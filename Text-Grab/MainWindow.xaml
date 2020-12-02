@@ -11,25 +11,50 @@
     AllowsTransparency="True"
     Background="Transparent"
     BorderBrush="Gray"
-    BorderThickness="2"
+    BorderThickness="4"
+    Cursor="Hand"
     ResizeMode="CanResizeWithGrip"
     WindowStyle="None"
     mc:Ignorable="d">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="auto" />
-        </Grid.RowDefinitions>
+    <local:DpiDecorator>
 
-        <Image x:Name="ScreenshotImage" Stretch="Uniform" />
+        <Grid
+            x:Name="mainGrid"
+            Cursor="Hand"
+            MouseDown="mainGrid_MouseDown"
+            MouseMove="mainGrid_MouseMove"
+            MouseUp="mainGrid_MouseUp">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
 
-        <Button
-            x:Name="ScreenshotBTN"
-            Grid.Row="1"
-            Width="108"
-            Height="24"
-            Click="ScreenshotBTN_Click">
-            Screenshot
-        </Button>
-    </Grid>
+            <Rectangle
+                Width="50"
+                Height="50"
+                Margin="-35,-35,0,0"
+                HorizontalAlignment="Left"
+                Fill="Beige"
+                MouseDown="mainGrid_MouseDown"
+                MouseLeave="Rectangle_MouseLeave"
+                MouseMove="mainGrid_MouseMove"
+                MouseUp="mainGrid_MouseUp" />
+
+            <Grid x:Name="screenshotGrid" Grid.Row="1">
+                <Border BorderBrush="Red" BorderThickness="2" >
+                    <Image x:Name="ScreenshotImage" Stretch="Uniform" />
+                </Border>
+            </Grid>
+
+            <Button
+                x:Name="ScreenshotBTN"
+                Grid.Row="2"
+                Width="108"
+                Height="24"
+                Click="ScreenshotBTN_Click">
+                Screenshot
+            </Button>
+        </Grid>
+    </local:DpiDecorator>
 </Window>
