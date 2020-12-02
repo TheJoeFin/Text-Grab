@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,9 @@ namespace Text_Grab
             InitializeComponent();
         }
 
-        private void ScreenshotBTN_Click(object sender, RoutedEventArgs e)
+        public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
+
+        private async void ScreenshotBTN_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Point windowPoint = screenshotGrid.PointToScreen(new System.Windows.Point(0, 0));
             Rectangle rect = new Rectangle((int)windowPoint.X + 2, (int)windowPoint.Y + 2, (int)screenshotGrid.ActualWidth - 4, (int)screenshotGrid.ActualHeight - 4);
@@ -34,6 +37,12 @@ namespace Text_Grab
             Graphics g = Graphics.FromImage(bmp);
             g.CopyFromScreen(rect.Left, rect.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
             ScreenshotImage.Source = BitmapToImageSource(bmp);
+
+            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
+            ocrText.Trim();
+
+            Clipboard.SetData(DataFormats.Text, ocrText);
+            MessageBox.Show(ocrText, "OCR Text", MessageBoxButton.OK);
         }
 
         BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -52,7 +61,31 @@ namespace Text_Grab
             }
         }
 
-        public async Task<string> ExtractText(string image, string languageCode)
+        public async Task<string> ExtractText(Bitmap bmp, string languageCode)
+        {
+
+            if (!GlobalizationPreferences.Languages.Contains(languageCode))
+                throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
+
+            StringBuilder text = new StringBuilder();
+
+            await using (MemoryStream memory = new MemoryStream())
+            {
+                bmp.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0; 
+                var bmpDecoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+                var softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+                var ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
+                var ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
+                foreach (var line in ocrResult.Lines) text.AppendLine(line.Text);
+            }
+
+            return text.ToString();
+        }
+
+        public async Task<string> ExtractText(string imagePath, string languageCode)
         {
 
           if (!GlobalizationPreferences.Languages.Contains(languageCode))
@@ -60,9 +93,9 @@ namespace Text_Grab
 
             StringBuilder text = new StringBuilder();
 
-            await using (var fileStream = File.OpenRead(image))
+            await using (var fileStream = File.OpenRead(imagePath))
             {
-                var bmpDecoder = await BitmapDecoder.CreateAsync(fileStream.AsRandomAccessStream());
+                var bmpDecoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(fileStream.AsRandomAccessStream());
                 var softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
                 var ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
