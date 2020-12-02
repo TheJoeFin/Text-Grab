@@ -16,6 +16,9 @@
     ResizeMode="CanResizeWithGrip"
     WindowStyle="None"
     mc:Ignorable="d">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="26" ResizeBorderThickness="4" />
+    </WindowChrome.WindowChrome>
     <local:DpiDecorator>
 
         <Grid
@@ -31,9 +34,8 @@
             </Grid.RowDefinitions>
 
             <Rectangle
-                Width="50"
-                Height="50"
-                Margin="-35,-35,0,0"
+                Width="1000"
+                Height="24"
                 HorizontalAlignment="Left"
                 Fill="Beige"
                 MouseDown="mainGrid_MouseDown"
@@ -42,7 +44,7 @@
                 MouseUp="mainGrid_MouseUp" />
 
             <Grid x:Name="screenshotGrid" Grid.Row="1">
-                <Border BorderBrush="Red" BorderThickness="2" >
+                <Border BorderBrush="Red" BorderThickness="2">
                     <Image x:Name="ScreenshotImage" Stretch="Uniform" />
                 </Border>
             </Grid>

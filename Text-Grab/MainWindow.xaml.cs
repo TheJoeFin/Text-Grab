@@ -13,7 +13,6 @@ using System.Windows.Media.Imaging;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
-using Color = System.Drawing.Color;
 
 namespace Text_Grab
 {
@@ -27,6 +26,8 @@ namespace Text_Grab
             InitializeComponent();
         }
 
+        public double WindowResizeZone { get; set; } = 32f;
+
         public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
         private async void ScreenshotBTN_Click(object sender, RoutedEventArgs e)
@@ -36,7 +37,7 @@ namespace Text_Grab
             Bitmap bmp = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
             g.CopyFromScreen(rect.Left, rect.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-            ScreenshotImage.Source = BitmapToImageSource(bmp);
+            // ScreenshotImage.Source = BitmapToImageSource(bmp);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
             ocrText.Trim();
@@ -121,11 +122,11 @@ namespace Text_Grab
             if (dragging == false)
                 return;
 
-            var pos = e.GetPosition(this);
-            var pos2 = new System.Windows.Point(pos.X - clickedPoint.X, pos.Y - clickedPoint.Y);
-
-            this.Left += pos2.X;
-            this.Top += pos2.Y;
+            // var pos = e.GetPosition(this);
+            // var pos2 = new System.Windows.Point(pos.X - clickedPoint.X, pos.Y - clickedPoint.Y);
+            // 
+            // this.Left += pos2.X;
+            // this.Top += pos2.Y;
         }
 
         private void mainGrid_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
