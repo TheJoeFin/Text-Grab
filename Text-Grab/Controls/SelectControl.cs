@@ -1042,7 +1042,7 @@ namespace Text_Grab.Controls
                     Child = new TextPath
                     {
                         IsHitTestVisible = false,
-                        Text = LocalizationHelper.Get("S.Recorder.SelectArea.Embedded"),
+                        Text = "S.Recorder.SelectArea.Embedded",
                         Fill = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
                         Stroke = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
                         StrokeThickness = 1.6,
@@ -1081,7 +1081,7 @@ namespace Text_Grab.Controls
                 Height = 40,
                 ContentHeight = 25,
                 ContentWidth = 25,
-                ToolTip = LocalizationHelper.Get("S.Recorder.CancelSelection"),
+                ToolTip = "CancelSelection",
                 Icon = TryFindResource("Vector.Cancel") as Brush,
                 Style = TryFindResource("Style.Button.NoText.White") as Style,
                 Cursor = Cursors.Arrow,
@@ -1112,7 +1112,7 @@ namespace Text_Grab.Controls
                     Child = new TextPath
                     {
                         IsHitTestVisible = false,
-                        Text = "👆 " + LocalizationHelper.Get("S.Recorder.SelectScreen"),
+                        Text = "👆 SelectScreen",
                         Fill = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
                         Stroke = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
                         StrokeThickness = 3,
@@ -1148,7 +1148,7 @@ namespace Text_Grab.Controls
                             Child = new TextPath
                             {
                                 IsHitTestVisible = false,
-                                Text = window.Bounds.Width < 400 || window.Bounds.Height < 100 ? "👆" : "👆 " + LocalizationHelper.Get("S.Recorder.SelectWindow"),
+                                Text = window.Bounds.Width < 400 || window.Bounds.Height < 100 ? "👆" : "👆 S.Recorder.SelectWindow",
                                 Fill = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
                                 Stroke = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
                                 StrokeThickness = 3,
@@ -1175,7 +1175,7 @@ namespace Text_Grab.Controls
                         Child = new TextPath
                         {
                             IsHitTestVisible = false,
-                            Text = window.Bounds.Width < 400 || window.Bounds.Height < 100 ? "👆" : "👆 " + LocalizationHelper.Get("S.Recorder.SelectWindow"),
+                            Text = window.Bounds.Width < 400 || window.Bounds.Height < 100 ? "👆" : "👆 S.Recorder.SelectWindow",
                             Fill = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
                             Stroke = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
                             StrokeThickness = 3,
@@ -1226,7 +1226,7 @@ namespace Text_Grab.Controls
                     Child = new TextPath
                     {
                         IsHitTestVisible = false,
-                        Text = LocalizationHelper.Get("S.Recorder.SelectArea"),
+                        Text = "SelectArea",
                         Fill = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
                         Stroke = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
                         StrokeThickness = 3,

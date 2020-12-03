@@ -1,5 +1,5 @@
 <Window
-    x:Class="ScreenToGif.Windows.Other.RegionSelector"
+    x:Class="Text_Grab.Windows.Other.RegionSelector"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:n="clr-namespace:Text_Grab.Controls"

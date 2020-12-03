@@ -304,16 +304,16 @@ namespace Text_Grab.Util
             MapvkVscToVkEx = 0x3,
         }
 
-        private enum Gwl
-        {
-            GwlWndproc = -4,
-            GwlHinstance = -6,
-            GwlHwndparent = -8,
-            GwlStyle = -16,
-            GwlExstyle = -20,
-            GwlUserdata = -21,
-            GwlId = -12
-        }
+        //private enum Gwl
+        //{
+        //    GwlWndproc = -4,
+        //    GwlHinstance = -6,
+        //    GwlHwndparent = -8,
+        //    GwlStyle = -16,
+        //    GwlExstyle = -20,
+        //    GwlUserdata = -21,
+        //    GwlId = -12
+        //}
 
         private enum GetAncestorFlags
         {
@@ -2323,7 +2323,7 @@ namespace Text_Grab.Util
 
                     //Special localization
                     case Key.Space:
-                        keyText = LocalizationHelper.Get("S.Keys.Space");
+                        keyText = "Space";
                         break;
                 }
 

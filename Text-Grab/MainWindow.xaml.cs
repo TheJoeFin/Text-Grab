@@ -10,9 +10,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Windows.Other;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
+using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 
 namespace Text_Grab
 {
@@ -44,6 +46,9 @@ namespace Text_Grab
 
             Clipboard.SetData(DataFormats.Text, ocrText);
             MessageBox.Show(ocrText, "OCR Text", MessageBoxButton.OK);
+
+            RegionSelector regionSelector = new RegionSelector();
+            regionSelector.Show();
         }
 
         BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -74,7 +79,7 @@ namespace Text_Grab
             {
                 bmp.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
                 memory.Position = 0; 
-                var bmpDecoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+                var bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
                 var softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
                 var ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
@@ -96,7 +101,7 @@ namespace Text_Grab
 
             await using (var fileStream = File.OpenRead(imagePath))
             {
-                var bmpDecoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(fileStream.AsRandomAccessStream());
+                var bmpDecoder = await BitmapDecoder.CreateAsync(fileStream.AsRandomAccessStream());
                 var softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
                 var ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
