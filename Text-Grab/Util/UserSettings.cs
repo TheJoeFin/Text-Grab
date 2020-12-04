@@ -45,7 +45,7 @@ namespace Text_Grab.Util
 
             //Paths.
             var local = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.xaml");
-            var appData = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ScreenToGif"), "Settings.xaml");
+            var appData = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Text_Grab"), "Settings.xaml");
 
             //Only creates an empty AppData settings file if there's no local settings defined.
             if (!File.Exists(local) && !File.Exists(appData))
@@ -59,20 +59,6 @@ namespace Text_Grab.Util
                 File.Create(appData).Dispose();
             }
 
-
-            //Loads AppData settings.
-            if (File.Exists(appData))
-            {
-                _appData = LoadOrDefault(appData);
-                Application.Current.Resources.MergedDictionaries.Add(_appData);
-            }
-
-            //Loads Local settings.
-            if (File.Exists(local))
-            {
-                _local = LoadOrDefault(local);
-                Application.Current.Resources.MergedDictionaries.Add(_local);
-            }
 
             //Reads the default settings (It's loaded by default).
             Default = Application.Current.Resources.MergedDictionaries.FirstOrDefault(d => d.Source.OriginalString.EndsWith("/Settings.xaml"));
@@ -88,9 +74,9 @@ namespace Text_Grab.Util
 
             //Filename: Local or AppData.
             var filename = _local != null ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.xaml") :
-                Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ScreenToGif"), "Settings.xaml");
+                Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Text_Grab"), "Settings.xaml");
             var backup = _local != null ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.xaml.bak") :
-                Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ScreenToGif"), "Settings.xaml.bak");
+                Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Text_Grab"), "Settings.xaml.bak");
 
             #region Create folder
 
@@ -260,7 +246,7 @@ namespace Text_Grab.Util
 
         public static void RemoveAppDataSettings()
         {
-            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ScreenToGif", "Settings.xaml");
+            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Text_Grab", "Settings.xaml");
 
             if (File.Exists(appData))
                 File.Delete(appData);

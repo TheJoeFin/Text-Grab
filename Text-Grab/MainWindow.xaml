@@ -13,6 +13,7 @@
     BorderBrush="Gray"
     BorderThickness="4"
     Cursor="Hand"
+    Loaded="Window_Loaded"
     ResizeMode="CanResizeWithGrip"
     WindowStyle="None"
     mc:Ignorable="d">

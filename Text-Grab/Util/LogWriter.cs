@@ -22,7 +22,7 @@ namespace Text_Grab.Util
                 #region Output folder
 
                 var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                var folder = Path.Combine(documents, "ScreenToGif", "Logs");
+                var folder = Path.Combine(documents, "Text_Grab", "Logs");
 
                 if (!Directory.Exists(folder))
                     Directory.CreateDirectory(folder);

@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Capture;
 using Text_Grab.Windows.Other;
 using Windows.Globalization;
 using Windows.Media.Ocr;
@@ -44,11 +45,15 @@ namespace Text_Grab
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
             ocrText.Trim();
 
-            Clipboard.SetData(DataFormats.Text, ocrText);
-            MessageBox.Show(ocrText, "OCR Text", MessageBoxButton.OK);
+            Clipboard.SetText(ocrText);
 
             RegionSelector regionSelector = new RegionSelector();
             regionSelector.Show();
+
+            MessageBox.Show(ocrText, "OCR Text", MessageBoxButton.OK);
+
+            await RegionSelectHelper.Select(Util.ModeType.Region, new Rect(), null, true);
+            
         }
 
         BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -142,6 +147,11 @@ namespace Text_Grab
         private void Rectangle_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
         {
             dragging = false;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            
         }
     }
 

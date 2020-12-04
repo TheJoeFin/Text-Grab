@@ -21,7 +21,7 @@
         x:Name="SelectControl"
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
-        AnimateBorder="{Binding Source={x:Static util:UserSettings.All}, Path=AnimateRecorderBorder, Mode=OneWay}"
+        AnimateBorder="{Binding Source={x:Static util:UserSettings.All}, Mode=OneWay}"
         Focusable="True"
         MouseHovering="SelectControl_MouseHovering"
         SelectionAccepted="SelectControl_SelectionAccepted"

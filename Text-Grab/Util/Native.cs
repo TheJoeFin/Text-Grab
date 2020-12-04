@@ -2086,7 +2086,7 @@ namespace Text_Grab.Util
                 var className = new StringBuilder(256); //Maximum class name.
                 if (GetClassName(handle, className, className.Capacity) != 0)
                 {
-                    if (className.ToString().Contains("ScreenToGif.exe"))
+                    if (className.ToString().Contains("Text_Grab.exe"))
                         return true;
                 }
 
@@ -2165,7 +2165,7 @@ namespace Text_Grab.Util
                 var className = new StringBuilder(256); //Maximum class name.
                 if (GetClassName(handle, className, className.Capacity) != 0)
                 {
-                    if (className.ToString().Contains("ScreenToGif.exe"))
+                    if (className.ToString().Contains("Text_Grab.exe"))
                         return true;
                 }
 
