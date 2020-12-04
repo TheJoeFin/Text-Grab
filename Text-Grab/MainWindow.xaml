@@ -20,6 +20,7 @@
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="26" ResizeBorderThickness="4" />
     </WindowChrome.WindowChrome>
+
     <local:DpiDecorator>
 
         <Grid
@@ -50,14 +51,24 @@
                 </Border>
             </Grid>
 
-            <Button
-                x:Name="ScreenshotBTN"
-                Grid.Row="2"
-                Width="108"
-                Height="24"
-                Click="ScreenshotBTN_Click">
-                Screenshot
-            </Button>
+            <StackPanel Grid.Row="2" Orientation="Horizontal">
+                <Button
+                    x:Name="ScreenshotBTN"
+                    Grid.Row="2"
+                    Width="108"
+                    Height="24"
+                    Click="ScreenshotBTN_Click">
+                    Screenshot
+                </Button>
+
+                <Button Click="TestButton_Click"
+                    x:Name="TestButton"
+                    Width="108"
+                    Height="24"
+                    Margin="12,0">
+                    Test
+                </Button>
+            </StackPanel>
         </Grid>
     </local:DpiDecorator>
 </Window>

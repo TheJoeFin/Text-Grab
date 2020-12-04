@@ -40,6 +40,7 @@ namespace Text_Grab.Capture
             Selectors.Clear();
 
             var monitors = Monitor.AllMonitorsGranular();
+            currentMonitor = monitors.FirstOrDefault();
 
             //If in quick screen selection mode and there's just one screen, select that one.
             if (quickSelection && mode == ModeType.Fullscreen && monitors.Count == 1)

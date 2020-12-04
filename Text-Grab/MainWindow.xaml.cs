@@ -47,13 +47,7 @@ namespace Text_Grab
 
             Clipboard.SetText(ocrText);
 
-            RegionSelector regionSelector = new RegionSelector();
-            regionSelector.Show();
-
-            MessageBox.Show(ocrText, "OCR Text", MessageBoxButton.OK);
-
-            await RegionSelectHelper.Select(Util.ModeType.Region, new Rect(), null, true);
-            
+            MessageBox.Show(ocrText, "OCR Text", MessageBoxButton.OK);            
         }
 
         BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -151,6 +145,15 @@ namespace Text_Grab
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            
+        }
+
+        private async void TestButton_Click(object sender, RoutedEventArgs e)
+        {
+            // RegionSelector regionSelector = new RegionSelector();
+            // regionSelector.Show();
+
+            var selection = await RegionSelectHelper.Select(Util.ModeType.Region, new Rect(), null, true);
             
         }
     }
