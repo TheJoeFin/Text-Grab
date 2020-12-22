@@ -238,8 +238,8 @@ namespace Text_Grab.Windows
 
                 UserSettings.All.CursorFollowing = IsFollowing = false;
 
-                Dialog.Ok(LocalizationHelper.Get("S.StartUp.Recorder"), LocalizationHelper.Get("S.Options.Warning.Follow.Header"),
-                    LocalizationHelper.Get("S.Options.Warning.Follow.Message"), Icons.Warning);
+                // Dialog.Ok(LocalizationHelper.Get("S.StartUp.Recorder"), LocalizationHelper.Get("S.Options.Warning.Follow.Header"),
+                //     LocalizationHelper.Get("S.Options.Warning.Follow.Message"), Icons.Warning);
             }
         }
 
@@ -576,8 +576,8 @@ namespace Text_Grab.Windows
                 _viewModel.DiscardCommand.Execute(null, this);
             else if (Keyboard.Modifiers.HasFlag(UserSettings.All.FollowModifiers) && e.Key == UserSettings.All.FollowShortcut)
                 UserSettings.All.CursorFollowing = IsFollowing = !IsFollowing;
-            else
-                _keyList.Add(new SimpleKeyGesture(e.Key, Keyboard.Modifiers, e.IsUppercase, e.IsInjected));
+            //else
+                //_keyList.Add(new SimpleKeyGesture(e.Key, Keyboard.Modifiers, e.IsUppercase, e.IsInjected));
         }
 
         /// <summary>
@@ -618,9 +618,9 @@ namespace Text_Grab.Windows
         {
             if (_preStartCount >= 1)
             {
-                Title = "TextGrab - " + LocalizationHelper.Get("S.Recorder.PreStarting");
+                Title = "TextGrab - "; //LocalizationHelper.Get("S.Recorder.PreStarting");
                 DisplayTimer.SetElapsed(-_preStartCount);
-                Splash.SetTime(-_preStartCount);
+                // Splash.SetTime(-_preStartCount);
                 _preStartCount--;
                 return;
             }
@@ -629,14 +629,14 @@ namespace Text_Grab.Windows
 
             if (IsRegionIntersected())
             {
-                Splash.Dismiss();
+                // Splash.Dismiss();
                 WindowState = WindowState.Minimized;
             }
 
             Title = "Text Grab";
             IsRecording = true;
             DisplayTimer.Start();
-            FrameRate.Start(HasFixedDelay(), GetFixedDelay());
+            // FrameRate.Start(HasFixedDelay(), GetFixedDelay());
 
             if (UserSettings.All.ShowCursor)
             {
@@ -957,7 +957,7 @@ namespace Text_Grab.Windows
             CommandBindings.AddRange(new CommandBindingCollection
             {
                 new CommandBinding(_viewModel.CloseCommand, (sender, args) => Close(),
-                    (sender, args) => args.CanExecute = Stage == Stage.Stopped || ((UserSettings.All.CaptureFrequency == CaptureFrequency.Manual || UserSettings.All.CaptureFrequency == CaptureFrequency.Interaction) && (Project == null || !Project.Any))),
+                    (sender, args) => args.CanExecute = Stage == Stage.Stopped || ((UserSettings.All.CaptureFrequency == CaptureFrequency.Manual || UserSettings.All.CaptureFrequency == CaptureFrequency.Interaction) && (Project == null))),
 
                 new CommandBinding(_viewModel.OptionsCommand, ShowOptions,
                     (sender, args) => args.CanExecute = (Stage != Stage.Recording || UserSettings.All.CaptureFrequency == CaptureFrequency.Manual || UserSettings.All.CaptureFrequency == CaptureFrequency.Interaction) && Stage != Stage.PreStarting),
@@ -1593,14 +1593,14 @@ namespace Text_Grab.Windows
                         }
 
                         SizeTextBlock.Text = _viewModel.CurrentMonitor.FriendlyName;
-                        SizeTextBlock.ToolTip =
-                            LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info1", "Graphics adapter: {0}", _viewModel.CurrentMonitor.AdapterName) +
-                            Environment.NewLine +
-                            LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info2", "Resolution: {0} x {1}", _viewModel.CurrentMonitor.Bounds.Width, _viewModel.CurrentMonitor.Bounds.Height) +
-                            (Math.Abs(_viewModel.CurrentMonitor.Scale - 1) > 0.001 ? Environment.NewLine +
-                            LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info3", "Native resolution: {0} x {1}", _viewModel.CurrentMonitor.NativeBounds.Width, _viewModel.CurrentMonitor.NativeBounds.Height) : "") +
-                            Environment.NewLine +
-                            LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info4", "DPI: {0} ({1:0.##}%)", _viewModel.CurrentMonitor.Dpi, _viewModel.CurrentMonitor.Scale * 100d);
+                        SizeTextBlock.ToolTip = "";
+                            //LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info1", "Graphics adapter: {0}", _viewModel.CurrentMonitor.AdapterName) +
+                            //Environment.NewLine +
+                            //LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info2", "Resolution: {0} x {1}", _viewModel.CurrentMonitor.Bounds.Width, _viewModel.CurrentMonitor.Bounds.Height) +
+                            //(Math.Abs(_viewModel.CurrentMonitor.Scale - 1) > 0.001 ? Environment.NewLine +
+                            //LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info3", "Native resolution: {0} x {1}", _viewModel.CurrentMonitor.NativeBounds.Width, _viewModel.CurrentMonitor.NativeBounds.Height) : "") +
+                            //Environment.NewLine +
+                            //LocalizationHelper.GetWithFormat("S.Recorder.Screen.Name.Info4", "DPI: {0} ({1:0.##}%)", _viewModel.CurrentMonitor.Dpi, _viewModel.CurrentMonitor.Scale * 100d);
 
                         return;
                     }
