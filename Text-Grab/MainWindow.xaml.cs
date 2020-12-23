@@ -7,12 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Text_Grab.Capture;
-using Text_Grab.Util;
-using Text_Grab.Windows;
-using Text_Grab.Windows.Other;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
@@ -25,15 +22,7 @@ namespace Text_Grab
     /// </summary>
     public partial class MainWindow : Window
     {
-        /// <summary>
-        /// This is the helper class which brings the screen area selection.
-        /// </summary>
-        private readonly RegionSelection _regionSelection = new RegionSelection();
 
-        /// <summary>
-        /// Deals with all screen capture methods.
-        /// </summary>
-        private ICapture _capture;
 
         public MainWindow()
         {
@@ -159,10 +148,15 @@ namespace Text_Grab
             
         }
 
-        private async void TestButton_Click(object sender, RoutedEventArgs e)
+        private void TestButton_Click(object sender, RoutedEventArgs e)
         {
-            NewRecorder newRecorder = new NewRecorder();
-            newRecorder.Show();
+            // NewRecorder newRecorder = new NewRecorder();
+            // newRecorder.Show();
+
+            if (this.WindowState == WindowState.Normal)
+                this.WindowState = WindowState.Maximized;
+            else
+                this.WindowState = WindowState.Normal;
         }
 
         private void ForceUpdate()
@@ -171,6 +165,36 @@ namespace Text_Grab
             InvalidateArrange();
             Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
             Arrange(new Rect(DesiredSize));
+        }
+
+        private bool isSelecting = false;
+
+        private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            isSelecting = true;
+
+            Border selectBorder = new Border();
+            selectBorder.BorderThickness = new Thickness(1);
+            selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
+            RegionClickCanvas.Children.Add(selectBorder);
+            Canvas.SetLeft(selectBorder, Mouse.GetPosition(this).X);
+            Canvas.SetTop(selectBorder, Mouse.GetPosition(this).Y);
+            
+
+        }
+
+        private void RegionClickCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isSelecting == false)
+                return;
+            
+
+            
+        }
+
+        private void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            isSelecting = false;
         }
     }
 

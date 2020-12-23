@@ -46,6 +46,11 @@
                 MouseUp="mainGrid_MouseUp" />
 
             <Grid x:Name="screenshotGrid" Grid.Row="1">
+                <Canvas
+                    Name="RegionClickCanvas"
+                    MouseDown="RegionClickCanvas_MouseDown"
+                    MouseMove="RegionClickCanvas_MouseMove"
+                    MouseUp="RegionClickCanvas_MouseUp" />
                 <Border BorderBrush="Red" BorderThickness="2">
                     <Image x:Name="ScreenshotImage" Stretch="Uniform" />
                 </Border>
@@ -61,11 +66,12 @@
                     Screenshot
                 </Button>
 
-                <Button Click="TestButton_Click"
+                <Button
                     x:Name="TestButton"
                     Width="108"
                     Height="24"
-                    Margin="12,0">
+                    Margin="12,0"
+                    Click="TestButton_Click">
                     Test
                 </Button>
             </StackPanel>
