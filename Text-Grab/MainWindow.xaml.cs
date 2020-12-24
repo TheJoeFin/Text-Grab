@@ -122,6 +122,15 @@ namespace Text_Grab
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Maximized;
+
+            RoutedCommand newCmd = new RoutedCommand();
+            newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
+            CommandBindings.Add(new CommandBinding(newCmd, escape_Keyed));
+        }
+
+        private void escape_Keyed(object sender, ExecutedRoutedEventArgs e)
+        {
+            this.Close();
         }
 
         private void TestButton_Click(object sender, RoutedEventArgs e)
