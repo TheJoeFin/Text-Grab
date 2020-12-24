@@ -9,7 +9,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
@@ -36,7 +35,6 @@ namespace Text_Grab
             Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
             g.CopyFromScreen(selectedRegion.Left, selectedRegion.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-            // ScreenshotImage.Source = BitmapToImageSource(bmp);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
             ocrText.Trim();
@@ -44,7 +42,20 @@ namespace Text_Grab
             return ocrText;
         }
 
-        public async Task<string> ExtractText(Bitmap bmp, string languageCode)
+        private async Task<string> GetClickedWord(System.Windows.Point clickedPoint)
+        {
+            Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+            Bitmap bmp = new Bitmap((int)(this.ActualWidth * m.M11), (int)(this.ActualHeight * m.M22), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            Graphics g = Graphics.FromImage(bmp);
+            g.CopyFromScreen(0, 0, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+
+            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), clickedPoint);
+            ocrText.Trim();
+
+            return ocrText;
+        }
+
+        public async Task<string> ExtractText(Bitmap bmp, string languageCode, System.Windows.Point? singlePoint = null)
         {
 
             if (!GlobalizationPreferences.Languages.Contains(languageCode))
@@ -55,14 +66,28 @@ namespace Text_Grab
             await using (MemoryStream memory = new MemoryStream())
             {
                 bmp.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                memory.Position = 0; 
-                var bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
-                var softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+                memory.Position = 0;
+                BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+                Windows.Graphics.Imaging.SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
-                var ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
-                var ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+                OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
+                OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
 
-                foreach (var line in ocrResult.Lines) text.AppendLine(line.Text);
+                if(singlePoint == null)
+                    foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
+                else
+                {
+                    Windows.Foundation.Point fPoint = new Windows.Foundation.Point(singlePoint.Value.X, singlePoint.Value.Y);
+                    foreach (OcrLine ocrLine in ocrResult.Lines)
+                    {
+                        foreach (OcrWord ocrWord in ocrLine.Words)
+                        {
+                            if (ocrWord.BoundingRect.Contains(fPoint))
+                                text.Append(ocrWord.Text);
+                        }
+                    }
+
+                }
             }
 
             return text.ToString();
@@ -161,7 +186,12 @@ namespace Text_Grab
                 (int)(region.Width * m.M11),
                 (int)(region.Height * m.M22) );
 
-            string grabbedText = await GetRegionsText(regionScaled);
+            string grabbedText = "";
+
+            if (regionScaled.Width < 3 || regionScaled.Height < 3)
+                grabbedText = await GetClickedWord(new System.Windows.Point(clickedPoint.X * m.M11, clickedPoint.Y * m.M22));
+            else
+                grabbedText = await GetRegionsText(regionScaled);
 
             RegionClickCanvas.Children.Remove(selectBorder);
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
