@@ -22,8 +22,6 @@ namespace Text_Grab
     /// </summary>
     public partial class MainWindow : Window
     {
-
-
         public MainWindow()
         {
             InitializeComponent();
@@ -37,17 +35,25 @@ namespace Text_Grab
         {
             System.Windows.Point windowPoint = screenshotGrid.PointToScreen(new System.Windows.Point(0, 0));
             Rectangle rect = new Rectangle((int)windowPoint.X + 2, (int)windowPoint.Y + 2, (int)screenshotGrid.ActualWidth - 4, (int)screenshotGrid.ActualHeight - 4);
-            Bitmap bmp = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            string text = await GetRegionsText(rect);
+
+            Clipboard.SetText(text);
+
+            MessageBox.Show(text, "OCR Text", MessageBoxButton.OK);            
+        }
+
+        private async Task<string> GetRegionsText(Rectangle selectedRegion)
+        {
+            Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
-            g.CopyFromScreen(rect.Left, rect.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            g.CopyFromScreen(selectedRegion.Left, selectedRegion.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
             // ScreenshotImage.Source = BitmapToImageSource(bmp);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
             ocrText.Trim();
 
-            System.Windows.Clipboard.SetText(ocrText);
-
-            System.Windows.MessageBox.Show(ocrText, "OCR Text", MessageBoxButton.OK);            
+            return ocrText;
         }
 
         BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -112,73 +118,37 @@ namespace Text_Grab
             return text.ToString();
         }
 
-        private System.Windows.Point clickedPoint;
-        private bool dragging = false;
-
-        private void mainGrid_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            clickedPoint = e.GetPosition(this);
-            dragging = true;
-        }
-
-        private void mainGrid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            if (dragging == false)
-                return;
-
-            // var pos = e.GetPosition(this);
-            // var pos2 = new System.Windows.Point(pos.X - clickedPoint.X, pos.Y - clickedPoint.Y);
-            // 
-            // this.Left += pos2.X;
-            // this.Top += pos2.Y;
-        }
-
-        private void mainGrid_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            dragging = false;
-        }
-
-        private void Rectangle_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            dragging = false;
-        }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            
+            this.WindowState = WindowState.Maximized;
         }
 
         private void TestButton_Click(object sender, RoutedEventArgs e)
         {
-            // NewRecorder newRecorder = new NewRecorder();
-            // newRecorder.Show();
-
             if (this.WindowState == WindowState.Normal)
                 this.WindowState = WindowState.Maximized;
             else
                 this.WindowState = WindowState.Normal;
         }
 
-        private void ForceUpdate()
-        {
-            InvalidateMeasure();
-            InvalidateArrange();
-            Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
-            Arrange(new Rect(DesiredSize));
-        }
 
         private bool isSelecting = false;
+        System.Windows.Point clickedPoint = new System.Windows.Point();
+        Border selectBorder = new Border();
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             isSelecting = true;
+            clickedPoint = e.GetPosition(this);
+            selectBorder.Height = 1;
+            selectBorder.Width = 1;
 
-            Border selectBorder = new Border();
-            selectBorder.BorderThickness = new Thickness(1);
+            selectBorder.BorderThickness = new Thickness(3);
             selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
             RegionClickCanvas.Children.Add(selectBorder);
-            Canvas.SetLeft(selectBorder, Mouse.GetPosition(this).X);
-            Canvas.SetTop(selectBorder, Mouse.GetPosition(this).Y);
+            Canvas.SetLeft(selectBorder, clickedPoint.X);
+            Canvas.SetTop(selectBorder, clickedPoint.Y);
             
 
         }
@@ -187,22 +157,40 @@ namespace Text_Grab
         {
             if (isSelecting == false)
                 return;
-            
 
-            
+
+            System.Windows.Point movingPoint = e.GetPosition(this);
+
+            selectBorder.Width = Math.Abs( movingPoint.X - clickedPoint.X);
+            selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
         }
 
-        private void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
-        }
-    }
 
-    public enum ModeType
-    {
-        Region,
-        Window,
-        Fullscreen
+            Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+
+            double xDim = Canvas.GetLeft(selectBorder);
+            double yDim = Canvas.GetTop(selectBorder);
+
+            Rectangle region = new Rectangle((int)xDim, (int)yDim, (int)selectBorder.Width, (int)selectBorder.Height);
+            Rectangle regionScaled = new Rectangle(
+                (int)(region.X * m.M11),
+                (int)(region.Y * m.M22),
+                (int)(region.Width * m.M11),
+                (int)(region.Height * m.M22) );
+
+            string grabbedText = await GetRegionsText(regionScaled);
+
+            RegionClickCanvas.Children.Remove(selectBorder);
+            if (string.IsNullOrWhiteSpace(grabbedText) == false)
+            {
+                Clipboard.SetText(grabbedText);
+                this.Close();
+            }
+
+        }
     }
 
     public class DpiDecorator : Decorator
