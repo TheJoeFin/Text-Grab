@@ -153,7 +153,7 @@ namespace Text_Grab
             selectBorder.Height = 1;
             selectBorder.Width = 1;
 
-            selectBorder.BorderThickness = new Thickness(3);
+            selectBorder.BorderThickness = new Thickness(1.5);
             selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
             RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
@@ -170,8 +170,41 @@ namespace Text_Grab
 
             System.Windows.Point movingPoint = e.GetPosition(this);
 
-            selectBorder.Width = Math.Abs( movingPoint.X - clickedPoint.X);
-            selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            double xDelta = movingPoint.X - clickedPoint.X;
+            double yDelta = movingPoint.Y - clickedPoint.Y;
+
+
+            // X and Y postive
+            if(xDelta > 0 && yDelta > 0)
+            {
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
+            // X negative Y positive
+            if(xDelta < 0 && yDelta > 0)
+            {
+                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
+
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
+            // X postive Y negative
+            if(xDelta > 0 && yDelta < 0)
+            {
+                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
+
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
+            // X and Y negative
+            if(xDelta < 0 && yDelta < 0)
+            {
+                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
+                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
+                
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
         }
 
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
