@@ -17,51 +17,14 @@
     ResizeMode="CanResizeWithGrip"
     WindowStyle="None"
     mc:Ignorable="d">
-
-
-    <Grid x:Name="mainGrid" Cursor="Hand">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="auto" />
-        </Grid.RowDefinitions>
-
-
-        <Grid x:Name="screenshotGrid" Grid.Row="1">
-            <Canvas
-                Name="RegionClickCanvas"
-                Cursor="Pen"
-                MouseDown="RegionClickCanvas_MouseDown"
-                MouseMove="RegionClickCanvas_MouseMove"
-                MouseUp="RegionClickCanvas_MouseUp">
-                <Canvas.Background>
-                    <SolidColorBrush Opacity=".2" Color="Beige" />
-                </Canvas.Background>
-            </Canvas>
-
-        </Grid>
-
-        <StackPanel
-            Grid.Row="2"
-            Orientation="Horizontal"
-            Visibility="Collapsed">
-            <Button
-                x:Name="ScreenshotBTN"
-                Grid.Row="2"
-                Width="108"
-                Height="24"
-                Click="ScreenshotBTN_Click">
-                Screenshot
-            </Button>
-
-            <Button
-                x:Name="TestButton"
-                Width="108"
-                Height="24"
-                Margin="12,0"
-                Click="TestButton_Click">
-                Test
-            </Button>
-        </StackPanel>
-    </Grid>
+    <Canvas
+        Name="RegionClickCanvas"
+        Cursor="Pen"
+        MouseDown="RegionClickCanvas_MouseDown"
+        MouseMove="RegionClickCanvas_MouseMove"
+        MouseUp="RegionClickCanvas_MouseUp">
+        <Canvas.Background>
+            <SolidColorBrush Opacity=".2" Color="Beige" />
+        </Canvas.Background>
+    </Canvas>
 </Window>

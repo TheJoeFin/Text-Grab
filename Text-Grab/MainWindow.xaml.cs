@@ -31,18 +31,6 @@ namespace Text_Grab
 
         public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
-        private async void ScreenshotBTN_Click(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Point windowPoint = screenshotGrid.PointToScreen(new System.Windows.Point(0, 0));
-            Rectangle rect = new Rectangle((int)windowPoint.X + 2, (int)windowPoint.Y + 2, (int)screenshotGrid.ActualWidth - 4, (int)screenshotGrid.ActualHeight - 4);
-
-            string text = await GetRegionsText(rect);
-
-            Clipboard.SetText(text);
-
-            MessageBox.Show(text, "OCR Text", MessageBoxButton.OK);            
-        }
-
         private async Task<string> GetRegionsText(Rectangle selectedRegion)
         {
             Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -54,22 +42,6 @@ namespace Text_Grab
             ocrText.Trim();
 
             return ocrText;
-        }
-
-        BitmapImage BitmapToImageSource(Bitmap bitmap)
-        {
-            using (MemoryStream memory = new MemoryStream())
-            {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                memory.Position = 0;
-                BitmapImage bitmapimage = new BitmapImage();
-                bitmapimage.BeginInit();
-                bitmapimage.StreamSource = memory;
-                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapimage.EndInit();
-
-                return bitmapimage;
-            }
         }
 
         public async Task<string> ExtractText(Bitmap bmp, string languageCode)
@@ -96,29 +68,6 @@ namespace Text_Grab
             return text.ToString();
         }
 
-        public async Task<string> ExtractText(string imagePath, string languageCode)
-        {
-
-          if (!GlobalizationPreferences.Languages.Contains(languageCode))
-                throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
-
-            StringBuilder text = new StringBuilder();
-
-            await using (var fileStream = File.OpenRead(imagePath))
-            {
-                var bmpDecoder = await BitmapDecoder.CreateAsync(fileStream.AsRandomAccessStream());
-                var softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
-
-                var ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
-                var ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
-
-                foreach (var line in ocrResult.Lines) text.AppendLine(line.Text);
-            }
-
-            return text.ToString();
-        }
-
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Maximized;
@@ -132,15 +81,6 @@ namespace Text_Grab
         {
             this.Close();
         }
-
-        private void TestButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (this.WindowState == WindowState.Normal)
-                this.WindowState = WindowState.Maximized;
-            else
-                this.WindowState = WindowState.Normal;
-        }
-
 
         private bool isSelecting = false;
         System.Windows.Point clickedPoint = new System.Windows.Point();
@@ -167,12 +107,10 @@ namespace Text_Grab
             if (isSelecting == false)
                 return;
 
-
             System.Windows.Point movingPoint = e.GetPosition(this);
 
             double xDelta = movingPoint.X - clickedPoint.X;
             double yDelta = movingPoint.Y - clickedPoint.Y;
-
 
             // X and Y postive
             if(xDelta > 0 && yDelta > 0)
@@ -232,21 +170,6 @@ namespace Text_Grab
                 this.Close();
             }
 
-        }
-    }
-
-    public class DpiDecorator : Decorator
-    {
-        public DpiDecorator()
-        {
-            this.Loaded += (s, e) =>
-            {
-                Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
-                ScaleTransform dpiTransform = new ScaleTransform(1 / m.M11, 1 / m.M22);
-                if (dpiTransform.CanFreeze)
-                    dpiTransform.Freeze();
-                this.LayoutTransform = dpiTransform;
-            };
         }
     }
 }
