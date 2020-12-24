@@ -17,58 +17,14 @@
     ResizeMode="CanResizeWithGrip"
     WindowStyle="None"
     mc:Ignorable="d">
-    <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="26" ResizeBorderThickness="4" />
-    </WindowChrome.WindowChrome>
-
-    <local:DpiDecorator>
-
-        <Grid
-            x:Name="mainGrid"
-            Cursor="Hand"
-            MouseDown="mainGrid_MouseDown"
-            MouseMove="mainGrid_MouseMove"
-            MouseUp="mainGrid_MouseUp">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="auto" />
-            </Grid.RowDefinitions>
-
-            <Rectangle
-                Width="1000"
-                Height="24"
-                HorizontalAlignment="Left"
-                Fill="Beige"
-                MouseDown="mainGrid_MouseDown"
-                MouseLeave="Rectangle_MouseLeave"
-                MouseMove="mainGrid_MouseMove"
-                MouseUp="mainGrid_MouseUp" />
-
-            <Grid x:Name="screenshotGrid" Grid.Row="1">
-                <Border BorderBrush="Red" BorderThickness="2">
-                    <Image x:Name="ScreenshotImage" Stretch="Uniform" />
-                </Border>
-            </Grid>
-
-            <StackPanel Grid.Row="2" Orientation="Horizontal">
-                <Button
-                    x:Name="ScreenshotBTN"
-                    Grid.Row="2"
-                    Width="108"
-                    Height="24"
-                    Click="ScreenshotBTN_Click">
-                    Screenshot
-                </Button>
-
-                <Button Click="TestButton_Click"
-                    x:Name="TestButton"
-                    Width="108"
-                    Height="24"
-                    Margin="12,0">
-                    Test
-                </Button>
-            </StackPanel>
-        </Grid>
-    </local:DpiDecorator>
+    <Canvas
+        Name="RegionClickCanvas"
+        Cursor="Pen"
+        MouseDown="RegionClickCanvas_MouseDown"
+        MouseMove="RegionClickCanvas_MouseMove"
+        MouseUp="RegionClickCanvas_MouseUp">
+        <Canvas.Background>
+            <SolidColorBrush Opacity=".2" Color="Beige" />
+        </Canvas.Background>
+    </Canvas>
 </Window>

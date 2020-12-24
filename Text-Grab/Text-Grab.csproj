@@ -6,6 +6,7 @@
     <RootNamespace>Text_Grab</RootNamespace>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>t_ICON.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
