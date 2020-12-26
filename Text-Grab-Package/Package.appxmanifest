@@ -7,13 +7,13 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="e4c3b6ae-0359-4ec2-83a7-2ffaa91dc4cd"
-    Publisher="CN=josep"
+    Name="40087JoeFinApps.TextGrab"
+    Publisher="CN=153F3B0F-BA3D-4964-8098-71AC78A1DF6A"
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>Text-Grab-Package</DisplayName>
-    <PublisherDisplayName>josep</PublisherDisplayName>
+    <DisplayName>Text Grab</DisplayName>
+    <PublisherDisplayName>JoeFinApps</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
 
@@ -31,7 +31,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Text-Grab-Package"
+        DisplayName="Text Grab"
         Description="Text-Grab-Package"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
