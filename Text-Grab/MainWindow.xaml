@@ -5,16 +5,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="MainWindow"
+    Title="Text Grab"
     Width="800"
     Height="450"
     AllowsTransparency="True"
     Background="Transparent"
-    BorderBrush="Gray"
-    BorderThickness="4"
-    Cursor="Hand"
     Loaded="Window_Loaded"
-    ResizeMode="CanResizeWithGrip"
+    ResizeMode="NoResize"
     WindowStyle="None"
     mc:Ignorable="d">
     <Canvas
