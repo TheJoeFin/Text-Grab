@@ -188,6 +188,8 @@ namespace Text_Grab
 
             string grabbedText = "";
 
+            RegionClickCanvas.Background.Opacity = 0;
+
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
                 grabbedText = await GetClickedWord(new System.Windows.Point(clickedPoint.X * m.M11, clickedPoint.Y * m.M22));
             else
@@ -199,7 +201,8 @@ namespace Text_Grab
                 Clipboard.SetText(grabbedText);
                 this.Close();
             }
-
+            else
+                RegionClickCanvas.Background.Opacity = .2;
         }
     }
 }
