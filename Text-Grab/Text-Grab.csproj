@@ -5,6 +5,11 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Text_Grab</RootNamespace>
     <UseWPF>true</UseWPF>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>t_ICON.ico</ApplicationIcon>
   </PropertyGroup>
