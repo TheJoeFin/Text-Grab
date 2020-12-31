@@ -1,17 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
+using System.Windows.Forms;
 
 namespace Text_Grab
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+
+            var allScreens = Screen.AllScreens;
+
+            if(allScreens.Count() > 1)
+            {
+                foreach (Screen screen in allScreens)
+                {
+                    if (screen.Bounds.X == 0 && screen.Bounds.Y == 0)
+                        continue;
+
+                    MainWindow mw = new MainWindow();
+                    mw.Left = screen.Bounds.X;
+                    mw.Top = screen.Bounds.Y;
+
+                    mw.Show();
+                }
+            }
+
+        }
     }
 }

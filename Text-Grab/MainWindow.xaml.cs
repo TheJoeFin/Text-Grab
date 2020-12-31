@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace Text_Grab
             InitializeComponent();
         }
 
-        public double WindowResizeZone { get; set; } = 32f;
+        System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
         public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
@@ -173,8 +174,18 @@ namespace Text_Grab
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
-
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+
+            var mPt = GetMousePos();
+            System.Windows.Point movingPoint = e.GetPosition(this);
+            movingPoint.X *= m.M11;
+            movingPoint.Y *= m.M22;
+
+            movingPoint.X = Math.Round(movingPoint.X);
+            movingPoint.Y = Math.Round(movingPoint.Y);
+
+            if (mPt == movingPoint)
+                Debug.WriteLine("Probably on Screen 1");
 
             double xDim = Canvas.GetLeft(selectBorder);
             double yDim = Canvas.GetTop(selectBorder);
