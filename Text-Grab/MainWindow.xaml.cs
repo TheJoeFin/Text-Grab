@@ -181,14 +181,16 @@ namespace Text_Grab
             movingPoint.X *= m.M11;
             movingPoint.Y *= m.M22;
 
+            
+
             movingPoint.X = Math.Round(movingPoint.X);
             movingPoint.Y = Math.Round(movingPoint.Y);
 
             if (mPt == movingPoint)
                 Debug.WriteLine("Probably on Screen 1");
 
-            double xDim = Canvas.GetLeft(selectBorder);
-            double yDim = Canvas.GetTop(selectBorder);
+            double xDim = Canvas.GetLeft(selectBorder) + this.Left;
+            double yDim = Canvas.GetTop(selectBorder) + this.Top;
 
             Rectangle region = new Rectangle((int)xDim, (int)yDim, (int)selectBorder.Width, (int)selectBorder.Height);
             Rectangle regionScaled = new Rectangle(
