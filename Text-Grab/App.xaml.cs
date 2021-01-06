@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Windows;
 using System.Windows.Forms;
 
 namespace Text_Grab
@@ -14,19 +15,28 @@ namespace Text_Grab
             base.OnActivated(e);
 
             var allScreens = Screen.AllScreens;
+            var allWindows = System.Windows.Application.Current.Windows;
 
-            if(allScreens.Count() > 1)
+            if (allScreens.Count() > 1)
             {
                 foreach (Screen screen in allScreens)
                 {
-                    if (screen.Bounds.X == 0 && screen.Bounds.Y == 0)
-                        continue;
+                    bool screenHasWindow = true;
 
-                    MainWindow mw = new MainWindow();
-                    mw.Left = screen.Bounds.X;
-                    mw.Top = screen.Bounds.Y;
+                    foreach (Window window in allWindows)
+                    {
+                        if (screen.Bounds.X == window.Left && screen.Bounds.Y == window.Top)
+                            screenHasWindow = false;
+                    }
 
-                    mw.Show();
+                    if(screenHasWindow)
+                    {
+                        MainWindow mw = new MainWindow();
+                        mw.Left = screen.Bounds.X;
+                        mw.Top = screen.Bounds.Y;
+
+                        mw.Show();
+                    }
                 }
             }
 
