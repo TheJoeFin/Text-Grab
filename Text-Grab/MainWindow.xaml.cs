@@ -48,7 +48,11 @@ namespace Text_Grab
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
             Bitmap bmp = new Bitmap((int)(this.ActualWidth * m.M11), (int)(this.ActualHeight * m.M22), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
-            g.CopyFromScreen(0, 0, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+
+            int xDimScaled = (int)(this.Left * m.M11);
+            int yDimScaled = (int)(this.Top * m.M22);
+
+            g.CopyFromScreen(xDimScaled, yDimScaled, xDimScaled, yDimScaled, bmp.Size, CopyPixelOperation.SourceCopy);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), clickedPoint);
             ocrText.Trim();
