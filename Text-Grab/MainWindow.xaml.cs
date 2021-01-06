@@ -105,7 +105,7 @@ namespace Text_Grab
 
         private void escape_Keyed(object sender, ExecutedRoutedEventArgs e)
         {
-            this.Close();
+            App.Current.Shutdown();
         }
 
         private bool isSelecting = false;
@@ -211,7 +211,7 @@ namespace Text_Grab
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);
-                this.Close();
+                App.Current.Shutdown();
             }
             else
                 RegionClickCanvas.Background.Opacity = .2;
