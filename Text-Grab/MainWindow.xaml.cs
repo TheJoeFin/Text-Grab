@@ -189,22 +189,21 @@ namespace Text_Grab
             if (mPt == movingPoint)
                 Debug.WriteLine("Probably on Screen 1");
 
-            double xDim = Canvas.GetLeft(selectBorder) + this.Left;
-            double yDim = Canvas.GetTop(selectBorder) + this.Top;
+            double xDimScaled = (Canvas.GetLeft(selectBorder) + this.Left) * m.M11;
+            double yDimScaled = (Canvas.GetTop(selectBorder) + this.Top) * m.M22;
 
-            Rectangle region = new Rectangle((int)xDim, (int)yDim, (int)selectBorder.Width, (int)selectBorder.Height);
             Rectangle regionScaled = new Rectangle(
-                (int)(region.X * m.M11),
-                (int)(region.Y * m.M22),
-                (int)(region.Width * m.M11),
-                (int)(region.Height * m.M22) );
+                (int)xDimScaled,
+                (int)yDimScaled,
+                (int)(selectBorder.Width * m.M11),
+                (int)(selectBorder.Height * m.M22) );
 
             string grabbedText = "";
 
             RegionClickCanvas.Background.Opacity = 0;
 
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
-                grabbedText = await GetClickedWord(new System.Windows.Point(clickedPoint.X * m.M11, clickedPoint.Y * m.M22));
+                grabbedText = await GetClickedWord(new System.Windows.Point(xDimScaled, yDimScaled));
             else
                 grabbedText = await GetRegionsText(regionScaled);
 
