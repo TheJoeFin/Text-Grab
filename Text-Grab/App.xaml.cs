@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
+using Text_Grab.Properties;
 
 namespace Text_Grab
 {
@@ -40,8 +41,15 @@ namespace Text_Grab
                 }
             }
 
-            FirstRunWindow frw = new FirstRunWindow();
-            frw.Show();
+            
+            if(Settings.Default.FirstRun)
+            {
+                FirstRunWindow frw = new FirstRunWindow();
+                frw.Show();
+
+                Settings.Default.FirstRun = false;
+                Settings.Default.Save();
+            }
 
         }
     }
