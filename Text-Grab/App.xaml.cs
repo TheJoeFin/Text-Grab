@@ -40,6 +40,9 @@ namespace Text_Grab
                 }
             }
 
+            FirstRunWindow frw = new FirstRunWindow();
+            frw.Show();
+
         }
     }
 }
