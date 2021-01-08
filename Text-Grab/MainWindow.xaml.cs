@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace Text_Grab
             InitializeComponent();
         }
 
-        public double WindowResizeZone { get; set; } = 32f;
+        System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
         public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
@@ -47,7 +48,11 @@ namespace Text_Grab
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
             Bitmap bmp = new Bitmap((int)(this.ActualWidth * m.M11), (int)(this.ActualHeight * m.M22), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
-            g.CopyFromScreen(0, 0, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+
+            int xDimScaled = (int)(this.Left * m.M11);
+            int yDimScaled = (int)(this.Top * m.M22);
+
+            g.CopyFromScreen(xDimScaled, yDimScaled, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), clickedPoint);
             ocrText.Trim();
@@ -104,7 +109,7 @@ namespace Text_Grab
 
         private void escape_Keyed(object sender, ExecutedRoutedEventArgs e)
         {
-            this.Close();
+            App.Current.Shutdown();
         }
 
         private bool isSelecting = false;
@@ -173,25 +178,36 @@ namespace Text_Grab
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
-
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
-            double xDim = Canvas.GetLeft(selectBorder);
-            double yDim = Canvas.GetTop(selectBorder);
+            var mPt = GetMousePos();
+            System.Windows.Point movingPoint = e.GetPosition(this);
+            movingPoint.X *= m.M11;
+            movingPoint.Y *= m.M22;
 
-            Rectangle region = new Rectangle((int)xDim, (int)yDim, (int)selectBorder.Width, (int)selectBorder.Height);
+            
+
+            movingPoint.X = Math.Round(movingPoint.X);
+            movingPoint.Y = Math.Round(movingPoint.Y);
+
+            if (mPt == movingPoint)
+                Debug.WriteLine("Probably on Screen 1");
+
+            double xDimScaled = (Canvas.GetLeft(selectBorder) + this.Left) * m.M11;
+            double yDimScaled = (Canvas.GetTop(selectBorder) + this.Top) * m.M22;
+
             Rectangle regionScaled = new Rectangle(
-                (int)(region.X * m.M11),
-                (int)(region.Y * m.M22),
-                (int)(region.Width * m.M11),
-                (int)(region.Height * m.M22) );
+                (int)xDimScaled,
+                (int)yDimScaled,
+                (int)(selectBorder.Width * m.M11),
+                (int)(selectBorder.Height * m.M22) );
 
             string grabbedText = "";
 
             RegionClickCanvas.Background.Opacity = 0;
 
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
-                grabbedText = await GetClickedWord(new System.Windows.Point(clickedPoint.X * m.M11, clickedPoint.Y * m.M22));
+                grabbedText = await GetClickedWord(new System.Windows.Point(xDimScaled, yDimScaled));
             else
                 grabbedText = await GetRegionsText(regionScaled);
 
@@ -199,7 +215,7 @@ namespace Text_Grab
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);
-                this.Close();
+                App.Current.Shutdown();
             }
             else
                 RegionClickCanvas.Background.Opacity = .2;
