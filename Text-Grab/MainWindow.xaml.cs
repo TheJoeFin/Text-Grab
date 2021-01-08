@@ -52,7 +52,7 @@ namespace Text_Grab
             int xDimScaled = (int)(this.Left * m.M11);
             int yDimScaled = (int)(this.Top * m.M22);
 
-            g.CopyFromScreen(xDimScaled, yDimScaled, xDimScaled, yDimScaled, bmp.Size, CopyPixelOperation.SourceCopy);
+            g.CopyFromScreen(xDimScaled, yDimScaled, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), clickedPoint);
             ocrText.Trim();
