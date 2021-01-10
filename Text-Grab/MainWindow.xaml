@@ -16,7 +16,7 @@
     mc:Ignorable="d">
     <Canvas
         Name="RegionClickCanvas"
-        Cursor="Pen"
+        Cursor="Cross"
         MouseDown="RegionClickCanvas_MouseDown"
         MouseMove="RegionClickCanvas_MouseMove"
         MouseUp="RegionClickCanvas_MouseUp">
