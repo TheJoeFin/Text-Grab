@@ -23,5 +23,6 @@
         <Canvas.Background>
             <SolidColorBrush Opacity=".2" Color="Beige" />
         </Canvas.Background>
+        <Image x:Name="DebugImage" />
     </Canvas>
 </Window>

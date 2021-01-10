@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
@@ -53,11 +54,29 @@ namespace Text_Grab
             int yDimScaled = (int)(this.Top * m.M22);
 
             g.CopyFromScreen(xDimScaled, yDimScaled, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            var bmpImage = BitmapToImageSource(bmp);
+            DebugImage.Source = bmpImage;
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), clickedPoint);
             ocrText.Trim();
 
             return ocrText;
+        }
+
+        BitmapImage BitmapToImageSource(Bitmap bitmap)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+
+                return bitmapimage;
+            }
         }
 
         public async Task<string> ExtractText(Bitmap bmp, string languageCode, System.Windows.Point? singlePoint = null)
@@ -122,6 +141,15 @@ namespace Text_Grab
             clickedPoint = e.GetPosition(this);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
+
+            try
+            {
+                RegionClickCanvas.Children.Remove(selectBorder);
+            }
+            catch (Exception)
+            {
+
+            }
 
             selectBorder.BorderThickness = new Thickness(1.5);
             selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
