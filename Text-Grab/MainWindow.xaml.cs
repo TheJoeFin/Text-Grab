@@ -15,13 +15,14 @@ using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
+using NativeHelpers;
 
 namespace Text_Grab
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : PerMonitorDPIWindow
     {
         public MainWindow()
         {
