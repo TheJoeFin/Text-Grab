@@ -1,4 +1,4 @@
-﻿<src:PerMonitorDPIWindow
+﻿<Window
     x:Class="Text_Grab.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -26,4 +26,4 @@
         </Canvas.Background>
         <Image x:Name="DebugImage" />
     </Canvas>
-</src:PerMonitorDPIWindow>
+</Window>

@@ -22,7 +22,7 @@ namespace Text_Grab
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : PerMonitorDPIWindow
+    public partial class MainWindow : Window
     {
         public MainWindow()
         {
@@ -47,18 +47,24 @@ namespace Text_Grab
 
         private async Task<string> GetClickedWord(System.Windows.Point clickedPoint)
         {
-            Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
-            Bitmap bmp = new Bitmap((int)(this.ActualWidth * m.M11), (int)(this.ActualHeight * m.M22), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            //Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+            var dpi = VisualTreeHelper.GetDpi(this);
+            Bitmap bmp = new Bitmap((int)(this.ActualWidth * dpi.DpiScaleX), (int)(this.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
 
-            int xDimScaled = (int)(this.Left * m.M11);
-            int yDimScaled = (int)(this.Top * m.M22);
+            int thisLeft = (int)(this.Left);
+            int thisTop = (int)(this.Top);
 
-            g.CopyFromScreen(xDimScaled, yDimScaled, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            int thisLeftScaled = (int)(this.Left);
+            int thisTopScaled = (int)(this.Top);
+
+            g.CopyFromScreen(thisLeftScaled, thisTopScaled, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
             var bmpImage = BitmapToImageSource(bmp);
             DebugImage.Source = bmpImage;
 
-            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), clickedPoint);
+            System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X - this.Left, clickedPoint.Y - this.Top);
+
+            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), adjustedPoint);
             ocrText.Trim();
 
             return ocrText;
@@ -222,8 +228,11 @@ namespace Text_Grab
             if (mPt == movingPoint)
                 Debug.WriteLine("Probably on Screen 1");
 
-            double xDimScaled = (Canvas.GetLeft(selectBorder) + this.Left) * m.M11;
-            double yDimScaled = (Canvas.GetTop(selectBorder) + this.Top) * m.M22;
+            double xDimScaled = (Canvas.GetLeft(selectBorder) * m.M11) + this.Left;
+            double yDimScaled = (Canvas.GetTop(selectBorder) * m.M22) + this.Top;
+
+            double borderLeft = Canvas.GetLeft(selectBorder);
+            double borderTop = Canvas.GetTop(selectBorder);
 
             Rectangle regionScaled = new Rectangle(
                 (int)xDimScaled,
