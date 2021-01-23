@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
@@ -35,7 +36,12 @@ namespace Text_Grab
         {
             Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
-            g.CopyFromScreen(selectedRegion.Left, selectedRegion.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+
+            System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+            int thisCorrectedLeft = (int)(absPosPoint.X) + selectedRegion.Left;
+            int thisCorrectedTop = (int)(absPosPoint.Y) + selectedRegion.Top;
+
+            g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
             ocrText.Trim();
@@ -45,19 +51,41 @@ namespace Text_Grab
 
         private async Task<string> GetClickedWord(System.Windows.Point clickedPoint)
         {
-            Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
-            Bitmap bmp = new Bitmap((int)(this.ActualWidth * m.M11), (int)(this.ActualHeight * m.M22), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            // Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+            var dpi = VisualTreeHelper.GetDpi(this);
+            Bitmap bmp = new Bitmap((int)(this.ActualWidth * dpi.DpiScaleX), (int)(this.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
 
-            int xDimScaled = (int)(this.Left * m.M11);
-            int yDimScaled = (int)(this.Top * m.M22);
+            System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+            int thisCorrectedLeft = (int)(absPosPoint.X);
+            int thisCorrectedTop = (int)(absPosPoint.Y);
 
-            g.CopyFromScreen(xDimScaled, yDimScaled, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            // var bmpImage = BitmapToImageSource(bmp);
+            // DebugImage.Source = bmpImage;
 
-            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), clickedPoint);
+            System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
+
+            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), adjustedPoint);
             ocrText.Trim();
 
             return ocrText;
+        }
+
+        BitmapImage BitmapToImageSource(Bitmap bitmap)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+
+                return bitmapimage;
+            }
         }
 
         public async Task<string> ExtractText(Bitmap bmp, string languageCode, System.Windows.Point? singlePoint = null)
@@ -122,6 +150,15 @@ namespace Text_Grab
             clickedPoint = e.GetPosition(this);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
+
+            try
+            {
+                RegionClickCanvas.Children.Remove(selectBorder);
+            }
+            catch (Exception)
+            {
+
+            }
 
             selectBorder.BorderThickness = new Thickness(1.5);
             selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
@@ -193,8 +230,17 @@ namespace Text_Grab
             if (mPt == movingPoint)
                 Debug.WriteLine("Probably on Screen 1");
 
-            double xDimScaled = (Canvas.GetLeft(selectBorder) + this.Left) * m.M11;
-            double yDimScaled = (Canvas.GetTop(selectBorder) + this.Top) * m.M22;
+            double correctedLeft = this.Left;
+            double correctedTop = this.Top;
+
+            if (correctedLeft < 0)
+                correctedLeft = 0;
+
+            if (correctedTop < 0)
+                correctedTop = 0;
+
+            double xDimScaled = (Canvas.GetLeft(selectBorder) * m.M11);
+            double yDimScaled = (Canvas.GetTop(selectBorder) * m.M22);
 
             Rectangle regionScaled = new Rectangle(
                 (int)xDimScaled,

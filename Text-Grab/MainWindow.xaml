@@ -16,12 +16,15 @@
     mc:Ignorable="d">
     <Canvas
         Name="RegionClickCanvas"
-        Cursor="Pen"
+        Cursor="Cross"
         MouseDown="RegionClickCanvas_MouseDown"
         MouseMove="RegionClickCanvas_MouseMove"
         MouseUp="RegionClickCanvas_MouseUp">
         <Canvas.Background>
             <SolidColorBrush Opacity=".2" Color="Beige" />
         </Canvas.Background>
+        <Viewbox>
+            <Image x:Name="DebugImage" Stretch="UniformToFill" />
+        </Viewbox>
     </Canvas>
 </Window>

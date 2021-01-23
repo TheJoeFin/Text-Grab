@@ -5,11 +5,20 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Text_Grab</RootNamespace>
     <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
+	  <DpiAware>false</DpiAware>
+	  <DisableDpiAwareness>True</DisableDpiAwareness>
+	  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	  <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>t_ICON.ico</ApplicationIcon>
+    <StartupObject>Text_Grab.App</StartupObject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
@@ -27,7 +36,7 @@
     <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
+	<ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <AutoGen>True</AutoGen>

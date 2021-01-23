@@ -26,15 +26,31 @@ namespace Text_Grab
 
                     foreach (Window window in allWindows)
                     {
-                        if (screen.Bounds.X == window.Left && screen.Bounds.Y == window.Top)
-                            screenHasWindow = false;
+                        System.Drawing.Point windowCenter = 
+                            new System.Drawing.Point(
+                                (int)(window.Left + (window.Width / 2)), 
+                                (int)(window.Top + (window.Height / 2)));
+                        screenHasWindow = screen.Bounds.Contains(windowCenter);
                     }
 
-                    if(screenHasWindow)
+                    if(screenHasWindow == false)
                     {
                         MainWindow mw = new MainWindow();
-                        mw.Left = screen.Bounds.X;
-                        mw.Top = screen.Bounds.Y;
+                        mw.WindowStartupLocation = WindowStartupLocation.Manual;
+                        mw.Width = 200;
+                        mw.Height = 200;
+
+                        mw.WindowState = WindowState.Normal;
+
+                        if(screen.WorkingArea.Left > 0)
+                            mw.Left = screen.WorkingArea.Left;
+                        else
+                            mw.Left = screen.WorkingArea.Left / 2;
+
+                        if(screen.WorkingArea.Top > 0)
+                            mw.Top = screen.WorkingArea.Top;
+                        else
+                            mw.Top = screen.WorkingArea.Top / 2;
 
                         mw.Show();
                     }
