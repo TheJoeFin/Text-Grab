@@ -36,7 +36,12 @@ namespace Text_Grab
         {
             Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
-            g.CopyFromScreen(selectedRegion.Left, selectedRegion.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+
+            System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+            int thisCorrectedLeft = (int)(absPosPoint.X) + selectedRegion.Left;
+            int thisCorrectedTop = (int)(absPosPoint.Y) + selectedRegion.Top;
+
+            g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
             ocrText.Trim();
@@ -59,7 +64,7 @@ namespace Text_Grab
             var bmpImage = BitmapToImageSource(bmp);
             DebugImage.Source = bmpImage;
 
-            System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X - this.Left, clickedPoint.Y - this.Top);
+            System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
             string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), adjustedPoint);
             ocrText.Trim();
@@ -234,8 +239,8 @@ namespace Text_Grab
             if (correctedTop < 0)
                 correctedTop = 0;
 
-            double xDimScaled = (Canvas.GetLeft(selectBorder) * m.M11) + correctedLeft;
-            double yDimScaled = (Canvas.GetTop(selectBorder) * m.M22) + correctedTop;
+            double xDimScaled = (Canvas.GetLeft(selectBorder) * m.M11);
+            double yDimScaled = (Canvas.GetTop(selectBorder) * m.M22);
 
             Rectangle regionScaled = new Rectangle(
                 (int)xDimScaled,
