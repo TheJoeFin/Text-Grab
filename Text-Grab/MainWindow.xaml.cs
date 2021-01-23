@@ -61,8 +61,8 @@ namespace Text_Grab
             int thisCorrectedTop = (int)(absPosPoint.Y);
 
             g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-            var bmpImage = BitmapToImageSource(bmp);
-            DebugImage.Source = bmpImage;
+            // var bmpImage = BitmapToImageSource(bmp);
+            // DebugImage.Source = bmpImage;
 
             System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
