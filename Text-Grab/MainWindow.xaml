@@ -5,7 +5,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:src="clr-namespace:NativeHelpers;assembly=NativeHelpers"
     Title="Text Grab"
     Width="800"
     Height="450"
@@ -24,6 +23,8 @@
         <Canvas.Background>
             <SolidColorBrush Opacity=".2" Color="Beige" />
         </Canvas.Background>
-        <Image x:Name="DebugImage" />
+        <Viewbox>
+            <Image x:Name="DebugImage" Stretch="UniformToFill" />
+        </Viewbox>
     </Canvas>
 </Window>

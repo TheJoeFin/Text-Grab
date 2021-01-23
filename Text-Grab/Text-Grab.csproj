@@ -36,10 +36,6 @@
     <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\NativeHelpers\NativeHelpers.vcxproj" />
-  </ItemGroup>
-
 	<ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
       <DesignTimeSharedInput>True</DesignTimeSharedInput>

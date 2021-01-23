@@ -15,7 +15,6 @@ using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
-using NativeHelpers;
 
 namespace Text_Grab
 {
@@ -47,18 +46,16 @@ namespace Text_Grab
 
         private async Task<string> GetClickedWord(System.Windows.Point clickedPoint)
         {
-            //Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+            // Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
             var dpi = VisualTreeHelper.GetDpi(this);
             Bitmap bmp = new Bitmap((int)(this.ActualWidth * dpi.DpiScaleX), (int)(this.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
 
-            int thisLeft = (int)(this.Left);
-            int thisTop = (int)(this.Top);
+            System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+            int thisCorrectedLeft = (int)(absPosPoint.X);
+            int thisCorrectedTop = (int)(absPosPoint.Y);
 
-            int thisLeftScaled = (int)(this.Left);
-            int thisTopScaled = (int)(this.Top);
-
-            g.CopyFromScreen(thisLeftScaled, thisTopScaled, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
             var bmpImage = BitmapToImageSource(bmp);
             DebugImage.Source = bmpImage;
 
@@ -228,11 +225,17 @@ namespace Text_Grab
             if (mPt == movingPoint)
                 Debug.WriteLine("Probably on Screen 1");
 
-            double xDimScaled = (Canvas.GetLeft(selectBorder) * m.M11) + this.Left;
-            double yDimScaled = (Canvas.GetTop(selectBorder) * m.M22) + this.Top;
+            double correctedLeft = this.Left;
+            double correctedTop = this.Top;
 
-            double borderLeft = Canvas.GetLeft(selectBorder);
-            double borderTop = Canvas.GetTop(selectBorder);
+            if (correctedLeft < 0)
+                correctedLeft = 0;
+
+            if (correctedTop < 0)
+                correctedTop = 0;
+
+            double xDimScaled = (Canvas.GetLeft(selectBorder) * m.M11) + correctedLeft;
+            double yDimScaled = (Canvas.GetTop(selectBorder) * m.M22) + correctedTop;
 
             Rectangle regionScaled = new Rectangle(
                 (int)xDimScaled,
