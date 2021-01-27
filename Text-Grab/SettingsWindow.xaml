@@ -4,9 +4,27 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Text_Grab"
+        Background="#1E1E1E"
         mc:Ignorable="d"
-        Title="Settings" Height="450" Width="800">
-    <Grid>
-        <TextBlock Text="Settings" />
-    </Grid>
+        Title="Text Grab" Height="450" Width="800">
+    <Window.Resources>
+        <Style x:Key="labelText" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+    </Window.Resources>
+    <Border Padding="26,8">
+        <StackPanel Orientation="Vertical" >
+            <!-- Heading -->
+            <TextBlock Text="Settings" FontSize="24" Foreground="White" />
+
+            <!-- Show Toast on success -->
+            <StackPanel Orientation="Horizontal">
+                <CheckBox Content="Hello" Style="{StaticResource labelText}"/>
+            </StackPanel>
+            
+            <!-- Pick Language -->
+            
+            <!-- -->
+        </StackPanel>
+    </Border>
 </Window>
