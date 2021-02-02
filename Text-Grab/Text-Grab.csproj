@@ -9,7 +9,7 @@
 	  <DisableDpiAwareness>True</DisableDpiAwareness>
 	  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	  <UseWindowsForms>true</UseWindowsForms>
-    <ApplicationIcon>t_ICON.ico</ApplicationIcon>
+    <ApplicationIcon>t_ICON2.ico</ApplicationIcon>
     <StartupObject>Text_Grab.App</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
