@@ -11,9 +11,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Windows.Data.Xml.Dom;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
+using Windows.UI.Notifications;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 
 namespace Text_Grab
@@ -124,6 +126,26 @@ namespace Text_Grab
             }
 
             return text.ToString();
+        }
+
+        private void ShowToast(string copiedText)
+        {
+            string title = "Text Copied";
+
+            string xmlString =
+            $@"<toast><visual>
+             <binding template='ToastGeneric'>
+             <text>{title}</text>
+             <text>{copiedText}</text>
+             </binding>
+            </visual></toast>";
+
+            XmlDocument toastXml = new XmlDocument();
+            toastXml.LoadXml(xmlString);
+
+            ToastNotification toast = new ToastNotification(toastXml);
+
+            ToastNotificationManager.CreateToastNotifier().Show(toast);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -261,6 +283,7 @@ namespace Text_Grab
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);
+                ShowToast(grabbedText);
                 App.Current.Shutdown();
             }
             else
