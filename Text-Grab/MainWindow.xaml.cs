@@ -17,6 +17,8 @@ using Windows.Media.Ocr;
 using Windows.System.UserProfile;
 using Windows.UI.Notifications;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
+using Microsoft.Toolkit.Uwp.Notifications;
+using Windows.ApplicationModel.Activation;
 
 namespace Text_Grab
 {
@@ -130,22 +132,26 @@ namespace Text_Grab
 
         private void ShowToast(string copiedText)
         {
-            string title = "Text Copied";
+            // Construct the content
+            ToastContent content = new ToastContentBuilder()
+                .AddToastActivationInfo("clickedToast", ToastActivationType.Foreground)
+                .SetBackgroundActivation()
+                .AddText(copiedText)
+                .GetToastContent();
+            content.Duration = ToastDuration.Short;
 
-            string xmlString =
-            $@"<toast><visual>
-             <binding template='ToastGeneric'>
-             <text>{title}</text>
-             <text>{copiedText}</text>
-             </binding>
-            </visual></toast>";
+            // Create the toast notification
+            var toastNotif = new ToastNotification(content.GetXml());
 
-            XmlDocument toastXml = new XmlDocument();
-            toastXml.LoadXml(xmlString);
+            toastNotif.Activated += ToastNotif_Activated;
 
-            ToastNotification toast = new ToastNotification(toastXml);
+            // And send the notification
+            ToastNotificationManager.CreateToastNotifier().Show(toastNotif);
+        }
 
-            ToastNotificationManager.CreateToastNotifier().Show(toast);
+        private void ToastNotif_Activated(ToastNotification sender, object args)
+        {
+            throw new NotImplementedException();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)

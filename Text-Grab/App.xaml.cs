@@ -3,6 +3,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
+using Windows.ApplicationModel.Activation;
+using Windows.Foundation.Collections;
 
 namespace Text_Grab
 {
@@ -19,6 +21,11 @@ namespace Text_Grab
                 {
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
+                }
+                else
+                {
+                    ManipulateTextWindow mtw = new ManipulateTextWindow();
+                    mtw.Show();
                 }
             }
 
