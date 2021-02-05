@@ -15,17 +15,19 @@ namespace Text_Grab
     {
         void appStartup(object sender, StartupEventArgs e)
         {
+            if(e.Args != null && e.Args.Length > 0 && e.Args[0] == "-ToastActivated")
+            {
+                ManipulateTextWindow mtw = new ManipulateTextWindow(e.Args[1]);
+                mtw.Show();
+            }
+            
+            
             for (int i = 0; i != e.Args.Length; ++i)
             {
                 if (e.Args[i] == "Settings")
                 {
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
-                }
-                else
-                {
-                    ManipulateTextWindow mtw = new ManipulateTextWindow();
-                    mtw.Show();
                 }
             }
 

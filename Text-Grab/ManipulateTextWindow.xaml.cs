@@ -17,8 +17,17 @@ namespace Text_Grab
     /// </summary>
     public partial class ManipulateTextWindow : Window
     {
+        public string CopiedText { get; set; } = "";
+
         public ManipulateTextWindow()
         {
+            InitializeComponent();
+        }
+
+        public ManipulateTextWindow(string passedString)
+        {
+            CopiedText = passedString;
+
             InitializeComponent();
         }
     }

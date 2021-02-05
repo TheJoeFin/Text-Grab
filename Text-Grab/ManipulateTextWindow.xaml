@@ -7,6 +7,6 @@
         mc:Ignorable="d"
         Title="Edit Text" Height="450" Width="800">
     <Grid>
-        <TextBlock Text="manipulation Text Window"/>
+        <TextBlock Text="{Binding CopiedText, Mode=OneTime}"/>
     </Grid>
 </Window>
