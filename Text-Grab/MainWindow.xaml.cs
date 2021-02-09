@@ -19,6 +19,7 @@ using Windows.UI.Notifications;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Windows.ApplicationModel.Activation;
+using Text_Grab.Properties;
 
 namespace Text_Grab
 {
@@ -146,7 +147,15 @@ namespace Text_Grab
             toastNotif.Activated += ToastNotif_Activated;
 
             // And send the notification
-            ToastNotificationManager.CreateToastNotifier().Show(toastNotif);
+            try 
+            { 
+                ToastNotificationManager.CreateToastNotifier().Show(toastNotif); 
+            } 
+            catch (Exception) 
+            {
+                Settings.Default.ShowToast = false;
+                Settings.Default.Save();
+            }
         }
 
         private void ToastNotif_Activated(ToastNotification sender, object args)
@@ -170,7 +179,7 @@ namespace Text_Grab
 
         private bool isSelecting = false;
         System.Windows.Point clickedPoint = new System.Windows.Point();
-        Border selectBorder = new Border();
+        DashedBorder selectBorder = new DashedBorder();
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -188,8 +197,8 @@ namespace Text_Grab
 
             }
 
-            selectBorder.BorderThickness = new Thickness(1.5);
-            selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
+            // selectBorder.BorderThickness = new Thickness(1.5);
+            // selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
             RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
@@ -289,7 +298,8 @@ namespace Text_Grab
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);
-                ShowToast(grabbedText);
+                if(Settings.Default.ShowToast)
+                    ShowToast(grabbedText);
                 App.Current.Shutdown();
             }
             else
