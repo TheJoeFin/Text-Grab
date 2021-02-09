@@ -17,8 +17,8 @@ namespace Text_Grab
         {
             if(e.Args != null && e.Args.Length > 0 && e.Args[0] == "-ToastActivated")
             {
-                ManipulateTextWindow mtw = new ManipulateTextWindow(e.Args[1]);
-                mtw.Show();
+                // ManipulateTextWindow mtw = new ManipulateTextWindow(e.Args[1]);
+                // mtw.Show();
             }
             
             

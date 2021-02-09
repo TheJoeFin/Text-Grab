@@ -7,6 +7,6 @@
         mc:Ignorable="d"
         Title="Edit Text" Height="450" Width="800">
     <Grid>
-        <TextBlock Text="{Binding CopiedText, Mode=OneTime}"/>
+        <TextBox Background="#1E1E1E" Foreground="White" FontSize="16" x:Name="PassedTextControl" Text="{Binding CopiedText, Mode=OneWay}"/>
     </Grid>
 </Window>

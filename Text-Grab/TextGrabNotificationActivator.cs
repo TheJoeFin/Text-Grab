@@ -15,7 +15,8 @@ namespace Text_Grab
     {
         public override void OnActivated(string invokedArgs, NotificationUserInput userInput, string appUserModelId)
         {
-            // TODO: Handle activation
+            ManipulateTextWindow mtw = new ManipulateTextWindow(invokedArgs);
+            mtw.Show();
         }
     }
 }

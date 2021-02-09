@@ -27,8 +27,8 @@ namespace Text_Grab
         public ManipulateTextWindow(string passedString)
         {
             CopiedText = passedString;
-
             InitializeComponent();
+            PassedTextControl.Text = CopiedText;
         }
     }
 }
