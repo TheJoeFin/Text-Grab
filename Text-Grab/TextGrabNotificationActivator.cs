@@ -19,6 +19,7 @@ namespace Text_Grab
                     // Perform a normal launch
                     ManipulateTextWindow mtw = new ManipulateTextWindow(invokedArgs);
                     mtw.Show();
+                    mtw.Activate();
                     return;
                 }
             });

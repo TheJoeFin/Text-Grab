@@ -31,6 +31,7 @@ namespace Text_Grab
                 {
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
+                    sw.Activate();
                 }
             }
 
@@ -88,6 +89,7 @@ namespace Text_Grab
             {
                 FirstRunWindow frw = new FirstRunWindow();
                 frw.Show();
+                frw.Activate();
 
                 Settings.Default.FirstRun = false;
                 Settings.Default.Save();
