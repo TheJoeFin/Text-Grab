@@ -179,7 +179,7 @@ namespace Text_Grab
 
         private bool isSelecting = false;
         System.Windows.Point clickedPoint = new System.Windows.Point();
-        DashedBorder selectBorder = new DashedBorder();
+        Border selectBorder = new Border();
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -188,22 +188,14 @@ namespace Text_Grab
             selectBorder.Height = 1;
             selectBorder.Width = 1;
 
-            try
-            {
-                RegionClickCanvas.Children.Remove(selectBorder);
-            }
-            catch (Exception)
-            {
+            try { RegionClickCanvas.Children.Remove(selectBorder); } catch (Exception) { }
 
-            }
-
-            // selectBorder.BorderThickness = new Thickness(1.5);
-            // selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
+            selectBorder.BorderThickness = new Thickness(2);
+            System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
+            selectBorder.BorderBrush = new SolidColorBrush(borderColor);
             RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
-            
-
         }
 
         private void RegionClickCanvas_MouseMove(object sender, MouseEventArgs e)
