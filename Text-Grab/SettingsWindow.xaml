@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Text_Grab"
+        Loaded="Window_Loaded"
         Background="#1E1E1E"
         mc:Ignorable="d"
-        Title="Text Grab" Height="450" Width="800">
+        Title="Text Grab" Height="320" Width="240">
     <Window.Resources>
         <Style x:Key="labelText" TargetType="CheckBox">
             <Setter Property="Foreground" Value="White" />
@@ -18,8 +19,8 @@
             <TextBlock Text="Settings" FontSize="24" Foreground="White" />
 
             <!-- Show Toast on success -->
-            <StackPanel Orientation="Horizontal">
-                <CheckBox Content="Hello" Style="{StaticResource labelText}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                <CheckBox Content="Show Toast" Name="ShowToastCheckBox" Click="ShowToastCheckBox_Click" Style="{StaticResource labelText}"/>
             </StackPanel>
             
             <!-- Pick Language -->

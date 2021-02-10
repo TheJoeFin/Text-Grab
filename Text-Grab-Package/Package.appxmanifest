@@ -38,15 +38,15 @@
 			<!--Register COM CLSID LocalServer32 registry key-->
 			<com:Extension Category="windows.comServer">
 				<com:ComServer>
-					<com:ExeServer Executable="Text-Grab\Text-Grab.exe" Arguments="-ToastActivated" DisplayName="Toast activator">
-						<com:Class Id=">215d64d2-031c-33c7-96e3-61794cd1ee61" DisplayName="Toast activator"/>
+					<com:ExeServer Executable="Text-Grab\Text-Grab.exe" Arguments="-ToastActivated" DisplayName="Text Grab">
+						<com:Class Id="215d64d2-031c-33c7-96e3-61794cd1ee61" DisplayName="Toast activator"/>
 					</com:ExeServer>
 				</com:ComServer>
 			</com:Extension>
 
 			<!--Specify which CLSID to activate when toast clicked-->
 			<desktop:Extension Category="windows.toastNotificationActivation">
-				<desktop:ToastNotificationActivation ToastActivatorCLSID=">215d64d2-031c-33c7-96e3-61794cd1ee61" />
+				<desktop:ToastNotificationActivation ToastActivatorCLSID="215d64d2-031c-33c7-96e3-61794cd1ee61" />
 			</desktop:Extension>
 
 		</Extensions>

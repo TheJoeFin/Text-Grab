@@ -1,9 +1,5 @@
-﻿using Microsoft.Toolkit.Uwp.Notifications;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Runtime.InteropServices;
-using System.Text;
-using static Microsoft.Toolkit.Uwp.Notifications.Internal.InternalNotificationActivator;
 
 namespace Text_Grab
 {
@@ -15,8 +11,17 @@ namespace Text_Grab
     {
         public override void OnActivated(string invokedArgs, NotificationUserInput userInput, string appUserModelId)
         {
-            ManipulateTextWindow mtw = new ManipulateTextWindow(invokedArgs);
-            mtw.Show();
+            System.Windows.Application.Current.Dispatcher.Invoke(delegate
+            {
+                // Tapping on the top-level header launches with empty args
+                if (invokedArgs.Length != 0)
+                {
+                    // Perform a normal launch
+                    ManipulateTextWindow mtw = new ManipulateTextWindow(invokedArgs);
+                    mtw.Show();
+                    return;
+                }
+            });
         }
     }
 }

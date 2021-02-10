@@ -135,7 +135,7 @@ namespace Text_Grab
         {
             // Construct the content
             ToastContent content = new ToastContentBuilder()
-                .AddToastActivationInfo("clickedToast", ToastActivationType.Foreground)
+                .AddToastActivationInfo(copiedText, ToastActivationType.Foreground)
                 .SetBackgroundActivation()
                 .AddText(copiedText)
                 .GetToastContent();
