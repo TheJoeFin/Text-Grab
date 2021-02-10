@@ -5,8 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Text_Grab"
         mc:Ignorable="d"
-        Title="Edit Text" Height="450" Width="800">
+        Title="Edit Text" Height="450" Width="600">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
         <TextBox Background="#1E1E1E" Foreground="White" FontSize="16" x:Name="PassedTextControl" Text="{Binding CopiedText, Mode=OneWay}"/>
+
+        <StackPanel Background="#444444" Grid.Row="1" Orientation="Horizontal" >
+            <Button Width="120" Background="Orange" Margin="10,10,0,10" Padding="6" x:Name="CopyCloseBTN" Content="Copy And Close" />
+            <Button Width="120"  Margin="10" Padding="6" x:Name="SaveBTN" Content="Save to File..." />
+        </StackPanel>
     </Grid>
 </Window>
