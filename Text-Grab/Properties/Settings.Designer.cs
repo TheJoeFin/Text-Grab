@@ -34,5 +34,17 @@ namespace Text_Grab.Properties {
                 this["FirstRun"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ShowToast {
+            get {
+                return ((bool)(this["ShowToast"]));
+            }
+            set {
+                this["ShowToast"] = value;
+            }
+        }
     }
 }

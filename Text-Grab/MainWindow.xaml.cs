@@ -15,7 +15,10 @@ using System.Windows.Threading;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
+using Windows.UI.Notifications;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
+using Microsoft.Toolkit.Uwp.Notifications;
+using Text_Grab.Properties;
 
 namespace Text_Grab
 {
@@ -153,6 +156,38 @@ namespace Text_Grab
             return text.ToString();
         }
 
+        private void ShowToast(string copiedText)
+        {
+            // Construct the content
+            ToastContent content = new ToastContentBuilder()
+                .AddToastActivationInfo(copiedText, ToastActivationType.Foreground)
+                .SetBackgroundActivation()
+                .AddText(copiedText)
+                .GetToastContent();
+            content.Duration = ToastDuration.Short;
+
+            // Create the toast notification
+            var toastNotif = new ToastNotification(content.GetXml());
+
+            toastNotif.Activated += ToastNotif_Activated;
+
+            // And send the notification
+            try 
+            { 
+                ToastNotificationManager.CreateToastNotifier().Show(toastNotif); 
+            } 
+            catch (Exception) 
+            {
+                Settings.Default.ShowToast = false;
+                Settings.Default.Save();
+            }
+        }
+
+        private void ToastNotif_Activated(ToastNotification sender, object args)
+        {
+            throw new NotImplementedException();
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Maximized;
@@ -178,22 +213,14 @@ namespace Text_Grab
             selectBorder.Height = 1;
             selectBorder.Width = 1;
 
-            try
-            {
-                RegionClickCanvas.Children.Remove(selectBorder);
-            }
-            catch (Exception)
-            {
+            try { RegionClickCanvas.Children.Remove(selectBorder); } catch (Exception) { }
 
-            }
-
-            selectBorder.BorderThickness = new Thickness(1.5);
-            selectBorder.BorderBrush = new SolidColorBrush(Colors.Green);
+            selectBorder.BorderThickness = new Thickness(2);
+            System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
+            selectBorder.BorderBrush = new SolidColorBrush(borderColor);
             RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
-            
-
         }
 
         private void RegionClickCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -291,6 +318,8 @@ namespace Text_Grab
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);
+                if(Settings.Default.ShowToast)
+                    ShowToast(grabbedText);
                 App.Current.Shutdown();
             }
             else

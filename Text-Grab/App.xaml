@@ -3,6 +3,14 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:Text_Grab"
-    StartupUri="MainWindow.xaml">
+    Startup="appStartup">
     <Application.Resources />
+    <JumpList.JumpList>
+        <JumpList>
+            <JumpTask
+                Title="Settings"
+                Arguments="Settings"
+                Description="Open Text Grab Settings" />
+        </JumpList>
+    </JumpList.JumpList>
 </Application>

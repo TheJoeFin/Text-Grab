@@ -9,7 +9,7 @@
 	  <DisableDpiAwareness>True</DisableDpiAwareness>
 	  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	  <UseWindowsForms>true</UseWindowsForms>
-    <ApplicationIcon>t_ICON.ico</ApplicationIcon>
+    <ApplicationIcon>t_ICON2.ico</ApplicationIcon>
     <StartupObject>Text_Grab.App</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
@@ -23,6 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.0.0-preview4" />
     <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.1" />
     <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
   </ItemGroup>

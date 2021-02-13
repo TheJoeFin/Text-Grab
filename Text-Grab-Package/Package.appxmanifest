@@ -4,7 +4,9 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  IgnorableNamespaces="uap rescap com desktop">
 
   <Identity
     Name="40087JoeFinApps.TextGrab"
@@ -30,6 +32,25 @@
     <Application Id="App"
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
+
+		<Extensions>
+
+			<!--Register COM CLSID LocalServer32 registry key-->
+			<com:Extension Category="windows.comServer">
+				<com:ComServer>
+					<com:ExeServer Executable="Text-Grab\Text-Grab.exe" Arguments="-ToastActivated" DisplayName="Text Grab">
+						<com:Class Id="215d64d2-031c-33c7-96e3-61794cd1ee61" DisplayName="Toast activator"/>
+					</com:ExeServer>
+				</com:ComServer>
+			</com:Extension>
+
+			<!--Specify which CLSID to activate when toast clicked-->
+			<desktop:Extension Category="windows.toastNotificationActivation">
+				<desktop:ToastNotificationActivation ToastActivatorCLSID="215d64d2-031c-33c7-96e3-61794cd1ee61" />
+			</desktop:Extension>
+
+		</Extensions>
+		
       <uap:VisualElements
         DisplayName="Text Grab"
         Description="Text-Grab-Package"
