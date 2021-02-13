@@ -18,7 +18,6 @@ using Windows.System.UserProfile;
 using Windows.UI.Notifications;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using Microsoft.Toolkit.Uwp.Notifications;
-using Windows.ApplicationModel.Activation;
 using Text_Grab.Properties;
 
 namespace Text_Grab

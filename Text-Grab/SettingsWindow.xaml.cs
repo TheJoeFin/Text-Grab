@@ -12,8 +12,6 @@ namespace Text_Grab
         public SettingsWindow()
         {
             InitializeComponent();
-
-            ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
         }
 
         private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
@@ -24,13 +22,11 @@ namespace Text_Grab
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-
+            ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
         }
 
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
-            // for .NET Core you need to add UseShellExecute = true
-            // see https://docs.microsoft.com/dotnet/api/system.diagnostics.processstartinfo.useshellexecute#property-value
             Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
             e.Handled = true;
         }

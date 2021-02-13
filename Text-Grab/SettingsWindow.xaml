@@ -43,9 +43,8 @@
                 <!--    -->
             </StackPanel>
             <TextBlock Grid.Row="1" Foreground="White">
-                What do you want to see here? Submit an issue on GitHub
-                <LineBreak />
-                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues">https://github.com/TheJoeFin/Text-Grab/issues</Hyperlink>
+                What do you want to see here? Submit an issue on GitHub<LineBreak />
+                <Hyperlink NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/TheJoeFin/Text-Grab/issues</Hyperlink>
             </TextBlock>
         </Grid>
     </Border>
