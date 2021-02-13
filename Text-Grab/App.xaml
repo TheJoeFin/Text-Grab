@@ -7,9 +7,10 @@
     <Application.Resources />
     <JumpList.JumpList>
         <JumpList>
-            <JumpTask Title="Settings" 
-                      Description="Open Text Grab Settings" 
-                      Arguments="Settings"/>
+            <JumpTask
+                Title="Settings"
+                Arguments="Settings"
+                Description="Open Text Grab Settings" />
         </JumpList>
     </JumpList.JumpList>
 </Application>
