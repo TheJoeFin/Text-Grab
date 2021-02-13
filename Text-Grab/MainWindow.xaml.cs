@@ -11,7 +11,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Windows.Data.Xml.Dom;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
