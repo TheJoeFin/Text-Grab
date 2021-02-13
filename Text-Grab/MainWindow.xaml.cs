@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System.UserProfile;
@@ -35,6 +36,25 @@ namespace Text_Grab
 
         public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
+        // add padding to image to reach a minimum size
+        private Bitmap PadImage(Bitmap image, int minW = 64, int minH = 64)
+        {
+            if (image.Height >= minH && image.Width >= minW)
+                return image;
+
+            int width = Math.Max(image.Width + 16, minW + 16);
+            int height = Math.Max(image.Height + 16, minH + 16);
+
+            // Create a compatible bitmap
+            Bitmap dest = new Bitmap(width, height, image.PixelFormat);
+            using (Graphics gd = Graphics.FromImage(dest))
+            {
+                gd.Clear(image.GetPixel(0, 0));
+                gd.DrawImageUnscaled(image, 8, 8);
+            }
+            return dest;
+        }
+
         private async Task<string> GetRegionsText(Rectangle selectedRegion)
         {
             Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -45,11 +65,15 @@ namespace Text_Grab
             int thisCorrectedTop = (int)(absPosPoint.Y) + selectedRegion.Top;
 
             g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            bmp = PadImage(bmp);
 
-            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault());
-            ocrText.Trim();
+            // use currently selected Language
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            if (!InstalledLanguages.Contains(inputLang)) 
+                inputLang = InstalledLanguages.FirstOrDefault();
 
-            return ocrText;
+            string ocrText = await ExtractText(bmp, inputLang);
+            return ocrText.Trim();
         }
 
         private async Task<string> GetClickedWord(System.Windows.Point clickedPoint)
@@ -69,10 +93,13 @@ namespace Text_Grab
 
             System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
-            string ocrText = await ExtractText(bmp, InstalledLanguages.FirstOrDefault(), adjustedPoint);
-            ocrText.Trim();
+            // use currently selected Language
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            if (!InstalledLanguages.Contains(inputLang))
+                inputLang = InstalledLanguages.FirstOrDefault();
 
-            return ocrText;
+            string ocrText = await ExtractText(bmp, inputLang, adjustedPoint);
+            return ocrText.Trim();
         }
 
         BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -277,14 +304,17 @@ namespace Text_Grab
 
             string grabbedText = "";
 
+            // remove selectBorder before capture - force screen Re-render to actually remove it
+            try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
             RegionClickCanvas.Background.Opacity = 0;
+            RegionClickCanvas.UpdateLayout();
+            RegionClickCanvas.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
                 grabbedText = await GetClickedWord(new System.Windows.Point(xDimScaled, yDimScaled));
             else
                 grabbedText = await GetRegionsText(regionScaled);
 
-            RegionClickCanvas.Children.Remove(selectBorder);
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);

@@ -61,7 +61,7 @@ static class WPFExtensionMethods
             IntPtr hmonitor = OSInterop.MonitorFromWindow(new HandleRef((object)null, helper.EnsureHandle()), 2);
             OSInterop.MONITORINFOEX info = new OSInterop.MONITORINFOEX();
             OSInterop.GetMonitorInfo(new HandleRef((object)null, hmonitor), info);
-            r = new Int32Rect(info.rcWork.left, info.rcWork.top, info.rcWork.width, info.rcWork.height);
+            r = new Int32Rect(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.width, info.rcMonitor.height);
         }
         return new Point(r.X, r.Y);
     }
