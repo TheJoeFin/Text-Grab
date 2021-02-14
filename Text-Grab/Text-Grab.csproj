@@ -4,22 +4,23 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Text_Grab</RootNamespace>
-    <UseWPF>true</UseWPF>
-	  <DpiAware>false</DpiAware>
-	  <DisableDpiAwareness>True</DisableDpiAwareness>
-	  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-	  <UseWindowsForms>true</UseWindowsForms>
+	<RuntimeIdentifier>win-x86</RuntimeIdentifier>
+	<UseWPF>true</UseWPF>
+	<DpiAware>false</DpiAware>
+	<DisableDpiAwareness>True</DisableDpiAwareness>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>t_ICON2.ico</ApplicationIcon>
     <StartupObject>Text_Grab.App</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
