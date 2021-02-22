@@ -21,6 +21,7 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using Text_Grab.Properties;
 using System.Globalization;
 using System.Windows.Markup;
+using System.Drawing.Imaging;
 
 namespace Text_Grab
 {
@@ -120,11 +121,67 @@ namespace Text_Grab
             }
         }
 
+        private Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
+        {
+            // BitmapImage bitmapImage = new BitmapImage(new Uri("../Images/test.png", UriKind.Relative));
+
+            using (MemoryStream outStream = new MemoryStream())
+            {
+                BitmapEncoder enc = new BmpBitmapEncoder();
+                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
+                enc.Save(outStream);
+                System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(outStream);
+
+                return new Bitmap(bitmap);
+            }
+        }
+
+        Bitmap BitmapSourceToBitmap(BitmapSource source)
+        {
+            Bitmap bmp = new Bitmap(
+              source.PixelWidth,
+              source.PixelHeight,
+              System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            BitmapData data = bmp.LockBits(
+              new Rectangle(System.Drawing.Point.Empty, bmp.Size),
+              ImageLockMode.WriteOnly,
+              System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            source.CopyPixels(
+              Int32Rect.Empty,
+              data.Scan0,
+              data.Height * data.Stride,
+              data.Stride);
+            bmp.UnlockBits(data);
+            return bmp;
+        }
+
+        private Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                passedBitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+                TransformedBitmap tbmpImg = new TransformedBitmap();
+                tbmpImg.BeginInit();
+                tbmpImg.Source = bitmapimage;
+                tbmpImg.Transform = new ScaleTransform(scale, scale);
+                tbmpImg.EndInit();
+                return BitmapSourceToBitmap(tbmpImg.Source);
+            }
+        }
+
         public async Task<string> ExtractText(Bitmap bmp, string languageCode, System.Windows.Point? singlePoint = null)
         {
-
             if (!GlobalizationPreferences.Languages.Contains(languageCode))
                 throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
+
+            BitmapImage bmpImg = BitmapToImageSource(bmp);
+            Bitmap scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
 
             XmlLanguage lang = XmlLanguage.GetLanguage(languageCode);
             CultureInfo culture = lang.GetEquivalentCulture();
@@ -133,7 +190,7 @@ namespace Text_Grab
 
             await using (MemoryStream memory = new MemoryStream())
             {
-                bmp.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                scaledBitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
                 memory.Position = 0;
                 BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
                 Windows.Graphics.Imaging.SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
