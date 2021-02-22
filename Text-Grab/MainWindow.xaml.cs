@@ -19,6 +19,8 @@ using Windows.UI.Notifications;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Text_Grab.Properties;
+using System.Globalization;
+using System.Windows.Markup;
 
 namespace Text_Grab
 {
@@ -124,6 +126,9 @@ namespace Text_Grab
             if (!GlobalizationPreferences.Languages.Contains(languageCode))
                 throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
 
+            XmlLanguage lang = XmlLanguage.GetLanguage(languageCode);
+            CultureInfo culture = lang.GetEquivalentCulture();
+
             StringBuilder text = new StringBuilder();
 
             await using (MemoryStream memory = new MemoryStream())
@@ -152,8 +157,17 @@ namespace Text_Grab
 
                 }
             }
+            if(culture.TextInfo.IsRightToLeft)
+            {
+                List<string> textList = text.ToString().Split().ToList();
+                textList.Reverse();
 
-            return text.ToString();
+                text.Clear();
+                return string.Join(" ", textList.ToArray());
+            }
+            else
+                return text.ToString();
+
         }
 
         private void ShowToast(string copiedText)
