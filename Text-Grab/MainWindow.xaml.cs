@@ -235,9 +235,10 @@ namespace Text_Grab
 
         private void ShowToast(string copiedText)
         {
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
             // Construct the content
             ToastContent content = new ToastContentBuilder()
-                .AddToastActivationInfo(copiedText, ToastActivationType.Foreground)
+                .AddToastActivationInfo(copiedText + ',' + inputLang, ToastActivationType.Foreground)
                 .SetBackgroundActivation()
                 .AddText(copiedText)
                 .GetToastContent();
@@ -352,8 +353,6 @@ namespace Text_Grab
             System.Windows.Point movingPoint = e.GetPosition(this);
             movingPoint.X *= m.M11;
             movingPoint.Y *= m.M22;
-
-            
 
             movingPoint.X = Math.Round(movingPoint.X);
             movingPoint.Y = Math.Round(movingPoint.Y);
