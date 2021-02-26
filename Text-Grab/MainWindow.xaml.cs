@@ -30,14 +30,17 @@ namespace Text_Grab
     /// </summary>
     public partial class MainWindow : Window
     {
+        private bool isSelecting = false;
+        System.Windows.Point clickedPoint = new System.Windows.Point();
+        Border selectBorder = new Border();
+
+        System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
+        public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
+
         public MainWindow()
         {
             InitializeComponent();
         }
-
-        System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
-
-        public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
         // add padding to image to reach a minimum size
         private Bitmap PadImage(Bitmap image, int minW = 64, int minH = 64)
@@ -109,7 +112,7 @@ namespace Text_Grab
         {
             using (MemoryStream memory = new MemoryStream())
             {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                bitmap.Save(memory, ImageFormat.Bmp);
                 memory.Position = 0;
                 BitmapImage bitmapimage = new BitmapImage();
                 bitmapimage.BeginInit();
@@ -130,7 +133,7 @@ namespace Text_Grab
                 BitmapEncoder enc = new BmpBitmapEncoder();
                 enc.Frames.Add(BitmapFrame.Create(bitmapImage));
                 enc.Save(outStream);
-                System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(outStream);
+                Bitmap bitmap = new Bitmap(outStream);
 
                 return new Bitmap(bitmap);
             }
@@ -159,7 +162,7 @@ namespace Text_Grab
         {
             using (MemoryStream memory = new MemoryStream())
             {
-                passedBitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                passedBitmap.Save(memory, ImageFormat.Bmp);
                 memory.Position = 0;
                 BitmapImage bitmapimage = new BitmapImage();
                 bitmapimage.BeginInit();
@@ -180,17 +183,15 @@ namespace Text_Grab
             if (!GlobalizationPreferences.Languages.Contains(languageCode))
                 throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
 
-            BitmapImage bmpImg = BitmapToImageSource(bmp);
             Bitmap scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
+            StringBuilder text = new StringBuilder();
 
             XmlLanguage lang = XmlLanguage.GetLanguage(languageCode);
             CultureInfo culture = lang.GetEquivalentCulture();
 
-            StringBuilder text = new StringBuilder();
-
             await using (MemoryStream memory = new MemoryStream())
             {
-                scaledBitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                scaledBitmap.Save(memory, ImageFormat.Bmp);
                 memory.Position = 0;
                 BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
                 Windows.Graphics.Imaging.SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
@@ -211,10 +212,9 @@ namespace Text_Grab
                                 text.Append(ocrWord.Text);
                         }
                     }
-
                 }
             }
-            if(culture.TextInfo.IsRightToLeft)
+            if (culture.TextInfo.IsRightToLeft)
             {
                 List<string> textListLines = text.ToString().Split(Environment.NewLine).ToList();
 
@@ -247,8 +247,6 @@ namespace Text_Grab
             // Create the toast notification
             var toastNotif = new ToastNotification(content.GetXml());
 
-            toastNotif.Activated += ToastNotif_Activated;
-
             // And send the notification
             try 
             { 
@@ -259,11 +257,6 @@ namespace Text_Grab
                 Settings.Default.ShowToast = false;
                 Settings.Default.Save();
             }
-        }
-
-        private void ToastNotif_Activated(ToastNotification sender, object args)
-        {
-            throw new NotImplementedException();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -279,10 +272,6 @@ namespace Text_Grab
         {
             App.Current.Shutdown();
         }
-
-        private bool isSelecting = false;
-        System.Windows.Point clickedPoint = new System.Windows.Point();
-        Border selectBorder = new Border();
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
