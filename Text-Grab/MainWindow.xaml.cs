@@ -183,7 +183,12 @@ namespace Text_Grab
             if (!GlobalizationPreferences.Languages.Contains(languageCode))
                 throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
 
-            Bitmap scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
+            Bitmap scaledBitmap;
+            if (singlePoint != null)
+                scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
+            else
+                scaledBitmap = ScaleBitmapUniform(bmp, 1.0);
+
             StringBuilder text = new StringBuilder();
 
             XmlLanguage lang = XmlLanguage.GetLanguage(languageCode);
