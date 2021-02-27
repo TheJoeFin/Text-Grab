@@ -237,15 +237,17 @@ namespace Text_Grab
             }
             if (culture.TextInfo.IsRightToLeft)
             {
-                List<string> textListLines = text.ToString().Split(Environment.NewLine).ToList();
+                List<string> textListLines = text.ToString().Split(new char[] { '\n', '\r'}).ToList();
 
                 text.Clear();
-                foreach (var textLine in textListLines)
+                foreach (string textLine in textListLines)
                 {
                     List<string> wordArray = textLine.Split().ToList();
                     wordArray.Reverse();
                     text.Append(string.Join(' ', wordArray));
-                    text.Append(Environment.NewLine);
+
+                    if(textLine.Length > 0)
+                        text.Append('\n');
                 }
                 return text.ToString();
             }
