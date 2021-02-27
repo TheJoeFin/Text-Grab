@@ -1,7 +1,10 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Markup;
 
@@ -23,12 +26,12 @@ namespace Text_Grab
 
         public ManipulateTextWindow(string rawPassedString)
         {
-            var splitInput = rawPassedString.Split(',');
-            
-            CopiedText = splitInput[0];
+            int lastCommaPosition = rawPassedString.AllIndexesOf(",").LastOrDefault();            
+            CopiedText = rawPassedString.Substring(0,lastCommaPosition);
             InitializeComponent();
             PassedTextControl.Text = CopiedText;
-            XmlLanguage lang = XmlLanguage.GetLanguage(splitInput[1]);
+            string langString = rawPassedString.Substring(lastCommaPosition + 1, (rawPassedString.Length - (lastCommaPosition + 1)));
+            XmlLanguage lang = XmlLanguage.GetLanguage(langString);
             CultureInfo culture = lang.GetEquivalentCulture();
             if (culture.TextInfo.IsRightToLeft)
             {
@@ -65,6 +68,11 @@ namespace Text_Grab
             string textToEdit = PassedTextControl.Text;
             PassedTextControl.Text = "";
             textToEdit = textToEdit.Replace('\n', ' ');
+            textToEdit = textToEdit.Replace('\r', ' ');
+            textToEdit = textToEdit.Replace(Environment.NewLine, " ");
+            Regex regex = new Regex("[ ]{2,}");
+            textToEdit = regex.Replace(textToEdit, " ");
+            textToEdit = textToEdit.Trim();
             PassedTextControl.Text = textToEdit;
         }
 

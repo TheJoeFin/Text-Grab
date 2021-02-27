@@ -23,6 +23,7 @@
         </Grid.RowDefinitions>
         <TextBox
             x:Name="PassedTextControl"
+            AcceptsReturn="True"
             Background="#1E1E1E"
             FontSize="16"
             Foreground="White"
