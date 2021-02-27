@@ -75,8 +75,6 @@ namespace Text_Grab
 
             // use currently selected Language
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            if (!InstalledLanguages.Contains(inputLang)) 
-                inputLang = InstalledLanguages.FirstOrDefault();
 
             string ocrText = await ExtractText(bmp, inputLang);
             return ocrText.Trim();
@@ -180,11 +178,29 @@ namespace Text_Grab
 
         public async Task<string> ExtractText(Bitmap bmp, string languageCode, System.Windows.Point? singlePoint = null)
         {
-            if (!GlobalizationPreferences.Languages.Contains(languageCode))
-                throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
+            Language selectedLanguage = new Language(languageCode);
+            List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
+
+            if(possibleOCRLangs.Count < 1)
+                throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
+
+            if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
+            {
+                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
+                if (similarLanguages.Count() > 0)
+                    selectedLanguage = similarLanguages.FirstOrDefault();
+                else
+                    selectedLanguage = possibleOCRLangs.FirstOrDefault();
+            }
+
+            bool scaleBMP = true;
+
+            if (singlePoint != null
+                || bmp.Width * 1.5 > OcrEngine.MaxImageDimension)
+                scaleBMP = false;
 
             Bitmap scaledBitmap;
-            if (singlePoint != null)
+            if (scaleBMP)
                 scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
             else
                 scaledBitmap = ScaleBitmapUniform(bmp, 1.0);
@@ -201,7 +217,7 @@ namespace Text_Grab
                 BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
                 Windows.Graphics.Imaging.SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
-                OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
+                OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
                 OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
 
                 if(singlePoint == null)
