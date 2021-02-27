@@ -1,18 +1,9 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Markup;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace Text_Grab
 {
@@ -22,6 +13,8 @@ namespace Text_Grab
     public partial class ManipulateTextWindow : Window
     {
         public string CopiedText { get; set; } = "";
+
+        public bool WrapText { get; set; } = false;
 
         public ManipulateTextWindow()
         {
@@ -65,6 +58,22 @@ namespace Text_Grab
             {
                 File.WriteAllText(dialog.FileName, fileText);
             }
+        }
+
+        private void SingleLineBTN_Click(object sender, RoutedEventArgs e)
+        {
+            string textToEdit = PassedTextControl.Text;
+            PassedTextControl.Text = "";
+            textToEdit = textToEdit.Replace('\n', ' ');
+            PassedTextControl.Text = textToEdit;
+        }
+
+        private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
+        {
+            if ((bool)WrapTextCHBOX.IsChecked)
+                PassedTextControl.TextWrapping = TextWrapping.Wrap;
+            else
+                PassedTextControl.TextWrapping = TextWrapping.NoWrap;
         }
     }
 }

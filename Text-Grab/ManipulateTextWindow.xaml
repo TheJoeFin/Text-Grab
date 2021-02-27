@@ -9,6 +9,13 @@
     Width="600"
     Height="450"
     mc:Ignorable="d">
+    <Window.Resources>
+        <Style x:Key="SimpleBTN" TargetType="Button">
+            <Setter Property="Width" Value="120" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Margin" Value="10,10,0,10" />
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -19,7 +26,8 @@
             Background="#1E1E1E"
             FontSize="16"
             Foreground="White"
-            Text="{Binding CopiedText, Mode=OneWay}" />
+            Text="{Binding CopiedText, Mode=OneWay}"
+            TextWrapping="Wrap" />
 
         <StackPanel
             Grid.Row="1"
@@ -27,19 +35,33 @@
             Orientation="Horizontal">
             <Button
                 x:Name="CopyCloseBTN"
-                Width="120"
                 Margin="10,10,0,10"
-                Padding="6"
                 Background="Orange"
                 Click="CopyCloseBTN_Click"
-                Content="Copy And Close" />
+                Content="Copy And Close"
+                Style="{StaticResource SimpleBTN}" />
             <Button
                 x:Name="SaveBTN"
                 Width="120"
-                Margin="10"
-                Padding="6"
                 Click="SaveBTN_Click"
-                Content="Save to File..." />
+                Content="Save to File..."
+                Style="{StaticResource SimpleBTN}" />
+            <Button
+                x:Name="SingleLineBTN"
+                Width="120"
+                Click="SingleLineBTN_Click"
+                Content="Make Single Line"
+                Style="{StaticResource SimpleBTN}" />
+            <CheckBox
+                x:Name="WrapTextCHBOX"
+                Width="120"
+                Margin="10,10,0,10"
+                VerticalAlignment="Center"
+                Checked="WrapTextCHBOX_Checked"
+                Content="Wrap text"
+                Foreground="White"
+                IsChecked="True"
+                Unchecked="WrapTextCHBOX_Checked" />
         </StackPanel>
     </Grid>
 </Window>
