@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
@@ -70,15 +71,15 @@ namespace Text_Grab
 
                     mw.WindowState = WindowState.Normal;
 
-                    if(screen.WorkingArea.Left > 0)
+                    if(screen.WorkingArea.Left >= 0)
                         mw.Left = screen.WorkingArea.Left;
                     else
-                        mw.Left = screen.WorkingArea.Left / 2;
+                        mw.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
 
-                    if(screen.WorkingArea.Top > 0)
+                    if (screen.WorkingArea.Top >= 0)
                         mw.Top = screen.WorkingArea.Top;
                     else
-                        mw.Top = screen.WorkingArea.Top / 2;
+                        mw.Top = screen.WorkingArea.Top + (screen.WorkingArea.Height / 2);
 
                     mw.Show();
                 }

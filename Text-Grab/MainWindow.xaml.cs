@@ -19,6 +19,9 @@ using Windows.UI.Notifications;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Text_Grab.Properties;
+using System.Globalization;
+using System.Windows.Markup;
+using System.Drawing.Imaging;
 
 namespace Text_Grab
 {
@@ -27,14 +30,17 @@ namespace Text_Grab
     /// </summary>
     public partial class MainWindow : Window
     {
+        private bool isSelecting = false;
+        System.Windows.Point clickedPoint = new System.Windows.Point();
+        Border selectBorder = new Border();
+
+        System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
+        public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
+
         public MainWindow()
         {
             InitializeComponent();
         }
-
-        System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
-
-        public List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
         // add padding to image to reach a minimum size
         private Bitmap PadImage(Bitmap image, int minW = 64, int minH = 64)
@@ -69,8 +75,6 @@ namespace Text_Grab
 
             // use currently selected Language
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            if (!InstalledLanguages.Contains(inputLang)) 
-                inputLang = InstalledLanguages.FirstOrDefault();
 
             string ocrText = await ExtractText(bmp, inputLang);
             return ocrText.Trim();
@@ -106,7 +110,7 @@ namespace Text_Grab
         {
             using (MemoryStream memory = new MemoryStream())
             {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                bitmap.Save(memory, ImageFormat.Bmp);
                 memory.Position = 0;
                 BitmapImage bitmapimage = new BitmapImage();
                 bitmapimage.BeginInit();
@@ -118,22 +122,102 @@ namespace Text_Grab
             }
         }
 
+        private Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
+        {
+            // BitmapImage bitmapImage = new BitmapImage(new Uri("../Images/test.png", UriKind.Relative));
+
+            using (MemoryStream outStream = new MemoryStream())
+            {
+                BitmapEncoder enc = new BmpBitmapEncoder();
+                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
+                enc.Save(outStream);
+                Bitmap bitmap = new Bitmap(outStream);
+
+                return new Bitmap(bitmap);
+            }
+        }
+
+        Bitmap BitmapSourceToBitmap(BitmapSource source)
+        {
+            Bitmap bmp = new Bitmap(
+              source.PixelWidth,
+              source.PixelHeight,
+              System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            BitmapData data = bmp.LockBits(
+              new Rectangle(System.Drawing.Point.Empty, bmp.Size),
+              ImageLockMode.WriteOnly,
+              System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            source.CopyPixels(
+              Int32Rect.Empty,
+              data.Scan0,
+              data.Height * data.Stride,
+              data.Stride);
+            bmp.UnlockBits(data);
+            return bmp;
+        }
+
+        private Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                passedBitmap.Save(memory, ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+                TransformedBitmap tbmpImg = new TransformedBitmap();
+                tbmpImg.BeginInit();
+                tbmpImg.Source = bitmapimage;
+                tbmpImg.Transform = new ScaleTransform(scale, scale);
+                tbmpImg.EndInit();
+                return BitmapSourceToBitmap(tbmpImg.Source);
+            }
+        }
+
         public async Task<string> ExtractText(Bitmap bmp, string languageCode, System.Windows.Point? singlePoint = null)
         {
+            Language selectedLanguage = new Language(languageCode);
+            List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
 
-            if (!GlobalizationPreferences.Languages.Contains(languageCode))
-                throw new ArgumentOutOfRangeException($"{languageCode} is not installed.");
+            if(possibleOCRLangs.Count < 1)
+                throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
+
+            if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
+            {
+                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
+                if (similarLanguages.Count() > 0)
+                    selectedLanguage = similarLanguages.FirstOrDefault();
+                else
+                    selectedLanguage = possibleOCRLangs.FirstOrDefault();
+            }
+
+            bool scaleBMP = true;
+
+            if (singlePoint != null
+                || bmp.Width * 1.5 > OcrEngine.MaxImageDimension)
+                scaleBMP = false;
+
+            Bitmap scaledBitmap;
+            if (scaleBMP)
+                scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
+            else
+                scaledBitmap = ScaleBitmapUniform(bmp, 1.0);
 
             StringBuilder text = new StringBuilder();
 
+            XmlLanguage lang = XmlLanguage.GetLanguage(languageCode);
+            CultureInfo culture = lang.GetEquivalentCulture();
+
             await using (MemoryStream memory = new MemoryStream())
             {
-                bmp.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                scaledBitmap.Save(memory, ImageFormat.Bmp);
                 memory.Position = 0;
                 BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
                 Windows.Graphics.Imaging.SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
-                OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(new Language(languageCode));
+                OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
                 OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
 
                 if(singlePoint == null)
@@ -149,18 +233,35 @@ namespace Text_Grab
                                 text.Append(ocrWord.Text);
                         }
                     }
-
                 }
             }
+            if (culture.TextInfo.IsRightToLeft)
+            {
+                List<string> textListLines = text.ToString().Split(new char[] { '\n', '\r'}).ToList();
 
-            return text.ToString();
+                text.Clear();
+                foreach (string textLine in textListLines)
+                {
+                    List<string> wordArray = textLine.Split().ToList();
+                    wordArray.Reverse();
+                    text.Append(string.Join(' ', wordArray));
+
+                    if(textLine.Length > 0)
+                        text.Append('\n');
+                }
+                return text.ToString();
+            }
+            else
+                return text.ToString();
+
         }
 
         private void ShowToast(string copiedText)
         {
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
             // Construct the content
             ToastContent content = new ToastContentBuilder()
-                .AddToastActivationInfo(copiedText, ToastActivationType.Foreground)
+                .AddToastActivationInfo(copiedText + ',' + inputLang, ToastActivationType.Foreground)
                 .SetBackgroundActivation()
                 .AddText(copiedText)
                 .GetToastContent();
@@ -168,8 +269,6 @@ namespace Text_Grab
 
             // Create the toast notification
             var toastNotif = new ToastNotification(content.GetXml());
-
-            toastNotif.Activated += ToastNotif_Activated;
 
             // And send the notification
             try 
@@ -181,11 +280,6 @@ namespace Text_Grab
                 Settings.Default.ShowToast = false;
                 Settings.Default.Save();
             }
-        }
-
-        private void ToastNotif_Activated(ToastNotification sender, object args)
-        {
-            throw new NotImplementedException();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -201,10 +295,6 @@ namespace Text_Grab
         {
             App.Current.Shutdown();
         }
-
-        private bool isSelecting = false;
-        System.Windows.Point clickedPoint = new System.Windows.Point();
-        Border selectBorder = new Border();
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -275,8 +365,6 @@ namespace Text_Grab
             System.Windows.Point movingPoint = e.GetPosition(this);
             movingPoint.X *= m.M11;
             movingPoint.Y *= m.M22;
-
-            
 
             movingPoint.X = Math.Round(movingPoint.X);
             movingPoint.Y = Math.Round(movingPoint.Y);
