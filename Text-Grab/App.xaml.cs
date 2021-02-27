@@ -73,12 +73,12 @@ namespace Text_Grab
                     if(screen.WorkingArea.Left > 0)
                         mw.Left = screen.WorkingArea.Left;
                     else
-                        mw.Left = screen.WorkingArea.Left / 2;
+                        mw.Left = screen.WorkingArea.Left + (mw.Width + 1);
 
                     if(screen.WorkingArea.Top > 0)
                         mw.Top = screen.WorkingArea.Top;
                     else
-                        mw.Top = screen.WorkingArea.Top / 2;
+                        mw.Top = screen.WorkingArea.Top + (mw.Height + 1);
 
                     mw.Show();
                 }
