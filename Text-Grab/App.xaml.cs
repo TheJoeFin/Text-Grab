@@ -1,11 +1,7 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation.Collections;
+using Text_Grab.Views;
 
 namespace Text_Grab
 {
@@ -33,10 +29,19 @@ namespace Text_Grab
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
                 }
+                if(e.Args[i] == "GrabFrame")
+                {
+                    GrabFrame gf = new GrabFrame();
+                    gf.Show();
+                }
             }
 
             if(e.Args.Length == 0)
-                NormalLaunch();
+            {
+                GrabFrame gf = new GrabFrame();
+                gf.Show();
+            }
+                // NormalLaunch();
         }
         
         protected void NormalLaunch()

@@ -1,0 +1,40 @@
+﻿<Window
+    x:Class="Text_Grab.Views.GrabFrame"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Grab Frame"
+    Width="800"
+    Height="450"
+    AllowsTransparency="True"
+    Background="Transparent"
+    ResizeMode="CanResizeWithGrip"
+    WindowStyle="None"
+    mc:Ignorable="d">
+    <Grid>
+        <Border BorderBrush="Gray" BorderThickness="2,24,2,40" />
+
+        <Grid
+            Height="28"
+            Margin="6"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="6*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                Grid.Column="0"
+                Margin="0,0,6,0"
+                Padding="4"
+                Text="hello" />
+            <Button
+                Grid.Column="1"
+                Background="Teal"
+                Content="Grab" />
+        </Grid>
+
+    </Grid>
+</Window>

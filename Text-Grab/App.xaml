@@ -11,6 +11,10 @@
                 Title="Settings"
                 Arguments="Settings"
                 Description="Open Text Grab Settings" />
+            <JumpTask
+                Title="Grab Frame"
+                Arguments="GrabFrame"
+                Description="Open a Grab Frame" />
         </JumpList>
     </JumpList.JumpList>
 </Application>
