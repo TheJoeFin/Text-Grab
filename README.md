@@ -9,7 +9,7 @@ The OCR is done locally by [Windows 10 API](https://docs.microsoft.com/en-us/uwp
 ## Two Use Cases
 
 The first use case is the most obvious, selecting a region of the screen and the text within the selected region will be added to the clipboard.
-![Select text from a region](images/Region-Select.gif)
+![Select text from a region](images/Region-Toast-Edit-2.gif)
 
 The second use case takes a single click and attempts to copy the word which was clicked on. This is enabled because the Windows 10 OCR API draws a bounding box around each recognized word. 
 ![Select clicked word](images/Single-Click.gif)
