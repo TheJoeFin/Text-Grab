@@ -11,11 +11,48 @@
     AllowsTransparency="True"
     Background="Transparent"
     ResizeMode="CanResizeWithGrip"
+    Topmost="True"
+    WindowStartupLocation="CenterOwner"
     WindowStyle="None"
     mc:Ignorable="d">
+    <WindowChrome.WindowChrome>
+        <WindowChrome
+            CaptionHeight="24"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="4" />
+    </WindowChrome.WindowChrome>
     <Grid>
         <Border BorderBrush="Gray" BorderThickness="2,24,2,40" />
+        <Grid Height="24" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
 
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Image
+                    Width="16"
+                    Height="16"
+                    Margin="4,0"
+                    Source="../t_ICON2.ico" />
+                <TextBlock
+                    Grid.Column="0"
+                    Padding="4,0"
+                    VerticalAlignment="Center"
+                    Text="Grab Frame" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button
+                    x:Name="CloseBTN"
+                    Width="32"
+                    Height="20"
+                    Margin="2"
+                    Click="CloseBTN_Click"
+                    Content="X" />
+            </StackPanel>
+        </Grid>
         <Grid
             Height="28"
             Margin="6"

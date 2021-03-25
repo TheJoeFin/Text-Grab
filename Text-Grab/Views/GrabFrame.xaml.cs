@@ -21,5 +21,10 @@ namespace Text_Grab.Views
         {
             InitializeComponent();
         }
+
+        private void CloseBTN_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 }
