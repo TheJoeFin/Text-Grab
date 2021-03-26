@@ -22,9 +22,19 @@ namespace Text_Grab.Views
             InitializeComponent();
         }
 
-        private void CloseBTN_Click(object sender, RoutedEventArgs e)
+        private void OnMaximizeRestoreButtonClick(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Maximized;
+        }
+
+        private void OnCloseButtonClick(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
         }
     }
 }

@@ -15,63 +15,164 @@
     WindowStartupLocation="CenterOwner"
     WindowStyle="None"
     mc:Ignorable="d">
+    <Window.Resources>
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource WindowTextBrush}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border
+                            x:Name="border"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            SnapsToDevicePixels="true">
+                            <ContentPresenter
+                                x:Name="contentPresenter"
+                                Margin="0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Focusable="False"
+                                RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource MouseOverOverlayBackgroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PressedOverlayBackgroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TitleBarCloseButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border
+                            x:Name="border"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            SnapsToDevicePixels="true">
+                            <ContentPresenter
+                                x:Name="contentPresenter"
+                                Margin="0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Focusable="False"
+                                RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="Red" />
+                                <Setter Property="Foreground" Value="{DynamicResource MouseOverWindowCloseButtonForegroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="DarkRed" />
+                                <Setter Property="Foreground" Value="{DynamicResource MouseOverWindowCloseButtonForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <WindowChrome.WindowChrome>
         <WindowChrome
             CaptionHeight="24"
             CornerRadius="0"
             GlassFrameThickness="0"
-            ResizeBorderThickness="4" />
+            ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
-    <Grid>
-        <Border BorderBrush="Gray" BorderThickness="2,24,2,40" />
-        <Grid Height="24" VerticalAlignment="Top">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="auto" />
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+    <Border BorderBrush="DimGray" BorderThickness="2,2,2,2">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+            <Grid
+                Grid.Row="0"
+                VerticalAlignment="Top"
+                Background="DimGray">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <Image
-                    Width="16"
-                    Height="16"
-                    Margin="4,0"
-                    Source="../t_ICON2.ico" />
-                <TextBlock
                     Grid.Column="0"
-                    Padding="4,0"
+                    Width="18"
+                    Height="18"
+                    Margin="4"
+                    Source="../Images/Text-Grab-Icon.png" />
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="4,0,0,0"
                     VerticalAlignment="Center"
-                    Text="Grab Frame" />
-            </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button
-                    x:Name="CloseBTN"
-                    Width="32"
-                    Height="20"
-                    Margin="2"
-                    Click="CloseBTN_Click"
-                    Content="X" />
-            </StackPanel>
-        </Grid>
-        <Grid
-            Height="28"
-            Margin="6"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Bottom">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="6*" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <TextBox
-                Grid.Column="0"
-                Margin="0,0,6,0"
-                Padding="4"
-                Text="hello" />
-            <Button
-                Grid.Column="1"
-                Background="Teal"
-                Content="Grab" />
-        </Grid>
+                    FontSize="14"
+                    Foreground="White"
+                    Text="Grab Frame">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource WindowTitleBarInactiveText}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
-    </Grid>
+                <Button
+                    Grid.Column="2"
+                    Width="46"
+                    Height="24"
+                    Margin="0,-2,0,0"
+                    Click="OnCloseButtonClick"
+                    Style="{StaticResource TitleBarCloseButtonStyle}">
+                    <TextBlock
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="White"
+                        Text="" />
+                </Button>
+            </Grid>
+            <Image x:Name="ImageSource" Grid.Row="1" />
+            <Canvas x:Name="RectanglesCanvas" Grid.Row="1" />
+            <Border Grid.Row="2" Background="DimGray">
+                <Grid
+                    Height="28"
+                    Margin="6"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Bottom"
+                    Background="DimGray">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="6*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox
+                        Grid.Column="0"
+                        Margin="0,0,6,0"
+                        Padding="4"
+                        Text="hello" />
+                    <Button
+                        Grid.Column="1"
+                        Background="Teal"
+                        Content="Grab" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
 </Window>
