@@ -123,7 +123,9 @@ namespace Text_Grab.Views
                         Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 6,
                         Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
                         BorderBrush = new SolidColorBrush(Colors.Teal),
-                        BorderThickness = new Thickness(2)
+                        BorderThickness = new Thickness(2),
+                        Background = new SolidColorBrush(Colors.Transparent),
+                        ToolTip = ocrWord.Text
                     };
 
                     if((bool)ExactMatchChkBx.IsChecked)

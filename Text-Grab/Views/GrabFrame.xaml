@@ -66,7 +66,8 @@
                         <Border
                             x:Name="border"
                             Background="#18474C"
-                            BorderThickness="0"
+                            BorderBrush="#308E98"
+                            BorderThickness="1"
                             SnapsToDevicePixels="true">
                             <ContentPresenter
                                 x:Name="contentPresenter"
@@ -159,7 +160,8 @@
                 x:Name="RectanglesCanvas"
                 Grid.Row="1"
                 Margin="-4,-4,0,0"
-                Background="Transparent" />
+                Background="Transparent"
+                IsHitTestVisible="True" />
             <Border Grid.Row="2" Background="#444444">
                 <Grid
                     Height="28"
