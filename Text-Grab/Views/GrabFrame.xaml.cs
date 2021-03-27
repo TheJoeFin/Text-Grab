@@ -125,6 +125,7 @@ namespace Text_Grab.Views
                         BorderBrush = new SolidColorBrush(Colors.Teal),
                         BorderThickness = new Thickness(1)
                     };
+
                     if((bool)ExactMatchChkBx.IsChecked)
                     {
                         if(ocrWord.Text == searchWord)
@@ -151,6 +152,14 @@ namespace Text_Grab.Views
                     Canvas.SetLeft(wordborder, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 2);
                     Canvas.SetTop(wordborder, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 2);
                 }
+            }
+
+            if(ocrResultOfWindow != null && ocrResultOfWindow.TextAngle != null)
+            {
+                RotateTransform transform = new RotateTransform((double)ocrResultOfWindow.TextAngle);
+                transform.CenterX = (this.Width - 4) / 2;
+                transform.CenterY = (this.Height -60) / 2;
+                RectanglesCanvas.RenderTransform = transform;
             }
             MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
