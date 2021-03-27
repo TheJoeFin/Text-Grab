@@ -120,10 +120,10 @@ namespace Text_Grab.Views
                 {
                     Border wordborder = new Border
                     {
-                        Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 4,
-                        Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 4,
+                        Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 6,
+                        Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
                         BorderBrush = new SolidColorBrush(Colors.Teal),
-                        BorderThickness = new Thickness(1)
+                        BorderThickness = new Thickness(2)
                     };
 
                     if((bool)ExactMatchChkBx.IsChecked)
@@ -149,8 +149,8 @@ namespace Text_Grab.Views
                     }
 
                     RectanglesCanvas.Children.Add(wordborder);
-                    Canvas.SetLeft(wordborder, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 2);
-                    Canvas.SetTop(wordborder, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 2);
+                    Canvas.SetLeft(wordborder, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 3);
+                    Canvas.SetTop(wordborder, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 3);
                 }
             }
 

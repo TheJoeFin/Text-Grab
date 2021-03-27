@@ -169,7 +169,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="6*" />
                         <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
@@ -212,6 +212,7 @@
                         x:Name="MatchesTXTBLK"
                         Grid.Column="2"
                         Margin="6"
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Foreground="White"
                         Text="Matches: 0" />
