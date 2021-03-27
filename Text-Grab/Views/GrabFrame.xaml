@@ -10,7 +10,9 @@
     Height="450"
     AllowsTransparency="True"
     Background="Transparent"
+    LocationChanged="Window_LocationChanged"
     ResizeMode="CanResizeWithGrip"
+    SizeChanged="Window_SizeChanged"
     Topmost="True"
     WindowStartupLocation="CenterOwner"
     WindowStyle="None"
@@ -119,6 +121,7 @@
             <Canvas
                 x:Name="RectanglesCanvas"
                 Grid.Row="1"
+                Margin="-4,-4,0,0"
                 Background="Transparent" />
             <Border Grid.Row="2" Background="#444444">
                 <Grid
@@ -131,10 +134,13 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBox
+                        x:Name="SearchBox"
                         Grid.Column="0"
                         Margin="0,0,6,0"
                         Padding="4"
-                        Text="hello" />
+                        GotFocus="SearchBox_GotFocus"
+                        Text="Search For Text..."
+                        TextChanged="SearchBox_TextChanged" />
                     <Button
                         x:Name="GrabBTN"
                         Grid.Column="1"

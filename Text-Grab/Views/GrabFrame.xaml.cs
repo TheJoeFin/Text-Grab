@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -10,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Text_Grab.Utilities;
+using Windows.Media.Ocr;
 
 namespace Text_Grab.Views
 {
@@ -18,6 +21,9 @@ namespace Text_Grab.Views
     /// </summary>
     public partial class GrabFrame : Window
     {
+        private bool isDrawing = false;
+        private OcrResult ocrResultOfWindow;
+
         public GrabFrame()
         {
             InitializeComponent();
@@ -51,6 +57,84 @@ namespace Text_Grab.Views
             };
             string frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize);
             NotificationUtilities.ShowToast(frameText);
+        }
+
+        private void Window_LocationChanged(object sender, EventArgs e)
+        {
+            if (this.IsLoaded == false)
+                return;
+
+            RectanglesCanvas.Children.Clear();
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (this.IsLoaded == false)
+                return; 
+            
+            RectanglesCanvas.Children.Clear();
+        }
+
+        private async Task DrawRectanglesAroundWords(string searchWord)
+        {
+            if (isDrawing == true)
+                return;
+
+            isDrawing = true;
+
+            RectanglesCanvas.Children.Clear();
+
+            Point windowPosition = this.GetAbsolutePosition();
+            var dpi = VisualTreeHelper.GetDpi(this);
+            System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
+            {
+                Width = (int)((this.ActualWidth + 2) * dpi.DpiScaleX),
+                Height = (int)((this.Height - 64) * dpi.DpiScaleY),
+                X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
+                Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
+            };
+
+            if(ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
+                ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
+
+            foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
+            {
+                foreach (OcrWord ocrWord in ocrLine.Words)
+                {
+                    Border wordborder = new Border
+                    {
+                        Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 4,
+                        Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 4,
+                        BorderBrush = new SolidColorBrush(Colors.Teal),
+                        BorderThickness = new Thickness(1)
+                    };
+                    if(ocrWord.Text == searchWord)
+                    {
+                        wordborder.BorderThickness = new Thickness(2);
+                        wordborder.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                    }
+
+                    RectanglesCanvas.Children.Add(wordborder);
+                    Canvas.SetLeft(wordborder, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 2);
+                    Canvas.SetTop(wordborder, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 2);
+                }
+            }
+
+            isDrawing = false;
+        }
+
+        private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox searchBox = sender as TextBox;
+
+            if(searchBox != null)
+                await DrawRectanglesAroundWords(searchBox.Text);
+        }
+
+        private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = sender as TextBox;
+            searchBox.Text = "";
         }
     }
 }
