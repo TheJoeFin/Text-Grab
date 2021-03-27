@@ -43,9 +43,9 @@ namespace Text_Grab
 
             if(e.Args.Length == 0)
             {
-                //GrabFrame gf = new GrabFrame();
-                //gf.Show();
-                NormalLaunch();
+                GrabFrame gf = new GrabFrame();
+                gf.Show();
+                // NormalLaunch();
             }
         }
         

@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using Text_Grab.Utilities;
 
 namespace Text_Grab.Views
 {
@@ -37,9 +38,19 @@ namespace Text_Grab.Views
             this.WindowState = WindowState.Minimized;
         }
 
-        private void GrabBTN_Click(object sender, RoutedEventArgs e)
+        private async void GrabBTN_Click(object sender, RoutedEventArgs e)
         {
-
+            Point windowPosition = this.GetAbsolutePosition();
+             
+             System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
+             {
+                 Width = (int)RectanglesCanvas.Width,
+                 Height = (int)RectanglesCanvas.Height,
+                 X = (int)windowPosition.X + 2,
+                 Y = (int)windowPosition.Y + 24
+             };
+             string frameText = await ImageMethods.GetRegionsText(this, rectCanvasSize);
+             NotificationUtilities.ShowToast(frameText);
         }
     }
 }
