@@ -12,6 +12,19 @@ namespace Text_Grab
         public SettingsWindow()
         {
             InitializeComponent();
+
+            switch (Settings.Default.DefaultLaunch)
+            {
+                case "Fullscreen":
+                    FullScreenRDBTN.IsChecked = true;
+                    break;
+                case "GrabFrame":
+                    GrabFrameRDBTN.IsChecked = true;
+                    break;
+                default:
+                    FullScreenRDBTN.IsChecked = true;
+                    break;
+            }
         }
 
         private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
@@ -29,6 +42,19 @@ namespace Text_Grab
         {
             Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
             e.Handled = true;
+        }
+
+        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (this.IsLoaded != true)
+                return;
+
+            if ((bool)GrabFrameRDBTN.IsChecked)
+                Settings.Default.DefaultLaunch = "GrabFrame";
+            else
+                Settings.Default.DefaultLaunch = "Fullscreen";
+
+            Settings.Default.Save();
         }
     }
 }

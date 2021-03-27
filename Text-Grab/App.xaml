@@ -14,7 +14,11 @@
             <JumpTask
                 Title="Grab Frame"
                 Arguments="GrabFrame"
-                Description="Open a Grab Frame" />
+                Description="Open a Grab Frame to search and select text" />
+            <JumpTask
+                Title="Full Screen"
+                Arguments="Fullscreen"
+                Description="Full screen overlay to select text" />
         </JumpList>
     </JumpList.JumpList>
 </Application>

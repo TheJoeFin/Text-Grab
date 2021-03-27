@@ -39,13 +39,27 @@ namespace Text_Grab
                     GrabFrame gf = new GrabFrame();
                     gf.Show();
                 }
+                if (e.Args[i] == "Fullscreen")
+                {
+                    NormalLaunch();
+                }
             }
 
             if(e.Args.Length == 0)
             {
-                GrabFrame gf = new GrabFrame();
-                gf.Show();
-                // NormalLaunch();
+                switch (Settings.Default.DefaultLaunch)
+                {
+                    case "Fullscreen":
+                        NormalLaunch();
+                        break;
+                    case "GrabFrame":
+                        GrabFrame gf = new GrabFrame();
+                        gf.Show();
+                        break;
+                    default:
+                        NormalLaunch();
+                        break;
+                }
             }
         }
         
