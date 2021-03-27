@@ -77,7 +77,14 @@ namespace Text_Grab
             Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
 
-            System.Windows.Point absPosPoint = passedWindow.GetAbsolutePosition();
+
+            System.Windows.Point absPosPoint;
+
+            if (passedWindow == null)
+                absPosPoint = new System.Windows.Point();
+            else
+                absPosPoint = passedWindow.GetAbsolutePosition();
+            
             int thisCorrectedLeft = (int)(absPosPoint.X) + selectedRegion.Left;
             int thisCorrectedTop = (int)(absPosPoint.Y) + selectedRegion.Top;
 
@@ -94,7 +101,6 @@ namespace Text_Grab
 
         static internal async Task<string> GetClickedWord(Window passedWindow, System.Windows.Point clickedPoint)
         {
-            // Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
             var dpi = VisualTreeHelper.GetDpi(passedWindow);
             Bitmap bmp = new Bitmap((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);

@@ -116,14 +116,16 @@
                 </Button>
             </Grid>
             <Image x:Name="ImageSource" Grid.Row="1" />
-            <Canvas x:Name="RectanglesCanvas" Grid.Row="1" />
-            <Border Grid.Row="2" Background="DimGray">
+            <Canvas
+                x:Name="RectanglesCanvas"
+                Grid.Row="1"
+                Background="Transparent" />
+            <Border Grid.Row="2" Background="#444444">
                 <Grid
                     Height="28"
                     Margin="6"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Bottom"
-                    Background="DimGray">
+                    VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="6*" />
                         <ColumnDefinition Width="*" />
@@ -138,7 +140,8 @@
                         Grid.Column="1"
                         Background="Teal"
                         Click="GrabBTN_Click"
-                        Content="Grab" />
+                        Content="Grab"
+                        Foreground="White" />
                 </Grid>
             </Border>
         </Grid>

@@ -41,16 +41,16 @@ namespace Text_Grab.Views
         private async void GrabBTN_Click(object sender, RoutedEventArgs e)
         {
             Point windowPosition = this.GetAbsolutePosition();
-             
-             System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
-             {
-                 Width = (int)RectanglesCanvas.Width,
-                 Height = (int)RectanglesCanvas.Height,
-                 X = (int)windowPosition.X + 2,
-                 Y = (int)windowPosition.Y + 24
-             };
-             string frameText = await ImageMethods.GetRegionsText(this, rectCanvasSize);
-             NotificationUtilities.ShowToast(frameText);
+            var dpi = VisualTreeHelper.GetDpi(this);
+            System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
+            {
+                Width = (int)((this.ActualWidth + 2) * dpi.DpiScaleX),
+                Height = (int)((this.Height - 64) * dpi.DpiScaleY),
+                X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
+                Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
+            };
+            string frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize);
+            NotificationUtilities.ShowToast(frameText);
         }
     }
 }
