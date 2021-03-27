@@ -182,5 +182,16 @@ namespace Text_Grab.Views
         {
             SearchBox.Text = "";
         }
+
+        private async void RefreshBTN_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = SearchBox;
+            ResetGrabFrame();
+
+            await Task.Delay(200);
+
+            if (searchBox != null)
+                await DrawRectanglesAroundWords(searchBox.Text);
+        }
     }
 }

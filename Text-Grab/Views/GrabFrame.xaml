@@ -135,6 +135,7 @@
                         <ColumnDefinition Width="6*" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBox
@@ -148,20 +149,32 @@
                     <Button
                         x:Name="ClearBTN"
                         Margin="0,0,6,0"
-                        Padding="6" Click="ClearBTN_Click"
+                        Padding="6"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
                         Background="Transparent"
-                        BorderBrush="Transparent">
+                        BorderBrush="Transparent"
+                        Click="ClearBTN_Click">
                         <TextBlock
                             FontFamily="Segoe MDL2 Assets"
                             Foreground="Black"
                             Text="" />
                     </Button>
 
+                    <Button
+                        x:Name="RefreshBTN" Click="RefreshBTN_Click"
+                        Grid.Column="1"
+                        Width="24"
+                        Background="Teal">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+
                     <TextBlock
                         x:Name="MatchesTXTBLK"
-                        Grid.Column="1"
+                        Grid.Column="2"
                         Margin="6"
                         VerticalAlignment="Center"
                         Foreground="White"
@@ -169,7 +182,7 @@
 
                     <CheckBox
                         x:Name="ExactMatchChkBx"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="6"
                         VerticalAlignment="Center"
                         Click="ExactMatchChkBx_Click"
