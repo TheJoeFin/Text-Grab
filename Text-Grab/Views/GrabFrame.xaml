@@ -5,11 +5,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="GrabFrameWindow"
     Title="Grab Frame"
     Width="800"
     Height="450"
     AllowsTransparency="True"
     Background="Transparent"
+    Deactivated="GrabFrameWindow_Deactivated"
     LocationChanged="Window_LocationChanged"
     ResizeMode="CanResizeWithGrip"
     SizeChanged="Window_SizeChanged"
@@ -62,7 +64,7 @@
             GlassFrameThickness="0"
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
-    <Border BorderBrush="DimGray" BorderThickness="2,2,2,2">
+    <Border BorderBrush="#444444" BorderThickness="2,2,2,2">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
@@ -72,7 +74,7 @@
             <Grid
                 Grid.Row="0"
                 VerticalAlignment="Top"
-                Background="DimGray">
+                Background="#444444">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -131,6 +133,8 @@
                     VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="6*" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBox
@@ -142,8 +146,39 @@
                         Text="Search For Text..."
                         TextChanged="SearchBox_TextChanged" />
                     <Button
-                        x:Name="GrabBTN"
+                        x:Name="ClearBTN"
+                        Margin="0,0,6,0"
+                        Padding="6" Click="ClearBTN_Click"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        BorderBrush="Transparent">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="Black"
+                            Text="" />
+                    </Button>
+
+                    <TextBlock
+                        x:Name="MatchesTXTBLK"
                         Grid.Column="1"
+                        Margin="6"
+                        VerticalAlignment="Center"
+                        Foreground="White"
+                        Text="Matches: 0" />
+
+                    <CheckBox
+                        x:Name="ExactMatchChkBx"
+                        Grid.Column="2"
+                        Margin="6"
+                        VerticalAlignment="Center"
+                        Click="ExactMatchChkBx_Click"
+                        Content="Exact Match"
+                        Foreground="White" />
+
+                    <Button
+                        x:Name="GrabBTN"
+                        Grid.Column="4"
                         Background="Teal"
                         Click="GrabBTN_Click"
                         Content="Grab"

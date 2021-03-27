@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -23,15 +24,11 @@ namespace Text_Grab.Views
     {
         private bool isDrawing = false;
         private OcrResult ocrResultOfWindow;
+        private List<string> matchesList= new List<string>();
 
         public GrabFrame()
         {
             InitializeComponent();
-        }
-
-        private void OnMaximizeRestoreButtonClick(object sender, RoutedEventArgs e)
-        {
-            this.WindowState = WindowState.Maximized;
         }
 
         private void OnCloseButtonClick(object sender, RoutedEventArgs e)
@@ -39,24 +36,36 @@ namespace Text_Grab.Views
             this.Close();
         }
 
-        private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
-        {
-            this.WindowState = WindowState.Minimized;
-        }
-
         private async void GrabBTN_Click(object sender, RoutedEventArgs e)
         {
-            Point windowPosition = this.GetAbsolutePosition();
-            var dpi = VisualTreeHelper.GetDpi(this);
-            System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
+            string frameText = "";
+
+            if(matchesList.Count == 0)
             {
-                Width = (int)((this.ActualWidth + 2) * dpi.DpiScaleX),
-                Height = (int)((this.Height - 64) * dpi.DpiScaleY),
-                X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
-                Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
-            };
-            string frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize);
+                Point windowPosition = this.GetAbsolutePosition();
+                var dpi = VisualTreeHelper.GetDpi(this);
+                System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
+                {
+                    Width = (int)((this.ActualWidth + 2) * dpi.DpiScaleX),
+                    Height = (int)((this.Height - 64) * dpi.DpiScaleY),
+                    X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
+                    Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
+                };
+                frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize);
+            }
+
+            if (matchesList.Count > 0)
+                frameText = string.Join('\n', matchesList.ToArray());
+
             NotificationUtilities.ShowToast(frameText);
+        }
+
+        private void ResetGrabFrame()
+        {
+            ocrResultOfWindow = null;
+            RectanglesCanvas.Children.Clear();
+            matchesList.Clear();
+            MatchesTXTBLK.Text = "Matches: 0";
         }
 
         private void Window_LocationChanged(object sender, EventArgs e)
@@ -64,15 +73,20 @@ namespace Text_Grab.Views
             if (this.IsLoaded == false)
                 return;
 
-            RectanglesCanvas.Children.Clear();
+            ResetGrabFrame();
         }
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (this.IsLoaded == false)
-                return; 
-            
-            RectanglesCanvas.Children.Clear();
+                return;
+
+            ResetGrabFrame();
+        }
+
+        private void GrabFrameWindow_Deactivated(object sender, EventArgs e)
+        {
+            ResetGrabFrame();
         }
 
         private async Task DrawRectanglesAroundWords(string searchWord)
@@ -83,6 +97,7 @@ namespace Text_Grab.Views
             isDrawing = true;
 
             RectanglesCanvas.Children.Clear();
+            matchesList.Clear();
 
             Point windowPosition = this.GetAbsolutePosition();
             var dpi = VisualTreeHelper.GetDpi(this);
@@ -97,6 +112,8 @@ namespace Text_Grab.Views
             if(ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
                 ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
 
+            int numberOfMatches = 0;
+
             foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
             {
                 foreach (OcrWord ocrWord in ocrLine.Words)
@@ -108,10 +125,26 @@ namespace Text_Grab.Views
                         BorderBrush = new SolidColorBrush(Colors.Teal),
                         BorderThickness = new Thickness(1)
                     };
-                    if(ocrWord.Text == searchWord)
+                    if((bool)ExactMatchChkBx.IsChecked)
                     {
-                        wordborder.BorderThickness = new Thickness(2);
-                        wordborder.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                        if(ocrWord.Text == searchWord)
+                        {
+                            wordborder.BorderThickness = new Thickness(2);
+                            wordborder.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                            numberOfMatches++;
+                            matchesList.Add(ocrWord.Text);
+                        }
+                    }
+                    else
+                    {
+                        if (!String.IsNullOrWhiteSpace(searchWord) 
+                            && ocrWord.Text.ToLower().Contains(searchWord.ToLower()))
+                        {
+                            wordborder.BorderThickness = new Thickness(2);
+                            wordborder.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                            numberOfMatches++;
+                            matchesList.Add(ocrWord.Text);
+                        }
                     }
 
                     RectanglesCanvas.Children.Add(wordborder);
@@ -119,7 +152,7 @@ namespace Text_Grab.Views
                     Canvas.SetTop(wordborder, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 2);
                 }
             }
-
+            MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
         }
 
@@ -135,6 +168,19 @@ namespace Text_Grab.Views
         {
             TextBox searchBox = sender as TextBox;
             searchBox.Text = "";
+        }
+
+        private async void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = SearchBox;
+
+            if (searchBox != null)
+                await DrawRectanglesAroundWords(searchBox.Text);
+        }
+
+        private void ClearBTN_Click(object sender, RoutedEventArgs e)
+        {
+            SearchBox.Text = "";
         }
     }
 }
