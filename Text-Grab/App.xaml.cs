@@ -1,7 +1,10 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
 using Text_Grab.Views;
+using Windows.System.UserProfile;
 
 namespace Text_Grab
 {
@@ -10,6 +13,8 @@ namespace Text_Grab
     /// </summary>
     public partial class App : System.Windows.Application
     {
+        public static List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
+
         void appStartup(object sender, StartupEventArgs e)
         {
             // Register COM server and activator type
@@ -38,10 +43,10 @@ namespace Text_Grab
 
             if(e.Args.Length == 0)
             {
-                GrabFrame gf = new GrabFrame();
-                gf.Show();
+                //GrabFrame gf = new GrabFrame();
+                //gf.Show();
+                NormalLaunch();
             }
-                // NormalLaunch();
         }
         
         protected void NormalLaunch()

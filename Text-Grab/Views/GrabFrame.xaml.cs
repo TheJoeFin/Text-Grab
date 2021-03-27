@@ -36,5 +36,10 @@ namespace Text_Grab.Views
         {
             this.WindowState = WindowState.Minimized;
         }
+
+        private void GrabBTN_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
