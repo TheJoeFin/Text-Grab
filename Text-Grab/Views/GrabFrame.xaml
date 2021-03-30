@@ -120,8 +120,8 @@
                 </Grid.ColumnDefinitions>
                 <Image
                     Grid.Column="0"
-                    Width="18"
-                    Height="18"
+                    Width="14"
+                    Height="14"
                     Margin="4"
                     Source="../Images/Text-Grab-Icon.png" />
                 <TextBlock
@@ -159,7 +159,7 @@
             <Canvas
                 x:Name="RectanglesCanvas"
                 Grid.Row="1"
-                Margin="-4,-4,0,0"
+                Margin="-4,0,0,0"
                 Background="Transparent"
                 IsHitTestVisible="True" />
             <Border Grid.Row="2" Background="#444444">

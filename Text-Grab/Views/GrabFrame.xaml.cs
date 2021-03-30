@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using Text_Grab.Controls;
 using Text_Grab.Utilities;
 using Windows.Media.Ocr;
 
@@ -24,7 +26,7 @@ namespace Text_Grab.Views
     {
         private bool isDrawing = false;
         private OcrResult ocrResultOfWindow;
-        private List<string> matchesList= new List<string>();
+        private ObservableCollection<WordBorder> wordBorders = new ObservableCollection<WordBorder>();
 
         public GrabFrame()
         {
@@ -40,7 +42,7 @@ namespace Text_Grab.Views
         {
             string frameText = "";
 
-            if(matchesList.Count == 0)
+            if(wordBorders.Where(w => w.IsSelected == true).ToList().Count == 0)
             {
                 Point windowPosition = this.GetAbsolutePosition();
                 var dpi = VisualTreeHelper.GetDpi(this);
@@ -54,8 +56,16 @@ namespace Text_Grab.Views
                 frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize);
             }
 
-            if (matchesList.Count > 0)
-                frameText = string.Join('\n', matchesList.ToArray());
+            if (wordBorders.Count > 0)
+            {
+                var selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
+                List<string> wordsList = new List<string>();
+                foreach (WordBorder border in selectedBorders)
+                {
+                    wordsList.Add(border.Word);
+                }
+                frameText = string.Join('\n', wordsList);
+            }
 
             NotificationUtilities.ShowToast(frameText);
         }
@@ -64,7 +74,7 @@ namespace Text_Grab.Views
         {
             ocrResultOfWindow = null;
             RectanglesCanvas.Children.Clear();
-            matchesList.Clear();
+            wordBorders.Clear();
             MatchesTXTBLK.Text = "Matches: 0";
         }
 
@@ -97,7 +107,7 @@ namespace Text_Grab.Views
             isDrawing = true;
 
             RectanglesCanvas.Children.Clear();
-            matchesList.Clear();
+            wordBorders.Clear();
 
             Point windowPosition = this.GetAbsolutePosition();
             var dpi = VisualTreeHelper.GetDpi(this);
@@ -118,13 +128,11 @@ namespace Text_Grab.Views
             {
                 foreach (OcrWord ocrWord in ocrLine.Words)
                 {
-                    Border wordborder = new Border
+                    WordBorder wordBorderBox = new WordBorder
                     {
                         Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 6,
                         Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
-                        BorderBrush = new SolidColorBrush(Colors.Teal),
-                        BorderThickness = new Thickness(2),
-                        Background = new SolidColorBrush(Colors.Transparent),
+                        Word = ocrWord.Text,
                         ToolTip = ocrWord.Text
                     };
 
@@ -132,10 +140,8 @@ namespace Text_Grab.Views
                     {
                         if(ocrWord.Text == searchWord)
                         {
-                            wordborder.BorderThickness = new Thickness(2);
-                            wordborder.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                            wordBorderBox.Select();
                             numberOfMatches++;
-                            matchesList.Add(ocrWord.Text);
                         }
                     }
                     else
@@ -143,16 +149,15 @@ namespace Text_Grab.Views
                         if (!String.IsNullOrWhiteSpace(searchWord) 
                             && ocrWord.Text.ToLower().Contains(searchWord.ToLower()))
                         {
-                            wordborder.BorderThickness = new Thickness(2);
-                            wordborder.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                            wordBorderBox.Select();
                             numberOfMatches++;
-                            matchesList.Add(ocrWord.Text);
                         }
                     }
 
-                    RectanglesCanvas.Children.Add(wordborder);
-                    Canvas.SetLeft(wordborder, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 3);
-                    Canvas.SetTop(wordborder, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 3);
+                    wordBorders.Add(wordBorderBox);
+                    RectanglesCanvas.Children.Add(wordBorderBox);
+                    Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 3);
+                    Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 3);
                 }
             }
 
