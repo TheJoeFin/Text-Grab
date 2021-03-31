@@ -1,18 +1,12 @@
-﻿using System;
+﻿using Fasetto.Word;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using Text_Grab.Controls;
 using Text_Grab.Utilities;
 using Windows.Media.Ocr;
@@ -31,6 +25,8 @@ namespace Text_Grab.Views
         public GrabFrame()
         {
             InitializeComponent();
+
+            var resizer = new WindowResizer(this);
         }
 
         private void OnCloseButtonClick(object sender, RoutedEventArgs e)
