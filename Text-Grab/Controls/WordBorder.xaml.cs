@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -45,6 +46,22 @@ namespace Text_Grab.Controls
                 Deselect();
             else
                 Select();
+        }
+
+        private async void WordBorderControl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            Clipboard.SetText(Word);
+
+            if(IsSelected)
+            {
+                await Task.Delay(100);
+                Deselect();
+            }
+            else
+            {
+                await Task.Delay(100);
+                Select();
+            }
         }
     }
 }

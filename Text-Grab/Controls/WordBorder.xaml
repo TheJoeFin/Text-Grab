@@ -10,6 +10,7 @@
     d:DesignWidth="80"
     BorderBrush="#308E98"
     BorderThickness="2"
+    MouseDoubleClick="WordBorderControl_MouseDoubleClick"
     MouseDown="WordBorderControl_MouseDown"
     mc:Ignorable="d">
     <Grid
