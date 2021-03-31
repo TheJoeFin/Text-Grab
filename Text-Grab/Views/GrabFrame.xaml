@@ -175,9 +175,13 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="6*" />
                         <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="96" />
-                        <ColumnDefinition Width="96" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition
+                            Width="*"
+                            MinWidth="80"
+                            MaxWidth="180" />
                     </Grid.ColumnDefinitions>
                     <TextBox
                         x:Name="SearchBox"
@@ -216,7 +220,7 @@
 
                     <TextBlock
                         x:Name="MatchesTXTBLK"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="6"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
@@ -225,16 +229,17 @@
 
                     <CheckBox
                         x:Name="ExactMatchChkBx"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="6"
                         VerticalAlignment="Center"
                         Click="ExactMatchChkBx_Click"
                         Content="Exact Match"
-                        Foreground="White" />
+                        Foreground="White"
+                        Visibility="Collapsed" />
 
                     <Button
                         x:Name="GrabBTN"
-                        Grid.Column="4"
+                        Grid.Column="5"
                         Click="GrabBTN_Click"
                         Content="Grab"
                         Foreground="White"

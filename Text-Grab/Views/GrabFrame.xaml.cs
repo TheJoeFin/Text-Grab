@@ -67,6 +67,7 @@ namespace Text_Grab.Views
                 frameText = string.Join('\n', wordsList);
             }
 
+            Clipboard.SetText(frameText);
             NotificationUtilities.ShowToast(frameText);
         }
 
