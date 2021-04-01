@@ -113,7 +113,7 @@ namespace Text_Grab.Views
             System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
             {
                 Width = (int)((this.ActualWidth + 2) * dpi.DpiScaleX),
-                Height = (int)((this.Height - 64) * dpi.DpiScaleY),
+                Height = (int)((this.ActualHeight - 64) * dpi.DpiScaleY),
                 X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
                 Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
             };
@@ -173,6 +173,9 @@ namespace Text_Grab.Views
 
         private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (IsLoaded == false)
+                return;
+
             TextBox searchBox = sender as TextBox;
 
             if(searchBox != null)
