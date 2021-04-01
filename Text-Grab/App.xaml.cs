@@ -15,7 +15,7 @@ namespace Text_Grab
     {
         public static List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
-        public static AppSettings AppSettings => new AppSettings();
+        public static AppSettings AppSettings { get; set; } = new AppSettings();
 
         void appStartup(object sender, StartupEventArgs e)
         {
