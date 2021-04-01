@@ -15,18 +15,13 @@ namespace Text_Grab
     {
         public static List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
+        public static AppSettings AppSettings => new AppSettings();
+
         void appStartup(object sender, StartupEventArgs e)
         {
             // Register COM server and activator type
             DesktopNotificationManagerCompat.RegisterActivator<TextGrabNotificationActivator>();
 
-            if (e.Args != null && e.Args.Length > 0 && e.Args[0] == "-ToastActivated")
-            {
-                // ManipulateTextWindow mtw = new ManipulateTextWindow(e.Args[1]);
-                // mtw.Show();
-            }
-            
-            
             for (int i = 0; i != e.Args.Length; ++i)
             {
                 if (e.Args[i] == "Settings")
@@ -47,12 +42,12 @@ namespace Text_Grab
 
             if(e.Args.Length == 0)
             {
-                switch (Settings.Default.DefaultLaunch)
+                switch (AppSettings.DefaultLaunch)
                 {
-                    case "Fullscreen":
+                    case DefaultLaunchSetting.Fullscreen:
                         NormalLaunch();
                         break;
-                    case "GrabFrame":
+                    case DefaultLaunchSetting.GrabFrame:
                         GrabFrame gf = new GrabFrame();
                         gf.Show();
                         break;
@@ -61,6 +56,7 @@ namespace Text_Grab
                         break;
                 }
             }
+
         }
         
         protected void NormalLaunch()

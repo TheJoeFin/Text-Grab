@@ -12,6 +12,17 @@ namespace Text_Grab
         public SettingsWindow()
         {
             InitializeComponent();
+        }
+
+        private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
+            Settings.Default.Save();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
 
             switch (Settings.Default.DefaultLaunch)
             {
@@ -25,17 +36,6 @@ namespace Text_Grab
                     FullScreenRDBTN.IsChecked = true;
                     break;
             }
-        }
-
-        private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
-            Settings.Default.Save();
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
         }
 
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)

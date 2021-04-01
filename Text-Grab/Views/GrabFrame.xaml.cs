@@ -64,7 +64,9 @@ namespace Text_Grab.Views
             }
 
             Clipboard.SetText(frameText);
-            NotificationUtilities.ShowToast(frameText);
+
+            if(App.AppSettings.ShowToast)
+                NotificationUtilities.ShowToast(frameText);
         }
 
         private void ResetGrabFrame()

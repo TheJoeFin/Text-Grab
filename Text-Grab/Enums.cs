@@ -1,7 +1,7 @@
 ﻿
 namespace Text_Grab
 {
-    enum DefaultLaunchSetting
+    public enum DefaultLaunchSetting
     {
         Fullscreen = 0,
         GrabFrame = 1

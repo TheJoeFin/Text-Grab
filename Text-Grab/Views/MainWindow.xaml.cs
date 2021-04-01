@@ -6,7 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
 namespace Text_Grab
@@ -151,7 +150,7 @@ namespace Text_Grab
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);
-                if (Settings.Default.ShowToast)
+                if (App.AppSettings.ShowToast)
                     NotificationUtilities.ShowToast(grabbedText);
                 App.Current.Shutdown();
             }
