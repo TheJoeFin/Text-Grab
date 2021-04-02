@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Text_Grab.Controls;
+using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Media.Ocr;
 
@@ -65,7 +66,7 @@ namespace Text_Grab.Views
 
             Clipboard.SetText(frameText);
 
-            if(App.AppSettings.ShowToast)
+            if(Settings.Default.ShowToast)
                 NotificationUtilities.ShowToast(frameText);
         }
 

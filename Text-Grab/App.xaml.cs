@@ -15,8 +15,6 @@ namespace Text_Grab
     {
         public static List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
 
-        public static AppSettings AppSettings { get; set; } = new AppSettings();
-
         void appStartup(object sender, StartupEventArgs e)
         {
             // Register COM server and activator type
@@ -42,12 +40,12 @@ namespace Text_Grab
 
             if(e.Args.Length == 0)
             {
-                switch (AppSettings.DefaultLaunch)
+                switch (Settings.Default.DefaultLaunch)
                 {
-                    case DefaultLaunchSetting.Fullscreen:
+                    case "Fullscreen":
                         NormalLaunch();
                         break;
-                    case DefaultLaunchSetting.GrabFrame:
+                    case "GrabFrame":
                         GrabFrame gf = new GrabFrame();
                         gf.Show();
                         break;
@@ -56,7 +54,6 @@ namespace Text_Grab
                         break;
                 }
             }
-
         }
         
         protected void NormalLaunch()
