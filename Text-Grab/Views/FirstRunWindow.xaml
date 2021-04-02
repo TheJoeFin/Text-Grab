@@ -5,11 +5,14 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="FirstRun"
     Title="FirstRunWindow"
     Width="800"
-    Height="840"
+    Height="600"
     Padding="50"
     Background="#252526"
+    Loaded="FirstRun_Loaded"
+    WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical">
@@ -49,6 +52,104 @@
                 I hope you find Text Grab as useful as I do. If you have any questions or comments please visit the GitHub page for Text Grab or email support@TextGrab.net.<LineBreak />
                 <LineBreak />
                 Joe</TextBlock>
+
+            <Grid MaxWidth="500">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Center"
+                    FontSize="18"
+                    Foreground="White"
+                    Text="Show Toast When Copying Text" />
+
+                <Viewbox
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Margin="20">
+                    <Rectangle
+                        Width="200"
+                        Height="200"
+                        Fill="Yellow" />
+                </Viewbox>
+                <CheckBox
+                    x:Name="ShowToastCheckBox"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Content="Show Toast"
+                    Foreground="White" />
+
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Center"
+                    FontSize="18"
+                    Foreground="White"
+                    Text="Default Launch Window" />
+
+                <Viewbox
+                    Grid.Row="4"
+                    Grid.Column="0"
+                    Margin="20">
+                    <Rectangle
+                        Width="200"
+                        Height="200"
+                        Fill="Red" />
+                </Viewbox>
+                <RadioButton
+                    x:Name="FullScreenRDBTN"
+                    Grid.Row="3"
+                    Grid.Column="0"
+                    HorizontalAlignment="Center"
+                    Checked="RadioButton_Checked"
+                    Content="Fullscreen"
+                    Foreground="White"
+                    GroupName="DefaultLaunch" />
+
+
+                <Viewbox
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    Margin="20">
+                    <Rectangle
+                        Width="200"
+                        Height="200"
+                        Fill="Blue" />
+                </Viewbox>
+                <RadioButton
+                    x:Name="GrabFrameRDBTN"
+                    Grid.Row="3"
+                    Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    Checked="RadioButton_Checked"
+                    Content="Grab Frame"
+                    Foreground="White"
+                    GroupName="DefaultLaunch" />
+
+            </Grid>
+
+            <Button
+                x:Name="OkayButton"
+                Width="100"
+                Margin="20"
+                Padding="8"
+                HorizontalAlignment="Right"
+                Click="OkayButton_Click"
+                Content="Okay" />
         </StackPanel>
     </ScrollViewer>
 </Window>

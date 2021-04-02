@@ -38,7 +38,7 @@ namespace Text_Grab
                 }
             }
 
-            if(e.Args.Length == 0)
+            if(e.Args.Length == 0 && Settings.Default.FirstRun == false)
             {
                 switch (Settings.Default.DefaultLaunch)
                 {
@@ -53,6 +53,17 @@ namespace Text_Grab
                         NormalLaunch();
                         break;
                 }
+            }
+
+
+            // if (Settings.Default.FirstRun)
+            if (true)
+            {
+                FirstRunWindow frw = new FirstRunWindow();
+                frw.Show();
+
+                Settings.Default.FirstRun = false;
+                Settings.Default.Save();
             }
         }
         
@@ -100,15 +111,6 @@ namespace Text_Grab
 
                     mw.Show();
                 }
-            }
-
-            if (Settings.Default.FirstRun)
-            {
-                FirstRunWindow frw = new FirstRunWindow();
-                frw.Show();
-
-                Settings.Default.FirstRun = false;
-                Settings.Default.Save();
             }
         }
     }
