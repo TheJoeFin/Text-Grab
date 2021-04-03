@@ -77,7 +77,6 @@ namespace Text_Grab
             Bitmap bmp = new Bitmap(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
 
-
             System.Windows.Point absPosPoint;
 
             if (passedWindow == null)
@@ -91,10 +90,7 @@ namespace Text_Grab
             g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
             bmp = ImageMethods.PadImage(bmp);
 
-            // use currently selected Language
-            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-
-            string ocrText = await ExtractText(bmp, inputLang);
+            string ocrText = await ExtractText(bmp);
             return ocrText.Trim();
         }
 
@@ -115,22 +111,24 @@ namespace Text_Grab
 
             System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
-            // use currently selected Language
-            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            if (!App.InstalledLanguages.Contains(inputLang))
-                inputLang = App.InstalledLanguages.FirstOrDefault();
-
-            string ocrText = await ImageMethods.ExtractText(bmp, inputLang, adjustedPoint);
+            string ocrText = await ImageMethods.ExtractText(bmp, adjustedPoint);
             return ocrText.Trim();
         }
 
-        public static async Task<string> ExtractText(Bitmap bmp, string languageCode, System.Windows.Point? singlePoint = null)
+        public static async Task<string> ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null)
         {
-            Language selectedLanguage = new Language(languageCode);
+            // use currently selected Language
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+
+            Language selectedLanguage = new Language(inputLang);
             List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
 
             if (possibleOCRLangs.Count < 1)
-                throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
+            {
+                MessageBox.Show($"No possible OCR languages are installed.", "Text Grab");
+                return null;
+                // throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
+            }
 
             if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
             {
@@ -140,6 +138,9 @@ namespace Text_Grab
                 else
                     selectedLanguage = possibleOCRLangs.FirstOrDefault();
             }
+
+            XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
+            CultureInfo culture = lang.GetEquivalentCulture();
 
             bool scaleBMP = true;
 
@@ -154,9 +155,6 @@ namespace Text_Grab
                 scaledBitmap = ScaleBitmapUniform(bmp, 1.0);
 
             StringBuilder text = new StringBuilder();
-
-            XmlLanguage lang = XmlLanguage.GetLanguage(languageCode);
-            CultureInfo culture = lang.GetEquivalentCulture();
 
             await using (MemoryStream memory = new MemoryStream())
             {
@@ -213,14 +211,16 @@ namespace Text_Grab
 
             // use currently selected Language
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            if (!App.InstalledLanguages.Contains(inputLang))
-                inputLang = App.InstalledLanguages.FirstOrDefault();
-
+            
             Language selectedLanguage = new Language(inputLang);
             List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
 
             if (possibleOCRLangs.Count < 1)
-                throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
+            {
+                MessageBox.Show($"No possible OCR languages are installed.", "Text Grab");
+                return null;
+                // throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
+            }
 
             if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
             {
@@ -230,9 +230,6 @@ namespace Text_Grab
                 else
                     selectedLanguage = possibleOCRLangs.FirstOrDefault();
             }
-            
-            XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
-            CultureInfo culture = lang.GetEquivalentCulture();
 
             OcrResult ocrResult;
             await using (MemoryStream memory = new MemoryStream())
