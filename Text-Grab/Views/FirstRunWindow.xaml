@@ -39,12 +39,12 @@
 
             <TextBlock Style="{StaticResource TextBody}">
                 Text Grab has two different types of windows for grabbing text on screen.<LineBreak />
-                1. Fullscreen<LineBreak />
+                1. Full Screen<LineBreak />
                 2. Grab Frame<LineBreak />
             </TextBlock>
 
             <TextBlock Style="{StaticResource TextHeader}">
-                How Fullscreen works
+                How Full Screen works
             </TextBlock>
             <TextBlock Style="{StaticResource TextBody}">
                 Like Snip and Sketch or Snipping Tool Text Grab launches with a thin overlay signifying area selection mode.<LineBreak />
