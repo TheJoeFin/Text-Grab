@@ -180,12 +180,15 @@
 
             <Button
                 x:Name="OkayButton"
-                Width="100"
+                Width="90"
+                Height="26"
                 Margin="20"
-                Padding="8"
+                Padding="12"
                 HorizontalAlignment="Right"
                 Click="OkayButton_Click"
-                Content="Okay" />
+                Content="Okay"
+                Foreground="White"
+                Style="{StaticResource TealColor}" />
         </StackPanel>
     </ScrollViewer>
 </Window>
