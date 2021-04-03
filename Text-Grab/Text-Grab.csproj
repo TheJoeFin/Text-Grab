@@ -34,7 +34,6 @@
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.0.0-preview4" />
     <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.1" />
     <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
-    <PackageReference Include="XamlAnimatedGif" Version="1.2.3" />
   </ItemGroup>
 
   <ItemGroup>
