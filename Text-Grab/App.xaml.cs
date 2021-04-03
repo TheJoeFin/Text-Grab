@@ -56,8 +56,8 @@ namespace Text_Grab
             }
 
 
-            // if (Settings.Default.FirstRun)
-            if (true)
+            // if (true)
+            if (Settings.Default.FirstRun)
             {
                 FirstRunWindow frw = new FirstRunWindow();
                 frw.Show();
