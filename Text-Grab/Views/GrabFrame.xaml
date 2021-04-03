@@ -9,6 +9,8 @@
     Title="Grab Frame"
     Width="800"
     Height="450"
+    MinWidth="50"
+    MinHeight="100"
     AllowsTransparency="True"
     Background="Transparent"
     Deactivated="GrabFrameWindow_Deactivated"
