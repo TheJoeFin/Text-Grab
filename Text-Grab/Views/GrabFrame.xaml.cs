@@ -56,6 +56,10 @@ namespace Text_Grab.Views
             if (wordBorders.Count > 0)
             {
                 var selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
+
+                if(selectedBorders.Count == 0)
+                    selectedBorders.AddRange(wordBorders);
+                
                 List<string> wordsList = new List<string>();
                 foreach (WordBorder border in selectedBorders)
                 {
@@ -66,7 +70,7 @@ namespace Text_Grab.Views
 
             Clipboard.SetText(frameText);
 
-            if(Settings.Default.ShowToast)
+            if(Settings.Default.ShowToast && string.IsNullOrWhiteSpace(frameText) == false)
                 NotificationUtilities.ShowToast(frameText);
         }
 
