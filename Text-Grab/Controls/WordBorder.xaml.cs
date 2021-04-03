@@ -25,6 +25,8 @@ namespace Text_Grab.Controls
 
         public string Word { get; set; } = "";
 
+        public int LineNumber { get; set; } = 0;
+
         public WordBorder()
         {
             InitializeComponent();

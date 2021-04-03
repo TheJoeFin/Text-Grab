@@ -61,11 +61,18 @@ namespace Text_Grab.Views
                     selectedBorders.AddRange(wordBorders);
                 
                 List<string> wordsList = new List<string>();
+                int lastLineNum = selectedBorders.FirstOrDefault().LineNumber;
                 foreach (WordBorder border in selectedBorders)
                 {
+                    if(border.LineNumber != lastLineNum)
+                    {
+                        wordsList.Add("\n");
+                        lastLineNum = border.LineNumber;
+                    }
+
                     wordsList.Add(border.Word);
                 }
-                frameText = string.Join('\n', wordsList);
+                frameText = string.Join(' ', wordsList);
             }
 
             Clipboard.SetText(frameText);
@@ -127,6 +134,7 @@ namespace Text_Grab.Views
                 ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
 
             int numberOfMatches = 0;
+            int lineNumber = 0;
 
             foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
             {
@@ -137,7 +145,8 @@ namespace Text_Grab.Views
                         Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 6,
                         Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
                         Word = ocrWord.Text,
-                        ToolTip = ocrWord.Text
+                        ToolTip = ocrWord.Text,
+                        LineNumber = lineNumber
                     };
 
                     if((bool)ExactMatchChkBx.IsChecked)
@@ -163,6 +172,8 @@ namespace Text_Grab.Views
                     Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 3);
                     Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 3);
                 }
+
+                lineNumber++;
             }
 
             if(ocrResultOfWindow != null && ocrResultOfWindow.TextAngle != null)
