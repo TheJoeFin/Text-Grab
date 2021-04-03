@@ -11,6 +11,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Text_Grab.Properties;
+using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls
 {
@@ -52,7 +54,10 @@ namespace Text_Grab.Controls
         {
             Clipboard.SetText(Word);
 
-            if(IsSelected)
+            if (Settings.Default.ShowToast)
+                NotificationUtilities.ShowToast(Word);
+
+            if (IsSelected)
             {
                 await Task.Delay(100);
                 Deselect();

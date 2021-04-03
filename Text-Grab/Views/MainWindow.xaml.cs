@@ -153,6 +153,7 @@ namespace Text_Grab
                 Clipboard.SetText(grabbedText);
                 if (Settings.Default.ShowToast)
                     NotificationUtilities.ShowToast(grabbedText);
+
                 App.Current.Shutdown();
             }
             else

@@ -16,6 +16,9 @@ namespace Text_Grab
 
         private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
         {
+            if (IsLoaded == false)
+                return;
+
             Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
             Settings.Default.Save();
         }
