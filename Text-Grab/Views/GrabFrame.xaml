@@ -1,0 +1,181 @@
+﻿<Window
+    x:Class="Text_Grab.Views.GrabFrame"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="GrabFrameWindow"
+    Title="Grab Frame"
+    Width="800"
+    Height="450"
+    MinWidth="50"
+    MinHeight="100"
+    AllowsTransparency="True"
+    Background="Transparent"
+    Deactivated="GrabFrameWindow_Deactivated"
+    LocationChanged="Window_LocationChanged"
+    ResizeMode="CanResizeWithGrip"
+    SizeChanged="Window_SizeChanged"
+    Topmost="True"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="None"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/Text-Grab-Icon.png" />
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome
+            CaptionHeight="24"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="5" />
+    </WindowChrome.WindowChrome>
+    <Border BorderBrush="#444444" BorderThickness="2,2,2,2">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="24" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+            <Grid
+                Grid.Row="0"
+                VerticalAlignment="Top"
+                Background="#444444">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Image
+                    x:Name="WindowIcon"
+                    Grid.Column="0"
+                    Width="18"
+                    Height="18"
+                    Margin="4,2,4,6"
+                    Source="{StaticResource TextGrabIcon}"
+                    Stretch="UniformToFill" />
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="4,-4,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    Foreground="White"
+                    Text="Grab Frame">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource WindowTitleBarInactiveText}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <Button
+                    Grid.Column="2"
+                    Width="46"
+                    Height="24"
+                    Margin="0,-2,0,0"
+                    Click="OnCloseButtonClick"
+                    Style="{StaticResource TitleBarCloseButtonStyle}">
+                    <TextBlock
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="White"
+                        Text="" />
+                </Button>
+            </Grid>
+            <Image x:Name="ImageSource" Grid.Row="1" />
+            <Canvas
+                x:Name="RectanglesCanvas"
+                Grid.Row="1"
+                Margin="-4,-2,0,0"
+                Background="Transparent"
+                IsHitTestVisible="True" />
+            <Border Grid.Row="2" Background="#444444">
+                <Grid
+                    Height="28"
+                    Margin="6"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Bottom">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="6*" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="96" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition
+                            Width="*"
+                            MinWidth="80"
+                            MaxWidth="180" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox
+                        x:Name="SearchBox"
+                        Grid.Column="0"
+                        Margin="0,0,6,0"
+                        Padding="4"
+                        GotFocus="SearchBox_GotFocus"
+                        Text="Search For Text..."
+                        TextChanged="SearchBox_TextChanged" />
+                    <Button
+                        x:Name="ClearBTN"
+                        Margin="0,0,6,0"
+                        Padding="6"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        Click="ClearBTN_Click">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="Black"
+                            Text="" />
+                    </Button>
+
+                    <Button
+                        x:Name="RefreshBTN"
+                        Grid.Column="1"
+                        Width="24"
+                        Click="RefreshBTN_Click"
+                        Style="{StaticResource TealColor}">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+
+                    <TextBlock
+                        x:Name="MatchesTXTBLK"
+                        Grid.Column="3"
+                        Margin="6"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Foreground="White"
+                        Text="Matches: 0" />
+
+                    <CheckBox
+                        x:Name="ExactMatchChkBx"
+                        Grid.Column="4"
+                        Margin="6"
+                        VerticalAlignment="Center"
+                        Click="ExactMatchChkBx_Click"
+                        Content="Exact Match"
+                        Foreground="White"
+                        Visibility="Collapsed" />
+
+                    <Button
+                        x:Name="GrabBTN"
+                        Grid.Column="5"
+                        Click="GrabBTN_Click"
+                        Content="Grab"
+                        Foreground="White"
+                        Style="{StaticResource TealColor}" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

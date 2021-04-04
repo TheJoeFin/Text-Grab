@@ -4,13 +4,23 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:Text_Grab"
     Startup="appStartup">
-    <Application.Resources />
+    <Application.Resources>
+        <ResourceDictionary Source="/Styles/ButtonStyles.xaml" />
+    </Application.Resources>
     <JumpList.JumpList>
         <JumpList>
             <JumpTask
                 Title="Settings"
                 Arguments="Settings"
                 Description="Open Text Grab Settings" />
+            <JumpTask
+                Title="Grab Frame"
+                Arguments="GrabFrame"
+                Description="Open a Grab Frame to search and select text" />
+            <JumpTask
+                Title="Full Screen"
+                Arguments="Fullscreen"
+                Description="Full screen overlay to select text" />
         </JumpList>
     </JumpList.JumpList>
 </Application>

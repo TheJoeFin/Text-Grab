@@ -1,11 +1,10 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation.Collections;
+using Text_Grab.Views;
+using Windows.System.UserProfile;
 
 namespace Text_Grab
 {
@@ -14,18 +13,13 @@ namespace Text_Grab
     /// </summary>
     public partial class App : System.Windows.Application
     {
+        public static List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
+
         void appStartup(object sender, StartupEventArgs e)
         {
             // Register COM server and activator type
             DesktopNotificationManagerCompat.RegisterActivator<TextGrabNotificationActivator>();
 
-            if (e.Args != null && e.Args.Length > 0 && e.Args[0] == "-ToastActivated")
-            {
-                // ManipulateTextWindow mtw = new ManipulateTextWindow(e.Args[1]);
-                // mtw.Show();
-            }
-            
-            
             for (int i = 0; i != e.Args.Length; ++i)
             {
                 if (e.Args[i] == "Settings")
@@ -33,10 +27,44 @@ namespace Text_Grab
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
                 }
+                if(e.Args[i] == "GrabFrame")
+                {
+                    GrabFrame gf = new GrabFrame();
+                    gf.Show();
+                }
+                if (e.Args[i] == "Fullscreen")
+                {
+                    NormalLaunch();
+                }
             }
 
-            if(e.Args.Length == 0)
-                NormalLaunch();
+            if(e.Args.Length == 0 && Settings.Default.FirstRun == false)
+            {
+                switch (Settings.Default.DefaultLaunch)
+                {
+                    case "Fullscreen":
+                        NormalLaunch();
+                        break;
+                    case "GrabFrame":
+                        GrabFrame gf = new GrabFrame();
+                        gf.Show();
+                        break;
+                    default:
+                        NormalLaunch();
+                        break;
+                }
+            }
+
+
+            // if (true)
+            if (Settings.Default.FirstRun)
+            {
+                FirstRunWindow frw = new FirstRunWindow();
+                frw.Show();
+
+                Settings.Default.FirstRun = false;
+                Settings.Default.Save();
+            }
         }
         
         protected void NormalLaunch()
@@ -83,15 +111,6 @@ namespace Text_Grab
 
                     mw.Show();
                 }
-            }
-
-            if (Settings.Default.FirstRun)
-            {
-                FirstRunWindow frw = new FirstRunWindow();
-                frw.Show();
-
-                Settings.Default.FirstRun = false;
-                Settings.Default.Save();
             }
         }
     }

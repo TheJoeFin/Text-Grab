@@ -46,5 +46,17 @@ namespace Text_Grab.Properties {
                 this["ShowToast"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Fullscreen")]
+        public string DefaultLaunch {
+            get {
+                return ((string)(this["DefaultLaunch"]));
+            }
+            set {
+                this["DefaultLaunch"] = value;
+            }
+        }
     }
 }
