@@ -23,11 +23,21 @@
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <StackPanel Orientation="Vertical">
-                <!--  Heading  -->
-                <TextBlock
-                    FontSize="24"
-                    Foreground="White"
-                    Text="Settings" />
+
+                <StackPanel Orientation="Horizontal">
+                    <!--  Heading  -->
+                    <TextBlock
+                        FontSize="24"
+                        Foreground="White"
+                        Text="Settings" />
+
+                    <!--  Version Text  -->
+                    <TextBlock
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Bottom"
+                        Foreground="White"
+                        Text="v2.0" />
+                </StackPanel>
 
                 <!--  Show Toast on success  -->
                 <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
