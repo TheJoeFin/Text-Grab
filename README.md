@@ -31,4 +31,4 @@ Text Grab is designed to be as minimal and quick as possible. By using Windows 1
 There is no history, or dialog box, or feedback. This tool is designed to be used hundreds of times a day. Reducing clicks and menus means saving time, which is the primary focus of Text Grab. 
 ### Thanks for using Text Grab
 Hopefully this simple app makes you more productive and saves you time from transcribing text.
-If you have any questions or feedback reach out on Twitter [@TheJoeFin](www.twitter.com/thejoefin) or by email joe@textgrab.net
+If you have any questions or feedback reach out on Twitter [@TheJoeFin](http://www.twitter.com/thejoefin) or by email joe@textgrab.net
