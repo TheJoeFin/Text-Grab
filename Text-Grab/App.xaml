@@ -14,6 +14,10 @@
                 Arguments="Settings"
                 Description="Open Text Grab Settings" />
             <JumpTask
+                Title="Edit Text"
+                Arguments="EditText"
+                Description="Open Text Edit Window" />
+            <JumpTask
                 Title="Grab Frame"
                 Arguments="GrabFrame"
                 Description="Open a Grab Frame to search and select text" />

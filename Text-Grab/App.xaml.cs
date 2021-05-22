@@ -36,6 +36,11 @@ namespace Text_Grab
                 {
                     NormalLaunch();
                 }
+                if (e.Args[i] == "EditText")
+                {
+                    ManipulateTextWindow manipulateTextWindow = new ManipulateTextWindow();
+                    manipulateTextWindow.Show();
+                }
             }
 
             if(e.Args.Length == 0 && Settings.Default.FirstRun == false)
