@@ -83,5 +83,34 @@ namespace Text_Grab
             else
                 PassedTextControl.TextWrapping = TextWrapping.NoWrap;
         }
+
+        private void TrimEachLineMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            string workingString = PassedTextControl.Text;
+            List<string> stringSplit = workingString.Split('\n').ToList();
+
+            string finalString = "";
+            foreach (string line in stringSplit)
+            {
+                if(string.IsNullOrWhiteSpace(line) == false)
+                    finalString += line.Trim() + "\n";
+            }
+
+            PassedTextControl.Text = finalString;
+        }
+
+        private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            string workingString = PassedTextControl.Text;
+
+            workingString = workingString.Replace('o', '0');
+            workingString = workingString.Replace('O', '0');
+            workingString = workingString.Replace('g', '9');
+            workingString = workingString.Replace('i', '1');
+            workingString = workingString.Replace('l', '1');
+            workingString = workingString.Replace('Q', '0');
+
+            PassedTextControl.Text = workingString;
+        }
     }
 }

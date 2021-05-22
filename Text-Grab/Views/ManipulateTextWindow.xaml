@@ -18,20 +18,53 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
+
         <TextBox
             x:Name="PassedTextControl"
+            Grid.Row="1"
             AcceptsReturn="True"
+            AcceptsTab="True"
             Background="#1E1E1E"
             FontSize="16"
             Foreground="White"
             Text="{Binding CopiedText, Mode=OneWay}"
             TextWrapping="Wrap" />
-
+        <Menu>
+            <MenuItem Header="File">
+                <MenuItem
+                    x:Name="SaveFileMenuItem"
+                    Click="SaveBTN_Click"
+                    Header="Save To File..." />
+                <MenuItem
+                    x:Name="CopyAndCloseMenuItem"
+                    Click="CopyCloseBTN_Click"
+                    Header="Copy And Close" />
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Command="ApplicationCommands.Copy" />
+                <MenuItem Command="ApplicationCommands.Cut" />
+                <MenuItem Command="ApplicationCommands.Paste" />
+                <Separator />
+                <MenuItem
+                    x:Name="SingleLineMenuItem"
+                    Click="SingleLineBTN_Click"
+                    Header="Make Single Line" />
+                <MenuItem
+                    x:Name="TrimEachLineMenuItem"
+                    Click="TrimEachLineMenuItem_Click"
+                    Header="Trim Each Line" />
+                <MenuItem
+                    x:Name="TryToNumberMenuItem"
+                    Click="TryToNumberMenuItem_Click"
+                    Header="Try To Make Numbers" />
+            </MenuItem>
+        </Menu>
         <StackPanel
-            Grid.Row="1"
+            Grid.Row="2"
             Background="#444444"
             Orientation="Horizontal">
             <Button
