@@ -8,6 +8,7 @@
     Title="Edit Text"
     Width="600"
     Height="450"
+    Background="#444444"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">
@@ -50,6 +51,14 @@
                 <MenuItem Command="ApplicationCommands.Paste" />
                 <Separator />
                 <MenuItem
+                    x:Name="WrapTextMenuItem"
+                    Checked="WrapTextCHBOX_Checked"
+                    Header="Wrap Text"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    Unchecked="WrapTextCHBOX_Checked" />
+                <Separator />
+                <MenuItem
                     x:Name="SingleLineMenuItem"
                     Click="SingleLineBTN_Click"
                     Header="Make Single Line" />
@@ -61,41 +70,73 @@
                     x:Name="TryToNumberMenuItem"
                     Click="TryToNumberMenuItem_Click"
                     Header="Try To Make Numbers" />
+                <MenuItem
+                    x:Name="TryToAlphaMenuItem"
+                    Click="TryToAlphaMenuItem_Click"
+                    Header="Try To Make Letters" />
+                <Separator />
+                <MenuItem
+                    x:Name="SplitLineBeforeSelectionMI"
+                    Click="SplitLineBeforeSelectionMI_Click"
+                    Header="Split Lines Before Each Selection" />
+                <MenuItem
+                    x:Name="RejoinLinesAtSelectionMI"
+                    Click="RejoinLinesAtSelectionMI_Click"
+                    Header="Rejoin Lines At Every Selection" />
             </MenuItem>
         </Menu>
-        <StackPanel
-            Grid.Row="2"
-            Background="#444444"
-            Orientation="Horizontal">
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <Button
+                    x:Name="CopyCloseBTN"
+                    Margin="10,10,0,10"
+                    Background="Orange"
+                    Click="CopyCloseBTN_Click"
+                    Content="Copy And Close"
+                    Style="{StaticResource SimpleBTN}" />
+                <Button
+                    x:Name="SaveBTN"
+                    Width="120"
+                    Click="SaveBTN_Click"
+                    Content="Save to File..."
+                    Style="{StaticResource SimpleBTN}" />
+                <Button
+                    x:Name="SingleLineBTN"
+                    Width="120"
+                    Click="SingleLineBTN_Click"
+                    Content="Make Single Line"
+                    Style="{StaticResource SimpleBTN}" />
+            </StackPanel>
+            <TextBox
+                x:Name="SearchTextBox"
+                Grid.Column="1"
+                Margin="10"
+                Padding="6"
+                HorizontalAlignment="Stretch"
+                GotFocus="SearchTextBox_GotFocus"
+                Text="Search For Text..."
+                TextChanged="SearchTextBox_TextChanged"
+                Visibility="Collapsed" />
             <Button
-                x:Name="CopyCloseBTN"
-                Margin="10,10,0,10"
-                Background="Orange"
-                Click="CopyCloseBTN_Click"
-                Content="Copy And Close"
-                Style="{StaticResource SimpleBTN}" />
-            <Button
-                x:Name="SaveBTN"
-                Width="120"
-                Click="SaveBTN_Click"
-                Content="Save to File..."
-                Style="{StaticResource SimpleBTN}" />
-            <Button
-                x:Name="SingleLineBTN"
-                Width="120"
-                Click="SingleLineBTN_Click"
-                Content="Make Single Line"
-                Style="{StaticResource SimpleBTN}" />
-            <CheckBox
-                x:Name="WrapTextCHBOX"
-                Width="120"
-                Margin="10,10,0,10"
+                x:Name="ClearBTN"
+                Grid.Column="1"
+                Margin="0,0,10,0"
+                Padding="6"
+                HorizontalAlignment="Right"
                 VerticalAlignment="Center"
-                Checked="WrapTextCHBOX_Checked"
-                Content="Wrap text"
-                Foreground="White"
-                IsChecked="True"
-                Unchecked="WrapTextCHBOX_Checked" />
-        </StackPanel>
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Click="ClearSeachBTN_Click"
+                Visibility="Collapsed">
+                <TextBlock
+                    FontFamily="Segoe MDL2 Assets"
+                    Foreground="Black"
+                    Text="" />
+            </Button>
+        </Grid>
     </Grid>
 </Window>

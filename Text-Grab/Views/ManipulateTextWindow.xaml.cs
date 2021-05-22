@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Markup;
 
 namespace Text_Grab
@@ -78,7 +79,7 @@ namespace Text_Grab
 
         private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
         {
-            if ((bool)WrapTextCHBOX.IsChecked)
+            if ((bool)WrapTextMenuItem.IsChecked)
                 PassedTextControl.TextWrapping = TextWrapping.Wrap;
             else
                 PassedTextControl.TextWrapping = TextWrapping.NoWrap;
@@ -111,6 +112,43 @@ namespace Text_Grab
             workingString = workingString.Replace('Q', '0');
 
             PassedTextControl.Text = workingString;
+        }
+        private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            string workingString = PassedTextControl.Text;
+
+            workingString = workingString.Replace('0', 'o');
+            workingString = workingString.Replace('4', 'h');
+            workingString = workingString.Replace('9', 'g');
+            workingString = workingString.Replace('1', 'l');
+
+            PassedTextControl.Text = workingString;
+        }
+
+        private void ClearSeachBTN_Click(object sender, RoutedEventArgs e)
+        {
+            SearchTextBox.Text = "";
+        }
+
+        private void SearchTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = sender as TextBox;
+            searchBox.Text = "";
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            PassedTextControl.SelectedText = SearchTextBox.Text;
+        }
+
+        private void SplitLineBeforeSelectionMI_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void RejoinLinesAtSelectionMI_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
