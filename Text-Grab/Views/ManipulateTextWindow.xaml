@@ -110,6 +110,12 @@
                     Click="SingleLineBTN_Click"
                     Content="Make Single Line"
                     Style="{StaticResource SimpleBTN}" />
+                <Button
+                    x:Name="AddTextBTN"
+                    Background="LightBlue"
+                    Click="AddTextBTN_Click"
+                    Content="Add More Text"
+                    Style="{StaticResource SimpleBTN}" />
             </StackPanel>
             <TextBox
                 x:Name="SearchTextBox"
