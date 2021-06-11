@@ -27,7 +27,7 @@ namespace Text_Grab
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
                 }
-                if(e.Args[i] == "GrabFrame")
+                if (e.Args[i] == "GrabFrame")
                 {
                     GrabFrame gf = new GrabFrame();
                     gf.Show();
@@ -60,7 +60,6 @@ namespace Text_Grab
                 }
             }
 
-
             // if (true)
             if (Settings.Default.FirstRun)
             {
@@ -71,13 +70,13 @@ namespace Text_Grab
                 Settings.Default.Save();
             }
         }
-        
-        protected void NormalLaunch()
+
+        public void NormalLaunch()
         {
             // base.OnActivated(e);
 
-            var allScreens = Screen.AllScreens;
-            var allWindows = System.Windows.Application.Current.Windows;
+            Screen[] allScreens = Screen.AllScreens;
+            WindowCollection allWindows = Current.Windows;
 
             foreach (Screen screen in allScreens)
             {
@@ -85,9 +84,9 @@ namespace Text_Grab
 
                 foreach (Window window in allWindows)
                 {
-                    System.Drawing.Point windowCenter = 
+                    System.Drawing.Point windowCenter =
                         new System.Drawing.Point(
-                            (int)(window.Left + (window.Width / 2)), 
+                            (int)(window.Left + (window.Width / 2)),
                             (int)(window.Top + (window.Height / 2)));
                     screenHasWindow = screen.Bounds.Contains(windowCenter);
                 }
@@ -95,16 +94,18 @@ namespace Text_Grab
                 if (allWindows.Count < 1)
                     screenHasWindow = false;
 
-                if(screenHasWindow == false)
+                if (screenHasWindow == false)
                 {
-                    MainWindow mw = new MainWindow();
-                    mw.WindowStartupLocation = WindowStartupLocation.Manual;
-                    mw.Width = 200;
-                    mw.Height = 200;
+                    MainWindow mw = new MainWindow
+                    {
+                        WindowStartupLocation = WindowStartupLocation.Manual,
+                        Width = 200,
+                        Height = 200,
 
-                    mw.WindowState = WindowState.Normal;
+                        WindowState = WindowState.Normal
+                    };
 
-                    if(screen.WorkingArea.Left >= 0)
+                    if (screen.WorkingArea.Left >= 0)
                         mw.Left = screen.WorkingArea.Left;
                     else
                         mw.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
