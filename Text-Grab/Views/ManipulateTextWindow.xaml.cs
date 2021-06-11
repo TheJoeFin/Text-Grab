@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
+using Text_Grab.Utilities;
 
 namespace Text_Grab
 {
@@ -104,12 +105,7 @@ namespace Text_Grab
         {
             string workingString = PassedTextControl.Text;
 
-            workingString = workingString.Replace('o', '0');
-            workingString = workingString.Replace('O', '0');
-            workingString = workingString.Replace('g', '9');
-            workingString = workingString.Replace('i', '1');
-            workingString = workingString.Replace('l', '1');
-            workingString = workingString.Replace('Q', '0');
+            workingString = workingString.TryFixToNumbers();
 
             PassedTextControl.Text = workingString;
         }
@@ -117,10 +113,7 @@ namespace Text_Grab
         {
             string workingString = PassedTextControl.Text;
 
-            workingString = workingString.Replace('0', 'o');
-            workingString = workingString.Replace('4', 'h');
-            workingString = workingString.Replace('9', 'g');
-            workingString = workingString.Replace('1', 'l');
+            workingString = workingString.TryFixToLetters();
 
             PassedTextControl.Text = workingString;
         }

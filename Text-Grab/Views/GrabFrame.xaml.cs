@@ -140,18 +140,20 @@ namespace Text_Grab.Views
             {
                 foreach (OcrWord ocrWord in ocrLine.Words)
                 {
+                    string wordString = ocrWord.Text.TryFixNumberLetterErrors();
+                    
                     WordBorder wordBorderBox = new WordBorder
                     {
                         Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 6,
                         Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
-                        Word = ocrWord.Text,
-                        ToolTip = ocrWord.Text,
+                        Word = wordString,
+                        ToolTip = wordString,
                         LineNumber = lineNumber
                     };
 
-                    if((bool)ExactMatchChkBx.IsChecked)
+                    if ((bool)ExactMatchChkBx.IsChecked)
                     {
-                        if(ocrWord.Text == searchWord)
+                        if (wordString == searchWord)
                         {
                             wordBorderBox.Select();
                             numberOfMatches++;
@@ -159,8 +161,8 @@ namespace Text_Grab.Views
                     }
                     else
                     {
-                        if (!String.IsNullOrWhiteSpace(searchWord) 
-                            && ocrWord.Text.ToLower().Contains(searchWord.ToLower()))
+                        if (!string.IsNullOrWhiteSpace(searchWord)
+                            && wordString.ToLower().Contains(searchWord.ToLower()))
                         {
                             wordBorderBox.Select();
                             numberOfMatches++;
