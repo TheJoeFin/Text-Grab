@@ -143,6 +143,12 @@ namespace Text_Grab
         {
             string selectedText = PassedTextControl.SelectedText;
 
+            if(string.IsNullOrEmpty(selectedText))
+            {
+                MessageBox.Show("No text selected", "Did not split lines");
+                return;
+            }
+
             string textToManipulate = PassedTextControl.Text;
 
             textToManipulate = textToManipulate.Replace(selectedText, "\n" + selectedText);
