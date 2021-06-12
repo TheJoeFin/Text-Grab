@@ -32,8 +32,10 @@
             Background="#1E1E1E"
             FontSize="16"
             Foreground="White"
+            HorizontalScrollBarVisibility="Auto"
             Text="{Binding CopiedText, Mode=OneWay}"
-            TextWrapping="Wrap" />
+            TextWrapping="Wrap"
+            VerticalScrollBarVisibility="Auto" />
         <Menu>
             <MenuItem Header="File">
                 <MenuItem
