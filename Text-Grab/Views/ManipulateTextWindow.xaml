@@ -115,7 +115,8 @@
                     Background="LightBlue"
                     Click="AddTextBTN_Click"
                     Content="Add More Text"
-                    Style="{StaticResource SimpleBTN}" />
+                    Style="{StaticResource SimpleBTN}"
+                    Visibility="Collapsed" />
             </StackPanel>
             <TextBox
                 x:Name="SearchTextBox"
