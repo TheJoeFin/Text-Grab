@@ -25,6 +25,7 @@ namespace Text_Grab.Views
         private OcrResult ocrResultOfWindow;
         private ObservableCollection<WordBorder> wordBorders = new ObservableCollection<WordBorder>();
         private DispatcherTimer reDrawTimer = new DispatcherTimer();
+        public bool IsfromEditWindow { get; set; } = false;
 
         public GrabFrame()
         {
@@ -107,8 +108,13 @@ namespace Text_Grab.Views
 
             Clipboard.SetText(frameText);
 
-            if (Settings.Default.ShowToast && string.IsNullOrWhiteSpace(frameText) == false)
+            if (Settings.Default.ShowToast
+                && IsfromEditWindow == false
+                && string.IsNullOrWhiteSpace(frameText) == false)
                 NotificationUtilities.ShowToast(frameText);
+
+            if (IsfromEditWindow == true && string.IsNullOrWhiteSpace(frameText) == false)
+                WindowUtilities.AddTextToOpenWindow(frameText);
         }
 
         private void ResetGrabFrame()
@@ -182,7 +188,8 @@ namespace Text_Grab.Views
                         Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
                         Word = wordString,
                         ToolTip = wordString,
-                        LineNumber = lineNumber
+                        LineNumber = lineNumber,
+                        IsFromEditWindow = IsfromEditWindow
                     };
 
                     if ((bool)ExactMatchChkBx.IsChecked)

@@ -22,6 +22,8 @@ namespace Text_Grab.Views
 
         private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
+        public bool IsFromEditWindow { get; set; } = false;
+
         public FullscreenGrab()
         {
             InitializeComponent();
@@ -151,8 +153,11 @@ namespace Text_Grab.Views
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);
-                if (Settings.Default.ShowToast)
+                if (Settings.Default.ShowToast && IsFromEditWindow == false)
                     NotificationUtilities.ShowToast(grabbedText);
+
+                if (IsFromEditWindow == true)
+                    WindowUtilities.AddTextToOpenWindow(grabbedText);
 
                 // Application.Current.Shutdown();
                 WindowUtilities.CloseAllFullscreenGrabs();

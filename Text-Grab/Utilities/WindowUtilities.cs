@@ -52,7 +52,7 @@ namespace Text_Grab.Utilities
                         WindowStartupLocation = WindowStartupLocation.Manual,
                         Width = 200,
                         Height = 200,
-
+                        IsFromEditWindow = openAnyway,
                         WindowState = WindowState.Normal
                     };
 

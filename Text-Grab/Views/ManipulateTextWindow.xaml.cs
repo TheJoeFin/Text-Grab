@@ -126,7 +126,12 @@ namespace Text_Grab
 
         public void AddThisText(string textToAdd)
         {
+            if (string.IsNullOrWhiteSpace(PassedTextControl.Text) == false)
+                textToAdd = "\n" + textToAdd;
+
             PassedTextControl.Text += textToAdd;
+
+            PassedTextControl.ScrollToEnd();
         }
 
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
@@ -198,11 +203,13 @@ namespace Text_Grab
                 if (window is GrabFrame grabFrame)
                 {
                     grabFrame.Activate();
+                    grabFrame.IsfromEditWindow = true;
                     return;
                 }
             }
 
             GrabFrame gf = new GrabFrame();
+            gf.IsfromEditWindow = true;
             gf.Show();
         }
 
