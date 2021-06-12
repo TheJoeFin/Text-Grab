@@ -17,10 +17,10 @@ namespace Text_Grab.Views
     public partial class FullscreenGrab : Window
     {
         private bool isSelecting = false;
-        System.Windows.Point clickedPoint = new System.Windows.Point();
-        Border selectBorder = new Border();
+        private System.Windows.Point clickedPoint = new System.Windows.Point();
+        private Border selectBorder = new Border();
 
-        System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
+        private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
         public FullscreenGrab()
         {
@@ -29,16 +29,16 @@ namespace Text_Grab.Views
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            this.WindowState = WindowState.Maximized;
+            WindowState = WindowState.Maximized;
 
             RoutedCommand newCmd = new RoutedCommand();
-            newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
-            CommandBindings.Add(new CommandBinding(newCmd, escape_Keyed));
+            _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
+            _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
         }
 
-        private void escape_Keyed(object sender, ExecutedRoutedEventArgs e)
+        private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
         {
-            App.Current.Shutdown();
+            Application.Current.Shutdown();
         }
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -53,7 +53,7 @@ namespace Text_Grab.Views
             selectBorder.BorderThickness = new Thickness(2);
             System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
             selectBorder.BorderBrush = new SolidColorBrush(borderColor);
-            RegionClickCanvas.Children.Add(selectBorder);
+            _ = RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
         }
@@ -106,7 +106,7 @@ namespace Text_Grab.Views
             isSelecting = false;
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
-            var mPt = GetMousePos();
+            System.Windows.Point mPt = GetMousePos();
             System.Windows.Point movingPoint = e.GetPosition(this);
             movingPoint.X *= m.M11;
             movingPoint.Y *= m.M22;
@@ -117,8 +117,8 @@ namespace Text_Grab.Views
             if (mPt == movingPoint)
                 Debug.WriteLine("Probably on Screen 1");
 
-            double correctedLeft = this.Left;
-            double correctedTop = this.Top;
+            double correctedLeft = Left;
+            double correctedTop = Top;
 
             if (correctedLeft < 0)
                 correctedLeft = 0;
@@ -126,8 +126,8 @@ namespace Text_Grab.Views
             if (correctedTop < 0)
                 correctedTop = 0;
 
-            double xDimScaled = (Canvas.GetLeft(selectBorder) * m.M11);
-            double yDimScaled = (Canvas.GetTop(selectBorder) * m.M22);
+            double xDimScaled = Canvas.GetLeft(selectBorder) * m.M11;
+            double yDimScaled = Canvas.GetTop(selectBorder) * m.M22;
 
             Rectangle regionScaled = new Rectangle(
                 (int)xDimScaled,
@@ -154,10 +154,12 @@ namespace Text_Grab.Views
                 if (Settings.Default.ShowToast)
                     NotificationUtilities.ShowToast(grabbedText);
 
-                App.Current.Shutdown();
+                Application.Current.Shutdown();
             }
             else
+            {
                 RegionClickCanvas.Background.Opacity = .2;
+            }
         }
     }
 }
