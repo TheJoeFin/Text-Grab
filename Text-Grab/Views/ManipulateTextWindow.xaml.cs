@@ -189,11 +189,6 @@ namespace Text_Grab
 
         }
 
-        private void AddTextBTN_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void CheckForGrabFrameOrLaunch()
         {
             WindowCollection allWindows = System.Windows.Application.Current.Windows;

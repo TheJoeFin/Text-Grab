@@ -159,7 +159,6 @@ namespace Text_Grab.Views
                 if (IsFromEditWindow == true)
                     WindowUtilities.AddTextToOpenWindow(grabbedText);
 
-                // Application.Current.Shutdown();
                 WindowUtilities.CloseAllFullscreenGrabs();
             }
             else

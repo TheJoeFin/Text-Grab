@@ -6,9 +6,10 @@
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Edit Text"
-    Width="600" Loaded="Window_Loaded"
+    Width="600"
     Height="450"
     Background="#444444"
+    Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">
@@ -112,13 +113,6 @@
                     Click="SingleLineBTN_Click"
                     Content="Make Single Line"
                     Style="{StaticResource SimpleBTN}" />
-                <Button
-                    x:Name="AddTextBTN"
-                    Background="LightBlue"
-                    Click="AddTextBTN_Click"
-                    Content="Add More Text"
-                    Style="{StaticResource SimpleBTN}"
-                    Visibility="Collapsed" />
                 <Button
                     x:Name="NewFullscreen"
                     Margin="10,10,0,10"
