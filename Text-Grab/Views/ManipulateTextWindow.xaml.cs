@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using Text_Grab.Utilities;
+using Text_Grab.Views;
 
 namespace Text_Grab
 {
@@ -164,6 +165,28 @@ namespace Text_Grab
         private void AddTextBTN_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void OpenGrabFrame_Click(object sender, RoutedEventArgs e)
+        {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
+            {
+                if (window is GrabFrame grabFrame)
+                {
+                    grabFrame.Activate();
+                    return;
+                }
+            }
+
+            GrabFrame gf = new GrabFrame();
+            gf.Show();
+        }
+
+        private void NewFullscreen_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.NormalLaunch(true);
         }
     }
 }

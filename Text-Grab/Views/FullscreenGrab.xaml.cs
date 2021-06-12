@@ -154,7 +154,8 @@ namespace Text_Grab.Views
                 if (Settings.Default.ShowToast)
                     NotificationUtilities.ShowToast(grabbedText);
 
-                Application.Current.Shutdown();
+                // Application.Current.Shutdown();
+                WindowUtilities.CloseAllFullscreenGrabs();
             }
             else
             {

@@ -47,16 +47,27 @@ namespace Text_Grab
             e.Handled = true;
         }
 
-        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        private void EditTextRDBTN_Checked(object sender, RoutedEventArgs e)
         {
             if (this.IsLoaded != true)
                 return;
+            Settings.Default.DefaultLaunch = "EditText";
+            Settings.Default.Save();
+        }
 
-            if ((bool)GrabFrameRDBTN.IsChecked)
-                Settings.Default.DefaultLaunch = "GrabFrame";
-            else
-                Settings.Default.DefaultLaunch = "Fullscreen";
+        private void GrabFrameRDBTN_Checked(object sender, RoutedEventArgs e)
+        {
+            if (this.IsLoaded != true)
+                return; 
+            Settings.Default.DefaultLaunch = "GrabFrame";
+            Settings.Default.Save();
+        }
 
+        private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
+        {
+            if (this.IsLoaded != true)
+                return;
+            Settings.Default.DefaultLaunch = "Fullscreen";
             Settings.Default.Save();
         }
     }

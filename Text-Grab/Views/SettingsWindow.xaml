@@ -56,14 +56,20 @@
                     Text="Default Launch Window" />
                 <RadioButton
                     x:Name="FullScreenRDBTN"
-                    Checked="RadioButton_Checked"
+                    Checked="FullScreenRDBTN_Checked"
                     Content="Full Screen"
                     Foreground="White"
                     GroupName="DefaultLaunch" />
                 <RadioButton
                     x:Name="GrabFrameRDBTN"
-                    Checked="RadioButton_Checked"
+                    Checked="GrabFrameRDBTN_Checked"
                     Content="Grab Frame"
+                    Foreground="White"
+                    GroupName="DefaultLaunch" />
+                <RadioButton
+                    x:Name="EditTextRDBTN"
+                    Checked="EditTextRDBTN_Checked"
+                    Content="Edit Text"
                     Foreground="White"
                     GroupName="DefaultLaunch" />
 

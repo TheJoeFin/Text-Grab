@@ -117,6 +117,34 @@
                     Content="Add More Text"
                     Style="{StaticResource SimpleBTN}"
                     Visibility="Collapsed" />
+                <Button
+                    x:Name="NewFullscreen"
+                    Margin="10,10,0,10"
+                    Padding="6"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Click="NewFullscreen_Click">
+                    <TextBlock
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="White"
+                        Text="" />
+                </Button>
+                <Button
+                    x:Name="OpenGrabFrame"
+                    Margin="10"
+                    Padding="6"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Click="OpenGrabFrame_Click">
+                    <TextBlock
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="White"
+                        Text="" />
+                </Button>
             </StackPanel>
             <TextBox
                 x:Name="SearchTextBox"
