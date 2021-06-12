@@ -9,12 +9,12 @@ using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
-namespace Text_Grab
+namespace Text_Grab.Views
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class FullscreenGrab : Window
     {
         private bool isSelecting = false;
         System.Windows.Point clickedPoint = new System.Windows.Point();
@@ -22,7 +22,7 @@ namespace Text_Grab
 
         System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
-        public MainWindow()
+        public FullscreenGrab()
         {
             InitializeComponent();
         }

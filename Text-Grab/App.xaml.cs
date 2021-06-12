@@ -96,7 +96,7 @@ namespace Text_Grab
 
                 if (screenHasWindow == false)
                 {
-                    MainWindow mw = new MainWindow
+                    FullscreenGrab mw = new FullscreenGrab
                     {
                         WindowStartupLocation = WindowStartupLocation.Manual,
                         Width = 200,
