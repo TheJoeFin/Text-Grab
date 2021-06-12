@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Text_Grab.Utilities
@@ -47,6 +48,23 @@ namespace Text_Grab.Utilities
                 stringToFix = stringToFix.TryFixToLetters();
 
             return stringToFix;
+        }
+
+        public static string TryFixEveryWordLetterNumberErrors(this string stringToFix)
+        {
+            List<string> listOfWords = stringToFix.Split(' ').ToList();
+            List<string> fixedWords = new List<string>();
+
+            foreach (string word in listOfWords)
+            {
+                string newWord = word.TryFixNumberLetterErrors();
+                fixedWords.Add(newWord);
+            }
+            string joinedString = string.Join(' ', fixedWords.ToArray());
+            joinedString = joinedString.Replace("\t ", "\t");
+            joinedString = joinedString.Replace("\r ", "\r");
+            joinedString = joinedString.Replace("\n ", "\n");
+            return joinedString.Trim();
         }
     }
 }
