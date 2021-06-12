@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Markup;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
@@ -40,6 +41,27 @@ namespace Text_Grab
             {
                 PassedTextControl.TextAlignment = TextAlignment.Right;
             }
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            RoutedCommand newFullscreenGrab = new RoutedCommand();
+            _ = newFullscreenGrab.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(newFullscreenGrab, keyedCtrlF));
+
+            RoutedCommand newGrabFrame = new RoutedCommand();
+            _ = newGrabFrame.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(newGrabFrame, keyedCtrlG));
+        }
+
+        private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
+        {
+            WindowUtilities.NormalLaunch(true);
+        }
+
+        private void keyedCtrlG(object sender, ExecutedRoutedEventArgs e)
+        {
+            CheckForGrabFrameOrLaunch();
         }
 
         private void CopyCloseBTN_Click(object sender, RoutedEventArgs e)
@@ -167,7 +189,7 @@ namespace Text_Grab
 
         }
 
-        private void OpenGrabFrame_Click(object sender, RoutedEventArgs e)
+        private void CheckForGrabFrameOrLaunch()
         {
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -182,6 +204,11 @@ namespace Text_Grab
 
             GrabFrame gf = new GrabFrame();
             gf.Show();
+        }
+
+        private void OpenGrabFrame_Click(object sender, RoutedEventArgs e)
+        {
+            CheckForGrabFrameOrLaunch();
         }
 
         private void NewFullscreen_Click(object sender, RoutedEventArgs e)
