@@ -129,7 +129,7 @@
                     <TextBlock
                         FontFamily="Segoe MDL2 Assets"
                         Foreground="White"
-                        Text="" />
+                        Text="" />
                 </Button>
                 <Button
                     x:Name="OpenGrabFrame"
