@@ -101,6 +101,11 @@ namespace Text_Grab
             PassedTextControl.Text = finalString;
         }
 
+        public void AddThisText(string textToAdd)
+        {
+            PassedTextControl.Text += textToAdd;
+        }
+
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
         {
             string workingString = PassedTextControl.Text;
@@ -136,7 +141,7 @@ namespace Text_Grab
 
         private void SplitLineBeforeSelectionMI_Click(object sender, RoutedEventArgs e)
         {
-
+            
         }
 
         private void RejoinLinesAtSelectionMI_Click(object sender, RoutedEventArgs e)

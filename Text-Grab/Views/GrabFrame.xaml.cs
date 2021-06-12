@@ -92,7 +92,7 @@ namespace Text_Grab.Views
 
             Clipboard.SetText(frameText);
 
-            if(Settings.Default.ShowToast && string.IsNullOrWhiteSpace(frameText) == false)
+            if (Settings.Default.ShowToast && string.IsNullOrWhiteSpace(frameText) == false)
                 NotificationUtilities.ShowToast(frameText);
         }
 
