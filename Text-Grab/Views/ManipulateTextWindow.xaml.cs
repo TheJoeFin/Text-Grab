@@ -141,7 +141,13 @@ namespace Text_Grab
 
         private void SplitLineBeforeSelectionMI_Click(object sender, RoutedEventArgs e)
         {
-            
+            string selectedText = PassedTextControl.SelectedText;
+
+            string textToManipulate = PassedTextControl.Text;
+
+            textToManipulate = textToManipulate.Replace(selectedText, "\n" + selectedText);
+
+            PassedTextControl.Text = textToManipulate;
         }
 
         private void RejoinLinesAtSelectionMI_Click(object sender, RoutedEventArgs e)
