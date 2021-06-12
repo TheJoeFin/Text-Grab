@@ -47,6 +47,11 @@
                     x:Name="CopyAndCloseMenuItem"
                     Click="CopyCloseBTN_Click"
                     Header="Copy And Close" />
+                <Separator />
+                <MenuItem
+                    x:Name="SettingsMenuItem"
+                    Click="SettingsMenuItem_Click"
+                    Header="Text Grab Settings..." />
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Command="ApplicationCommands.Copy" />

@@ -217,5 +217,22 @@ namespace Text_Grab
         {
             WindowUtilities.NormalLaunch(true);
         }
+
+        private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
+            {
+                if (window is SettingsWindow sw)
+                {
+                    sw.Activate();
+                    return;
+                }
+            }
+
+            SettingsWindow nsw = new SettingsWindow();
+            nsw.Show();
+        }
     }
 }
