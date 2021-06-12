@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Controls;
@@ -32,6 +33,20 @@ namespace Text_Grab.Views
             WindowResizer resizer = new WindowResizer(this);
             reDrawTimer.Interval = new TimeSpan(0, 0, 0, 0, 1200);
             reDrawTimer.Tick += ReDrawTimer_Tick;
+
+            RoutedCommand newCmd = new RoutedCommand();
+            _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
+            _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
+        }
+
+        private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(SearchBox.Text) == false && SearchBox.Text != "Search For Text...")
+                SearchBox.Text = "";
+            else if (RectanglesCanvas.Children.Count > 0)
+                ResetGrabFrame();
+            else
+                Close();
         }
 
         private async void ReDrawTimer_Tick(object sender, EventArgs e)
