@@ -32,6 +32,9 @@ namespace Text_Grab.Utilities
 
         public static string TryFixNumberLetterErrors(this string stringToFix)
         {
+            if (stringToFix.Length < 5)
+                return stringToFix;
+            
             int totalNumbers = 0;
 
             foreach (char charFromString in stringToFix)
