@@ -124,9 +124,8 @@
                     Padding="6"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
-                    Background="Transparent"
-                    BorderBrush="Transparent"
                     Click="NewFullscreen_Click"
+                    Style="{StaticResource SymbolButton}"
                     ToolTip="New Fullscreen Grab (CTRL + F)">
                     <TextBlock
                         FontFamily="Segoe MDL2 Assets"
@@ -139,9 +138,8 @@
                     Padding="6"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
-                    Background="Transparent"
-                    BorderBrush="Transparent"
                     Click="OpenGrabFrame_Click"
+                    Style="{StaticResource SymbolButton}"
                     ToolTip="Open Grab Frame (CTRL + G)">
                     <TextBlock
                         FontFamily="Segoe MDL2 Assets"
