@@ -40,7 +40,7 @@ namespace Text_Grab.Views
 
         private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
         {
-            Application.Current.Shutdown();
+            WindowUtilities.CloseAllFullscreenGrabs();
         }
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
