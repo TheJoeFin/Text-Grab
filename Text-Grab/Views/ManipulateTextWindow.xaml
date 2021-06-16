@@ -139,6 +139,8 @@
                     Style="{StaticResource SimpleBTN}" />
                 <Button
                     x:Name="NewFullscreen"
+                    Width="28"
+                    Height="28"
                     Margin="10,10,0,10"
                     Padding="6"
                     HorizontalAlignment="Right"
@@ -153,6 +155,8 @@
                 </Button>
                 <Button
                     x:Name="OpenGrabFrame"
+                    Width="28"
+                    Height="28"
                     Margin="10"
                     Padding="6"
                     HorizontalAlignment="Right"
