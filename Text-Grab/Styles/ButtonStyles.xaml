@@ -81,8 +81,6 @@
                     <Border
                         x:Name="border"
                         Background="Transparent"
-                        BorderBrush="Transparent"
-                        BorderThickness="1"
                         SnapsToDevicePixels="true">
                         <ContentPresenter
                             x:Name="contentPresenter"

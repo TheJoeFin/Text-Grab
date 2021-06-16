@@ -145,8 +145,8 @@
                     Style="{StaticResource SimpleBTN}" />
                 <Button
                     x:Name="NewFullscreen"
-                    Width="28"
-                    Height="28"
+                    Width="30"
+                    Height="30"
                     Margin="10,10,0,10"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
@@ -160,8 +160,8 @@
                 </Button>
                 <Button
                     x:Name="OpenGrabFrame"
-                    Width="28"
-                    Height="28"
+                    Width="30"
+                    Height="30"
                     Margin="10"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
