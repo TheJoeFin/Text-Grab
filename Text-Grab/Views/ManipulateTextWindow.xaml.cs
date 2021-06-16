@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Windows.Navigation;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 
@@ -52,6 +54,8 @@ namespace Text_Grab
             RoutedCommand newGrabFrame = new RoutedCommand();
             _ = newGrabFrame.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(newGrabFrame, keyedCtrlG));
+
+            PassedTextControl.Focus();
         }
 
         private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
@@ -184,11 +188,6 @@ namespace Text_Grab
             PassedTextControl.Text = textToManipulate;
         }
 
-        private void RejoinLinesAtSelectionMI_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void CheckForGrabFrameOrLaunch()
         {
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
@@ -233,6 +232,27 @@ namespace Text_Grab
 
             SettingsWindow nsw = new SettingsWindow();
             nsw.Show();
+        }
+
+        private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void AlwaysOnTop_Checked(object sender, RoutedEventArgs e)
+        {
+            if (Topmost == false)
+                Topmost = true;
+            else
+                Topmost = false;
+        }
+
+        private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
+        {
+            Uri source = new Uri("https://github.com/TheJoeFin/Text-Grab/issues", UriKind.Absolute);
+            RequestNavigateEventArgs e = new RequestNavigateEventArgs(source, "https://github.com/TheJoeFin/Text-Grab/issues");
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            e.Handled = true;
         }
     }
 }

@@ -34,6 +34,7 @@
             FontSize="16"
             Foreground="White"
             HorizontalScrollBarVisibility="Auto"
+            SpellCheck.IsEnabled="True"
             Text="{Binding CopiedText, Mode=OneWay}"
             TextWrapping="Wrap"
             VerticalScrollBarVisibility="Auto" />
@@ -52,19 +53,18 @@
                     x:Name="SettingsMenuItem"
                     Click="SettingsMenuItem_Click"
                     Header="Text Grab Settings..." />
+                <MenuItem
+                    x:Name="CloseMenuItem"
+                    Click="CloseMenuItem_Click"
+                    Header="Close" />
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Command="ApplicationCommands.Copy" />
-                <MenuItem Command="ApplicationCommands.Cut" />
-                <MenuItem Command="ApplicationCommands.Paste" />
+                <MenuItem Command="ApplicationCommands.Undo" />
+                <MenuItem Command="ApplicationCommands.Redo" />
                 <Separator />
-                <MenuItem
-                    x:Name="WrapTextMenuItem"
-                    Checked="WrapTextCHBOX_Checked"
-                    Header="Wrap Text"
-                    IsCheckable="True"
-                    IsChecked="True"
-                    Unchecked="WrapTextCHBOX_Checked" />
+                <MenuItem Command="ApplicationCommands.Cut" />
+                <MenuItem Command="ApplicationCommands.Copy" />
+                <MenuItem Command="ApplicationCommands.Paste" />
                 <Separator />
                 <MenuItem
                     x:Name="SingleLineMenuItem"
@@ -87,10 +87,29 @@
                     x:Name="SplitLineBeforeSelectionMI"
                     Click="SplitLineBeforeSelectionMI_Click"
                     Header="Split Lines Before Each Selection" />
+            </MenuItem>
+            <MenuItem Header="_Format">
                 <MenuItem
-                    x:Name="RejoinLinesAtSelectionMI"
-                    Click="RejoinLinesAtSelectionMI_Click"
-                    Header="Rejoin Lines At Every Selection" />
+                    x:Name="WrapTextMenuItem"
+                    Checked="WrapTextCHBOX_Checked"
+                    Header="Wrap Text"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    Unchecked="WrapTextCHBOX_Checked" />
+            </MenuItem>
+            <MenuItem Header="_Window">
+                <MenuItem
+                    x:Name="AlwaysOnTop"
+                    Click="AlwaysOnTop_Checked"
+                    Header="Always On Top"
+                    IsCheckable="True"
+                    IsChecked="False" />
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem
+                    x:Name="FeedbackMenuItem"
+                    Click="FeedbackMenuItem_Click"
+                    Header="Feedback..." />
             </MenuItem>
         </Menu>
         <Grid Grid.Row="2">
