@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -36,19 +37,30 @@ namespace Text_Grab.Utilities
                 return stringToFix;
             
             int totalNumbers = 0;
+            int totalLetters = 0;
 
             foreach (char charFromString in stringToFix)
             {
                 if (char.IsNumber(charFromString))
                     totalNumbers++;
+
+                if (char.IsLetter(charFromString))
+                    totalLetters++;
             }
 
             float fractionNumber = totalNumbers / (float)stringToFix.Length;
+            float letterNumber = totalLetters / (float)stringToFix.Length;
 
             if (fractionNumber > 0.6)
+            {
                 stringToFix = stringToFix.TryFixToNumbers();
-            else
+                Debug.WriteLine($"Tried to fix {stringToFix} to numbers");
+            }
+            else if(letterNumber > 0.6)
+            {
                 stringToFix = stringToFix.TryFixToLetters();
+                Debug.WriteLine($"Tried to fix {stringToFix} to letters");
+            }
 
             return stringToFix;
         }
