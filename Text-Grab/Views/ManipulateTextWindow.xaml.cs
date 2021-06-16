@@ -247,6 +247,14 @@ namespace Text_Grab
                 Topmost = false;
         }
 
+        private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (BottomBar.Visibility == Visibility.Visible)
+                BottomBar.Visibility = Visibility.Collapsed;
+            else
+                BottomBar.Visibility = Visibility.Visible;
+        }
+
         private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
         {
             Uri source = new Uri("https://github.com/TheJoeFin/Text-Grab/issues", UriKind.Absolute);

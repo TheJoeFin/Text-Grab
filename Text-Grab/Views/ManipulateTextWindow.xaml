@@ -104,6 +104,12 @@
                     Header="Always On Top"
                     IsCheckable="True"
                     IsChecked="False" />
+                <MenuItem
+                    x:Name="HideBottomBarMenuItem"
+                    Click="HideBottomBarMenuItem_Click"
+                    Header="Hide Bottom Bar"
+                    IsCheckable="True"
+                    IsChecked="False" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem
@@ -112,7 +118,7 @@
                     Header="Feedback..." />
             </MenuItem>
         </Menu>
-        <Grid Grid.Row="2">
+        <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
@@ -142,7 +148,6 @@
                     Width="28"
                     Height="28"
                     Margin="10,10,0,10"
-                    Padding="6"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     Click="NewFullscreen_Click"
@@ -158,7 +163,6 @@
                     Width="28"
                     Height="28"
                     Margin="10"
-                    Padding="6"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     Click="OpenGrabFrame_Click"
