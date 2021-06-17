@@ -96,6 +96,10 @@
                     IsCheckable="True"
                     IsChecked="True"
                     Unchecked="WrapTextCHBOX_Checked" />
+                <MenuItem
+                    x:Name="FontMenuItem"
+                    Click="FontMenuItem_Click"
+                    Header="Font..." />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem

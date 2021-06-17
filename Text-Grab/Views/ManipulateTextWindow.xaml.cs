@@ -8,8 +8,10 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
@@ -71,7 +73,7 @@ namespace Text_Grab
         private void CopyCloseBTN_Click(object sender, RoutedEventArgs e)
         {
             string clipboardText = PassedTextControl.Text;
-            Clipboard.SetText(clipboardText);
+            System.Windows.Clipboard.SetText(clipboardText);
             this.Close();
         }
 
@@ -79,7 +81,7 @@ namespace Text_Grab
         {
             string fileText = PassedTextControl.Text;
 
-            SaveFileDialog dialog = new SaveFileDialog()
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
             {
                 Filter = "Text Files(*.txt)|*.txt|All(*.*)|*",
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
@@ -162,7 +164,7 @@ namespace Text_Grab
 
         private void SearchTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
-            TextBox searchBox = sender as TextBox;
+            System.Windows.Controls.TextBox searchBox = sender as System.Windows.Controls.TextBox;
             searchBox.Text = "";
         }
 
@@ -177,7 +179,7 @@ namespace Text_Grab
 
             if(string.IsNullOrEmpty(selectedText))
             {
-                MessageBox.Show("No text selected", "Did not split lines");
+                System.Windows.MessageBox.Show("No text selected", "Did not split lines");
                 return;
             }
 
@@ -261,6 +263,26 @@ namespace Text_Grab
             RequestNavigateEventArgs e = new RequestNavigateEventArgs(source, "https://github.com/TheJoeFin/Text-Grab/issues");
             Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
             e.Handled = true;
+        }
+
+        private void FontMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            FontDialog fd = new FontDialog();
+            var result = fd.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                Debug.WriteLine(fd.Font);
+
+                PassedTextControl.FontFamily = new FontFamily(fd.Font.Name);
+                PassedTextControl.FontSize = fd.Font.Size * 96.0 / 72.0;
+                PassedTextControl.FontWeight = fd.Font.Bold ? FontWeights.Bold : FontWeights.Regular;
+                PassedTextControl.FontStyle = fd.Font.Italic ? FontStyles.Italic : FontStyles.Normal;
+
+                TextDecorationCollection tdc = new TextDecorationCollection();
+                if (fd.Font.Underline) tdc.Add(TextDecorations.Underline);
+                if (fd.Font.Strikeout) tdc.Add(TextDecorations.Strikethrough);
+                PassedTextControl.TextDecorations = tdc;
+            }
         }
     }
 }
