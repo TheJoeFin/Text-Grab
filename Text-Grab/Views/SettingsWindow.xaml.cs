@@ -26,6 +26,7 @@ namespace Text_Grab
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+            ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
 
             switch (Settings.Default.DefaultLaunch)
             {
