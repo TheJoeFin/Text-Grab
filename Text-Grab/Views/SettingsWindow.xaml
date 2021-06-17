@@ -50,7 +50,7 @@
 
                 <!--  default launch  -->
                 <TextBlock
-                    Margin="0,10,0,4"
+                    Margin="0,16,0,4"
                     FontSize="14"
                     Foreground="White"
                     Text="Default Launch Window" />
@@ -76,6 +76,12 @@
                 <!--  Pick Language  -->
 
                 <!--    -->
+                <CheckBox
+                    Name="ErrorCorrectBox"
+                    Margin="0,16,0,0"
+                    Click="ErrorCorrectBox_Click"
+                    Content="Try to correct common confusions between numbers and letters"
+                    Style="{StaticResource labelText}" />
             </StackPanel>
             <TextBlock Grid.Row="1" Foreground="White">
                 What do you want to see here? Submit an issue on GitHub<LineBreak />

@@ -70,5 +70,14 @@ namespace Text_Grab
             Settings.Default.DefaultLaunch = "Fullscreen";
             Settings.Default.Save();
         }
+
+        private void ErrorCorrectBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsLoaded == false)
+                return;
+
+            Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
+            Settings.Default.Save();
+        }
     }
 }

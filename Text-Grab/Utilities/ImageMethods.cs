@@ -18,7 +18,6 @@ using Windows.Graphics.Imaging;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
-using Text_Grab.Utilities;
 
 namespace Text_Grab
 {
@@ -92,7 +91,8 @@ namespace Text_Grab
             bmp = PadImage(bmp);
 
             string ocrText = await ExtractText(bmp);
-            return ocrText.TryFixEveryWordLetterNumberErrors();
+
+            return ocrText;
         }
 
 
@@ -113,7 +113,7 @@ namespace Text_Grab
             System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
             string ocrText = await ExtractText(bmp, adjustedPoint);
-            return ocrText.TryFixNumberLetterErrors().Trim();
+            return ocrText.Trim();
         }
 
         public static async Task<string> ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null)

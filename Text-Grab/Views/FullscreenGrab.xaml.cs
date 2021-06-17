@@ -150,6 +150,9 @@ namespace Text_Grab.Views
             else
                 grabbedText = await ImageMethods.GetRegionsText(this, regionScaled);
 
+            if (Settings.Default.CorrectErrors)
+                grabbedText.TryFixEveryWordLetterNumberErrors();
+
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 Clipboard.SetText(grabbedText);

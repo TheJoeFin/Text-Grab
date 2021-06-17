@@ -180,7 +180,10 @@ namespace Text_Grab.Views
             {
                 foreach (OcrWord ocrWord in ocrLine.Words)
                 {
-                    string wordString = ocrWord.Text.TryFixNumberLetterErrors();
+                    string wordString = ocrWord.Text;
+
+                    if(Settings.Default.CorrectErrors)
+                        wordString = wordString.TryFixEveryWordLetterNumberErrors();
 
                     WordBorder wordBorderBox = new WordBorder
                     {
