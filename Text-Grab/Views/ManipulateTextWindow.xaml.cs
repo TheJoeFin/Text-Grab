@@ -109,6 +109,9 @@ namespace Text_Grab
 
         private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
         {
+            if (IsLoaded == false)
+                return;
+
             if ((bool)WrapTextMenuItem.IsChecked)
                 PassedTextControl.TextWrapping = TextWrapping.Wrap;
             else
@@ -243,6 +246,9 @@ namespace Text_Grab
 
         private void AlwaysOnTop_Checked(object sender, RoutedEventArgs e)
         {
+            if (IsLoaded == false)
+                return;
+            
             if (Topmost == false)
                 Topmost = true;
             else

@@ -24,21 +24,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-
-        <TextBox
-            x:Name="PassedTextControl"
-            Grid.Row="1"
-            AcceptsReturn="True"
-            AcceptsTab="True"
-            Background="#1E1E1E"
-            FontSize="16"
-            Foreground="White"
-            HorizontalScrollBarVisibility="Auto"
-            SpellCheck.IsEnabled="True"
-            Text="{Binding CopiedText, Mode=OneWay}"
-            TextWrapping="Wrap"
-            VerticalScrollBarVisibility="Auto" />
-        <Menu>
+        <Menu Grid.Row="0" Background="#444444" Foreground="White">
             <MenuItem Header="File">
                 <MenuItem
                     x:Name="SaveFileMenuItem"
@@ -122,6 +108,19 @@
                     Header="Feedback..." />
             </MenuItem>
         </Menu>
+        <TextBox
+            x:Name="PassedTextControl"
+            Grid.Row="1"
+            AcceptsReturn="True"
+            AcceptsTab="True"
+            Background="#1E1E1E"
+            FontSize="16"
+            Foreground="White"
+            HorizontalScrollBarVisibility="Auto"
+            SpellCheck.IsEnabled="True"
+            Text="{Binding CopiedText, Mode=OneWay}"
+            TextWrapping="Wrap"
+            VerticalScrollBarVisibility="Auto" />
         <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />
@@ -133,20 +132,38 @@
                     Margin="10,10,0,10"
                     Background="Orange"
                     Click="CopyCloseBTN_Click"
-                    Content="Copy And Close"
-                    Style="{StaticResource SimpleBTN}" />
+                    Style="{StaticResource SimpleBTN}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                        FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"
+                        Text="" />
+                        <TextBlock Text="Copy and Close" />
+                    </StackPanel>
+                </Button>
                 <Button
                     x:Name="SaveBTN"
                     Width="120"
                     Click="SaveBTN_Click"
-                    Content="Save to File..."
-                    Style="{StaticResource SimpleBTN}" />
+                    Style="{StaticResource SimpleBTN}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                        FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"
+                        Text="" />
+                        <TextBlock Text="Save to File..." />
+                    </StackPanel>
+                </Button>
                 <Button
                     x:Name="SingleLineBTN"
-                    Width="120"
+                    Width="130"
                     Click="SingleLineBTN_Click"
-                    Content="Make Single Line"
-                    Style="{StaticResource SimpleBTN}" />
+                    Style="{StaticResource SimpleBTN}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                        FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"
+                        Text="" />
+                        <TextBlock Text="Make Single Line" />
+                    </StackPanel>
+                </Button>
                 <Button
                     x:Name="NewFullscreen"
                     Width="30"
@@ -160,7 +177,7 @@
                     <TextBlock
                         FontFamily="Segoe MDL2 Assets"
                         Foreground="White"
-                        Text="" />
+                        Text="" />
                 </Button>
                 <Button
                     x:Name="OpenGrabFrame"
