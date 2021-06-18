@@ -160,7 +160,7 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock
                         FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"
-                        Text="" />
+                        Text="" />
                         <TextBlock Text="Make Single Line" />
                     </StackPanel>
                 </Button>
