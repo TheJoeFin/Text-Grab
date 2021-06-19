@@ -30,6 +30,14 @@ namespace Text_Grab
         public ManipulateTextWindow()
         {
             InitializeComponent();
+
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
+            CultureInfo culture = lang.GetEquivalentCulture();
+            if (culture.TextInfo.IsRightToLeft)
+            {
+                PassedTextControl.TextAlignment = TextAlignment.Right;
+            }
         }
 
         public ManipulateTextWindow(string rawPassedString)
