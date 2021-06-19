@@ -108,7 +108,7 @@
                     Header="Feedback..." />
             </MenuItem>
         </Menu>
-        <TextBox
+        <TextBox Style="{DynamicResource TextBoxStyle1}"
             x:Name="PassedTextControl"
             Grid.Row="1"
             AcceptsReturn="True"
