@@ -11,6 +11,7 @@
     Height="450"
     MinWidth="50"
     MinHeight="100"
+    Activated="GrabFrameWindow_Activated"
     AllowsTransparency="True"
     Background="Transparent"
     Deactivated="GrabFrameWindow_Deactivated"

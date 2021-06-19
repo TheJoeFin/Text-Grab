@@ -1,0 +1,10 @@
+﻿[*.cs]
+
+# IDE0011: Add braces
+csharp_prefer_braces = when_multiline
+
+# IDE0045: Convert to conditional expression
+dotnet_style_prefer_conditional_expression_over_assignment = false
+
+# Default severity for analyzer diagnostics with category 'Style'
+dotnet_analyzer_diagnostic.category-Style.severity = none

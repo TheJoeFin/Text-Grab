@@ -26,6 +26,7 @@ namespace Text_Grab
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+            ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
 
             switch (Settings.Default.DefaultLaunch)
             {
@@ -34,6 +35,9 @@ namespace Text_Grab
                     break;
                 case "GrabFrame":
                     GrabFrameRDBTN.IsChecked = true;
+                    break;
+                case "EditText":
+                    EditTextRDBTN.IsChecked = true;
                     break;
                 default:
                     FullScreenRDBTN.IsChecked = true;
@@ -47,16 +51,36 @@ namespace Text_Grab
             e.Handled = true;
         }
 
-        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        private void EditTextRDBTN_Checked(object sender, RoutedEventArgs e)
         {
             if (this.IsLoaded != true)
                 return;
+            Settings.Default.DefaultLaunch = "EditText";
+            Settings.Default.Save();
+        }
 
-            if ((bool)GrabFrameRDBTN.IsChecked)
-                Settings.Default.DefaultLaunch = "GrabFrame";
-            else
-                Settings.Default.DefaultLaunch = "Fullscreen";
+        private void GrabFrameRDBTN_Checked(object sender, RoutedEventArgs e)
+        {
+            if (this.IsLoaded != true)
+                return; 
+            Settings.Default.DefaultLaunch = "GrabFrame";
+            Settings.Default.Save();
+        }
 
+        private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
+        {
+            if (this.IsLoaded != true)
+                return;
+            Settings.Default.DefaultLaunch = "Fullscreen";
+            Settings.Default.Save();
+        }
+
+        private void ErrorCorrectBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsLoaded == false)
+                return;
+
+            Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
             Settings.Default.Save();
         }
     }

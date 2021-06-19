@@ -11,5 +11,8 @@
     <Setting Name="DefaultLaunch" Type="System.String" Scope="User">
       <Value Profile="(Default)">Fullscreen</Value>
     </Setting>
+    <Setting Name="CorrectErrors" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

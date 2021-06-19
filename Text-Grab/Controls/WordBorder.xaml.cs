@@ -27,6 +27,8 @@ namespace Text_Grab.Controls
 
         public int LineNumber { get; set; } = 0;
 
+        public bool IsFromEditWindow { get; set; } = false;
+
         public WordBorder()
         {
             InitializeComponent();
@@ -56,8 +58,12 @@ namespace Text_Grab.Controls
         {
             Clipboard.SetText(Word);
 
-            if (Settings.Default.ShowToast)
+            if (Settings.Default.ShowToast
+                && IsFromEditWindow == false)
                 NotificationUtilities.ShowToast(Word);
+
+            if (IsFromEditWindow == true)
+                WindowUtilities.AddTextToOpenWindow(Word);
 
             if (IsSelected)
             {
