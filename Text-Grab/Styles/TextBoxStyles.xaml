@@ -45,8 +45,9 @@
 
     
     <SolidColorBrush x:Key="TextBox.Static.Border" Color="#FFABAdB3"/>
-    <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#FF7EB4EA"/>
+    <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#4DECFD"/>
     <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#1F5E65"/>
+    <SolidColorBrush x:Key="TextBox.IsDragging.Border" Color="#3CB1BE"/>
     <Style x:Key="TextBoxStyle1" TargetType="{x:Type TextBox}">
         <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
         <Setter Property="BorderBrush" Value="{StaticResource TextBox.Static.Border}"/>
@@ -101,9 +102,9 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type RepeatButton}">
                     <Border x:Name="Border"
-                Margin="1"
-                CornerRadius="1"
-                BorderThickness="1">
+                            Margin="1"
+                            CornerRadius="1"
+                            BorderThickness="1">
                         <Border.BorderBrush>
                             <SolidColorBrush Color="{DynamicResource ControlDarkColor}" />
                         </Border.BorderBrush>
@@ -117,8 +118,7 @@
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="Arrow"
-                                                Storyboard.TargetProperty="(Shape.Fill).
-                    (SolidColorBrush.Color)">
+                                                Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)">
                                             <EasingColorKeyFrame KeyTime="0"
                                          Value="{StaticResource ControlPressedColor}" />
                                         </ColorAnimationUsingKeyFrames>
@@ -127,8 +127,7 @@
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="Arrow"
-                                                Storyboard.TargetProperty="(Shape.Fill).
-                    (SolidColorBrush.Color)">
+                                                Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)">
                                             <EasingColorKeyFrame KeyTime="0"
                                          Value="{StaticResource DisabledForegroundColor}" />
                                         </ColorAnimationUsingKeyFrames>
@@ -137,10 +136,9 @@
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
                         <Path x:Name="Arrow"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Data="{Binding Content, 
-            RelativeSource={RelativeSource TemplatedParent}}" >
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Data="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" >
                             <Path.Fill>
                                 <SolidColorBrush Color="{DynamicResource GlyphColor}"/>
                             </Path.Fill>
@@ -183,10 +181,24 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Thumb}">
-                    <Border CornerRadius="1"
-                Background="{TemplateBinding Background}"
-                BorderBrush="{TemplateBinding BorderBrush}"
-                BorderThickness="1" />
+                    <Border CornerRadius="1" Name="thumbBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Opacity" TargetName="thumbBorder" Value="0.56"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="BorderBrush" TargetName="thumbBorder" Value="{StaticResource TextBox.MouseOver.Border}"/>
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter Property="Background" TargetName="thumbBorder" Value="{StaticResource TextBox.IsDragging.Border}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="true">
+                            <Setter Property="BorderBrush" TargetName="thumbBorder" Value="{StaticResource TextBox.Focus.Border}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
