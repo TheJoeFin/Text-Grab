@@ -124,7 +124,9 @@
         </Menu>
         <TextBox Style="{DynamicResource TextBoxStyle1}"
             x:Name="PassedTextControl"
-            Grid.Row="1"
+            AutoWordSelection="True" 
+            IsInactiveSelectionHighlightEnabled="True"
+            Grid.Row="1" 
             AcceptsReturn="True"
             AcceptsTab="True"
             Background="#1E1E1E"
@@ -208,33 +210,22 @@
                         Foreground="White"
                         Text="" />
                 </Button>
+                <Button
+                    x:Name="SearchButton"
+                    Width="30"
+                    Height="30"
+                    Margin="10"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Click="SearchButton_Click"
+                    Style="{StaticResource SymbolButton}"
+                    ToolTip="Open Grab Frame (CTRL + G)">
+                    <TextBlock
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="White"
+                        Text="" />
+                </Button>
             </StackPanel>
-            <TextBox
-                x:Name="SearchTextBox"
-                Grid.Column="1"
-                Margin="10"
-                Padding="6"
-                HorizontalAlignment="Stretch"
-                GotFocus="SearchTextBox_GotFocus"
-                Text="Search For Text..."
-                TextChanged="SearchTextBox_TextChanged"
-                Visibility="Collapsed" />
-            <Button
-                x:Name="ClearBTN"
-                Grid.Column="1"
-                Margin="0,0,10,0"
-                Padding="6"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                BorderBrush="Transparent"
-                Click="ClearSeachBTN_Click"
-                Visibility="Collapsed">
-                <TextBlock
-                    FontFamily="Segoe MDL2 Assets"
-                    Foreground="Black"
-                    Text="" />
-            </Button>
         </Grid>
     </Grid>
 </Window>

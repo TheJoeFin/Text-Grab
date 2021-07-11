@@ -12,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Navigation;
+using Text_Grab.Controls;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 
@@ -195,22 +196,6 @@ namespace Text_Grab
             PassedTextControl.Text = workingString;
         }
 
-        private void ClearSeachBTN_Click(object sender, RoutedEventArgs e)
-        {
-            SearchTextBox.Text = "";
-        }
-
-        private void SearchTextBox_GotFocus(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Controls.TextBox searchBox = sender as System.Windows.Controls.TextBox;
-            searchBox.Text = "";
-        }
-
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            PassedTextControl.SelectedText = SearchTextBox.Text;
-        }
-
         private void SplitOnSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
             string selectedText = PassedTextControl.SelectedText;
@@ -345,6 +330,14 @@ namespace Text_Grab
                 if (fd.Font.Strikeout) tdc.Add(TextDecorations.Strikethrough);
                 PassedTextControl.TextDecorations = tdc;
             }
+        }
+
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            FindAndReplaceWindow farw = new FindAndReplaceWindow();
+            farw.StringFromWindow = PassedTextControl.Text;
+            farw.TextEditWindow = this;
+            farw.Show();
         }
     }
 }
