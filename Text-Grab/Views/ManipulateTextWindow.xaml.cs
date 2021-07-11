@@ -1,5 +1,4 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -42,8 +41,8 @@ namespace Text_Grab
 
         public ManipulateTextWindow(string rawPassedString)
         {
-            int lastCommaPosition = rawPassedString.AllIndexesOf(",").LastOrDefault();            
-            CopiedText = rawPassedString.Substring(0,lastCommaPosition);
+            int lastCommaPosition = rawPassedString.AllIndexesOf(",").LastOrDefault();
+            CopiedText = rawPassedString.Substring(0, lastCommaPosition);
             InitializeComponent();
             PassedTextControl.Text = CopiedText;
             string langString = rawPassedString.Substring(lastCommaPosition + 1, (rawPassedString.Length - (lastCommaPosition + 1)));
@@ -134,7 +133,7 @@ namespace Text_Grab
             string finalString = "";
             foreach (string line in stringSplit)
             {
-                if(string.IsNullOrWhiteSpace(line) == false)
+                if (string.IsNullOrWhiteSpace(line) == false)
                     finalString += line.Trim() + "\n";
             }
 
@@ -188,7 +187,7 @@ namespace Text_Grab
         {
             string selectedText = PassedTextControl.SelectedText;
 
-            if(string.IsNullOrEmpty(selectedText))
+            if (string.IsNullOrEmpty(selectedText))
             {
                 System.Windows.MessageBox.Show("No text selected", "Did not split lines");
                 return;
@@ -256,7 +255,7 @@ namespace Text_Grab
         {
             if (IsLoaded == false)
                 return;
-            
+
             if (Topmost == false)
                 Topmost = true;
             else
