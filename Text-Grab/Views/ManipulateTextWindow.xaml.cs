@@ -26,6 +26,10 @@ namespace Text_Grab
 
         public bool WrapText { get; set; } = false;
 
+        public static RoutedCommand SplitOnSelectionCmd = new RoutedCommand();
+
+        public static RoutedCommand IsolateSelectionCmd = new RoutedCommand();
+
         public ManipulateTextWindow()
         {
             InitializeComponent();
@@ -183,7 +187,7 @@ namespace Text_Grab
             PassedTextControl.SelectedText = SearchTextBox.Text;
         }
 
-        private void SplitLineBeforeSelectionMI_Click(object sender, RoutedEventArgs e)
+        private void SplitOnSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
             string selectedText = PassedTextControl.SelectedText;
 
@@ -198,6 +202,27 @@ namespace Text_Grab
             textToManipulate = textToManipulate.Replace(selectedText, "\n" + selectedText);
 
             PassedTextControl.Text = textToManipulate;
+        }
+
+        private void SplitOnSelectionCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(PassedTextControl.SelectedText))
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
+        }
+
+        private void IsolateSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            PassedTextControl.Text = PassedTextControl.SelectedText;
+        }
+
+        private void IsolateSelectionCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(PassedTextControl.SelectedText))
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
         }
 
         private void CheckForGrabFrameOrLaunch()

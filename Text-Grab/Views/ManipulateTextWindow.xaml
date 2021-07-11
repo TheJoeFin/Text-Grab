@@ -18,6 +18,14 @@
             <Setter Property="Margin" Value="10,10,0,10" />
         </Style>
     </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static local:ManipulateTextWindow.SplitOnSelectionCmd}"
+                    Executed="SplitOnSelectionCmdExecuted"
+                    CanExecute="SplitOnSelectionCmdCanExecute"/>
+        <CommandBinding Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
+                        Executed="IsolateSelectionCmdExecuted"
+                        CanExecute="IsolateSelectionCmdCanExecute" />
+    </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -53,26 +61,29 @@
                 <MenuItem Command="ApplicationCommands.Paste" />
                 <Separator />
                 <MenuItem
-                    x:Name="SingleLineMenuItem"
+                    x:Name="_SingleLineMenuItem"
                     Click="SingleLineBTN_Click"
                     Header="Make Single Line" />
                 <MenuItem
-                    x:Name="TrimEachLineMenuItem"
+                    x:Name="_TrimEachLineMenuItem"
                     Click="TrimEachLineMenuItem_Click"
                     Header="Trim Each Line" />
                 <MenuItem
-                    x:Name="TryToNumberMenuItem"
+                    x:Name="TryTo_NumberMenuItem"
                     Click="TryToNumberMenuItem_Click"
                     Header="Try To Make Numbers" />
                 <MenuItem
-                    x:Name="TryToAlphaMenuItem"
+                    x:Name="TryTo_AlphaMenuItem"
                     Click="TryToAlphaMenuItem_Click"
                     Header="Try To Make Letters" />
                 <Separator />
                 <MenuItem
-                    x:Name="SplitLineBeforeSelectionMI"
-                    Click="SplitLineBeforeSelectionMI_Click"
+                    x:Name="Split_LineBeforeSelectionMI" 
+                    Command="{x:Static local:ManipulateTextWindow.SplitOnSelectionCmd}"
                     Header="Split Lines Before Each Selection" />
+                <MenuItem x:Name="_IsolateSelectionMI" 
+                          Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
+                          Header="Isolate Selected Text" />
             </MenuItem>
             <MenuItem Header="_Format">
                 <MenuItem
