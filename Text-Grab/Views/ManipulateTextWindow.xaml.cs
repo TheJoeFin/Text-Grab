@@ -30,6 +30,8 @@ namespace Text_Grab
 
         public static RoutedCommand IsolateSelectionCmd = new RoutedCommand();
 
+        public static RoutedCommand SingleLineCmd = new RoutedCommand();
+
         public ManipulateTextWindow()
         {
             InitializeComponent();
@@ -107,15 +109,37 @@ namespace Text_Grab
 
         private void SingleLineBTN_Click(object sender, RoutedEventArgs e)
         {
+            
+        }
+
+        private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
             string textToEdit = PassedTextControl.Text;
             PassedTextControl.Text = "";
+            textToEdit = textToEdit.Replace("\r\n", " ");
+            textToEdit = textToEdit.Replace(Environment.NewLine, " ");
             textToEdit = textToEdit.Replace('\n', ' ');
             textToEdit = textToEdit.Replace('\r', ' ');
-            textToEdit = textToEdit.Replace(Environment.NewLine, " ");
+            
             Regex regex = new Regex("[ ]{2,}");
             textToEdit = regex.Replace(textToEdit, " ");
             textToEdit = textToEdit.Trim();
             PassedTextControl.Text = textToEdit;
+        }
+
+        private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            int n = 0;
+            foreach (var c in PassedTextControl.Text)
+            {
+                if (c == '\n' || c == '\r') 
+                    n++;
+            }
+            
+            if (n < 2)
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
         }
 
         private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)

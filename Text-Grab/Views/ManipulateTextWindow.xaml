@@ -25,6 +25,9 @@
         <CommandBinding Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
                         Executed="IsolateSelectionCmdExecuted"
                         CanExecute="IsolateSelectionCmdCanExecute" />
+        <CommandBinding Command="{x:Static local:ManipulateTextWindow.SingleLineCmd}"
+                        Executed="SingleLineCmdExecuted"
+                        CanExecute="SingleLineCmdCanExecute" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -62,7 +65,7 @@
                 <Separator />
                 <MenuItem
                     x:Name="_SingleLineMenuItem"
-                    Click="SingleLineBTN_Click"
+                    Command="{x:Static local:ManipulateTextWindow.SingleLineCmd}"
                     Header="Make Single Line" />
                 <MenuItem
                     x:Name="_TrimEachLineMenuItem"
@@ -166,7 +169,7 @@
                 <Button
                     x:Name="SingleLineBTN"
                     Width="130"
-                    Click="SingleLineBTN_Click"
+                    Command="{x:Static local:ManipulateTextWindow.SingleLineCmd}"
                     Style="{StaticResource SimpleBTN}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock
