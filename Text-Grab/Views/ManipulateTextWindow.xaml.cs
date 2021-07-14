@@ -71,7 +71,85 @@ namespace Text_Grab
             _ = newGrabFrame.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(newGrabFrame, keyedCtrlG));
 
+            RoutedCommand selectLineCommand = new RoutedCommand();
+            _ = selectLineCommand.InputGestures.Add(new KeyGesture(Key.L, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(selectLineCommand, SelectLine));
+
+            RoutedCommand moveLineUpCommand = new RoutedCommand();
+            _ = moveLineUpCommand.InputGestures.Add(new KeyGesture(Key.Up, ModifierKeys.Alt));
+            _ = CommandBindings.Add(new CommandBinding(moveLineUpCommand, MoveLineUp));
+
+            RoutedCommand moveLineDownCommand = new RoutedCommand();
+            _ = moveLineDownCommand.InputGestures.Add(new KeyGesture(Key.Down, ModifierKeys.Alt));
+            _ = CommandBindings.Add(new CommandBinding(moveLineDownCommand, MoveLineDown));
+
             PassedTextControl.Focus();
+        }
+
+        private void MoveLineDown(object sender, ExecutedRoutedEventArgs e)
+        {
+            SelectLine(sender, e);
+
+            string lineText = PassedTextControl.SelectedText;
+            PassedTextControl.SelectedText = "";
+            string textBoxText = PassedTextControl.Text;
+            int selectionIndex = PassedTextControl.SelectionStart;
+            int indexOfNextNewline = textBoxText.Length;
+
+            bool foundNewLine = false;
+
+            for (int j = selectionIndex; j < textBoxText.Length; j++)
+            {
+                char charToCheck = textBoxText[j];
+                if (charToCheck == '\n'
+                    || charToCheck == '\r')
+                {
+                    foundNewLine = true;
+                    indexOfNextNewline = j;
+                }
+                else
+                {
+                    if (foundNewLine == true)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            PassedTextControl.Select(indexOfNextNewline, 0);
+            PassedTextControl.SelectedText = lineText;
+        }
+
+        private void MoveLineUp(object sender, ExecutedRoutedEventArgs e)
+        {
+            SelectLine(sender, e);
+            string lineText = PassedTextControl.SelectedText;
+            PassedTextControl.SelectedText = "";
+            string textBoxText = PassedTextControl.Text;
+            int selectionIndex = PassedTextControl.SelectionStart;
+            int indexOfPreviousNewline = 0;
+
+            bool foundThroughNewLines = false;
+
+            for (int i = selectionIndex - 2; i >= 0; i--)
+            {
+                char charToCheck = textBoxText[i];
+                if (charToCheck == '\n'
+                    || charToCheck == '\r')
+                {
+                    indexOfPreviousNewline = i;
+
+                    if (foundThroughNewLines)
+                        break;
+                }
+                else
+                {
+                    foundThroughNewLines = true;
+                }
+            }
+
+            PassedTextControl.Select(indexOfPreviousNewline, 0);
+            PassedTextControl.SelectedText = lineText;
         }
 
         private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
@@ -330,6 +408,52 @@ namespace Text_Grab
                 if (fd.Font.Strikeout) tdc.Add(TextDecorations.Strikethrough);
                 PassedTextControl.TextDecorations = tdc;
             }
+        }
+
+        private void SelectLine(object sender, ExecutedRoutedEventArgs e)
+        {
+            int selectionIndex = PassedTextControl.SelectionStart;
+            int selectionLength = PassedTextControl.SelectionLength;
+            string textBoxText = PassedTextControl.Text;
+
+            int indexOfPreviousNewline = 0;
+            int indexOfNextNewline = textBoxText.Length;
+
+            if (selectionIndex < 1)
+                selectionIndex = 1;
+
+            for (int i = selectionIndex - 1; i >= 0; i--)
+            {
+                char charToCheck = textBoxText[i];
+                if (charToCheck == '\n'
+                    || charToCheck == '\r')
+                {
+                    indexOfPreviousNewline = i;
+                    break;
+                }
+            }
+
+            bool foundNewLine = false;
+
+            for (int j = selectionIndex; j < textBoxText.Length; j++)
+            {
+                char charToCheck = textBoxText[j];
+                if (charToCheck == '\n'
+                    || charToCheck == '\r')
+                {
+                    foundNewLine = true;
+                    indexOfNextNewline = j;
+                }
+                else
+                {
+                    if(foundNewLine == true)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            PassedTextControl.Select(indexOfPreviousNewline, indexOfNextNewline - indexOfPreviousNewline);
         }
 
         private void SearchButton_Click(object sender, RoutedEventArgs e)
