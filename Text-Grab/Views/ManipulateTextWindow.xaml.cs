@@ -21,9 +21,12 @@ namespace Text_Grab
     /// <summary>
     /// Interaction logic for ManipulateTextWindow.xaml
     /// </summary>
+
     public partial class ManipulateTextWindow : Window
     {
         public string CopiedText { get; set; } = "";
+
+        public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Lower;
 
         public bool WrapText { get; set; } = false;
 
@@ -83,7 +86,32 @@ namespace Text_Grab
             _ = moveLineDownCommand.InputGestures.Add(new KeyGesture(Key.Down, ModifierKeys.Alt));
             _ = CommandBindings.Add(new CommandBinding(moveLineDownCommand, MoveLineDown));
 
+            RoutedCommand toggleCaseCommand = new RoutedCommand();
+            _ = toggleCaseCommand.InputGestures.Add(new KeyGesture(Key.F3, ModifierKeys.Shift));
+            _ = CommandBindings.Add(new CommandBinding(toggleCaseCommand, ToggleCase));
+
             PassedTextControl.Focus();
+        }
+
+        private void ToggleCase(object sender, ExecutedRoutedEventArgs e)
+        {
+            switch (CaseStatusOfToggle)
+            {
+                case CurrentCase.Lower:
+                    PassedTextControl.SelectedText = PassedTextControl.SelectedText.ToLower();
+                    CaseStatusOfToggle = CurrentCase.Camel;
+                    break;
+                case CurrentCase.Camel:
+                    PassedTextControl.SelectedText = PassedTextControl.SelectedText.ToCamel();
+                    CaseStatusOfToggle = CurrentCase.Upper;
+                    break;
+                case CurrentCase.Upper:
+                    PassedTextControl.SelectedText = PassedTextControl.SelectedText.ToUpper();
+                    CaseStatusOfToggle = CurrentCase.Lower;
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void MoveLineDown(object sender, ExecutedRoutedEventArgs e)
