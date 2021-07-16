@@ -25,6 +25,7 @@ namespace Text_Grab.Utilities
             fixToNumbers = fixToNumbers.Replace('O', '0');
             fixToNumbers = fixToNumbers.Replace('g', '9');
             fixToNumbers = fixToNumbers.Replace('i', '1');
+            fixToNumbers = fixToNumbers.Replace('I', '1');
             fixToNumbers = fixToNumbers.Replace('l', '1');
             fixToNumbers = fixToNumbers.Replace('Q', '0');
 

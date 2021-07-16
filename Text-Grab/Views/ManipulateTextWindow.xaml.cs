@@ -259,19 +259,35 @@ namespace Text_Grab
 
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            string workingString = PassedTextControl.Text;
+            string workingString = string.Empty;
+
+            if (PassedTextControl.SelectionLength == 0)
+                workingString = PassedTextControl.Text;
+            else
+                workingString = PassedTextControl.SelectedText;
 
             workingString = workingString.TryFixToNumbers();
 
-            PassedTextControl.Text = workingString;
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = workingString;
+            else
+                PassedTextControl.SelectedText = workingString;
         }
         private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            string workingString = PassedTextControl.Text;
+            string workingString = string.Empty;
+
+            if (PassedTextControl.SelectionLength == 0)
+                workingString = PassedTextControl.Text;
+            else
+                workingString = PassedTextControl.SelectedText;
 
             workingString = workingString.TryFixToLetters();
 
-            PassedTextControl.Text = workingString;
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = workingString;
+            else
+                PassedTextControl.SelectedText = workingString;
         }
 
         private void SplitOnSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
