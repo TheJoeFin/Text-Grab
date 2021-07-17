@@ -221,17 +221,7 @@ namespace Text_Grab
 
         private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
-            string textToEdit = PassedTextControl.Text;
-            PassedTextControl.Text = "";
-            textToEdit = textToEdit.Replace("\r\n", " ");
-            textToEdit = textToEdit.Replace(Environment.NewLine, " ");
-            textToEdit = textToEdit.Replace('\n', ' ');
-            textToEdit = textToEdit.Replace('\r', ' ');
-            
-            Regex regex = new Regex("[ ]{2,}");
-            textToEdit = regex.Replace(textToEdit, " ");
-            textToEdit = textToEdit.Trim();
-            PassedTextControl.Text = textToEdit;
+            PassedTextControl.Text = PassedTextControl.Text.MakeStringSingleLine();
         }
 
         private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)

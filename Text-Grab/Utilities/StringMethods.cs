@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Text_Grab.Utilities
 {
@@ -81,6 +82,20 @@ namespace Text_Grab.Utilities
             joinedString = joinedString.Replace("\r ", "\r");
             joinedString = joinedString.Replace("\n ", "\n");
             return joinedString.Trim();
+        }
+
+        public static string MakeStringSingleLine(this string textToEdit)
+        {
+            textToEdit = textToEdit.Replace("\r\n", " ");
+            textToEdit = textToEdit.Replace(Environment.NewLine, " ");
+            textToEdit = textToEdit.Replace('\n', ' ');
+            textToEdit = textToEdit.Replace('\r', ' ');
+
+            Regex regex = new Regex("[ ]{2,}");
+            textToEdit = regex.Replace(textToEdit, " ");
+            textToEdit = textToEdit.Trim();
+
+            return textToEdit;
         }
     }
 }
