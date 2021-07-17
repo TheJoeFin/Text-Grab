@@ -28,7 +28,7 @@ namespace Text_Grab.Controls
 
             MatchCollection matches = Regex.Matches(StringFromWindow.ToLower(), pattern);
 
-            if (matches.Count == 0)
+            if (matches.Count == 0 || string.IsNullOrWhiteSpace(FindTextBox.Text))
             {
                 ResultsListView.Items.Add("No Matches");
                 ResultsListView.IsEnabled = false;
@@ -55,7 +55,10 @@ namespace Text_Grab.Controls
             string stringToParse = ResultsListView.SelectedItem as string;
 
             if (string.IsNullOrWhiteSpace(stringToParse))
+            {
+                ResultsListView.Items.Clear();
                 return;
+            }
 
             int.TryParse(stringToParse.Substring(8), out int selectionStartIndex);
 

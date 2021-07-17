@@ -28,13 +28,18 @@
             FontSize="18"
             Foreground="{StaticResource Teal}"
             Text="Matches" />
-        <ListView
-            x:Name="ResultsListView"
-            Grid.Row="2"
-            Background="{StaticResource DarkControlBackground}"
-            Foreground="White"
-            ScrollViewer.CanContentScroll="True"
-            ScrollViewer.VerticalScrollBarVisibility="Auto"
-            SelectionChanged="ResultsListView_SelectionChanged" />
+
+        <Border Grid.Row="2" Background="{StaticResource DarkControlBackground}">
+            <ListView Style="{DynamicResource ListViewDarkStyle}"
+                x:Name="ResultsListView"
+                Grid.Row="2"
+                Background="Transparent"
+                Foreground="White"
+                ScrollViewer.CanContentScroll="True"
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                SelectionChanged="ResultsListView_SelectionChanged">
+                No Matches
+            </ListView>
+        </Border>
     </Grid>
 </Window>
