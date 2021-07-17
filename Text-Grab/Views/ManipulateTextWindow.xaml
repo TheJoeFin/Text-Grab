@@ -43,15 +43,15 @@
             Grid.Row="0"
             Background="{StaticResource DarkBackground}"
             Foreground="White">
-            <MenuItem Header="File">
+            <MenuItem Header="_File">
                 <MenuItem
                     x:Name="SaveFileMenuItem"
                     Click="SaveBTN_Click"
-                    Header="Save To File..." />
+                    Header="_Save To File..." />
                 <MenuItem
                     x:Name="CopyAndCloseMenuItem"
                     Click="CopyCloseBTN_Click"
-                    Header="Copy And Close" />
+                    Header="_Copy And Close" />
                 <Separator />
                 <MenuItem
                     x:Name="SettingsMenuItem"
@@ -60,7 +60,7 @@
                 <MenuItem
                     x:Name="CloseMenuItem"
                     Click="CloseMenuItem_Click"
-                    Header="Close" />
+                    Header="_Exit" />
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Command="ApplicationCommands.Undo" />
@@ -71,55 +71,55 @@
                 <MenuItem Command="ApplicationCommands.Paste" />
                 <Separator />
                 <MenuItem
-                    x:Name="_SingleLineMenuItem"
+                    x:Name="SingleLineMenuItem"
                     Command="{x:Static local:ManipulateTextWindow.SingleLineCmd}"
-                    Header="Make Single Line" />
+                    Header="Make _Single Line" />
                 <MenuItem
                     x:Name="_TrimEachLineMenuItem"
                     Click="TrimEachLineMenuItem_Click"
-                    Header="Trim Each Line" />
+                    Header="_Trim Each Line" />
                 <MenuItem
-                    x:Name="TryTo_NumberMenuItem"
+                    x:Name="TryToNumberMenuItem"
                     Click="TryToNumberMenuItem_Click"
-                    Header="Try To Make Numbers" />
+                    Header="Try To Make _Numbers" />
                 <MenuItem
-                    x:Name="TryTo_AlphaMenuItem"
+                    x:Name="TryToAlphaMenuItem"
                     Click="TryToAlphaMenuItem_Click"
-                    Header="Try To Make Letters" />
+                    Header="Try To Make _Letters" />
                 <Separator />
                 <MenuItem
-                    x:Name="Split_LineBeforeSelectionMI"
+                    x:Name="SplitLineBeforeSelectionMI"
                     Command="{x:Static local:ManipulateTextWindow.SplitOnSelectionCmd}"
-                    Header="Split Lines Before Each Selection" />
+                    Header="Split Lines _Before Each Selection" />
                 <MenuItem
-                    x:Name="_IsolateSelectionMI"
+                    x:Name="IsolateSelectionMI"
                     Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
-                    Header="Isolate Selected Text" />
+                    Header="_Isolate Selected Text" />
             </MenuItem>
-            <MenuItem Header="_Format">
+            <MenuItem Header="F_ormat">
                 <MenuItem
                     x:Name="WrapTextMenuItem"
                     Checked="WrapTextCHBOX_Checked"
-                    Header="Wrap Text"
+                    Header="_Wrap Text"
                     IsCheckable="True"
                     IsChecked="True"
                     Unchecked="WrapTextCHBOX_Checked" />
                 <MenuItem
                     x:Name="FontMenuItem"
                     Click="FontMenuItem_Click"
-                    Header="Font..." />
+                    Header="_Font..." />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem
                     x:Name="AlwaysOnTop"
                     Click="AlwaysOnTop_Checked"
-                    Header="Always On Top"
+                    Header="_Always On Top"
                     IsCheckable="True"
                     IsChecked="False" />
                 <MenuItem
                     x:Name="HideBottomBarMenuItem"
                     Click="HideBottomBarMenuItem_Click"
-                    Header="Hide Bottom Bar"
+                    Header="_Hide Bottom Bar"
                     IsCheckable="True"
                     IsChecked="False" />
             </MenuItem>
@@ -127,7 +127,7 @@
                 <MenuItem
                     x:Name="FeedbackMenuItem"
                     Click="FeedbackMenuItem_Click"
-                    Header="Feedback..." />
+                    Header="_Feedback..." />
             </MenuItem>
         </Menu>
         <TextBox
