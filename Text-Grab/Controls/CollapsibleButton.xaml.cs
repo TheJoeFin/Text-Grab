@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using Windows.UI;
+using System.Windows.Media;
 
 namespace Text_Grab.Controls
 {
@@ -13,6 +15,8 @@ namespace Text_Grab.Controls
         private string _buttonText = "Button Text";
 
         public bool IsSymbol { get; set; } = false;
+
+        public Brush ButtonBackground { get; set; }
 
         public string ButtonText
         {
@@ -54,6 +58,22 @@ namespace Text_Grab.Controls
             InitializeComponent();
         }
 
+        private void CollapsibleButton_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (IsSymbol == true)
+            {
+                // change to a symbol button
+                Style SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
+                this.Style = SymbolButtonStyle;
+                ButtonTextBlock.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                if (ButtonBackground != null)
+                    this.Background = ButtonBackground;
+            }
+        }
+
         private void ChangeButtonLayout_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (IsSymbol == true)
@@ -62,8 +82,9 @@ namespace Text_Grab.Controls
                 Style tealButtonStyle = this.FindResource("TealColor") as Style;
                 this.Style = tealButtonStyle;
                 ButtonTextBlock.Visibility = Visibility.Visible;
-                this.InvalidateMeasure();
-                this.InvalidateArrange();
+
+                if (ButtonBackground != null)
+                    this.Background = ButtonBackground;
 
                 IsSymbol = false;
             }
@@ -73,9 +94,6 @@ namespace Text_Grab.Controls
                 Style SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
                 this.Style = SymbolButtonStyle;
                 ButtonTextBlock.Visibility = Visibility.Collapsed;
-                Width = 30;
-                this.InvalidateMeasure();
-                this.InvalidateArrange();
 
                 IsSymbol = true;
             }

@@ -570,7 +570,7 @@
         </Setter>
     </Style>
     <Style x:Key="TealColor" TargetType="Button">
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+        <Setter Property="Foreground" Value="White" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
         <Setter Property="IsTabStop" Value="False" />
@@ -579,8 +579,8 @@
                 <ControlTemplate TargetType="{x:Type Button}">
                     <Border
                         x:Name="border"
-                        Background="#18474C"
-                        BorderBrush="#308E98"
+                        Background="{StaticResource DarkTeal}"
+                        BorderBrush="{StaticResource Teal}"
                         BorderThickness="1"
                         SnapsToDevicePixels="true">
                         <ContentPresenter
@@ -592,13 +592,17 @@
                             RecognizesAccessKey="True" />
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="true">
+                        <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Background" Value="#1E595F" />
                             <Setter Property="Foreground" Value="White" />
                         </Trigger>
-                        <Trigger Property="IsPressed" Value="true">
+                        <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="border" Property="Background" Value="#071818" />
                             <Setter Property="Foreground" Value="White" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Background" Value="#071718" />
+                            <Setter Property="Foreground" Value="#3E3E3E" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -606,7 +610,7 @@
         </Setter>
     </Style>
     <Style x:Key="SymbolButton" TargetType="Button">
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+        <Setter Property="Foreground" Value="White" />
         <Setter Property="Padding" Value="6" />
         <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
         <Setter Property="IsTabStop" Value="False" />
@@ -633,6 +637,9 @@
                         <Trigger Property="IsPressed" Value="true">
                             <Setter TargetName="border" Property="Background" Value="#071818" />
                             <Setter Property="Foreground" Value="White" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="Gray" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
