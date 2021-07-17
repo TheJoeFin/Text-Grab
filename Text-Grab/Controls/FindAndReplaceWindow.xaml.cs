@@ -1,8 +1,10 @@
 ﻿using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Models;
+using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls
 {
@@ -37,7 +39,41 @@ namespace Text_Grab.Controls
             {
                 ResultsListView.IsEnabled = true;
                 foreach (Match m in matches)
-                    ResultsListView.Items.Add($"At index {m.Index}");
+                {
+                    int previewLengths = 16;
+                    int previewBeginning =  0;
+                    int previewEnd =  0;
+                    bool atBeginning = false;
+                    bool atEnd = false;
+
+                    if (m.Index - previewLengths < 0)
+                    {
+                        atBeginning = true;
+                        previewBeginning = 0;
+                    }
+                    else
+                        previewBeginning = m.Index - previewLengths;
+
+                    if (m.Index + previewLengths > StringFromWindow.Length)
+                    {
+                        atEnd = true;
+                        previewEnd = StringFromWindow.Length;
+                    }
+                    else
+                        previewEnd = m.Index + previewLengths;
+
+                    string previewString = "";
+
+                    if (atBeginning == false)
+                        previewString += "...";
+
+                    previewString += StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine();
+
+                    if (atEnd == false)
+                        previewString += "...";
+
+                    ResultsListView.Items.Add($"At index {m.Index} \t\t {previewString}");
+                }
             }
 
             if (matches.Count > 0)
@@ -59,6 +95,8 @@ namespace Text_Grab.Controls
                 ResultsListView.Items.Clear();
                 return;
             }
+
+            stringToParse = stringToParse.Split('\t').FirstOrDefault();
 
             int.TryParse(stringToParse.Substring(8), out int selectionStartIndex);
 

@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Find and Replace"
-    Width="300"
+    Width="450"
     Height="450"
     Background="{StaticResource DarkBackground}"
     mc:Ignorable="d">
@@ -30,14 +30,15 @@
             Text="Matches" />
 
         <Border Grid.Row="2" Background="{StaticResource DarkControlBackground}">
-            <ListView Style="{DynamicResource ListViewDarkStyle}"
+            <ListView
                 x:Name="ResultsListView"
                 Grid.Row="2"
                 Background="Transparent"
                 Foreground="White"
                 ScrollViewer.CanContentScroll="True"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                SelectionChanged="ResultsListView_SelectionChanged">
+                SelectionChanged="ResultsListView_SelectionChanged"
+                Style="{DynamicResource ListViewDarkStyle}">
                 No Matches
             </ListView>
         </Border>
