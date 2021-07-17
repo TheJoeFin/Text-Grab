@@ -8,7 +8,7 @@
     Title="Edit Text"
     Width="600"
     Height="450"
-    Background="#444444"
+    Background="{StaticResource DarkBackground}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -19,15 +19,18 @@
         </Style>
     </Window.Resources>
     <Window.CommandBindings>
-        <CommandBinding Command="{x:Static local:ManipulateTextWindow.SplitOnSelectionCmd}"
-                    Executed="SplitOnSelectionCmdExecuted"
-                    CanExecute="SplitOnSelectionCmdCanExecute"/>
-        <CommandBinding Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
-                        Executed="IsolateSelectionCmdExecuted"
-                        CanExecute="IsolateSelectionCmdCanExecute" />
-        <CommandBinding Command="{x:Static local:ManipulateTextWindow.SingleLineCmd}"
-                        Executed="SingleLineCmdExecuted"
-                        CanExecute="SingleLineCmdCanExecute" />
+        <CommandBinding
+            CanExecute="SplitOnSelectionCmdCanExecute"
+            Command="{x:Static local:ManipulateTextWindow.SplitOnSelectionCmd}"
+            Executed="SplitOnSelectionCmdExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
+            Executed="IsolateSelectionCmdExecuted" />
+        <CommandBinding
+            CanExecute="SingleLineCmdCanExecute"
+            Command="{x:Static local:ManipulateTextWindow.SingleLineCmd}"
+            Executed="SingleLineCmdExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -35,7 +38,10 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-        <Menu Grid.Row="0" Background="#444444" Foreground="White">
+        <Menu
+            Grid.Row="0"
+            Background="{StaticResource DarkBackground}"
+            Foreground="White">
             <MenuItem Header="File">
                 <MenuItem
                     x:Name="SaveFileMenuItem"
@@ -81,12 +87,13 @@
                     Header="Try To Make Letters" />
                 <Separator />
                 <MenuItem
-                    x:Name="Split_LineBeforeSelectionMI" 
+                    x:Name="Split_LineBeforeSelectionMI"
                     Command="{x:Static local:ManipulateTextWindow.SplitOnSelectionCmd}"
                     Header="Split Lines Before Each Selection" />
-                <MenuItem x:Name="_IsolateSelectionMI" 
-                          Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
-                          Header="Isolate Selected Text" />
+                <MenuItem
+                    x:Name="_IsolateSelectionMI"
+                    Command="{x:Static local:ManipulateTextWindow.IsolateSelectionCmd}"
+                    Header="Isolate Selected Text" />
             </MenuItem>
             <MenuItem Header="_Format">
                 <MenuItem
@@ -122,18 +129,19 @@
                     Header="Feedback..." />
             </MenuItem>
         </Menu>
-        <TextBox Style="{DynamicResource TextBoxStyle1}"
+        <TextBox
             x:Name="PassedTextControl"
-            AutoWordSelection="True" 
-            IsInactiveSelectionHighlightEnabled="True"
-            Grid.Row="1" 
+            Grid.Row="1"
             AcceptsReturn="True"
             AcceptsTab="True"
-            Background="#1E1E1E"
+            AutoWordSelection="True"
+            Background="{StaticResource DarkControlBackground}"
             FontSize="16"
             Foreground="White"
             HorizontalScrollBarVisibility="Auto"
+            IsInactiveSelectionHighlightEnabled="True"
             SpellCheck.IsEnabled="True"
+            Style="{DynamicResource TextBoxStyle1}"
             Text="{Binding CopiedText, Mode=OneWay}"
             TextWrapping="Wrap"
             VerticalScrollBarVisibility="Auto" />
@@ -151,8 +159,10 @@
                     Style="{StaticResource SimpleBTN}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock
-                        FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"
-                        Text="" />
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            FontFamily="Segoe MDL2 Assets"
+                            Text="" />
                         <TextBlock Text="Copy and Close" />
                     </StackPanel>
                 </Button>
@@ -163,8 +173,10 @@
                     Style="{StaticResource SimpleBTN}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock
-                        FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"
-                        Text="" />
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            FontFamily="Segoe MDL2 Assets"
+                            Text="" />
                         <TextBlock Text="Save to File..." />
                     </StackPanel>
                 </Button>
@@ -175,8 +187,10 @@
                     Style="{StaticResource SimpleBTN}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock
-                        FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"
-                        Text="" />
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            FontFamily="Segoe MDL2 Assets"
+                            Text="" />
                         <TextBlock Text="Make Single Line" />
                     </StackPanel>
                 </Button>
