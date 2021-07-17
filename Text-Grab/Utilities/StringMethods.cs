@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Text_Grab.Utilities
@@ -37,7 +36,7 @@ namespace Text_Grab.Utilities
         {
             if (stringToFix.Length < 5)
                 return stringToFix;
-            
+
             int totalNumbers = 0;
             int totalLetters = 0;
 
@@ -58,7 +57,7 @@ namespace Text_Grab.Utilities
                 stringToFix = stringToFix.TryFixToNumbers();
                 Debug.WriteLine($"Tried to fix {stringToFix} to numbers");
             }
-            else if(letterNumber > 0.6)
+            else if (letterNumber > 0.6)
             {
                 stringToFix = stringToFix.TryFixToLetters();
                 Debug.WriteLine($"Tried to fix {stringToFix} to letters");
@@ -96,6 +95,35 @@ namespace Text_Grab.Utilities
             textToEdit = textToEdit.Trim();
 
             return textToEdit;
+        }
+
+        public static string ToCamel(this string stringToCamel)
+        {
+            string toReturn = string.Empty;
+            bool isSpaceOrNewLine = true;
+
+            foreach (char characterToCheck in stringToCamel)
+            {
+                if (isSpaceOrNewLine == true
+                    && char.IsLetter(characterToCheck))
+                {
+                    isSpaceOrNewLine = false;
+                    toReturn += char.ToUpper(characterToCheck);
+                }
+                else
+                {
+                    toReturn += characterToCheck;
+
+                    if (char.IsWhiteSpace(characterToCheck)
+                        || char.IsPunctuation(characterToCheck)
+                        || characterToCheck == '\n'
+                        || characterToCheck == '\r')
+                    {
+                        isSpaceOrNewLine = true;
+                    }
+                }
+            }
+            return toReturn;
         }
     }
 }
