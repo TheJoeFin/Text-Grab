@@ -144,6 +144,7 @@
             SpellCheck.IsEnabled="True"
             Style="{DynamicResource TextBoxStyle1}"
             Text="{Binding CopiedText, Mode=OneWay}"
+            TextChanged="PassedTextControl_TextChanged"
             TextWrapping="Wrap"
             VerticalScrollBarVisibility="Auto" />
         <Grid x:Name="BottomBar" Grid.Row="2">

@@ -90,7 +90,16 @@ namespace Text_Grab
             _ = toggleCaseCommand.InputGestures.Add(new KeyGesture(Key.F3, ModifierKeys.Shift));
             _ = CommandBindings.Add(new CommandBinding(toggleCaseCommand, ToggleCase));
 
-            PassedTextControl.Focus();
+            // PassedTextControl.Focus();
+            this.WindowState = WindowState.Minimized;
+
+            WindowUtilities.NormalLaunch(true);
+        }
+
+        private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            this.WindowState = WindowState.Normal;
+
         }
 
         private void ToggleCase(object sender, ExecutedRoutedEventArgs e)
@@ -216,7 +225,7 @@ namespace Text_Grab
 
         private void SingleLineBTN_Click(object sender, RoutedEventArgs e)
         {
-            
+
         }
 
         private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -229,10 +238,10 @@ namespace Text_Grab
             int n = 0;
             foreach (var c in PassedTextControl.Text)
             {
-                if (c == '\n' || c == '\r') 
+                if (c == '\n' || c == '\r')
                     n++;
             }
-            
+
             if (n < 2)
                 e.CanExecute = false;
             else
@@ -480,7 +489,7 @@ namespace Text_Grab
                 }
                 else
                 {
-                    if(foundNewLine == true)
+                    if (foundNewLine == true)
                     {
                         break;
                     }
