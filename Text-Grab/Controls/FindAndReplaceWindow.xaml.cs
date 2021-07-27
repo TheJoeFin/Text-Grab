@@ -1,9 +1,7 @@
-﻿using System.Collections.ObjectModel;
-using System.Linq;
+﻿using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using Text_Grab.Models;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls
@@ -15,7 +13,7 @@ namespace Text_Grab.Controls
     {
         public string StringFromWindow { get; set; } = "";
 
-        public ManipulateTextWindow TextEditWindow = null;
+        public EditTextWindow TextEditWindow = null;
 
         public FindAndReplaceWindow()
         {
@@ -41,8 +39,8 @@ namespace Text_Grab.Controls
                 foreach (Match m in matches)
                 {
                     int previewLengths = 16;
-                    int previewBeginning =  0;
-                    int previewEnd =  0;
+                    int previewBeginning = 0;
+                    int previewEnd = 0;
                     bool atBeginning = false;
                     bool atEnd = false;
 

@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -22,7 +21,7 @@ namespace Text_Grab
     /// Interaction logic for ManipulateTextWindow.xaml
     /// </summary>
 
-    public partial class ManipulateTextWindow : Window
+    public partial class EditTextWindow : Window
     {
         public string CopiedText { get; set; } = "";
 
@@ -36,7 +35,7 @@ namespace Text_Grab
 
         public static RoutedCommand SingleLineCmd = new RoutedCommand();
 
-        public ManipulateTextWindow()
+        public EditTextWindow()
         {
             InitializeComponent();
 
@@ -49,7 +48,7 @@ namespace Text_Grab
             }
         }
 
-        public ManipulateTextWindow(string rawPassedString)
+        public EditTextWindow(string rawPassedString)
         {
             int lastCommaPosition = rawPassedString.AllIndexesOf(",").LastOrDefault();
             CopiedText = rawPassedString.Substring(0, lastCommaPosition);
@@ -90,16 +89,15 @@ namespace Text_Grab
             _ = toggleCaseCommand.InputGestures.Add(new KeyGesture(Key.F3, ModifierKeys.Shift));
             _ = CommandBindings.Add(new CommandBinding(toggleCaseCommand, ToggleCase));
 
-            // PassedTextControl.Focus();
-            this.WindowState = WindowState.Minimized;
 
-            WindowUtilities.NormalLaunch(true);
+            WindowState = WindowState.Minimized;
+            WindowUtilities.LaunchFullScreenGrab(true);
         }
 
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
         {
-            this.WindowState = WindowState.Normal;
-
+            WindowState = WindowState.Normal;
+            PassedTextControl.Focus();
         }
 
         private void ToggleCase(object sender, ExecutedRoutedEventArgs e)
@@ -191,7 +189,7 @@ namespace Text_Grab
 
         private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
         {
-            WindowUtilities.NormalLaunch(true);
+            WindowUtilities.LaunchFullScreenGrab(true);
         }
 
         private void keyedCtrlG(object sender, ExecutedRoutedEventArgs e)
@@ -381,7 +379,7 @@ namespace Text_Grab
 
         private void NewFullscreen_Click(object sender, RoutedEventArgs e)
         {
-            WindowUtilities.NormalLaunch(true);
+            WindowUtilities.LaunchFullScreenGrab(true);
         }
 
         private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)

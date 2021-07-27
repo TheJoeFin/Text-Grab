@@ -70,7 +70,7 @@ namespace Text_Grab.Views
         {
             string frameText = "";
 
-            if(wordBorders.Where(w => w.IsSelected == true).ToList().Count == 0)
+            if (wordBorders.Where(w => w.IsSelected == true).ToList().Count == 0)
             {
                 Point windowPosition = this.GetAbsolutePosition();
                 DpiScale dpi = VisualTreeHelper.GetDpi(this);
@@ -88,14 +88,14 @@ namespace Text_Grab.Views
             {
                 List<WordBorder> selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
 
-                if(selectedBorders.Count == 0)
+                if (selectedBorders.Count == 0)
                     selectedBorders.AddRange(wordBorders);
-                
+
                 List<string> wordsList = new List<string>();
                 int lastLineNum = selectedBorders.FirstOrDefault().LineNumber;
                 foreach (WordBorder border in selectedBorders)
                 {
-                    if(border.LineNumber != lastLineNum)
+                    if (border.LineNumber != lastLineNum)
                     {
                         wordsList.Add("\n");
                         lastLineNum = border.LineNumber;
@@ -182,7 +182,7 @@ namespace Text_Grab.Views
                 {
                     string wordString = ocrWord.Text;
 
-                    if(Settings.Default.CorrectErrors)
+                    if (Settings.Default.CorrectErrors)
                         wordString = wordString.TryFixEveryWordLetterNumberErrors();
 
                     WordBorder wordBorderBox = new WordBorder

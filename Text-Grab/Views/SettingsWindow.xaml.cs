@@ -62,7 +62,7 @@ namespace Text_Grab
         private void GrabFrameRDBTN_Checked(object sender, RoutedEventArgs e)
         {
             if (this.IsLoaded != true)
-                return; 
+                return;
             Settings.Default.DefaultLaunch = "GrabFrame";
             Settings.Default.Save();
         }

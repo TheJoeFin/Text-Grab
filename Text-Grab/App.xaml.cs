@@ -35,11 +35,11 @@ namespace Text_Grab
                 }
                 if (e.Args[i] == "Fullscreen")
                 {
-                    WindowUtilities.NormalLaunch();
+                    WindowUtilities.LaunchFullScreenGrab();
                 }
                 if (e.Args[i] == "EditText")
                 {
-                    ManipulateTextWindow manipulateTextWindow = new ManipulateTextWindow();
+                    EditTextWindow manipulateTextWindow = new EditTextWindow();
                     manipulateTextWindow.Show();
                 }
             }
@@ -49,18 +49,18 @@ namespace Text_Grab
                 switch (Settings.Default.DefaultLaunch)
                 {
                     case "Fullscreen":
-                        WindowUtilities.NormalLaunch();
+                        WindowUtilities.LaunchFullScreenGrab();
                         break;
                     case "GrabFrame":
                         GrabFrame gf = new GrabFrame();
                         gf.Show();
                         break;
                     case "EditText":
-                        ManipulateTextWindow manipulateTextWindow = new ManipulateTextWindow();
+                        EditTextWindow manipulateTextWindow = new EditTextWindow();
                         manipulateTextWindow.Show();
                         break;
                     default:
-                        WindowUtilities.NormalLaunch();
+                        WindowUtilities.LaunchFullScreenGrab();
                         break;
                 }
             }

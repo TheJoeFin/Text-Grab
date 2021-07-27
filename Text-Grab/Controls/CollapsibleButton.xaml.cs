@@ -1,8 +1,7 @@
-﻿using System.Windows.Controls;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using Windows.UI;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace Text_Grab.Controls
@@ -21,8 +20,8 @@ namespace Text_Grab.Controls
         public string ButtonText
         {
             get { return _buttonText; }
-            set 
-            { 
+            set
+            {
                 if (_buttonText != value)
                 {
                     _buttonText = value;
@@ -36,9 +35,9 @@ namespace Text_Grab.Controls
         public string SymbolText
         {
             get { return _symbolText; }
-            set 
-            { 
-                if(_symbolText != value)
+            set
+            {
+                if (_symbolText != value)
                 {
                     _symbolText = value;
                     OnPropertyChanged();

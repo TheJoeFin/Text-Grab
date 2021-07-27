@@ -17,7 +17,7 @@ namespace Text_Grab
                 if (invokedArgs.Length != 0)
                 {
                     // Perform a normal launch
-                    ManipulateTextWindow mtw = new ManipulateTextWindow(invokedArgs);
+                    EditTextWindow mtw = new EditTextWindow(invokedArgs);
                     mtw.Show();
                     return;
                 }

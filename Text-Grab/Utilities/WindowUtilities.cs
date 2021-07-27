@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Views;
 
@@ -15,17 +12,15 @@ namespace Text_Grab.Utilities
 
             foreach (Window window in allWindows)
             {
-                if (window is ManipulateTextWindow mtw)
+                if (window is EditTextWindow mtw)
                 {
                     mtw.AddThisText(textToAdd);
                 }
             }
         }
 
-        public static void NormalLaunch(bool openAnyway = false)
+        public static void LaunchFullScreenGrab(bool openAnyway = false)
         {
-            // base.OnActivated(e);
-
             Screen[] allScreens = Screen.AllScreens;
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
