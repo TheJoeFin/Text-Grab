@@ -49,8 +49,10 @@ namespace Text_Grab
 
             if ((bool)GrabFrameRDBTN.IsChecked)
                 Settings.Default.DefaultLaunch = "GrabFrame";
-            else
+            else if ((bool)FullScreenRDBTN.IsChecked)
                 Settings.Default.DefaultLaunch = "Fullscreen";
+            else
+                Settings.Default.DefaultLaunch = "EditText";
 
             Settings.Default.Save();
         }

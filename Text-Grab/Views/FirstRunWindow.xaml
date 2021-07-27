@@ -9,6 +9,7 @@
     Title="FirstRunWindow"
     Width="800"
     Height="600"
+    d:Height="3000"
     MinWidth="200"
     MinHeight="200"
     Padding="50"
@@ -75,6 +76,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
@@ -115,22 +117,13 @@
 
                 <TextBlock
                     Grid.Row="2"
-                    Grid.ColumnSpan="2"
+                    Grid.ColumnSpan="3"
                     Margin="0,30,0,0"
                     HorizontalAlignment="Center"
                     FontSize="18"
                     Foreground="White"
                     Text="Default Launch Window" />
 
-                <Viewbox
-                    Grid.Row="4"
-                    Grid.Column="0"
-                    Margin="20">
-                    <Image
-                        Width="800"
-                        Height="620"
-                        Source="/Text-Grab;component/Images/Fullscreen.png" />
-                </Viewbox>
                 <RadioButton
                     x:Name="FullScreenRDBTN"
                     Grid.Row="3"
@@ -140,17 +133,16 @@
                     Content="Fullscreen"
                     Foreground="White"
                     GroupName="DefaultLaunch" />
-
-
                 <Viewbox
                     Grid.Row="4"
-                    Grid.Column="1"
+                    Grid.Column="0"
                     Margin="20">
                     <Image
                         Width="800"
                         Height="620"
-                        Source="/Text-Grab;component/Images/Grab-Frame.png" />
+                        Source="/Text-Grab;component/Images/Fullscreen.png" />
                 </Viewbox>
+
                 <RadioButton
                     x:Name="GrabFrameRDBTN"
                     Grid.Row="3"
@@ -160,6 +152,34 @@
                     Content="Grab Frame"
                     Foreground="White"
                     GroupName="DefaultLaunch" />
+                <Viewbox
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    Margin="20">
+                    <Image
+                        Width="800"
+                        Height="620"
+                        Source="/Text-Grab;component/Images/Grab-Frame.png" />
+                </Viewbox>
+
+                <RadioButton
+                    x:Name="EditWindowRDBTN"
+                    Grid.Row="3"
+                    Grid.Column="2"
+                    HorizontalAlignment="Center"
+                    Checked="RadioButton_Checked"
+                    Content="Edit Text Window"
+                    Foreground="White"
+                    GroupName="DefaultLaunch" />
+                <Viewbox
+                    Grid.Row="4"
+                    Grid.Column="2"
+                    Margin="20">
+                    <Image
+                        Width="800"
+                        Height="620"
+                        Source="/Text-Grab;component/Images/EditTextWindow.png" />
+                </Viewbox>
 
             </Grid>
             <TextBlock Style="{StaticResource TextHeader}">

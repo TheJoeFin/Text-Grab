@@ -24,6 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Images\EditTextWindow.png" />
     <None Remove="Images\Fullscreen.png" />
     <None Remove="Images\Grab-Frame.png" />
     <None Remove="Images\Text-Grab-Icon.png" />
@@ -41,6 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Images\EditTextWindow.png" />
     <Content Include="Images\Fullscreen.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
