@@ -181,6 +181,9 @@ namespace Text_Grab
                 {
                     foundThroughNewLines = true;
                 }
+
+                if (i == 0)
+                    indexOfPreviousNewline = i;
             }
 
             PassedTextControl.Select(indexOfPreviousNewline, 0);
