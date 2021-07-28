@@ -482,7 +482,7 @@ namespace Text_Grab
                 if (charToCheck == '\n'
                     || charToCheck == '\r')
                 {
-                    indexOfPreviousNewline = i;
+                    indexOfPreviousNewline = i + 1;
                     break;
                 }
             }
@@ -507,7 +507,7 @@ namespace Text_Grab
                 }
             }
 
-            PassedTextControl.Select(indexOfPreviousNewline, indexOfNextNewline - indexOfPreviousNewline);
+            PassedTextControl.Select(indexOfPreviousNewline, indexOfNextNewline - indexOfPreviousNewline + 1);
         }
 
         private void SearchButton_Click(object sender, RoutedEventArgs e)
