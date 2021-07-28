@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Text_Grab.Utilities
@@ -85,16 +86,31 @@ namespace Text_Grab.Utilities
 
         public static string MakeStringSingleLine(this string textToEdit)
         {
-            textToEdit = textToEdit.Replace("\r\n", " ");
-            textToEdit = textToEdit.Replace(Environment.NewLine, " ");
-            textToEdit = textToEdit.Replace('\n', ' ');
-            textToEdit = textToEdit.Replace('\r', ' ');
+            StringBuilder endingNewLines = new StringBuilder();
+
+            for (int i = textToEdit.Length - 1; i <= 0; i--)
+            {
+                if (textToEdit[i] == '\n'
+                    || textToEdit[i] == '\r')
+                    endingNewLines.Insert(0, textToEdit[i]);
+            }
+
+            StringBuilder workingString = new StringBuilder();
+            workingString.Append(textToEdit);
+
+            workingString.Replace("\r\n", " ");
+            workingString.Replace(Environment.NewLine, " ");
+            workingString.Replace('\n', ' ');
+            workingString.Replace('\r', ' ');
 
             Regex regex = new Regex("[ ]{2,}");
-            textToEdit = regex.Replace(textToEdit, " ");
-            textToEdit = textToEdit.Trim();
+            string temp = regex.Replace(workingString.ToString(), " ").Trim();
+            workingString.Clear();
+            workingString.Append(temp);
 
-            return textToEdit;
+            workingString.Append(endingNewLines.ToString());
+
+            return workingString.ToString();
         }
 
         public static string ToCamel(this string stringToCamel)
