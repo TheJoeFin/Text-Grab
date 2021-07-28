@@ -231,13 +231,23 @@ namespace Text_Grab
 
         private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
-            PassedTextControl.Text = PassedTextControl.Text.MakeStringSingleLine();
+            if (PassedTextControl.SelectedText.Length > 0)
+                PassedTextControl.SelectedText = PassedTextControl.SelectedText.MakeStringSingleLine();
+            else
+                PassedTextControl.Text = PassedTextControl.Text.MakeStringSingleLine();
         }
 
         private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
+            string textToOperateOn;
+
+            if (PassedTextControl.SelectedText.Length > 0)
+                textToOperateOn = PassedTextControl.SelectedText;
+            else
+                textToOperateOn = PassedTextControl.Text;
+
             int n = 0;
-            foreach (var c in PassedTextControl.Text)
+            foreach (var c in textToOperateOn)
             {
                 if (c == '\n' || c == '\r')
                     n++;
