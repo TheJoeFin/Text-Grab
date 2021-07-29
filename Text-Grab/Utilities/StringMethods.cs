@@ -88,11 +88,13 @@ namespace Text_Grab.Utilities
         {
             StringBuilder endingNewLines = new StringBuilder();
 
-            for (int i = textToEdit.Length - 1; i <= 0; i--)
+            for (int i = textToEdit.Length - 1; i >= 0; i--)
             {
                 if (textToEdit[i] == '\n'
                     || textToEdit[i] == '\r')
                     endingNewLines.Insert(0, textToEdit[i]);
+                else
+                    break;
             }
 
             StringBuilder workingString = new StringBuilder();
