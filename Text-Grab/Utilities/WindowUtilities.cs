@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Views;
 
@@ -42,7 +43,7 @@ namespace Text_Grab.Utilities
 
                 if (screenHasWindow == false || openAnyway == true)
                 {
-                    FullscreenGrab mw = new FullscreenGrab
+                    FullscreenGrab fullscreenGrab = new FullscreenGrab
                     {
                         WindowStartupLocation = WindowStartupLocation.Manual,
                         Width = 200,
@@ -52,16 +53,17 @@ namespace Text_Grab.Utilities
                     };
 
                     if (screen.WorkingArea.Left >= 0)
-                        mw.Left = screen.WorkingArea.Left;
+                        fullscreenGrab.Left = screen.WorkingArea.Left;
                     else
-                        mw.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
+                        fullscreenGrab.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
 
                     if (screen.WorkingArea.Top >= 0)
-                        mw.Top = screen.WorkingArea.Top;
+                        fullscreenGrab.Top = screen.WorkingArea.Top;
                     else
-                        mw.Top = screen.WorkingArea.Top + (screen.WorkingArea.Height / 2);
+                        fullscreenGrab.Top = screen.WorkingArea.Top + (screen.WorkingArea.Height / 2);
 
-                    mw.Show();
+                    fullscreenGrab.Show();
+                    fullscreenGrab.Activate();
                 }
             }
         }
