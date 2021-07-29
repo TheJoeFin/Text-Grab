@@ -224,11 +224,6 @@ namespace Text_Grab
             }
         }
 
-        private void SingleLineBTN_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
             if (PassedTextControl.SelectedText.Length > 0)
