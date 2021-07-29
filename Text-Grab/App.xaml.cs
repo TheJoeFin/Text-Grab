@@ -60,7 +60,8 @@ namespace Text_Grab
                         manipulateTextWindow.Show();
                         break;
                     default:
-                        WindowUtilities.LaunchFullScreenGrab();
+                        EditTextWindow editTextWindow = new EditTextWindow();
+                        editTextWindow.Show();
                         break;
                 }
             }

@@ -30,8 +30,11 @@ namespace Text_Grab
                 case "GrabFrame":
                     GrabFrameRDBTN.IsChecked = true;
                     break;
+                case "EditText":
+                    EditWindowRDBTN.IsChecked = true;
+                    break;
                 default:
-                    FullScreenRDBTN.IsChecked = true;
+                    EditWindowRDBTN.IsChecked = true;
                     break;
             }
         }
