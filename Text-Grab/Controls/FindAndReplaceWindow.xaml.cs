@@ -16,30 +16,42 @@ namespace Text_Grab.Controls
 
         public EditTextWindow TextEditWindow = null;
 
+        private string Pattern { get; set; }
+
+        private int MatchLength { get; set; }
+
         public FindAndReplaceWindow()
         {
             InitializeComponent();
+        }
+
+        private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
+        {
+            if (TextEditWindow != null)
+                TextEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+        }
+
+        private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
+        {
+            StringFromWindow = TextEditWindow.PassedTextControl.Text;
         }
 
         private void FindTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             ResultsListView.Items.Clear();
 
-            string pattern = FindTextBox.Text.ToLower();
+            Pattern = FindTextBox.Text.ToLower();
 
             MatchCollection matches = null;
             try
             {
-                matches = Regex.Matches(StringFromWindow.ToLower(), pattern);
+                matches = Regex.Matches(StringFromWindow.ToLower(), Pattern);
             }
             catch (Exception)
             {
 
                 return;
             }
-            // /\w{5}/
-
-
 
             if (matches.Count == 0 || string.IsNullOrWhiteSpace(FindTextBox.Text))
             {
@@ -53,6 +65,7 @@ namespace Text_Grab.Controls
                 ResultsListView.IsEnabled = true;
                 foreach (Match m in matches)
                 {
+                    MatchLength = m.Length;
                     int previewLengths = 16;
                     int previewBeginning = 0;
                     int previewEnd = 0;
@@ -113,7 +126,7 @@ namespace Text_Grab.Controls
 
             int.TryParse(stringToParse.Substring(8), out int selectionStartIndex);
 
-            TextEditWindow.PassedTextControl.Select(selectionStartIndex, FindTextBox.Text.Length);
+            TextEditWindow.PassedTextControl.Select(selectionStartIndex, MatchLength);
             TextEditWindow.PassedTextControl.Focus();
             this.Focus();
         }
