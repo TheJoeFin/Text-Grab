@@ -16,14 +16,27 @@
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBox
-            x:Name="FindTextBox"
-            Grid.Row="0"
-            Margin="6,6,6,0"
-            TextChanged="FindTextBox_TextChanged" />
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                x:Name="FindTextBox"
+                Margin="6,6,6,0"
+                TextChanged="FindTextBox_TextChanged" />
+
+            <Button 
+                Grid.Column="1"
+                x:Name="ExtractSimplePattern" 
+                Content="Extract Pattern" 
+                Click="ExtractSimplePattern_Click" />
+        </Grid>
 
         <TextBlock
             Grid.Row="1"
+            x:Name="MatchesText"
             Margin="6"
             FontSize="18"
             Foreground="{StaticResource Teal}"

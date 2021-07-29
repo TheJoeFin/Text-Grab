@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,15 +27,29 @@ namespace Text_Grab.Controls
 
             string pattern = FindTextBox.Text.ToLower();
 
-            MatchCollection matches = Regex.Matches(StringFromWindow.ToLower(), pattern);
+            MatchCollection matches = null;
+            try
+            {
+                matches = Regex.Matches(StringFromWindow.ToLower(), pattern);
+            }
+            catch (Exception)
+            {
+
+                return;
+            }
+            // /\w{5}/
+
+
 
             if (matches.Count == 0 || string.IsNullOrWhiteSpace(FindTextBox.Text))
             {
+                MatchesText.Text = "0 Matches";
                 ResultsListView.Items.Add("No Matches");
                 ResultsListView.IsEnabled = false;
             }
             else
             {
+                MatchesText.Text = $"{matches.Count} Matches";
                 ResultsListView.IsEnabled = true;
                 foreach (Match m in matches)
                 {
@@ -101,6 +116,11 @@ namespace Text_Grab.Controls
             TextEditWindow.PassedTextControl.Select(selectionStartIndex, FindTextBox.Text.Length);
             TextEditWindow.PassedTextControl.Focus();
             this.Focus();
+        }
+
+        private void ExtractSimplePattern_Click(object sender, RoutedEventArgs e)
+        {
+            FindTextBox.Text = "\\w{8}";
         }
     }
 }
