@@ -143,5 +143,86 @@ namespace Text_Grab.Utilities
             }
             return toReturn;
         }
+
+        public enum CharType { Letter, Number, Space, Other };
+
+        public class CharRun
+        {
+            public CharType TypeOfChar { get; set; }
+            public Char Character { get; set; }
+            public int numberOfRun { get; set; }
+        }
+
+        public static string ExtractSimplePattern(this string stringToExtract)
+        {
+            List<CharRun> charRunList = new List<CharRun>();
+
+            foreach (char c in stringToExtract)
+            {
+                CharType thisCharType = CharType.Other;
+                if (Char.IsLetter(c))
+                    thisCharType = CharType.Letter;
+                else if (Char.IsNumber(c))
+                    thisCharType = CharType.Number;
+                else if (Char.IsWhiteSpace(c))
+                    thisCharType = CharType.Space;
+
+                if (charRunList.LastOrDefault() != null
+                    && thisCharType == charRunList.LastOrDefault().TypeOfChar)
+                {
+                    if (thisCharType == CharType.Other)
+                    {
+                        if (c == charRunList.LastOrDefault().Character)
+                            charRunList.LastOrDefault().numberOfRun++;
+                    }
+                    else
+                    {
+                        charRunList.LastOrDefault().numberOfRun++;
+                    }
+                }
+                else
+                {
+                    CharRun newRun = new CharRun()
+                    {
+                        Character = c,
+                        numberOfRun = 1,
+                        TypeOfChar = thisCharType
+                    };
+                    charRunList.Add(newRun);
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            // sb.Append("(");
+
+            foreach (CharRun ct in charRunList)
+            {
+                // append previous stuff to the string       
+                switch (ct.TypeOfChar)
+                {
+                    case CharType.Letter:
+                        // sb.Append("\\w");
+                        sb.Append("[A-z]");
+                        break;
+                    case CharType.Number:
+                        sb.Append("\\d");
+                        break;
+                    case CharType.Space:
+                        sb.Append("\\s");
+                        break;
+                    default:
+                        sb.Append(ct.Character);
+                        break;
+                }
+
+                if (ct.numberOfRun > 1)
+                {
+                    sb.Append("{" + ct.numberOfRun + "}");
+                }
+            }
+            // sb.Append(")");
+            return sb.ToString();
+        }
+
     }
 }

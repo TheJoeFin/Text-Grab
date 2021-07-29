@@ -120,7 +120,11 @@ namespace Text_Grab.Controls
 
         private void ExtractSimplePattern_Click(object sender, RoutedEventArgs e)
         {
-            FindTextBox.Text = "\\w{8}";
+            string selection = TextEditWindow.PassedTextControl.SelectedText;
+
+            string simplePattern = selection.ExtractSimplePattern();
+
+            FindTextBox.Text = simplePattern;
         }
     }
 }
