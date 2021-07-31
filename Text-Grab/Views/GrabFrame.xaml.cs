@@ -97,7 +97,7 @@ namespace Text_Grab.Views
                 {
                     if (border.LineNumber != lastLineNum)
                     {
-                        wordsList.Add("\n");
+                        wordsList.Add(Environment.NewLine);
                         lastLineNum = border.LineNumber;
                     }
 
