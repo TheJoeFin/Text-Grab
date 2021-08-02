@@ -12,6 +12,7 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
+using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 
@@ -89,9 +90,12 @@ namespace Text_Grab
             _ = toggleCaseCommand.InputGestures.Add(new KeyGesture(Key.F3, ModifierKeys.Shift));
             _ = CommandBindings.Add(new CommandBinding(toggleCaseCommand, ToggleCase));
 
-
-            WindowState = WindowState.Minimized;
-            WindowUtilities.LaunchFullScreenGrab(true);
+            if (Settings.Default.EditWindowStartFullscreen)
+            {
+                WindowState = WindowState.Minimized;
+                WindowUtilities.LaunchFullScreenGrab(true);
+                LaunchFullscreenOnLoad.IsChecked = true;
+            }
         }
 
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
@@ -511,6 +515,17 @@ namespace Text_Grab
             farw.StringFromWindow = PassedTextControl.Text;
             farw.TextEditWindow = this;
             farw.Show();
+        }
+
+        private void LaunchFullscreenOnLoad_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Default.EditWindowStartFullscreen = LaunchFullscreenOnLoad.IsChecked;
+            Settings.Default.Save();
+        }
+
+        private void Window_Activated(object sender, EventArgs e)
+        {
+            PassedTextControl.Focus();
         }
     }
 }

@@ -70,5 +70,17 @@ namespace Text_Grab.Properties {
                 this["CorrectErrors"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EditWindowStartFullscreen {
+            get {
+                return ((bool)(this["EditWindowStartFullscreen"]));
+            }
+            set {
+                this["EditWindowStartFullscreen"] = value;
+            }
+        }
     }
 }

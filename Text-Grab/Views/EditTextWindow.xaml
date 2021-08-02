@@ -9,6 +9,7 @@
     Title="Edit Text"
     Width="600"
     Height="450"
+    Activated="Window_Activated"
     Background="{StaticResource DarkBackground}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
@@ -120,6 +121,12 @@
                     x:Name="HideBottomBarMenuItem"
                     Click="HideBottomBarMenuItem_Click"
                     Header="_Hide Bottom Bar"
+                    IsCheckable="True"
+                    IsChecked="False" />
+                <MenuItem
+                    x:Name="LaunchFullscreenOnLoad"
+                    Click="LaunchFullscreenOnLoad_Click"
+                    Header="Open _Fullscreen on Launch"
                     IsCheckable="True"
                     IsChecked="False" />
             </MenuItem>
