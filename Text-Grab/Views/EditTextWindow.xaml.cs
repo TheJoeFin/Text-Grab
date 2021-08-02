@@ -92,9 +92,9 @@ namespace Text_Grab
 
             if (Settings.Default.EditWindowStartFullscreen)
             {
-                WindowState = WindowState.Minimized;
                 WindowUtilities.LaunchFullScreenGrab(true);
                 LaunchFullscreenOnLoad.IsChecked = true;
+                WindowState = WindowState.Minimized;
             }
         }
 
