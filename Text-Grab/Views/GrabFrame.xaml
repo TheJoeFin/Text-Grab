@@ -94,10 +94,16 @@
             <Canvas
                 x:Name="RectanglesCanvas"
                 Grid.Row="1"
-                Margin="-4,-2,0,0"
-                Background="Transparent"
-                IsHitTestVisible="True" />
-            <Border Grid.Row="2" Background="#444444">
+                Margin="-4,-2,0,0" 
+                MouseDown="RectanglesCanvas_MouseDown" 
+                MouseUp="RectanglesCanvas_MouseUp" 
+                MouseMove="RectanglesCanvas_MouseMove"
+                IsHitTestVisible="True">
+                <Canvas.Background>
+                    <SolidColorBrush Color="White" Opacity=".05" />
+                </Canvas.Background>
+            </Canvas>
+            <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
                 <Grid
                     Height="28"
                     Margin="6"

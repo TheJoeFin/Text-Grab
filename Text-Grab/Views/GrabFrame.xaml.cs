@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -25,6 +26,11 @@ namespace Text_Grab.Views
         private OcrResult ocrResultOfWindow;
         private ObservableCollection<WordBorder> wordBorders = new ObservableCollection<WordBorder>();
         private DispatcherTimer reDrawTimer = new DispatcherTimer();
+        private bool isSelecting;
+        private Point clickedPoint;
+        private Border selectBorder = new Border();
+        private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
+
         public bool IsfromEditWindow { get; set; } = false;
 
         public GrabFrame()
@@ -277,6 +283,120 @@ namespace Text_Grab.Views
         private void GrabFrameWindow_Activated(object sender, EventArgs e)
         {
             reDrawTimer.Start();
+        }
+
+        private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            isSelecting = true;
+            clickedPoint = e.GetPosition(RectanglesCanvas);
+            selectBorder.Height = 1;
+            selectBorder.Width = 1;
+
+            try { RectanglesCanvas.Children.Remove(selectBorder); } catch (Exception) { }
+
+            selectBorder.BorderThickness = new Thickness(2);
+            System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
+            selectBorder.BorderBrush = new SolidColorBrush(borderColor);
+            _ = RectanglesCanvas.Children.Add(selectBorder);
+            Canvas.SetLeft(selectBorder, clickedPoint.X);
+            Canvas.SetTop(selectBorder, clickedPoint.Y);
+        }
+
+        private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            isSelecting = false;
+            Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+
+            System.Windows.Point mPt = GetMousePos();
+            System.Windows.Point movingPoint = e.GetPosition(RectanglesCanvas);
+            movingPoint.X *= m.M11;
+            movingPoint.Y *= m.M22;
+
+            movingPoint.X = Math.Round(movingPoint.X);
+            movingPoint.Y = Math.Round(movingPoint.Y);
+
+            if (mPt == movingPoint)
+                Debug.WriteLine("Probably on Screen 1");
+
+            double correctedLeft = Left;
+            double correctedTop = Top;
+
+            if (correctedLeft < 0)
+                correctedLeft = 0;
+
+            if (correctedTop < 0)
+                correctedTop = 0;
+
+            double xDimScaled = Canvas.GetLeft(selectBorder) * m.M11;
+            double yDimScaled = Canvas.GetTop(selectBorder) * m.M22;
+
+            System.Drawing.Rectangle regionScaled = new System.Drawing.Rectangle(
+                (int)xDimScaled,
+                (int)yDimScaled,
+                (int)(selectBorder.Width * m.M11),
+                (int)(selectBorder.Height * m.M22));
+
+            try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
+        }
+
+        private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isSelecting == false)
+                return;
+
+            System.Windows.Point movingPoint = e.GetPosition(RectanglesCanvas);
+            
+            double xDelta = movingPoint.X - clickedPoint.X;
+            double yDelta = movingPoint.Y - clickedPoint.Y;
+
+            // X and Y postive
+            if (xDelta > 0 && yDelta > 0)
+            {
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
+            // X negative Y positive
+            if (xDelta < 0 && yDelta > 0)
+            {
+                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
+
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
+            // X postive Y negative
+            if (xDelta > 0 && yDelta < 0)
+            {
+                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
+
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
+            // X and Y negative
+            if (xDelta < 0 && yDelta < 0)
+            {
+                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
+                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
+
+                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
+                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
+            }
+
+            CheckSelectBorderIntersections();
+        }
+
+        private void CheckSelectBorderIntersections()
+        {
+            Rect rectSelect = new Rect(Canvas.GetLeft(selectBorder), Canvas.GetTop(selectBorder), selectBorder.Width, selectBorder.Height);
+
+            foreach (WordBorder wordBorder in wordBorders)
+            {
+                Rect wbRect= new Rect(Canvas.GetLeft(wordBorder), Canvas.GetTop(wordBorder), wordBorder.Width, wordBorder.Height);
+
+                if (rectSelect.IntersectsWith(wbRect))
+                    wordBorder.Select();
+                else
+                    wordBorder.Deselect();
+            }
         }
     }
 }
