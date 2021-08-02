@@ -17,7 +17,9 @@ namespace Text_Grab.Views
     public partial class FullscreenGrab : Window
     {
         private bool isSelecting = false;
+        private bool isShiftDown = false;
         private System.Windows.Point clickedPoint = new System.Windows.Point();
+        private System.Windows.Point shiftPoint = new System.Windows.Point();
         private Border selectBorder = new Border();
 
         private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
@@ -33,14 +35,43 @@ namespace Text_Grab.Views
         {
             WindowState = WindowState.Maximized;
 
-            RoutedCommand newCmd = new RoutedCommand();
-            _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
-            _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
+            this.KeyDown += FullscreenGrab_KeyDown;
+            this.KeyUp += FullscreenGrab_KeyUp;
         }
 
-        private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
+        private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
         {
-            WindowUtilities.CloseAllFullscreenGrabs();
+            switch (e.Key)
+            {
+                case Key.LeftShift:
+                    isShiftDown = false;
+                    break;
+                case Key.RightShift:
+                    isShiftDown = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void FullscreenGrab_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.LeftShift:
+                    isShiftDown = true;
+                    shiftPoint = Mouse.GetPosition(this);
+                    break;
+                case Key.RightShift:
+                    isShiftDown = true;
+                    shiftPoint = Mouse.GetPosition(this);
+                    break;
+                case Key.Escape:
+                    WindowUtilities.CloseAllFullscreenGrabs();
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -69,6 +100,18 @@ namespace Text_Grab.Views
 
             double xDelta = movingPoint.X - clickedPoint.X;
             double yDelta = movingPoint.Y - clickedPoint.Y;
+
+            if (isShiftDown == true)
+            {
+                Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+                double xShiftDelta = (movingPoint.X - shiftPoint.X) / m.M11;
+                double yShiftDelta = (movingPoint.Y - shiftPoint.Y) / m.M22;
+                double selectLeft = Canvas.GetLeft(selectBorder);
+                double selectTop = Canvas.GetTop(selectBorder);
+                Canvas.SetLeft(selectBorder, selectLeft + xShiftDelta);
+                Canvas.SetTop(selectBorder, selectTop + yShiftDelta);
+                return;
+            }
 
             // X and Y postive
             if (xDelta > 0 && yDelta > 0)
