@@ -337,6 +337,8 @@ namespace Text_Grab.Views
                 (int)(selectBorder.Height * m.M22));
 
             try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
+
+            CheckSelectBorderIntersections(true);
         }
 
         private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -384,18 +386,34 @@ namespace Text_Grab.Views
             CheckSelectBorderIntersections();
         }
 
-        private void CheckSelectBorderIntersections()
+        private void CheckSelectBorderIntersections(bool finalCheck = false)
         {
             Rect rectSelect = new Rect(Canvas.GetLeft(selectBorder), Canvas.GetTop(selectBorder), selectBorder.Width, selectBorder.Height);
+
+            bool clickedEmptySpace = true;
+            bool smallSelction = false;
+            if (rectSelect.Width < 10 && rectSelect.Height < 10)
+                smallSelction = true;
 
             foreach (WordBorder wordBorder in wordBorders)
             {
                 Rect wbRect= new Rect(Canvas.GetLeft(wordBorder), Canvas.GetTop(wordBorder), wordBorder.Width, wordBorder.Height);
 
                 if (rectSelect.IntersectsWith(wbRect))
-                    wordBorder.Select();
-                else
-                    wordBorder.Deselect();
+                {
+                    clickedEmptySpace = false;
+
+                    if (smallSelction == true && wordBorder.IsSelected == true)
+                        wordBorder.Deselect();
+                    else
+                        wordBorder.Select();
+                }
+            }
+
+            if (clickedEmptySpace == true && finalCheck == true)
+            {
+                foreach (WordBorder wb in wordBorders)
+                    wb.Deselect();
             }
         }
     }
