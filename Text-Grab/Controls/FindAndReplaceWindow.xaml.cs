@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -88,17 +89,17 @@ namespace Text_Grab.Controls
                     else
                         previewEnd = m.Index + previewLengths;
 
-                    string previewString = "";
+                    StringBuilder previewString = new StringBuilder();
 
                     if (atBeginning == false)
-                        previewString += "...";
+                        previewString.Append("...");
 
-                    previewString += StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine();
+                    previewString.Append(StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine());
 
                     if (atEnd == false)
-                        previewString += "...";
+                        previewString.Append("...");
 
-                    ResultsListView.Items.Add($"At index {m.Index} \t\t {previewString}");
+                    ResultsListView.Items.Add($"At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
                 }
             }
 
