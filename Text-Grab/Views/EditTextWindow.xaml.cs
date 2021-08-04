@@ -272,13 +272,13 @@ namespace Text_Grab
         private void TrimEachLineMenuItem_Click(object sender, RoutedEventArgs e)
         {
             string workingString = PassedTextControl.Text;
-            List<string> stringSplit = workingString.Split('\n').ToList();
+            List<string> stringSplit = workingString.Split(Environment.NewLine).ToList();
 
             string finalString = "";
             foreach (string line in stringSplit)
             {
                 if (string.IsNullOrWhiteSpace(line) == false)
-                    finalString += line.Trim() + "\n";
+                    finalString += line.Trim() + Environment.NewLine;
             }
 
             PassedTextControl.Text = finalString;
@@ -287,7 +287,7 @@ namespace Text_Grab
         public void AddThisText(string textToAdd)
         {
             if (string.IsNullOrWhiteSpace(PassedTextControl.Text) == false)
-                textToAdd = "\n" + textToAdd;
+                textToAdd = Environment.NewLine + textToAdd;
 
             PassedTextControl.Text += textToAdd;
 
@@ -339,7 +339,7 @@ namespace Text_Grab
 
             string textToManipulate = PassedTextControl.Text;
 
-            textToManipulate = textToManipulate.Replace(selectedText, "\n" + selectedText);
+            textToManipulate = textToManipulate.Replace(selectedText, Environment.NewLine + selectedText);
 
             PassedTextControl.Text = textToManipulate;
         }
