@@ -144,7 +144,7 @@ namespace Text_Grab.Utilities
             return toReturn;
         }
 
-        public enum CharType { Letter, Number, Space, Other };
+        public enum CharType { Letter, Number, Space, Special, Other };
 
         public class CharRun
         {
@@ -156,11 +156,15 @@ namespace Text_Grab.Utilities
         public static string ExtractSimplePattern(this string stringToExtract)
         {
             List<CharRun> charRunList = new List<CharRun>();
+            List<Char> specialCharList = new List<Char>() 
+                { '.', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '\\' };
 
             foreach (char c in stringToExtract)
             {
                 CharType thisCharType = CharType.Other;
-                if (Char.IsLetter(c))
+                if (specialCharList.Contains(c))
+                    thisCharType = CharType.Special;
+                else if (Char.IsLetter(c))
                     thisCharType = CharType.Letter;
                 else if (Char.IsNumber(c))
                     thisCharType = CharType.Number;
@@ -209,6 +213,9 @@ namespace Text_Grab.Utilities
                         break;
                     case CharType.Space:
                         sb.Append("\\s");
+                        break;
+                    case CharType.Special:
+                        sb.Append($"(\\{ct.Character})");
                         break;
                     default:
                         sb.Append(ct.Character);
