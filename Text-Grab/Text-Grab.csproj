@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
     <RootNamespace>Text_Grab</RootNamespace>
-	<RuntimeIdentifier>win-x86</RuntimeIdentifier>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	<UseWPF>true</UseWPF>
 	<DpiAware>false</DpiAware>
 	<DisableDpiAwareness>True</DisableDpiAwareness>
@@ -13,14 +13,19 @@
     <ApplicationIcon>t_ICON2.ico</ApplicationIcon>
     <StartupObject>Text_Grab.App</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <CsWinRTWindowsMetadata>10.0.19041.0</CsWinRTWindowsMetadata>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <UICulture>en-US</UICulture>
+  </PropertyGroup>
+  
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,13 +41,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.0.0-preview4" />
-    <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.1" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.0.2" />
     <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Images\EditTextWindow.png" />
+    <Content Include="Images\EditTextWindow.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Images\Fullscreen.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
