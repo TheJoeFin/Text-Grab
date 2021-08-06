@@ -515,6 +515,11 @@ namespace Text_Grab
             farw.StringFromWindow = PassedTextControl.Text;
             farw.TextEditWindow = this;
             farw.Show();
+
+            if (PassedTextControl.SelectedText.Length > 0)
+            {
+                farw.FindTextBox.Text = PassedTextControl.SelectedText;
+            }
         }
 
         private void LaunchFullscreenOnLoad_Click(object sender, RoutedEventArgs e)
