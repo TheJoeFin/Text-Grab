@@ -532,5 +532,27 @@ namespace Text_Grab
         {
             PassedTextControl.Focus();
         }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
+            {
+                if (window is GrabFrame grabFrame)
+                {
+                    grabFrame.IsfromEditWindow = false;
+                }
+                if (window is FullscreenGrab fullscreenGrab)
+                {
+                    fullscreenGrab.IsFromEditWindow = false;
+                }
+                if (window is FindAndReplaceWindow findAndReplaceWindow)
+                {
+                    findAndReplaceWindow.Close();
+                }
+
+            }
+        }
     }
 }
