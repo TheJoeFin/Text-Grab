@@ -82,5 +82,77 @@ namespace Text_Grab.Properties {
                 this["EditWindowStartFullscreen"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Segoe UI")]
+        public string FontFamilySetting {
+            get {
+                return ((string)(this["FontFamilySetting"]));
+            }
+            set {
+                this["FontFamilySetting"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("12")]
+        public double FontSizeSetting {
+            get {
+                return ((double)(this["FontSizeSetting"]));
+            }
+            set {
+                this["FontSizeSetting"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IsFontBold {
+            get {
+                return ((bool)(this["IsFontBold"]));
+            }
+            set {
+                this["IsFontBold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IsFontItalic {
+            get {
+                return ((bool)(this["IsFontItalic"]));
+            }
+            set {
+                this["IsFontItalic"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IsFontUnderline {
+            get {
+                return ((bool)(this["IsFontUnderline"]));
+            }
+            set {
+                this["IsFontUnderline"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IsFontStrikeout {
+            get {
+                return ((bool)(this["IsFontStrikeout"]));
+            }
+            set {
+                this["IsFontStrikeout"] = value;
+            }
+        }
     }
 }

@@ -90,12 +90,30 @@ namespace Text_Grab
             _ = toggleCaseCommand.InputGestures.Add(new KeyGesture(Key.F3, ModifierKeys.Shift));
             _ = CommandBindings.Add(new CommandBinding(toggleCaseCommand, ToggleCase));
 
+            SetFontFromSettings();
+
             if (Settings.Default.EditWindowStartFullscreen)
             {
                 WindowUtilities.LaunchFullScreenGrab(true);
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
+        }
+
+        private void SetFontFromSettings()
+        {
+            PassedTextControl.FontFamily = new FontFamily(Settings.Default.FontFamilySetting);
+            PassedTextControl.FontSize = Settings.Default.FontSizeSetting;
+            if (Settings.Default.IsFontBold == true)
+                PassedTextControl.FontWeight = FontWeights.Bold;
+            if (Settings.Default.IsFontItalic == true)
+                PassedTextControl.FontStyle = FontStyles.Italic;
+
+            TextDecorationCollection tdc = new TextDecorationCollection();
+            if (Settings.Default.IsFontUnderline) tdc.Add(TextDecorations.Underline);
+            if (Settings.Default.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
+            PassedTextControl.TextDecorations = tdc;
+
         }
 
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
@@ -451,15 +469,15 @@ namespace Text_Grab
             {
                 Debug.WriteLine(fd.Font);
 
-                PassedTextControl.FontFamily = new FontFamily(fd.Font.Name);
-                PassedTextControl.FontSize = fd.Font.Size * 96.0 / 72.0;
-                PassedTextControl.FontWeight = fd.Font.Bold ? FontWeights.Bold : FontWeights.Regular;
-                PassedTextControl.FontStyle = fd.Font.Italic ? FontStyles.Italic : FontStyles.Normal;
+                Settings.Default.FontFamilySetting = fd.Font.Name;
+                Settings.Default.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
+                Settings.Default.IsFontBold = fd.Font.Bold;
+                Settings.Default.IsFontItalic = fd.Font.Italic;
+                Settings.Default.IsFontUnderline = fd.Font.Underline;
+                Settings.Default.IsFontStrikeout = fd.Font.Strikeout;
+                Settings.Default.Save();
 
-                TextDecorationCollection tdc = new TextDecorationCollection();
-                if (fd.Font.Underline) tdc.Add(TextDecorations.Underline);
-                if (fd.Font.Strikeout) tdc.Add(TextDecorations.Strikethrough);
-                PassedTextControl.TextDecorations = tdc;
+                SetFontFromSettings();
             }
         }
 
