@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -102,7 +103,7 @@ namespace Text_Grab
 
         private void SetFontFromSettings()
         {
-            PassedTextControl.FontFamily = new FontFamily(Settings.Default.FontFamilySetting);
+            PassedTextControl.FontFamily = new System.Windows.Media.FontFamily(Settings.Default.FontFamilySetting);
             PassedTextControl.FontSize = Settings.Default.FontSizeSetting;
             if (Settings.Default.IsFontBold == true)
                 PassedTextControl.FontWeight = FontWeights.Bold;
@@ -464,6 +465,8 @@ namespace Text_Grab
         private void FontMenuItem_Click(object sender, RoutedEventArgs e)
         {
             FontDialog fd = new FontDialog();
+            Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
+            fd.Font = currentFont;
             var result = fd.ShowDialog();
             if (result == System.Windows.Forms.DialogResult.OK)
             {
