@@ -481,47 +481,39 @@ namespace Text_Grab
         private void SelectLine(object sender, ExecutedRoutedEventArgs e)
         {
             int selectionIndex = PassedTextControl.SelectionStart;
+            int selectionEndIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength - (Environment.NewLine.Length);
+            if (selectionEndIndex < selectionIndex)
+                selectionEndIndex = selectionIndex;
             int selectionLength = PassedTextControl.SelectionLength;
             string textBoxText = PassedTextControl.Text;
 
-            int indexOfPreviousNewline = 0;
-            int indexOfNextNewline = textBoxText.Length;
+            IEnumerable<int> allNewLines = textBoxText.AllIndexesOf(Environment.NewLine);
 
-            if (selectionIndex < 1)
-                selectionIndex = 1;
+            int startSelectionIndex = 0;
+            int stopSelectionIndex = 0;
 
-            for (int i = selectionIndex - 1; i >= 0; i--)
+            foreach (int newLineIndex in allNewLines)
             {
-                char charToCheck = textBoxText[i];
-                if (charToCheck == '\n'
-                    || charToCheck == '\r')
+                if (PassedTextControl.SelectionStart > newLineIndex)
+                    startSelectionIndex = newLineIndex;
+
+                if (newLineIndex >= selectionEndIndex)
                 {
-                    indexOfPreviousNewline = i + 1;
+                    stopSelectionIndex = newLineIndex;
                     break;
                 }
             }
 
-            bool foundNewLine = false;
+            if (startSelectionIndex == 0)
+                selectionIndex = startSelectionIndex;
+            else
+                selectionIndex = startSelectionIndex + Environment.NewLine.Length;
 
-            for (int j = selectionIndex; j < textBoxText.Length; j++)
-            {
-                char charToCheck = textBoxText[j];
-                if (charToCheck == '\n'
-                    || charToCheck == '\r')
-                {
-                    foundNewLine = true;
-                    indexOfNextNewline = j;
-                }
-                else
-                {
-                    if (foundNewLine == true)
-                    {
-                        break;
-                    }
-                }
-            }
+            selectionLength = (stopSelectionIndex) - selectionIndex + Environment.NewLine.Length;
+            if (selectionLength < 0)
+                selectionLength = 0;
 
-            PassedTextControl.Select(indexOfPreviousNewline, indexOfNextNewline - indexOfPreviousNewline + 1);
+            PassedTextControl.Select(selectionIndex, selectionLength);
         }
 
         private void SearchButton_Click(object sender, RoutedEventArgs e)
