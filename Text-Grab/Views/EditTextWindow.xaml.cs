@@ -10,7 +10,6 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
-using System.Windows.Media;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
 using Text_Grab.Properties;
@@ -305,12 +304,7 @@ namespace Text_Grab
 
         public void AddThisText(string textToAdd)
         {
-            if (string.IsNullOrWhiteSpace(PassedTextControl.Text) == false)
-                textToAdd = Environment.NewLine + textToAdd;
-
-            PassedTextControl.Text += textToAdd;
-
-            PassedTextControl.ScrollToEnd();
+            PassedTextControl.SelectedText = textToAdd;
         }
 
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
