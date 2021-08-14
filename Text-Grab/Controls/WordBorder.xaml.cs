@@ -14,6 +14,8 @@ namespace Text_Grab.Controls
     public partial class WordBorder : UserControl
     {
         public bool IsSelected { get; set; } = false;
+        
+        public bool WasRegionSelected { get; set; } = false;
 
         public string Word { get; set; } = "";
 

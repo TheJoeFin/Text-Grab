@@ -409,12 +409,23 @@ namespace Text_Grab.Views
                     if (smallSelction == false)
                     {
                         wordBorder.Select();
+                        wordBorder.WasRegionSelected = true;
                     }
 
                 }
+                else
+                {
+                    if (wordBorder.WasRegionSelected == true)
+                        wordBorder.Deselect();
+                }
+
+                if (finalCheck == true)
+                    wordBorder.WasRegionSelected = false;
             }
 
-            if (clickedEmptySpace == true && finalCheck == true)
+            if (clickedEmptySpace == true 
+                && smallSelction == true
+                && finalCheck == true)
             {
                 foreach (WordBorder wb in wordBorders)
                     wb.Deselect();
