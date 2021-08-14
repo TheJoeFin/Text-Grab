@@ -167,7 +167,7 @@ namespace Text_Grab.Utilities
         }
 
         public static List<Char> specialCharList = new List<Char>()
-                { '\\', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?' };
+                { '\\', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
 
         public static string ExtractSimplePattern(this string stringToExtract)
         {
