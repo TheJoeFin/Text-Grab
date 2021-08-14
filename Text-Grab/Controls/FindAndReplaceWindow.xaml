@@ -11,6 +11,12 @@
     Height="450"
     Background="{StaticResource DarkBackground}"
     mc:Ignorable="d">
+    <Window.CommandBindings>
+        <CommandBinding
+            CanExecute="TextSearch_CanExecute"
+            Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}"
+            Executed="TextSearch_Executed" />
+    </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -20,22 +26,90 @@
 
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+            <ToggleButton 
+                x:Name="MoreOptionsToggleButton" 
+                Content="▼" 
+                Width="32"  
+                Click="MoreOptionsToggleButton_Click"
+                Background="Transparent" 
+                BorderBrush="Transparent" />
+
             <TextBox
-                x:Name="FindTextBox"
+                x:Name="FindTextBox" 
+                KeyUp="FindTextBox_KeyUp"
+                Height="28"
+                Margin="6,6,6,0" Grid.Column="1" 
+                VerticalContentAlignment="Center" />
+            <Button 
+                x:Name="FindButton"
+                Content="Find" 
+                Grid.Row="0"
+                Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}"
+                Grid.Column="2" Width="80"
+                Margin="0,6,6,0" 
+                Padding="4"/>
+
+            <TextBox 
+                x:Name="ReplaceTextBox" 
+                Visibility="Collapsed"
                 Margin="6,6,6,0" 
-                VerticalContentAlignment="Center"
-                TextChanged="FindTextBox_TextChanged" />
+                Height="28"
+                Grid.Row="1" 
+                Grid.Column="1" />
+            <Button 
+                x:Name="ReplaceButton"
+                Visibility="Collapsed"
+                Content="Replace" 
+                Grid.Row="1" 
+                Grid.Column="2" 
+                Margin="0,6,6,0" 
+                Padding="4"/>
 
             <Button 
-                x:Name="ExtractSimplePattern" 
-                Grid.Column="1"
-                Margin="0,6,6,0"
-                Click="ExtractSimplePattern_Click" >
-                <TextBlock Text="Extract Pattern"  Margin="4"/>
-            </Button>
+                x:Name="ReplaceAllButton" 
+                Content="Replace All" 
+                Grid.Row="2" 
+                Visibility="Collapsed"
+                Grid.Column="2" 
+                Margin="0,6,6,0" 
+                Padding="4"/>
+
+            <StackPanel  
+                x:Name="MoreOptionsHozStack"
+                Orientation="Horizontal" 
+                Visibility="Collapsed"
+                Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2">
+                <CheckBox
+                    x:Name="ExactMatchCheckBox" 
+                    Content="Match Exactly" 
+                    Foreground="White" 
+                    VerticalAlignment="Center" 
+                    Margin="6"/>
+
+                <CheckBox
+                    x:Name="UsePaternCheckBox" 
+                    Content="Regex" 
+                    Foreground="White" 
+                    VerticalAlignment="Center" 
+                    Margin="6"/>
+
+                <Button 
+                    x:Name="ExtractSimplePattern" 
+                    Margin="0,6,6,0"
+                    Click="ExtractSimplePattern_Click" >
+                    <TextBlock Text="Extract Pattern"  Margin="4"/>
+                </Button>
+            </StackPanel>
+            
         </Grid>
 
         <TextBlock

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls
@@ -16,6 +17,8 @@ namespace Text_Grab.Controls
         public string StringFromWindow { get; set; } = "";
 
         public EditTextWindow TextEditWindow = null;
+
+        public static RoutedCommand TextSearchCmd = new RoutedCommand();
 
         private string Pattern { get; set; }
 
@@ -30,6 +33,9 @@ namespace Text_Grab.Controls
         {
             if (TextEditWindow != null)
                 TextEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+
+            if (string.IsNullOrWhiteSpace(FindTextBox.Text) == false)
+                SearchForText();
         }
 
         private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
@@ -37,20 +43,29 @@ namespace Text_Grab.Controls
             StringFromWindow = TextEditWindow.PassedTextControl.Text;
         }
 
-        private void FindTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        private void SearchForText()
         {
             ResultsListView.Items.Clear();
 
-            Pattern = FindTextBox.Text.ToLower();
+            Pattern = FindTextBox.Text;
+
+            if (UsePaternCheckBox.IsChecked == false)
+            {
+                Pattern = Pattern.EscapeSpecialRegexChars();
+            }
 
             MatchCollection matches = null;
             try
             {
-                matches = Regex.Matches(StringFromWindow.ToLower(), Pattern);
-            }
-            catch (Exception)
-            {
+                if (ExactMatchCheckBox.IsChecked == true)
+                    matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline );
+                else
+                    matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
+            }
+            catch (Exception ex)
+            {
+                MatchesText.Text = "Error searching: " + ex.GetType().ToString();
                 return;
             }
 
@@ -113,6 +128,11 @@ namespace Text_Grab.Controls
             }
         }
 
+        private void FindTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            
+        }
+
         private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string stringToParse = ResultsListView.SelectedItem as string;
@@ -138,7 +158,41 @@ namespace Text_Grab.Controls
 
             string simplePattern = selection.ExtractSimplePattern();
 
+            UsePaternCheckBox.IsChecked = true;
             FindTextBox.Text = simplePattern;
+
+            SearchForText();
+        }
+
+        private void MoreOptionsToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            Visibility optionsVisibility = Visibility.Collapsed;
+            if (MoreOptionsToggleButton.IsChecked == true)
+                optionsVisibility = Visibility.Visible;
+
+            ReplaceTextBox.Visibility = optionsVisibility;
+            ReplaceButton.Visibility = optionsVisibility;
+            ReplaceAllButton.Visibility = optionsVisibility;
+            MoreOptionsHozStack.Visibility = optionsVisibility;
+        }
+
+        private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(FindTextBox.Text))
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
+        }
+
+        private void TextSearch_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            SearchForText();
+        }
+
+        private void FindTextBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+                SearchForText();
         }
     }
 }

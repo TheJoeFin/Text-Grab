@@ -153,12 +153,26 @@ namespace Text_Grab.Utilities
             public int numberOfRun { get; set; }
         }
 
+        public static string EscapeSpecialRegexChars(this string stringToEscape)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(stringToEscape);
+
+            foreach (char specialChar in specialCharList)
+            {
+                sb.Replace(specialChar.ToString(), $"\\{specialChar}");
+            }
+
+            return sb.ToString();
+        }
+
+        public static List<Char> specialCharList = new List<Char>()
+                { '\\', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?' };
+
         public static string ExtractSimplePattern(this string stringToExtract)
         {
             List<CharRun> charRunList = new List<CharRun>();
-            List<Char> specialCharList = new List<Char>() 
-                { '.', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '\\' };
-
+            
             foreach (char c in stringToExtract)
             {
                 CharType thisCharType = CharType.Other;
