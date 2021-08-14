@@ -43,7 +43,7 @@ namespace Text_Grab.Controls
             StringFromWindow = TextEditWindow.PassedTextControl.Text;
         }
 
-        private void SearchForText()
+        public void SearchForText()
         {
             ResultsListView.Items.Clear();
 
@@ -128,11 +128,6 @@ namespace Text_Grab.Controls
             }
         }
 
-        private void FindTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            
-        }
-
         private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string stringToParse = ResultsListView.SelectedItem as string;
@@ -193,6 +188,11 @@ namespace Text_Grab.Controls
         {
             if (e.Key == Key.Enter)
                 SearchForText();
+        }
+
+        private void OptionsChangedRefresh(object sender, RoutedEventArgs e)
+        {
+            SearchForText();
         }
     }
 }

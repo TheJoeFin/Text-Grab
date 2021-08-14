@@ -514,7 +514,8 @@ namespace Text_Grab
 
             if (PassedTextControl.SelectedText.Length > 0)
             {
-                farw.FindTextBox.Text = PassedTextControl.SelectedText;
+                farw.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
+                farw.SearchForText();
             }
         }
 

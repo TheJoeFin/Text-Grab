@@ -91,6 +91,7 @@
                 <CheckBox
                     x:Name="ExactMatchCheckBox" 
                     Content="Match Exactly" 
+                    Checked="OptionsChangedRefresh"
                     Foreground="White" 
                     VerticalAlignment="Center" 
                     Margin="6"/>
