@@ -112,12 +112,15 @@ namespace Text_Grab.Views
                 frameText = string.Join(' ', wordsList);
             }
 
-            Clipboard.SetText(frameText);
 
-            if (Settings.Default.ShowToast
-                && IsfromEditWindow == false
+            if (IsfromEditWindow == false
                 && string.IsNullOrWhiteSpace(frameText) == false)
-                NotificationUtilities.ShowToast(frameText);
+            {
+                Clipboard.SetText(frameText);
+
+                if (Settings.Default.ShowToast)
+                    NotificationUtilities.ShowToast(frameText);
+            }
 
             if (IsfromEditWindow == true && string.IsNullOrWhiteSpace(frameText) == false)
                 WindowUtilities.AddTextToOpenWindow(frameText);
