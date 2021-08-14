@@ -406,10 +406,11 @@ namespace Text_Grab.Views
                 {
                     clickedEmptySpace = false;
 
-                    if (smallSelction == true && wordBorder.IsSelected == true)
-                        wordBorder.Deselect();
-                    else
+                    if (smallSelction == false)
+                    {
                         wordBorder.Select();
+                    }
+
                 }
             }
 
