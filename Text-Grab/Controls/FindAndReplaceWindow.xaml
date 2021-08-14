@@ -16,6 +16,14 @@
             CanExecute="TextSearch_CanExecute"
             Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}"
             Executed="TextSearch_Executed" />
+        <CommandBinding
+            CanExecute="Replace_CanExecute"
+            Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
+            Executed="Replace_Executed" />
+        <CommandBinding
+            CanExecute="Replace_CanExecute"
+            Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
+            Executed="ReplaceAll_Executed" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -68,6 +76,7 @@
             <Button 
                 x:Name="ReplaceButton"
                 Visibility="Collapsed"
+                Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
                 Content="Replace" 
                 Grid.Row="1" 
                 Grid.Column="2" 
@@ -78,6 +87,7 @@
                 x:Name="ReplaceAllButton" 
                 Content="Replace All" 
                 Grid.Row="2" 
+                Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
                 Visibility="Collapsed"
                 Grid.Column="2" 
                 Margin="0,6,6,0" 

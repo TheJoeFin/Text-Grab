@@ -19,10 +19,14 @@ namespace Text_Grab.Controls
         public EditTextWindow TextEditWindow = null;
 
         public static RoutedCommand TextSearchCmd = new RoutedCommand();
+        public static RoutedCommand ReplaceOneCmd = new RoutedCommand();
+        public static RoutedCommand ReplaceAllCmd = new RoutedCommand();
 
         private string Pattern { get; set; }
 
         private int MatchLength { get; set; }
+
+        private MatchCollection Matches;
 
         public FindAndReplaceWindow()
         {
@@ -54,13 +58,13 @@ namespace Text_Grab.Controls
                 Pattern = Pattern.EscapeSpecialRegexChars();
             }
 
-            MatchCollection matches = null;
+            Matches = null;
             try
             {
                 if (ExactMatchCheckBox.IsChecked == true)
-                    matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline );
+                    Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline );
                 else
-                    matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+                    Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
             }
             catch (Exception ex)
@@ -69,7 +73,7 @@ namespace Text_Grab.Controls
                 return;
             }
 
-            if (matches.Count == 0 || string.IsNullOrWhiteSpace(FindTextBox.Text))
+            if (Matches.Count == 0 || string.IsNullOrWhiteSpace(FindTextBox.Text))
             {
                 MatchesText.Text = "0 Matches";
                 ResultsListView.Items.Add("No Matches");
@@ -77,9 +81,9 @@ namespace Text_Grab.Controls
             }
             else
             {
-                MatchesText.Text = $"{matches.Count} Matches";
+                MatchesText.Text = $"{Matches.Count} Matches";
                 ResultsListView.IsEnabled = true;
-                foreach (Match m in matches)
+                foreach (Match m in Matches)
                 {
                     MatchLength = m.Length;
                     int previewLengths = 16;
@@ -118,9 +122,9 @@ namespace Text_Grab.Controls
                 }
             }
 
-            if (matches.Count > 0)
+            if (Matches.Count > 0)
             {
-                Match fm = matches[0];
+                Match fm = Matches[0];
 
                 TextEditWindow.PassedTextControl.Select(fm.Index, fm.Value.Length);
                 TextEditWindow.PassedTextControl.Focus();
@@ -137,12 +141,11 @@ namespace Text_Grab.Controls
                 ResultsListView.Items.Clear();
                 return;
             }
+            
+            int selectedResultIndex = ResultsListView.SelectedIndex;
+            Match sameMatch = Matches[selectedResultIndex];
 
-            stringToParse = stringToParse.Split('\t').FirstOrDefault();
-
-            int.TryParse(stringToParse.Substring(8), out int selectionStartIndex);
-
-            TextEditWindow.PassedTextControl.Select(selectionStartIndex, MatchLength);
+            TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
             TextEditWindow.PassedTextControl.Focus();
             this.Focus();
         }
@@ -170,6 +173,31 @@ namespace Text_Grab.Controls
             ReplaceAllButton.Visibility = optionsVisibility;
             MoreOptionsHozStack.Visibility = optionsVisibility;
         }
+
+        private void ReplaceAll_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+
+        }
+
+        private void Replace_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(ReplaceTextBox.Text)
+                || Matches.Count < 1)
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
+        }
+
+        private void Replace_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            int selectedResultIndex = ResultsListView.SelectedIndex;
+            Match sameMatch = Matches[selectedResultIndex];
+            TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
+            TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+
+            // TODO there is a bug here where clicking replace again will mess up the text
+        }
+
 
         private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
