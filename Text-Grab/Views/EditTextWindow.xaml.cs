@@ -551,5 +551,17 @@ namespace Text_Grab
 
             }
         }
+
+        private void ReplaceReservedCharsMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (PassedTextControl.SelectionLength > 0)
+            {
+                PassedTextControl.SelectedText = PassedTextControl.SelectedText.ReplaceReservedCharacters();
+            }
+            else
+            {
+                PassedTextControl.Text = PassedTextControl.Text.ReplaceReservedCharacters();
+            }
+        }
     }
 }

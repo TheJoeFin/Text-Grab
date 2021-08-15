@@ -9,6 +9,12 @@ namespace Text_Grab.Utilities
 {
     public static class StringMethods
     {
+        public static List<Char> specialCharList = new List<Char>()
+                { '\\', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
+
+        public static List<Char> ReservedChars = new List<Char>()
+        { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
+        
         public static string TryFixToLetters(this string fixToLetters)
         {
             fixToLetters = fixToLetters.Replace('0', 'o');
@@ -153,6 +159,19 @@ namespace Text_Grab.Utilities
             public int numberOfRun { get; set; }
         }
 
+        public static string ReplaceReservedCharacters(this string stringToClean)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(stringToClean);
+
+            foreach (Char reservedChar in ReservedChars)
+            {
+                sb.Replace(reservedChar, '-');
+            }
+
+            return sb.ToString();
+        }
+
         public static string EscapeSpecialRegexChars(this string stringToEscape)
         {
             StringBuilder sb = new StringBuilder();
@@ -165,9 +184,6 @@ namespace Text_Grab.Utilities
 
             return sb.ToString();
         }
-
-        public static List<Char> specialCharList = new List<Char>()
-                { '\\', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
 
         public static string ExtractSimplePattern(this string stringToExtract)
         {
@@ -244,6 +260,5 @@ namespace Text_Grab.Utilities
             // sb.Append(")");
             return sb.ToString();
         }
-
     }
 }

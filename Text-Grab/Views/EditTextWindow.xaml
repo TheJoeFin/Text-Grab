@@ -88,6 +88,10 @@
                     x:Name="TryToAlphaMenuItem"
                     Click="TryToAlphaMenuItem_Click"
                     Header="Try To Make _Letters" />
+                <MenuItem
+                    x:Name="ReplaceReservedCharsMenuItem"
+                    Click="ReplaceReservedCharsMenuItem_Click"
+                    Header="_Replace Reserved Characters" />
                 <Separator />
                 <MenuItem
                     x:Name="SplitLineBeforeSelectionMI"
