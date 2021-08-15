@@ -9,6 +9,8 @@
     Title="Edit Text"
     Width="600" 
     Height="450"
+    KeyUp="Window_KeyUp"
+    KeyDown="Window_KeyDown"
     Activated="Window_Activated"
     Closing="Window_Closing"
     Background="{StaticResource DarkBackground}"
@@ -158,6 +160,7 @@
             Text="{Binding CopiedText, Mode=OneWay}"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="Wrap"
+            Mouse.MouseWheel="PassedTextControl_MouseWheel"
             VerticalScrollBarVisibility="Auto" />
         <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>

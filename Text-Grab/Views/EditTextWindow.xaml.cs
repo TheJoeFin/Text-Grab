@@ -28,6 +28,8 @@ namespace Text_Grab
 
         public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Lower;
 
+        private bool isCtrlDown = false;
+
         public bool WrapText { get; set; } = false;
 
         public static RoutedCommand SplitOnSelectionCmd = new RoutedCommand();
@@ -120,6 +122,17 @@ namespace Text_Grab
         {
             WindowState = WindowState.Normal;
             PassedTextControl.Focus();
+        }
+
+        private void ZoomTextIn(object sender = null, ExecutedRoutedEventArgs e = null)
+        {
+            PassedTextControl.FontSize += 4;
+        }
+
+        private void ZoomTextOut(object sender = null, ExecutedRoutedEventArgs e = null)
+        {
+            if (PassedTextControl.FontSize > 4)
+                PassedTextControl.FontSize -= 4;
         }
 
         private void ToggleCase(object sender, ExecutedRoutedEventArgs e)
@@ -561,6 +574,34 @@ namespace Text_Grab
             else
             {
                 PassedTextControl.Text = PassedTextControl.Text.ReplaceReservedCharacters();
+            }
+        }
+
+        private void PassedTextControl_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            
+            if (isCtrlDown == true)
+            {
+                if (e.Delta > 0)
+                    ZoomTextIn();
+                if (e.Delta < 0)
+                    ZoomTextOut();
+            }
+        }
+
+        private void Window_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+            {
+                isCtrlDown = false;
+            }
+        }
+
+        private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+            {
+                isCtrlDown = true;
             }
         }
     }
