@@ -6,9 +6,9 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Find and Replace"
-    Width="450"
+    Width="480"
     Loaded="FindAndReplacedLoaded"
-    Height="450"
+    Height="560"
     Background="{StaticResource DarkBackground}"
     mc:Ignorable="d">
     <Window.CommandBindings>
@@ -69,8 +69,9 @@
             <TextBox 
                 x:Name="ReplaceTextBox" 
                 Visibility="Collapsed"
-                Margin="6,6,6,0" 
+                Margin="6,6,6,0"  
                 Height="28"
+                VerticalContentAlignment="Center"
                 Grid.Row="1" 
                 Grid.Column="1" />
             <Button 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -23,8 +24,6 @@ namespace Text_Grab.Controls
         public static RoutedCommand ReplaceAllCmd = new RoutedCommand();
 
         private string Pattern { get; set; }
-
-        private int MatchLength { get; set; }
 
         private MatchCollection Matches;
 
@@ -58,7 +57,6 @@ namespace Text_Grab.Controls
                 Pattern = Pattern.EscapeSpecialRegexChars();
             }
 
-            Matches = null;
             try
             {
                 if (ExactMatchCheckBox.IsChecked == true)
@@ -83,9 +81,9 @@ namespace Text_Grab.Controls
             {
                 MatchesText.Text = $"{Matches.Count} Matches";
                 ResultsListView.IsEnabled = true;
+                int count = 1;
                 foreach (Match m in Matches)
                 {
-                    MatchLength = m.Length;
                     int previewLengths = 16;
                     int previewBeginning = 0;
                     int previewEnd = 0;
@@ -118,7 +116,8 @@ namespace Text_Grab.Controls
                     if (atEnd == false)
                         previewString.Append("...");
 
-                    ResultsListView.Items.Add($"At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
+                    ResultsListView.Items.Add($"{count} \t At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
+                    count++;
                 }
             }
 
@@ -176,12 +175,40 @@ namespace Text_Grab.Controls
 
         private void ReplaceAll_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            var selection = ResultsListView.SelectedItems;
 
+            if (Matches.Count < 1)
+                return;
+
+            if (selection.Count < 2)
+            {
+                for (int i = Matches.Count - 1; i >= 0; i--)
+                {
+                    Match matchItem = Matches[i];
+                    TextEditWindow.PassedTextControl.Select(matchItem.Index, matchItem.Length);
+                    TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+                }
+            }
+            else
+            {
+                for (int j = selection.Count - 1; j >= 0; j--)
+                {
+                    string selectionItem = selection[j] as string;
+                    int currentIndex = int.Parse(selectionItem.Split('\t').FirstOrDefault());
+                    currentIndex--;
+                    Match match = Matches[currentIndex];
+                    TextEditWindow.PassedTextControl.Select(match.Index, match.Length);
+                    TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+                }
+            }
+
+            SearchForText();
         }
 
         private void Replace_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(ReplaceTextBox.Text)
+                || Matches == null
                 || Matches.Count < 1)
                 e.CanExecute = false;
             else
@@ -191,10 +218,15 @@ namespace Text_Grab.Controls
         private void Replace_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             int selectedResultIndex = ResultsListView.SelectedIndex;
+
+            if (selectedResultIndex == -1)
+                return;
+
             Match sameMatch = Matches[selectedResultIndex];
             TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
             TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
 
+            SearchForText();
             // TODO there is a bug here where clicking replace again will mess up the text
         }
 
