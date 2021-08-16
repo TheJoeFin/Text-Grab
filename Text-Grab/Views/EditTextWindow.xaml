@@ -104,6 +104,30 @@
                     Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
                     Header="_Isolate Selected Text" />
             </MenuItem>
+            <MenuItem Header="_Selection" >
+                <MenuItem
+                    x:Name="FindAndReplaceMenuItem"
+                    Header="Find and Replace"
+                    Click="FindAndReplaceMenuItem_Click" />
+                <Separator />
+                <MenuItem Command="ApplicationCommands.SelectAll" />
+                <MenuItem 
+                    x:Name="SelectLineMenuItem" 
+                    InputGestureText="Ctrl + L"
+                    Click="SelectLineMenuItem_Click"
+                    Header="Select _Line" />
+                <Separator />
+                <MenuItem 
+                    x:Name="MoveLineUpMenuItem"
+                    Header="Move Selection _Up" 
+                    InputGestureText="Alt + Up"
+                    Click="MoveLineUpMenuItem_Click" />
+                <MenuItem 
+                    x:Name="MoveLineDownMenuItem"
+                    Header="Move Selection _Down"
+                    InputGestureText="Alt + Down"
+                    Click="MoveLineDownMenuItem_Click" />
+            </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
                     x:Name="WrapTextMenuItem"

@@ -115,7 +115,6 @@ namespace Text_Grab
             if (Settings.Default.IsFontUnderline) tdc.Add(TextDecorations.Underline);
             if (Settings.Default.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
             PassedTextControl.TextDecorations = tdc;
-
         }
 
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
@@ -475,7 +474,7 @@ namespace Text_Grab
             }
         }
 
-        private void SelectLine(object sender, ExecutedRoutedEventArgs e)
+        private void SelectLine(object sender = null, ExecutedRoutedEventArgs e = null)
         {
             string selectedText = PassedTextControl.SelectedText;
             int selectionIndex = PassedTextControl.SelectionStart;
@@ -518,7 +517,7 @@ namespace Text_Grab
             PassedTextControl.Select(startSelectionIndex, selectionLength);
         }
 
-        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        private void LaunchFindAndReplace()
         {
             FindAndReplaceWindow farw = new FindAndReplaceWindow();
             farw.StringFromWindow = PassedTextControl.Text;
@@ -530,6 +529,11 @@ namespace Text_Grab
                 farw.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
                 farw.SearchForText();
             }
+        }
+
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            LaunchFindAndReplace();
         }
 
         private void LaunchFullscreenOnLoad_Click(object sender, RoutedEventArgs e)
@@ -603,6 +607,26 @@ namespace Text_Grab
             {
                 isCtrlDown = true;
             }
+        }
+
+        private void SelectLineMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SelectLine();
+        }
+
+        private void MoveLineUpMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            MoveLineUp(sender, null);
+        }
+
+        private void MoveLineDownMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            MoveLineDown(sender, null);
+        }
+
+        private void FindAndReplaceMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            LaunchFindAndReplace();
         }
     }
 }
