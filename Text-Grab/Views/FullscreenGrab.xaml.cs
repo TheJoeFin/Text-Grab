@@ -101,17 +101,17 @@ namespace Text_Grab.Views
             double xDelta = movingPoint.X - clickedPoint.X;
             double yDelta = movingPoint.Y - clickedPoint.Y;
 
-            if (isShiftDown == true)
-            {
-                Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
-                double xShiftDelta = (movingPoint.X - shiftPoint.X) / m.M11;
-                double yShiftDelta = (movingPoint.Y - shiftPoint.Y) / m.M22;
-                double selectLeft = Canvas.GetLeft(selectBorder);
-                double selectTop = Canvas.GetTop(selectBorder);
-                Canvas.SetLeft(selectBorder, selectLeft + xShiftDelta);
-                Canvas.SetTop(selectBorder, selectTop + yShiftDelta);
-                return;
-            }
+            // if (isShiftDown == true)
+            // {
+            //     Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+            //     double xShiftDelta = (movingPoint.X - shiftPoint.X) / m.M11;
+            //     double yShiftDelta = (movingPoint.Y - shiftPoint.Y) / m.M22;
+            //     double selectLeft = Canvas.GetLeft(selectBorder);
+            //     double selectTop = Canvas.GetTop(selectBorder);
+            //     Canvas.SetLeft(selectBorder, selectLeft + xShiftDelta);
+            //     Canvas.SetTop(selectBorder, selectTop + yShiftDelta);
+            //     return;
+            // }
 
             // X and Y postive
             if (xDelta > 0 && yDelta > 0)
