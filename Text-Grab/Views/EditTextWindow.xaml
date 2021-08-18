@@ -101,6 +101,7 @@
                     Header="Split Lines _Before Each Selection" />
                 <MenuItem
                     x:Name="IsolateSelectionMI"
+                    InputGestureText="Ctrl + I"
                     Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
                     Header="_Isolate Selected Text" />
             </MenuItem>
@@ -193,7 +194,36 @@
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="Wrap"
             Mouse.MouseWheel="PassedTextControl_MouseWheel"
-            VerticalScrollBarVisibility="Auto" />
+            VerticalScrollBarVisibility="Auto">
+            <TextBox.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Command="ApplicationCommands.Undo" />
+                    <MenuItem Command="ApplicationCommands.Redo" />
+                    <Separator />
+                    <MenuItem Command="ApplicationCommands.Cut" />
+                    <MenuItem Command="ApplicationCommands.Copy" />
+                    <MenuItem Command="ApplicationCommands.Paste" />
+                    <Separator />
+                    <MenuItem
+                        Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
+                        InputGestureText="Ctrl + I"
+                        Header="_Isolate Selected Text" />
+                    <MenuItem 
+                        InputGestureText="Ctrl + L"
+                        Click="SelectLineMenuItem_Click"
+                        Header="Select _Line" />
+                    <Separator />
+                    <MenuItem 
+                        Header="Move Selection _Up" 
+                        InputGestureText="Alt + Up"
+                        Click="MoveLineUpMenuItem_Click" />
+                    <MenuItem 
+                        Header="Move Selection _Down"
+                        InputGestureText="Alt + Down"
+                        Click="MoveLineDownMenuItem_Click" />
+                </ContextMenu>
+            </TextBox.ContextMenu>
+        </TextBox>
         <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />
