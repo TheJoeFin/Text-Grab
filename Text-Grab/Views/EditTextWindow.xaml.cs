@@ -81,6 +81,14 @@ namespace Text_Grab
             _ = selectLineCommand.InputGestures.Add(new KeyGesture(Key.L, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(selectLineCommand, SelectLine));
 
+            RoutedCommand IsolateSelectionCommand = new RoutedCommand();
+            _ = IsolateSelectionCommand.InputGestures.Add(new KeyGesture(Key.I, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(IsolateSelectionCommand, IsolateSelectionCmdExecuted));
+
+            RoutedCommand SaveCommand = new RoutedCommand();
+            _ = SaveCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(SaveCommand, SaveBTN_Click));
+
             RoutedCommand moveLineUpCommand = new RoutedCommand();
             _ = moveLineUpCommand.InputGestures.Add(new KeyGesture(Key.Up, ModifierKeys.Alt));
             _ = CommandBindings.Add(new CommandBinding(moveLineUpCommand, MoveLineUp));
