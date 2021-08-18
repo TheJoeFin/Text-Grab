@@ -10,11 +10,11 @@ namespace Text_Grab.Utilities
     public static class StringMethods
     {
         public static List<Char> specialCharList = new List<Char>()
-                { '\\', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
+                { '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
 
         public static List<Char> ReservedChars = new List<Char>()
         { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
-        
+
         public static string TryFixToLetters(this string fixToLetters)
         {
             fixToLetters = fixToLetters.Replace('0', 'o');
@@ -188,7 +188,7 @@ namespace Text_Grab.Utilities
         public static string ExtractSimplePattern(this string stringToExtract)
         {
             List<CharRun> charRunList = new List<CharRun>();
-            
+
             foreach (char c in stringToExtract)
             {
                 CharType thisCharType = CharType.Other;
