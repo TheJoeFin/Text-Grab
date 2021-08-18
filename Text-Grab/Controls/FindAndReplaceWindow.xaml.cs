@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls
@@ -22,6 +23,7 @@ namespace Text_Grab.Controls
         public static RoutedCommand TextSearchCmd = new RoutedCommand();
         public static RoutedCommand ReplaceOneCmd = new RoutedCommand();
         public static RoutedCommand ReplaceAllCmd = new RoutedCommand();
+        DispatcherTimer ChangeFindTextTimer = new DispatcherTimer();
 
         private string Pattern { get; set; }
 
@@ -30,6 +32,15 @@ namespace Text_Grab.Controls
         public FindAndReplaceWindow()
         {
             InitializeComponent();
+
+            ChangeFindTextTimer.Interval = TimeSpan.FromMilliseconds(400);
+            ChangeFindTextTimer.Tick += ChangeFindText_Tick;
+        }
+
+        private void ChangeFindText_Tick(object sender, EventArgs e)
+        {
+            ChangeFindTextTimer.Stop();
+            SearchForText();
         }
 
         private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
@@ -227,7 +238,6 @@ namespace Text_Grab.Controls
             TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
 
             SearchForText();
-            // TODO there is a bug here where clicking replace again will mess up the text
         }
 
 
@@ -246,13 +256,33 @@ namespace Text_Grab.Controls
 
         private void FindTextBox_KeyUp(object sender, KeyEventArgs e)
         {
+            ChangeFindTextTimer.Stop();
+
             if (e.Key == Key.Enter)
+            {
+                ChangeFindTextTimer.Stop();
                 SearchForText();
+            } 
+            else
+            {
+                ChangeFindTextTimer.Start();
+            }
         }
 
         private void OptionsChangedRefresh(object sender, RoutedEventArgs e)
         {
             SearchForText();
+        }
+
+        private void Window_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                if (string.IsNullOrWhiteSpace(FindTextBox.Text) == false)
+                    FindTextBox.Clear();
+                else
+                    this.Close();
+            }
         }
     }
 }
