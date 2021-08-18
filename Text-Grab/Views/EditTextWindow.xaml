@@ -49,7 +49,13 @@
             Foreground="White">
             <MenuItem Header="_File">
                 <MenuItem
+                    x:Name="OpenFileMenuItem"
+                    InputGestureText="Ctrl + O"
+                    Click="OpenFileMenuItem_Click"
+                    Header="_Open File..." />
+                <MenuItem
                     x:Name="SaveFileMenuItem"
+                    InputGestureText="Ctrl + S"
                     Click="SaveBTN_Click"
                     Header="_Save To File..." />
                 <MenuItem
@@ -63,6 +69,7 @@
                     Header="Text Grab Settings..." />
                 <MenuItem
                     x:Name="CloseMenuItem"
+                    InputGestureText="Alt + F4"
                     Click="CloseMenuItem_Click"
                     Header="_Exit" />
             </MenuItem>

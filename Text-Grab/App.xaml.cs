@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
@@ -40,6 +41,12 @@ namespace Text_Grab
                 if (e.Args[i] == "EditText")
                 {
                     EditTextWindow manipulateTextWindow = new EditTextWindow();
+                    manipulateTextWindow.Show();
+                }
+                if (File.Exists(e.Args[i]))
+                {
+                    EditTextWindow manipulateTextWindow = new EditTextWindow();
+                    manipulateTextWindow.OpenThisPath(e.Args[i]);
                     manipulateTextWindow.Show();
                 }
             }

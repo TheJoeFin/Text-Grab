@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -89,6 +90,10 @@ namespace Text_Grab
             _ = SaveCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(SaveCommand, SaveBTN_Click));
 
+            RoutedCommand OpenCommand = new RoutedCommand();
+            _ = OpenCommand.InputGestures.Add(new KeyGesture(Key.O, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(OpenCommand, OpenFileMenuItem_Click));
+
             RoutedCommand moveLineUpCommand = new RoutedCommand();
             _ = moveLineUpCommand.InputGestures.Add(new KeyGesture(Key.Up, ModifierKeys.Alt));
             _ = CommandBindings.Add(new CommandBinding(moveLineUpCommand, MoveLineUp));
@@ -163,6 +168,34 @@ namespace Text_Grab
                     break;
                 default:
                     break;
+            }
+        }
+
+        private async void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            // Create OpenFileDialog 
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+
+            // Set filter for file extension and default file extension 
+            dlg.DefaultExt = ".txt";
+            dlg.Filter = "Text documents (.txt)|*.txt";
+
+            bool? result = dlg.ShowDialog();
+
+            if (result == true
+                && dlg.CheckFileExists == true)
+            {
+                OpenThisPath(dlg.FileName);
+            }
+
+        }
+
+        internal async void OpenThisPath(string v)
+        {
+            using (StreamReader sr = File.OpenText(v))
+            {
+                string s = await sr.ReadToEndAsync();
+                PassedTextControl.Text = s;
             }
         }
 
