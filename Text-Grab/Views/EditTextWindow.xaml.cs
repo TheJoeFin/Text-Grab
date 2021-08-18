@@ -15,6 +15,7 @@ using Text_Grab.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.System;
 
 namespace Text_Grab
 {
@@ -629,6 +630,16 @@ namespace Text_Grab
         private void FindAndReplaceMenuItem_Click(object sender, RoutedEventArgs e)
         {
             LaunchFindAndReplace();
+        }
+
+        private async void RateAndReview_Click(object sender, RoutedEventArgs e)
+        {
+            _ = await Launcher.LaunchUriAsync(new Uri(string.Format("ms-windows-store:REVIEW?PFN={0}", "40087JoeFinApps.TextGrab_kdbpvth5scec4")));
+        }
+
+        private async void ContactMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            _ = await Launcher.LaunchUriAsync(new Uri(string.Format("mailto:support@textgrab.net")));
         }
     }
 }

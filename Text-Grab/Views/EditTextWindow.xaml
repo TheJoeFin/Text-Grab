@@ -163,6 +163,14 @@
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem
+                    x:Name="ContactMenuItem"
+                    Click="ContactMenuItem_Click"
+                    Header="_Contact The Developer..." />
+                <MenuItem
+                    x:Name="RateAndReview"
+                    Click="RateAndReview_Click"
+                    Header="_Rate and Review..." />
+                <MenuItem
                     x:Name="FeedbackMenuItem"
                     Click="FeedbackMenuItem_Click"
                     Header="_Feedback..." />
