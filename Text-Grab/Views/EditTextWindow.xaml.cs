@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -27,6 +26,8 @@ namespace Text_Grab
     public partial class EditTextWindow : Window
     {
         public string CopiedText { get; set; } = "";
+
+        private string OpenedFilePath;
 
         public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Lower;
 
@@ -135,7 +136,7 @@ namespace Text_Grab
         {
             if (WindowState == WindowState.Minimized)
                 WindowState = WindowState.Normal;
-            
+
             PassedTextControl.Focus();
         }
 
@@ -171,7 +172,7 @@ namespace Text_Grab
             }
         }
 
-        private async void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
+        private void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
         {
             // Create OpenFileDialog 
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
@@ -185,9 +186,10 @@ namespace Text_Grab
             if (result == true
                 && dlg.CheckFileExists == true)
             {
+                OpenedFilePath = dlg.FileName;
+                Title = $"Edit Text | {dlg.FileName.Split('\\').LastOrDefault()}";
                 OpenThisPath(dlg.FileName);
             }
-
         }
 
         internal async void OpenThisPath(string v)
@@ -273,17 +275,25 @@ namespace Text_Grab
         {
             string fileText = PassedTextControl.Text;
 
-            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
+            if (string.IsNullOrEmpty(OpenedFilePath))
             {
-                Filter = "Text Files(*.txt)|*.txt|All(*.*)|*",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                RestoreDirectory = true,
-            };
+                Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
+                {
+                    Filter = "Text Files(*.txt)|*.txt|All(*.*)|*",
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    RestoreDirectory = true,
+                };
 
-            if (dialog.ShowDialog() == true)
-            {
-                File.WriteAllText(dialog.FileName, fileText);
+                if (dialog.ShowDialog() == true)
+                {
+                    File.WriteAllText(dialog.FileName, fileText);
+                }
             }
+            else
+            {
+                File.WriteAllText(OpenedFilePath, fileText);
+            }
+
         }
 
         private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -627,7 +637,7 @@ namespace Text_Grab
 
         private void PassedTextControl_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            
+
             if (isCtrlDown == true)
             {
                 if (e.Delta > 0)
