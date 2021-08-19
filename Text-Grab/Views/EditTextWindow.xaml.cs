@@ -91,6 +91,10 @@ namespace Text_Grab
             _ = SaveCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(SaveCommand, SaveBTN_Click));
 
+            RoutedCommand SaveAsCommand = new RoutedCommand();
+            _ = SaveAsCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Shift | ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(SaveAsCommand, SaveAsBTN_Click));
+
             RoutedCommand OpenCommand = new RoutedCommand();
             _ = OpenCommand.InputGestures.Add(new KeyGesture(Key.O, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(OpenCommand, OpenFileMenuItem_Click));
@@ -187,7 +191,6 @@ namespace Text_Grab
             if (result == true
                 && dlg.CheckFileExists == true)
             {
-                Title = $"Edit Text | {dlg.FileName.Split('\\').LastOrDefault()}";
                 OpenThisPath(dlg.FileName);
             }
         }
@@ -195,6 +198,7 @@ namespace Text_Grab
         internal async void OpenThisPath(string pathOfFileToOpen)
         {
             OpenedFilePath = pathOfFileToOpen;
+            Title = $"Edit Text | {pathOfFileToOpen.Split('\\').LastOrDefault()}";
 
             using (StreamReader sr = File.OpenText(pathOfFileToOpen))
             {
@@ -289,13 +293,33 @@ namespace Text_Grab
                 if (dialog.ShowDialog() == true)
                 {
                     File.WriteAllText(dialog.FileName, fileText);
+                    OpenedFilePath = dialog.FileName;
+                    Title = $"Edit Text | {OpenedFilePath.Split('\\').LastOrDefault()}";
                 }
             }
             else
             {
                 File.WriteAllText(OpenedFilePath, fileText);
             }
+        }
 
+        private void SaveAsBTN_Click(object sender, RoutedEventArgs e)
+        {
+            string fileText = PassedTextControl.Text;
+
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
+            {
+                Filter = "Text Files(*.txt)|*.txt|All(*.*)|*",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                RestoreDirectory = true,
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                File.WriteAllText(dialog.FileName, fileText);
+                OpenedFilePath = dialog.FileName;
+                Title = $"Edit Text | {OpenedFilePath.Split('\\').LastOrDefault()}";
+            }
         }
 
         private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)

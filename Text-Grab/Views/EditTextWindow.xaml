@@ -57,7 +57,12 @@
                     x:Name="SaveFileMenuItem"
                     InputGestureText="Ctrl + S"
                     Click="SaveBTN_Click"
-                    Header="_Save To File..." />
+                    Header="_Save" />
+                <MenuItem
+                    x:Name="SaveAsFileMenuItem"
+                    InputGestureText="Ctrl + Shift + S"
+                    Click="SaveAsBTN_Click"
+                    Header="Save _As..." />
                 <MenuItem
                     x:Name="CopyAndCloseMenuItem"
                     Click="CopyCloseBTN_Click"
