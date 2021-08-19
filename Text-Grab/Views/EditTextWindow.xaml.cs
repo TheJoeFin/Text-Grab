@@ -109,7 +109,8 @@ namespace Text_Grab
 
             SetFontFromSettings();
 
-            if (Settings.Default.EditWindowStartFullscreen)
+            if (Settings.Default.EditWindowStartFullscreen
+                && string.IsNullOrWhiteSpace(OpenedFilePath) == true)
             {
                 WindowUtilities.LaunchFullScreenGrab(true);
                 LaunchFullscreenOnLoad.IsChecked = true;
@@ -186,15 +187,16 @@ namespace Text_Grab
             if (result == true
                 && dlg.CheckFileExists == true)
             {
-                OpenedFilePath = dlg.FileName;
                 Title = $"Edit Text | {dlg.FileName.Split('\\').LastOrDefault()}";
                 OpenThisPath(dlg.FileName);
             }
         }
 
-        internal async void OpenThisPath(string v)
+        internal async void OpenThisPath(string pathOfFileToOpen)
         {
-            using (StreamReader sr = File.OpenText(v))
+            OpenedFilePath = pathOfFileToOpen;
+
+            using (StreamReader sr = File.OpenText(pathOfFileToOpen))
             {
                 string s = await sr.ReadToEndAsync();
                 PassedTextControl.Text = s;
