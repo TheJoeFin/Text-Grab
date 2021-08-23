@@ -36,6 +36,10 @@
             CanExecute="SingleLineCmdCanExecute"
             Command="{x:Static local:EditTextWindow.SingleLineCmd}"
             Executed="SingleLineCmdExecuted" />
+        <CommandBinding
+            CanExecute="ToggleCaseCmdCanExecute"
+            Executed="ToggleCase"
+            Command="{x:Static local:EditTextWindow.ToggleCaseCmd}" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -116,6 +120,11 @@
                     InputGestureText="Ctrl + I"
                     Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
                     Header="_Isolate Selected Text" />
+                <MenuItem
+                    x:Name="ToggleCaseMenuItem"
+                    InputGestureText="Shift + F3"
+                    Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+                    Header="Toggle _Case" />
             </MenuItem>
             <MenuItem Header="_Selection" >
                 <MenuItem
@@ -224,6 +233,10 @@
                         InputGestureText="Ctrl + L"
                         Click="SelectLineMenuItem_Click"
                         Header="Select _Line" />
+                    <MenuItem
+                        InputGestureText="Shift + F3"
+                        Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+                        Header="Toggle _Case" />
                     <Separator />
                     <MenuItem 
                         Header="Move Selection _Up" 

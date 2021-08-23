@@ -29,7 +29,7 @@ namespace Text_Grab
 
         private string OpenedFilePath;
 
-        public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Lower;
+        public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Unknown;
 
         private bool isCtrlDown = false;
 
@@ -40,6 +40,8 @@ namespace Text_Grab
         public static RoutedCommand IsolateSelectionCmd = new RoutedCommand();
 
         public static RoutedCommand SingleLineCmd = new RoutedCommand();
+        
+        public static RoutedCommand ToggleCaseCmd = new RoutedCommand();
 
         public EditTextWindow()
         {
@@ -156,25 +158,87 @@ namespace Text_Grab
                 PassedTextControl.FontSize -= 4;
         }
 
-        private void ToggleCase(object sender, ExecutedRoutedEventArgs e)
+        private void ToggleCaseCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
+            string text;
+            bool containsLetters = false;
+
+            if (PassedTextControl.SelectionLength == 0)
+                text = PassedTextControl.Text;
+            else
+                text = PassedTextControl.SelectedText;
+
+            foreach (char letter in text)
+            {
+                if (char.IsLetter(letter) == true)
+                    containsLetters = true;
+            }
+
+            if (containsLetters == true)
+                e.CanExecute = true;
+            else
+                e.CanExecute = false;
+        }
+
+
+        private void ToggleCase(object sender = null, ExecutedRoutedEventArgs e = null)
+        {
+            string textToModify;
+
+            if (PassedTextControl.SelectionLength == 0)
+                textToModify = PassedTextControl.Text;
+            else
+                textToModify = PassedTextControl.SelectedText;
+
+            if (CaseStatusOfToggle == CurrentCase.Unknown)
+                CaseStatusOfToggle = DetermineToggleCase(textToModify);
+
             switch (CaseStatusOfToggle)
             {
                 case CurrentCase.Lower:
-                    PassedTextControl.SelectedText = PassedTextControl.SelectedText.ToLower();
+                    textToModify = textToModify.ToLower();
                     CaseStatusOfToggle = CurrentCase.Camel;
                     break;
                 case CurrentCase.Camel:
-                    PassedTextControl.SelectedText = PassedTextControl.SelectedText.ToCamel();
+                    textToModify = textToModify.ToCamel();
                     CaseStatusOfToggle = CurrentCase.Upper;
                     break;
                 case CurrentCase.Upper:
-                    PassedTextControl.SelectedText = PassedTextControl.SelectedText.ToUpper();
+                    textToModify = textToModify.ToUpper();
                     CaseStatusOfToggle = CurrentCase.Lower;
                     break;
                 default:
                     break;
             }
+
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = textToModify;
+            else
+                PassedTextControl.SelectedText = textToModify;
+        }
+
+        private CurrentCase DetermineToggleCase(string textToModify)
+        {
+            bool isAllLower = true;
+            bool isAllUpper = true;
+
+            foreach (char letter in textToModify)
+            {
+                if (char.IsLower(letter) == true)
+                {
+                    isAllUpper = false;
+                }
+                if (char.IsUpper(letter) == true)
+                {
+                    isAllLower = false;
+                }
+            }
+
+            if (isAllLower == false
+                && isAllUpper == true)
+                return CurrentCase.Lower;
+
+            return CurrentCase.Camel;
         }
 
         private void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
