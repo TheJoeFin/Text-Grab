@@ -38,7 +38,7 @@
                         Margin="10,0,0,0"
                         VerticalAlignment="Bottom"
                         Foreground="White"
-                        Text="v2.1" />
+                        Text="v2.2" />
                 </StackPanel>
 
                 <!--  Show Toast on success  -->
