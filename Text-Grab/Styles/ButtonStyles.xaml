@@ -569,8 +569,10 @@
             </Setter.Value>
         </Setter>
     </Style>
+
     <Style x:Key="TealColor" TargetType="Button">
         <Setter Property="Foreground" Value="White" />
+        <Setter Property="Background" Value="{StaticResource DarkTeal}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
         <Setter Property="IsTabStop" Value="False" />
@@ -579,7 +581,7 @@
                 <ControlTemplate TargetType="{x:Type Button}">
                     <Border
                         x:Name="border"
-                        Background="{StaticResource DarkTeal}"
+                        Background="{TemplateBinding Background}"
                         BorderBrush="{StaticResource Teal}"
                         BorderThickness="1"
                         SnapsToDevicePixels="true">

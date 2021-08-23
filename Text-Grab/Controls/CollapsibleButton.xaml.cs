@@ -15,8 +15,6 @@ namespace Text_Grab.Controls
 
         public bool IsSymbol { get; set; } = false;
 
-        public Brush ButtonBackground { get; set; }
-
         public string ButtonText
         {
             get { return _buttonText; }
@@ -66,11 +64,6 @@ namespace Text_Grab.Controls
                 this.Style = SymbolButtonStyle;
                 ButtonTextBlock.Visibility = Visibility.Collapsed;
             }
-            else
-            {
-                if (ButtonBackground != null)
-                    this.Background = ButtonBackground;
-            }
         }
 
         private void ChangeButtonLayout_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -80,10 +73,7 @@ namespace Text_Grab.Controls
                 // change to a normal button
                 Style tealButtonStyle = this.FindResource("TealColor") as Style;
                 this.Style = tealButtonStyle;
-                ButtonTextBlock.Visibility = Visibility.Visible;
-
-                if (ButtonBackground != null)
-                    this.Background = ButtonBackground;
+                ButtonTextBlock.Visibility = Visibility.Visible;;
 
                 IsSymbol = false;
             }

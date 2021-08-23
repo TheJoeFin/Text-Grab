@@ -257,7 +257,7 @@
             <StackPanel Orientation="Horizontal">
                 <controls:CollapsibleButton
                     x:Name="CopyCloseBTN"
-                    ButtonBackground="Orange"
+                    Background="DarkOrange" Foreground="White"
                     ButtonText="Copy and Close"
                     Click="CopyCloseBTN_Click"
                     SymbolText="" />
