@@ -40,6 +40,10 @@
             CanExecute="ToggleCaseCmdCanExecute"
             Executed="ToggleCase"
             Command="{x:Static local:EditTextWindow.ToggleCaseCmd}" />
+        <CommandBinding
+            CanExecute="ReplaceReservedCharsCmdCanExecute"
+            Executed="ReplaceReservedCharsCmdExecuted"
+            Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -108,7 +112,8 @@
                     Header="Try To Make _Letters" />
                 <MenuItem
                     x:Name="ReplaceReservedCharsMenuItem"
-                    Click="ReplaceReservedCharsMenuItem_Click"
+                    InputGestureText="Ctrl + R"
+                    Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
                     Header="_Replace Reserved Characters" />
                 <Separator />
                 <MenuItem

@@ -45,6 +45,8 @@ namespace Text_Grab
         
         public static RoutedCommand ToggleCaseCmd = new RoutedCommand();
 
+        public static RoutedCommand ReplaceReservedCmd = new RoutedCommand();
+
         public EditTextWindow()
         {
             InitializeComponent();
@@ -114,6 +116,10 @@ namespace Text_Grab
             RoutedCommand toggleCaseCommand = new RoutedCommand();
             _ = toggleCaseCommand.InputGestures.Add(new KeyGesture(Key.F3, ModifierKeys.Shift));
             _ = CommandBindings.Add(new CommandBinding(toggleCaseCommand, ToggleCase));
+
+            RoutedCommand replaceReservedCharsCommand = new RoutedCommand();
+            _ = replaceReservedCharsCommand.InputGestures.Add(new KeyGesture(Key.R, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(replaceReservedCharsCommand, ReplaceReservedCharsCmdExecuted));
 
             SetFontFromSettings();
 
@@ -717,7 +723,7 @@ namespace Text_Grab
             }
         }
 
-        private void ReplaceReservedCharsMenuItem_Click(object sender, RoutedEventArgs e)
+        private void ReplaceReservedCharsCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
             if (PassedTextControl.SelectionLength > 0)
             {
@@ -727,6 +733,33 @@ namespace Text_Grab
             {
                 PassedTextControl.Text = PassedTextControl.Text.ReplaceReservedCharacters();
             }
+        }
+
+        private void ReplaceReservedCharsCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            bool containsAnyReservedChars = false;
+
+            if (PassedTextControl.SelectionLength > 0)
+            {
+                foreach (char reservedChar in StringMethods.ReservedChars)
+                {
+                    if (PassedTextControl.SelectedText.Contains(reservedChar))
+                        containsAnyReservedChars = true;
+                }
+            }
+            else
+            {
+                foreach (char reservedChar in StringMethods.ReservedChars)
+                {
+                    if (PassedTextControl.Text.Contains(reservedChar))
+                        containsAnyReservedChars = true;
+                }
+            }
+
+            if (containsAnyReservedChars == true)
+                e.CanExecute = true;
+            else 
+                e.CanExecute = false;
         }
 
         private void PassedTextControl_MouseWheel(object sender, MouseWheelEventArgs e)
