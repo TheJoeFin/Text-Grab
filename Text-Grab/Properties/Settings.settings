@@ -21,7 +21,7 @@
       <Value Profile="(Default)">Segoe UI</Value>
     </Setting>
     <Setting Name="FontSizeSetting" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">16</Value>
+      <Value Profile="(Default)">14</Value>
     </Setting>
     <Setting Name="IsFontBold" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
