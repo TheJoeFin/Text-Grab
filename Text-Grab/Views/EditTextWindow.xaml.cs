@@ -29,6 +29,8 @@ namespace Text_Grab
 
         private string OpenedFilePath;
 
+        private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
+
         public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Unknown;
 
         private bool isCtrlDown = false;
@@ -49,8 +51,8 @@ namespace Text_Grab
 
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
             XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
-            CultureInfo culture = lang.GetEquivalentCulture();
-            if (culture.TextInfo.IsRightToLeft)
+            selectedCultureInfo = lang.GetEquivalentCulture();
+            if (selectedCultureInfo.TextInfo.IsRightToLeft)
             {
                 PassedTextControl.TextAlignment = TextAlignment.Right;
             }
@@ -193,18 +195,20 @@ namespace Text_Grab
             if (CaseStatusOfToggle == CurrentCase.Unknown)
                 CaseStatusOfToggle = DetermineToggleCase(textToModify);
 
+            TextInfo currentTI = selectedCultureInfo.TextInfo;
+
             switch (CaseStatusOfToggle)
             {
                 case CurrentCase.Lower:
-                    textToModify = textToModify.ToLower();
+                    textToModify = currentTI.ToLower(textToModify);
                     CaseStatusOfToggle = CurrentCase.Camel;
                     break;
                 case CurrentCase.Camel:
-                    textToModify = textToModify.ToCamel();
+                    textToModify = currentTI.ToTitleCase(textToModify);
                     CaseStatusOfToggle = CurrentCase.Upper;
                     break;
                 case CurrentCase.Upper:
-                    textToModify = textToModify.ToUpper();
+                    textToModify = currentTI.ToUpper(textToModify);
                     CaseStatusOfToggle = CurrentCase.Lower;
                     break;
                 default:
