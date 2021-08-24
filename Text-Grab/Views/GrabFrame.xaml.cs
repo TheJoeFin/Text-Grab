@@ -109,7 +109,7 @@ namespace Text_Grab.Views
                         outputString.Append(Environment.NewLine);
                         lineList.Clear();
                         lastLineNum = border.LineNumber;
-                        
+
                     }
                     lineList.Add(border.Word);
                 }
@@ -356,7 +356,7 @@ namespace Text_Grab.Views
                 return;
 
             System.Windows.Point movingPoint = e.GetPosition(RectanglesCanvas);
-            
+
             double xDelta = movingPoint.X - clickedPoint.X;
             double yDelta = movingPoint.Y - clickedPoint.Y;
 
@@ -406,7 +406,7 @@ namespace Text_Grab.Views
 
             foreach (WordBorder wordBorder in wordBorders)
             {
-                Rect wbRect= new Rect(Canvas.GetLeft(wordBorder), Canvas.GetTop(wordBorder), wordBorder.Width, wordBorder.Height);
+                Rect wbRect = new Rect(Canvas.GetLeft(wordBorder), Canvas.GetTop(wordBorder), wordBorder.Width, wordBorder.Height);
 
                 if (rectSelect.IntersectsWith(wbRect))
                 {
@@ -429,7 +429,7 @@ namespace Text_Grab.Views
                     wordBorder.WasRegionSelected = false;
             }
 
-            if (clickedEmptySpace == true 
+            if (clickedEmptySpace == true
                 && smallSelction == true
                 && finalCheck == true)
             {

@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace Text_Grab.Controls
 {
@@ -75,7 +74,7 @@ namespace Text_Grab.Controls
                 // change to a normal button
                 Style tealButtonStyle = this.FindResource("TealColor") as Style;
                 this.Style = tealButtonStyle;
-                ButtonTextBlock.Visibility = Visibility.Visible;;
+                ButtonTextBlock.Visibility = Visibility.Visible; ;
 
                 IsSymbol = false;
             }

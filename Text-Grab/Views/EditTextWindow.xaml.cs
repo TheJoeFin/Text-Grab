@@ -42,7 +42,7 @@ namespace Text_Grab
         public static RoutedCommand IsolateSelectionCmd = new RoutedCommand();
 
         public static RoutedCommand SingleLineCmd = new RoutedCommand();
-        
+
         public static RoutedCommand ToggleCaseCmd = new RoutedCommand();
 
         public static RoutedCommand ReplaceReservedCmd = new RoutedCommand();
@@ -758,7 +758,7 @@ namespace Text_Grab
 
             if (containsAnyReservedChars == true)
                 e.CanExecute = true;
-            else 
+            else
                 e.CanExecute = false;
         }
 
