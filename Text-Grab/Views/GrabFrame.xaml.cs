@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -97,19 +98,24 @@ namespace Text_Grab.Views
                 if (selectedBorders.Count == 0)
                     selectedBorders.AddRange(wordBorders);
 
-                List<string> wordsList = new List<string>();
+                List<string> lineList = new List<string>();
+                StringBuilder outputString = new StringBuilder();
                 int lastLineNum = selectedBorders.FirstOrDefault().LineNumber;
                 foreach (WordBorder border in selectedBorders)
                 {
                     if (border.LineNumber != lastLineNum)
                     {
-                        wordsList.Add(Environment.NewLine);
+                        outputString.Append(string.Join(' ', lineList));
+                        outputString.Append(Environment.NewLine);
+                        lineList.Clear();
                         lastLineNum = border.LineNumber;
+                        
                     }
-
-                    wordsList.Add(border.Word);
+                    lineList.Add(border.Word);
                 }
-                frameText = string.Join(' ', wordsList);
+                outputString.Append(string.Join(' ', lineList));
+
+                frameText = outputString.ToString();
             }
 
 
