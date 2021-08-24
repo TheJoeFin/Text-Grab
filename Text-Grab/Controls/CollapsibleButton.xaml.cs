@@ -15,6 +15,8 @@ namespace Text_Grab.Controls
 
         public bool IsSymbol { get; set; } = false;
 
+        public bool CanChangeStyle { get; set; } = true;
+
         public string ButtonText
         {
             get { return _buttonText; }

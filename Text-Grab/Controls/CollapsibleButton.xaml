@@ -40,6 +40,7 @@
             <MenuItem
                 Name="ChangeButtonLayout"
                 Click="ChangeButtonLayout_Click"
+                IsEnabled="{Binding Path=CanChangeStyle, Mode=OneWay}"
                 Header="Change Style" />
         </ContextMenu>
     </Button.ContextMenu>

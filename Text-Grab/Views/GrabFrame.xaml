@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     x:Name="GrabFrameWindow"
     Title="Grab Frame"
@@ -109,7 +110,7 @@
             </Canvas>
             <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
                 <Grid
-                    Height="28"
+                    Height="30"
                     Margin="6"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Bottom">
@@ -119,10 +120,7 @@
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="auto" />
-                        <ColumnDefinition
-                            Width="*"
-                            MinWidth="80"
-                            MaxWidth="180" />
+                        <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox
                         x:Name="SearchBox"
@@ -130,34 +128,29 @@
                         Margin="0,0,6,0"
                         Padding="4"
                         GotFocus="SearchBox_GotFocus"
+                        VerticalContentAlignment="Center"
                         Text="Search For Text..."
                         TextChanged="SearchBox_TextChanged" />
-                    <Button
+                    <controls:CollapsibleButton
                         x:Name="ClearBTN"
                         Margin="0,0,6,0"
-                        Padding="6"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
-                        Background="Transparent"
-                        BorderBrush="Transparent"
+                        IsSymbol="True"
+                        CanChangeStyle="False"
+                        SymbolText=""
+                        Foreground="Black"
                         Click="ClearBTN_Click">
-                        <TextBlock
-                            FontFamily="Segoe MDL2 Assets"
-                            Foreground="Black"
-                            Text="" />
-                    </Button>
+                    </controls:CollapsibleButton>
 
-                    <Button
+                    <controls:CollapsibleButton
                         x:Name="RefreshBTN"
                         Grid.Column="1"
-                        Width="24"
-                        Click="RefreshBTN_Click"
-                        Style="{StaticResource TealColor}">
-                        <TextBlock
-                            FontFamily="Segoe MDL2 Assets"
-                            Foreground="White"
-                            Text="" />
-                    </Button>
+                        Margin="0"
+                        SymbolText=""
+                        ButtonText="Refresh" 
+                        IsSymbol="True"
+                        Click="RefreshBTN_Click" />
 
                     <TextBlock
                         x:Name="MatchesTXTBLK"
@@ -178,13 +171,15 @@
                         Foreground="White"
                         Visibility="Collapsed" />
 
-                    <Button
+                    <controls:CollapsibleButton
                         x:Name="GrabBTN"
                         Grid.Column="5"
-                        Click="GrabBTN_Click"
-                        Content="Grab"
-                        Foreground="White"
-                        Style="{StaticResource TealColor}" />
+                        Margin="0" 
+                        Width="110"
+                        SymbolText=""
+                        ButtonText="Grab"
+                        CanChangeStyle="False"
+                        Click="GrabBTN_Click" />
                 </Grid>
             </Border>
         </Grid>
