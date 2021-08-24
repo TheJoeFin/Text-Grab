@@ -20,7 +20,7 @@ namespace Text_Grab
 
         private void FirstRun_Loaded(object sender, RoutedEventArgs e)
         {
-            ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+            // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
 
             switch (Settings.Default.DefaultLaunch)
             {
@@ -41,7 +41,7 @@ namespace Text_Grab
 
         private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
+            // Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
             Settings.Default.Save();
         }
 
