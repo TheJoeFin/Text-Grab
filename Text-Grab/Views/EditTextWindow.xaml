@@ -9,6 +9,8 @@
     Title="Edit Text"
     Width="600" 
     Height="450"
+    MinWidth="200"
+    MinHeight="200"
     KeyUp="Window_KeyUp"
     KeyDown="Window_KeyDown"
     Activated="Window_Activated"
@@ -79,7 +81,7 @@
                 <MenuItem
                     x:Name="SettingsMenuItem"
                     Click="SettingsMenuItem_Click"
-                    Header="Text Grab Settings..." />
+                    Header="Text Grab Sett_ings..." />
                 <MenuItem
                     x:Name="CloseMenuItem"
                     InputGestureText="Alt + F4"

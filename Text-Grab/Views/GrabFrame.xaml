@@ -9,8 +9,8 @@
     Title="Grab Frame"
     Width="800"
     Height="450"
-    MinWidth="50"
-    MinHeight="100"
+    MinWidth="150"
+    MinHeight="150"
     Activated="GrabFrameWindow_Activated"
     AllowsTransparency="True"
     Background="Transparent"
@@ -51,31 +51,35 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Image
-                    x:Name="WindowIcon"
-                    Grid.Column="0"
-                    Width="18"
-                    Height="18"
-                    Margin="4,2,4,6"
-                    Source="{StaticResource TextGrabIcon}"
-                    Stretch="UniformToFill" />
-                <TextBlock
-                    Grid.Column="1"
-                    Margin="4,-4,0,0"
-                    VerticalAlignment="Center"
-                    FontSize="13"
-                    Foreground="White"
-                    Text="Grab Frame">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
-                                    <Setter Property="Foreground" Value="{DynamicResource WindowTitleBarInactiveText}" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                <StackPanel 
+                    Grid.Column="1" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Center">
+                    <Image
+                        x:Name="WindowIcon"
+                        Width="18"
+                        Height="18"
+                        Margin="4,2,4,6"
+                        Source="{StaticResource TextGrabIcon}"
+                        Stretch="UniformToFill" />
+                    <TextBlock
+                        Margin="4,-4,0,0"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        FontSize="13"
+                        Foreground="White"
+                        Text="Grab Frame">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Foreground" Value="{DynamicResource WindowTitleBarInactiveText}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
 
                 <Button
                     Grid.Column="2"

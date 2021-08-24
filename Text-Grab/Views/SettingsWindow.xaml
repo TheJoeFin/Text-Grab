@@ -9,6 +9,8 @@
     Title="Text Grab"
     Width="480"
     Height="500"
+    MinWidth="200"
+    MinHeight="300"
     Background="{StaticResource DarkControlBackground}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
