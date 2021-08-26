@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 using Text_Grab.Properties;
 
 namespace Text_Grab
@@ -58,6 +59,12 @@ namespace Text_Grab
                 Settings.Default.DefaultLaunch = "EditText";
 
             Settings.Default.Save();
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            e.Handled = true;
         }
     }
 }

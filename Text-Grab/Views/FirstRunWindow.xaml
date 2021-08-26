@@ -2,6 +2,7 @@
     x:Class="Text_Grab.FirstRunWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -44,7 +45,7 @@
                 2. Grab Frame - An overlay for picking and finding text on screen<LineBreak />
                 3. Edit Text - A window with tools for fixing and changing text<LineBreak />
                 <LineBreak />
-                Right click on Text Grab in the Start Menu, or on the TaskBar to launch the different modes. The mode can be changed in the settings at any time.</TextBlock>
+                Right click on Text Grab in the Start Menu, or on the Taskbar to launch the different modes. The mode can be changed in the settings at any time.</TextBlock>
 
             <TextBlock Style="{StaticResource TextHeaderFirstRun}">
                 How Full Screen works
@@ -58,7 +59,6 @@
                 • When text is recognized from the screen it gets put in your Windows clipboard.<LineBreak />
                 • Then paste using Ctrl + V into any program.<LineBreak />
                 • To view a history of your clipboard use the Windows 10 clipboard manager by pressing Win+V.<LineBreak />
-                <LineBreak />
             </TextBlock>
 
             <TextBlock Style="{StaticResource TextHeaderFirstRun}">
@@ -135,10 +135,9 @@
                 <TextBlock
                     Grid.Row="2"
                     Grid.ColumnSpan="3"
-                    Margin="0,30,0,0"
+                    Margin="0,30,0,10"
                     HorizontalAlignment="Center"
-                    FontSize="18"
-                    Foreground="White"
+                    Style="{StaticResource TextHeader}"
                     Text="Default Launch Window" />
 
                 <RadioButton
@@ -146,10 +145,14 @@
                     Grid.Row="3"
                     Grid.Column="0"
                     HorizontalAlignment="Center"
+                    VerticalContentAlignment="Center"
                     Checked="RadioButton_Checked"
-                    Content="Fullscreen"
                     Foreground="White"
-                    GroupName="DefaultLaunch" />
+                    GroupName="DefaultLaunch">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Fullscreen
+                    </TextBlock>
+                </RadioButton>
                 <Viewbox
                     Grid.Row="4"
                     Grid.Column="0"
@@ -165,10 +168,13 @@
                     Grid.Row="3"
                     Grid.Column="1"
                     HorizontalAlignment="Center"
+                    VerticalContentAlignment="Center"
                     Checked="RadioButton_Checked"
-                    Content="Grab Frame"
-                    Foreground="White"
-                    GroupName="DefaultLaunch" />
+                    GroupName="DefaultLaunch">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Grab Frame
+                    </TextBlock>
+                </RadioButton>
                 <Viewbox
                     Grid.Row="4"
                     Grid.Column="1"
@@ -184,10 +190,13 @@
                     Grid.Row="3"
                     Grid.Column="2"
                     HorizontalAlignment="Center"
+                    VerticalContentAlignment="Center"
                     Checked="RadioButton_Checked"
-                    Content="Edit Text Window"
-                    Foreground="White"
-                    GroupName="DefaultLaunch" />
+                    GroupName="DefaultLaunch">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Edit Text Window
+                    </TextBlock>
+                </RadioButton>
                 <Viewbox
                     Grid.Row="4"
                     Grid.Column="2"
@@ -203,7 +212,6 @@
                 How Text Grab is Different
             </TextBlock>
             <TextBlock Style="{StaticResource TextBody}">
-                <LineBreak />
                 Text Grab was designed with speed, efficiency, and privacy in mind.<LineBreak />
                 - With no cumbersome UI Text Grab can be used like a basic part of the operating system.<LineBreak />
                 - Paired with the Windows 10 Clipboard manager, Text Grab fulfills its goal without duplicating tools found elsewhere in Windows.<LineBreak />
@@ -211,21 +219,32 @@
                 - The OCR engine built into Windows 10 enables Text Grab to respect users' privacy and not transmit data regarding the copied text.<LineBreak />
                 - This does mean I will not be able to directly improve the OCR accuracy since the code is owned and maintained by Microsoft.<LineBreak />
                 <LineBreak />
-                I hope you find Text Grab as useful as I do. If you have any questions or comments please visit the GitHub page for Text Grab or email support@TextGrab.net.<LineBreak />
+                I hope you find Text Grab as useful as I do. If you have any questions or comments please visit the GitHub page for Text Grab at:<Hyperlink
+                    Foreground="DeepSkyBlue"
+                    NavigateUri="https://github.com/TheJoeFin/Text-Grab/"
+                    RequestNavigate="Hyperlink_RequestNavigate">
+                    GitHub.com/TheJoeFin/Text-Grab/
+                </Hyperlink>
+                or email:<Hyperlink
+                    Foreground="DeepSkyBlue"
+                    NavigateUri="mailto:support@textgrab.net"
+                    RequestNavigate="Hyperlink_RequestNavigate">
+                    support@TextGrab.net
+                </Hyperlink>
+
+                <LineBreak />
                 <LineBreak />
                 Joe</TextBlock>
 
-            <Button
+            <controls:CollapsibleButton
                 x:Name="OkayButton"
-                Width="90"
-                Height="26"
+                Width="100"
                 Margin="20"
-                Padding="12"
                 HorizontalAlignment="Right"
+                ButtonText="Okay"
+                CanChangeStyle="False"
                 Click="OkayButton_Click"
-                Content="Okay"
-                Foreground="White"
-                Style="{StaticResource TealColor}" />
+                SymbolText="" />
         </StackPanel>
     </ScrollViewer>
 </Window>
