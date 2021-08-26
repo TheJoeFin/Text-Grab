@@ -9,10 +9,10 @@
     Title="FirstRunWindow"
     Width="800"
     Height="600"
-    d:Height="3000"
     MinWidth="200"
     MinHeight="200"
     Padding="50"
+    d:Height="3000"
     Background="{StaticResource DarkControlBackground}"
     Loaded="FirstRun_Loaded"
     WindowStartupLocation="CenterScreen"
@@ -27,16 +27,16 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="FontSize" Value="16" />
         </Style>
-        <Style x:Key="TextHeader" TargetType="TextBlock">
+        <Style
+            x:Key="TextHeaderFirstRun"
+            BasedOn="{StaticResource TextHeader}"
+            TargetType="TextBlock">
             <Setter Property="Margin" Value="25,25,0,-20" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="FontSize" Value="20" />
-            <Setter Property="FontWeight" Value="Bold" />
         </Style>
     </Window.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical">
-            <TextBlock Style="{StaticResource TextHeader}" Text="Welcome to Text Grab!" />
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}" Text="Welcome to Text Grab!" />
 
             <TextBlock Style="{StaticResource TextBody}">
                 Text Grab has three different modes for working with text.<LineBreak />
@@ -44,10 +44,9 @@
                 2. Grab Frame - An overlay for picking and finding text on screen<LineBreak />
                 3. Edit Text - A window with tools for fixing and changing text<LineBreak />
                 <LineBreak />
-                Right click on Text Grab in the Start Menu, or on the TaskBar to launch the different modes. The mode can be changed in the settings at any time.
-            </TextBlock>
+                Right click on Text Grab in the Start Menu, or on the TaskBar to launch the different modes. The mode can be changed in the settings at any time.</TextBlock>
 
-            <TextBlock Style="{StaticResource TextHeader}">
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
                 How Full Screen works
             </TextBlock>
             <TextBlock Style="{StaticResource TextBody}">
@@ -62,7 +61,7 @@
                 <LineBreak />
             </TextBlock>
 
-            <TextBlock Style="{StaticResource TextHeader}">
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
                 How Grab Frame works
             </TextBlock>
             <TextBlock Style="{StaticResource TextBody}">
@@ -71,24 +70,23 @@
                 • If there is no search string or clicked word borders then the Grab Frame reads all text within the window and copies it to the clipboard.<LineBreak />
             </TextBlock>
 
-            <TextBlock Style="{StaticResource TextHeader}">
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
                 What the Edit Text Window can do
             </TextBlock>
             <TextBlock Style="{StaticResource TextBody}">
-                • Similar to Notepad, the Edit Text Window is a "Pure Text" editing experience, with no formatting.<LineBreak />
+                • Similar to Notepad, the Edit Text Window is a &quot;Pure Text&quot; editing experience, with no formatting.<LineBreak />
                 • This means copying text into or out of the Window will remove all formatting, but linebreaks and tabs will remain.<LineBreak />
                 • Gather text using Fullscreen Grabs or Grab Frames.<LineBreak />
-                • There are several tools with in the Edit Text Window which make it quick and easy to fix or change text.
-            </TextBlock>
+                • There are several tools with in the Edit Text Window which make it quick and easy to fix or change text.</TextBlock>
             <TextBlock Margin="70,0,0,0" Style="{StaticResource TextBody}">
-                - Make text into a single line <LineBreak />
+                - Make text into a single line<LineBreak />
                 - Toggle between UPPERCASE, lowercase, and Titlecase<LineBreak />
-                - Trim spaces and empty lines <LineBreak />
-                - Isolate selected text <LineBreak />
-                - Replace reserved characters <LineBreak />
-                - Find and replace <LineBreak />
-                - Extract regular expressions <LineBreak />
-                - And more! <LineBreak />
+                - Trim spaces and empty lines<LineBreak />
+                - Isolate selected text<LineBreak />
+                - Replace reserved characters<LineBreak />
+                - Find and replace<LineBreak />
+                - Extract regular expressions<LineBreak />
+                - And more!<LineBreak />
             </TextBlock>
 
             <Grid MaxWidth="2000">
@@ -201,7 +199,7 @@
                 </Viewbox>
 
             </Grid>
-            <TextBlock Style="{StaticResource TextHeader}">
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
                 How Text Grab is Different
             </TextBlock>
             <TextBlock Style="{StaticResource TextBody}">

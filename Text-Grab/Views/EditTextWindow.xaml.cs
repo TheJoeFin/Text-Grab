@@ -719,7 +719,10 @@ namespace Text_Grab
                 {
                     findAndReplaceWindow.Close();
                 }
-
+                if (window is FirstRunWindow firstRunWindow)
+                {
+                    firstRunWindow.Close();
+                }
             }
         }
 
@@ -818,6 +821,12 @@ namespace Text_Grab
         private async void ContactMenuItem_Click(object sender, RoutedEventArgs e)
         {
             _ = await Launcher.LaunchUriAsync(new Uri(string.Format("mailto:support@textgrab.net")));
+        }
+
+        private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            FirstRunWindow frw = new FirstRunWindow();
+            frw.Show();
         }
     }
 }

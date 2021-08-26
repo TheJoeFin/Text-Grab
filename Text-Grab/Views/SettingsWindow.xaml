@@ -2,11 +2,11 @@
     x:Class="Text_Grab.SettingsWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:controls="clr-namespace:Text_Grab.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Text Grab"
+    Title="Text Grab Settings"
     Width="480"
     Height="500"
     MinWidth="200"
@@ -28,50 +28,70 @@
             </Grid.RowDefinitions>
             <StackPanel Orientation="Vertical">
 
-                <StackPanel Orientation="Horizontal">
-                    <!--  Heading  -->
-                    <TextBlock
-                        FontSize="24"
-                        Foreground="White"
-                        Text="Settings" />
-
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
+                    </Grid.ColumnDefinitions>
                     <!--  Version Text  -->
                     <TextBlock
-                        Margin="10,0,0,0"
-                        VerticalAlignment="Bottom"
+                        VerticalAlignment="Center"
                         Foreground="White"
-                        Text="v2.2" />
-                </StackPanel>
+                        Style="{StaticResource TextBodyNormal}"
+                        Text="Version 2.2" />
+
+                    <controls:CollapsibleButton
+                        x:Name="AboutBTN"
+                        Grid.Column="2"
+                        Margin="0"
+                        ButtonText="About Text Grab"
+                        Click="AboutBTN_Click"
+                        SymbolText="" />
+                </Grid>
 
                 <!--  Show Toast on success  -->
                 <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
                     <CheckBox
                         Name="ShowToastCheckBox"
-                        Content="Show Toast when text is copied. Opens window to display and edit text."
-                        Style="{StaticResource labelText}" />
+                        VerticalContentAlignment="Center"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Show Toast when text is copied. Opens window to display and edit text.
+                        </TextBlock>
+                    </CheckBox>
                 </StackPanel>
 
                 <!--  default launch  -->
                 <TextBlock
                     Margin="0,16,0,4"
-                    FontSize="14"
-                    Foreground="White"
+                    FontSize="16"
+                    Style="{StaticResource TextHeader}"
                     Text="Default Launch Window" />
                 <RadioButton
                     x:Name="FullScreenRDBTN"
-                    Content="Full Screen"
-                    Foreground="White"
-                    GroupName="DefaultLaunch" />
+                    VerticalContentAlignment="Center"
+                    GroupName="DefaultLaunch">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Full Screen
+                    </TextBlock>
+                </RadioButton>
                 <RadioButton
                     x:Name="GrabFrameRDBTN"
-                    Content="Grab Frame"
-                    Foreground="White"
-                    GroupName="DefaultLaunch" />
+                    VerticalContentAlignment="Center"
+                    GroupName="DefaultLaunch">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Grab Frame
+                    </TextBlock>
+                </RadioButton>
                 <RadioButton
                     x:Name="EditTextRDBTN"
-                    Content="Edit Text"
-                    Foreground="White"
-                    GroupName="DefaultLaunch" />
+                    VerticalContentAlignment="Center"
+                    GroupName="DefaultLaunch">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Edit Text Window
+                    </TextBlock>
+                </RadioButton>
 
                 <!--  Pick Language  -->
 
@@ -79,23 +99,27 @@
                 <CheckBox
                     Name="ErrorCorrectBox"
                     Margin="0,16,0,0"
-                    Content="Try to correct common confusions between numbers and letters"
-                    Style="{StaticResource labelText}" />
+                    VerticalContentAlignment="Center"
+                    Style="{StaticResource labelText}">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Try to correct confusions between numbers and letters
+                    </TextBlock>
+                </CheckBox>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Grid.Row="1">
-                <controls:CollapsibleButton 
-                    x:Name="CloseBTN" 
+            <StackPanel Grid.Row="1" Orientation="Horizontal">
+                <controls:CollapsibleButton
+                    x:Name="CloseBTN"
+                    ButtonText="Cancel"
                     Click="CloseBTN_Click"
-                    SymbolText=""
-                    ButtonText="Cancel" />
-                <controls:CollapsibleButton 
-                    x:Name="SaveBTN" 
-                    Click="SaveBTN_Click"
-                    SymbolText=""
+                    SymbolText="" />
+                <controls:CollapsibleButton
+                    x:Name="SaveBTN"
                     Background="DarkGreen"
-                    ButtonText="Save and Close" />
+                    ButtonText="Save and Close"
+                    Click="SaveBTN_Click"
+                    SymbolText="" />
             </StackPanel>
-            <TextBlock Grid.Row="2" Foreground="White">
+            <TextBlock Grid.Row="2" Style="{StaticResource TextBodyNormal}">
                 What do you want to see here? Submit an issue on GitHub<LineBreak />
                 <Hyperlink
                     Foreground="DeepSkyBlue"

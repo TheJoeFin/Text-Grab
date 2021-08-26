@@ -7,15 +7,15 @@
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Edit Text"
-    Width="600" 
+    Width="600"
     Height="450"
     MinWidth="200"
     MinHeight="200"
-    KeyUp="Window_KeyUp"
-    KeyDown="Window_KeyDown"
     Activated="Window_Activated"
-    Closing="Window_Closing"
     Background="{StaticResource DarkBackground}"
+    Closing="Window_Closing"
+    KeyDown="Window_KeyDown"
+    KeyUp="Window_KeyUp"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -40,12 +40,12 @@
             Executed="SingleLineCmdExecuted" />
         <CommandBinding
             CanExecute="ToggleCaseCmdCanExecute"
-            Executed="ToggleCase"
-            Command="{x:Static local:EditTextWindow.ToggleCaseCmd}" />
+            Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+            Executed="ToggleCase" />
         <CommandBinding
             CanExecute="ReplaceReservedCharsCmdCanExecute"
-            Executed="ReplaceReservedCharsCmdExecuted"
-            Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}" />
+            Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
+            Executed="ReplaceReservedCharsCmdExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -60,19 +60,19 @@
             <MenuItem Header="_File">
                 <MenuItem
                     x:Name="OpenFileMenuItem"
-                    InputGestureText="Ctrl + O"
                     Click="OpenFileMenuItem_Click"
-                    Header="_Open File..." />
+                    Header="_Open File..."
+                    InputGestureText="Ctrl + O" />
                 <MenuItem
                     x:Name="SaveFileMenuItem"
-                    InputGestureText="Ctrl + S"
                     Click="SaveBTN_Click"
-                    Header="_Save" />
+                    Header="_Save"
+                    InputGestureText="Ctrl + S" />
                 <MenuItem
                     x:Name="SaveAsFileMenuItem"
-                    InputGestureText="Ctrl + Shift + S"
                     Click="SaveAsBTN_Click"
-                    Header="Save _As..." />
+                    Header="Save _As..."
+                    InputGestureText="Ctrl + Shift + S" />
                 <MenuItem
                     x:Name="CopyAndCloseMenuItem"
                     Click="CopyCloseBTN_Click"
@@ -84,9 +84,9 @@
                     Header="Text Grab Sett_ings..." />
                 <MenuItem
                     x:Name="CloseMenuItem"
-                    InputGestureText="Alt + F4"
                     Click="CloseMenuItem_Click"
-                    Header="_Exit" />
+                    Header="_Exit"
+                    InputGestureText="Alt + F4" />
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Command="ApplicationCommands.Undo" />
@@ -114,9 +114,9 @@
                     Header="Try To Make _Letters" />
                 <MenuItem
                     x:Name="ReplaceReservedCharsMenuItem"
-                    InputGestureText="Ctrl + R"
                     Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
-                    Header="_Replace Reserved Characters" />
+                    Header="_Replace Reserved Characters"
+                    InputGestureText="Ctrl + R" />
                 <Separator />
                 <MenuItem
                     x:Name="SplitLineBeforeSelectionMI"
@@ -124,38 +124,38 @@
                     Header="Split Lines _Before Each Selection" />
                 <MenuItem
                     x:Name="IsolateSelectionMI"
-                    InputGestureText="Ctrl + I"
                     Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                    Header="_Isolate Selected Text" />
+                    Header="_Isolate Selected Text"
+                    InputGestureText="Ctrl + I" />
                 <MenuItem
                     x:Name="ToggleCaseMenuItem"
-                    InputGestureText="Shift + F3"
                     Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                    Header="Toggle _Case" />
+                    Header="Toggle _Case"
+                    InputGestureText="Shift + F3" />
             </MenuItem>
-            <MenuItem Header="_Selection" >
+            <MenuItem Header="_Selection">
                 <MenuItem
                     x:Name="FindAndReplaceMenuItem"
-                    Header="Find and Replace"
-                    Click="FindAndReplaceMenuItem_Click" />
+                    Click="FindAndReplaceMenuItem_Click"
+                    Header="Find and Replace" />
                 <Separator />
                 <MenuItem Command="ApplicationCommands.SelectAll" />
-                <MenuItem 
-                    x:Name="SelectLineMenuItem" 
-                    InputGestureText="Ctrl + L"
+                <MenuItem
+                    x:Name="SelectLineMenuItem"
                     Click="SelectLineMenuItem_Click"
-                    Header="Select _Line" />
+                    Header="Select _Line"
+                    InputGestureText="Ctrl + L" />
                 <Separator />
-                <MenuItem 
+                <MenuItem
                     x:Name="MoveLineUpMenuItem"
-                    Header="Move Selection _Up" 
-                    InputGestureText="Alt + Up"
-                    Click="MoveLineUpMenuItem_Click" />
-                <MenuItem 
+                    Click="MoveLineUpMenuItem_Click"
+                    Header="Move Selection _Up"
+                    InputGestureText="Alt + Up" />
+                <MenuItem
                     x:Name="MoveLineDownMenuItem"
+                    Click="MoveLineDownMenuItem_Click"
                     Header="Move Selection _Down"
-                    InputGestureText="Alt + Down"
-                    Click="MoveLineDownMenuItem_Click" />
+                    InputGestureText="Alt + Down" />
             </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
@@ -203,6 +203,10 @@
                     x:Name="FeedbackMenuItem"
                     Click="FeedbackMenuItem_Click"
                     Header="_Feedback..." />
+                <MenuItem
+                    x:Name="AboutMenuItem"
+                    Click="AboutMenuItem_Click"
+                    Header="_About" />
             </MenuItem>
         </Menu>
         <TextBox
@@ -216,12 +220,12 @@
             Foreground="White"
             HorizontalScrollBarVisibility="Auto"
             IsInactiveSelectionHighlightEnabled="True"
+            Mouse.MouseWheel="PassedTextControl_MouseWheel"
             SpellCheck.IsEnabled="True"
             Style="{DynamicResource TextBoxStyle1}"
             Text="{Binding CopiedText, Mode=OneWay}"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="Wrap"
-            Mouse.MouseWheel="PassedTextControl_MouseWheel"
             VerticalScrollBarVisibility="Auto">
             <TextBox.ContextMenu>
                 <ContextMenu>
@@ -234,25 +238,25 @@
                     <Separator />
                     <MenuItem
                         Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                        InputGestureText="Ctrl + I"
-                        Header="_Isolate Selected Text" />
-                    <MenuItem 
-                        InputGestureText="Ctrl + L"
-                        Click="SelectLineMenuItem_Click"
-                        Header="Select _Line" />
+                        Header="_Isolate Selected Text"
+                        InputGestureText="Ctrl + I" />
                     <MenuItem
-                        InputGestureText="Shift + F3"
+                        Click="SelectLineMenuItem_Click"
+                        Header="Select _Line"
+                        InputGestureText="Ctrl + L" />
+                    <MenuItem
                         Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                        Header="Toggle _Case" />
+                        Header="Toggle _Case"
+                        InputGestureText="Shift + F3" />
                     <Separator />
-                    <MenuItem 
-                        Header="Move Selection _Up" 
-                        InputGestureText="Alt + Up"
-                        Click="MoveLineUpMenuItem_Click" />
-                    <MenuItem 
+                    <MenuItem
+                        Click="MoveLineUpMenuItem_Click"
+                        Header="Move Selection _Up"
+                        InputGestureText="Alt + Up" />
+                    <MenuItem
+                        Click="MoveLineDownMenuItem_Click"
                         Header="Move Selection _Down"
-                        InputGestureText="Alt + Down"
-                        Click="MoveLineDownMenuItem_Click" />
+                        InputGestureText="Alt + Down" />
                 </ContextMenu>
             </TextBox.ContextMenu>
         </TextBox>
@@ -264,10 +268,10 @@
             <StackPanel Orientation="Horizontal">
                 <controls:CollapsibleButton
                     x:Name="CopyCloseBTN"
-                    Background="#CC7000" 
-                    Foreground="White"
+                    Background="#CC7000"
                     ButtonText="Copy and Close"
                     Click="CopyCloseBTN_Click"
+                    Foreground="White"
                     SymbolText="" />
                 <controls:CollapsibleButton
                     x:Name="SaveBTN"

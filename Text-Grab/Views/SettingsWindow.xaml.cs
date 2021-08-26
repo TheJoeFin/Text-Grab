@@ -63,5 +63,11 @@ namespace Text_Grab
             Settings.Default.Save();
             Close();
         }
+
+        private void AboutBTN_Click(object sender, RoutedEventArgs e)
+        {
+            FirstRunWindow frw = new FirstRunWindow();
+            frw.Show();
+        }
     }
 }
