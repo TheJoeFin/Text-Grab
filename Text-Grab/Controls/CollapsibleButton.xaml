@@ -33,6 +33,7 @@
             Margin="0,-3,8,0"
             VerticalAlignment="Center"
             d:Text="Design Text"
+            FontFamily="Segoe UI"
             Text="{Binding Path=ButtonText, Mode=OneWay}" />
     </Grid>
     <Button.ContextMenu>

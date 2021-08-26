@@ -8,6 +8,8 @@
     Title="Find and Replace"
     Width="480"
     Height="560"
+    MinWidth="486"
+    MinHeight="300"
     Background="{StaticResource DarkBackground}"
     KeyUp="Window_KeyUp"
     Loaded="FindAndReplacedLoaded"
@@ -25,6 +27,10 @@
             CanExecute="Replace_CanExecute"
             Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
             Executed="ReplaceAll_Executed" />
+        <CommandBinding
+            CanExecute="ExtractPattern_CanExecute"
+            Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
+            Executed="ExtractPattern_Executed" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -51,51 +57,61 @@
                 BorderBrush="Transparent"
                 Click="MoreOptionsToggleButton_Click"
                 Content="▼"
-                Foreground="White" />
+                Foreground="White"
+                Style="{DynamicResource ToggleSymbolButton}" />
 
             <TextBox
                 x:Name="FindTextBox"
                 Grid.Column="1"
-                Height="28"
+                Height="30"
                 Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
+                FontFamily="Segoe UI"
                 KeyUp="FindTextBox_KeyUp" />
-            <Button
+            <local:CollapsibleButton
                 x:Name="FindButton"
                 Grid.Row="0"
                 Grid.Column="2"
-                Width="80"
+                Width="100"
                 Margin="0,6,6,0"
                 Padding="4"
+                ButtonText="Find"
                 Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}"
-                Content="Find" />
+                SymbolText="" />
 
             <TextBox
                 x:Name="ReplaceTextBox"
                 Grid.Row="1"
                 Grid.Column="1"
-                Height="28"
+                Height="30"
                 Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
+                FontFamily="Segoe UI"
                 Visibility="Collapsed" />
-            <Button
+            <local:CollapsibleButton
                 x:Name="ReplaceButton"
                 Grid.Row="1"
                 Grid.Column="2"
+                Width="100"
                 Margin="0,6,6,0"
                 Padding="4"
+                d:Visibility="Visible"
+                ButtonText="Replace"
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
-                Content="Replace"
+                SymbolText=""
                 Visibility="Collapsed" />
 
-            <Button
+            <local:CollapsibleButton
                 x:Name="ReplaceAllButton"
                 Grid.Row="2"
                 Grid.Column="2"
+                Width="100"
+                Height="30"
                 Margin="0,6,6,0"
                 Padding="4"
+                ButtonText="Replace All"
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
-                Content="Replace All"
+                SymbolText=""
                 Visibility="Collapsed" />
 
             <StackPanel
@@ -103,29 +119,39 @@
                 Grid.Row="2"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
+                Margin="0,6,0,0"
+                d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Collapsed">
                 <CheckBox
                     x:Name="ExactMatchCheckBox"
                     Margin="6"
                     VerticalAlignment="Center"
+                    VerticalContentAlignment="Center"
                     Checked="OptionsChangedRefresh"
-                    Content="Match Exactly"
-                    Foreground="White" />
+                    Foreground="White">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Match Exactly
+                    </TextBlock>
+                </CheckBox>
 
                 <CheckBox
                     x:Name="UsePaternCheckBox"
                     Margin="6"
                     VerticalAlignment="Center"
-                    Content="Regex"
-                    Foreground="White" />
+                    VerticalContentAlignment="Center">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Regex
+                    </TextBlock>
+                </CheckBox>
 
-                <Button
+                <local:CollapsibleButton
                     x:Name="ExtractSimplePattern"
-                    Margin="0,6,6,0"
-                    Click="ExtractSimplePattern_Click">
-                    <TextBlock Margin="4" Text="Extract Pattern" />
-                </Button>
+                    Margin="10,0"
+                    VerticalAlignment="Center"
+                    ButtonText="Extract Pattern"
+                    Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
+                    SymbolText="" />
             </StackPanel>
 
         </Grid>

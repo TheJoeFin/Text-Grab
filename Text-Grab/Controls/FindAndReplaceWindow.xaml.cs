@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -23,6 +22,7 @@ namespace Text_Grab.Controls
         public static RoutedCommand TextSearchCmd = new RoutedCommand();
         public static RoutedCommand ReplaceOneCmd = new RoutedCommand();
         public static RoutedCommand ReplaceAllCmd = new RoutedCommand();
+        public static RoutedCommand ExtractPatternCmd = new RoutedCommand();
         DispatcherTimer ChangeFindTextTimer = new DispatcherTimer();
 
         private string Pattern { get; set; }
@@ -54,7 +54,10 @@ namespace Text_Grab.Controls
 
         private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
         {
+            ChangeFindTextTimer.Stop();
             StringFromWindow = TextEditWindow.PassedTextControl.Text;
+
+            ChangeFindTextTimer.Start();
         }
 
         public void SearchForText()
@@ -71,7 +74,7 @@ namespace Text_Grab.Controls
             try
             {
                 if (ExactMatchCheckBox.IsChecked == true)
-                    Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline );
+                    Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline);
                 else
                     Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
@@ -151,7 +154,7 @@ namespace Text_Grab.Controls
                 ResultsListView.Items.Clear();
                 return;
             }
-            
+
             int selectedResultIndex = ResultsListView.SelectedIndex;
             Match sameMatch = Matches[selectedResultIndex];
 
@@ -160,7 +163,16 @@ namespace Text_Grab.Controls
             this.Focus();
         }
 
-        private void ExtractSimplePattern_Click(object sender, RoutedEventArgs e)
+        private void ExtractPattern_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (TextEditWindow != null
+                    && TextEditWindow.PassedTextControl.SelectedText.Length > 0)
+                e.CanExecute = true;
+            else
+                e.CanExecute = false;
+        }
+
+        private void ExtractPattern_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             string selection = TextEditWindow.PassedTextControl.SelectedText;
 
@@ -171,6 +183,7 @@ namespace Text_Grab.Controls
 
             SearchForText();
         }
+
 
         private void MoreOptionsToggleButton_Click(object sender, RoutedEventArgs e)
         {
@@ -231,7 +244,12 @@ namespace Text_Grab.Controls
             int selectedResultIndex = ResultsListView.SelectedIndex;
 
             if (selectedResultIndex == -1)
-                return;
+            {
+                if (ResultsListView.Items.Count < 1)
+                    return;
+                else
+                    selectedResultIndex = 0;
+            }
 
             Match sameMatch = Matches[selectedResultIndex];
             TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
@@ -262,7 +280,7 @@ namespace Text_Grab.Controls
             {
                 ChangeFindTextTimer.Stop();
                 SearchForText();
-            } 
+            }
             else
             {
                 ChangeFindTextTimer.Start();
