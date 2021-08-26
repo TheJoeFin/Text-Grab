@@ -517,7 +517,8 @@ namespace Text_Grab
 
         private void IsolateSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
-            PassedTextControl.Text = PassedTextControl.SelectedText;
+            if (string.IsNullOrEmpty(PassedTextControl.SelectedText) == false)
+                PassedTextControl.Text = PassedTextControl.SelectedText;
         }
 
         private void IsolateSelectionCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
