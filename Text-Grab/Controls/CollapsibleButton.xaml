@@ -1,0 +1,48 @@
+﻿<Button
+    x:Class="Text_Grab.Controls.CollapsibleButton"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Height="30"
+    MaxWidth="300"
+    Margin="10,10,0,10"
+    HorizontalAlignment="Left"
+    HorizontalContentAlignment="Left"
+    d:DesignHeight="30"
+    d:DesignWidth="120"
+    Loaded="CollapsibleButton_Loaded"
+    Style="{StaticResource TealColor}"
+    mc:Ignorable="d">
+    <Grid HorizontalAlignment="Left" VerticalAlignment="Center">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <TextBlock
+            Margin="8,0,8,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            d:Text=""
+            FontFamily="Segoe MDL2 Assets"
+            Text="{Binding Path=SymbolText, Mode=OneWay}" />
+        <TextBlock
+            x:Name="ButtonTextBlock"
+            Grid.Column="1"
+            Margin="0,-3,8,0"
+            VerticalAlignment="Center"
+            d:Text="Design Text"
+            FontFamily="Segoe UI"
+            Text="{Binding Path=ButtonText, Mode=OneWay}" />
+    </Grid>
+    <Button.ContextMenu>
+        <ContextMenu>
+            <MenuItem
+                Name="ChangeButtonLayout"
+                Click="ChangeButtonLayout_Click"
+                Header="Change Style"
+                IsEnabled="{Binding Path=CanChangeStyle, Mode=OneWay}" />
+        </ContextMenu>
+    </Button.ContextMenu>
+</Button>

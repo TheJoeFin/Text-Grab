@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 using Text_Grab.Properties;
 
 namespace Text_Grab
@@ -20,7 +21,7 @@ namespace Text_Grab
 
         private void FirstRun_Loaded(object sender, RoutedEventArgs e)
         {
-            ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+            // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
 
             switch (Settings.Default.DefaultLaunch)
             {
@@ -30,15 +31,18 @@ namespace Text_Grab
                 case "GrabFrame":
                     GrabFrameRDBTN.IsChecked = true;
                     break;
+                case "EditText":
+                    EditWindowRDBTN.IsChecked = true;
+                    break;
                 default:
-                    FullScreenRDBTN.IsChecked = true;
+                    EditWindowRDBTN.IsChecked = true;
                     break;
             }
         }
 
         private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
+            // Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
             Settings.Default.Save();
         }
 
@@ -49,10 +53,18 @@ namespace Text_Grab
 
             if ((bool)GrabFrameRDBTN.IsChecked)
                 Settings.Default.DefaultLaunch = "GrabFrame";
-            else
+            else if ((bool)FullScreenRDBTN.IsChecked)
                 Settings.Default.DefaultLaunch = "Fullscreen";
+            else
+                Settings.Default.DefaultLaunch = "EditText";
 
             Settings.Default.Save();
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            e.Handled = true;
         }
     }
 }

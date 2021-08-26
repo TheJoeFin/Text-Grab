@@ -14,15 +14,6 @@ namespace Text_Grab
             InitializeComponent();
         }
 
-        private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded == false)
-                return;
-
-            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
-            Settings.Default.Save();
-        }
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
@@ -51,37 +42,32 @@ namespace Text_Grab
             e.Handled = true;
         }
 
-        private void EditTextRDBTN_Checked(object sender, RoutedEventArgs e)
+        private void CloseBTN_Click(object sender, RoutedEventArgs e)
         {
-            if (this.IsLoaded != true)
-                return;
-            Settings.Default.DefaultLaunch = "EditText";
-            Settings.Default.Save();
+            Close();
         }
 
-        private void GrabFrameRDBTN_Checked(object sender, RoutedEventArgs e)
+        private void SaveBTN_Click(object sender, RoutedEventArgs e)
         {
-            if (this.IsLoaded != true)
-                return; 
-            Settings.Default.DefaultLaunch = "GrabFrame";
-            Settings.Default.Save();
-        }
+            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
 
-        private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
-        {
-            if (this.IsLoaded != true)
-                return;
-            Settings.Default.DefaultLaunch = "Fullscreen";
-            Settings.Default.Save();
-        }
-
-        private void ErrorCorrectBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded == false)
-                return;
+            if (FullScreenRDBTN.IsChecked == true)
+                Settings.Default.DefaultLaunch = "Fullscreen";
+            else if (GrabFrameRDBTN.IsChecked == true)
+                Settings.Default.DefaultLaunch = "GrabFrame";
+            else if (EditTextRDBTN.IsChecked == true)
+                Settings.Default.DefaultLaunch = "EditText";
 
             Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
+
             Settings.Default.Save();
+            Close();
+        }
+
+        private void AboutBTN_Click(object sender, RoutedEventArgs e)
+        {
+            FirstRunWindow frw = new FirstRunWindow();
+            frw.Show();
         }
     }
 }

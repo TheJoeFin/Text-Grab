@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
@@ -35,11 +36,17 @@ namespace Text_Grab
                 }
                 if (e.Args[i] == "Fullscreen")
                 {
-                    WindowUtilities.NormalLaunch();
+                    WindowUtilities.LaunchFullScreenGrab();
                 }
                 if (e.Args[i] == "EditText")
                 {
-                    ManipulateTextWindow manipulateTextWindow = new ManipulateTextWindow();
+                    EditTextWindow manipulateTextWindow = new EditTextWindow();
+                    manipulateTextWindow.Show();
+                }
+                if (File.Exists(e.Args[i]))
+                {
+                    EditTextWindow manipulateTextWindow = new EditTextWindow();
+                    manipulateTextWindow.OpenThisPath(e.Args[i]);
                     manipulateTextWindow.Show();
                 }
             }
@@ -49,18 +56,19 @@ namespace Text_Grab
                 switch (Settings.Default.DefaultLaunch)
                 {
                     case "Fullscreen":
-                        WindowUtilities.NormalLaunch();
+                        WindowUtilities.LaunchFullScreenGrab();
                         break;
                     case "GrabFrame":
                         GrabFrame gf = new GrabFrame();
                         gf.Show();
                         break;
                     case "EditText":
-                        ManipulateTextWindow manipulateTextWindow = new ManipulateTextWindow();
+                        EditTextWindow manipulateTextWindow = new EditTextWindow();
                         manipulateTextWindow.Show();
                         break;
                     default:
-                        WindowUtilities.NormalLaunch();
+                        EditTextWindow editTextWindow = new EditTextWindow();
+                        editTextWindow.Show();
                         break;
                 }
             }
