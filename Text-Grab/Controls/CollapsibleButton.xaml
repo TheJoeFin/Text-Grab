@@ -15,7 +15,7 @@
     Loaded="CollapsibleButton_Loaded"
     Style="{StaticResource TealColor}"
     mc:Ignorable="d">
-    <Grid HorizontalAlignment="Left" VerticalAlignment="Center" >
+    <Grid HorizontalAlignment="Left" VerticalAlignment="Center">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="auto" />
             <ColumnDefinition Width="*" />
@@ -40,8 +40,8 @@
             <MenuItem
                 Name="ChangeButtonLayout"
                 Click="ChangeButtonLayout_Click"
-                IsEnabled="{Binding Path=CanChangeStyle, Mode=OneWay}"
-                Header="Change Style" />
+                Header="Change Style"
+                IsEnabled="{Binding Path=CanChangeStyle, Mode=OneWay}" />
         </ContextMenu>
     </Button.ContextMenu>
 </Button>

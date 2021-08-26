@@ -5,12 +5,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    KeyUp="Window_KeyUp"
     Title="Find and Replace"
     Width="480"
-    Loaded="FindAndReplacedLoaded"
     Height="560"
     Background="{StaticResource DarkBackground}"
+    KeyUp="Window_KeyUp"
+    Loaded="FindAndReplacedLoaded"
     mc:Ignorable="d">
     <Window.CommandBindings>
         <CommandBinding
@@ -44,90 +44,95 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
-            <ToggleButton 
-                x:Name="MoreOptionsToggleButton" 
-                Content="▼" 
-                Width="32"  
+            <ToggleButton
+                x:Name="MoreOptionsToggleButton"
+                Width="32"
+                Background="Transparent"
+                BorderBrush="Transparent"
                 Click="MoreOptionsToggleButton_Click"
-                Background="Transparent" 
-                BorderBrush="Transparent" />
+                Content="▼"
+                Foreground="White" />
 
             <TextBox
-                x:Name="FindTextBox" 
-                KeyUp="FindTextBox_KeyUp"
+                x:Name="FindTextBox"
+                Grid.Column="1"
                 Height="28"
-                Margin="6,6,6,0" Grid.Column="1" 
-                VerticalContentAlignment="Center" />
-            <Button 
-                x:Name="FindButton"
-                Content="Find" 
-                Grid.Row="0"
-                Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}"
-                Grid.Column="2" Width="80"
-                Margin="0,6,6,0" 
-                Padding="4"/>
-
-            <TextBox 
-                x:Name="ReplaceTextBox" 
-                Visibility="Collapsed"
-                Margin="6,6,6,0"  
-                Height="28"
+                Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
-                Grid.Row="1" 
-                Grid.Column="1" />
-            <Button 
+                KeyUp="FindTextBox_KeyUp" />
+            <Button
+                x:Name="FindButton"
+                Grid.Row="0"
+                Grid.Column="2"
+                Width="80"
+                Margin="0,6,6,0"
+                Padding="4"
+                Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}"
+                Content="Find" />
+
+            <TextBox
+                x:Name="ReplaceTextBox"
+                Grid.Row="1"
+                Grid.Column="1"
+                Height="28"
+                Margin="6,6,6,0"
+                VerticalContentAlignment="Center"
+                Visibility="Collapsed" />
+            <Button
                 x:Name="ReplaceButton"
-                Visibility="Collapsed"
+                Grid.Row="1"
+                Grid.Column="2"
+                Margin="0,6,6,0"
+                Padding="4"
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
-                Content="Replace" 
-                Grid.Row="1" 
-                Grid.Column="2" 
-                Margin="0,6,6,0" 
-                Padding="4"/>
+                Content="Replace"
+                Visibility="Collapsed" />
 
-            <Button 
-                x:Name="ReplaceAllButton" 
-                Content="Replace All" 
-                Grid.Row="2" 
+            <Button
+                x:Name="ReplaceAllButton"
+                Grid.Row="2"
+                Grid.Column="2"
+                Margin="0,6,6,0"
+                Padding="4"
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
-                Visibility="Collapsed"
-                Grid.Column="2" 
-                Margin="0,6,6,0" 
-                Padding="4"/>
+                Content="Replace All"
+                Visibility="Collapsed" />
 
-            <StackPanel  
+            <StackPanel
                 x:Name="MoreOptionsHozStack"
-                Orientation="Horizontal" 
-                Visibility="Collapsed"
-                Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2">
+                Grid.Row="2"
+                Grid.Column="1"
+                Grid.ColumnSpan="2"
+                Orientation="Horizontal"
+                Visibility="Collapsed">
                 <CheckBox
-                    x:Name="ExactMatchCheckBox" 
-                    Content="Match Exactly" 
+                    x:Name="ExactMatchCheckBox"
+                    Margin="6"
+                    VerticalAlignment="Center"
                     Checked="OptionsChangedRefresh"
-                    Foreground="White" 
-                    VerticalAlignment="Center" 
-                    Margin="6"/>
+                    Content="Match Exactly"
+                    Foreground="White" />
 
                 <CheckBox
-                    x:Name="UsePaternCheckBox" 
-                    Content="Regex" 
-                    Foreground="White" 
-                    VerticalAlignment="Center" 
-                    Margin="6"/>
+                    x:Name="UsePaternCheckBox"
+                    Margin="6"
+                    VerticalAlignment="Center"
+                    Content="Regex"
+                    Foreground="White" />
 
-                <Button 
-                    x:Name="ExtractSimplePattern" 
+                <Button
+                    x:Name="ExtractSimplePattern"
                     Margin="0,6,6,0"
-                    Click="ExtractSimplePattern_Click" >
-                    <TextBlock Text="Extract Pattern"  Margin="4"/>
+                    Click="ExtractSimplePattern_Click">
+                    <TextBlock Margin="4" Text="Extract Pattern" />
                 </Button>
             </StackPanel>
-            
+
         </Grid>
 
         <TextBlock
-            Grid.Row="1"
             x:Name="MatchesText"
+            Grid.Row="1"
             Margin="6"
             FontSize="18"
             Foreground="{StaticResource Teal}"

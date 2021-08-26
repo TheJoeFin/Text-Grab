@@ -2,9 +2,9 @@
     x:Class="Text_Grab.Views.GrabFrame"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
-    xmlns:controls="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     x:Name="GrabFrameWindow"
     Title="Grab Frame"
@@ -52,10 +52,10 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel 
-                    Grid.Column="1" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Center">
+                <StackPanel
+                    Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
                     <Image
                         x:Name="WindowIcon"
                         Width="18"
@@ -65,8 +65,8 @@
                         Stretch="UniformToFill" />
                     <TextBlock
                         Margin="4,-4,0,0"
-                        VerticalAlignment="Center"
                         HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
                         FontSize="13"
                         Foreground="White"
                         Text="Grab Frame">
@@ -99,13 +99,13 @@
             <Canvas
                 x:Name="RectanglesCanvas"
                 Grid.Row="1"
-                Margin="-4,-2,0,0" 
-                MouseDown="RectanglesCanvas_MouseDown" 
-                MouseUp="RectanglesCanvas_MouseUp" 
+                Margin="-4,-2,0,0"
+                IsHitTestVisible="True"
+                MouseDown="RectanglesCanvas_MouseDown"
                 MouseMove="RectanglesCanvas_MouseMove"
-                IsHitTestVisible="True">
+                MouseUp="RectanglesCanvas_MouseUp">
                 <Canvas.Background>
-                    <SolidColorBrush Color="White" Opacity=".05" />
+                    <SolidColorBrush Opacity=".05" Color="White" />
                 </Canvas.Background>
             </Canvas>
             <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
@@ -127,8 +127,8 @@
                         Grid.Column="0"
                         Margin="0,0,6,0"
                         Padding="4"
-                        GotFocus="SearchBox_GotFocus"
                         VerticalContentAlignment="Center"
+                        GotFocus="SearchBox_GotFocus"
                         Text="Search For Text..."
                         TextChanged="SearchBox_TextChanged" />
                     <controls:CollapsibleButton
@@ -136,21 +136,20 @@
                         Margin="0,0,6,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
-                        IsSymbol="True"
                         CanChangeStyle="False"
-                        SymbolText=""
+                        Click="ClearBTN_Click"
                         Foreground="Black"
-                        Click="ClearBTN_Click">
-                    </controls:CollapsibleButton>
+                        IsSymbol="True"
+                        SymbolText="" />
 
                     <controls:CollapsibleButton
                         x:Name="RefreshBTN"
                         Grid.Column="1"
                         Margin="0"
-                        SymbolText=""
-                        ButtonText="Refresh" 
+                        ButtonText="Refresh"
+                        Click="RefreshBTN_Click"
                         IsSymbol="True"
-                        Click="RefreshBTN_Click" />
+                        SymbolText="" />
 
                     <TextBlock
                         x:Name="MatchesTXTBLK"
@@ -174,12 +173,12 @@
                     <controls:CollapsibleButton
                         x:Name="GrabBTN"
                         Grid.Column="5"
-                        Margin="0" 
                         Width="110"
-                        SymbolText=""
+                        Margin="0"
                         ButtonText="Grab"
                         CanChangeStyle="False"
-                        Click="GrabBTN_Click" />
+                        Click="GrabBTN_Click"
+                        SymbolText="" />
                 </Grid>
             </Border>
         </Grid>
