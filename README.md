@@ -6,7 +6,32 @@ Too often there is text on the screen but it is unable to be selected. This happ
 
 The OCR is done locally by [Windows 10 API](https://docs.microsoft.com/en-us/uwp/api/Windows.Media.Ocr). This enables Text Grab to have essentially no UI and not require a constantly running background process.
 
-## Two Modes
+## How to Build
+Get the code:
+
+- git clone https://github.com/TheJoeFin/Text-Grab.git
+- Open Text-Grab\Text-Grab.sln in Visual Studio.
+
+### With Visual Studio 2019 or 2022
+- Install the Visual Studio (the free community edition is sufficient).
+    - Install the "Universal Windows Platform Development" workload.
+    - Install the ".NET desktop development" workload.
+    - Install ".NET cross-platform development" toolset
+    - Install Windows 10 SDK (10.0.17763.0)
+    - Install Windows 10 SDK (10.0.18362.0)
+    - Install Windows 10 SDK (10.0.19041.0)
+
+### With Visual Studio Code (VS Code)
+- Install Visual Studio Code https://code.visualstudio.com/
+- Install .NET 3.1 SDK https://dotnet.microsoft.com/download/dotnet/3.1
+- Open Text-Grab\Text-Grab Folder in VS Code
+- Run terminal commands:
+    - dotnet restore
+    - dotnet build 
+
+> Note: running Text Grab from VS Code does not launch native Window notifications
+
+## Text Grab wroks in Three Modes
 
 ### Full Screen Mode
 
