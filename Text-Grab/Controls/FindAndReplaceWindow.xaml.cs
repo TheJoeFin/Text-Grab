@@ -149,7 +149,9 @@ namespace Text_Grab.Controls
         {
             string stringToParse = ResultsListView.SelectedItem as string;
 
-            if (string.IsNullOrWhiteSpace(stringToParse))
+            if (string.IsNullOrWhiteSpace(stringToParse)
+                || Matches is null
+                || Matches.Count < 1)
             {
                 ResultsListView.Items.Clear();
                 return;
