@@ -76,6 +76,12 @@ namespace Text_Grab.Utilities
             {
                 if (window is FullscreenGrab fsg)
                     fsg.Close();
+                if (window is EditTextWindow etw)
+                {
+                    if (etw.WindowState == WindowState.Minimized)
+                        etw.WindowState = WindowState.Normal;
+                }
+
             }
         }
     }

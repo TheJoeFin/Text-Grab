@@ -149,9 +149,6 @@ namespace Text_Grab
 
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (WindowState == WindowState.Minimized)
-                WindowState = WindowState.Normal;
-
             PassedTextControl.Focus();
         }
 
