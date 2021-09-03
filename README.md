@@ -34,7 +34,7 @@ Get the code:
 
 > Note: running Text Grab from VS Code does not launch native Window notifications
 
-## Text Grab wroks in Three Modes
+## Text Grab works in Three Modes
 
 ### Full Screen Mode
 
