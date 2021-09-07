@@ -133,7 +133,7 @@ namespace Text_Grab
 
             if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
             {
-                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
+                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.LanguageTag == selectedLanguage.LanguageTag).ToList();
                 if (similarLanguages.Count() > 0)
                     selectedLanguage = similarLanguages.FirstOrDefault();
                 else
@@ -230,7 +230,7 @@ namespace Text_Grab
 
             if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
             {
-                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
+                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.LanguageTag == selectedLanguage.LanguageTag).ToList();
                 if (similarLanguages.Count() > 0)
                     selectedLanguage = similarLanguages.FirstOrDefault();
                 else
