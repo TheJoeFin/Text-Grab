@@ -14,8 +14,6 @@
     Activated="Window_Activated"
     Background="{StaticResource DarkBackground}"
     Closing="Window_Closing"
-    KeyDown="Window_KeyDown"
-    KeyUp="Window_KeyUp"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>

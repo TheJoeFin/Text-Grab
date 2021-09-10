@@ -33,8 +33,6 @@ namespace Text_Grab
 
         public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Unknown;
 
-        private bool isCtrlDown = false;
-
         public bool WrapText { get; set; } = false;
 
         public static RoutedCommand SplitOnSelectionCmd = new RoutedCommand();
@@ -150,17 +148,6 @@ namespace Text_Grab
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
         {
             PassedTextControl.Focus();
-        }
-
-        private void ZoomTextIn(object sender = null, ExecutedRoutedEventArgs e = null)
-        {
-            PassedTextControl.FontSize += 4;
-        }
-
-        private void ZoomTextOut(object sender = null, ExecutedRoutedEventArgs e = null)
-        {
-            if (PassedTextControl.FontSize > 4)
-                PassedTextControl.FontSize -= 4;
         }
 
         private void ToggleCaseCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -765,29 +752,20 @@ namespace Text_Grab
 
         private void PassedTextControl_MouseWheel(object sender, MouseWheelEventArgs e)
         {
+            // Source: StackOverflow, read on Sep. 10, 2021
+            // https://stackoverflow.com/a/53698638/7438031
 
-            if (isCtrlDown == true)
-            {
-                if (e.Delta > 0)
-                    ZoomTextIn();
-                if (e.Delta < 0)
-                    ZoomTextOut();
-            }
-        }
+            if (Keyboard.Modifiers != ModifierKeys.Control)
+                return;
 
-        private void Window_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
-            {
-                isCtrlDown = false;
-            }
-        }
+            e.Handled = true;
 
-        private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+            if (e.Delta > 0)
+                PassedTextControl.FontSize += 4;
+            else if (e.Delta < 0)
             {
-                isCtrlDown = true;
+                if (PassedTextControl.FontSize > 4)
+                    PassedTextControl.FontSize -= 4;
             }
         }
 
