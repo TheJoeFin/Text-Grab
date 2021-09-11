@@ -212,7 +212,7 @@ namespace Text_Grab.Views
 
                     if ((bool)ExactMatchChkBx.IsChecked)
                     {
-                        if (wordString == searchWord)
+                        if (wordString.Equals(searchWord, StringComparison.CurrentCulture))
                         {
                             wordBorderBox.Select();
                             numberOfMatches++;
@@ -221,7 +221,7 @@ namespace Text_Grab.Views
                     else
                     {
                         if (!string.IsNullOrWhiteSpace(searchWord)
-                            && wordString.ToLower().Contains(searchWord.ToLower()))
+                            && wordString.Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
                         {
                             wordBorderBox.Select();
                             numberOfMatches++;
