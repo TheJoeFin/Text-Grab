@@ -437,7 +437,7 @@ namespace Text_Grab
         private void TrimEachLineMenuItem_Click(object sender, RoutedEventArgs e)
         {
             string workingString = PassedTextControl.Text;
-            List<string> stringSplit = workingString.Split(Environment.NewLine).ToList();
+            string[] stringSplit = workingString.Split(Environment.NewLine);
 
             string finalString = "";
             foreach (string line in stringSplit)
