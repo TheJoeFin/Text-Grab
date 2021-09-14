@@ -51,16 +51,14 @@
                 </Grid>
 
                 <!--  Show Toast on success  -->
-                <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
-                    <CheckBox
-                        Name="ShowToastCheckBox"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
-                        <TextBlock Style="{StaticResource TextBodyNormal}">
-                            Show Toast when text is copied. Opens window to display and edit text.
-                        </TextBlock>
-                    </CheckBox>
-                </StackPanel>
+                <CheckBox Margin="0,12,0,0"
+                    Name="ShowToastCheckBox"
+                    VerticalContentAlignment="Center"
+                    Style="{StaticResource labelText}">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Show Toast when text is copied. Opens window to display and edit text.
+                    </TextBlock>
+                </CheckBox>
 
                 <!--  default launch  -->
                 <TextBlock
