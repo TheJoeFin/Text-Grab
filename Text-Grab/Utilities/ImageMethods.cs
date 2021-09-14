@@ -120,6 +120,8 @@ namespace Text_Grab
         {
             // use currently selected Language
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            // store abbreviation to check for fallback languages
+            string langAbbreviation = InputLanguageManager.Current.CurrentInputLanguage.ThreeLetterISOLanguageName;
 
             Language selectedLanguage = new Language(inputLang);
             List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
@@ -133,7 +135,7 @@ namespace Text_Grab
 
             if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
             {
-                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.LanguageTag == selectedLanguage.LanguageTag).ToList();
+                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == langAbbreviation).ToList();
                 if (similarLanguages.Count() > 0)
                     selectedLanguage = similarLanguages.FirstOrDefault();
                 else
@@ -217,6 +219,8 @@ namespace Text_Grab
 
             // use currently selected Language
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            // store abbreviation to check for fallback languages
+            string langAbbreviation = InputLanguageManager.Current.CurrentInputLanguage.ThreeLetterISOLanguageName;
             
             Language selectedLanguage = new Language(inputLang);
             List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
@@ -230,7 +234,7 @@ namespace Text_Grab
 
             if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
             {
-                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.LanguageTag == selectedLanguage.LanguageTag).ToList();
+                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == langAbbreviation).ToList();
                 if (similarLanguages.Count() > 0)
                     selectedLanguage = similarLanguages.FirstOrDefault();
                 else
