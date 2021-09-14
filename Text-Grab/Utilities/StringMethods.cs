@@ -201,17 +201,16 @@ namespace Text_Grab.Utilities
                 else if (Char.IsNumber(c))
                     thisCharType = CharType.Number;
 
-                if (charRunList.LastOrDefault() != null
-                    && thisCharType == charRunList.LastOrDefault().TypeOfChar)
+                if (thisCharType == charRunList.LastOrDefault()?.TypeOfChar)
                 {
                     if (thisCharType == CharType.Other)
                     {
-                        if (c == charRunList.LastOrDefault().Character)
-                            charRunList.LastOrDefault().numberOfRun++;
+                        if (c == charRunList.Last().Character)
+                            charRunList.Last().numberOfRun++;
                     }
                     else
                     {
-                        charRunList.LastOrDefault().numberOfRun++;
+                        charRunList.Last().numberOfRun++;
                     }
                 }
                 else
@@ -254,7 +253,7 @@ namespace Text_Grab.Utilities
 
                 if (ct.numberOfRun > 1)
                 {
-                    sb.Append("{" + ct.numberOfRun + "}");
+                    sb.Append('{').Append(ct.numberOfRun).Append('}');
                 }
             }
             // sb.Append(")");
