@@ -593,23 +593,25 @@ namespace Text_Grab
 
         private void FontMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            FontDialog fd = new FontDialog();
-            Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
-            fd.Font = currentFont;
-            var result = fd.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+            using (FontDialog fd = new FontDialog())
             {
-                Debug.WriteLine(fd.Font);
+                Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float) ((PassedTextControl.FontSize * 72.0) / 96.0));
+                fd.Font = currentFont;
+                var result = fd.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    Debug.WriteLine(fd.Font);
 
-                Settings.Default.FontFamilySetting = fd.Font.Name;
-                Settings.Default.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
-                Settings.Default.IsFontBold = fd.Font.Bold;
-                Settings.Default.IsFontItalic = fd.Font.Italic;
-                Settings.Default.IsFontUnderline = fd.Font.Underline;
-                Settings.Default.IsFontStrikeout = fd.Font.Strikeout;
-                Settings.Default.Save();
+                    Settings.Default.FontFamilySetting = fd.Font.Name;
+                    Settings.Default.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
+                    Settings.Default.IsFontBold = fd.Font.Bold;
+                    Settings.Default.IsFontItalic = fd.Font.Italic;
+                    Settings.Default.IsFontUnderline = fd.Font.Underline;
+                    Settings.Default.IsFontStrikeout = fd.Font.Strikeout;
+                    Settings.Default.Save();
 
-                SetFontFromSettings();
+                    SetFontFromSettings();
+                }
             }
         }
 
