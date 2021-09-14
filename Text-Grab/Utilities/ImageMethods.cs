@@ -188,7 +188,7 @@ namespace Text_Grab
             }
             if (culture.TextInfo.IsRightToLeft)
             {
-                List<string> textListLines = text.ToString().Split(new char[] { '\n', '\r' }).ToList();
+                string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
 
                 _ = text.Clear();
                 foreach (string textLine in textListLines)

@@ -75,7 +75,7 @@ namespace Text_Grab.Utilities
 
         public static string TryFixEveryWordLetterNumberErrors(this string stringToFix)
         {
-            List<string> listOfWords = stringToFix.Split(' ').ToList();
+            string[] listOfWords = stringToFix.Split(' ');
             List<string> fixedWords = new List<string>();
 
             foreach (string word in listOfWords)
