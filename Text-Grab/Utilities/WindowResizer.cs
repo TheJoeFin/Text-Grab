@@ -125,7 +125,7 @@ namespace Fasetto.Word
             mTransformToDevice = default(Matrix);
 
             // If we cannot get the source, ignore
-            if (source == null)
+            if (source?.CompositionTarget == null)
                 return;
 
             // Otherwise, get the new transform object
@@ -266,7 +266,11 @@ namespace Fasetto.Word
             mLastScreen = lCurrentScreen;
 
             // Get min/max structure to fill with information
-            var lMmi = (MINMAXINFO)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO));
+            var lMmiTmp = (MINMAXINFO?)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO));
+            if (lMmiTmp == null)
+                return;
+
+            var lMmi = lMmiTmp.Value;
 
             // If it is the primary screen, use the rcWork variable
             if (lPrimaryScreen.Equals(lCurrentScreen) == true)
