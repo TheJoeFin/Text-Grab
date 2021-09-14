@@ -314,36 +314,6 @@ namespace Text_Grab.Views
         private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
-            Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
-
-            System.Windows.Point mPt = GetMousePos();
-            System.Windows.Point movingPoint = e.GetPosition(RectanglesCanvas);
-            movingPoint.X *= m.M11;
-            movingPoint.Y *= m.M22;
-
-            movingPoint.X = Math.Round(movingPoint.X);
-            movingPoint.Y = Math.Round(movingPoint.Y);
-
-            if (mPt == movingPoint)
-                Debug.WriteLine("Probably on Screen 1");
-
-            double correctedLeft = Left;
-            double correctedTop = Top;
-
-            if (correctedLeft < 0)
-                correctedLeft = 0;
-
-            if (correctedTop < 0)
-                correctedTop = 0;
-
-            double xDimScaled = Canvas.GetLeft(selectBorder) * m.M11;
-            double yDimScaled = Canvas.GetTop(selectBorder) * m.M22;
-
-            System.Drawing.Rectangle regionScaled = new System.Drawing.Rectangle(
-                (int)xDimScaled,
-                (int)yDimScaled,
-                (int)(selectBorder.Width * m.M11),
-                (int)(selectBorder.Height * m.M22));
 
             try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
