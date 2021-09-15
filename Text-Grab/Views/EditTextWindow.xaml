@@ -218,7 +218,6 @@
             Foreground="White"
             HorizontalScrollBarVisibility="Auto"
             IsInactiveSelectionHighlightEnabled="True"
-            Mouse.MouseWheel="PassedTextControl_MouseWheel"
             SpellCheck.IsEnabled="True"
             Style="{DynamicResource TextBoxStyle1}"
             Text="{Binding CopiedText, Mode=OneWay}"
