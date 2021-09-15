@@ -773,25 +773,6 @@ namespace Text_Grab
             }
         }
 
-        //private void PassedTextControl_MouseWheel(object sender, MouseWheelEventArgs e)
-        //{
-        //    // Source: StackOverflow, read on Sep. 10, 2021
-        //    // https://stackoverflow.com/a/53698638/7438031
-
-        //    if (Keyboard.Modifiers != ModifierKeys.Control)
-        //        return;
-
-        //    e.Handled = true;
-
-        //    if (e.Delta > 0)
-        //        PassedTextControl.FontSize += 4;
-        //    else if (e.Delta < 0)
-        //    {
-        //        if (PassedTextControl.FontSize > 4)
-        //            PassedTextControl.FontSize -= 4;
-        //    }
-        //}
-
         private void SelectLineMenuItem_Click(object sender, RoutedEventArgs e)
         {
             SelectLine();
