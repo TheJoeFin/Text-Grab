@@ -57,7 +57,7 @@ namespace Text_Grab
                 PassedTextControl.TextAlignment = TextAlignment.Right;
             }
 
-            PassedTextControl.PreviewMouseWheel += PassedTextControl_PreviewMouseWheel;
+            PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
         }
 
         public EditTextWindow(string rawPassedString)
@@ -754,7 +754,7 @@ namespace Text_Grab
                 e.CanExecute = false;
         }
 
-        private void PassedTextControl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        private void HandlePreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             // Source: StackOverflow, read on Sep. 10, 2021
             // https://stackoverflow.com/a/53698638/7438031
