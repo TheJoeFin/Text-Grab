@@ -297,6 +297,7 @@ namespace Text_Grab.Views
         private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             isSelecting = true;
+            RectanglesCanvas.CaptureMouse();
             clickedPoint = e.GetPosition(RectanglesCanvas);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
@@ -314,6 +315,7 @@ namespace Text_Grab.Views
         private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
+            RectanglesCanvas.ReleaseMouseCapture();
 
             try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 

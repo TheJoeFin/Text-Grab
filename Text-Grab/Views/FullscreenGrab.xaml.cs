@@ -77,6 +77,7 @@ namespace Text_Grab.Views
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             isSelecting = true;
+            RegionClickCanvas.CaptureMouse();
             clickedPoint = e.GetPosition(this);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
@@ -149,6 +150,7 @@ namespace Text_Grab.Views
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
+            RegionClickCanvas.ReleaseMouseCapture();
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
             System.Windows.Point mPt = GetMousePos();
