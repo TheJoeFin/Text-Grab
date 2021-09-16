@@ -20,21 +20,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="Images\EditTextWindow.png">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="Images\Fullscreen.png">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="Images\Grab-Frame.png">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="Images\Text-Grab-Icon.png">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="Images\Toast.png">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
+		<Resource Include="Images\EditTextWindow.png" />
+		<Resource Include="Images\Fullscreen.png" />
+		<Resource Include="Images\Grab-Frame.png" />
+		<Resource Include="Images\Text-Grab-Icon.png" />
+		<Resource Include="Images\Toast.png" />
 	</ItemGroup>
 
 	<ItemGroup>
