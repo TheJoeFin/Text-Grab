@@ -77,6 +77,7 @@ namespace Text_Grab.Views
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             isSelecting = true;
+            RegionClickCanvas.CaptureMouse();
             clickedPoint = e.GetPosition(this);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
@@ -86,6 +87,8 @@ namespace Text_Grab.Views
             selectBorder.BorderThickness = new Thickness(2);
             System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
             selectBorder.BorderBrush = new SolidColorBrush(borderColor);
+            System.Windows.Media.Color backgroundColor = System.Windows.Media.Color.FromArgb(15, 40, 118, 126);
+            selectBorder.Background = new SolidColorBrush(backgroundColor);
             _ = RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
@@ -149,6 +152,7 @@ namespace Text_Grab.Views
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
+            RegionClickCanvas.ReleaseMouseCapture();
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
             System.Windows.Point mPt = GetMousePos();
