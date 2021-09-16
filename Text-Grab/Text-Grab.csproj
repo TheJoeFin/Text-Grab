@@ -12,6 +12,7 @@
 		<ApplicationIcon>t_ICON2.ico</ApplicationIcon>
 		<StartupObject>Text_Grab.App</StartupObject>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
