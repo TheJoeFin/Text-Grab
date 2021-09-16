@@ -87,6 +87,8 @@ namespace Text_Grab.Views
             selectBorder.BorderThickness = new Thickness(2);
             System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
             selectBorder.BorderBrush = new SolidColorBrush(borderColor);
+            System.Windows.Media.Color backgroundColor = System.Windows.Media.Color.FromArgb(15, 40, 118, 126);
+            selectBorder.Background = new SolidColorBrush(backgroundColor);
             _ = RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);

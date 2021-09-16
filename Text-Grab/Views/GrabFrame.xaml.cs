@@ -305,8 +305,10 @@ namespace Text_Grab.Views
             try { RectanglesCanvas.Children.Remove(selectBorder); } catch (Exception) { }
 
             selectBorder.BorderThickness = new Thickness(2);
-            System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
+            Color borderColor = Color.FromArgb(255, 40, 118, 126);
             selectBorder.BorderBrush = new SolidColorBrush(borderColor);
+            Color backgroundColor = Color.FromArgb(15, 40, 118, 126);
+            selectBorder.Background = new SolidColorBrush(backgroundColor);
             _ = RectanglesCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
