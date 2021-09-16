@@ -24,6 +24,12 @@ namespace Text_Grab.Views
 
         private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
+        double selectLeft = 0;
+        double selectTop = 0;
+
+        double xShiftDelta = 0;
+        double yShiftDelta = 0;
+
         public bool IsFromEditWindow { get; set; } = false;
 
         public FullscreenGrab()
@@ -45,9 +51,11 @@ namespace Text_Grab.Views
             {
                 case Key.LeftShift:
                     isShiftDown = false;
+                    clickedPoint = new System.Windows.Point(clickedPoint.X + xShiftDelta, clickedPoint.Y + yShiftDelta);
                     break;
                 case Key.RightShift:
                     isShiftDown = false;
+                    clickedPoint = new System.Windows.Point(clickedPoint.X + xShiftDelta, clickedPoint.Y + yShiftDelta);
                     break;
                 default:
                     break;
@@ -58,14 +66,6 @@ namespace Text_Grab.Views
         {
             switch (e.Key)
             {
-                case Key.LeftShift:
-                    isShiftDown = true;
-                    shiftPoint = Mouse.GetPosition(this);
-                    break;
-                case Key.RightShift:
-                    isShiftDown = true;
-                    shiftPoint = Mouse.GetPosition(this);
-                    break;
                 case Key.Escape:
                     WindowUtilities.CloseAllFullscreenGrabs();
                     break;
@@ -104,17 +104,24 @@ namespace Text_Grab.Views
             double xDelta = movingPoint.X - clickedPoint.X;
             double yDelta = movingPoint.Y - clickedPoint.Y;
 
-            // if (isShiftDown == true)
-            // {
-            //     Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
-            //     double xShiftDelta = (movingPoint.X - shiftPoint.X) / m.M11;
-            //     double yShiftDelta = (movingPoint.Y - shiftPoint.Y) / m.M22;
-            //     double selectLeft = Canvas.GetLeft(selectBorder);
-            //     double selectTop = Canvas.GetTop(selectBorder);
-            //     Canvas.SetLeft(selectBorder, selectLeft + xShiftDelta);
-            //     Canvas.SetTop(selectBorder, selectTop + yShiftDelta);
-            //     return;
-            // }
+            if (Keyboard.Modifiers == ModifierKeys.Shift)
+            {
+
+                if (isShiftDown == false)
+                {
+                    shiftPoint = Mouse.GetPosition(this);
+                    selectLeft = Canvas.GetLeft(selectBorder);
+                    selectTop = Canvas.GetTop(selectBorder);
+                }
+                isShiftDown = true;
+                xShiftDelta = (movingPoint.X - shiftPoint.X);
+                yShiftDelta = (movingPoint.Y - shiftPoint.Y);
+                Canvas.SetLeft(selectBorder, selectLeft + xShiftDelta);
+                Canvas.SetTop(selectBorder, selectTop + yShiftDelta);
+                return;
+            }
+
+            isShiftDown = false;
 
             // X and Y postive
             if (xDelta > 0 && yDelta > 0)
