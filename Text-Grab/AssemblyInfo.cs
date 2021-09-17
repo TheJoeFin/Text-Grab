@@ -1,6 +1,8 @@
+using System.Runtime.Versioning;
 using System.Windows;
 using System.Windows.Media;
 
+[assembly: SupportedOSPlatform("windows10.0.19041.0")]
 [assembly: DisableDpiAwareness]
 [assembly: ThemeInfo(
     ResourceDictionaryLocation.None, //where theme specific resource dictionaries are located
