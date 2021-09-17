@@ -22,68 +22,74 @@ namespace Text_Grab
             // Register COM server and activator type
             DesktopNotificationManagerCompat.RegisterActivator<TextGrabNotificationActivator>();
 
-            for (int i = 0; i != e.Args.Length; ++i)
+            bool handledArgument = false;
+
+            for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
             {
                 if (e.Args[i] == "Settings")
                 {
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
+                    handledArgument = true;
                 }
-                if (e.Args[i] == "GrabFrame")
+                else if (e.Args[i] == "GrabFrame")
                 {
                     GrabFrame gf = new GrabFrame();
                     gf.Show();
+                    handledArgument = true;
                 }
-                if (e.Args[i] == "Fullscreen")
+                else if (e.Args[i] == "Fullscreen")
                 {
                     WindowUtilities.LaunchFullScreenGrab();
+                    handledArgument = true;
                 }
-                if (e.Args[i] == "EditText")
+                else if (e.Args[i] == "EditText")
                 {
                     EditTextWindow manipulateTextWindow = new EditTextWindow();
                     manipulateTextWindow.Show();
+                    handledArgument = true;
                 }
-                if (File.Exists(e.Args[i]))
+                else if (File.Exists(e.Args[i]))
                 {
                     EditTextWindow manipulateTextWindow = new EditTextWindow();
                     manipulateTextWindow.OpenThisPath(e.Args[i]);
                     manipulateTextWindow.Show();
+                    handledArgument = true;
                 }
             }
 
-            if(e.Args.Length == 0 && Settings.Default.FirstRun == false)
+            if (!handledArgument)
             {
-                switch (Settings.Default.DefaultLaunch)
+                if (Settings.Default.FirstRun)
                 {
-                    case "Fullscreen":
-                        WindowUtilities.LaunchFullScreenGrab();
-                        break;
-                    case "GrabFrame":
-                        GrabFrame gf = new GrabFrame();
-                        gf.Show();
-                        break;
-                    case "EditText":
-                        EditTextWindow manipulateTextWindow = new EditTextWindow();
-                        manipulateTextWindow.Show();
-                        break;
-                    default:
-                        EditTextWindow editTextWindow = new EditTextWindow();
-                        editTextWindow.Show();
-                        break;
+                    FirstRunWindow frw = new FirstRunWindow();
+                    frw.Show();
+
+                    Settings.Default.FirstRun = false;
+                    Settings.Default.Save();
                 }
-            }
-
-            // if (true)
-            if (Settings.Default.FirstRun)
-            {
-                FirstRunWindow frw = new FirstRunWindow();
-                frw.Show();
-
-                Settings.Default.FirstRun = false;
-                Settings.Default.Save();
+                else
+                {
+                    switch (Settings.Default.DefaultLaunch)
+                    {
+                        case "Fullscreen":
+                            WindowUtilities.LaunchFullScreenGrab();
+                            break;
+                        case "GrabFrame":
+                            GrabFrame gf = new GrabFrame();
+                            gf.Show();
+                            break;
+                        case "EditText":
+                            EditTextWindow manipulateTextWindow = new EditTextWindow();
+                            manipulateTextWindow.Show();
+                            break;
+                        default:
+                            EditTextWindow editTextWindow = new EditTextWindow();
+                            editTextWindow.Show();
+                            break;
+                    }
+                }
             }
         }
-
-        
     }
 }
