@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
@@ -173,8 +173,17 @@ namespace Text_Grab.Views
             try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
             RegionClickCanvas.Background.Opacity = 0;
             RegionClickCanvas.UpdateLayout();
-            RegionClickCanvas.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
+            // This may have worked at one time. But see comment underneath.
+            //RegionClickCanvas.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+
+            // we cannot guarantee that the above changes to RegionClickCanvas have
+            // been rendered by the time we copy the screen contents to a bitmap. 
+            // Additionally, there is no "OnRendered" event we can hook. Of the several
+            // solutions, the simplest is to introduce a short task switch allowing
+            // the UI thread to update.
+            await Task.Delay(10);
+            
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
                 grabbedText = await ImageMethods.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled));
             else
