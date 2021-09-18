@@ -78,6 +78,7 @@ namespace Text_Grab.Views
         {
             isSelecting = true;
             RegionClickCanvas.CaptureMouse();
+            CursorClipper.ClipCursor(this);
             clickedPoint = e.GetPosition(this);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
@@ -121,20 +122,13 @@ namespace Text_Grab.Views
             }
 
             isShiftDown = false;
-
-            var left = Math.Min(clickedPoint.X, movingPoint.X);
-            var top = Math.Min(clickedPoint.Y, movingPoint.Y);
-
-            selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
-            selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
-
-            Canvas.SetLeft(selectBorder, left);
-            Canvas.SetTop(selectBorder, top);
+            SelectionRectangleHelper.DrawSelectionRectangle(selectBorder, clickedPoint, movingPoint);
         }
 
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
+            CursorClipper.UnClipCursor();
             RegionClickCanvas.ReleaseMouseCapture();
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 

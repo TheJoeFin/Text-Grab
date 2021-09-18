@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
+using Point = System.Windows.Point;
 
 static class OSInterop
 {
@@ -17,6 +18,12 @@ static class OSInterop
 
     [DllImport("user32.dll")]
     public static extern IntPtr MonitorFromWindow(HandleRef handle, int flags);
+
+    [DllImport("user32.dll")]
+    public static extern bool ClipCursor(ref RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern bool ClipCursor([In()] IntPtr lpRect);
 
     public struct RECT
     {

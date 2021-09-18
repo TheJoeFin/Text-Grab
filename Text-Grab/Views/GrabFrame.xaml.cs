@@ -298,6 +298,7 @@ namespace Text_Grab.Views
         {
             isSelecting = true;
             RectanglesCanvas.CaptureMouse();
+            CursorClipper.ClipCursor(RectanglesCanvas);
             clickedPoint = e.GetPosition(RectanglesCanvas);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
@@ -317,6 +318,7 @@ namespace Text_Grab.Views
         private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
+            CursorClipper.UnClipCursor();
             RectanglesCanvas.ReleaseMouseCapture();
 
             try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
@@ -326,45 +328,13 @@ namespace Text_Grab.Views
 
         private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (isSelecting == false)
+            if (!isSelecting)
+            {
                 return;
-
-            System.Windows.Point movingPoint = e.GetPosition(RectanglesCanvas);
-
-            double xDelta = movingPoint.X - clickedPoint.X;
-            double yDelta = movingPoint.Y - clickedPoint.Y;
-
-            // X and Y postive
-            if (xDelta > 0 && yDelta > 0)
-            {
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
             }
-            // X negative Y positive
-            if (xDelta < 0 && yDelta > 0)
-            {
-                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
 
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
-            }
-            // X postive Y negative
-            if (xDelta > 0 && yDelta < 0)
-            {
-                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
-
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
-            }
-            // X and Y negative
-            if (xDelta < 0 && yDelta < 0)
-            {
-                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
-                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
-
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
-            }
+            Point movingPoint = e.GetPosition(RectanglesCanvas);
+            SelectionRectangleHelper.DrawSelectionRectangle(selectBorder, clickedPoint, movingPoint);
 
             CheckSelectBorderIntersections();
         }
