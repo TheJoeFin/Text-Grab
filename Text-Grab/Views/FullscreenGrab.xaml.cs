@@ -78,6 +78,7 @@ namespace Text_Grab.Views
         {
             isSelecting = true;
             RegionClickCanvas.CaptureMouse();
+            CursorClipper.ClipCursor(this);
             clickedPoint = e.GetPosition(this);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
@@ -142,6 +143,7 @@ namespace Text_Grab.Views
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
+            CursorClipper.UnClipCursor();
             RegionClickCanvas.ReleaseMouseCapture();
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
