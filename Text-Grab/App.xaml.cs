@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows;
-using System.Windows.Forms;
+using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
-using Windows.System.UserProfile;
 
 namespace Text_Grab
 {
@@ -15,8 +13,6 @@ namespace Text_Grab
     /// </summary>
     public partial class App : System.Windows.Application
     {
-        public static List<string> InstalledLanguages => GlobalizationPreferences.Languages.ToList();
-
         void appStartup(object sender, StartupEventArgs e)
         {
             // Register COM server and activator type
@@ -90,6 +86,14 @@ namespace Text_Grab
                     }
                 }
             }
+        }
+
+        private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            // unhandled exceptions thrown from UI thread
+            Debug.WriteLine($"Unhandled exception: {e.Exception}");
+            e.Handled = true;
+            Current.Shutdown();
         }
     }
 }

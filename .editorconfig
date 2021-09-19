@@ -8,3 +8,5 @@ dotnet_style_prefer_conditional_expression_over_assignment = false
 
 # Default severity for analyzer diagnostics with category 'Style'
 dotnet_analyzer_diagnostic.category-Style.severity = none
+
+dotnet_diagnostic.CA1416.severity = none

@@ -96,23 +96,22 @@ namespace Text_Grab.Views
 
         private void RegionClickCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (isSelecting == false)
+            if (!isSelecting)
+            {
                 return;
+            }
 
             System.Windows.Point movingPoint = e.GetPosition(this);
 
-            double xDelta = movingPoint.X - clickedPoint.X;
-            double yDelta = movingPoint.Y - clickedPoint.Y;
-
             if (Keyboard.Modifiers == ModifierKeys.Shift)
             {
-
-                if (isShiftDown == false)
+                if (!isShiftDown)
                 {
-                    shiftPoint = Mouse.GetPosition(this);
+                    shiftPoint = movingPoint;
                     selectLeft = Canvas.GetLeft(selectBorder);
                     selectTop = Canvas.GetTop(selectBorder);
                 }
+
                 isShiftDown = true;
                 xShiftDelta = (movingPoint.X - shiftPoint.X);
                 yShiftDelta = (movingPoint.Y - shiftPoint.Y);
@@ -123,37 +122,14 @@ namespace Text_Grab.Views
 
             isShiftDown = false;
 
-            // X and Y postive
-            if (xDelta > 0 && yDelta > 0)
-            {
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
-            }
-            // X negative Y positive
-            if (xDelta < 0 && yDelta > 0)
-            {
-                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
+            var left = Math.Min(clickedPoint.X, movingPoint.X);
+            var top = Math.Min(clickedPoint.Y, movingPoint.Y);
 
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
-            }
-            // X postive Y negative
-            if (xDelta > 0 && yDelta < 0)
-            {
-                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
+            selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
+            selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
 
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
-            }
-            // X and Y negative
-            if (xDelta < 0 && yDelta < 0)
-            {
-                Canvas.SetLeft(selectBorder, clickedPoint.X - Math.Abs(xDelta));
-                Canvas.SetTop(selectBorder, clickedPoint.Y - Math.Abs(yDelta));
-
-                selectBorder.Width = Math.Abs(movingPoint.X - clickedPoint.X);
-                selectBorder.Height = Math.Abs(movingPoint.Y - clickedPoint.Y);
-            }
+            Canvas.SetLeft(selectBorder, left);
+            Canvas.SetTop(selectBorder, top);
         }
 
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
