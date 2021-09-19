@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
@@ -24,11 +24,11 @@ namespace Text_Grab.Views
 
         private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
-        double selectLeft = 0;
-        double selectTop = 0;
+        double selectLeft;
+        double selectTop;
 
-        double xShiftDelta = 0;
-        double yShiftDelta = 0;
+        double xShiftDelta;
+        double yShiftDelta;
 
         public bool IsFromEditWindow { get; set; } = false;
 
@@ -40,7 +40,7 @@ namespace Text_Grab.Views
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Maximized;
-
+            FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
             this.KeyDown += FullscreenGrab_KeyDown;
             this.KeyUp += FullscreenGrab_KeyUp;
         }
@@ -87,8 +87,6 @@ namespace Text_Grab.Views
             selectBorder.BorderThickness = new Thickness(2);
             System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
             selectBorder.BorderBrush = new SolidColorBrush(borderColor);
-            System.Windows.Media.Color backgroundColor = System.Windows.Media.Color.FromArgb(15, 40, 118, 126);
-            selectBorder.Background = new SolidColorBrush(backgroundColor);
             _ = RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
@@ -115,8 +113,12 @@ namespace Text_Grab.Views
                 isShiftDown = true;
                 xShiftDelta = (movingPoint.X - shiftPoint.X);
                 yShiftDelta = (movingPoint.Y - shiftPoint.Y);
-                Canvas.SetLeft(selectBorder, selectLeft + xShiftDelta);
-                Canvas.SetTop(selectBorder, selectTop + yShiftDelta);
+
+                clippingGeometry.Rect = new Rect(
+                    new System.Windows.Point(selectLeft + xShiftDelta, selectTop + yShiftDelta),
+                    new System.Windows.Size(selectBorder.Width - 2, selectBorder.Height - 2));
+                Canvas.SetLeft(selectBorder, selectLeft + xShiftDelta - 1);
+                Canvas.SetTop(selectBorder, selectTop + yShiftDelta - 1);
                 return;
             }
 
@@ -127,9 +129,14 @@ namespace Text_Grab.Views
 
             selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
             selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
+            selectBorder.Height = selectBorder.Height + 2;
+            selectBorder.Width = selectBorder.Width + 2;
 
-            Canvas.SetLeft(selectBorder, left);
-            Canvas.SetTop(selectBorder, top);
+            clippingGeometry.Rect = new Rect(
+                new System.Windows.Point(left, top),
+                new System.Windows.Size(selectBorder.Width - 2, selectBorder.Height - 2));
+            Canvas.SetLeft(selectBorder, left - 1);
+            Canvas.SetTop(selectBorder, top - 1);
         }
 
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
@@ -168,15 +175,14 @@ namespace Text_Grab.Views
                 (int)(selectBorder.Height * m.M22));
 
             string grabbedText = "";
-
-            // remove selectBorder before capture - force screen Re-render to actually remove it
+            
             try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
-            RegionClickCanvas.Background.Opacity = 0;
-            RegionClickCanvas.UpdateLayout();
-            RegionClickCanvas.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
-
+            
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
+            {
+                BackgroundBrush.Opacity = 0;
                 grabbedText = await ImageMethods.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled));
+            }
             else
                 grabbedText = await ImageMethods.GetRegionsText(this, regionScaled);
 
@@ -196,7 +202,10 @@ namespace Text_Grab.Views
             }
             else
             {
-                RegionClickCanvas.Background.Opacity = .2;
+                BackgroundBrush.Opacity = .2;
+                clippingGeometry.Rect = new Rect(
+                new System.Windows.Point(0, 0),
+                new System.Windows.Size(0, 0));
             }
         }
     }
