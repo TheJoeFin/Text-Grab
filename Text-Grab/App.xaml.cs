@@ -17,6 +17,8 @@ namespace Text_Grab
         {
             // Register COM server and activator type
             DesktopNotificationManagerCompat.RegisterActivator<TextGrabNotificationActivator>();
+            
+            Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
             bool handledArgument = false;
 
