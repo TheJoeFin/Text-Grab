@@ -118,26 +118,10 @@ namespace Text_Grab
 
         public static async Task<string> ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null)
         {
-            // use currently selected Language
-            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-
-            Language selectedLanguage = new Language(inputLang);
-            List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
-
-            if (possibleOCRLangs.Count < 1)
+            Language selectedLanguage = GetOCRLanguage();
+            if (selectedLanguage == null)
             {
-                _ = MessageBox.Show($"No possible OCR languages are installed.", "Text Grab");
                 return null;
-                // throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
-            }
-
-            if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
-            {
-                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
-                if (similarLanguages.Count() > 0)
-                    selectedLanguage = similarLanguages.FirstOrDefault();
-                else
-                    selectedLanguage = possibleOCRLangs.FirstOrDefault();
             }
 
             XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
@@ -210,32 +194,16 @@ namespace Text_Grab
 
         public static async Task<OcrResult> GetOcrResultFromRegion(Rectangle region)
         {
+            Language selectedLanguage = GetOCRLanguage();
+            if (selectedLanguage == null)
+            {
+                return null;
+            }
+            
             Bitmap bmp = new Bitmap(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
 
             g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-
-            // use currently selected Language
-            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            
-            Language selectedLanguage = new Language(inputLang);
-            List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
-
-            if (possibleOCRLangs.Count < 1)
-            {
-                _ = MessageBox.Show($"No possible OCR languages are installed.", "Text Grab");
-                return null;
-                // throw new ArgumentOutOfRangeException($"No possible OCR languages are installed.");
-            }
-
-            if (possibleOCRLangs.Where(l => l.LanguageTag == selectedLanguage.LanguageTag).Count() < 1)
-            {
-                List<Language> similarLanguages = possibleOCRLangs.Where(la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
-                if (similarLanguages.Count() > 0)
-                    selectedLanguage = similarLanguages.FirstOrDefault();
-                else
-                    selectedLanguage = possibleOCRLangs.FirstOrDefault();
-            }
 
             OcrResult ocrResult;
             await using (MemoryStream memory = new MemoryStream())
@@ -288,6 +256,33 @@ namespace Text_Grab
               data.Stride);
             bmp.UnlockBits(data);
             return bmp;
+        }
+
+        private static Language GetOCRLanguage()
+        {
+            // use currently selected Language
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+
+            Language selectedLanguage = new Language(inputLang);
+            List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
+
+            if (possibleOCRLangs.Count < 1)
+            {
+                MessageBox.Show("No possible OCR languages are installed.", "Text Grab");
+                return null;
+            }
+
+            if (possibleOCRLangs.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
+            {
+                List<Language> similarLanguages = possibleOCRLangs.Where(
+                    la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
+
+                selectedLanguage = similarLanguages.Count > 0
+                    ? similarLanguages.FirstOrDefault()
+                    : possibleOCRLangs.FirstOrDefault();
+            }
+
+            return selectedLanguage;
         }
     }
 }
