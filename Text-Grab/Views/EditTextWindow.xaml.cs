@@ -130,6 +130,20 @@ namespace Text_Grab
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
+
+            ClipboardManager cbm = new ClipboardManager(this);
+            cbm.ClipboardChanged += ClipboardChanged;
+        }
+
+        private void ClipboardChanged(object sender, EventArgs e)
+        {
+            // Handle your clipboard update here, debug logging example:
+            if (System.Windows.Clipboard.ContainsText())
+            {
+                string clipboardString = System.Windows.Clipboard.GetText();
+                Debug.WriteLine(clipboardString);
+                PassedTextControl.Text += $"\n{clipboardString}";
+            }
         }
 
         private void SetFontFromSettings()
@@ -597,7 +611,7 @@ namespace Text_Grab
         {
             using (FontDialog fd = new FontDialog())
             {
-                Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float) ((PassedTextControl.FontSize * 72.0) / 96.0));
+                Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
                 fd.Font = currentFont;
                 var result = fd.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK)
