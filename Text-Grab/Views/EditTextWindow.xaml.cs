@@ -808,5 +808,15 @@ namespace Text_Grab
             FirstRunWindow frw = new FirstRunWindow();
             frw.Show();
         }
+
+        private void FullScreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.LaunchFullScreenGrab(true);
+        }
+
+        private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            CheckForGrabFrameOrLaunch();
+        }
     }
 }
