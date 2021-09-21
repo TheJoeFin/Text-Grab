@@ -66,6 +66,17 @@ namespace Text_Grab
 
         private void AboutBTN_Click(object sender, RoutedEventArgs e)
         {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
+            {
+                if (window is FirstRunWindow firstRunWindowOpen)
+                {
+                    firstRunWindowOpen.Activate();
+                    return;
+                }
+            }
+            
             FirstRunWindow frw = new FirstRunWindow();
             frw.Show();
         }
