@@ -193,8 +193,12 @@ namespace Text_Grab.Views
 
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
-                Clipboard.SetText(grabbedText);
-                if (Settings.Default.ShowToast && IsFromEditWindow == false)
+                if (Settings.Default.NeverAutoUseClipboard == false
+                    && IsFromEditWindow == false)
+                    Clipboard.SetText(grabbedText);
+                
+                if (Settings.Default.ShowToast 
+                    && IsFromEditWindow == false)
                     NotificationUtilities.ShowToast(grabbedText);
 
                 if (IsFromEditWindow == true)

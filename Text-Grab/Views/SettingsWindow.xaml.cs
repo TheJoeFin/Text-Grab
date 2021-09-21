@@ -18,6 +18,7 @@ namespace Text_Grab
         {
             ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
             ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
+            NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
 
             switch (Settings.Default.DefaultLaunch)
             {
@@ -59,6 +60,7 @@ namespace Text_Grab
                 Settings.Default.DefaultLaunch = "EditText";
 
             Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
+            Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
 
             Settings.Default.Save();
             Close();

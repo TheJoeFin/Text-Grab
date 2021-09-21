@@ -120,13 +120,13 @@ namespace Text_Grab.Views
 
 
             if (IsfromEditWindow == false
-                && string.IsNullOrWhiteSpace(frameText) == false)
-            {
+                && string.IsNullOrWhiteSpace(frameText) == false
+                && Settings.Default.NeverAutoUseClipboard == false)
                 Clipboard.SetText(frameText);
 
-                if (Settings.Default.ShowToast)
-                    NotificationUtilities.ShowToast(frameText);
-            }
+            if (Settings.Default.ShowToast == false
+                && IsfromEditWindow == false)
+                NotificationUtilities.ShowToast(frameText);
 
             if (IsfromEditWindow == true && string.IsNullOrWhiteSpace(frameText) == false)
                 WindowUtilities.AddTextToOpenWindow(frameText);
