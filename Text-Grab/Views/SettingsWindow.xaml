@@ -103,6 +103,16 @@
                         Try to correct confusions between numbers and letters
                     </TextBlock>
                 </CheckBox>
+
+                <CheckBox
+                    Name="NeverUseClipboardChkBx"
+                    Margin="0,16,0,0"
+                    VerticalContentAlignment="Center"
+                    Style="{StaticResource labelText}">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Never automatically add text to the clipboard
+                    </TextBlock>
+                </CheckBox>
             </StackPanel>
             <StackPanel Grid.Row="1" Orientation="Horizontal">
                 <controls:CollapsibleButton
