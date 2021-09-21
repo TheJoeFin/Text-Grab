@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
@@ -44,6 +45,8 @@ namespace Text_Grab
         public static RoutedCommand ToggleCaseCmd = new RoutedCommand();
 
         public static RoutedCommand ReplaceReservedCmd = new RoutedCommand();
+
+        private int numberOfContextMenuItems;
 
         public EditTextWindow()
         {
@@ -122,6 +125,9 @@ namespace Text_Grab
             _ = CommandBindings.Add(new CommandBinding(replaceReservedCharsCommand, ReplaceReservedCharsCmdExecuted));
 
             SetFontFromSettings();
+
+            PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
+            numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
 
             if (Settings.Default.EditWindowStartFullscreen
                 && string.IsNullOrWhiteSpace(OpenedFilePath) == true)
@@ -662,6 +668,17 @@ namespace Text_Grab
 
         private void LaunchFindAndReplace()
         {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
+            {
+                if (window is FindAndReplaceWindow openFindReplaceWindow)
+                {
+                    openFindReplaceWindow.Activate();
+                    return;
+                }
+            }
+
             FindAndReplaceWindow farw = new FindAndReplaceWindow();
             farw.StringFromWindow = PassedTextControl.Text;
             farw.TextEditWindow = this;
@@ -805,8 +822,86 @@ namespace Text_Grab
 
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
+            {
+                if (window is FirstRunWindow firstRunWindowOpen)
+                {
+                    firstRunWindowOpen.Activate();
+                    return;
+                }
+            }
+            
             FirstRunWindow frw = new FirstRunWindow();
             frw.Show();
+        }
+
+
+        private void FullScreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.LaunchFullScreenGrab(true);
+        }
+
+        private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            CheckForGrabFrameOrLaunch();
+        }
+        
+        private void PassedTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            PassedTextControl.ContextMenu = null;
+
+            int caretIndex, cmdIndex;
+            SpellingError spellingError;
+
+            ContextMenu baseContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
+
+            while (baseContextMenu.Items.Count > numberOfContextMenuItems )
+            {
+                baseContextMenu.Items.RemoveAt(0);
+            }
+
+            PassedTextControl.ContextMenu = baseContextMenu;
+            caretIndex = PassedTextControl.CaretIndex;
+
+            cmdIndex = 0;
+            spellingError = PassedTextControl.GetSpellingError(caretIndex);
+            if (spellingError != null)
+            {
+                foreach (string str in spellingError.Suggestions)
+                {
+                    MenuItem mi = new MenuItem();
+                    mi.Header = str;
+                    mi.FontWeight = FontWeights.Bold;
+                    mi.Command = EditingCommands.CorrectSpellingError;
+                    mi.CommandParameter = str;
+                    mi.CommandTarget = PassedTextControl;
+                    PassedTextControl.ContextMenu.Items.Insert(cmdIndex, mi);
+                    cmdIndex++;
+                }
+
+                if (cmdIndex == 0)
+                {
+                    MenuItem mi = new MenuItem();
+                    mi.Header = "no suggestions";
+                    mi.IsEnabled = false;
+                    PassedTextControl.ContextMenu.Items.Insert(cmdIndex, mi);
+                    cmdIndex++;
+                }
+
+                Separator separatorMenuItem1 = new Separator();
+                PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem1);
+                cmdIndex++;
+                MenuItem ignoreAllMI = new MenuItem();
+                ignoreAllMI.Header = "Ignore All";
+                ignoreAllMI.Command = EditingCommands.IgnoreSpellingError;
+                ignoreAllMI.CommandTarget = PassedTextControl;
+                PassedTextControl.ContextMenu.Items.Insert(cmdIndex, ignoreAllMI);
+                cmdIndex++;
+                Separator separatorMenuItem2 = new Separator();
+                PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem2);
+            }
         }
     }
 }

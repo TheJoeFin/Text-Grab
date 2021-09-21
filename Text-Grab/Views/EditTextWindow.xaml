@@ -22,6 +22,37 @@
             <Setter Property="Padding" Value="6" />
             <Setter Property="Margin" Value="10,10,0,10" />
         </Style>
+
+        <ContextMenu x:Key="ContextMenuResource">
+            <MenuItem Command="ApplicationCommands.Undo" />
+            <MenuItem Command="ApplicationCommands.Redo" />
+            <Separator />
+            <MenuItem Command="ApplicationCommands.Cut" />
+            <MenuItem Command="ApplicationCommands.Copy" />
+            <MenuItem Command="ApplicationCommands.Paste" />
+            <Separator />
+            <MenuItem
+                        Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
+                        Header="_Isolate Selected Text"
+                        InputGestureText="Ctrl + I" />
+            <MenuItem
+                        Click="SelectLineMenuItem_Click"
+                        Header="Select _Line"
+                        InputGestureText="Ctrl + L" />
+            <MenuItem
+                        Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+                        Header="Toggle _Case"
+                        InputGestureText="Shift + F3" />
+            <Separator />
+            <MenuItem
+                        Click="MoveLineUpMenuItem_Click"
+                        Header="Move Selection _Up"
+                        InputGestureText="Alt + Up" />
+            <MenuItem
+                        Click="MoveLineDownMenuItem_Click"
+                        Header="Move Selection _Down"
+                        InputGestureText="Alt + Down" />
+        </ContextMenu>
     </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding
@@ -168,6 +199,16 @@
                     Click="FontMenuItem_Click"
                     Header="_Font..." />
             </MenuItem>
+            <MenuItem Header="_Capture">
+                <MenuItem
+                    x:Name="FullScreenGrabMenuItem"
+                    Click="FullScreenGrabMenuItem_Click"
+                    Header="New _Fullscreen Grab" />
+                <MenuItem
+                    x:Name="GrabFrameMenuItem"
+                    Click="GrabFrameMenuItem_Click"
+                    Header="New _Grab Frame" />
+            </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem
                     x:Name="AlwaysOnTop"
@@ -223,39 +264,8 @@
             Text="{Binding CopiedText, Mode=OneWay}"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="Wrap"
+            ContextMenuOpening="PassedTextControl_ContextMenuOpening"
             VerticalScrollBarVisibility="Auto">
-            <TextBox.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Command="ApplicationCommands.Undo" />
-                    <MenuItem Command="ApplicationCommands.Redo" />
-                    <Separator />
-                    <MenuItem Command="ApplicationCommands.Cut" />
-                    <MenuItem Command="ApplicationCommands.Copy" />
-                    <MenuItem Command="ApplicationCommands.Paste" />
-                    <Separator />
-                    <MenuItem
-                        Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                        Header="_Isolate Selected Text"
-                        InputGestureText="Ctrl + I" />
-                    <MenuItem
-                        Click="SelectLineMenuItem_Click"
-                        Header="Select _Line"
-                        InputGestureText="Ctrl + L" />
-                    <MenuItem
-                        Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                        Header="Toggle _Case"
-                        InputGestureText="Shift + F3" />
-                    <Separator />
-                    <MenuItem
-                        Click="MoveLineUpMenuItem_Click"
-                        Header="Move Selection _Up"
-                        InputGestureText="Alt + Up" />
-                    <MenuItem
-                        Click="MoveLineDownMenuItem_Click"
-                        Header="Move Selection _Down"
-                        InputGestureText="Alt + Down" />
-                </ContextMenu>
-            </TextBox.ContextMenu>
         </TextBox>
         <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>
