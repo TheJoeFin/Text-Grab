@@ -837,6 +837,17 @@ namespace Text_Grab
             frw.Show();
         }
 
+
+        private void FullScreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.LaunchFullScreenGrab(true);
+        }
+
+        private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            CheckForGrabFrameOrLaunch();
+        }
+        
         private void PassedTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
             PassedTextControl.ContextMenu = null;
