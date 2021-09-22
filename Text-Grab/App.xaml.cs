@@ -17,14 +17,19 @@ namespace Text_Grab
         {
             // Register COM server and activator type
             DesktopNotificationManagerCompat.RegisterActivator<TextGrabNotificationActivator>();
-            
             Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
             bool handledArgument = false;
 
             for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
             {
-                if (e.Args[i] == "Settings")
+                Debug.WriteLine($"ARG {i}:{e.Args[i]}");
+                if (e.Args[i].Contains("ToastActivated"))
+                {
+                    Debug.WriteLine("Launched from toast");
+                    handledArgument = true;
+                }
+                else if (e.Args[i] == "Settings")
                 {
                     SettingsWindow sw = new SettingsWindow();
                     sw.Show();
