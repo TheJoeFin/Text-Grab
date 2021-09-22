@@ -146,6 +146,11 @@
                     Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
                     Header="_Replace Reserved Characters"
                     InputGestureText="Ctrl + R" />
+                <MenuItem
+                    x:Name="UnStackMenuItem"
+                    Click="UnStackMenuItem_Click"
+                    Header="_Unstack Text"
+                    InputGestureText="Ctrl + U" />
                 <Separator />
                 <MenuItem
                     x:Name="SplitLineBeforeSelectionMI"

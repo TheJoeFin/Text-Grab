@@ -449,6 +449,11 @@ namespace Text_Grab
             PassedTextControl.SelectedText = textToAdd;
         }
 
+        private void UnStackMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(5);
+        }
+
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
         {
             string workingString = string.Empty;
@@ -603,7 +608,7 @@ namespace Text_Grab
         {
             using (FontDialog fd = new FontDialog())
             {
-                Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float) ((PassedTextControl.FontSize * 72.0) / 96.0));
+                Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
                 fd.Font = currentFont;
                 var result = fd.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK)
@@ -832,7 +837,7 @@ namespace Text_Grab
                     return;
                 }
             }
-            
+
             FirstRunWindow frw = new FirstRunWindow();
             frw.Show();
         }
@@ -847,7 +852,7 @@ namespace Text_Grab
         {
             CheckForGrabFrameOrLaunch();
         }
-        
+
         private void PassedTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
             PassedTextControl.ContextMenu = null;
@@ -857,7 +862,7 @@ namespace Text_Grab
 
             ContextMenu baseContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
 
-            while (baseContextMenu.Items.Count > numberOfContextMenuItems )
+            while (baseContextMenu.Items.Count > numberOfContextMenuItems)
             {
                 baseContextMenu.Items.RemoveAt(0);
             }

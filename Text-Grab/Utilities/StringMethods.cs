@@ -270,16 +270,16 @@ namespace Text_Grab.Utilities
 
             foreach (string line in splitString)
             {
-                if (columnIterator > numberOfColumns)
+                if (columnIterator == numberOfColumns)
                 {
-                    sbUnstacked.Append(Environment.NewLine).Append(line);
+                    sbUnstacked.Append(Environment.NewLine).Append(line).Append("\t");
                     columnIterator = 0;
                 }
                 else
                 {
                     sbUnstacked.Append(line).Append("\t");
-                    columnIterator++;
                 }
+                columnIterator++;
             }
 
             return sbUnstacked.ToString();
