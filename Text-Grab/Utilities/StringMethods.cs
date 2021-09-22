@@ -259,5 +259,30 @@ namespace Text_Grab.Utilities
             // sb.Append(")");
             return sb.ToString();
         }
+
+        public static string UnstackStrings(this string stringToUnstack, int numberOfColumns)
+        {
+            StringBuilder sbUnstacked = new StringBuilder();
+
+            string[] splitString = stringToUnstack.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
+
+            int columnIterator = 0;
+
+            foreach (string line in splitString)
+            {
+                if (columnIterator > numberOfColumns)
+                {
+                    sbUnstacked.Append(Environment.NewLine).Append(line);
+                    columnIterator = 0;
+                }
+                else
+                {
+                    sbUnstacked.Append(line).Append("\t");
+                    columnIterator++;
+                }
+            }
+
+            return sbUnstacked.ToString();
+        }
     }
 }
