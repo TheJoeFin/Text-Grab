@@ -87,7 +87,8 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <Menu
-            Grid.Row="0"
+            Grid.Row="0" 
+            IsMainMenu="True"
             Background="{StaticResource DarkBackground}"
             Foreground="White">
             <MenuItem Header="_File">
@@ -146,6 +147,15 @@
                     Click="TryToAlphaMenuItem_Click"
                     Header="Try To Make _Letters" />
                 <MenuItem
+                    x:Name="ToggleCaseMenuItem"
+                    Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+                    Header="Toggle _Case"
+                    InputGestureText="Shift + F3" />
+                <MenuItem
+                    x:Name="RemoveDuplicateLines"
+                    Click="RemoveDuplicateLines_Click"
+                    Header="Remove Duplicate Lines" />
+                <MenuItem
                     x:Name="ReplaceReservedCharsMenuItem"
                     Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
                     Header="_Replace Reserved Characters"
@@ -155,25 +165,6 @@
                     Command="{x:Static local:EditTextWindow.UnstackCmd}"
                     Header="_Unstack Text (Select Top Row)"
                     InputGestureText="Ctrl + U" />
-                <Separator />
-                <MenuItem
-                    x:Name="SplitLineBeforeSelectionMI"
-                    Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
-                    Header="Split Lines _Before Each Selection" />
-                <MenuItem
-                    x:Name="IsolateSelectionMI"
-                    Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                    Header="_Isolate Selected Text"
-                    InputGestureText="Ctrl + I" />
-                <MenuItem
-                    x:Name="ToggleCaseMenuItem"
-                    Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                    Header="Toggle _Case"
-                    InputGestureText="Shift + F3" />
-                <MenuItem
-                    x:Name="RemoveDuplicateLines"
-                    Click="RemoveDuplicateLines_Click"
-                    Header="Remove Duplicate Lines" />
             </MenuItem>
             <MenuItem Header="_Selection">
                 <MenuItem
@@ -198,6 +189,16 @@
                     Click="MoveLineDownMenuItem_Click"
                     Header="Move Selection _Down"
                     InputGestureText="Alt + Down" />
+                <Separator />
+                <MenuItem
+                    x:Name="SplitLineBeforeSelectionMI"
+                    Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
+                    Header="Split Lines _Before Each Selection" />
+                <MenuItem
+                    x:Name="IsolateSelectionMI"
+                    Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
+                    Header="_Isolate Selected Text"
+                    InputGestureText="Ctrl + I" />
             </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
