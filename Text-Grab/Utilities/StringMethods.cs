@@ -272,12 +272,14 @@ namespace Text_Grab.Utilities
             {
                 if (columnIterator == numberOfColumns)
                 {
-                    sbUnstacked.Append(Environment.NewLine).Append(line).Append("\t");
+                    sbUnstacked.Append(Environment.NewLine).Append(line);
                     columnIterator = 0;
                 }
                 else
                 {
-                    sbUnstacked.Append(line).Append("\t");
+                    if (columnIterator != 0)
+                        sbUnstacked.Append('\t');
+                    sbUnstacked.Append(line);
                 }
                 columnIterator++;
             }

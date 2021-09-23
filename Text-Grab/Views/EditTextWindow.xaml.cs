@@ -46,6 +46,8 @@ namespace Text_Grab
 
         public static RoutedCommand ReplaceReservedCmd = new RoutedCommand();
 
+        public static RoutedCommand UnstackCmd = new RoutedCommand();
+
         private int numberOfContextMenuItems;
 
         public EditTextWindow()
@@ -124,6 +126,10 @@ namespace Text_Grab
             _ = replaceReservedCharsCommand.InputGestures.Add(new KeyGesture(Key.R, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(replaceReservedCharsCommand, ReplaceReservedCharsCmdExecuted));
 
+            RoutedCommand UnstackCommand = new RoutedCommand();
+            _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
+            _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
+
             SetFontFromSettings();
 
             PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
@@ -156,6 +162,14 @@ namespace Text_Grab
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
         {
             PassedTextControl.Focus();
+        }
+
+        private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (PassedTextControl.SelectedText.Contains(Environment.NewLine))
+                e.CanExecute = true;
+            else
+                e.CanExecute = false;
         }
 
         private void ToggleCaseCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -449,9 +463,13 @@ namespace Text_Grab
             PassedTextControl.SelectedText = textToAdd;
         }
 
-        private void UnStackMenuItem_Click(object sender, RoutedEventArgs e)
+        private void UnstackExecuted(object sender = null, ExecutedRoutedEventArgs e = null)
+
         {
-            PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(5);
+            string[] selectionLines = PassedTextControl.SelectedText.Split(Environment.NewLine);
+            int numberOfLines = selectionLines.Length;
+            
+            PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
         }
 
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
