@@ -32,26 +32,26 @@
             <MenuItem Command="ApplicationCommands.Paste" />
             <Separator />
             <MenuItem
-                        Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                        Header="_Isolate Selected Text"
-                        InputGestureText="Ctrl + I" />
+                Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
+                Header="_Isolate Selected Text"
+                InputGestureText="Ctrl + I" />
             <MenuItem
-                        Click="SelectLineMenuItem_Click"
-                        Header="Select _Line"
-                        InputGestureText="Ctrl + L" />
+                Click="SelectLineMenuItem_Click"
+                Header="Select _Line"
+                InputGestureText="Ctrl + L" />
             <MenuItem
-                        Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                        Header="Toggle _Case"
-                        InputGestureText="Shift + F3" />
+                Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+                Header="Toggle _Case"
+                InputGestureText="Shift + F3" />
             <Separator />
             <MenuItem
-                        Click="MoveLineUpMenuItem_Click"
-                        Header="Move Selection _Up"
-                        InputGestureText="Alt + Up" />
+                Click="MoveLineUpMenuItem_Click"
+                Header="Move Selection _Up"
+                InputGestureText="Alt + Up" />
             <MenuItem
-                        Click="MoveLineDownMenuItem_Click"
-                        Header="Move Selection _Down"
-                        InputGestureText="Alt + Down" />
+                Click="MoveLineDownMenuItem_Click"
+                Header="Move Selection _Down"
+                InputGestureText="Alt + Down" />
         </ContextMenu>
     </Window.Resources>
     <Window.CommandBindings>
@@ -75,6 +75,10 @@
             CanExecute="ReplaceReservedCharsCmdCanExecute"
             Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
             Executed="ReplaceReservedCharsCmdExecuted" />
+        <CommandBinding
+            CanExecute="SelectionContainsNewLinesCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.UnstackCmd}"
+            Executed="UnstackExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -146,6 +150,11 @@
                     Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
                     Header="_Replace Reserved Characters"
                     InputGestureText="Ctrl + R" />
+                <MenuItem
+                    x:Name="UnStackMenuItem"
+                    Command="{x:Static local:EditTextWindow.UnstackCmd}"
+                    Header="_Unstack Text (Select Top Row)"
+                    InputGestureText="Ctrl + U" />
                 <Separator />
                 <MenuItem
                     x:Name="SplitLineBeforeSelectionMI"
