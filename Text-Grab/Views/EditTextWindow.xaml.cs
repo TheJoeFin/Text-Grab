@@ -926,5 +926,10 @@ namespace Text_Grab
                 PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem2);
             }
         }
+
+        private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
+        {
+            PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
+        }
     }
 }

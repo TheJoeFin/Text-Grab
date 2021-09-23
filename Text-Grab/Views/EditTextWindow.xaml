@@ -170,6 +170,10 @@
                     Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                     Header="Toggle _Case"
                     InputGestureText="Shift + F3" />
+                <MenuItem
+                    x:Name="RemoveDuplicateLines"
+                    Click="RemoveDuplicateLines_Click"
+                    Header="Remove Duplicate Lines" />
             </MenuItem>
             <MenuItem Header="_Selection">
                 <MenuItem
