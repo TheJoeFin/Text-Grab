@@ -286,5 +286,21 @@ namespace Text_Grab.Utilities
 
             return sbUnstacked.ToString();
         }
+
+        public static string RemoveDuplicateLines(this string stringToDeduplicate)
+        {
+            string[] splitString = stringToDeduplicate.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
+            List<string> uniqueLines = new();
+
+            foreach (string originalLine in splitString)
+            {
+                if (uniqueLines.Contains(originalLine) == false)
+                {
+                    uniqueLines.Add(originalLine);
+                }
+            }
+
+            return string.Join(Environment.NewLine, uniqueLines.ToArray());
+        }
     }
 }
