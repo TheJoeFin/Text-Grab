@@ -1,8 +1,6 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
 using System;
-using System.Windows.Input;
-using Text_Grab.Properties;
-using Windows.UI.Notifications;
+using System.Text;
 
 namespace Text_Grab.Utilities
 {
@@ -10,11 +8,11 @@ namespace Text_Grab.Utilities
     {
         internal static void ShowToast(string copiedText)
         {
-            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            byte[] plainTextBytes = Encoding.UTF8.GetBytes(copiedText);
+            string encodedString = Convert.ToHexString(plainTextBytes);
 
             new ToastContentBuilder()
-                .AddArgument("inputLang", inputLang)
-                .AddArgument("text", copiedText)
+                .AddArgument("text", encodedString)
                 .AddText("Text Grab")
                 .AddText(copiedText)
                 .Show();

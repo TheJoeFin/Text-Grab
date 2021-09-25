@@ -15,6 +15,7 @@
     Background="{StaticResource DarkBackground}"
     Closing="Window_Closing"
     Loaded="Window_Loaded"
+    Initialized="Window_Initialized"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">

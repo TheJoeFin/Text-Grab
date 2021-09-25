@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -53,44 +54,26 @@ namespace Text_Grab
         public EditTextWindow()
         {
             InitializeComponent();
-
-            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
-            selectedCultureInfo = lang.GetEquivalentCulture();
-            if (selectedCultureInfo.TextInfo.IsRightToLeft)
-            {
-                PassedTextControl.TextAlignment = TextAlignment.Right;
-            }
-
-            PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
         }
 
         public EditTextWindow(string rawPassedString)
         {
-            string copiedText = "";
-            string langString = "en-US";
-            string[] args = rawPassedString.Split(';');
-            foreach (string arg in args)
+            InitializeComponent();
+
+            string rawEncodedString = rawPassedString.Substring(5);
+            try
             {
-                string[] split = arg.Split('=');
-                if (split[0] == "text")
-                {
-                    copiedText = split[1];
-                }
-                else if (split[0] == "inputLang")
-                {
-                    langString = split[1];
-                }
+                byte[] hexEncodedBytes = Convert.FromHexString(rawEncodedString);
+                string copiedText = Encoding.UTF8.GetString(hexEncodedBytes);
+                PassedTextControl.Text = copiedText;
+            }
+            catch (Exception ex)
+            {
+                PassedTextControl.Text = rawEncodedString;
+                PassedTextControl.Text += ex.Message;
             }
 
-            InitializeComponent();
-            PassedTextControl.Text = copiedText;
-            XmlLanguage lang = XmlLanguage.GetLanguage(langString);
-            CultureInfo culture = lang.GetEquivalentCulture();
-            if (culture.TextInfo.IsRightToLeft)
-            {
-                PassedTextControl.TextAlignment = TextAlignment.Right;
-            }
+
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -143,7 +126,6 @@ namespace Text_Grab
             _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
 
-            SetFontFromSettings();
 
             PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
             numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
@@ -154,6 +136,20 @@ namespace Text_Grab
                 WindowUtilities.LaunchFullScreenGrab(true);
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
+            }
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            SetFontFromSettings();
+            PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
+
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
+            selectedCultureInfo = lang.GetEquivalentCulture();
+            if (selectedCultureInfo.TextInfo.IsRightToLeft)
+            {
+                PassedTextControl.TextAlignment = TextAlignment.Right;
             }
         }
 

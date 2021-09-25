@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 using Text_Grab.Properties;
@@ -23,7 +24,7 @@ namespace Text_Grab
 
             ToastNotificationManagerCompat.OnActivated += toastArgs =>
             {
-                string argsInvoked = toastArgs.Argument.ToString();
+                string argsInvoked = toastArgs.Argument;
                 // Need to dispatch to UI thread if performing UI operations
                 Dispatcher.BeginInvoke((Action)(() =>
                 {
