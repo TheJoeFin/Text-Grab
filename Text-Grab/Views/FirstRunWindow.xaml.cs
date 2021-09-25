@@ -18,6 +18,24 @@ namespace Text_Grab
 
         private void OkayButton_Click(object sender, RoutedEventArgs e)
         {
+            if (System.Windows.Application.Current.Windows.Count == 1)
+            {
+                switch (Settings.Default.DefaultLaunch)
+                {
+                    case "Fullscreen":
+                        WindowUtilities.LaunchFullScreenGrab(true);
+                        break;
+                    case "GrabFrame":
+                        WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+                        break;
+                    case "EditText":
+                        WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+                        break;
+                    default:
+                        break;
+                }
+            }
+            
             this.Close();
         }
 
