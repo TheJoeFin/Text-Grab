@@ -297,9 +297,9 @@ namespace Text_Grab.Views
         private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             isSelecting = true;
+            clickedPoint = e.GetPosition(RectanglesCanvas);
             RectanglesCanvas.CaptureMouse();
             CursorClipper.ClipCursor(RectanglesCanvas);
-            clickedPoint = e.GetPosition(RectanglesCanvas);
             selectBorder.Height = 1;
             selectBorder.Width = 1;
 
@@ -315,7 +315,7 @@ namespace Text_Grab.Views
             Canvas.SetTop(selectBorder, clickedPoint.Y);
         }
 
-        private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        private async void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             isSelecting = false;
             CursorClipper.UnClipCursor();
@@ -323,6 +323,7 @@ namespace Text_Grab.Views
 
             try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
+            await Task.Delay(50);
             CheckSelectBorderIntersections(true);
         }
 
@@ -367,11 +368,20 @@ namespace Text_Grab.Views
                         wordBorder.Select();
                         wordBorder.WasRegionSelected = true;
                     }
+                    else
+                    {
+                        if (wordBorder.IsSelected)
+                            wordBorder.Deselect();
+                        else
+                            wordBorder.Select();
+                        wordBorder.WasRegionSelected = false;
+                    }
 
                 }
                 else
                 {
-                    if (wordBorder.WasRegionSelected == true)
+                    if (wordBorder.WasRegionSelected == true
+                        && smallSelction == false)
                         wordBorder.Deselect();
                 }
 
