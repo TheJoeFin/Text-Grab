@@ -124,7 +124,7 @@ namespace Text_Grab.Views
                 && Settings.Default.NeverAutoUseClipboard == false)
                 Clipboard.SetText(frameText);
 
-            if (Settings.Default.ShowToast == false
+            if (Settings.Default.ShowToast == true
                 && IsfromEditWindow == false)
                 NotificationUtilities.ShowToast(frameText);
 
