@@ -7,7 +7,7 @@
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     x:Name="FirstRun"
-    Title="FirstRunWindow"
+    Title="About Text Grab"
     Width="800"
     Height="600"
     MinWidth="200"
@@ -153,15 +153,26 @@
                         Fullscreen
                     </TextBlock>
                 </RadioButton>
-                <Viewbox
-                    Grid.Row="4"
-                    Grid.Column="0"
-                    Margin="20">
-                    <Image
-                        Width="800"
-                        Height="620"
-                        Source="/Text-Grab;component/Images/Fullscreen.png" />
-                </Viewbox>
+                <StackPanel Orientation="Vertical" Grid.Row="4" Grid.Column="0">
+                    <Viewbox
+                        Grid.Row="4"
+                        Grid.Column="0"
+                        Margin="20">
+                        <Image
+                            Width="800"
+                            Height="620"
+                            Source="/Text-Grab;component/Images/Fullscreen.png" />
+                    </Viewbox>
+                    <TextBlock HorizontalAlignment="Center">
+                        <Hyperlink
+                            x:Name="TryFullscreen" 
+                            FontSize="14"
+                            Foreground="SkyBlue"
+                            Click="TryFullscreen_Click" >
+                            Try Fullscreen
+                        </Hyperlink>
+                    </TextBlock>
+                </StackPanel>
 
                 <RadioButton
                     x:Name="GrabFrameRDBTN"
@@ -175,15 +186,26 @@
                         Grab Frame
                     </TextBlock>
                 </RadioButton>
-                <Viewbox
-                    Grid.Row="4"
-                    Grid.Column="1"
-                    Margin="20">
-                    <Image
-                        Width="800"
-                        Height="620"
-                        Source="/Text-Grab;component/Images/Grab-Frame.png" />
-                </Viewbox>
+                <StackPanel Orientation="Vertical" Grid.Row="4" Grid.Column="1">
+                    <Viewbox
+                        Grid.Row="4"
+                        Grid.Column="1"
+                        Margin="20">
+                        <Image
+                            Width="800"
+                            Height="620"
+                            Source="/Text-Grab;component/Images/Grab-Frame.png" />
+                    </Viewbox>
+                    <TextBlock HorizontalAlignment="Center">
+                        <Hyperlink
+                            x:Name="TryGrabFrame" 
+                            FontSize="14"
+                            Foreground="SkyBlue"
+                            Click="TryGrabFrame_Click" >
+                            Try Grab Frame
+                        </Hyperlink>
+                    </TextBlock>
+                </StackPanel>
 
                 <RadioButton
                     x:Name="EditWindowRDBTN"
@@ -197,15 +219,26 @@
                         Edit Text Window
                     </TextBlock>
                 </RadioButton>
-                <Viewbox
-                    Grid.Row="4"
-                    Grid.Column="2"
-                    Margin="20">
-                    <Image
-                        Width="800"
-                        Height="620"
-                        Source="/Text-Grab;component/Images/EditTextWindow.png" />
-                </Viewbox>
+                <StackPanel Orientation="Vertical" Grid.Row="4" Grid.Column="2">
+                    <Viewbox
+                        Grid.Row="4"
+                        Grid.Column="2"
+                        Margin="20">
+                        <Image
+                            Width="800"
+                            Height="620"
+                            Source="/Text-Grab;component/Images/EditTextWindow.png" />
+                    </Viewbox>
+                    <TextBlock HorizontalAlignment="Center">
+                        <Hyperlink
+                            x:Name="TryEditWindow" 
+                            FontSize="14"
+                            Foreground="SkyBlue"
+                            Click="TryEditWindow_Click" >
+                            Try Edit Text Window
+                        </Hyperlink>
+                    </TextBlock>
+                </StackPanel>
 
             </Grid>
             <TextBlock Style="{StaticResource TextHeaderFirstRun}">
@@ -236,15 +269,26 @@
                 <LineBreak />
                 Joe</TextBlock>
 
-            <controls:CollapsibleButton
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+
+                <controls:CollapsibleButton
+                    x:Name="SettingsButton" 
+                    ButtonText="Settings"
+                    CanChangeStyle="False"
+                    Background="DimGray"
+                    Width="100"
+                    Click="SettingsButton_Click"
+                    SymbolText="" />
+
+                <controls:CollapsibleButton
                 x:Name="OkayButton"
                 Width="100"
                 Margin="20"
-                HorizontalAlignment="Right"
                 ButtonText="Okay"
                 CanChangeStyle="False"
                 Click="OkayButton_Click"
                 SymbolText="" />
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </Window>

@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Windows;
 using Text_Grab.Properties;
+using Text_Grab.Utilities;
+using Text_Grab.Views;
 
 namespace Text_Grab
 {
@@ -65,6 +67,28 @@ namespace Text_Grab
         {
             Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
             e.Handled = true;
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+
+            this.Close();
+        }
+
+        private void TryFullscreen_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.LaunchFullScreenGrab(true);
+        }
+
+        private void TryGrabFrame_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+        }
+
+        private void TryEditWindow_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
         }
     }
 }

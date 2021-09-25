@@ -84,5 +84,23 @@ namespace Text_Grab.Utilities
 
             }
         }
+
+        internal static void OpenOrActivateWindow<T>() where T : Window, new()
+        {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (var window in allWindows)
+            {
+                if (window is T matchWindow)
+                {
+                    matchWindow.Activate();
+                    return;
+                }
+            }
+
+            // No Window Found, open a new one
+            T newWindow = new T();
+            newWindow.Show();
+        }
     }
 }
