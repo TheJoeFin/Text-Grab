@@ -30,7 +30,7 @@
         <TextBlock
             x:Name="ButtonTextBlock"
             Grid.Column="1"
-            Margin="0,-3,8,0"
+            Margin="0,0,8,0"
             VerticalAlignment="Center"
             d:Text="Design Text"
             FontFamily="Segoe UI"
