@@ -761,10 +761,6 @@ namespace Text_Grab
                 {
                     findAndReplaceWindow.Close();
                 }
-                if (window is FirstRunWindow firstRunWindow)
-                {
-                    firstRunWindow.Close();
-                }
             }
         }
 
