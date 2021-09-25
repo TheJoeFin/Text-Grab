@@ -11,27 +11,13 @@ namespace Text_Grab.Utilities
         internal static void ShowToast(string copiedText)
         {
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            // Construct the content
-            ToastContent content = new ToastContentBuilder()
-                .AddToastActivationInfo(copiedText + ',' + inputLang, ToastActivationType.Foreground)
-                .SetBackgroundActivation()
+
+            new ToastContentBuilder()
+                .AddArgument("inputLang", inputLang)
+                .AddArgument("text", copiedText)
+                .AddText("Text Grab")
                 .AddText(copiedText)
-                .GetToastContent();
-            content.Duration = ToastDuration.Short;
-
-            // Create the toast notification
-            var toastNotif = new ToastNotification(content.GetXml());
-
-            // And send the notification
-            try
-            {
-                ToastNotificationManager.CreateToastNotifier().Show(toastNotif);
-            }
-            catch (Exception)
-            {
-                Settings.Default.ShowToast = false;
-                Settings.Default.Save();
-            }
+                .Show();
         }
     }
 }

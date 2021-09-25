@@ -67,11 +67,24 @@ namespace Text_Grab
 
         public EditTextWindow(string rawPassedString)
         {
-            int lastCommaPosition = rawPassedString.AllIndexesOf(",").LastOrDefault();
-            CopiedText = rawPassedString.Substring(0, lastCommaPosition);
+            string copiedText = "";
+            string langString = "en-US";
+            string[] args = rawPassedString.Split(';');
+            foreach (string arg in args)
+            {
+                string[] split = arg.Split('=');
+                if (split[0] == "text")
+                {
+                    copiedText = split[1];
+                }
+                else if (split[0] == "inputLang")
+                {
+                    langString = split[1];
+                }
+            }
+
             InitializeComponent();
-            PassedTextControl.Text = CopiedText;
-            string langString = rawPassedString.Substring(lastCommaPosition + 1, (rawPassedString.Length - (lastCommaPosition + 1)));
+            PassedTextControl.Text = copiedText;
             XmlLanguage lang = XmlLanguage.GetLanguage(langString);
             CultureInfo culture = lang.GetEquivalentCulture();
             if (culture.TextInfo.IsRightToLeft)

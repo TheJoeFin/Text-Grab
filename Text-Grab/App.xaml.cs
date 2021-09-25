@@ -1,10 +1,13 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Toolkit.Uwp.Notifications;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.Foundation.Collections;
 
 namespace Text_Grab
 {
@@ -16,10 +19,25 @@ namespace Text_Grab
         void appStartup(object sender, StartupEventArgs e)
         {
             // Register COM server and activator type
-            DesktopNotificationManagerCompat.RegisterActivator<TextGrabNotificationActivator>();
+            bool handledArgument = false;
+
+            ToastNotificationManagerCompat.OnActivated += toastArgs =>
+            {
+                string argsInvoked = toastArgs.Argument.ToString();
+                // Need to dispatch to UI thread if performing UI operations
+                Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    if (String.IsNullOrWhiteSpace(argsInvoked) == false)
+                    {
+                        EditTextWindow mtw = new EditTextWindow(argsInvoked);
+                        mtw.Show();
+                        handledArgument = true;
+                    }
+                }));
+            };
+
             Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
-            bool handledArgument = false;
 
             for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
             {
