@@ -34,7 +34,7 @@ Get the code:
 ## Text Grab works in Three Modes
 
 ### 1. Full Screen Mode
-![Select text from a region](images\2-3-Full-Screen-Grab-med.gif)
+![Select text from a region](images/2-3-Full-Screen-Grab-med.gif)
 
 The first full screen use case is the most obvious, selecting a region of the screen and the text within the selected region will be added to the clipboard.
 
@@ -43,7 +43,7 @@ The second use case takes a single click and attempts to copy the word which was
 If the click point or selected region has no text in it the Text Grab window stays active. To exit the application, press the escape key, or Alt+F4.
 
 ### 2. Grab Frame Mode
-![Grab Frame](images\2-3-Grab-Frame-Medium.gif)
+![Grab Frame](images/2-3-Grab-Frame-Medium.gif)
 
 Grab frame is a mostly transparent frame with a search bar and Grab button. The Grab Frame can be positioned wherever you want to copy the text. This can be done by searching for text, clicking on a word border, and/or clicking on the Grab button.
 
