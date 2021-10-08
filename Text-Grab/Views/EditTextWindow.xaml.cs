@@ -37,6 +37,8 @@ namespace Text_Grab
 
         public bool WrapText { get; set; } = false;
 
+        public bool LaunchedFromNotification = false;
+
         public static RoutedCommand SplitOnSelectionCmd = new RoutedCommand();
 
         public static RoutedCommand IsolateSelectionCmd = new RoutedCommand();
@@ -56,11 +58,11 @@ namespace Text_Grab
             InitializeComponent();
         }
 
-        public EditTextWindow(string rawPassedString)
+        public EditTextWindow(string encodedStringFromToast)
         {
             InitializeComponent();
 
-            string rawEncodedString = rawPassedString.Substring(5);
+            string rawEncodedString = encodedStringFromToast.Substring(5);
             try
             {
                 byte[] hexEncodedBytes = Convert.FromHexString(rawEncodedString);
@@ -73,7 +75,7 @@ namespace Text_Grab
                 PassedTextControl.Text += ex.Message;
             }
 
-
+            LaunchedFromNotification = true;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -130,8 +132,19 @@ namespace Text_Grab
             PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
             numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
 
+            SetFontFromSettings();
+
+            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+            XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
+            selectedCultureInfo = lang.GetEquivalentCulture();
+            if (selectedCultureInfo.TextInfo.IsRightToLeft)
+            {
+                PassedTextControl.TextAlignment = TextAlignment.Right;
+            }
+
             if (Settings.Default.EditWindowStartFullscreen
-                && string.IsNullOrWhiteSpace(OpenedFilePath) == true)
+                && string.IsNullOrWhiteSpace(OpenedFilePath) == true
+                && LaunchedFromNotification == false)
             {
                 WindowUtilities.LaunchFullScreenGrab(true);
                 LaunchFullscreenOnLoad.IsChecked = true;
@@ -141,16 +154,7 @@ namespace Text_Grab
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            SetFontFromSettings();
             PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
-
-            string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-            XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
-            selectedCultureInfo = lang.GetEquivalentCulture();
-            if (selectedCultureInfo.TextInfo.IsRightToLeft)
-            {
-                PassedTextControl.TextAlignment = TextAlignment.Right;
-            }
         }
 
         private void SetFontFromSettings()
@@ -477,7 +481,7 @@ namespace Text_Grab
         {
             string[] selectionLines = PassedTextControl.SelectedText.Split(Environment.NewLine);
             int numberOfLines = selectionLines.Length;
-            
+
             PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
         }
 
@@ -562,13 +566,13 @@ namespace Text_Grab
                 if (window is GrabFrame grabFrame)
                 {
                     grabFrame.Activate();
-                    grabFrame.IsfromEditWindow = true;
+                    grabFrame.IsFromEditWindow = true;
                     return;
                 }
             }
 
             GrabFrame gf = new GrabFrame();
-            gf.IsfromEditWindow = true;
+            gf.IsFromEditWindow = true;
             gf.Show();
         }
 
@@ -747,7 +751,7 @@ namespace Text_Grab
             {
                 if (window is GrabFrame grabFrame)
                 {
-                    grabFrame.IsfromEditWindow = false;
+                    grabFrame.IsFromEditWindow = false;
                 }
                 if (window is FullscreenGrab fullscreenGrab)
                 {

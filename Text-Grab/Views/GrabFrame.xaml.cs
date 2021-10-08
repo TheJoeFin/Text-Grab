@@ -32,7 +32,7 @@ namespace Text_Grab.Views
         private Border selectBorder = new Border();
         private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
 
-        public bool IsfromEditWindow { get; set; } = false;
+        public bool IsFromEditWindow { get; set; } = false;
 
         public GrabFrame()
         {
@@ -119,16 +119,16 @@ namespace Text_Grab.Views
             }
 
 
-            if (IsfromEditWindow == false
+            if (IsFromEditWindow == false
                 && string.IsNullOrWhiteSpace(frameText) == false
                 && Settings.Default.NeverAutoUseClipboard == false)
                 Clipboard.SetText(frameText);
 
             if (Settings.Default.ShowToast == true
-                && IsfromEditWindow == false)
+                && IsFromEditWindow == false)
                 NotificationUtilities.ShowToast(frameText);
 
-            if (IsfromEditWindow == true && string.IsNullOrWhiteSpace(frameText) == false)
+            if (IsFromEditWindow == true && string.IsNullOrWhiteSpace(frameText) == false)
                 WindowUtilities.AddTextToOpenWindow(frameText);
         }
 
@@ -207,7 +207,7 @@ namespace Text_Grab.Views
                         Word = wordString,
                         ToolTip = wordString,
                         LineNumber = lineNumber,
-                        IsFromEditWindow = IsfromEditWindow
+                        IsFromEditWindow = IsFromEditWindow
                     };
 
                     if ((bool)ExactMatchChkBx.IsChecked)
