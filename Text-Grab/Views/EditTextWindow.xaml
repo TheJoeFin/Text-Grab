@@ -243,6 +243,15 @@
                     Header="Open _Fullscreen on Launch"
                     IsCheckable="True"
                     IsChecked="False" />
+                <Separator />
+                <MenuItem
+                    x:Name="NewWindowMenuItem"
+                    Header="New Window"
+                    Click="NewWindow_Clicked" />
+                <MenuItem
+                    x:Name="NewWindowFromSelectionMenuItem"
+                    Header="New Window with Selected Text"
+                    Click="NewWindowWithText_Clicked" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem

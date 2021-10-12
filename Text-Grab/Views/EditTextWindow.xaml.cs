@@ -58,21 +58,28 @@ namespace Text_Grab
             InitializeComponent();
         }
 
-        public EditTextWindow(string encodedStringFromToast)
+        public EditTextWindow(string possiblyEndcodedString, bool isEncoded = true)
         {
             InitializeComponent();
 
-            string rawEncodedString = encodedStringFromToast.Substring(5);
-            try
+            if (isEncoded == true)
             {
-                byte[] hexEncodedBytes = Convert.FromHexString(rawEncodedString);
-                string copiedText = Encoding.UTF8.GetString(hexEncodedBytes);
-                PassedTextControl.Text = copiedText;
+                string rawEncodedString = possiblyEndcodedString.Substring(5);
+                try
+                {
+                    byte[] hexEncodedBytes = Convert.FromHexString(rawEncodedString);
+                    string copiedText = Encoding.UTF8.GetString(hexEncodedBytes);
+                    PassedTextControl.Text = copiedText;
+                }
+                catch (Exception ex)
+                {
+                    PassedTextControl.Text = rawEncodedString;
+                    PassedTextControl.Text += ex.Message;
+                }
             }
-            catch (Exception ex)
+            else
             {
-                PassedTextControl.Text = rawEncodedString;
-                PassedTextControl.Text += ex.Message;
+                PassedTextControl.Text = possiblyEndcodedString;
             }
 
             LaunchedFromNotification = true;
@@ -394,6 +401,20 @@ namespace Text_Grab
             {
                 File.WriteAllText(OpenedFilePath, fileText);
             }
+        }
+
+        private void NewWindow_Clicked(object sender, RoutedEventArgs e)
+        {
+            EditTextWindow newETW = new();
+            newETW.Show();
+        }
+
+        private void NewWindowWithText_Clicked(object sender, RoutedEventArgs e)
+        {
+            string selectedText = PassedTextControl.SelectedText;
+            PassedTextControl.SelectedText = "";
+            EditTextWindow newETWwithText = new(selectedText, false);
+            newETWwithText.Show();
         }
 
         private void SaveAsBTN_Click(object sender, RoutedEventArgs e)
