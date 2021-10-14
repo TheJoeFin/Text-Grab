@@ -285,10 +285,9 @@
             IsInactiveSelectionHighlightEnabled="True"
             SpellCheck.IsEnabled="True"
             Style="{DynamicResource TextBoxStyle1}"
-            Text="{Binding CopiedText, Mode=OneWay}"
-            TextChanged="PassedTextControl_TextChanged"
             TextWrapping="Wrap"
             ContextMenuOpening="PassedTextControl_ContextMenuOpening"
+            TextChanged="PassedTextControl_TextChanged"
             VerticalScrollBarVisibility="Auto">
         </TextBox>
         <Grid x:Name="BottomBar" Grid.Row="2">
