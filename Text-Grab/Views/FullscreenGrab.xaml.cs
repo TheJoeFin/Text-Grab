@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -177,9 +176,9 @@ namespace Text_Grab.Views
                 (int)(selectBorder.Height * m.M22));
 
             string grabbedText = "";
-            
+
             try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
-            
+
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
             {
                 BackgroundBrush.Opacity = 0;
@@ -196,8 +195,8 @@ namespace Text_Grab.Views
                 if (Settings.Default.NeverAutoUseClipboard == false
                     && IsFromEditWindow == false)
                     Clipboard.SetText(grabbedText);
-                
-                if (Settings.Default.ShowToast 
+
+                if (Settings.Default.ShowToast
                     && IsFromEditWindow == false)
                     NotificationUtilities.ShowToast(grabbedText);
 

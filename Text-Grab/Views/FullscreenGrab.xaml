@@ -32,7 +32,10 @@
             </CombinedGeometry>
         </Canvas.Clip>
         <Canvas.Background>
-            <SolidColorBrush x:Name="BackgroundBrush" Opacity=".2" Color="Beige" />
+            <SolidColorBrush
+                x:Name="BackgroundBrush"
+                Opacity=".2"
+                Color="Beige" />
         </Canvas.Background>
         <Viewbox>
             <Image x:Name="DebugImage" Stretch="UniformToFill" />

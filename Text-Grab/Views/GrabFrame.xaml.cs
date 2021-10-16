@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,13 +23,12 @@ namespace Text_Grab.Views
     public partial class GrabFrame : Window
     {
         private bool isDrawing = false;
-        private OcrResult ocrResultOfWindow;
-        private ObservableCollection<WordBorder> wordBorders = new ObservableCollection<WordBorder>();
-        private DispatcherTimer reDrawTimer = new DispatcherTimer();
+        private OcrResult? ocrResultOfWindow;
+        private ObservableCollection<WordBorder> wordBorders = new();
+        private DispatcherTimer reDrawTimer = new();
         private bool isSelecting;
         private Point clickedPoint;
-        private Border selectBorder = new Border();
-        private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
+        private Border selectBorder = new();
 
         public bool IsFromEditWindow { get; set; } = false;
 
@@ -38,11 +36,11 @@ namespace Text_Grab.Views
         {
             InitializeComponent();
 
-            WindowResizer resizer = new WindowResizer(this);
-            reDrawTimer.Interval = new TimeSpan(0, 0, 0, 0, 1200);
+            WindowResizer resizer = new(this);
+            reDrawTimer.Interval = new(0, 0, 0, 0, 1200);
             reDrawTimer.Tick += ReDrawTimer_Tick;
 
-            RoutedCommand newCmd = new RoutedCommand();
+            RoutedCommand newCmd = new();
             _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
             _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
         }
@@ -57,7 +55,7 @@ namespace Text_Grab.Views
                 Close();
         }
 
-        private async void ReDrawTimer_Tick(object sender, EventArgs e)
+        private async void ReDrawTimer_Tick(object? sender, EventArgs? e)
         {
             reDrawTimer.Stop();
             ResetGrabFrame();
@@ -93,14 +91,18 @@ namespace Text_Grab.Views
 
             if (wordBorders.Count > 0)
             {
-                List<WordBorder> selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
+                List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
 
                 if (selectedBorders.Count == 0)
                     selectedBorders.AddRange(wordBorders);
 
-                List<string> lineList = new List<string>();
-                StringBuilder outputString = new StringBuilder();
-                int lastLineNum = selectedBorders.FirstOrDefault().LineNumber;
+                List<string> lineList = new();
+                StringBuilder outputString = new();
+                int? lastLineNum = 0;
+
+                if (selectedBorders.FirstOrDefault() != null)
+                    lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
+
                 foreach (WordBorder border in selectedBorders)
                 {
                     if (border.LineNumber != lastLineNum)
@@ -186,7 +188,7 @@ namespace Text_Grab.Views
             };
 
             if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
-                ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
+                ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize)!;
 
             int numberOfMatches = 0;
             int lineNumber = 0;
@@ -210,7 +212,7 @@ namespace Text_Grab.Views
                         IsFromEditWindow = IsFromEditWindow
                     };
 
-                    if ((bool)ExactMatchChkBx.IsChecked)
+                    if ((bool)ExactMatchChkBx.IsChecked!)
                     {
                         if (wordString.Equals(searchWord, StringComparison.CurrentCulture))
                         {
@@ -261,8 +263,10 @@ namespace Text_Grab.Views
 
         private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
         {
-            TextBox searchBox = sender as TextBox;
-            searchBox.Text = "";
+            TextBox? searchBox = sender as TextBox;
+
+            if (searchBox != null)
+                searchBox.Text = "";
         }
 
         private async void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)

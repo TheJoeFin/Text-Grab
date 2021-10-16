@@ -50,7 +50,8 @@ namespace Text_Grab
 
         private void SaveBTN_Click(object sender, RoutedEventArgs e)
         {
-            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
+            if (ShowToastCheckBox.IsChecked != null)
+                Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
 
             if (FullScreenRDBTN.IsChecked == true)
                 Settings.Default.DefaultLaunch = "Fullscreen";
@@ -59,8 +60,11 @@ namespace Text_Grab
             else if (EditTextRDBTN.IsChecked == true)
                 Settings.Default.DefaultLaunch = "EditText";
 
-            Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
-            Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
+            if (ErrorCorrectBox.IsChecked != null)
+                Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
+
+            if (NeverUseClipboardChkBx.IsChecked != null)
+                Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
 
             Settings.Default.Save();
             Close();
@@ -78,8 +82,8 @@ namespace Text_Grab
                     return;
                 }
             }
-            
-            FirstRunWindow frw = new FirstRunWindow();
+
+            FirstRunWindow frw = new();
             frw.Show();
         }
     }

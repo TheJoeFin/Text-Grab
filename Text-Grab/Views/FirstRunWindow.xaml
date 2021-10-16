@@ -153,7 +153,10 @@
                         Fullscreen
                     </TextBlock>
                 </RadioButton>
-                <StackPanel Orientation="Vertical" Grid.Row="4" Grid.Column="0">
+                <StackPanel
+                    Grid.Row="4"
+                    Grid.Column="0"
+                    Orientation="Vertical">
                     <Viewbox
                         Grid.Row="4"
                         Grid.Column="0"
@@ -165,11 +168,11 @@
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
-                            x:Name="TryFullscreen" 
+                            x:Name="TryFullscreen"
+                            Click="TryFullscreen_Click"
                             FontSize="14"
-                            Foreground="SkyBlue"
-                            Click="TryFullscreen_Click" >
-                            Try Fullscreen
+                            Foreground="SkyBlue">
+                            Try Full Screen
                         </Hyperlink>
                     </TextBlock>
                 </StackPanel>
@@ -186,7 +189,10 @@
                         Grab Frame
                     </TextBlock>
                 </RadioButton>
-                <StackPanel Orientation="Vertical" Grid.Row="4" Grid.Column="1">
+                <StackPanel
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    Orientation="Vertical">
                     <Viewbox
                         Grid.Row="4"
                         Grid.Column="1"
@@ -198,10 +204,10 @@
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
-                            x:Name="TryGrabFrame" 
+                            x:Name="TryGrabFrame"
+                            Click="TryGrabFrame_Click"
                             FontSize="14"
-                            Foreground="SkyBlue"
-                            Click="TryGrabFrame_Click" >
+                            Foreground="SkyBlue">
                             Try Grab Frame
                         </Hyperlink>
                     </TextBlock>
@@ -219,7 +225,10 @@
                         Edit Text Window
                     </TextBlock>
                 </RadioButton>
-                <StackPanel Orientation="Vertical" Grid.Row="4" Grid.Column="2">
+                <StackPanel
+                    Grid.Row="4"
+                    Grid.Column="2"
+                    Orientation="Vertical">
                     <Viewbox
                         Grid.Row="4"
                         Grid.Column="2"
@@ -231,10 +240,10 @@
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
-                            x:Name="TryEditWindow" 
+                            x:Name="TryEditWindow"
+                            Click="TryEditWindow_Click"
                             FontSize="14"
-                            Foreground="SkyBlue"
-                            Click="TryEditWindow_Click" >
+                            Foreground="SkyBlue">
                             Try Edit Text Window
                         </Hyperlink>
                     </TextBlock>
@@ -269,25 +278,25 @@
                 <LineBreak />
                 Joe</TextBlock>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
 
                 <controls:CollapsibleButton
-                    x:Name="SettingsButton" 
+                    x:Name="SettingsButton"
+                    Width="100"
+                    Background="DimGray"
                     ButtonText="Settings"
                     CanChangeStyle="False"
-                    Background="DimGray"
-                    Width="100"
                     Click="SettingsButton_Click"
                     SymbolText="" />
 
                 <controls:CollapsibleButton
-                x:Name="OkayButton"
-                Width="100"
-                Margin="20"
-                ButtonText="Okay"
-                CanChangeStyle="False"
-                Click="OkayButton_Click"
-                SymbolText="" />
+                    x:Name="OkayButton"
+                    Width="100"
+                    Margin="20"
+                    ButtonText="Okay"
+                    CanChangeStyle="False"
+                    Click="OkayButton_Click"
+                    SymbolText="" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

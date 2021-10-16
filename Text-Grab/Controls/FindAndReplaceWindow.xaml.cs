@@ -17,17 +17,17 @@ namespace Text_Grab.Controls
     {
         public string StringFromWindow { get; set; } = "";
 
-        public EditTextWindow TextEditWindow = null;
+        public EditTextWindow? TextEditWindow = null;
 
-        public static RoutedCommand TextSearchCmd = new RoutedCommand();
-        public static RoutedCommand ReplaceOneCmd = new RoutedCommand();
-        public static RoutedCommand ReplaceAllCmd = new RoutedCommand();
-        public static RoutedCommand ExtractPatternCmd = new RoutedCommand();
-        DispatcherTimer ChangeFindTextTimer = new DispatcherTimer();
+        public static RoutedCommand TextSearchCmd = new();
+        public static RoutedCommand ReplaceOneCmd = new();
+        public static RoutedCommand ReplaceAllCmd = new();
+        public static RoutedCommand ExtractPatternCmd = new();
+        DispatcherTimer ChangeFindTextTimer = new();
 
-        private string Pattern { get; set; }
+        private string? Pattern { get; set; }
 
-        private MatchCollection Matches;
+        private MatchCollection? Matches;
 
         public FindAndReplaceWindow()
         {
@@ -37,7 +37,7 @@ namespace Text_Grab.Controls
             ChangeFindTextTimer.Tick += ChangeFindText_Tick;
         }
 
-        private void ChangeFindText_Tick(object sender, EventArgs e)
+        private void ChangeFindText_Tick(object? sender, EventArgs? e)
         {
             ChangeFindTextTimer.Stop();
             SearchForText();
@@ -55,7 +55,8 @@ namespace Text_Grab.Controls
         private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
         {
             ChangeFindTextTimer.Stop();
-            StringFromWindow = TextEditWindow.PassedTextControl.Text;
+            if (TextEditWindow != null)
+                StringFromWindow = TextEditWindow.PassedTextControl.Text;
 
             ChangeFindTextTimer.Start();
         }
@@ -120,7 +121,7 @@ namespace Text_Grab.Controls
                     else
                         previewEnd = m.Index + previewLengths;
 
-                    StringBuilder previewString = new StringBuilder();
+                    StringBuilder previewString = new();
 
                     if (atBeginning == false)
                         previewString.Append("...");
@@ -137,17 +138,20 @@ namespace Text_Grab.Controls
 
             if (Matches.Count > 0)
             {
-                Match fm = Matches[0];
+                Match? fm = Matches[0];
 
-                TextEditWindow.PassedTextControl.Select(fm.Index, fm.Value.Length);
-                TextEditWindow.PassedTextControl.Focus();
-                this.Focus();
+                if (TextEditWindow != null && fm != null)
+                {
+                    TextEditWindow.PassedTextControl.Select(fm.Index, fm.Value.Length);
+                    TextEditWindow.PassedTextControl.Focus();
+                    this.Focus();
+                }
             }
         }
 
         private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string stringToParse = ResultsListView.SelectedItem as string;
+            string? stringToParse = ResultsListView.SelectedItem as string;
 
             if (string.IsNullOrWhiteSpace(stringToParse)
                 || Matches is null
@@ -160,9 +164,12 @@ namespace Text_Grab.Controls
             int selectedResultIndex = ResultsListView.SelectedIndex;
             Match sameMatch = Matches[selectedResultIndex];
 
-            TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
-            TextEditWindow.PassedTextControl.Focus();
-            this.Focus();
+            if (TextEditWindow != null)
+            {
+                TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
+                TextEditWindow.PassedTextControl.Focus();
+                this.Focus();
+            }
         }
 
         private void ExtractPattern_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -176,7 +183,10 @@ namespace Text_Grab.Controls
 
         private void ExtractPattern_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            string selection = TextEditWindow.PassedTextControl.SelectedText;
+            if (TextEditWindow == null)
+                return;
+
+            string? selection = TextEditWindow.PassedTextControl.SelectedText;
 
             string simplePattern = selection.ExtractSimplePattern();
 
@@ -203,7 +213,8 @@ namespace Text_Grab.Controls
         {
             var selection = ResultsListView.SelectedItems;
 
-            if (Matches.Count < 1)
+            if (Matches == null 
+                || Matches.Count < 1)
                 return;
 
             if (selection.Count < 2)
@@ -211,20 +222,30 @@ namespace Text_Grab.Controls
                 for (int i = Matches.Count - 1; i >= 0; i--)
                 {
                     Match matchItem = Matches[i];
-                    TextEditWindow.PassedTextControl.Select(matchItem.Index, matchItem.Length);
-                    TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+                    if (TextEditWindow != null)
+                    {
+                        TextEditWindow.PassedTextControl.Select(matchItem.Index, matchItem.Length);
+                        TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+                    }
                 }
             }
             else
             {
                 for (int j = selection.Count - 1; j >= 0; j--)
                 {
-                    string selectionItem = selection[j] as string;
-                    int currentIndex = int.Parse(selectionItem.Split('\t').FirstOrDefault());
-                    currentIndex--;
-                    Match match = Matches[currentIndex];
-                    TextEditWindow.PassedTextControl.Select(match.Index, match.Length);
-                    TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+                    string? selectionItem = selection[j] as string;
+                    if (selectionItem != null && TextEditWindow != null)
+                    {
+                        string? intString = selectionItem.Split('\t').FirstOrDefault();
+                        if (intString != null)
+                        {
+                            int currentIndex = int.Parse(intString);
+                            currentIndex--;
+                            Match match = Matches[currentIndex];
+                            TextEditWindow.PassedTextControl.Select(match.Index, match.Length);
+                            TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+                        }
+                    }
                 }
             }
 
@@ -253,9 +274,16 @@ namespace Text_Grab.Controls
                     selectedResultIndex = 0;
             }
 
+            if (Matches == null)
+                return;
+
             Match sameMatch = Matches[selectedResultIndex];
-            TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
-            TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+
+            if (TextEditWindow != null)
+            {
+                TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
+                TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+            }
 
             SearchForText();
         }

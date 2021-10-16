@@ -27,9 +27,7 @@ namespace Text_Grab
 
     public partial class EditTextWindow : Window
     {
-        public string CopiedText { get; set; } = "";
-
-        private string OpenedFilePath;
+        private string? OpenedFilePath;
 
         private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
 
@@ -39,17 +37,17 @@ namespace Text_Grab
 
         public bool LaunchedFromNotification = false;
 
-        public static RoutedCommand SplitOnSelectionCmd = new RoutedCommand();
+        public static RoutedCommand SplitOnSelectionCmd = new();
 
-        public static RoutedCommand IsolateSelectionCmd = new RoutedCommand();
+        public static RoutedCommand IsolateSelectionCmd = new();
 
-        public static RoutedCommand SingleLineCmd = new RoutedCommand();
+        public static RoutedCommand SingleLineCmd = new();
 
-        public static RoutedCommand ToggleCaseCmd = new RoutedCommand();
+        public static RoutedCommand ToggleCaseCmd = new();
 
-        public static RoutedCommand ReplaceReservedCmd = new RoutedCommand();
+        public static RoutedCommand ReplaceReservedCmd = new();
 
-        public static RoutedCommand UnstackCmd = new RoutedCommand();
+        public static RoutedCommand UnstackCmd = new();
 
         private int numberOfContextMenuItems;
 
@@ -87,57 +85,58 @@ namespace Text_Grab
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            RoutedCommand newFullscreenGrab = new RoutedCommand();
+            RoutedCommand newFullscreenGrab = new();
             _ = newFullscreenGrab.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(newFullscreenGrab, keyedCtrlF));
 
-            RoutedCommand newGrabFrame = new RoutedCommand();
+            RoutedCommand newGrabFrame = new();
             _ = newGrabFrame.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(newGrabFrame, keyedCtrlG));
 
-            RoutedCommand selectLineCommand = new RoutedCommand();
+            RoutedCommand selectLineCommand = new();
             _ = selectLineCommand.InputGestures.Add(new KeyGesture(Key.L, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(selectLineCommand, SelectLine));
 
-            RoutedCommand IsolateSelectionCommand = new RoutedCommand();
+            RoutedCommand IsolateSelectionCommand = new();
             _ = IsolateSelectionCommand.InputGestures.Add(new KeyGesture(Key.I, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(IsolateSelectionCommand, IsolateSelectionCmdExecuted));
 
-            RoutedCommand SaveCommand = new RoutedCommand();
+            RoutedCommand SaveCommand = new();
             _ = SaveCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(SaveCommand, SaveBTN_Click));
 
-            RoutedCommand SaveAsCommand = new RoutedCommand();
+            RoutedCommand SaveAsCommand = new();
             _ = SaveAsCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Shift | ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(SaveAsCommand, SaveAsBTN_Click));
 
-            RoutedCommand OpenCommand = new RoutedCommand();
+            RoutedCommand OpenCommand = new();
             _ = OpenCommand.InputGestures.Add(new KeyGesture(Key.O, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(OpenCommand, OpenFileMenuItem_Click));
 
-            RoutedCommand moveLineUpCommand = new RoutedCommand();
+            RoutedCommand moveLineUpCommand = new();
             _ = moveLineUpCommand.InputGestures.Add(new KeyGesture(Key.Up, ModifierKeys.Alt));
             _ = CommandBindings.Add(new CommandBinding(moveLineUpCommand, MoveLineUp));
 
-            RoutedCommand moveLineDownCommand = new RoutedCommand();
+            RoutedCommand moveLineDownCommand = new();
             _ = moveLineDownCommand.InputGestures.Add(new KeyGesture(Key.Down, ModifierKeys.Alt));
             _ = CommandBindings.Add(new CommandBinding(moveLineDownCommand, MoveLineDown));
 
-            RoutedCommand toggleCaseCommand = new RoutedCommand();
+            RoutedCommand toggleCaseCommand = new();
             _ = toggleCaseCommand.InputGestures.Add(new KeyGesture(Key.F3, ModifierKeys.Shift));
             _ = CommandBindings.Add(new CommandBinding(toggleCaseCommand, ToggleCase));
 
-            RoutedCommand replaceReservedCharsCommand = new RoutedCommand();
+            RoutedCommand replaceReservedCharsCommand = new();
             _ = replaceReservedCharsCommand.InputGestures.Add(new KeyGesture(Key.R, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(replaceReservedCharsCommand, ReplaceReservedCharsCmdExecuted));
 
-            RoutedCommand UnstackCommand = new RoutedCommand();
+            RoutedCommand UnstackCommand = new();
             _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
 
 
             PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
-            numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
+            if (PassedTextControl.ContextMenu != null)
+                numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
 
             SetFontFromSettings();
 
@@ -173,7 +172,7 @@ namespace Text_Grab
             if (Settings.Default.IsFontItalic == true)
                 PassedTextControl.FontStyle = FontStyles.Italic;
 
-            TextDecorationCollection tdc = new TextDecorationCollection();
+            TextDecorationCollection tdc = new();
             if (Settings.Default.IsFontUnderline) tdc.Add(TextDecorations.Underline);
             if (Settings.Default.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
             PassedTextControl.TextDecorations = tdc;
@@ -215,7 +214,7 @@ namespace Text_Grab
         }
 
 
-        private void ToggleCase(object sender = null, ExecutedRoutedEventArgs e = null)
+        private void ToggleCase(object? sender = null, ExecutedRoutedEventArgs? e = null)
         {
             string textToModify;
 
@@ -253,7 +252,7 @@ namespace Text_Grab
                 PassedTextControl.SelectedText = textToModify;
         }
 
-        private CurrentCase DetermineToggleCase(string textToModify)
+        private static CurrentCase DetermineToggleCase(string textToModify)
         {
             bool isAllLower = true;
             bool isAllUpper = true;
@@ -307,7 +306,7 @@ namespace Text_Grab
             }
         }
 
-        private void MoveLineDown(object sender, ExecutedRoutedEventArgs e)
+        private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
         {
             SelectLine(sender, e);
 
@@ -338,7 +337,7 @@ namespace Text_Grab
             PassedTextControl.SelectedText = lineText;
         }
 
-        private void MoveLineUp(object sender, ExecutedRoutedEventArgs e)
+        private void MoveLineUp(object? sender, ExecutedRoutedEventArgs? e)
         {
             SelectLine(sender, e);
             string lineText = PassedTextControl.SelectedText;
@@ -497,7 +496,7 @@ namespace Text_Grab
             PassedTextControl.SelectedText = textToAdd;
         }
 
-        private void UnstackExecuted(object sender = null, ExecutedRoutedEventArgs e = null)
+        private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
 
         {
             string[] selectionLines = PassedTextControl.SelectedText.Split(Environment.NewLine);
@@ -578,7 +577,7 @@ namespace Text_Grab
                 e.CanExecute = true;
         }
 
-        private void CheckForGrabFrameOrLaunch()
+        private static void CheckForGrabFrameOrLaunch()
         {
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -592,7 +591,7 @@ namespace Text_Grab
                 }
             }
 
-            GrabFrame gf = new GrabFrame();
+            GrabFrame gf = new();
             gf.IsFromEditWindow = true;
             gf.Show();
         }
@@ -620,7 +619,7 @@ namespace Text_Grab
                 }
             }
 
-            SettingsWindow nsw = new SettingsWindow();
+            SettingsWindow nsw = new();
             nsw.Show();
         }
 
@@ -650,17 +649,17 @@ namespace Text_Grab
 
         private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
         {
-            Uri source = new Uri("https://github.com/TheJoeFin/Text-Grab/issues", UriKind.Absolute);
-            RequestNavigateEventArgs e = new RequestNavigateEventArgs(source, "https://github.com/TheJoeFin/Text-Grab/issues");
+            Uri source = new("https://github.com/TheJoeFin/Text-Grab/issues", UriKind.Absolute);
+            RequestNavigateEventArgs e = new(source, "https://github.com/TheJoeFin/Text-Grab/issues");
             Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
             e.Handled = true;
         }
 
         private void FontMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            using (FontDialog fd = new FontDialog())
+            using (FontDialog fd = new())
             {
-                Font currentFont = new Font(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
+                Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
                 fd.Font = currentFont;
                 var result = fd.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK)
@@ -680,7 +679,7 @@ namespace Text_Grab
             }
         }
 
-        private void SelectLine(object sender = null, ExecutedRoutedEventArgs e = null)
+        private void SelectLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
         {
             string selectedText = PassedTextControl.SelectedText;
             int selectionIndex = PassedTextControl.SelectionStart;
@@ -736,7 +735,7 @@ namespace Text_Grab
                 }
             }
 
-            FindAndReplaceWindow farw = new FindAndReplaceWindow();
+            FindAndReplaceWindow farw = new();
             farw.StringFromWindow = PassedTextControl.Text;
             farw.TextEditWindow = this;
             farw.Show();
@@ -886,7 +885,7 @@ namespace Text_Grab
                 }
             }
 
-            FirstRunWindow frw = new FirstRunWindow();
+            FirstRunWindow frw = new();
             frw.Show();
         }
 
@@ -908,9 +907,10 @@ namespace Text_Grab
             int caretIndex, cmdIndex;
             SpellingError spellingError;
 
-            ContextMenu baseContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
+            ContextMenu? baseContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
 
-            while (baseContextMenu.Items.Count > numberOfContextMenuItems)
+            while (baseContextMenu != null 
+                && baseContextMenu.Items.Count > numberOfContextMenuItems)
             {
                 baseContextMenu.Items.RemoveAt(0);
             }
@@ -920,11 +920,12 @@ namespace Text_Grab
 
             cmdIndex = 0;
             spellingError = PassedTextControl.GetSpellingError(caretIndex);
-            if (spellingError != null)
+            if (spellingError != null
+                && PassedTextControl.ContextMenu != null)
             {
                 foreach (string str in spellingError.Suggestions)
                 {
-                    MenuItem mi = new MenuItem();
+                    MenuItem mi = new();
                     mi.Header = str;
                     mi.FontWeight = FontWeights.Bold;
                     mi.Command = EditingCommands.CorrectSpellingError;
@@ -936,23 +937,23 @@ namespace Text_Grab
 
                 if (cmdIndex == 0)
                 {
-                    MenuItem mi = new MenuItem();
+                    MenuItem mi = new();
                     mi.Header = "no suggestions";
                     mi.IsEnabled = false;
                     PassedTextControl.ContextMenu.Items.Insert(cmdIndex, mi);
                     cmdIndex++;
                 }
 
-                Separator separatorMenuItem1 = new Separator();
+                Separator separatorMenuItem1 = new();
                 PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem1);
                 cmdIndex++;
-                MenuItem ignoreAllMI = new MenuItem();
+                MenuItem ignoreAllMI = new();
                 ignoreAllMI.Header = "Ignore All";
                 ignoreAllMI.Command = EditingCommands.IgnoreSpellingError;
                 ignoreAllMI.CommandTarget = PassedTextControl;
                 PassedTextControl.ContextMenu.Items.Insert(cmdIndex, ignoreAllMI);
                 cmdIndex++;
-                Separator separatorMenuItem2 = new Separator();
+                Separator separatorMenuItem2 = new();
                 PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem2);
             }
         }
