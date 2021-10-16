@@ -2,13 +2,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
-using Windows.Foundation.Collections;
 
 namespace Text_Grab
 {

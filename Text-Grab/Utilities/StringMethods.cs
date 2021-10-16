@@ -9,10 +9,10 @@ namespace Text_Grab.Utilities
 {
     public static class StringMethods
     {
-        public static List<Char> specialCharList = new List<Char>()
+        public static List<Char> specialCharList = new()
                 { '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
 
-        public static List<Char> ReservedChars = new List<Char>()
+        public static List<Char> ReservedChars = new()
         { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
 
         public static string TryFixToLetters(this string fixToLetters)
@@ -76,7 +76,7 @@ namespace Text_Grab.Utilities
         public static string TryFixEveryWordLetterNumberErrors(this string stringToFix)
         {
             string[] listOfWords = stringToFix.Split(' ');
-            List<string> fixedWords = new List<string>();
+            List<string> fixedWords = new();
 
             foreach (string word in listOfWords)
             {
@@ -92,7 +92,7 @@ namespace Text_Grab.Utilities
 
         public static string MakeStringSingleLine(this string textToEdit)
         {
-            StringBuilder endingNewLines = new StringBuilder();
+            StringBuilder endingNewLines = new();
 
             for (int i = textToEdit.Length - 1; i >= 0; i--)
             {
@@ -103,7 +103,7 @@ namespace Text_Grab.Utilities
                     break;
             }
 
-            StringBuilder workingString = new StringBuilder();
+            StringBuilder workingString = new();
             workingString.Append(textToEdit);
 
             workingString.Replace("\r\n", " ");
@@ -111,12 +111,12 @@ namespace Text_Grab.Utilities
             workingString.Replace('\n', ' ');
             workingString.Replace('\r', ' ');
 
-            Regex regex = new Regex("[ ]{2,}");
+            Regex regex = new("[ ]{2,}");
             string temp = regex.Replace(workingString.ToString(), " ").Trim();
             workingString.Clear();
             workingString.Append(temp);
 
-            workingString.Append(endingNewLines.ToString());
+            workingString.Append(endingNewLines);
 
             return workingString.ToString();
         }
@@ -161,7 +161,7 @@ namespace Text_Grab.Utilities
 
         public static string ReplaceReservedCharacters(this string stringToClean)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append(stringToClean);
 
             foreach (Char reservedChar in ReservedChars)
@@ -174,7 +174,7 @@ namespace Text_Grab.Utilities
 
         public static string EscapeSpecialRegexChars(this string stringToEscape)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append(stringToEscape);
 
             foreach (char specialChar in specialCharList)
@@ -187,7 +187,7 @@ namespace Text_Grab.Utilities
 
         public static string ExtractSimplePattern(this string stringToExtract)
         {
-            List<CharRun> charRunList = new List<CharRun>();
+            List<CharRun> charRunList = new();
 
             foreach (char c in stringToExtract)
             {
@@ -215,7 +215,7 @@ namespace Text_Grab.Utilities
                 }
                 else
                 {
-                    CharRun newRun = new CharRun()
+                    CharRun newRun = new()
                     {
                         Character = c,
                         numberOfRun = 1,
@@ -225,7 +225,7 @@ namespace Text_Grab.Utilities
                 }
             }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             // sb.Append("(");
 
             foreach (CharRun ct in charRunList)
@@ -262,7 +262,7 @@ namespace Text_Grab.Utilities
 
         public static string UnstackStrings(this string stringToUnstack, int numberOfColumns)
         {
-            StringBuilder sbUnstacked = new StringBuilder();
+            StringBuilder sbUnstacked = new();
 
             string[] splitString = stringToUnstack.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
 

@@ -44,8 +44,8 @@ namespace Text_Grab.Controls
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -61,8 +61,9 @@ namespace Text_Grab.Controls
             if (IsSymbol == true)
             {
                 // change to a symbol button
-                Style SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
-                this.Style = SymbolButtonStyle;
+                Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
+                if (SymbolButtonStyle != null)
+                    this.Style = SymbolButtonStyle;
                 ButtonTextBlock.Visibility = Visibility.Collapsed;
             }
         }
@@ -72,8 +73,9 @@ namespace Text_Grab.Controls
             if (IsSymbol == true)
             {
                 // change to a normal button
-                Style tealButtonStyle = this.FindResource("TealColor") as Style;
-                this.Style = tealButtonStyle;
+                Style? tealButtonStyle = this.FindResource("TealColor") as Style;
+                if (tealButtonStyle != null)
+                    this.Style = tealButtonStyle;
                 ButtonTextBlock.Visibility = Visibility.Visible; ;
 
                 IsSymbol = false;
@@ -81,8 +83,9 @@ namespace Text_Grab.Controls
             else
             {
                 // change to a symbol button
-                Style SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
-                this.Style = SymbolButtonStyle;
+                Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
+                if (SymbolButtonStyle != null)
+                    this.Style = SymbolButtonStyle;
                 ButtonTextBlock.Visibility = Visibility.Collapsed;
 
                 IsSymbol = true;

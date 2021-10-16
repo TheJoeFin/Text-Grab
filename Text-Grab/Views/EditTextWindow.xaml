@@ -14,8 +14,8 @@
     Activated="Window_Activated"
     Background="{StaticResource DarkBackground}"
     Closing="Window_Closing"
-    Loaded="Window_Loaded"
     Initialized="Window_Initialized"
+    Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">
@@ -88,10 +88,10 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <Menu
-            Grid.Row="0" 
-            IsMainMenu="True"
+            Grid.Row="0"
             Background="{StaticResource DarkBackground}"
-            Foreground="White">
+            Foreground="White"
+            IsMainMenu="True">
             <MenuItem Header="_File">
                 <MenuItem
                     x:Name="OpenFileMenuItem"
@@ -246,12 +246,12 @@
                 <Separator />
                 <MenuItem
                     x:Name="NewWindowMenuItem"
-                    Header="New Window"
-                    Click="NewWindow_Clicked" />
+                    Click="NewWindow_Clicked"
+                    Header="New Window" />
                 <MenuItem
                     x:Name="NewWindowFromSelectionMenuItem"
-                    Header="New Window with Selected Text"
-                    Click="NewWindowWithText_Clicked" />
+                    Click="NewWindowWithText_Clicked"
+                    Header="New Window with Selected Text" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem
@@ -279,17 +279,16 @@
             AcceptsTab="True"
             AutoWordSelection="True"
             Background="{StaticResource DarkControlBackground}"
+            ContextMenuOpening="PassedTextControl_ContextMenuOpening"
             FontSize="16"
             Foreground="White"
             HorizontalScrollBarVisibility="Auto"
             IsInactiveSelectionHighlightEnabled="True"
             SpellCheck.IsEnabled="True"
             Style="{DynamicResource TextBoxStyle1}"
-            TextWrapping="Wrap"
-            ContextMenuOpening="PassedTextControl_ContextMenuOpening"
             TextChanged="PassedTextControl_TextChanged"
-            VerticalScrollBarVisibility="Auto">
-        </TextBox>
+            TextWrapping="Wrap"
+            VerticalScrollBarVisibility="Auto" />
         <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />

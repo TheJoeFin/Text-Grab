@@ -35,7 +35,7 @@ namespace Text_Grab
                         break;
                 }
             }
-            
+
             this.Close();
         }
 
@@ -71,9 +71,9 @@ namespace Text_Grab
             if (this.IsLoaded != true)
                 return;
 
-            if ((bool)GrabFrameRDBTN.IsChecked)
+            if (GrabFrameRDBTN.IsChecked != null && (bool)GrabFrameRDBTN.IsChecked)
                 Settings.Default.DefaultLaunch = "GrabFrame";
-            else if ((bool)FullScreenRDBTN.IsChecked)
+            else if (FullScreenRDBTN.IsChecked != null && (bool)FullScreenRDBTN.IsChecked)
                 Settings.Default.DefaultLaunch = "Fullscreen";
             else
                 Settings.Default.DefaultLaunch = "EditText";
