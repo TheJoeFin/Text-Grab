@@ -188,7 +188,10 @@ namespace Text_Grab.Views
             };
 
             if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
-                ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize)!;
+                ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
+
+            if (ocrResultOfWindow == null)
+                return;
 
             int numberOfMatches = 0;
             int lineNumber = 0;

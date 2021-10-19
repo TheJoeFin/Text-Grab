@@ -115,20 +115,16 @@ namespace Text_Grab
 
             System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
-            string? ocrText = await ExtractText(bmp, adjustedPoint);
-
-            if (ocrText != null)
-                return ocrText.Trim();
-            else
-                return "";
+            string ocrText = await ExtractText(bmp, adjustedPoint);
+            return ocrText.Trim();
         }
 
-        public static async Task<string>? ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null)
+        public static async Task<string> ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null)
         {
             Language? selectedLanguage = GetOCRLanguage();
             if (selectedLanguage == null)
             {
-                return null;
+                return "";
             }
 
             XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
@@ -199,7 +195,7 @@ namespace Text_Grab
             }
         }
 
-        public static async Task<OcrResult>? GetOcrResultFromRegion(Rectangle region)
+        public static async Task<OcrResult?> GetOcrResultFromRegion(Rectangle region)
         {
             Language? selectedLanguage = GetOCRLanguage();
             if (selectedLanguage == null)

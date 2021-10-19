@@ -55,7 +55,7 @@ namespace Text_Grab
         public const string TOAST_ACTIVATED_LAUNCH_ARG = "-ToastActivated";
 
         private static bool _registeredAumidAndComServer;
-        private static string _aumid;
+        private static string? _aumid;
         private static bool _registeredActivator;
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace Text_Grab
         /// under Desktop Bridge. Call this upon application startup, before calling any other APIs.
         /// </summary>
         /// <param name="aumid">An AUMID that uniquely identifies your application.</param>
-        public static void RegisterAumidAndComServer<T>(string aumid)
+        public static void RegisterAumidAndComServer<T>(string? aumid)
             where T : NotificationActivator
         {
             if (string.IsNullOrWhiteSpace(aumid))
@@ -85,10 +85,14 @@ namespace Text_Grab
 
             _aumid = aumid;
 
-            String exePath = Process.GetCurrentProcess().MainModule.FileName;
-            RegisterComServer<T>(exePath);
+            if (Process.GetCurrentProcess().MainModule is ProcessModule processModule)
+            {
+                if (processModule.FileName is String exePath)
+                    RegisterComServer<T>(exePath);
 
-            _registeredAumidAndComServer = true;
+                _registeredAumidAndComServer = true;
+            }
+
         }
 
         private static void RegisterComServer<T>(String exePath)
@@ -221,7 +225,10 @@ namespace Text_Grab
             {
                 EnsureRegistered();
 
-                return new DesktopNotificationHistoryCompat(_aumid);
+                if (_aumid != null)
+                    return new DesktopNotificationHistoryCompat(_aumid);
+                else
+                    return new DesktopNotificationHistoryCompat("");
             }
         }
 

@@ -36,7 +36,7 @@ namespace Fasetto.Word
         /// <summary>
         /// The window to handle the resizing for
         /// </summary>
-        private Window mWindow;
+        private Window? mWindow;
 
         /// <summary>
         /// The last calculated available screen size
@@ -97,6 +97,9 @@ namespace Fasetto.Word
         /// <param name="adjustSize">The callback for the host to adjust the maximum available size if needed</param>
         public WindowResizer(Window window)
         {
+            if (window is null)
+                return;
+
             mWindow = window;
 
             // Create transform visual (for converting WPF size to pixel size)
@@ -137,7 +140,7 @@ namespace Fasetto.Word
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Window_SourceInitialized(object sender, System.EventArgs e)
+        private void Window_SourceInitialized(object? sender, System.EventArgs e)
         {
             // Get the handle of this window
             var handle = (new WindowInteropHelper(mWindow)).Handle;
@@ -163,7 +166,8 @@ namespace Fasetto.Word
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             // We cannot find positioning until the window transform has been established
-            if (mTransformToDevice == default(Matrix))
+            if (mTransformToDevice == default(Matrix)
+                || mWindow is null)
                 return;
 
             // Get the WPF size
@@ -243,6 +247,9 @@ namespace Fasetto.Word
         /// <param name="lParam"></param>
         private void WmGetMinMaxInfo(System.IntPtr hwnd, System.IntPtr lParam)
         {
+            if (mWindow is null)
+                return;
+
             // Get the point position to determine what screen we are on
             POINT lMousePosition;
             GetCursorPos(out lMousePosition);
