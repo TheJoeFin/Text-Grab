@@ -49,6 +49,8 @@ namespace Text_Grab
 
         public static RoutedCommand UnstackCmd = new();
 
+        public static RoutedCommand DeleteAllSelectionCmd = new();
+
         private int numberOfContextMenuItems;
 
         public EditTextWindow()
@@ -505,6 +507,14 @@ namespace Text_Grab
             PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
         }
 
+        private void DeleteAllSelectionExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+
+        {
+            string selectionToDelete = PassedTextControl.SelectedText;
+
+            PassedTextControl.Text = PassedTextControl.Text.RemoveAllInstancesOf(selectionToDelete);
+        }
+
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
         {
             string workingString = string.Empty;
@@ -909,7 +919,7 @@ namespace Text_Grab
 
             ContextMenu? baseContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
 
-            while (baseContextMenu != null 
+            while (baseContextMenu != null
                 && baseContextMenu.Items.Count > numberOfContextMenuItems)
             {
                 baseContextMenu.Items.RemoveAt(0);
