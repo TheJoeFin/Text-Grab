@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Views;
@@ -22,7 +23,8 @@ namespace Text_Grab.Utilities
 
         public static void SetWindowPosition(Window passedWindow)
         {
-            string storedPostionString = "50,50,400,600";
+            string storedPostionString = "";
+            Rect defaultSize = new Rect(50, 50, 600, 400);
             if (passedWindow is EditTextWindow)
                 storedPostionString = Properties.Settings.Default.EditTextWindowSizeAndPosition;
 
@@ -31,14 +33,36 @@ namespace Text_Grab.Utilities
 
             List<string> storedPostion = new(storedPostionString.Split(','));
 
+            bool isStoredRectWithinScreen = false;
+
             if (storedPostion != null
                 && storedPostion.Count == 4)
             {
-                passedWindow.Left = double.Parse(storedPostion[0]);
-                passedWindow.Top = double.Parse(storedPostion[1]);
-                passedWindow.Width = double.Parse(storedPostion[2]);
-                passedWindow.Height = double.Parse(storedPostion[3]);
+                Rectangle storedSize = new Rectangle(int.Parse(storedPostion[0]), int.Parse(storedPostion[1]), int.Parse(storedPostion[2]), int.Parse(storedPostion[3]));
+                Screen[] allScreens = Screen.AllScreens;
+                WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+                foreach (Screen screen in allScreens)
+                {
+                    if (screen.WorkingArea.IntersectsWith(storedSize))
+                        isStoredRectWithinScreen = true;
+                }
+
+                if (isStoredRectWithinScreen == true)
+                {
+                    passedWindow.Left = storedSize.X;
+                    passedWindow.Top = storedSize.Y;
+                    passedWindow.Width = storedSize.Width;
+                    passedWindow.Height = storedSize.Height;
+
+                    return;
+                }
             }
+
+            passedWindow.Left = defaultSize.X;
+            passedWindow.Top = defaultSize.Y;
+            passedWindow.Width = defaultSize.Width;
+            passedWindow.Height = defaultSize.Height;
         }
 
         public static void LaunchFullScreenGrab(bool openAnyway = false)
