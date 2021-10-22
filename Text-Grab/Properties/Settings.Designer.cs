@@ -166,5 +166,29 @@ namespace Text_Grab.Properties {
                 this["NeverAutoUseClipboard"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EditTextWindowSizeAndPosition {
+            get {
+                return ((string)(this["EditTextWindowSizeAndPosition"]));
+            }
+            set {
+                this["EditTextWindowSizeAndPosition"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GrabFrameWindowSizeAndPosition {
+            get {
+                return ((string)(this["GrabFrameWindowSizeAndPosition"]));
+            }
+            set {
+                this["GrabFrameWindowSizeAndPosition"] = value;
+            }
+        }
     }
 }

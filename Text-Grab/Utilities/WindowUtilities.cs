@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Views;
 
@@ -16,6 +17,27 @@ namespace Text_Grab.Utilities
                 {
                     mtw.AddThisText(textToAdd);
                 }
+            }
+        }
+
+        public static void SetWindowPosition(Window passedWindow)
+        {
+            string storedPostionString = "50,50,400,600";
+            if (passedWindow is EditTextWindow)
+                storedPostionString = Properties.Settings.Default.EditTextWindowSizeAndPosition;
+
+            if (passedWindow is GrabFrame)
+                storedPostionString = Properties.Settings.Default.GrabFrameWindowSizeAndPosition;
+
+            List<string> storedPostion = new(storedPostionString.Split(','));
+
+            if (storedPostion != null
+                && storedPostion.Count == 4)
+            {
+                passedWindow.Left = double.Parse(storedPostion[0]);
+                passedWindow.Top = double.Parse(storedPostion[1]);
+                passedWindow.Width = double.Parse(storedPostion[2]);
+                passedWindow.Height = double.Parse(storedPostion[3]);
             }
         }
 

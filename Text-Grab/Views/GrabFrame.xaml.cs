@@ -45,6 +45,18 @@ namespace Text_Grab.Views
             _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
         }
 
+        private void GrabFrameWindow_Initialized(object sender, EventArgs e)
+        {
+            WindowUtilities.SetWindowPosition(this);
+        }
+
+        private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
+            Properties.Settings.Default.GrabFrameWindowSizeAndPosition = windowSizeAndPosition;
+            Properties.Settings.Default.Save();
+        }
+
         private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(SearchBox.Text) == false && SearchBox.Text != "Search For Text...")

@@ -139,9 +139,6 @@ namespace Text_Grab
             if (PassedTextControl.ContextMenu != null)
                 numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
 
-            SetFontFromSettings();
-            SetWindowPosition();
-
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
             XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
             selectedCultureInfo = lang.GetEquivalentCulture();
@@ -160,51 +157,11 @@ namespace Text_Grab
             }
         }
 
-        public void Save_Setting<T>(string setting_Name, T setting_Value)
-        {
-            if (Properties.Settings.Default.Properties[setting_Name] is not SettingsProperty propToSave)
-            {
-                propToSave = new SettingsProperty(setting_Name);
-                propToSave.PropertyType = typeof(T);
-                Properties.Settings.Default.Properties.Add(propToSave);
-                Properties.Settings.Default.Save();
-            }
-
-            Properties.Settings.Default.Properties[setting_Name].DefaultValue = setting_Value;
-            Properties.Settings.Default.Save();
-        }
-
-        public T Retreive_Setting<T>(string setting_Name)
-        {
-            if (Properties.Settings.Default.Properties[setting_Name] is T retrievedProperty)
-                return retrievedProperty;
-            else
-                return default(T);
-        }
-
-        private void SetWindowPosition()
-        {
-            string storedPostionString = Retreive_Setting<string>("EditTextWindowSizeAndPosition");
-
-            // List<string> storedPostion = new(storedPostionString.Split(','));
-            if (string.IsNullOrWhiteSpace(storedPostionString))
-                PassedTextControl.Text += "Empty Setting EditTextWindowSizeAndPosition";
-            else
-                PassedTextControl.Text += storedPostionString;
-
-            // if (storedPostion != null
-            //     && storedPostion.Count == 4)
-            // {
-            //     this.Left = int.Parse(storedPostion[0]);
-            //     this.Top = int.Parse(storedPostion[1]);
-            //     this.Width = int.Parse(storedPostion[2]);
-            //     this.Height = int.Parse(storedPostion[3]);
-            // }
-        }
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
+            WindowUtilities.SetWindowPosition(this);
+            SetFontFromSettings();
         }
 
         private void SetFontFromSettings()
@@ -810,7 +767,8 @@ namespace Text_Grab
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
-            Save_Setting<string>("EditTextWindowSizeAndPosition", windowSizeAndPosition);
+            Properties.Settings.Default.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+            Properties.Settings.Default.Save();
 
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
