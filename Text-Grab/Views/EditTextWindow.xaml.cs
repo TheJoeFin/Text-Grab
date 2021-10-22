@@ -515,6 +515,32 @@ namespace Text_Grab
             PassedTextControl.Text = PassedTextControl.Text.RemoveAllInstancesOf(selectionToDelete);
         }
 
+        private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
+
+        {
+            string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+            string selection = PassedTextControl.SelectedText;
+            int selectionPositionInLine = 0;
+            for (int i = PassedTextControl.SelectionStart - 1; i >= 0; i--)
+            {
+                if (PassedTextControl.Text[i] == '\n'
+                    || PassedTextControl.Text[i] == '\r')
+                    selectionPositionInLine = PassedTextControl.SelectionStart - i;
+            }
+            int selectionLength = PassedTextControl.SelectionLength;
+
+            StringBuilder sb = new();
+            foreach (string line in splitString)
+            {
+                if (line.Substring(selectionPositionInLine, selectionLength) != selection)
+                    sb.Append(line.Insert(selectionPositionInLine, selection));
+                else
+                    sb.Append(line);
+            }
+
+            PassedTextControl.Text = sb.ToString();
+        }
+
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
         {
             string workingString = string.Empty;
