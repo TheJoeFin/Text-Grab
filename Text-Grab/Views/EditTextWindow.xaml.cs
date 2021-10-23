@@ -50,6 +50,8 @@ namespace Text_Grab
         public static RoutedCommand UnstackCmd = new();
 
         public static RoutedCommand DeleteAllSelectionCmd = new();
+        
+        public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
 
         private int numberOfContextMenuItems;
 
@@ -520,7 +522,7 @@ namespace Text_Grab
         {
             string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
             string selection = PassedTextControl.SelectedText;
-            int selectionPositionInLine = 0;
+            int selectionPositionInLine = PassedTextControl.SelectionStart;
             for (int i = PassedTextControl.SelectionStart - 1; i >= 0; i--)
             {
                 if (PassedTextControl.Text[i] == '\n'
@@ -532,10 +534,22 @@ namespace Text_Grab
             StringBuilder sb = new();
             foreach (string line in splitString)
             {
-                if (line.Substring(selectionPositionInLine, selectionLength) != selection)
-                    sb.Append(line.Insert(selectionPositionInLine, selection));
+                if (line.Length >= selectionPositionInLine
+                    && line.Length >= (selectionPositionInLine + selectionLength))
+                {
+                    if (line.Substring(selectionPositionInLine, selectionLength) != selection)
+                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                    else
+                        sb.Append(line);
+                }
                 else
-                    sb.Append(line);
+                {
+                    if (line.Length == selectionPositionInLine)
+                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                    else
+                        sb.Append(line);
+                }
+                sb.Append(Environment.NewLine);
             }
 
             PassedTextControl.Text = sb.ToString();

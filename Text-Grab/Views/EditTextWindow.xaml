@@ -84,6 +84,10 @@
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
             Executed="DeleteAllSelectionExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
+            Executed="InsertSelectionOnEveryLine" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -208,6 +212,10 @@
                     x:Name="DeleteAllSelectionMI"
                     Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
                     Header="Delete All Instances of Selection" />
+                <MenuItem
+                    x:Name="InsertSelectionOnEveryLineMI"
+                    Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
+                    Header="Insert Selection On Every Line" />
             </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
