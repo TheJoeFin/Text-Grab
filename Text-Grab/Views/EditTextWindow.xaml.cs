@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -51,6 +52,10 @@ namespace Text_Grab
         public static RoutedCommand UnstackCmd = new();
 
         public static RoutedCommand DeleteAllSelectionCmd = new();
+
+        public static RoutedCommand DeleteAllSelectionPatternCmd = new();
+
+        public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
 
         private int numberOfContextMenuItems;
 
@@ -514,6 +519,61 @@ namespace Text_Grab
             string selectionToDelete = PassedTextControl.SelectedText;
 
             PassedTextControl.Text = PassedTextControl.Text.RemoveAllInstancesOf(selectionToDelete);
+        }
+
+        private void DeleteAllSelectionPatternExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+
+        {
+            string selectionToDelete = PassedTextControl.SelectedText;
+            string Pattern = selectionToDelete.ExtractSimplePattern();
+            MatchCollection Matches = Regex.Matches(PassedTextControl.Text, Pattern, RegexOptions.Multiline);
+            StringBuilder sb = new(PassedTextControl.Text);
+            for (int i = Matches.Count - 1; i >= 0; i--)
+            {
+                Match match = Matches[i];
+
+                sb.Remove(match.Index, match.Length);
+            }
+
+            PassedTextControl.Text = sb.ToString();
+        }
+
+        private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
+
+        {
+            string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+            string selection = PassedTextControl.SelectedText;
+            int selectionPositionInLine = PassedTextControl.SelectionStart;
+            for (int i = PassedTextControl.SelectionStart - 1; i >= 0; i--)
+            {
+                if (PassedTextControl.Text[i] == '\n'
+                    || PassedTextControl.Text[i] == '\r')
+                    selectionPositionInLine = PassedTextControl.SelectionStart - i;
+            }
+            int selectionLength = PassedTextControl.SelectionLength;
+
+            StringBuilder sb = new();
+            foreach (string line in splitString)
+            {
+                if (line.Length >= selectionPositionInLine
+                    && line.Length >= (selectionPositionInLine + selectionLength))
+                {
+                    if (line.Substring(selectionPositionInLine, selectionLength) != selection)
+                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                    else
+                        sb.Append(line);
+                }
+                else
+                {
+                    if (line.Length == selectionPositionInLine)
+                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                    else
+                        sb.Append(line);
+                }
+                sb.Append(Environment.NewLine);
+            }
+
+            PassedTextControl.Text = sb.ToString();
         }
 
         private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
