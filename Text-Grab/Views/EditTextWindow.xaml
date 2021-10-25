@@ -80,6 +80,10 @@
             CanExecute="SelectionContainsNewLinesCmdCanExecute"
             Command="{x:Static local:EditTextWindow.UnstackCmd}"
             Executed="UnstackExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
+            Executed="DeleteAllSelectionExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -200,6 +204,10 @@
                     Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
                     Header="_Isolate Selected Text"
                     InputGestureText="Ctrl + I" />
+                <MenuItem
+                    x:Name="DeleteAllSelectionMI"
+                    Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
+                    Header="Delete All Instances of Selection" />
             </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem

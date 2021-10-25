@@ -10,7 +10,7 @@ namespace Text_Grab.Utilities
     public static class StringMethods
     {
         public static List<Char> specialCharList = new()
-                { '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
+        { '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
 
         public static List<Char> ReservedChars = new()
         { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
@@ -301,6 +301,12 @@ namespace Text_Grab.Utilities
             }
 
             return string.Join(Environment.NewLine, uniqueLines.ToArray());
+        }
+
+        public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)
+        {
+            Regex regex = new(stringToRemove);
+            return regex.Replace(stringToBeEdited, "");
         }
     }
 }
