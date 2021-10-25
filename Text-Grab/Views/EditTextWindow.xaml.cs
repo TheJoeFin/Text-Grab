@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -50,7 +51,9 @@ namespace Text_Grab
         public static RoutedCommand UnstackCmd = new();
 
         public static RoutedCommand DeleteAllSelectionCmd = new();
-        
+
+        public static RoutedCommand DeleteAllSelectionPatternCmd = new();
+
         public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
 
         private int numberOfContextMenuItems;
@@ -515,6 +518,23 @@ namespace Text_Grab
             string selectionToDelete = PassedTextControl.SelectedText;
 
             PassedTextControl.Text = PassedTextControl.Text.RemoveAllInstancesOf(selectionToDelete);
+        }
+
+        private void DeleteAllSelectionPatternExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+
+        {
+            string selectionToDelete = PassedTextControl.SelectedText;
+            string Pattern = selectionToDelete.ExtractSimplePattern();
+            MatchCollection Matches = Regex.Matches(PassedTextControl.Text, Pattern, RegexOptions.Multiline);
+            StringBuilder sb = new(PassedTextControl.Text);
+            for (int i = Matches.Count - 1; i >= 0; i--)
+            {
+                Match match = Matches[i];
+
+                sb.Remove(match.Index, match.Length);
+            }
+
+            PassedTextControl.Text = sb.ToString();
         }
 
         private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
