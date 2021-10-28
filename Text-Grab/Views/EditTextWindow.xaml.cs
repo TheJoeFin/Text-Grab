@@ -552,14 +552,19 @@ namespace Text_Grab
 
         {
             string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-            string selection = PassedTextControl.SelectedText;
+            string selectionText = PassedTextControl.SelectedText;
+            int initialSelectionStart = PassedTextControl.SelectionStart;
             int selectionPositionInLine = PassedTextControl.SelectionStart;
-            for (int i = PassedTextControl.SelectionStart - 1; i >= 0; i--)
+            for (int i = initialSelectionStart; i >= 0; i--)
             {
                 if (PassedTextControl.Text[i] == '\n'
                     || PassedTextControl.Text[i] == '\r')
-                    selectionPositionInLine = PassedTextControl.SelectionStart - i;
+                {
+                    selectionPositionInLine = initialSelectionStart - i - 1;
+                    break;
+                }
             }
+
             int selectionLength = PassedTextControl.SelectionLength;
 
             StringBuilder sb = new();
@@ -568,15 +573,15 @@ namespace Text_Grab
                 if (line.Length >= selectionPositionInLine
                     && line.Length >= (selectionPositionInLine + selectionLength))
                 {
-                    if (line.Substring(selectionPositionInLine, selectionLength) != selection)
-                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                    if (line.Substring(selectionPositionInLine, selectionLength) != selectionText)
+                        sb.Append(line.Insert(selectionPositionInLine, selectionText));
                     else
                         sb.Append(line);
                 }
                 else
                 {
                     if (line.Length == selectionPositionInLine)
-                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                        sb.Append(line.Insert(selectionPositionInLine, selectionText));
                     else
                         sb.Append(line);
                 }
