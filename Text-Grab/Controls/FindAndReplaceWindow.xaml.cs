@@ -213,7 +213,7 @@ namespace Text_Grab.Controls
         {
             var selection = ResultsListView.SelectedItems;
 
-            if (Matches == null 
+            if (Matches == null
                 || Matches.Count < 1)
                 return;
 
@@ -254,7 +254,7 @@ namespace Text_Grab.Controls
 
         private void Replace_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(ReplaceTextBox.Text)
+            if (string.IsNullOrEmpty(ReplaceTextBox.Text)
                 || Matches == null
                 || Matches.Count < 1)
                 e.CanExecute = false;
