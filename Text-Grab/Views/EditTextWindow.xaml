@@ -89,7 +89,7 @@
             Command="{x:Static local:EditTextWindow.DeleteAllSelectionPatternCmd}"
             Executed="DeleteAllSelectionPatternExecuted" />
         <CommandBinding
-            CanExecute="IsolateSelectionCmdCanExecute"
+            CanExecute="InsertSelectionOnEveryLineCmdCanExecute"
             Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
             Executed="InsertSelectionOnEveryLine" />
     </Window.CommandBindings>

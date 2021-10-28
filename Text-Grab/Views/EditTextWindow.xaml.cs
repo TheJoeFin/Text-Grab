@@ -537,6 +537,17 @@ namespace Text_Grab
             PassedTextControl.Text = sb.ToString();
         }
 
+        private void InsertSelectionOnEveryLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(PassedTextControl.SelectedText)
+                || PassedTextControl.SelectedText.Contains(Environment.NewLine)
+                || PassedTextControl.SelectedText.Contains("\r")
+                || PassedTextControl.SelectedText.Contains("\n"))
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
+        }
+
         private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
 
         {
