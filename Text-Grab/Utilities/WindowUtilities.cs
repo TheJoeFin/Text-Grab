@@ -24,7 +24,7 @@ namespace Text_Grab.Utilities
         public static void SetWindowPosition(Window passedWindow)
         {
             string storedPostionString = "";
-            Rect defaultSize = new Rect(50, 50, 600, 400);
+
             if (passedWindow is EditTextWindow)
                 storedPostionString = Properties.Settings.Default.EditTextWindowSizeAndPosition;
 
@@ -38,7 +38,11 @@ namespace Text_Grab.Utilities
             if (storedPostion != null
                 && storedPostion.Count == 4)
             {
-                Rectangle storedSize = new Rectangle(int.Parse(storedPostion[0]), int.Parse(storedPostion[1]), int.Parse(storedPostion[2]), int.Parse(storedPostion[3]));
+                int.TryParse(storedPostion[0], out int parsedX);
+                int.TryParse(storedPostion[0], out int parsedY);
+                int.TryParse(storedPostion[0], out int parsedWid);
+                int.TryParse(storedPostion[0], out int parsedHei);
+                Rectangle storedSize = new Rectangle(parsedX, parsedY, parsedWid, parsedHei);
                 Screen[] allScreens = Screen.AllScreens;
                 WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -58,11 +62,6 @@ namespace Text_Grab.Utilities
                     return;
                 }
             }
-
-            passedWindow.Left = defaultSize.X;
-            passedWindow.Top = defaultSize.Y;
-            passedWindow.Width = defaultSize.Width;
-            passedWindow.Height = defaultSize.Height;
         }
 
         public static void LaunchFullScreenGrab(bool openAnyway = false)
