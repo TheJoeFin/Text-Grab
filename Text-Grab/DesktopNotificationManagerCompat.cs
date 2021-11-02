@@ -501,7 +501,7 @@ namespace Text_Grab
                 }
             }
 
-            value = null;
+            value = string.Empty;
             return false;
         }
 
