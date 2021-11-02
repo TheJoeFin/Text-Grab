@@ -75,6 +75,9 @@ namespace Text_Grab.Views
 
         private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (e.RightButton == MouseButtonState.Pressed)
+                return;
+
             isSelecting = true;
             RegionClickCanvas.CaptureMouse();
             CursorClipper.ClipCursor(this);
@@ -90,6 +93,17 @@ namespace Text_Grab.Views
             _ = RegionClickCanvas.Children.Add(selectBorder);
             Canvas.SetLeft(selectBorder, clickedPoint.X);
             Canvas.SetTop(selectBorder, clickedPoint.Y);
+        }
+
+        private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+            WindowUtilities.CloseAllFullscreenGrabs();
+        }
+
+        private void CancelMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.CloseAllFullscreenGrabs();
         }
 
         private void RegionClickCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -141,6 +155,9 @@ namespace Text_Grab.Views
 
         private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (isSelecting == false)
+                return;
+
             isSelecting = false;
             CursorClipper.UnClipCursor();
             RegionClickCanvas.ReleaseMouseCapture();
