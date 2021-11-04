@@ -247,6 +247,11 @@
                     x:Name="GrabFrameMenuItem"
                     Click="GrabFrameMenuItem_Click"
                     Header="New _Grab Frame" />
+                <Separator />
+                <MenuItem
+                    x:Name="ListFilesMenuItem"
+                    Click="ListFilesMenuItem_Click"
+                    Header="_List Files From Folder..." />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem

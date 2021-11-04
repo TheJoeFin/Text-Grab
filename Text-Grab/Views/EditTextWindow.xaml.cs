@@ -1092,5 +1092,31 @@ namespace Text_Grab
         {
             UpdateLineAndColumnText();
         }
+
+        private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+            DialogResult result = folderBrowserDialog1.ShowDialog();
+
+            if (result is System.Windows.Forms.DialogResult.OK)
+            {
+                string chosenFolderPath = folderBrowserDialog1.SelectedPath;
+                try
+                {
+                    IEnumerable<String> files = Directory.EnumerateFiles($"{chosenFolderPath}");
+                    StringBuilder listOfNames = new StringBuilder();
+                    foreach (string file in files)
+                    {
+                        listOfNames.Append($"{file.Substring(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    }
+
+                    PassedTextControl.AppendText(listOfNames.ToString());
+                }
+                catch (System.Exception ex)
+                {
+                    PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
+                }
+            }
+        }
     }
 }
