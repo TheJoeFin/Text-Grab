@@ -1073,14 +1073,13 @@ namespace Text_Grab
 
                 if (numbOfSelectedLines > 0)
                 {
-                    BottomBarText.Text = $"Sel Start[ Ln {selStartLine + 1}, Col {selStartCol} ] Stop[ Ln {selStopLine + 1}, Col {selStopCol} ], Len {selLength}, Lines {numbOfSelectedLines + 1}";
+                    BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
                 }
                 else
                 {
-                    BottomBarText.Text = $"Ln {selStartLine + 1}, Start Col {selStartCol} Stop Col {selStopCol}, Len {selLength}";
+                    BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
                 }
             }
-
         }
 
         private void PassedTextControl_SizeChanged(object sender, SizeChangedEventArgs e)
