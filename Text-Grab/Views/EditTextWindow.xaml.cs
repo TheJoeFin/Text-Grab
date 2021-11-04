@@ -188,6 +188,7 @@ namespace Text_Grab
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
         {
             PassedTextControl.Focus();
+            UpdateLineAndColumnText();
         }
 
         private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1047,6 +1048,49 @@ namespace Text_Grab
         private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
         {
             PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
+        }
+
+        private void UpdateLineAndColumnText()
+        {
+            if (PassedTextControl.SelectionLength < 1)
+            {
+                int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
+                int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
+
+                BottomBarText.Text = $"Ln {lineNumber + 1}, Col {columnNumber}";
+            }
+            else
+            {
+                int selectionStartIndex = PassedTextControl.SelectionStart;
+                int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
+
+                int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
+                int selStartCol = selectionStartIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStartLine);
+                int selStopLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStopIndex); ;
+                int selStopCol = selectionStopIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStopLine); ;
+                int selLength = PassedTextControl.SelectionLength;
+                int numbOfSelectedLines = selStopLine - selStartLine;
+
+                if (numbOfSelectedLines > 0)
+                {
+                    BottomBarText.Text = $"Sel Start[ Ln {selStartLine + 1}, Col {selStartCol} ] Stop[ Ln {selStopLine + 1}, Col {selStopCol} ], Len {selLength}, Lines {numbOfSelectedLines + 1}";
+                }
+                else
+                {
+                    BottomBarText.Text = $"Ln {selStartLine + 1}, Start Col {selStartCol} Stop Col {selStopCol}, Len {selLength}";
+                }
+            }
+
+        }
+
+        private void PassedTextControl_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateLineAndColumnText();
+        }
+
+        private void PassedTextControl_SelectionChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateLineAndColumnText();
         }
     }
 }
