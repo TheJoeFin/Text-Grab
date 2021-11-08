@@ -9,11 +9,11 @@ using System.Windows.Interop;
 
 public class ClipboardManager
 {
-    public event EventHandler ClipboardChanged;
+    public event EventHandler? ClipboardChanged;
 
     public ClipboardManager(Window windowSource)
     {
-        HwndSource source = PresentationSource.FromVisual(windowSource) as HwndSource;
+        HwndSource? source = PresentationSource.FromVisual(windowSource) as HwndSource;
         if (source == null)
         {
             throw new ArgumentException(

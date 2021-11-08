@@ -32,6 +32,8 @@ namespace Text_Grab
 
         private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
 
+        private ClipboardManager? clipboardManager;
+
         public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Unknown;
 
         public bool WrapText { get; set; } = false;
@@ -163,20 +165,33 @@ namespace Text_Grab
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
-
-            ClipboardManager cbm = new ClipboardManager(this);
-            cbm.ClipboardChanged += ClipboardChanged;
         }
 
-        private void ClipboardChanged(object sender, EventArgs e)
+        private void ClipboardWatcherMenuItem_Checked(object sender, RoutedEventArgs e)
         {
-            // Handle your clipboard update here, debug logging example:
-            if (System.Windows.Clipboard.ContainsText())
+            if (IsLoaded == false)
+                return;
+
+            if ((bool)WrapTextMenuItem.IsChecked)
             {
-                string clipboardString = System.Windows.Clipboard.GetText();
-                Debug.WriteLine(clipboardString);
-                PassedTextControl.Text += $"\n{clipboardString}";
+                if (clipboardManager == null)
+                    clipboardManager = new ClipboardManager(this);
+                clipboardManager.ClipboardChanged += ClipboardChanged;
             }
+            else
+            {
+                if (clipboardManager != null)
+                {
+                    clipboardManager.ClipboardChanged -= ClipboardChanged;
+                    clipboardManager = null;
+                }
+            }
+        }
+
+        private void ClipboardChanged(object? sender, EventArgs e)
+        {
+            if (System.Windows.Clipboard.ContainsText())
+                PassedTextControl.AppendText(Environment.NewLine + System.Windows.Clipboard.GetText());
         }
 
         private void Window_Initialized(object sender, EventArgs e)

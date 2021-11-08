@@ -252,6 +252,13 @@
                     x:Name="ListFilesMenuItem"
                     Click="ListFilesMenuItem_Click"
                     Header="_List Files From Folder..." />
+                <MenuItem
+                    x:Name="ClipboardWatcherMenuItem"
+                    Checked="ClipboardWatcherMenuItem_Checked"
+                    Header="_Watch Clipboard For Changes"
+                    IsCheckable="True"
+                    IsChecked="False"
+                    Unchecked="ClipboardWatcherMenuItem_Checked" />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem
