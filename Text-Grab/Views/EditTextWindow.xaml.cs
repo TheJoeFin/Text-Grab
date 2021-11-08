@@ -163,6 +163,20 @@ namespace Text_Grab
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
+
+            ClipboardManager cbm = new ClipboardManager(this);
+            cbm.ClipboardChanged += ClipboardChanged;
+        }
+
+        private void ClipboardChanged(object sender, EventArgs e)
+        {
+            // Handle your clipboard update here, debug logging example:
+            if (System.Windows.Clipboard.ContainsText())
+            {
+                string clipboardString = System.Windows.Clipboard.GetText();
+                Debug.WriteLine(clipboardString);
+                PassedTextControl.Text += $"\n{clipboardString}";
+            }
         }
 
         private void Window_Initialized(object sender, EventArgs e)
