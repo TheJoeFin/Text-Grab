@@ -142,7 +142,6 @@ namespace Text_Grab
             _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
 
-
             PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
             if (PassedTextControl.ContextMenu != null)
                 numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
@@ -190,7 +189,8 @@ namespace Text_Grab
 
         private void ClipboardChanged(object? sender, EventArgs e)
         {
-            if (System.Windows.Clipboard.ContainsText())
+            if (System.Windows.Clipboard.ContainsText()
+                && ClipboardWatcherMenuItem.IsChecked)
                 PassedTextControl.AppendText(Environment.NewLine + System.Windows.Clipboard.GetText());
         }
 
@@ -540,6 +540,22 @@ namespace Text_Grab
             int numberOfLines = selectionLines.Length;
 
             PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
+        }
+
+        private void CopyExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+
+        {
+            if (ClipboardWatcherMenuItem.IsChecked)
+            {
+                PassedTextControl.AppendText(Environment.NewLine + PassedTextControl.SelectedText);
+            }
+            else
+            {
+                System.Windows.Clipboard.SetText(PassedTextControl.SelectedText);
+            }
+
+            if (e is not null)
+                e.Handled = true;
         }
 
         private void DeleteAllSelectionExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)

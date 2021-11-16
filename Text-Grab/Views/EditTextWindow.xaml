@@ -326,7 +326,11 @@
             SizeChanged="PassedTextControl_SizeChanged"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="WrapWithOverflow"
-            VerticalScrollBarVisibility="Auto" />
+            VerticalScrollBarVisibility="Auto">
+            <TextBox.CommandBindings>
+                <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="CopyExecuted" />
+            </TextBox.CommandBindings>
+        </TextBox>
 
         <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>
