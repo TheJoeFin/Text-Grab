@@ -18,6 +18,7 @@ using Text_Grab.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 
 namespace Text_Grab
@@ -31,8 +32,6 @@ namespace Text_Grab
         private string? OpenedFilePath;
 
         private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
-
-        private ClipboardManager? clipboardManager;
 
         public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Unknown;
 
@@ -164,34 +163,27 @@ namespace Text_Grab
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
-        }
 
-        private void ClipboardWatcherMenuItem_Checked(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded == false)
-                return;
-
-            if ((bool)WrapTextMenuItem.IsChecked)
+            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += async (s, e) =>
             {
-                if (clipboardManager == null)
-                    clipboardManager = new ClipboardManager(this);
-                clipboardManager.ClipboardChanged += ClipboardChanged;
-            }
-            else
-            {
-                if (clipboardManager != null)
+                DataPackageView dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+                if (dataPackageView.Contains(StandardDataFormats.Text))
                 {
-                    clipboardManager.ClipboardChanged -= ClipboardChanged;
-                    clipboardManager = null;
+                    string text = await dataPackageView.GetTextAsync();
+                    // To output the text from this example, you need a TextBlock control
+                    if (string.IsNullOrEmpty(text) == false)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
+
+                    }
                 }
-            }
+            };
         }
 
-        private void ClipboardChanged(object? sender, EventArgs e)
+        private void AddCopiedTextToTextBox(string textToAdd)
         {
-            if (System.Windows.Clipboard.ContainsText()
-                && ClipboardWatcherMenuItem.IsChecked)
-                PassedTextControl.AppendText(Environment.NewLine + System.Windows.Clipboard.GetText());
+            if (ClipboardWatcherMenuItem.IsChecked)
+                PassedTextControl.AppendText(Environment.NewLine + textToAdd);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -540,22 +532,6 @@ namespace Text_Grab
             int numberOfLines = selectionLines.Length;
 
             PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
-        }
-
-        private void CopyExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
-
-        {
-            if (ClipboardWatcherMenuItem.IsChecked)
-            {
-                PassedTextControl.AppendText(Environment.NewLine + PassedTextControl.SelectedText);
-            }
-            else
-            {
-                System.Windows.Clipboard.SetText(PassedTextControl.SelectedText);
-            }
-
-            if (e is not null)
-                e.Handled = true;
         }
 
         private void DeleteAllSelectionExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)

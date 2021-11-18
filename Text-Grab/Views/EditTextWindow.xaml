@@ -254,11 +254,9 @@
                     Header="_List Files From Folder..." />
                 <MenuItem
                     x:Name="ClipboardWatcherMenuItem"
-                    Checked="ClipboardWatcherMenuItem_Checked"
                     Header="_Watch Clipboard For Changes"
                     IsCheckable="True"
-                    IsChecked="False"
-                    Unchecked="ClipboardWatcherMenuItem_Checked" />
+                    IsChecked="False" />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem
@@ -326,11 +324,7 @@
             SizeChanged="PassedTextControl_SizeChanged"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="WrapWithOverflow"
-            VerticalScrollBarVisibility="Auto">
-            <TextBox.CommandBindings>
-                <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="CopyExecuted" />
-            </TextBox.CommandBindings>
-        </TextBox>
+            VerticalScrollBarVisibility="Auto" />
 
         <Grid x:Name="BottomBar" Grid.Row="2">
             <Grid.ColumnDefinitions>
