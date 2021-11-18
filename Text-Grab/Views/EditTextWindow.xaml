@@ -247,6 +247,16 @@
                     x:Name="GrabFrameMenuItem"
                     Click="GrabFrameMenuItem_Click"
                     Header="New _Grab Frame" />
+                <Separator />
+                <MenuItem
+                    x:Name="ListFilesMenuItem"
+                    Click="ListFilesMenuItem_Click"
+                    Header="_List Files and Folders From Folder..." />
+                <MenuItem
+                    x:Name="ClipboardWatcherMenuItem"
+                    Header="_Watch Clipboard For Changes"
+                    IsCheckable="True"
+                    IsChecked="False" />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem

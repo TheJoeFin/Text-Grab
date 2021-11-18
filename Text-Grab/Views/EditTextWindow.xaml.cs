@@ -18,6 +18,7 @@ using Text_Grab.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 
 namespace Text_Grab
@@ -140,7 +141,6 @@ namespace Text_Grab
             _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
 
-
             PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
             if (PassedTextControl.ContextMenu != null)
                 numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
@@ -163,6 +163,27 @@ namespace Text_Grab
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
+
+            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += async (s, e) =>
+            {
+                DataPackageView dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+                if (dataPackageView.Contains(StandardDataFormats.Text))
+                {
+                    string text = await dataPackageView.GetTextAsync();
+                    // To output the text from this example, you need a TextBlock control
+                    if (string.IsNullOrEmpty(text) == false)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
+
+                    }
+                }
+            };
+        }
+
+        private void AddCopiedTextToTextBox(string textToAdd)
+        {
+            if (ClipboardWatcherMenuItem.IsChecked)
+                PassedTextControl.AppendText(Environment.NewLine + textToAdd);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -1090,6 +1111,38 @@ namespace Text_Grab
         private void PassedTextControl_SelectionChanged(object sender, RoutedEventArgs e)
         {
             UpdateLineAndColumnText();
+        }
+
+        private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+            DialogResult result = folderBrowserDialog1.ShowDialog();
+
+            if (result is System.Windows.Forms.DialogResult.OK)
+            {
+                string chosenFolderPath = folderBrowserDialog1.SelectedPath;
+                try
+                {
+                    IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
+                    IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
+                    StringBuilder listOfNames = new StringBuilder();
+                    listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+                    foreach (string folder in folders)
+                    {
+                        listOfNames.Append($"{folder.Substring(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    }
+                    foreach (string file in files)
+                    {
+                        listOfNames.Append($"{file.Substring(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    }
+
+                    PassedTextControl.AppendText(listOfNames.ToString());
+                }
+                catch (System.Exception ex)
+                {
+                    PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
+                }
+            }
         }
     }
 }
