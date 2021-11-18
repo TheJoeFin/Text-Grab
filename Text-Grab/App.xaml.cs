@@ -1,8 +1,10 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Forms;
 using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -34,6 +36,16 @@ namespace Text_Grab
                     }
                 }));
             };
+
+            IContainer? components = new Container();
+            NotifyIcon icon = new NotifyIcon(components);
+            icon.Text = "Text Grab";
+            icon.Visible = true;
+            icon.MouseClick += (s, e) =>
+            {
+                WindowUtilities.LaunchFullScreenGrab();
+            };
+            icon.Icon = new System.Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico")));
 
             Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
