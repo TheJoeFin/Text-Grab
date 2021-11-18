@@ -1123,8 +1123,14 @@ namespace Text_Grab
                 string chosenFolderPath = folderBrowserDialog1.SelectedPath;
                 try
                 {
-                    IEnumerable<String> files = Directory.EnumerateFiles($"{chosenFolderPath}");
+                    IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
+                    IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
                     StringBuilder listOfNames = new StringBuilder();
+                    listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+                    foreach (string folder in folders)
+                    {
+                        listOfNames.Append($"{folder.Substring(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    }
                     foreach (string file in files)
                     {
                         listOfNames.Append($"{file.Substring(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
