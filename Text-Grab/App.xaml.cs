@@ -37,18 +37,18 @@ namespace Text_Grab
                 }));
             };
 
-            IContainer? components = new Container();
-            NotifyIcon icon = new NotifyIcon(components);
+            NotifyIcon icon = new NotifyIcon();
             icon.Text = "Text Grab";
+            icon.Icon = new System.Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico", UriKind.Relative)).Stream);
             icon.Visible = true;
-            icon.MouseClick += (s, e) =>
-            {
-                WindowUtilities.LaunchFullScreenGrab();
-            };
-            icon.Icon = new System.Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico")));
+            icon.MouseClick += (s, e) => { WindowUtilities.LaunchFullScreenGrab(true); };
+            ContextMenuStrip? contextMenu = new();
+            ToolStripMenuItem? settingsItem = new("&Settings...");
+            settingsItem.Click += (s, e) => {  };
+            contextMenu.Items.Add(settingsItem);
+            icon.ContextMenuStrip = contextMenu;
 
             Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
-
 
             for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
             {

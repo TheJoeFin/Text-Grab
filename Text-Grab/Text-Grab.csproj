@@ -17,6 +17,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="t_ICON2.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.0" />
 		<PackageReference Include="System.Drawing.Common" Version="5.0.2" />
 	</ItemGroup>
@@ -34,6 +38,7 @@
 			<Generator>MSBuild:Compile</Generator>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
+		<Resource Include="t_ICON2.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
