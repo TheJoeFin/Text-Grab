@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Forms;
+using Text_Grab.Properties;
 using Text_Grab.Views;
 
 namespace Text_Grab.Utilities
@@ -27,6 +28,7 @@ namespace Text_Grab.Utilities
             foreach (Screen screen in allScreens)
             {
                 bool screenHasWindow = true;
+                bool isEditWindowOpen = false;
 
                 foreach (Window window in allWindows)
                 {
@@ -35,6 +37,9 @@ namespace Text_Grab.Utilities
                             (int)(window.Left + (window.Width / 2)),
                             (int)(window.Top + (window.Height / 2)));
                     screenHasWindow = screen.Bounds.Contains(windowCenter);
+
+                    if (window is EditTextWindow)
+                        isEditWindowOpen = true;
                 }
 
                 if (allWindows.Count < 1)
@@ -47,7 +52,7 @@ namespace Text_Grab.Utilities
                         WindowStartupLocation = WindowStartupLocation.Manual,
                         Width = 200,
                         Height = 200,
-                        IsFromEditWindow = openAnyway,
+                        IsFromEditWindow = isEditWindowOpen,
                         WindowState = WindowState.Normal
                     };
 
@@ -80,8 +85,9 @@ namespace Text_Grab.Utilities
                     if (etw.WindowState == WindowState.Minimized)
                         etw.WindowState = WindowState.Normal;
                 }
-
             }
+
+            ShouldShutDown();
         }
 
         internal static void OpenOrActivateWindow<T>() where T : Window, new()
@@ -100,6 +106,14 @@ namespace Text_Grab.Utilities
             // No Window Found, open a new one
             T newWindow = new T();
             newWindow.Show();
+        }
+
+        public static void ShouldShutDown()
+        {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+            if (allWindows.Count <= 1
+                && Settings.Default.RunInTheBackground == false)
+                System.Windows.Application.Current.Shutdown();
         }
     }
 }

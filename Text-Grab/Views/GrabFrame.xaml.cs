@@ -404,5 +404,10 @@ namespace Text_Grab.Views
                     wb.Deselect();
             }
         }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            WindowUtilities.ShouldShutDown();
+        }
     }
 }

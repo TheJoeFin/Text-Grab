@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Windows;
 using Text_Grab.Properties;
+using Text_Grab.Utilities;
 
 namespace Text_Grab
 {
@@ -19,6 +20,7 @@ namespace Text_Grab
             ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
             ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
             NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
+            RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
 
             switch (Settings.Default.DefaultLaunch)
             {
@@ -66,6 +68,25 @@ namespace Text_Grab
             if (NeverUseClipboardChkBx.IsChecked != null)
                 Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
 
+            if (RunInBackgroundChkBx.IsChecked != null)
+            {
+                Settings.Default.RunInTheBackground = (bool)RunInBackgroundChkBx.IsChecked;
+
+                if ((bool)RunInBackgroundChkBx.IsChecked == true)
+                {
+                    // Get strongly-typed current application
+                    NotifyIconUtilities.SetupNotifyIcon();
+                }
+                else
+                {
+                    App app = (App)App.Current;
+                    if (app.TextGrabIcon != null)
+                        app.TextGrabIcon.Dispose();
+                }
+            }
+
+
+
             Settings.Default.Save();
             Close();
         }
@@ -85,6 +106,11 @@ namespace Text_Grab
 
             FirstRunWindow frw = new();
             frw.Show();
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            WindowUtilities.ShouldShutDown();
         }
     }
 }
