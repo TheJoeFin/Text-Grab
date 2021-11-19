@@ -16,6 +16,7 @@
     d:Height="3000"
     Background="{StaticResource DarkControlBackground}"
     Loaded="FirstRun_Loaded"
+    Closing="Window_Closing"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.Resources>

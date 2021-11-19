@@ -36,7 +36,8 @@ namespace Text_Grab
                 }));
             };
 
-            SetupNotifyIcon();
+            if (Settings.Default.RunInTheBackground == true)
+                SetupNotifyIcon();
 
             Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 

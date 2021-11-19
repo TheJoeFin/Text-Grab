@@ -13,6 +13,7 @@
     MinHeight="300"
     Background="{StaticResource DarkControlBackground}"
     Loaded="Window_Loaded"
+    Closing="Window_Closing"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="labelText" TargetType="CheckBox">

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Windows;
 using Text_Grab.Properties;
+using Text_Grab.Utilities;
 
 namespace Text_Grab
 {
@@ -85,6 +86,11 @@ namespace Text_Grab
 
             FirstRunWindow frw = new();
             frw.Show();
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            WindowUtilities.ShouldShutDown();
         }
     }
 }

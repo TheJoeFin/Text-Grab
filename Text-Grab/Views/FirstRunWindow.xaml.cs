@@ -108,5 +108,10 @@ namespace Text_Grab
         {
             WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
         }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            WindowUtilities.ShouldShutDown();
+        }
     }
 }

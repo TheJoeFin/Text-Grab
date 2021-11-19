@@ -890,6 +890,8 @@ namespace Text_Grab
                     findAndReplaceWindow.Close();
                 }
             }
+
+            WindowUtilities.ShouldShutDown();
         }
 
         private void ReplaceReservedCharsCmdExecuted(object sender, ExecutedRoutedEventArgs e)

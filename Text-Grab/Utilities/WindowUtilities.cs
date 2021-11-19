@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Forms;
+using Text_Grab.Properties;
 using Text_Grab.Views;
 
 namespace Text_Grab.Utilities
@@ -84,8 +85,9 @@ namespace Text_Grab.Utilities
                     if (etw.WindowState == WindowState.Minimized)
                         etw.WindowState = WindowState.Normal;
                 }
-
             }
+
+            ShouldShutDown();
         }
 
         internal static void OpenOrActivateWindow<T>() where T : Window, new()
@@ -104,6 +106,14 @@ namespace Text_Grab.Utilities
             // No Window Found, open a new one
             T newWindow = new T();
             newWindow.Show();
+        }
+
+        public static void ShouldShutDown()
+        {
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+            if (allWindows.Count <= 1
+                && Settings.Default.RunInTheBackground == false)
+                System.Windows.Application.Current.Shutdown();
         }
     }
 }
