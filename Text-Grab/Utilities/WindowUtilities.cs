@@ -27,6 +27,7 @@ namespace Text_Grab.Utilities
             foreach (Screen screen in allScreens)
             {
                 bool screenHasWindow = true;
+                bool isEditWindowOpen = false;
 
                 foreach (Window window in allWindows)
                 {
@@ -35,6 +36,9 @@ namespace Text_Grab.Utilities
                             (int)(window.Left + (window.Width / 2)),
                             (int)(window.Top + (window.Height / 2)));
                     screenHasWindow = screen.Bounds.Contains(windowCenter);
+
+                    if (window is EditTextWindow)
+                        isEditWindowOpen = true;
                 }
 
                 if (allWindows.Count < 1)
@@ -47,7 +51,7 @@ namespace Text_Grab.Utilities
                         WindowStartupLocation = WindowStartupLocation.Manual,
                         Width = 200,
                         Height = 200,
-                        IsFromEditWindow = openAnyway,
+                        IsFromEditWindow = isEditWindowOpen,
                         WindowState = WindowState.Normal
                     };
 
