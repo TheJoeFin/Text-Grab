@@ -1,6 +1,5 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -37,16 +36,7 @@ namespace Text_Grab
                 }));
             };
 
-            NotifyIcon icon = new NotifyIcon();
-            icon.Text = "Text Grab";
-            icon.Icon = new System.Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico", UriKind.Relative)).Stream);
-            icon.Visible = true;
-            icon.MouseClick += (s, e) => { WindowUtilities.LaunchFullScreenGrab(true); };
-            ContextMenuStrip? contextMenu = new();
-            ToolStripMenuItem? settingsItem = new("&Settings...");
-            settingsItem.Click += (s, e) => {  };
-            contextMenu.Items.Add(settingsItem);
-            icon.ContextMenuStrip = contextMenu;
+            SetupNotifyIcon();
 
             Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
@@ -122,6 +112,49 @@ namespace Text_Grab
                     }
                 }
             }
+        }
+
+        private void SetupNotifyIcon()
+        {
+            NotifyIcon icon = new NotifyIcon();
+            icon.Text = "Text Grab";
+            icon.Icon = new System.Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico", UriKind.Relative)).Stream);
+            icon.Visible = true;
+
+            ContextMenuStrip? contextMenu = new();
+
+            ToolStripMenuItem? settingsItem = new("&Settings");
+            settingsItem.Click += (s, e) => { SettingsWindow sw = new(); sw.Show(); };
+            ToolStripMenuItem? fullscreenGrabItem = new("&Fullscreen Grab");
+            fullscreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(true); };
+            ToolStripMenuItem? grabFrameItem = new("&Grab Frame");
+            grabFrameItem.Click += (s, e) => { GrabFrame gf = new(); gf.Show(); };
+            ToolStripMenuItem? editTextWindowItem = new("&Edit Text Window");
+            editTextWindowItem.Click += (s, e) => { EditTextWindow etw = new(); etw.Show(); };
+
+            ToolStripMenuItem? exitItem = new("&Close");
+            exitItem.Click += (s, e) => { icon.Dispose(); System.Windows.Application.Current.Shutdown(); };
+
+            contextMenu.Items.AddRange(
+                new ToolStripMenuItem[] {
+                    settingsItem,
+                    fullscreenGrabItem,
+                    grabFrameItem,
+                    editTextWindowItem,
+                    exitItem
+                }
+            );
+            icon.ContextMenuStrip = contextMenu;
+
+            icon.MouseClick += notifyIcon_Click;
+        }
+
+        private void notifyIcon_Click(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left)
+                return;
+
+            WindowUtilities.LaunchFullScreenGrab(true);
         }
 
         private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
