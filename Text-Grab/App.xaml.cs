@@ -147,6 +147,29 @@ namespace Text_Grab
             icon.ContextMenuStrip = contextMenu;
 
             icon.MouseClick += notifyIcon_Click;
+
+            HotKeyManager.RegisterHotKey(Keys.F, KeyModifiers.Windows | KeyModifiers.Shift);
+            HotKeyManager.RegisterHotKey(Keys.E, KeyModifiers.Windows | KeyModifiers.Shift);
+            HotKeyManager.RegisterHotKey(Keys.G, KeyModifiers.Windows | KeyModifiers.Shift);
+            HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
+        }
+
+        static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Keys.E:
+                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { EditTextWindow etw = new(); etw.Show(); }));
+                    break;
+                case Keys.F:
+                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { WindowUtilities.LaunchFullScreenGrab(true); }));
+                    break;
+                case Keys.G:
+                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { GrabFrame gf = new(); gf.Show(); }));
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void notifyIcon_Click(object? sender, MouseEventArgs e)
