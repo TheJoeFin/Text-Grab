@@ -44,12 +44,15 @@ namespace Text_Grab.Utilities
             );
             icon.ContextMenuStrip = contextMenu;
 
-            icon.MouseClick += (s, e) =>
+            icon.Click += (s, e) =>
             {
-                if (e.Button != MouseButtons.Left)
-                    return;
-
+                // TODO Add a setting to customize click behavior
                 WindowUtilities.LaunchFullScreenGrab(true);
+            };
+            icon.DoubleClick += (s, e) =>
+            {
+                // TODO Add a setting to customize doubleclick behavior
+                EditTextWindow etw = new(); etw.Show();
             };
 
             HotKeyManager.RegisterHotKey(Keys.F, KeyModifiers.Windows | KeyModifiers.Shift);
