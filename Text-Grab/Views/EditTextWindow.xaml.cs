@@ -163,7 +163,12 @@ namespace Text_Grab
                 WindowState = WindowState.Minimized;
             }
 
-            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += async (s, e) =>
+            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+            
+        }
+
+        private async void Clipboard_ContentChanged(object? sender, object e)
+        {
             {
                 DataPackageView dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
                 if (dataPackageView.Contains(StandardDataFormats.Text))
@@ -877,6 +882,8 @@ namespace Text_Grab
             string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
             Properties.Settings.Default.EditTextWindowSizeAndPosition = windowSizeAndPosition;
             Properties.Settings.Default.Save();
+
+            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
 
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
