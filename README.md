@@ -6,6 +6,17 @@ Too often there is text on the screen but it is unable to be selected. This happ
 
 The OCR is done locally by [Windows 10 API](https://docs.microsoft.com/en-us/uwp/api/Windows.Media.Ocr). This enables Text Grab to have essentially no UI and not require a constantly running background process.
 
+## How to Install
+
+### Official
+
+- [Microsoft Store](https://www.microsoft.com/en-us/p/text-grab/9mznkqj7sl0b?cid=TextGrabGitHub)
+- [GitHub Releases](https://github.com/TheJoeFin/Text-Grab/releases/latest)
+
+### Community
+
+- [scoop](https://scoop.sh/) — `scoop install text-grab`
+
 ## How to Build
 Get the code:
 - Install git: https://git-scm.com/download/win

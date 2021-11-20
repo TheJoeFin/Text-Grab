@@ -19,6 +19,7 @@ using Text_Grab.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 
 namespace Text_Grab
@@ -141,7 +142,6 @@ namespace Text_Grab
             _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
             _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
 
-
             PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
             if (PassedTextControl.ContextMenu != null)
                 numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
@@ -162,6 +162,27 @@ namespace Text_Grab
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
+
+            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += async (s, e) =>
+            {
+                DataPackageView dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+                if (dataPackageView.Contains(StandardDataFormats.Text))
+                {
+                    string text = await dataPackageView.GetTextAsync();
+                    // To output the text from this example, you need a TextBlock control
+                    if (string.IsNullOrEmpty(text) == false)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
+
+                    }
+                }
+            };
+        }
+
+        private void AddCopiedTextToTextBox(string textToAdd)
+        {
+            if (ClipboardWatcherMenuItem.IsChecked)
+                PassedTextControl.AppendText(Environment.NewLine + textToAdd);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -189,6 +210,7 @@ namespace Text_Grab
         private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
         {
             PassedTextControl.Focus();
+            UpdateLineAndColumnText();
         }
 
         private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -538,18 +560,34 @@ namespace Text_Grab
             PassedTextControl.Text = sb.ToString();
         }
 
+        private void InsertSelectionOnEveryLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(PassedTextControl.SelectedText)
+                || PassedTextControl.SelectedText.Contains(Environment.NewLine)
+                || PassedTextControl.SelectedText.Contains("\r")
+                || PassedTextControl.SelectedText.Contains("\n"))
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
+        }
+
         private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
 
         {
             string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-            string selection = PassedTextControl.SelectedText;
+            string selectionText = PassedTextControl.SelectedText;
+            int initialSelectionStart = PassedTextControl.SelectionStart;
             int selectionPositionInLine = PassedTextControl.SelectionStart;
-            for (int i = PassedTextControl.SelectionStart - 1; i >= 0; i--)
+            for (int i = initialSelectionStart; i >= 0; i--)
             {
                 if (PassedTextControl.Text[i] == '\n'
                     || PassedTextControl.Text[i] == '\r')
-                    selectionPositionInLine = PassedTextControl.SelectionStart - i;
+                {
+                    selectionPositionInLine = initialSelectionStart - i - 1;
+                    break;
+                }
             }
+
             int selectionLength = PassedTextControl.SelectionLength;
 
             StringBuilder sb = new();
@@ -558,15 +596,15 @@ namespace Text_Grab
                 if (line.Length >= selectionPositionInLine
                     && line.Length >= (selectionPositionInLine + selectionLength))
                 {
-                    if (line.Substring(selectionPositionInLine, selectionLength) != selection)
-                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                    if (line.Substring(selectionPositionInLine, selectionLength) != selectionText)
+                        sb.Append(line.Insert(selectionPositionInLine, selectionText));
                     else
                         sb.Append(line);
                 }
                 else
                 {
                     if (line.Length == selectionPositionInLine)
-                        sb.Append(line.Insert(selectionPositionInLine, selection));
+                        sb.Append(line.Insert(selectionPositionInLine, selectionText));
                     else
                         sb.Append(line);
                 }
@@ -857,6 +895,8 @@ namespace Text_Grab
                     findAndReplaceWindow.Close();
                 }
             }
+
+            WindowUtilities.ShouldShutDown();
         }
 
         private void ReplaceReservedCharsCmdExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -1036,6 +1076,80 @@ namespace Text_Grab
         private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
         {
             PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
+        }
+
+        private void UpdateLineAndColumnText()
+        {
+            if (PassedTextControl.SelectionLength < 1)
+            {
+                int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
+                int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
+
+                BottomBarText.Text = $"Ln {lineNumber + 1}, Col {columnNumber}";
+            }
+            else
+            {
+                int selectionStartIndex = PassedTextControl.SelectionStart;
+                int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
+
+                int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
+                int selStartCol = selectionStartIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStartLine);
+                int selStopLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStopIndex); ;
+                int selStopCol = selectionStopIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStopLine); ;
+                int selLength = PassedTextControl.SelectionLength;
+                int numbOfSelectedLines = selStopLine - selStartLine;
+
+                if (numbOfSelectedLines > 0)
+                {
+                    BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
+                }
+                else
+                {
+                    BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
+                }
+            }
+        }
+
+        private void PassedTextControl_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateLineAndColumnText();
+        }
+
+        private void PassedTextControl_SelectionChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateLineAndColumnText();
+        }
+
+        private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+            DialogResult result = folderBrowserDialog1.ShowDialog();
+
+            if (result is System.Windows.Forms.DialogResult.OK)
+            {
+                string chosenFolderPath = folderBrowserDialog1.SelectedPath;
+                try
+                {
+                    IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
+                    IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
+                    StringBuilder listOfNames = new StringBuilder();
+                    listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+                    foreach (string folder in folders)
+                    {
+                        listOfNames.Append($"{folder.Substring(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    }
+                    foreach (string file in files)
+                    {
+                        listOfNames.Append($"{file.Substring(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    }
+
+                    PassedTextControl.AppendText(listOfNames.ToString());
+                }
+                catch (System.Exception ex)
+                {
+                    PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
+                }
+            }
         }
     }
 }

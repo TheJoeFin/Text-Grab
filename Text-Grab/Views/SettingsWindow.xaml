@@ -12,6 +12,7 @@
     MinWidth="200"
     MinHeight="300"
     Background="{StaticResource DarkControlBackground}"
+    Closing="Window_Closing"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -114,6 +115,25 @@
                         Never automatically add text to the clipboard
                     </TextBlock>
                 </CheckBox>
+
+                <CheckBox
+                    Name="RunInBackgroundChkBx"
+                    Margin="0,16,0,0"
+                    VerticalContentAlignment="Center"
+                    Style="{StaticResource labelText}">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Run Text Grab in the background and enable hotkeys
+                    </TextBlock>
+                </CheckBox>
+                <TextBlock
+                    Margin="24,0"
+                    Foreground="LightGray"
+                    Style="{StaticResource TextBodyNormal}">
+                    - Win+Shift+F new Full Screen Grab<LineBreak />
+                    - Win+Shift+G new Grab Frame<LineBreak />
+                    - Win+Shift+E new Edit Text Window<LineBreak />
+                </TextBlock>
+
             </StackPanel>
             <StackPanel Grid.Row="1" Orientation="Horizontal">
                 <controls:CollapsibleButton

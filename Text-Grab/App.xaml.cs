@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Forms;
 using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -15,6 +16,8 @@ namespace Text_Grab
     /// </summary>
     public partial class App : System.Windows.Application
     {
+        public NotifyIcon? TextGrabIcon { get; set; }
+
         void appStartup(object sender, StartupEventArgs e)
         {
             // Register COM server and activator type
@@ -35,8 +38,10 @@ namespace Text_Grab
                 }));
             };
 
-            Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
+            if (Settings.Default.RunInTheBackground == true)
+                NotifyIconUtilities.SetupNotifyIcon();
 
+            Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
             for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
             {
