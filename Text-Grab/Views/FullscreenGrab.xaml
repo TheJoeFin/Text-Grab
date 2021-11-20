@@ -41,16 +41,16 @@
             <Image x:Name="DebugImage" Stretch="UniformToFill" />
         </Viewbox>
         <Canvas.ContextMenu>
-        <ContextMenu>
-            <MenuItem
-                Name="SettingsMenuItem"
-                Click="SettingsMenuItem_Click"
-                Header="Settings" />
-            <MenuItem
-                Name="CancelMenuItem"
-                Click="CancelMenuItem_Click"
-                Header="Cancel" />
-        </ContextMenu>
+            <ContextMenu>
+                <MenuItem
+                    Name="SettingsMenuItem"
+                    Click="SettingsMenuItem_Click"
+                    Header="Settings" />
+                <MenuItem
+                    Name="CancelMenuItem"
+                    Click="CancelMenuItem_Click"
+                    Header="Cancel" />
+            </ContextMenu>
         </Canvas.ContextMenu>
     </Canvas>
 </Window>

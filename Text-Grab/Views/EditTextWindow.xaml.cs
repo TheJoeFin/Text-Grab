@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -164,7 +163,6 @@ namespace Text_Grab
             }
 
             Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
-            
         }
 
         private async void Clipboard_ContentChanged(object? sender, object e)
@@ -174,11 +172,9 @@ namespace Text_Grab
                 if (dataPackageView.Contains(StandardDataFormats.Text))
                 {
                     string text = await dataPackageView.GetTextAsync();
-                    // To output the text from this example, you need a TextBlock control
                     if (string.IsNullOrEmpty(text) == false)
                     {
                         System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
-
                     }
                 }
             };
