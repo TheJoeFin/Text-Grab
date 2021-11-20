@@ -22,7 +22,6 @@
     ResizeMode="CanResizeWithGrip"
     SizeChanged="Window_SizeChanged"
     Topmost="True"
-    Closing="Window_Closing"
     WindowStartupLocation="CenterOwner"
     WindowStyle="None"
     mc:Ignorable="d">

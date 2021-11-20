@@ -55,6 +55,8 @@ namespace Text_Grab.Views
             string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
             Properties.Settings.Default.GrabFrameWindowSizeAndPosition = windowSizeAndPosition;
             Properties.Settings.Default.Save();
+
+            WindowUtilities.ShouldShutDown();
         }
 
         private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
@@ -415,11 +417,6 @@ namespace Text_Grab.Views
                 foreach (WordBorder wb in wordBorders)
                     wb.Deselect();
             }
-        }
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            WindowUtilities.ShouldShutDown();
         }
     }
 }
