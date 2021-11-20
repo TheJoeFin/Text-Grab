@@ -39,13 +39,17 @@ namespace Text_Grab.Utilities
             if (storedPostion != null
                 && storedPostion.Count == 4)
             {
-                int.TryParse(storedPostion[0], out int parsedX);
-                int.TryParse(storedPostion[0], out int parsedY);
-                int.TryParse(storedPostion[0], out int parsedWid);
-                int.TryParse(storedPostion[0], out int parsedHei);
-                Rectangle storedSize = new Rectangle(parsedX, parsedY, parsedWid, parsedHei);
+                bool couldParseAll = false;
+                couldParseAll = double.TryParse(storedPostion[0], out double parsedX);
+                couldParseAll = double.TryParse(storedPostion[1], out double parsedY);
+                couldParseAll = double.TryParse(storedPostion[2], out double parsedWid);
+                couldParseAll = double.TryParse(storedPostion[3], out double parsedHei);
+                Rectangle storedSize = new Rectangle((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
                 Screen[] allScreens = Screen.AllScreens;
                 WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+                if (parsedHei < 10 || parsedWid < 10)
+                    return;
 
                 foreach (Screen screen in allScreens)
                 {
@@ -53,7 +57,7 @@ namespace Text_Grab.Utilities
                         isStoredRectWithinScreen = true;
                 }
 
-                if (isStoredRectWithinScreen == true)
+                if (isStoredRectWithinScreen == true && couldParseAll == true)
                 {
                     passedWindow.Left = storedSize.X;
                     passedWindow.Top = storedSize.Y;
