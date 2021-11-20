@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -145,8 +146,6 @@ namespace Text_Grab
             if (PassedTextControl.ContextMenu != null)
                 numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
 
-            SetFontFromSettings();
-
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
             XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
             selectedCultureInfo = lang.GetEquivalentCulture();
@@ -189,6 +188,8 @@ namespace Text_Grab
         private void Window_Initialized(object sender, EventArgs e)
         {
             PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
+            WindowUtilities.SetWindowPosition(this);
+            SetFontFromSettings();
         }
 
         private void SetFontFromSettings()
@@ -873,6 +874,10 @@ namespace Text_Grab
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
+            Properties.Settings.Default.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+            Properties.Settings.Default.Save();
+
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
             foreach (Window window in allWindows)
