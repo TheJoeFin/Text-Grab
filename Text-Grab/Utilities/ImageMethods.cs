@@ -98,6 +98,19 @@ namespace Text_Grab
                 return "";
         }
 
+        internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+        {
+            DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
+            Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            Graphics g = Graphics.FromImage(bmp);
+
+            System.Windows.Point absPosPoint = passedWindow.GetAbsolutePosition();
+            int thisCorrectedLeft = (int)absPosPoint.X;
+            int thisCorrectedTop = (int)absPosPoint.Y;
+
+            g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+            return BitmapToImageSource(bmp);
+        }
 
         internal static async Task<string> GetClickedWord(Window passedWindow, System.Windows.Point clickedPoint)
         {
@@ -110,8 +123,6 @@ namespace Text_Grab
             int thisCorrectedTop = (int)absPosPoint.Y;
 
             g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-            // var bmpImage = BitmapToImageSource(bmp);
-            // DebugImage.Source = bmpImage;
 
             System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
