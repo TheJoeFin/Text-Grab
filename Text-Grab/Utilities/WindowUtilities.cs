@@ -172,8 +172,25 @@ namespace Text_Grab.Utilities
         public static void ShouldShutDown()
         {
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
-            if (allWindows.Count <= 1
-                && Settings.Default.RunInTheBackground == false)
+
+            bool shouldShutDown = false;
+
+            if (Settings.Default.RunInTheBackground == true)
+            {
+                if (App.Current is App app)
+                {
+                    if (app.NumberOfRunningInstances > 1
+                        && app.TextGrabIcon == null)
+                        shouldShutDown = true;
+                }
+            }
+            else
+            {
+                if (allWindows.Count <= 1)
+                    shouldShutDown = true;
+            }
+
+            if (shouldShutDown == true)
                 System.Windows.Application.Current.Shutdown();
         }
     }
