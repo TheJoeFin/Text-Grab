@@ -244,6 +244,14 @@
                     Click="FullScreenGrabMenuItem_Click"
                     Header="New _Fullscreen Grab" />
                 <MenuItem
+                    x:Name="FSGFreezeenuItem"
+                    Click="FSGFreezeenuItem_Click"
+                    Header="Fullscreen Grab with freeze" />
+                <MenuItem
+                    x:Name="FSGDelayMenuItem"
+                    Click="FSGDelayMenuItem_Click"
+                    Header="Fullscreen with 2 second _delay and freeze" />
+                <MenuItem
                     x:Name="GrabFrameMenuItem"
                     Click="GrabFrameMenuItem_Click"
                     Header="New _Grab Frame" />
@@ -314,14 +322,14 @@
             AutoWordSelection="True"
             Background="{StaticResource DarkControlBackground}"
             ContextMenuOpening="PassedTextControl_ContextMenuOpening"
-            SelectionChanged="PassedTextControl_SelectionChanged"
             FontSize="16"
             Foreground="White"
             HorizontalScrollBarVisibility="Auto"
             IsInactiveSelectionHighlightEnabled="True"
+            SelectionChanged="PassedTextControl_SelectionChanged"
+            SizeChanged="PassedTextControl_SizeChanged"
             SpellCheck.IsEnabled="True"
             Style="{DynamicResource TextBoxStyle1}"
-            SizeChanged="PassedTextControl_SizeChanged"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="WrapWithOverflow"
             VerticalScrollBarVisibility="Auto" />
@@ -378,14 +386,15 @@
                     ToolTip="Find and Replace" />
             </StackPanel>
 
-            <TextBlock x:Name="BottomBarText" 
-                    Grid.Column="1" 
-                    Text="Ln 1, Col 0"
-                    Foreground="White"
-                    Margin="20,0,20,0"
-                    FontFamily="Cascadia Mono"
-                    HorizontalAlignment="Right" 
-                    VerticalAlignment="Center" />
+            <TextBlock
+                x:Name="BottomBarText"
+                Grid.Column="1"
+                Margin="20,0,20,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                FontFamily="Cascadia Mono"
+                Foreground="White"
+                Text="Ln 1, Col 0" />
         </Grid>
     </Grid>
 </Window>
