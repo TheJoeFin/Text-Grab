@@ -69,7 +69,7 @@ namespace Text_Grab.Utilities
             }
         }
 
-        public static void LaunchFullScreenGrab(bool openAnyway = false)
+        public static void LaunchFullScreenGrab(bool openAnyway = false, bool setBackgroundImage = false)
         {
             Screen[] allScreens = Screen.AllScreens;
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
