@@ -15,42 +15,44 @@
     Topmost="True"
     WindowStyle="None"
     mc:Ignorable="d">
-    <Canvas
-        Name="RegionClickCanvas"
-        Cursor="Cross"
-        MouseDown="RegionClickCanvas_MouseDown"
-        MouseMove="RegionClickCanvas_MouseMove"
-        MouseUp="RegionClickCanvas_MouseUp">
-        <Canvas.Clip>
-            <CombinedGeometry GeometryCombineMode="Exclude">
-                <CombinedGeometry.Geometry1>
-                    <RectangleGeometry x:Name="FullWindow" />
-                </CombinedGeometry.Geometry1>
-                <CombinedGeometry.Geometry2>
-                    <RectangleGeometry x:Name="clippingGeometry" />
-                </CombinedGeometry.Geometry2>
-            </CombinedGeometry>
-        </Canvas.Clip>
-        <Canvas.Background>
-            <SolidColorBrush
-                x:Name="BackgroundBrush"
-                Opacity=".2"
-                Color="Beige" />
-        </Canvas.Background>
+    <Grid>
         <Viewbox>
-            <Image x:Name="DebugImage" Stretch="UniformToFill" />
+            <Image x:Name="BackgroundImage" Stretch="UniformToFill" />
         </Viewbox>
-        <Canvas.ContextMenu>
-        <ContextMenu>
-            <MenuItem
-                Name="SettingsMenuItem"
-                Click="SettingsMenuItem_Click"
-                Header="Settings" />
-            <MenuItem
-                Name="CancelMenuItem"
-                Click="CancelMenuItem_Click"
-                Header="Cancel" />
-        </ContextMenu>
-        </Canvas.ContextMenu>
-    </Canvas>
+        <Canvas
+            Name="RegionClickCanvas"
+            Cursor="Cross"
+            MouseDown="RegionClickCanvas_MouseDown"
+            MouseMove="RegionClickCanvas_MouseMove"
+            MouseUp="RegionClickCanvas_MouseUp">
+            <Canvas.Clip>
+                <CombinedGeometry GeometryCombineMode="Exclude">
+                    <CombinedGeometry.Geometry1>
+                        <RectangleGeometry x:Name="FullWindow" />
+                    </CombinedGeometry.Geometry1>
+                    <CombinedGeometry.Geometry2>
+                        <RectangleGeometry x:Name="clippingGeometry" />
+                    </CombinedGeometry.Geometry2>
+                </CombinedGeometry>
+            </Canvas.Clip>
+            <Canvas.Background>
+                <SolidColorBrush
+                    x:Name="BackgroundBrush"
+                    Opacity="0"
+                    Color="Beige" />
+            </Canvas.Background>
+            <Canvas.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Name="SettingsMenuItem"
+                        Click="SettingsMenuItem_Click"
+                        Header="Settings" />
+                    <MenuItem
+                        Name="CancelMenuItem"
+                        Click="CancelMenuItem_Click"
+                        Header="Cancel" />
+                </ContextMenu>
+            </Canvas.ContextMenu>
+        </Canvas>
+    </Grid>
 </Window>

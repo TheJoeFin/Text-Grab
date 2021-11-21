@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -31,9 +32,17 @@ namespace Text_Grab.Views
 
         public bool IsFromEditWindow { get; set; } = false;
 
+        public bool IsFreeze { get; set; } = false;
+
         public FullscreenGrab()
         {
             InitializeComponent();
+        }
+
+        public void SetImageToBackground()
+        {
+            BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
+            BackgroundBrush.Opacity = 0.2;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -42,6 +51,9 @@ namespace Text_Grab.Views
             FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
             this.KeyDown += FullscreenGrab_KeyDown;
             this.KeyUp += FullscreenGrab_KeyUp;
+
+            if (IsFreeze == false)
+                BackgroundBrush.Opacity = 0.2;
         }
 
         private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
