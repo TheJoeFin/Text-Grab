@@ -11,19 +11,19 @@ namespace Text_Grab.Utilities
 
     public static class HotKeyManager
     {
-        public static event EventHandler<HotKeyEventArgs> HotKeyPressed;
+        public static event EventHandler<HotKeyEventArgs>? HotKeyPressed;
 
         public static int RegisterHotKey(Keys key, KeyModifiers modifiers)
         {
-            _windowReadyEvent.WaitOne();
+            _windowReadyEvent?.WaitOne();
             int id = System.Threading.Interlocked.Increment(ref _id);
-            _wnd.Invoke(new RegisterHotKeyDelegate(RegisterHotKeyInternal), _hwnd, id, (uint)modifiers, (uint)key);
+            _wnd?.Invoke(new RegisterHotKeyDelegate(RegisterHotKeyInternal), _hwnd, id, (uint)modifiers, (uint)key);
             return id;
         }
 
         public static void UnregisterHotKey(int id)
         {
-            _wnd.Invoke(new UnRegisterHotKeyDelegate(UnRegisterHotKeyInternal), _hwnd, id);
+            _wnd?.Invoke(new UnRegisterHotKeyDelegate(UnRegisterHotKeyInternal), _hwnd, id);
         }
 
         delegate void RegisterHotKeyDelegate(IntPtr hwnd, int id, uint modifiers, uint key);
@@ -47,9 +47,9 @@ namespace Text_Grab.Utilities
             }
         }
 
-        private static volatile MessageWindow _wnd;
+        private static volatile MessageWindow? _wnd;
         private static volatile IntPtr _hwnd;
-        private static ManualResetEvent _windowReadyEvent = new ManualResetEvent(false);
+        private static ManualResetEvent? _windowReadyEvent = new ManualResetEvent(false);
         static HotKeyManager()
         {
             Thread messageLoop = new Thread(delegate ()
@@ -67,7 +67,7 @@ namespace Text_Grab.Utilities
             {
                 _wnd = this;
                 _hwnd = this.Handle;
-                _windowReadyEvent.Set();
+                _windowReadyEvent?.Set();
             }
 
             protected override void WndProc(ref Message m)

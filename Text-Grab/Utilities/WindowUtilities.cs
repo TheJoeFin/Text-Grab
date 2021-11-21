@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
@@ -21,7 +22,54 @@ namespace Text_Grab.Utilities
             }
         }
 
-        public static void LaunchFullScreenGrab(bool openAnyway = false, bool setBackgroundImage = false)
+        public static void SetWindowPosition(Window passedWindow)
+        {
+            string storedPostionString = "";
+
+            if (passedWindow is EditTextWindow)
+                storedPostionString = Properties.Settings.Default.EditTextWindowSizeAndPosition;
+
+            if (passedWindow is GrabFrame)
+                storedPostionString = Properties.Settings.Default.GrabFrameWindowSizeAndPosition;
+
+            List<string> storedPostion = new(storedPostionString.Split(','));
+
+            bool isStoredRectWithinScreen = false;
+
+            if (storedPostion != null
+                && storedPostion.Count == 4)
+            {
+                bool couldParseAll = false;
+                couldParseAll = double.TryParse(storedPostion[0], out double parsedX);
+                couldParseAll = double.TryParse(storedPostion[1], out double parsedY);
+                couldParseAll = double.TryParse(storedPostion[2], out double parsedWid);
+                couldParseAll = double.TryParse(storedPostion[3], out double parsedHei);
+                Rectangle storedSize = new Rectangle((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
+                Screen[] allScreens = Screen.AllScreens;
+                WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+                if (parsedHei < 10 || parsedWid < 10)
+                    return;
+
+                foreach (Screen screen in allScreens)
+                {
+                    if (screen.WorkingArea.IntersectsWith(storedSize))
+                        isStoredRectWithinScreen = true;
+                }
+
+                if (isStoredRectWithinScreen == true && couldParseAll == true)
+                {
+                    passedWindow.Left = storedSize.X;
+                    passedWindow.Top = storedSize.Y;
+                    passedWindow.Width = storedSize.Width;
+                    passedWindow.Height = storedSize.Height;
+
+                    return;
+                }
+            }
+        }
+
+        public static void LaunchFullScreenGrab(bool openAnyway = false)
         {
             Screen[] allScreens = Screen.AllScreens;
             WindowCollection allWindows = System.Windows.Application.Current.Windows;

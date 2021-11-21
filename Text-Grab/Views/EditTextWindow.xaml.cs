@@ -146,8 +146,6 @@ namespace Text_Grab
             if (PassedTextControl.ContextMenu != null)
                 numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
 
-            SetFontFromSettings();
-
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
             XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
             selectedCultureInfo = lang.GetEquivalentCulture();
@@ -165,17 +163,19 @@ namespace Text_Grab
                 WindowState = WindowState.Minimized;
             }
 
-            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += async (s, e) =>
+            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+        }
+
+        private async void Clipboard_ContentChanged(object? sender, object e)
+        {
             {
                 DataPackageView dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
                 if (dataPackageView.Contains(StandardDataFormats.Text))
                 {
                     string text = await dataPackageView.GetTextAsync();
-                    // To output the text from this example, you need a TextBlock control
                     if (string.IsNullOrEmpty(text) == false)
                     {
                         System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
-
                     }
                 }
             };
@@ -190,6 +190,8 @@ namespace Text_Grab
         private void Window_Initialized(object sender, EventArgs e)
         {
             PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
+            WindowUtilities.SetWindowPosition(this);
+            SetFontFromSettings();
         }
 
         private void SetFontFromSettings()
@@ -874,6 +876,12 @@ namespace Text_Grab
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
+            Properties.Settings.Default.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+            Properties.Settings.Default.Save();
+
+            Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
+
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
             foreach (Window window in allWindows)
