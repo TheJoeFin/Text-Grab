@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -1145,6 +1146,17 @@ namespace Text_Grab
                     PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
                 }
             }
+        }
+
+        private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            await Task.Delay(2000);
+            WindowUtilities.LaunchFullScreenGrab(true, true);
+        }
+
+        private void FSGFreezeenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.LaunchFullScreenGrab(true, true);
         }
     }
 }
