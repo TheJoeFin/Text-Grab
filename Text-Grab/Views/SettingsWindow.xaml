@@ -40,7 +40,7 @@
                         VerticalAlignment="Center"
                         Foreground="White"
                         Style="{StaticResource TextBodyNormal}"
-                        Text="Version 2.2" />
+                        Text="Version 2.4" />
 
                     <controls:CollapsibleButton
                         x:Name="AboutBTN"
