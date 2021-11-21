@@ -18,8 +18,12 @@ namespace Text_Grab
     {
         public NotifyIcon? TextGrabIcon { get; set; }
 
+        public int NumberOfRunningInstances { get; set; } = 0;
+
         void appStartup(object sender, StartupEventArgs e)
         {
+            NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
+
             // Register COM server and activator type
             bool handledArgument = false;
 
@@ -38,7 +42,8 @@ namespace Text_Grab
                 }));
             };
 
-            if (Settings.Default.RunInTheBackground == true)
+            if (Settings.Default.RunInTheBackground == true
+                && NumberOfRunningInstances < 2)
                 NotifyIconUtilities.SetupNotifyIcon();
 
             Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;

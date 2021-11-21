@@ -9,7 +9,8 @@ namespace Text_Grab.Utilities
         public static void SetupNotifyIcon()
         {
             App app = (App)App.Current;
-            if (app.TextGrabIcon != null)
+            if (app.TextGrabIcon != null
+                || app.NumberOfRunningInstances > 1)
             {
                 return;
             }
