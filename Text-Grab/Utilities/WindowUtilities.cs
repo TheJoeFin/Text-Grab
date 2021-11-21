@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
 using Text_Grab.Views;
@@ -20,10 +21,12 @@ namespace Text_Grab.Utilities
             }
         }
 
-        public static void LaunchFullScreenGrab(bool openAnyway = false)
+        public static void LaunchFullScreenGrab(bool openAnyway = false, bool setBackgroundImage = false)
         {
             Screen[] allScreens = Screen.AllScreens;
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            List<FullscreenGrab> allFullscreenGrab = new();
 
             foreach (Screen screen in allScreens)
             {
@@ -53,6 +56,7 @@ namespace Text_Grab.Utilities
                         Width = 200,
                         Height = 200,
                         IsFromEditWindow = isEditWindowOpen,
+                        IsFreeze = setBackgroundImage,
                         WindowState = WindowState.Normal
                     };
 
@@ -68,6 +72,15 @@ namespace Text_Grab.Utilities
 
                     fullscreenGrab.Show();
                     fullscreenGrab.Activate();
+                    allFullscreenGrab.Add(fullscreenGrab);
+                }
+            }
+
+            if (setBackgroundImage == true)
+            {
+                foreach (FullscreenGrab fsg in allFullscreenGrab)
+                {
+                    fsg.SetImageToBackground();
                 }
             }
         }
