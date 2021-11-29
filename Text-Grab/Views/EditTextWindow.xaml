@@ -13,7 +13,7 @@
     MinHeight="200"
     Activated="Window_Activated"
     Background="{StaticResource DarkBackground}"
-    Closing="Window_Closing"
+    Closed="Window_Closing"
     Initialized="Window_Initialized"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
