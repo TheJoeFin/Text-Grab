@@ -50,7 +50,7 @@ namespace Text_Grab.Views
             WindowUtilities.SetWindowPosition(this);
         }
 
-        private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closed(object? sender, EventArgs e)
         {
             string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
             Properties.Settings.Default.GrabFrameWindowSizeAndPosition = windowSizeAndPosition;

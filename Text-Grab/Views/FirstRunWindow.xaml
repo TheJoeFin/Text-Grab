@@ -15,7 +15,7 @@
     Padding="50"
     d:Height="3000"
     Background="{StaticResource DarkControlBackground}"
-    Closing="Window_Closing"
+    Closed="Window_Closed"
     Loaded="FirstRun_Loaded"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">

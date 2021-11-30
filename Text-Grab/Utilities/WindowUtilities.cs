@@ -188,7 +188,7 @@ namespace Text_Grab.Utilities
             }
             else
             {
-                if (allWindows.Count <= 1)
+                if (allWindows.Count < 1)
                     shouldShutDown = true;
             }
 

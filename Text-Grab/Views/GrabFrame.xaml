@@ -15,7 +15,7 @@
     Activated="GrabFrameWindow_Activated"
     AllowsTransparency="True"
     Background="Transparent"
-    Closing="GrabFrameWindow_Closing"
+    Closed="Window_Closed"
     Deactivated="GrabFrameWindow_Deactivated"
     Initialized="GrabFrameWindow_Initialized"
     LocationChanged="Window_LocationChanged"

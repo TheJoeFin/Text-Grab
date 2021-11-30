@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Windows;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -108,7 +109,7 @@ namespace Text_Grab
             frw.Show();
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closed(object? sender, EventArgs e)
         {
             WindowUtilities.ShouldShutDown();
         }

@@ -12,7 +12,7 @@
     MinWidth="200"
     MinHeight="300"
     Background="{StaticResource DarkControlBackground}"
-    Closing="Window_Closing"
+    Closed="Window_Closed"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
