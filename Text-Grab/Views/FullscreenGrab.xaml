@@ -12,6 +12,7 @@
     Background="Transparent"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
+    Closed="Window_Closed"
     Topmost="True"
     WindowStyle="None"
     mc:Ignorable="d">
