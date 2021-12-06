@@ -32,7 +32,7 @@ namespace Text_Grab.Views
 
         public bool IsFromEditWindow { get; set; } = false;
 
-        private string textFromOCR;
+        private string? textFromOCR;
 
         public bool IsFreeze { get; set; } = false;
 
@@ -249,6 +249,10 @@ namespace Text_Grab.Views
 
         private void Window_Closed(object sender, EventArgs e)
         {
+            if (textFromOCR is null
+                || IsFromEditWindow == true)
+                return;
+
             foreach (char c in textFromOCR)
             {
                 if (char.IsLetterOrDigit(c)
