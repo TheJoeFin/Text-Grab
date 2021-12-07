@@ -153,6 +153,15 @@
                         IsSymbol="True"
                         SymbolText="" />
 
+                    <controls:CollapsibleButton
+                        x:Name="SettingsBTN"
+                        Grid.Column="2"
+                        Margin="6,0,0,0"
+                        ButtonText="Settings"
+                        Click="SettingsBTN_Click"
+                        IsSymbol="True"
+                        SymbolText="" />
+
                     <TextBlock
                         x:Name="MatchesTXTBLK"
                         Grid.Column="3"

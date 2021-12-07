@@ -310,6 +310,11 @@ namespace Text_Grab.Views
                 await DrawRectanglesAroundWords(searchBox.Text);
         }
 
+        private void SettingsBTN_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+        }
+
         private void GrabFrameWindow_Activated(object sender, EventArgs e)
         {
             reDrawTimer.Start();
