@@ -52,6 +52,8 @@ namespace Text_Grab
 
         public static RoutedCommand UnstackCmd = new();
 
+        public static RoutedCommand UnstackGroupCmd = new();
+
         public static RoutedCommand DeleteAllSelectionCmd = new();
 
         public static RoutedCommand DeleteAllSelectionPatternCmd = new();
@@ -529,7 +531,6 @@ namespace Text_Grab
         }
 
         private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
-
         {
             string[] selectionLines = PassedTextControl.SelectedText.Split(Environment.NewLine);
             int numberOfLines = selectionLines.Length;
@@ -537,8 +538,15 @@ namespace Text_Grab
             PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
         }
 
-        private void DeleteAllSelectionExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+        private void UnstackGroupExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+        {
+            string[] selectionLines = PassedTextControl.SelectedText.Split(Environment.NewLine);
+            int numberOfLines = selectionLines.Length;
 
+            PassedTextControl.Text = PassedTextControl.Text.UnstackGroups(numberOfLines);
+        }
+
+        private void DeleteAllSelectionExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
         {
             string selectionToDelete = PassedTextControl.SelectedText;
 
@@ -546,7 +554,6 @@ namespace Text_Grab
         }
 
         private void DeleteAllSelectionPatternExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
-
         {
             string selectionToDelete = PassedTextControl.SelectedText;
             string Pattern = selectionToDelete.ExtractSimplePattern();
@@ -574,7 +581,6 @@ namespace Text_Grab
         }
 
         private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
-
         {
             string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
             string selectionText = PassedTextControl.SelectedText;

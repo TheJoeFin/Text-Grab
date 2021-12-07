@@ -81,6 +81,10 @@
             Command="{x:Static local:EditTextWindow.UnstackCmd}"
             Executed="UnstackExecuted" />
         <CommandBinding
+            CanExecute="SelectionContainsNewLinesCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
+            Executed="UnstackGroupExecuted" />
+        <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
             Executed="DeleteAllSelectionExecuted" />
@@ -178,6 +182,10 @@
                     Command="{x:Static local:EditTextWindow.UnstackCmd}"
                     Header="_Unstack Text (Select Top Row)"
                     InputGestureText="Ctrl + U" />
+                <MenuItem
+                    x:Name="UnStackGroupMenuItem"
+                    Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
+                    Header="_Unstack Text (Select First Column)" />
             </MenuItem>
             <MenuItem Header="_Selection">
                 <MenuItem

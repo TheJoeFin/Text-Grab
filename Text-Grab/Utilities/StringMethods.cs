@@ -287,6 +287,36 @@ namespace Text_Grab.Utilities
             return sbUnstacked.ToString();
         }
 
+        public static string UnstackGroups(this string stringGroupedToUnstack, int numberOfRows)
+        {
+            StringBuilder sbUnstacked = new();
+
+            string[] splitInputString = stringGroupedToUnstack.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
+
+            int numberOfColumns = splitInputString.Count() / numberOfRows;
+
+            for (int j = 0; j < numberOfRows; j++)
+            {
+                if (j != 0)
+                    sbUnstacked.Append(Environment.NewLine);
+
+                for (int i = 0; i < numberOfColumns; i++)
+                {
+                    int lineNumberToAppend = j + (i * numberOfRows);
+
+                    if (lineNumberToAppend - 1 > splitInputString.Count())
+                        break;
+
+                    if (i != 0)
+                        sbUnstacked.Append('\t');
+
+                    sbUnstacked.Append(splitInputString[lineNumberToAppend]);
+                }
+            }
+
+            return sbUnstacked.ToString();
+        }
+
         public static string RemoveDuplicateLines(this string stringToDeduplicate)
         {
             string[] splitString = stringToDeduplicate.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
