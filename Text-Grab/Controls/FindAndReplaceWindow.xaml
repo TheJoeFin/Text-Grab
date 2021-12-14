@@ -13,6 +13,7 @@
     Background="{StaticResource DarkBackground}"
     KeyUp="Window_KeyUp"
     Loaded="FindAndReplacedLoaded"
+    Closed="Window_Closed"
     mc:Ignorable="d">
     <Window.CommandBindings>
         <CommandBinding

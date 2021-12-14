@@ -34,7 +34,14 @@ namespace Text_Grab.Controls
             InitializeComponent();
 
             ChangeFindTextTimer.Interval = TimeSpan.FromMilliseconds(400);
+            ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
             ChangeFindTextTimer.Tick += ChangeFindText_Tick;
+        }
+
+        private void Window_Closed(object? sender, EventArgs e)
+        {
+            ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
+            ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
         }
 
         private void ChangeFindText_Tick(object? sender, EventArgs? e)
