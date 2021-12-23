@@ -253,11 +253,14 @@ namespace Text_Grab.Views
                 || IsFromEditWindow == true)
                 return;
 
-            foreach (char c in textFromOCR)
+            if (Settings.Default.TryInsert == true)
             {
-                if (char.IsLetterOrDigit(c)
-                    || char.IsWhiteSpace(c))
-                    System.Windows.Forms.SendKeys.SendWait(c.ToString());
+                foreach (char c in textFromOCR)
+                {
+                    if (char.IsLetterOrDigit(c)
+                        || char.IsWhiteSpace(c))
+                        System.Windows.Forms.SendKeys.SendWait(c.ToString());
+                }
             }
         }
     }
