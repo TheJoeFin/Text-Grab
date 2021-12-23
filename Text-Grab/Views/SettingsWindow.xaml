@@ -20,145 +20,159 @@
             <Setter Property="Foreground" Value="White" />
         </Style>
     </Window.Resources>
-    <Border Padding="26,8">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="auto" />
-                <RowDefinition Height="auto" />
-            </Grid.RowDefinitions>
-            <StackPanel Orientation="Vertical">
+    <Border>
+        <ScrollViewer
+            x:Name="SettingsScrollView"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <Grid Margin="26,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Vertical">
 
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="auto" />
-                    </Grid.ColumnDefinitions>
-                    <!--  Version Text  -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="auto" />
+                        </Grid.ColumnDefinitions>
+                        <!--  Version Text  -->
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="White"
+                            Style="{StaticResource TextBodyNormal}"
+                            Text="Version 2.4" />
+
+                        <controls:CollapsibleButton
+                            x:Name="AboutBTN"
+                            Grid.Column="2"
+                            Margin="0"
+                            ButtonText="About Text Grab"
+                            Click="AboutBTN_Click"
+                            SymbolText="" />
+                    </Grid>
+
+                    <!--  Show Toast on success  -->
+                    <CheckBox
+                        Name="ShowToastCheckBox"
+                        Margin="0,12,0,0"
+                        VerticalContentAlignment="Center"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Show Toast when text is copied. Opens window to display and edit text.
+                        </TextBlock>
+                    </CheckBox>
+
+                    <!--  default launch  -->
                     <TextBlock
-                        VerticalAlignment="Center"
-                        Foreground="White"
-                        Style="{StaticResource TextBodyNormal}"
-                        Text="Version 2.4" />
+                        Margin="0,16,0,4"
+                        FontSize="16"
+                        Style="{StaticResource TextHeader}"
+                        Text="Default Launch Window" />
+                    <RadioButton
+                        x:Name="FullScreenRDBTN"
+                        VerticalContentAlignment="Center"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Full Screen
+                        </TextBlock>
+                    </RadioButton>
+                    <RadioButton
+                        x:Name="GrabFrameRDBTN"
+                        VerticalContentAlignment="Center"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Grab Frame
+                        </TextBlock>
+                    </RadioButton>
+                    <RadioButton
+                        x:Name="EditTextRDBTN"
+                        VerticalContentAlignment="Center"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Edit Text Window
+                        </TextBlock>
+                    </RadioButton>
 
+                    <!--  Pick Language  -->
+
+                    <!--    -->
+                    <CheckBox
+                        Name="ErrorCorrectBox"
+                        Margin="0,16,0,0"
+                        VerticalContentAlignment="Center"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Try to correct confusions between numbers and letters
+                        </TextBlock>
+                    </CheckBox>
+
+                    <CheckBox
+                        Name="NeverUseClipboardChkBx"
+                        Margin="0,16,0,0"
+                        VerticalContentAlignment="Center"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Never automatically add text to the clipboard
+                        </TextBlock>
+                    </CheckBox>
+
+                    <CheckBox
+                        Name="RunInBackgroundChkBx"
+                        Margin="0,16,0,0"
+                        VerticalContentAlignment="Center"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Run Text Grab in the background and enable hotkeys
+                        </TextBlock>
+                    </CheckBox>
+                    <TextBlock
+                        Margin="24,0"
+                        Foreground="LightGray"
+                        Style="{StaticResource TextBodyNormal}">
+                        <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run><LineBreak />
+                        <Run FontWeight="Bold">Global hotkeys:</Run><LineBreak />
+                        - Win+Shift+F new Full Screen Grab<LineBreak />
+                        - Win+Shift+G new Grab Frame<LineBreak />
+                        - Win+Shift+E new Edit Text Window</TextBlock>
+
+                    <CheckBox
+                        Name="TryInsertCheckbox"
+                        Margin="0,16,0,0"
+                        VerticalContentAlignment="Center"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            (Experimental) Try to Insert text at text caret after copying
+                        </TextBlock>
+                    </CheckBox>
+
+                </StackPanel>
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
                     <controls:CollapsibleButton
-                        x:Name="AboutBTN"
-                        Grid.Column="2"
-                        Margin="0"
-                        ButtonText="About Text Grab"
-                        Click="AboutBTN_Click"
-                        SymbolText="" />
-                </Grid>
-
-                <!--  Show Toast on success  -->
-                <CheckBox
-                    Name="ShowToastCheckBox"
-                    Margin="0,12,0,0"
-                    VerticalContentAlignment="Center"
-                    Style="{StaticResource labelText}">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Show Toast when text is copied. Opens window to display and edit text.
-                    </TextBlock>
-                </CheckBox>
-
-                <!--  default launch  -->
-                <TextBlock
-                    Margin="0,16,0,4"
-                    FontSize="16"
-                    Style="{StaticResource TextHeader}"
-                    Text="Default Launch Window" />
-                <RadioButton
-                    x:Name="FullScreenRDBTN"
-                    VerticalContentAlignment="Center"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Full Screen
-                    </TextBlock>
-                </RadioButton>
-                <RadioButton
-                    x:Name="GrabFrameRDBTN"
-                    VerticalContentAlignment="Center"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Grab Frame
-                    </TextBlock>
-                </RadioButton>
-                <RadioButton
-                    x:Name="EditTextRDBTN"
-                    VerticalContentAlignment="Center"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Edit Text Window
-                    </TextBlock>
-                </RadioButton>
-
-                <!--  Pick Language  -->
-
-                <!--    -->
-                <CheckBox
-                    Name="ErrorCorrectBox"
-                    Margin="0,16,0,0"
-                    VerticalContentAlignment="Center"
-                    Style="{StaticResource labelText}">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Try to correct confusions between numbers and letters
-                    </TextBlock>
-                </CheckBox>
-
-                <CheckBox
-                    Name="NeverUseClipboardChkBx"
-                    Margin="0,16,0,0"
-                    VerticalContentAlignment="Center"
-                    Style="{StaticResource labelText}">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Never automatically add text to the clipboard
-                    </TextBlock>
-                </CheckBox>
-
-                <CheckBox
-                    Name="RunInBackgroundChkBx"
-                    Margin="0,16,0,0"
-                    VerticalContentAlignment="Center"
-                    Style="{StaticResource labelText}">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Run Text Grab in the background and enable hotkeys
-                    </TextBlock>
-                </CheckBox>
-                <TextBlock
-                    Margin="24,0"
-                    Foreground="LightGray"
-                    Style="{StaticResource TextBodyNormal}">
-                    <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run><LineBreak />
-                    <Run FontWeight="Bold">Global hotkeys:</Run><LineBreak />
-                    - Win+Shift+F new Full Screen Grab<LineBreak />
-                    - Win+Shift+G new Grab Frame<LineBreak />
-                    - Win+Shift+E new Edit Text Window<LineBreak />
+                        x:Name="CloseBTN"
+                        ButtonText="Cancel"
+                        Click="CloseBTN_Click"
+                        SymbolText="" />
+                    <controls:CollapsibleButton
+                        x:Name="SaveBTN"
+                        Background="DarkGreen"
+                        ButtonText="Save and Close"
+                        Click="SaveBTN_Click"
+                        SymbolText="" />
+                </StackPanel>
+                <TextBlock Grid.Row="2" Style="{StaticResource TextBodyNormal}">
+                    What do you want to see here? Submit an issue on GitHub<LineBreak />
+                    <Hyperlink
+                        Foreground="DeepSkyBlue"
+                        NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues"
+                        RequestNavigate="Hyperlink_RequestNavigate">
+                        https://github.com/TheJoeFin/Text-Grab/issues
+                    </Hyperlink>
                 </TextBlock>
-
-            </StackPanel>
-            <StackPanel Grid.Row="1" Orientation="Horizontal">
-                <controls:CollapsibleButton
-                    x:Name="CloseBTN"
-                    ButtonText="Cancel"
-                    Click="CloseBTN_Click"
-                    SymbolText="" />
-                <controls:CollapsibleButton
-                    x:Name="SaveBTN"
-                    Background="DarkGreen"
-                    ButtonText="Save and Close"
-                    Click="SaveBTN_Click"
-                    SymbolText="" />
-            </StackPanel>
-            <TextBlock Grid.Row="2" Style="{StaticResource TextBodyNormal}">
-                What do you want to see here? Submit an issue on GitHub<LineBreak />
-                <Hyperlink
-                    Foreground="DeepSkyBlue"
-                    NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues"
-                    RequestNavigate="Hyperlink_RequestNavigate">
-                    https://github.com/TheJoeFin/Text-Grab/issues
-                </Hyperlink>
-            </TextBlock>
-        </Grid>
+            </Grid>
+        </ScrollViewer>
     </Border>
 </Window>

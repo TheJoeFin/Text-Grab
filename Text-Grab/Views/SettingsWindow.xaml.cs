@@ -22,6 +22,7 @@ namespace Text_Grab
             ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
             NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
             RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
+            TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
 
             switch (Settings.Default.DefaultLaunch)
             {
@@ -86,6 +87,8 @@ namespace Text_Grab
                 }
             }
 
+            if (TryInsertCheckbox.IsChecked != null)
+                Settings.Default.TryInsert = (bool)TryInsertCheckbox.IsChecked;
 
 
             Settings.Default.Save();
