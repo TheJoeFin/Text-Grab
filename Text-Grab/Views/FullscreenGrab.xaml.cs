@@ -32,6 +32,8 @@ namespace Text_Grab.Views
 
         public bool IsFromEditWindow { get; set; } = false;
 
+        private string? textFromOCR;
+
         public bool IsFreeze { get; set; } = false;
 
         public FullscreenGrab()
@@ -221,6 +223,8 @@ namespace Text_Grab.Views
 
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
+                textFromOCR = grabbedText;
+
                 if (Settings.Default.NeverAutoUseClipboard == false
                     && IsFromEditWindow == false)
                     Clipboard.SetText(grabbedText);
@@ -240,6 +244,23 @@ namespace Text_Grab.Views
                 clippingGeometry.Rect = new Rect(
                 new System.Windows.Point(0, 0),
                 new System.Windows.Size(0, 0));
+            }
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            if (textFromOCR is null
+                || IsFromEditWindow == true)
+                return;
+
+            if (Settings.Default.TryInsert == true)
+            {
+                foreach (char c in textFromOCR)
+                {
+                    if (char.IsLetterOrDigit(c)
+                        || char.IsWhiteSpace(c))
+                        System.Windows.Forms.SendKeys.SendWait(c.ToString());
+                }
             }
         }
     }
