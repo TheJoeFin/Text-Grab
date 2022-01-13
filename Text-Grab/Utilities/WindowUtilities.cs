@@ -70,7 +70,9 @@ namespace Text_Grab.Utilities
             }
         }
 
-        public static void LaunchFullScreenGrab(bool openAnyway = false, bool setBackgroundImage = false)
+        public static void LaunchFullScreenGrab(bool openAnyway = false, 
+                                                bool setBackgroundImage = false, 
+                                                bool fromEditWindow = false)
         {
             Screen[] allScreens = Screen.AllScreens;
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
@@ -80,7 +82,6 @@ namespace Text_Grab.Utilities
             foreach (Screen screen in allScreens)
             {
                 bool screenHasWindow = true;
-                bool isEditWindowOpen = false;
 
                 foreach (Window window in allWindows)
                 {
@@ -90,8 +91,8 @@ namespace Text_Grab.Utilities
                             (int)(window.Top + (window.Height / 2)));
                     screenHasWindow = screen.Bounds.Contains(windowCenter);
 
-                    if (window is EditTextWindow)
-                        isEditWindowOpen = true;
+                    // if (window is EditTextWindow)
+                    //     isEditWindowOpen = true;
                 }
 
                 if (allWindows.Count < 1)
@@ -104,7 +105,7 @@ namespace Text_Grab.Utilities
                         WindowStartupLocation = WindowStartupLocation.Manual,
                         Width = 200,
                         Height = 200,
-                        IsFromEditWindow = isEditWindowOpen,
+                        IsFromEditWindow = fromEditWindow,
                         IsFreeze = setBackgroundImage,
                         WindowState = WindowState.Normal
                     };
@@ -138,14 +139,38 @@ namespace Text_Grab.Utilities
         {
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
+            bool isFromEditWindow = false;
+            string stringFromOCR = "";
+
             foreach (Window window in allWindows)
             {
                 if (window is FullscreenGrab fsg)
+                {
+                    if (string.IsNullOrWhiteSpace(fsg.textFromOCR) == false)
+                        stringFromOCR = fsg.textFromOCR;
+
+                    isFromEditWindow = fsg.IsFromEditWindow;
+
                     fsg.Close();
+                }
                 if (window is EditTextWindow etw)
                 {
                     if (etw.WindowState == WindowState.Minimized)
                         etw.WindowState = WindowState.Normal;
+                }
+            }
+
+            if (Settings.Default.TryInsert == true
+                && string.IsNullOrWhiteSpace(stringFromOCR) == false
+                && isFromEditWindow == false)
+            {
+                Debug.WriteLine("String From OCR:" + stringFromOCR);
+
+                foreach (char c in stringFromOCR)
+                {
+                    if (char.IsLetterOrDigit(c)
+                        || char.IsWhiteSpace(c))
+                        System.Windows.Forms.SendKeys.SendWait(c.ToString());
                 }
             }
 

@@ -395,7 +395,7 @@ namespace Text_Grab
 
         private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
         {
-            WindowUtilities.LaunchFullScreenGrab(true);
+            WindowUtilities.LaunchFullScreenGrab(openAnyway: true, fromEditWindow: true);
         }
 
         private void keyedCtrlG(object sender, ExecutedRoutedEventArgs e)
