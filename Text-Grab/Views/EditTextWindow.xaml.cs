@@ -160,7 +160,7 @@ namespace Text_Grab
                 && string.IsNullOrWhiteSpace(OpenedFilePath) == true
                 && LaunchedFromNotification == false)
             {
-                WindowUtilities.LaunchFullScreenGrab(true);
+                WindowUtilities.LaunchFullScreenGrab(true, false, this);
                 LaunchFullscreenOnLoad.IsChecked = true;
                 WindowState = WindowState.Minimized;
             }
@@ -395,7 +395,7 @@ namespace Text_Grab
 
         private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
         {
-            WindowUtilities.LaunchFullScreenGrab(openAnyway: true, fromEditWindow: true);
+            WindowUtilities.LaunchFullScreenGrab(openAnyway: true, editWindow: this);
         }
 
         private void keyedCtrlG(object sender, ExecutedRoutedEventArgs e)
@@ -720,7 +720,7 @@ namespace Text_Grab
 
         private void NewFullscreen_Click(object sender, RoutedEventArgs e)
         {
-            WindowUtilities.LaunchFullScreenGrab(true);
+            WindowUtilities.LaunchFullScreenGrab(true, editWindow: this);
         }
 
         private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -899,7 +899,7 @@ namespace Text_Grab
                 }
                 if (window is FullscreenGrab fullscreenGrab)
                 {
-                    fullscreenGrab.IsFromEditWindow = false;
+                    fullscreenGrab.EditWindow = null;
                 }
                 if (window is FindAndReplaceWindow findAndReplaceWindow)
                 {
@@ -1018,7 +1018,7 @@ namespace Text_Grab
 
         private void FullScreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            WindowUtilities.LaunchFullScreenGrab(true);
+            WindowUtilities.LaunchFullScreenGrab(true, editWindow: this);
         }
 
         private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1166,12 +1166,12 @@ namespace Text_Grab
         private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)
         {
             await Task.Delay(2000);
-            WindowUtilities.LaunchFullScreenGrab(true, true);
+            WindowUtilities.LaunchFullScreenGrab(true, true, this);
         }
 
         private void FSGFreezeenuItem_Click(object sender, RoutedEventArgs e)
         {
-            WindowUtilities.LaunchFullScreenGrab(true, true);
+            WindowUtilities.LaunchFullScreenGrab(true, true, this);
         }
     }
 }

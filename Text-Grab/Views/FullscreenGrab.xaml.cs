@@ -30,7 +30,7 @@ namespace Text_Grab.Views
         double xShiftDelta;
         double yShiftDelta;
 
-        public bool IsFromEditWindow { get; set; } = false;
+        public EditTextWindow? EditWindow { get; set; }
 
         public string? textFromOCR;
 
@@ -226,15 +226,15 @@ namespace Text_Grab.Views
                 textFromOCR = grabbedText;
 
                 if (Settings.Default.NeverAutoUseClipboard == false
-                    && IsFromEditWindow == false)
+                    && EditWindow is null)
                     Clipboard.SetText(grabbedText);
 
                 if (Settings.Default.ShowToast
-                    && IsFromEditWindow == false)
+                    && EditWindow is null)
                     NotificationUtilities.ShowToast(grabbedText);
 
-                if (IsFromEditWindow == true)
-                    WindowUtilities.AddTextToOpenWindow(grabbedText);
+                if (EditWindow is not null)
+                    EditWindow.AddThisText(grabbedText);
 
                 WindowUtilities.CloseAllFullscreenGrabs();
             }

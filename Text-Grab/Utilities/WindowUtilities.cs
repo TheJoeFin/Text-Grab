@@ -70,9 +70,9 @@ namespace Text_Grab.Utilities
             }
         }
 
-        public static void LaunchFullScreenGrab(bool openAnyway = false, 
-                                                bool setBackgroundImage = false, 
-                                                bool fromEditWindow = false)
+        public static void LaunchFullScreenGrab(bool openAnyway = false,
+                                                bool setBackgroundImage = false,
+                                                EditTextWindow? editWindow = null)
         {
             Screen[] allScreens = Screen.AllScreens;
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
@@ -105,7 +105,7 @@ namespace Text_Grab.Utilities
                         WindowStartupLocation = WindowStartupLocation.Manual,
                         Width = 200,
                         Height = 200,
-                        IsFromEditWindow = fromEditWindow,
+                        EditWindow = editWindow,
                         IsFreeze = setBackgroundImage,
                         WindowState = WindowState.Normal
                     };
@@ -149,7 +149,7 @@ namespace Text_Grab.Utilities
                     if (string.IsNullOrWhiteSpace(fsg.textFromOCR) == false)
                         stringFromOCR = fsg.textFromOCR;
 
-                    isFromEditWindow = fsg.IsFromEditWindow;
+                    isFromEditWindow = fsg.EditWindow is not null;
 
                     fsg.Close();
                 }
