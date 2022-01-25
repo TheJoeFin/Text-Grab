@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
@@ -149,7 +151,8 @@ namespace Text_Grab.Utilities
                     if (string.IsNullOrWhiteSpace(fsg.textFromOCR) == false)
                         stringFromOCR = fsg.textFromOCR;
 
-                    isFromEditWindow = fsg.EditWindow is not null;
+                    if (fsg.EditWindow is not null)
+                        isFromEditWindow = true;
 
                     fsg.Close();
                 }
@@ -166,11 +169,15 @@ namespace Text_Grab.Utilities
             {
                 Debug.WriteLine("String From OCR:" + stringFromOCR);
 
-                foreach (char c in stringFromOCR)
+                string stringToSend = Regex.Replace(stringFromOCR, "[+^%~()\\{\\}\\[\\]]", "{$0}");
+
+                try
                 {
-                    if (char.IsLetterOrDigit(c)
-                        || char.IsWhiteSpace(c))
-                        System.Windows.Forms.SendKeys.SendWait(c.ToString());
+                    SendKeys.SendWait(stringToSend);
+                }
+                catch (ArgumentException argEx)
+                {
+                    Debug.WriteLine($"Failed to Send Keys: {argEx.Message}");
                 }
             }
 
