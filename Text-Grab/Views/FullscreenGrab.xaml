@@ -44,6 +44,10 @@
             <Canvas.ContextMenu>
                 <ContextMenu>
                     <MenuItem
+                        Name="SingleLineMenuItem"
+                        IsCheckable="True"
+                        Header="Make Result Text Single Line" />
+                    <MenuItem
                         Name="FreezeMenuItem"
                         Click="FreezeMenuItem_Click"
                         Header="Freeze" />

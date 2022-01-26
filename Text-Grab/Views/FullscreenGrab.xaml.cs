@@ -241,6 +241,9 @@ namespace Text_Grab.Views
             if (Settings.Default.CorrectErrors)
                 grabbedText.TryFixEveryWordLetterNumberErrors();
 
+            if (SingleLineMenuItem.IsChecked == true)
+                grabbedText = grabbedText.MakeStringSingleLine();
+
             if (string.IsNullOrWhiteSpace(grabbedText) == false)
             {
                 textFromOCR = grabbedText;
