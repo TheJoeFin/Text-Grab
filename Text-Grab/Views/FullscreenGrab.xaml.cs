@@ -115,6 +115,26 @@ namespace Text_Grab.Views
             WindowUtilities.CloseAllFullscreenGrabs();
         }
 
+        private void NewGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+            WindowUtilities.CloseAllFullscreenGrabs();
+        }
+
+        private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            WindowUtilities.CloseAllFullscreenGrabs();
+        }
+
+        private async void FreezeMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            BackgroundBrush.Opacity = 0;
+            RegionClickCanvas.ContextMenu.IsOpen = false;
+            await Task.Delay(150);
+            SetImageToBackground();
+        }
+
         private void CancelMenuItem_Click(object sender, RoutedEventArgs e)
         {
             WindowUtilities.CloseAllFullscreenGrabs();

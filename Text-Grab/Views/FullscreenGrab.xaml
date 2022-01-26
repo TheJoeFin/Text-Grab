@@ -44,9 +44,23 @@
             <Canvas.ContextMenu>
                 <ContextMenu>
                     <MenuItem
+                        Name="FreezeMenuItem"
+                        Click="FreezeMenuItem_Click"
+                        Header="Freeze" />
+                    <Separator />
+                    <MenuItem
                         Name="SettingsMenuItem"
                         Click="SettingsMenuItem_Click"
                         Header="Settings" />
+                    <MenuItem
+                        Name="NewGrabFrameMenuItem"
+                        Click="NewGrabFrameMenuItem_Click"
+                        Header="Grab Frame" />
+                    <MenuItem
+                        Name="NewEditTextMenuItem"
+                        Click="NewEditTextMenuItem_Click"
+                        Header="Edit Text Window" />
+                    <Separator />
                     <MenuItem
                         Name="CancelMenuItem"
                         Click="CancelMenuItem_Click"
