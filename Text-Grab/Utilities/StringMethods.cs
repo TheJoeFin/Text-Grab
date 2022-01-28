@@ -62,12 +62,10 @@ namespace Text_Grab.Utilities
             if (fractionNumber > 0.6)
             {
                 stringToFix = stringToFix.TryFixToNumbers();
-                Debug.WriteLine($"Tried to fix {stringToFix} to numbers");
             }
             else if (letterNumber > 0.6)
             {
                 stringToFix = stringToFix.TryFixToLetters();
-                Debug.WriteLine($"Tried to fix {stringToFix} to letters");
             }
 
             return stringToFix;
