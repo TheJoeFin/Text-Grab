@@ -12,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Models;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
@@ -166,6 +167,8 @@ namespace Text_Grab
 
                 OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
                 OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
+                ResultTable rt = new ResultTable(ocrResult);
 
                 if (singlePoint == null)
                 {
