@@ -63,6 +63,16 @@
 				</uap:FileTypeAssociation>
 			</uap:Extension>-->
 
+      <uap5:Extension
+            Category="windows.startupTask"
+            Executable="TextGrab.exe"
+            EntryPoint="Windows.FullTrustApplication">
+            <uap5:StartupTask
+              TaskId="StartTextGrab"
+              Enabled="false"
+              DisplayName="Text Grab" />
+          </uap5:Extension>
+
 		</Extensions>
 		
       <uap:VisualElements

@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.ApplicationModel;
 
 namespace Text_Grab
 {
@@ -23,6 +24,8 @@ namespace Text_Grab
         void appStartup(object sender, StartupEventArgs e)
         {
             NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
+
+            attemptToSetStartupTask();
 
             // Register COM server and activator type
             bool handledArgument = false;
@@ -120,6 +123,31 @@ namespace Text_Grab
                     }
                 }
             }
+        }
+
+        private async void attemptToSetStartupTask()
+        {
+            StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
+            Debug.WriteLine("Startup is " + startupTask.State.ToString());
+
+            StartupTaskState newState = await startupTask.RequestEnableAsync();
+            // switch (startupTask.State)
+            // {
+            //     case StartupTaskState.Disabled:
+            //         // Task is disabled but can be enabled.
+            //         // StartupChkBox.Checked = false;
+            //         break;
+            //     case StartupTaskState.DisabledByUser:
+            //         // Task is disabled and user must enable it manually.
+            //         // StartupChkBox.Checked = false;
+            //         // StartupChkBox.Enabled = false;
+
+            //         // StartupChkBox.Text += "\nDisabled in Task Manager";
+            //         break;
+            //     case StartupTaskState.Enabled:
+            //         // StartupChkBox.Checked = true;
+            //         break;
+            // }
         }
 
         private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
