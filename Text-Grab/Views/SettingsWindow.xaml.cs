@@ -41,7 +41,7 @@ namespace Text_Grab
                         StartupOnLoginCheckBox.IsChecked = false;
                         StartupOnLoginCheckBox.IsEnabled = false;
 
-                        StartupOnLoginCheckBox.Content += "\nDisabled in Task Manager";
+                        StartupTextBlock.Text += "\nDisabled in Task Manager";
                         break;
                     case StartupTaskState.Enabled:
                         StartupOnLoginCheckBox.IsChecked = true;
