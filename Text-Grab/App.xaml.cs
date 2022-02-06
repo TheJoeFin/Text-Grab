@@ -1,4 +1,5 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -25,7 +26,10 @@ namespace Text_Grab
         {
             NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
 
-            attemptToSetStartupTask();
+            if (IsPackaged())
+                attemptToMSIXStartup();
+            else
+                attemptToSetRegistryStartup();
 
             // Register COM server and activator type
             bool handledArgument = false;
@@ -125,12 +129,39 @@ namespace Text_Grab
             }
         }
 
-        private async void attemptToSetStartupTask()
+        private void attemptToSetRegistryStartup()
+        {
+            string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+            string? BaseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
+            if (key is not null
+                && BaseDir is not null)
+            {
+                key.SetValue("Text-Grab", $"\"{BaseDir}\\Text-Grab.exe\"");
+            }
+        }
+
+        internal static bool IsPackaged()
+        {
+            try
+            {
+                // If we have a package ID then we are running in a packaged context
+                var dummy = Package.Current.Id;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async void attemptToMSIXStartup()
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
             Debug.WriteLine("Startup is " + startupTask.State.ToString());
 
             StartupTaskState newState = await startupTask.RequestEnableAsync();
+
             // switch (startupTask.State)
             // {
             //     case StartupTaskState.Disabled:
