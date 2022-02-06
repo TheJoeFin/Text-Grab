@@ -178,7 +178,7 @@ namespace Text_Grab
             else
             {
                 string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-                string? BaseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                string? BaseDir = System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory);
                 RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
                 if (key is not null
                     && BaseDir is not null)
