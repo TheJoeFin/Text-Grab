@@ -14,10 +14,27 @@
 		<StartupObject>Text_Grab.App</StartupObject>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
+		<Copyright>Joseph Finney 2022</Copyright>
+		<PackageProjectUrl>TextGrab.net</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/TheJoeFin/Text-Grab</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>SmallTile.scale-125.png</PackageIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
 	  <None Remove="t_ICON2.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\Text-Grab-Package\Images\SmallTile.scale-125.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>
