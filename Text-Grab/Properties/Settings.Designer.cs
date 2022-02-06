@@ -214,5 +214,17 @@ namespace Text_Grab.Properties {
                 this["TryInsert"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool StartupOnLogin {
+            get {
+                return ((bool)(this["StartupOnLogin"]));
+            }
+            set {
+                this["StartupOnLogin"] = value;
+            }
+        }
     }
 }
