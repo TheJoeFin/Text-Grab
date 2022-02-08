@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -81,7 +82,7 @@ namespace Text_Grab
             Close();
         }
 
-        private void SaveBTN_Click(object sender, RoutedEventArgs e)
+        private async void SaveBTN_Click(object sender, RoutedEventArgs e)
         {
             if (ShowToastCheckBox.IsChecked != null)
                 Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
@@ -124,7 +125,7 @@ namespace Text_Grab
                 Settings.Default.StartupOnLogin = (bool)StartupOnLoginCheckBox.IsChecked;
 
                 if (Settings.Default.StartupOnLogin == true)
-                    SetForStartup();
+                    await SetForStartup();
                 else
                     RemoveFromStartup();
             }
@@ -162,11 +163,14 @@ namespace Text_Grab
                 string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
                 RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
                 if (key is not null)
-                    key.DeleteValue("Text-Grab");
+                {
+                    try { key.DeleteValue("Text-Grab"); }
+                    catch (Exception) { }
+                }
             }
         }
 
-        private static async void SetForStartup()
+        private static async Task SetForStartup()
         {
             if (IsPackaged())
             {
@@ -186,6 +190,7 @@ namespace Text_Grab
                     key.SetValue("Text-Grab", $"\"{BaseDir}\\Text-Grab.exe\"");
                 }
             }
+            await Task.CompletedTask;
         }
 
         private void AboutBTN_Click(object sender, RoutedEventArgs e)
