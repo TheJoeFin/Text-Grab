@@ -221,8 +221,8 @@ namespace Text_Grab.Views
 
                     WordBorder wordBorderBox = new WordBorder
                     {
-                        Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 6,
-                        Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
+                        Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX),
+                        Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY),
                         Word = wordString,
                         ToolTip = wordString,
                         LineNumber = lineNumber,
@@ -249,8 +249,8 @@ namespace Text_Grab.Views
 
                     wordBorders.Add(wordBorderBox);
                     _ = RectanglesCanvas.Children.Add(wordBorderBox);
-                    Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 3);
-                    Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 3);
+                    Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / dpi.DpiScaleX));
+                    Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / dpi.DpiScaleY));
                 }
 
                 lineNumber++;
@@ -265,6 +265,57 @@ namespace Text_Grab.Views
                 };
                 RectanglesCanvas.RenderTransform = transform;
             }
+
+            int numberOfVerticalLines = rectCanvasSize.Width / 3;
+            int numberOfHorizontalLines = rectCanvasSize.Height / 3;
+
+            for (int i = 0; i < numberOfHorizontalLines; i++)
+            {
+                Border horzLine = new()
+                {
+                    Height = 1,
+                    Width = rectCanvasSize.Width,
+                    Background = new SolidColorBrush(Colors.Gray)
+                };
+                Rect horzLineRect = new(0, i * 3, horzLine.Width, horzLine.Height);
+                _ = RectanglesCanvas.Children.Add(horzLine);
+                Canvas.SetTop(horzLine, i * 3);
+
+                foreach (var child in RectanglesCanvas.Children)
+                {
+                    if (child is WordBorder wb)
+                    {
+                        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                        if (horzLineRect.IntersectsWith(wbRect) == true)
+                            horzLine.Opacity = 0;
+                    }
+                }
+            }
+
+            for (int i = 0; i < numberOfVerticalLines; i++)
+            {
+                Border vertLine = new()
+                {
+                    Height = rectCanvasSize.Height,
+                    Width = 1,
+                    Background = new SolidColorBrush(Colors.Gray)
+                };
+                _ = RectanglesCanvas.Children.Add(vertLine);
+                Canvas.SetLeft(vertLine, i * 3);
+
+                Rect vertLineRect = new(i * 3, 0, vertLine.Width, vertLine.Height);
+                foreach (var child in RectanglesCanvas.Children)
+                {
+                    if (child is WordBorder wb)
+                    {
+                        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                        if (vertLineRect.IntersectsWith(wbRect) == true)
+                            vertLine.Opacity = 0;
+                    }
+                }
+
+            }
+
             MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
         }
