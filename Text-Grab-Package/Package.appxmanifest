@@ -11,7 +11,7 @@
   <Identity
     Name="40087JoeFinApps.TextGrab"
     Publisher="CN=153F3B0F-BA3D-4964-8098-71AC78A1DF6A"
-    Version="2.4.2.0" />
+    Version="2.5.0.0" />
 
   <Properties>
     <DisplayName>Text Grab</DisplayName>
@@ -48,20 +48,15 @@
 				</com:ComServer>
 			</com:Extension>
 
-			<!--Specify which CLSID to activate when toast clicked-->
-			<!--<desktop:Extension Category="windows.toastNotificationActivation">
-				<desktop:ToastNotificationActivation ToastActivatorCLSID="215d64d2-031c-33c7-96e3-61794cd1ee61" />
-			</desktop:Extension>
-			<uap:Extension Category="windows.fileTypeAssociation">
-				<uap:FileTypeAssociation Name="text-grab">
-					<uap:SupportedFileTypes>
-						<uap:FileType>.txt</uap:FileType>
-					</uap:SupportedFileTypes>
-					<uap:DisplayName>Text Grab</uap:DisplayName>
-					<uap:InfoTip>Text Grab</uap:InfoTip>
-					<uap:Logo>Text-Grab-Icon.png</uap:Logo>
-				</uap:FileTypeAssociation>
-			</uap:Extension>-->
+      <desktop:Extension
+            Category="windows.startupTask"
+            Executable="Text-Grab\Text-Grab.exe"
+            EntryPoint="Windows.FullTrustApplication">
+            <desktop:StartupTask
+              TaskId="StartTextGrab"
+              Enabled="false"
+              DisplayName="Text Grab" />
+          </desktop:Extension>
 
 		</Extensions>
 		

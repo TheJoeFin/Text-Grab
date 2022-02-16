@@ -1,4 +1,5 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -8,6 +9,7 @@ using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.ApplicationModel;
 
 namespace Text_Grab
 {
@@ -23,6 +25,7 @@ namespace Text_Grab
         void appStartup(object sender, StartupEventArgs e)
         {
             NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
+            Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
             // Register COM server and activator type
             bool handledArgument = false;
@@ -44,9 +47,13 @@ namespace Text_Grab
 
             if (Settings.Default.RunInTheBackground == true
                 && NumberOfRunningInstances < 2)
+            {
                 NotifyIconUtilities.SetupNotifyIcon();
 
-            Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
+                if (Settings.Default.StartupOnLogin == true)
+                    handledArgument = true;
+            }
+
 
             for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
             {

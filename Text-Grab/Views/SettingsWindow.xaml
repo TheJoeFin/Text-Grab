@@ -44,7 +44,7 @@
                             VerticalAlignment="Center"
                             Foreground="White"
                             Style="{StaticResource TextBodyNormal}"
-                            Text="Version 2.*" />
+                            Text="Version 2.5.0" />
 
                         <controls:CollapsibleButton
                             x:Name="AboutBTN"
@@ -138,7 +138,15 @@
                         - Win+Shift+F new Full Screen Grab<LineBreak />
                         - Win+Shift+G new Grab Frame<LineBreak />
                         - Win+Shift+E new Edit Text Window</TextBlock>
-
+                    <CheckBox
+                        Name="StartupOnLoginCheckBox"
+                        Margin="0,16,0,0"
+                        VerticalContentAlignment="Center"
+                        Style="{StaticResource labelText}">
+                        <TextBlock x:Name="StartupTextBlock" Style="{StaticResource TextBodyNormal}">
+                            Auto start Text Grab when you login
+                        </TextBlock>
+                    </CheckBox>
                     <CheckBox
                         Name="TryInsertCheckbox"
                         Margin="0,16,0,0"
