@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Media.Ocr;
@@ -113,19 +114,26 @@ namespace Text_Grab.Views
                 List<string> lineList = new();
                 StringBuilder outputString = new();
                 int? lastLineNum = 0;
+                int lastColumnNum = 0;
 
                 if (selectedBorders.FirstOrDefault() != null)
                     lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
 
+                selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
+                selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
+
                 foreach (WordBorder border in selectedBorders)
                 {
-                    if (border.LineNumber != lastLineNum)
+                    if (border.ResultColumnID != lastColumnNum)
+                        lineList.Add("\t");
+                    lastColumnNum = border.ResultColumnID;
+
+                    if (border.ResultRowID != lastLineNum)
                     {
-                        outputString.Append(string.Join(' ', lineList));
+                        outputString.Append(string.Join(' ', lineList).Trim());
                         outputString.Append(Environment.NewLine);
                         lineList.Clear();
-                        lastLineNum = border.LineNumber;
-
+                        lastLineNum = border.ResultRowID;
                     }
                     lineList.Add(border.Word);
                 }
@@ -266,18 +274,24 @@ namespace Text_Grab.Views
                 RectanglesCanvas.RenderTransform = transform;
             }
 
-            int numberOfVerticalLines = rectCanvasSize.Width / 3;
-            int numberOfHorizontalLines = rectCanvasSize.Height / 3;
+            int hitGridSpacing = 3;
 
+            int numberOfVerticalLines = rectCanvasSize.Width / hitGridSpacing;
+            int numberOfHorizontalLines = rectCanvasSize.Height / hitGridSpacing;
+
+            List<ResultRow> resultRows = new();
+
+            List<int> rowAreas = new();
             for (int i = 0; i < numberOfHorizontalLines; i++)
             {
                 Border horzLine = new()
                 {
                     Height = 1,
                     Width = rectCanvasSize.Width,
+                    Opacity = 0,
                     Background = new SolidColorBrush(Colors.Gray)
                 };
-                Rect horzLineRect = new(0, i * 3, horzLine.Width, horzLine.Height);
+                Rect horzLineRect = new(0, i * hitGridSpacing, horzLine.Width, horzLine.Height);
                 _ = RectanglesCanvas.Children.Add(horzLine);
                 Canvas.SetTop(horzLine, i * 3);
 
@@ -287,37 +301,299 @@ namespace Text_Grab.Views
                     {
                         Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
                         if (horzLineRect.IntersectsWith(wbRect) == true)
-                            horzLine.Opacity = 0;
+                        {
+                            rowAreas.Add(i * hitGridSpacing);
+                            break;
+                        }
                     }
                 }
             }
 
+            int rowTop = 0;
+            int rowCount = 0;
+            for (int i = 0; i < rowAreas.Count(); i++)
+            {
+                int thisLine = rowAreas[i];
+
+                // check if should set this as top
+                if (i == 0)
+                    rowTop = thisLine;
+                else
+                {
+                    int prevRow = rowAreas[i - 1];
+                    if (thisLine - prevRow != hitGridSpacing)
+                    {
+                        rowTop = thisLine;
+                    }
+                }
+
+                // check to see if at bottom of row
+                if (i == rowAreas.Count - 1)
+                {
+                    resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
+                    rowCount++;
+                }
+                else
+                {
+                    int nextRow = rowAreas[i + 1];
+                    if (nextRow - thisLine != hitGridSpacing)
+                    {
+                        resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
+                        rowCount++;
+                    }
+                }
+            }
+
+            List<int> columnAreas = new();
             for (int i = 0; i < numberOfVerticalLines; i++)
             {
                 Border vertLine = new()
                 {
                     Height = rectCanvasSize.Height,
                     Width = 1,
+                    Opacity = 0,
                     Background = new SolidColorBrush(Colors.Gray)
                 };
                 _ = RectanglesCanvas.Children.Add(vertLine);
-                Canvas.SetLeft(vertLine, i * 3);
+                Canvas.SetLeft(vertLine, i * hitGridSpacing);
 
-                Rect vertLineRect = new(i * 3, 0, vertLine.Width, vertLine.Height);
+                Rect vertLineRect = new(i * hitGridSpacing, 0, vertLine.Width, vertLine.Height);
                 foreach (var child in RectanglesCanvas.Children)
                 {
                     if (child is WordBorder wb)
                     {
                         Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
                         if (vertLineRect.IntersectsWith(wbRect) == true)
-                            vertLine.Opacity = 0;
+                        {
+                            columnAreas.Add(i * hitGridSpacing);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            List<ResultColumn> resultColumns = new();
+            int columnLeft = 0;
+            int columnCount = 0;
+            for (int i = 0; i < columnAreas.Count(); i++)
+            {
+                int thisLine = columnAreas[i];
+
+                // check if should set this as top
+                if (i == 0)
+                    columnLeft = thisLine;
+                else
+                {
+                    int prevColumn = columnAreas[i - 1];
+                    if (thisLine - prevColumn != hitGridSpacing)
+                    {
+                        columnLeft = thisLine;
                     }
                 }
 
+                // check to see if at bottom of row
+                if (i == columnAreas.Count - 1)
+                {
+                    resultColumns.Add(new ResultColumn { Left = columnLeft, Right = thisLine, ID = columnCount });
+                    columnCount++;
+                }
+                else
+                {
+                    int nextColumn = columnAreas[i + 1];
+                    if (nextColumn - thisLine != hitGridSpacing)
+                    {
+                        resultColumns.Add(new ResultColumn { Left = columnLeft, Right = thisLine, ID = columnCount });
+                        columnCount++;
+                    }
+                }
             }
+
+            Rect tableBoundingRect = new()
+            {
+                X = columnAreas.FirstOrDefault(),
+                Y = rowAreas.FirstOrDefault(),
+                Width = columnAreas.LastOrDefault() - columnAreas.FirstOrDefault(),
+                Height = rowAreas.LastOrDefault() - rowAreas.FirstOrDefault()
+            };
+
+            // try 4 times to refine the rows and columns for outliers
+            // on the fifth time set the word boundery properties
+            for (int r = 0; r < 5; r++)
+            {
+                int outlierThreshould = 2;
+
+                List<int> outlierRowIDs = new();
+
+                foreach (ResultRow row in resultRows)
+                {
+                    int numberOfIntersectingWords = 0;
+                    Border rowBorder = new()
+                    {
+                        Height = row.Bottom - row.Top,
+                        Width = tableBoundingRect.Width,
+                        Background = new SolidColorBrush(Colors.Red),
+                        Tag = row.ID
+                    };
+                    RectanglesCanvas.Children.Add(rowBorder);
+                    Canvas.SetLeft(rowBorder, tableBoundingRect.X);
+                    Canvas.SetTop(rowBorder, row.Top);
+
+                    Rect rowRect = new Rect(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
+                    foreach (var child in RectanglesCanvas.Children)
+                    {
+                        if (child is WordBorder wb)
+                        {
+                            Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                            if (rowRect.IntersectsWith(wbRect) == true)
+                            {
+                                numberOfIntersectingWords++;
+                                wb.ResultRowID = row.ID;
+                            }
+                        }
+                    }
+
+                    if (numberOfIntersectingWords <= outlierThreshould && r != 4)
+                        outlierRowIDs.Add(row.ID);
+                }
+
+                if (outlierRowIDs.Count() > 0)
+                    mergeTheseRowIDs(resultRows, outlierRowIDs);
+
+
+                List<int> outlierColumnIDs = new();
+
+                foreach (ResultColumn column in resultColumns)
+                {
+                    int numberOfIntersectingWords = 0;
+                    Border columnBorder = new()
+                    {
+                        Height = tableBoundingRect.Height,
+                        Width = column.Right - column.Left,
+                        Background = new SolidColorBrush(Colors.Blue),
+                        Opacity = 0.2,
+                        Tag = column.ID
+                    };
+                    RectanglesCanvas.Children.Add(columnBorder);
+                    Canvas.SetLeft(columnBorder, column.Left);
+                    Canvas.SetTop(columnBorder, tableBoundingRect.Y);
+
+                    Rect columnRect = new Rect(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
+                    foreach (var child in RectanglesCanvas.Children)
+                    {
+                        if (child is WordBorder wb)
+                        {
+                            Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                            if (columnRect.IntersectsWith(wbRect) == true)
+                            {
+                                numberOfIntersectingWords++;
+                                wb.ResultColumnID = column.ID;
+                            }
+                        }
+                    }
+
+                    if (numberOfIntersectingWords <= outlierThreshould)
+                        outlierColumnIDs.Add(column.ID);
+                }
+
+                if (outlierColumnIDs.Count() > 0 && r != 4)
+                    mergetheseColumnIDs(resultColumns, outlierColumnIDs);
+
+                List<UIElement> wordBorders = new();
+                foreach (UIElement child in RectanglesCanvas.Children)
+                {
+                    if (child is WordBorder wordBorder)
+                        wordBorders.Add(wordBorder);
+                }
+                RectanglesCanvas.Children.Clear();
+                foreach (UIElement uie in wordBorders)
+                {
+                    RectanglesCanvas.Children.Add(uie);
+                }
+            }
+
+            // foreach (ResultRow row in resultRows)
+            // {
+            //     Border rowBorder = new()
+            //     {
+            //         Height = row.Bottom - row.Top,
+            //         Width = tableBoundingRect.Width,
+            //         Background = new SolidColorBrush(Colors.Red),
+            //         Opacity = 0.2,
+            //         Tag = row.ID
+            //     };
+            //     RectanglesCanvas.Children.Add(rowBorder);
+            //     Canvas.SetLeft(rowBorder, tableBoundingRect.X);
+            //     Canvas.SetTop(rowBorder, row.Top);
+            // }
+
+            // foreach (ResultColumn column in resultColumns)
+            // {
+            //     Border columnBorder = new()
+            //     {
+            //         Height = tableBoundingRect.Height,
+            //         Width = column.Right - column.Left,
+            //         Background = new SolidColorBrush(Colors.Blue),
+            //         Opacity = 0.2,
+            //         Tag = column.ID
+            //     };
+            //     RectanglesCanvas.Children.Add(columnBorder);
+            //     Canvas.SetLeft(columnBorder, column.Left);
+            //     Canvas.SetTop(columnBorder, tableBoundingRect.Y);
+            // }
 
             MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
+        }
+
+        private void mergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
+        {
+            for (int i = 0; i < outlierColumnIDs.Count(); i++)
+            {
+                for (int j = 0; j < resultColumns.Count(); j++)
+                {
+                    ResultColumn jthColumn = resultColumns[j];
+                    if (jthColumn.ID == outlierColumnIDs[i])
+                    {
+                        if (j == 0)
+                        {
+                            // merge with next column
+                            ResultColumn nextColumn = resultColumns[j + 1];
+                            nextColumn.Left = jthColumn.Left;
+                        }
+                        else if (j == resultColumns.Count() - 1)
+                        {
+                            // merge with previous column
+                            ResultColumn prevColumn = resultColumns[j - 1];
+                            prevColumn.Right = jthColumn.Right;
+                        }
+                        else
+                        {
+                            // merge with closet column
+                            ResultColumn prevColumn = resultColumns[j - 1];
+                            ResultColumn nextColumn = resultColumns[j + 1];
+                            int distToPrev = (int)(jthColumn.Left - prevColumn.Right);
+                            int distToNext = (int)(nextColumn.Left - jthColumn.Right);
+
+                            if (distToNext < distToPrev)
+                            {
+                                // merge with next column
+                                nextColumn.Left = jthColumn.Left;
+                            }
+                            else
+                            {
+                                // merge with prev column
+                                prevColumn.Right = jthColumn.Right;
+                            }
+                        }
+                        resultColumns.RemoveAt(j);
+                    }
+                }
+            }
+        }
+
+        private void mergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
+        {
+
         }
 
         private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
