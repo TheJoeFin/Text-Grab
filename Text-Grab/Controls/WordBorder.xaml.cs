@@ -21,6 +21,10 @@ namespace Text_Grab.Controls
 
         public int LineNumber { get; set; } = 0;
 
+        public int ResultRowID { get; set; } = 0;
+
+        public int ResultColumnID { get; set; } = 0;
+
         public bool IsFromEditWindow { get; set; } = false;
 
         public WordBorder()
