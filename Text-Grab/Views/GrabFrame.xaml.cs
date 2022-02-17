@@ -556,15 +556,21 @@ namespace Text_Grab.Views
                     {
                         if (j == 0)
                         {
-                            // merge with next column
-                            ResultColumn nextColumn = resultColumns[j + 1];
-                            nextColumn.Left = jthColumn.Left;
+                            // merge with next column if possible
+                            if (j + 1 < resultColumns.Count())
+                            {
+                                ResultColumn nextColumn = resultColumns[j + 1];
+                                nextColumn.Left = jthColumn.Left;
+                            }
                         }
                         else if (j == resultColumns.Count() - 1)
                         {
                             // merge with previous column
-                            ResultColumn prevColumn = resultColumns[j - 1];
-                            prevColumn.Right = jthColumn.Right;
+                            if (j - 1 >= 0)
+                            {
+                                ResultColumn prevColumn = resultColumns[j - 1];
+                                prevColumn.Right = jthColumn.Right;
+                            }
                         }
                         else
                         {
