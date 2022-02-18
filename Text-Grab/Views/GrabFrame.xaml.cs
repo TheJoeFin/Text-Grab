@@ -311,7 +311,7 @@ namespace Text_Grab.Views
 
             int rowTop = 0;
             int rowCount = 0;
-            for (int i = 0; i < rowAreas.Count(); i++)
+            for (int i = 0; i < rowAreas.Count; i++)
             {
                 int thisLine = rowAreas[i];
 
@@ -375,7 +375,7 @@ namespace Text_Grab.Views
             List<ResultColumn> resultColumns = new();
             int columnLeft = 0;
             int columnCount = 0;
-            for (int i = 0; i < columnAreas.Count(); i++)
+            for (int i = 0; i < columnAreas.Count; i++)
             {
                 int thisLine = columnAreas[i];
 
@@ -456,7 +456,7 @@ namespace Text_Grab.Views
                         outlierRowIDs.Add(row.ID);
                 }
 
-                if (outlierRowIDs.Count() > 0)
+                if (outlierRowIDs.Count > 0)
                     mergeTheseRowIDs(resultRows, outlierRowIDs);
 
 
@@ -495,7 +495,7 @@ namespace Text_Grab.Views
                         outlierColumnIDs.Add(column.ID);
                 }
 
-                if (outlierColumnIDs.Count() > 0 && r != 4)
+                if (outlierColumnIDs.Count > 0 && r != 4)
                     mergetheseColumnIDs(resultColumns, outlierColumnIDs);
 
                 List<UIElement> wordBorders = new();
@@ -545,11 +545,11 @@ namespace Text_Grab.Views
             isDrawing = false;
         }
 
-        private void mergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
+        private static void mergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
         {
-            for (int i = 0; i < outlierColumnIDs.Count(); i++)
+            for (int i = 0; i < outlierColumnIDs.Count; i++)
             {
-                for (int j = 0; j < resultColumns.Count(); j++)
+                for (int j = 0; j < resultColumns.Count; j++)
                 {
                     ResultColumn jthColumn = resultColumns[j];
                     if (jthColumn.ID == outlierColumnIDs[i])
@@ -557,13 +557,13 @@ namespace Text_Grab.Views
                         if (j == 0)
                         {
                             // merge with next column if possible
-                            if (j + 1 < resultColumns.Count())
+                            if (j + 1 < resultColumns.Count)
                             {
                                 ResultColumn nextColumn = resultColumns[j + 1];
                                 nextColumn.Left = jthColumn.Left;
                             }
                         }
-                        else if (j == resultColumns.Count() - 1)
+                        else if (j == resultColumns.Count - 1)
                         {
                             // merge with previous column
                             if (j - 1 >= 0)
@@ -597,7 +597,7 @@ namespace Text_Grab.Views
             }
         }
 
-        private void mergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
+        private static void mergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
         {
 
         }
