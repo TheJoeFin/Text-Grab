@@ -131,6 +131,7 @@ namespace Text_Grab.Views
                     if (border.ResultRowID != lastLineNum)
                     {
                         outputString.Append(string.Join(' ', lineList).Trim());
+                        outputString.Replace(" \t ", "\t");
                         outputString.Append(Environment.NewLine);
                         lineList.Clear();
                         lastLineNum = border.ResultRowID;
@@ -141,7 +142,6 @@ namespace Text_Grab.Views
 
                 frameText = outputString.ToString();
             }
-
 
             if (IsFromEditWindow == false
                 && string.IsNullOrWhiteSpace(frameText) == false
@@ -507,7 +507,14 @@ namespace Text_Grab.Views
                 RectanglesCanvas.Children.Clear();
                 foreach (UIElement uie in wordBorders)
                 {
-                    RectanglesCanvas.Children.Add(uie);
+                    if (uie is WordBorder wordBorder)
+                    {
+                        wordBorder.Width += 1;
+                        wordBorder.Height += 1;
+                        RectanglesCanvas.Children.Add(wordBorder);
+                        Canvas.SetLeft(wordBorder, Canvas.GetLeft(wordBorder) - 0.5);
+                        Canvas.SetTop(wordBorder, Canvas.GetTop(wordBorder) - 0.5);
+                    }
                 }
             }
 
