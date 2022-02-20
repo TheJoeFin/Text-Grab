@@ -117,8 +117,8 @@ namespace Text_Grab.Views
 
         private void NewGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            WindowUtilities.OpenOrActivateWindow<GrabFrame>();
-            WindowUtilities.CloseAllFullscreenGrabs();
+            // WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+            // WindowUtilities.CloseAllFullscreenGrabs();
         }
 
         private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
@@ -227,6 +227,29 @@ namespace Text_Grab.Views
                 (int)(selectBorder.Height * m.M22));
 
             string grabbedText = "";
+
+            if (NewGrabFrameMenuItem.IsChecked == true)
+            {
+                // Make a new GrabFrame and show it on screen
+                // Then place it where the user just drew the region
+                // Add space around the window to account for titlebar
+                // bottom bar and width of GrabFrame
+                GrabFrame grabFrame = new();
+                grabFrame.Show();
+                grabFrame.Left = Canvas.GetLeft(selectBorder) - 2;
+                grabFrame.Top = Canvas.GetTop(selectBorder) - 30;
+                if (grabFrame.Top < 0)
+                    grabFrame.Top = 0;
+
+                if (selectBorder.Width > 20 && selectBorder.Height > 20)
+                {
+                    grabFrame.Width = selectBorder.Width + 4;
+                    grabFrame.Height = selectBorder.Height + 72;
+                }
+                grabFrame.Activate();
+                Close();
+                return;
+            }
 
             try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
 
