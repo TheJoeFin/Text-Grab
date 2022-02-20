@@ -122,9 +122,11 @@ namespace Text_Grab.Views
                 selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
                 selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
 
+                int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
+
                 foreach (WordBorder border in selectedBorders)
                 {
-                    if (border.ResultColumnID != lastColumnNum)
+                    if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
                         lineList.Add("\t");
                     lastColumnNum = border.ResultColumnID;
 
@@ -274,6 +276,14 @@ namespace Text_Grab.Views
                 RectanglesCanvas.RenderTransform = transform;
             }
 
+            AnalyzeAsTable(rectCanvasSize);
+
+            MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
+            isDrawing = false;
+        }
+
+        private void AnalyzeAsTable(System.Drawing.Rectangle rectCanvasSize)
+        {
             int hitGridSpacing = 3;
 
             int numberOfVerticalLines = rectCanvasSize.Width / hitGridSpacing;
@@ -547,9 +557,6 @@ namespace Text_Grab.Views
             //     Canvas.SetLeft(columnBorder, column.Left);
             //     Canvas.SetTop(columnBorder, tableBoundingRect.Y);
             // }
-
-            MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
-            isDrawing = false;
         }
 
         private static void mergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
