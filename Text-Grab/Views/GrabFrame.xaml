@@ -120,6 +120,7 @@
                         <ColumnDefinition Width="6*" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
@@ -153,9 +154,21 @@
                         IsSymbol="True"
                         SymbolText="" />
 
+                    <ToggleButton
+                        x:Name="TableToggleButton"
+                        Grid.Column="2"
+                        Margin="6,0,0,0"
+                        Padding="7,4"
+                        Click="TableToggleButton_Click"
+                        Style="{StaticResource ToggleSymbolButton}">
+                        <TextBlock FontFamily="Segoe MDL2 Assets">
+                            
+                        </TextBlock>
+                    </ToggleButton>
+
                     <controls:CollapsibleButton
                         x:Name="SettingsBTN"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="6,0,0,0"
                         ButtonText="Settings"
                         Click="SettingsBTN_Click"
@@ -164,7 +177,7 @@
 
                     <TextBlock
                         x:Name="MatchesTXTBLK"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="6"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
@@ -183,7 +196,7 @@
 
                     <controls:CollapsibleButton
                         x:Name="GrabBTN"
-                        Grid.Column="5"
+                        Grid.Column="7"
                         Width="110"
                         Margin="0"
                         ButtonText="Grab"
