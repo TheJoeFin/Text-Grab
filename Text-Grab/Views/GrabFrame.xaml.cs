@@ -276,7 +276,29 @@ namespace Text_Grab.Views
                 RectanglesCanvas.RenderTransform = transform;
             }
 
-            AnalyzeAsTable(rectCanvasSize);
+            if (TableToggleButton.IsChecked == true)
+            {
+                AnalyzeAsTable(rectCanvasSize);
+            }
+
+            List<UIElement> wordBordersRePlace = new();
+            foreach (UIElement child in RectanglesCanvas.Children)
+            {
+                if (child is WordBorder wordBorder)
+                    wordBordersRePlace.Add(wordBorder);
+            }
+            RectanglesCanvas.Children.Clear();
+            foreach (UIElement uie in wordBordersRePlace)
+            {
+                if (uie is WordBorder wordBorder)
+                {
+                    wordBorder.Width += 4;
+                    wordBorder.Height += 4;
+                    RectanglesCanvas.Children.Add(wordBorder);
+                    Canvas.SetLeft(wordBorder, Canvas.GetLeft(wordBorder) - 2);
+                    Canvas.SetTop(wordBorder, Canvas.GetTop(wordBorder) - 2);
+                }
+            }
 
             MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
@@ -507,25 +529,6 @@ namespace Text_Grab.Views
 
                 if (outlierColumnIDs.Count > 0 && r != 4)
                     mergetheseColumnIDs(resultColumns, outlierColumnIDs);
-
-                List<UIElement> wordBorders = new();
-                foreach (UIElement child in RectanglesCanvas.Children)
-                {
-                    if (child is WordBorder wordBorder)
-                        wordBorders.Add(wordBorder);
-                }
-                RectanglesCanvas.Children.Clear();
-                foreach (UIElement uie in wordBorders)
-                {
-                    if (uie is WordBorder wordBorder)
-                    {
-                        wordBorder.Width += 1;
-                        wordBorder.Height += 1;
-                        RectanglesCanvas.Children.Add(wordBorder);
-                        Canvas.SetLeft(wordBorder, Canvas.GetLeft(wordBorder) - 0.5);
-                        Canvas.SetTop(wordBorder, Canvas.GetTop(wordBorder) - 0.5);
-                    }
-                }
             }
 
             // foreach (ResultRow row in resultRows)
@@ -769,6 +772,17 @@ namespace Text_Grab.Views
                 foreach (WordBorder wb in wordBorders)
                     wb.Deselect();
             }
+        }
+
+        private async void TableToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = SearchBox;
+            ResetGrabFrame();
+
+            await Task.Delay(200);
+
+            if (searchBox != null)
+                await DrawRectanglesAroundWords(searchBox.Text);
         }
     }
 }
