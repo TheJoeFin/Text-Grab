@@ -56,6 +56,9 @@ namespace Text_Grab.Views
 
             if (IsFreeze == false)
                 BackgroundBrush.Opacity = 0.2;
+
+            if (Settings.Default.FSGMakeSingleLineToggle == true)
+                SingleLineMenuItem.IsChecked = true;
         }
 
         private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
@@ -290,6 +293,14 @@ namespace Text_Grab.Views
                 clippingGeometry.Rect = new Rect(
                 new System.Windows.Point(0, 0),
                 new System.Windows.Size(0, 0));
+            }
+        }
+
+        private void SingleLineMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem singleLineMenuItem)
+            {
+                Settings.Default.FSGMakeSingleLineToggle = singleLineMenuItem.IsChecked;
             }
         }
     }

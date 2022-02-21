@@ -46,6 +46,7 @@
                     <MenuItem
                         Name="SingleLineMenuItem"
                         Header="Make Result Text Single Line"
+                        Click="SingleLineMenuItem_Click"
                         IsCheckable="True" />
                     <MenuItem
                         Name="FreezeMenuItem"
