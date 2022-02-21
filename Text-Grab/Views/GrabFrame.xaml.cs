@@ -313,7 +313,45 @@ namespace Text_Grab.Views
 
         private void DrawTable(ResultTable resultTable)
         {
-            throw new NotImplementedException();
+            // Draw the lines and bounds of the table
+            SolidColorBrush tableColor = new SolidColorBrush(Color.FromArgb(255, 40, 118, 126));
+
+            Border tableOutline = new()
+            {
+                Width = resultTable.BoundingRect.Width,
+                Height = resultTable.BoundingRect.Height,
+                BorderThickness = new Thickness(3),
+                BorderBrush = tableColor
+            };
+            RectanglesCanvas.Children.Add(tableOutline);
+            Canvas.SetTop(tableOutline, resultTable.BoundingRect.Y);
+            Canvas.SetLeft(tableOutline, resultTable.BoundingRect.X);
+
+            foreach (int columnLine in resultTable.ColumnLines)
+            {
+                Border vertLine = new()
+                {
+                    Width = 2,
+                    Height = resultTable.BoundingRect.Height,
+                    Background = tableColor
+                };
+                RectanglesCanvas.Children.Add(vertLine);
+                Canvas.SetTop(vertLine, resultTable.BoundingRect.Y);
+                Canvas.SetLeft(vertLine, columnLine);
+            }
+
+            foreach (int rowLine in resultTable.RowLines)
+            {
+                Border horzLine = new()
+                {
+                    Height = 2,
+                    Width = resultTable.BoundingRect.Width,
+                    Background = tableColor
+                };
+                RectanglesCanvas.Children.Add(horzLine);
+                Canvas.SetTop(horzLine, rowLine);
+                Canvas.SetLeft(horzLine, resultTable.BoundingRect.X);
+            }
         }
 
         private void AnalyzeAsTable(System.Drawing.Rectangle rectCanvasSize)
@@ -544,18 +582,6 @@ namespace Text_Grab.Views
             }
 
             AnalyedResultTable = new ResultTable(resultColumns, resultRows);
-
-            // Draw the lines and bounds of the table
-            Border tableOutline = new()
-            {
-                Width = tableBoundingRect.Width,
-                Height = tableBoundingRect.Height,
-                BorderThickness = new Thickness(2),
-                BorderBrush = new SolidColorBrush(Colors.Yellow)
-            };
-            RectanglesCanvas.Children.Add(tableOutline);
-            Canvas.SetTop(tableOutline, tableBoundingRect.Top);
-            Canvas.SetLeft(tableOutline, tableBoundingRect.Left);
 
             // foreach (ResultRow row in resultRows)
             // {

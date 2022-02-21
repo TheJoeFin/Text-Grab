@@ -15,11 +15,11 @@ public class ResultTable
 
     private OcrResult? OcrResult { get; set; }
 
-    public Rect? BoundingRect { get; set; }
+    public Rect BoundingRect { get; set; } = new();
 
-    public List<int>? ColumnLines;
+    public List<int> ColumnLines { get; set; } = new();
 
-    public List<int>? RowLines;
+    public List<int> RowLines { get; set; } = new();
 
     public ResultTable(List<ResultColumn> ColumnsArgs, List<ResultRow> RowsArgs)
     {
@@ -27,12 +27,50 @@ public class ResultTable
         Columns.AddRange(ColumnsArgs);
         Rows.Clear();
         Rows.AddRange(RowsArgs);
+
+        ParseRowAndColumnLines();
     }
 
     public ResultTable(OcrResult ocrResultParam)
     {
         OcrResult = ocrResultParam;
         ParseOcrResultIntoResultTable();
+    }
+
+    private void ParseRowAndColumnLines()
+    {
+        // Draw Bounding Rect
+        int topBound = (int)Rows[0].Top;
+        int bottomBound = (int)Rows[Rows.Count - 1].Bottom;
+        int leftBound = (int)Columns[0].Left;
+        int rightBound = (int)Columns[Columns.Count - 1].Right;
+
+        BoundingRect = new()
+        {
+            Width = (rightBound - leftBound) + 10,
+            Height = (bottomBound - topBound) + 10,
+            X = leftBound - 5,
+            Y = topBound - 5
+        };
+
+        // parse columns
+        ColumnLines = new();
+
+        for (int i = 0; i < Columns.Count - 1; i++)
+        {
+            int columnMid = (int)(Columns[i].Left + Columns[i + 1].Right) / 2;
+            ColumnLines.Add(columnMid);
+        }
+
+
+        // parse rows
+        RowLines = new();
+
+        for (int i = 0; i < Rows.Count - 1; i++)
+        {
+            int rowMid = (int)(Rows[i].Top + Rows[i + 1].Bottom) / 2;
+            RowLines.Add(rowMid);
+        }
     }
 
     private void ParseOcrResultIntoResultTable()
