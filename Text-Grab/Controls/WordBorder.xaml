@@ -16,16 +16,16 @@
         BorderBrush="#308E98"
         BorderThickness="1"
         CornerRadius="2">
-        <Grid x:Name="MainGrid">
+        <Grid x:Name="MainGrid" ClipToBounds="True">
             <Grid.Background>
                 <SolidColorBrush Opacity="0.1" Color="White" />
             </Grid.Background>
-            <Viewbox ClipToBounds="True">
+            <Viewbox>
                 <TextBox
                     x:Name="EditWordTextBox"
                     Margin="-2,-2.8,-2,-1"
                     d:Text="Test"
-                    FontFamily="Segoe UI"
+                    FontFamily="Cascadia Code"
                     FontWeight="Medium"
                     Foreground="White"
                     Style="{StaticResource TextBoxStyle1}"
