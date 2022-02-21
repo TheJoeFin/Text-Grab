@@ -35,13 +35,13 @@ namespace Text_Grab.Controls
         public void Select()
         {
             IsSelected = true;
-            this.BorderBrush = new SolidColorBrush(Colors.Yellow);
+            WordBorderBorder.BorderBrush = new SolidColorBrush(Colors.Yellow);
         }
 
         public void Deselect()
         {
             IsSelected = false;
-            this.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 48, 142, 152));
+            WordBorderBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 48, 142, 152));
         }
 
         private void WordBorderControl_MouseDown(object sender, MouseButtonEventArgs e)

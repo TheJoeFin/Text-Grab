@@ -8,13 +8,17 @@
     Name="WordBorderControl"
     d:DesignHeight="30"
     d:DesignWidth="80"
-    BorderBrush="#308E98"
-    BorderThickness="2"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
     MouseDown="WordBorderControl_MouseDown"
     mc:Ignorable="d">
-    <Grid
-        x:Name="MainGrid"
-        Background="White"
-        Opacity=".05" />
+    <Border
+        x:Name="WordBorderBorder"
+        BorderBrush="#308E98"
+        BorderThickness="1"
+        CornerRadius="2">
+        <Grid
+            x:Name="MainGrid"
+            Background="White"
+            Opacity=".05" />
+    </Border>
 </UserControl>
