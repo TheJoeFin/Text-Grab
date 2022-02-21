@@ -27,14 +27,14 @@ public class ResultTable
             return;
 
         List<Rect> allBoundingRects = new();
-        Debug.WriteLine("Table debug:");
-        Debug.WriteLine("Word Text\tHeight\tWidth\tX\tY");
+        // Debug.WriteLine("Table debug:");
+        // Debug.WriteLine("Word Text\tHeight\tWidth\tX\tY");
         foreach (OcrLine ocrLine in OcrResult.Lines)
         {
             foreach (OcrWord ocrWord in ocrLine.Words)
             {
                 allBoundingRects.Add(ocrWord.BoundingRect);
-                Debug.WriteLine($"{ocrWord.Text}\t{ocrWord.BoundingRect.Height}\t{ocrWord.BoundingRect.Width}\t{ocrWord.BoundingRect.X}\t{ocrWord.BoundingRect.Y}");
+                // Debug.WriteLine($"{ocrWord.Text}\t{ocrWord.BoundingRect.Height}\t{ocrWord.BoundingRect.Width}\t{ocrWord.BoundingRect.X}\t{ocrWord.BoundingRect.Y}");
             }
         }
     }
