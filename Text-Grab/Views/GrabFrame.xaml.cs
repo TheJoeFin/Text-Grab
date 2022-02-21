@@ -31,6 +31,8 @@ namespace Text_Grab.Views
         private Point clickedPoint;
         private Border selectBorder = new();
 
+        private ResultTable? AnalyedResultTable;
+
         public bool IsFromEditWindow { get; set; } = false;
 
         public GrabFrame()
@@ -300,8 +302,18 @@ namespace Text_Grab.Views
                 }
             }
 
+            if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
+            {
+                DrawTable(AnalyedResultTable);
+            }
+
             MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
+        }
+
+        private void DrawTable(ResultTable resultTable)
+        {
+            throw new NotImplementedException();
         }
 
         private void AnalyzeAsTable(System.Drawing.Rectangle rectCanvasSize)
@@ -530,6 +542,20 @@ namespace Text_Grab.Views
                 if (outlierColumnIDs.Count > 0 && r != 4)
                     mergetheseColumnIDs(resultColumns, outlierColumnIDs);
             }
+
+            AnalyedResultTable = new ResultTable(resultColumns, resultRows);
+
+            // Draw the lines and bounds of the table
+            Border tableOutline = new()
+            {
+                Width = tableBoundingRect.Width,
+                Height = tableBoundingRect.Height,
+                BorderThickness = new Thickness(2),
+                BorderBrush = new SolidColorBrush(Colors.Yellow)
+            };
+            RectanglesCanvas.Children.Add(tableOutline);
+            Canvas.SetTop(tableOutline, tableBoundingRect.Top);
+            Canvas.SetLeft(tableOutline, tableBoundingRect.Left);
 
             // foreach (ResultRow row in resultRows)
             // {
