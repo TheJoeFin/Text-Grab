@@ -239,8 +239,8 @@ namespace Text_Grab.Views
                 // bottom bar and width of GrabFrame
                 GrabFrame grabFrame = new();
                 grabFrame.Show();
-                grabFrame.Left = Canvas.GetLeft(selectBorder) - 2;
-                grabFrame.Top = Canvas.GetTop(selectBorder) - 30;
+                grabFrame.Left = Canvas.GetLeft(selectBorder) - 2 + this.Left;
+                grabFrame.Top = Canvas.GetTop(selectBorder) - 30 + this.Top;
                 if (grabFrame.Top < 0)
                     grabFrame.Top = 0;
 
@@ -250,7 +250,7 @@ namespace Text_Grab.Views
                     grabFrame.Height = selectBorder.Height + 72;
                 }
                 grabFrame.Activate();
-                Close();
+                WindowUtilities.CloseAllFullscreenGrabs();
                 return;
             }
 
