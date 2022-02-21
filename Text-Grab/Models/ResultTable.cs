@@ -15,6 +15,20 @@ public class ResultTable
 
     private OcrResult? OcrResult { get; set; }
 
+    public Rect? BoundingRect { get; set; }
+
+    public List<int>? ColumnLines;
+
+    public List<int>? RowLines;
+
+    public ResultTable(List<ResultColumn> ColumnsArgs, List<ResultRow> RowsArgs)
+    {
+        Columns.Clear();
+        Columns.AddRange(ColumnsArgs);
+        Rows.Clear();
+        Rows.AddRange(RowsArgs);
+    }
+
     public ResultTable(OcrResult ocrResultParam)
     {
         OcrResult = ocrResultParam;
