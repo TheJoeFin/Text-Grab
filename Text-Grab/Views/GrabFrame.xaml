@@ -117,13 +117,14 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="6*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
                     <TextBox
                         x:Name="SearchBox"
@@ -166,9 +167,21 @@
                         </TextBlock>
                     </ToggleButton>
 
+                    <ToggleButton
+                        x:Name="EditToggleButton"
+                        Grid.Column="3"
+                        Margin="6,0,0,0"
+                        Padding="7,4"
+                        Click="EditToggleButton_Click"
+                        Style="{StaticResource ToggleSymbolButton}">
+                        <TextBlock FontFamily="Segoe MDL2 Assets">
+                            
+                        </TextBlock>
+                    </ToggleButton>
+
                     <controls:CollapsibleButton
                         x:Name="SettingsBTN"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="6,0,0,0"
                         ButtonText="Settings"
                         Click="SettingsBTN_Click"
@@ -177,7 +190,7 @@
 
                     <TextBlock
                         x:Name="MatchesTXTBLK"
-                        Grid.Column="4"
+                        Grid.Column="5"
                         Margin="6"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
@@ -186,7 +199,7 @@
 
                     <CheckBox
                         x:Name="ExactMatchChkBx"
-                        Grid.Column="4"
+                        Grid.Column="5"
                         Margin="6"
                         VerticalAlignment="Center"
                         Click="ExactMatchChkBx_Click"
@@ -196,7 +209,7 @@
 
                     <controls:CollapsibleButton
                         x:Name="GrabBTN"
-                        Grid.Column="7"
+                        Grid.Column="8"
                         Width="110"
                         Margin="0"
                         ButtonText="Grab"

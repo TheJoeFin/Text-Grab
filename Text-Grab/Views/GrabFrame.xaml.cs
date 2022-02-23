@@ -836,5 +836,24 @@ namespace Text_Grab.Views
             if (searchBox != null)
                 await DrawRectanglesAroundWords(searchBox.Text);
         }
+
+        private void EditToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (EditToggleButton.IsChecked is bool isEditMode && isEditMode == true)
+                EnterEditMode();
+            else
+                ExitEditMode();
+
+        }
+
+        private void ExitEditMode()
+        {
+            
+        }
+
+        private void EnterEditMode()
+        {
+            
+        }
     }
 }
