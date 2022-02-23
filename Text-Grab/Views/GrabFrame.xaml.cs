@@ -35,6 +35,8 @@ namespace Text_Grab.Views
 
         public bool IsFromEditWindow { get; set; } = false;
 
+        public bool IsWordEditMode { get; set; } = false;
+
         public GrabFrame()
         {
             InitializeComponent();
@@ -306,6 +308,9 @@ namespace Text_Grab.Views
             {
                 DrawTable(AnalyedResultTable);
             }
+
+            if (IsWordEditMode == true)
+                EnterEditMode();
 
             MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
@@ -846,14 +851,26 @@ namespace Text_Grab.Views
 
         }
 
-        private void ExitEditMode()
-        {
-            
-        }
-
         private void EnterEditMode()
         {
-            
+            IsWordEditMode = true;
+
+            foreach (UIElement uIElement in RectanglesCanvas.Children)
+            {
+                if (uIElement is WordBorder wb)
+                    wb.EnterEdit();
+            }
+        }
+
+        private void ExitEditMode()
+        {
+            IsWordEditMode = false;
+
+            foreach (UIElement uIElement in RectanglesCanvas.Children)
+            {
+                if (uIElement is WordBorder wb)
+                    wb.ExitEdit();
+            }
         }
     }
 }

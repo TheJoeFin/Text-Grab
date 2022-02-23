@@ -68,6 +68,16 @@ namespace Text_Grab.Controls
             EditWordTextBox.Foreground = new SolidColorBrush(Colors.White);
         }
 
+        public void EnterEdit()
+        {
+            EditWordTextBox.Visibility = Visibility.Visible;
+        }
+
+        public void ExitEdit()
+        {
+            EditWordTextBox.Visibility = Visibility.Collapsed;
+        }
+
         private void WordBorderControl_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (IsSelected)

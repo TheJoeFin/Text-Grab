@@ -23,13 +23,14 @@
             <Viewbox>
                 <TextBox
                     x:Name="EditWordTextBox"
-                    Margin="-2,-2.8,-2,-1"
-                    d:Text="Test"
+                    Margin="-1,-2,-1,-2"
+                    d:Text="Test g"
                     FontFamily="Cascadia Code"
                     FontWeight="Medium"
                     Foreground="White"
                     Style="{StaticResource TextBoxStyle1}"
-                    Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Visibility="Collapsed" />
             </Viewbox>
         </Grid>
     </Border>
