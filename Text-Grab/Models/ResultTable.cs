@@ -58,7 +58,7 @@ public class ResultTable
 
         for (int i = 0; i < Columns.Count - 1; i++)
         {
-            int columnMid = (int)(Columns[i].Left + Columns[i + 1].Right) / 2;
+            int columnMid = (int)(Columns[i].Right + Columns[i + 1].Left) / 2;
             ColumnLines.Add(columnMid);
         }
 
@@ -68,7 +68,7 @@ public class ResultTable
 
         for (int i = 0; i < Rows.Count - 1; i++)
         {
-            int rowMid = (int)(Rows[i].Top + Rows[i + 1].Bottom) / 2;
+            int rowMid = (int)(Rows[i].Bottom + Rows[i + 1].Top) / 2;
             RowLines.Add(rowMid);
         }
     }
