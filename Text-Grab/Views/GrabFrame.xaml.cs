@@ -37,6 +37,8 @@ namespace Text_Grab.Views
 
         public bool IsWordEditMode { get; set; } = false;
 
+        public bool IsFreezeMode { get; set; } = false;
+
         public GrabFrame()
         {
             InitializeComponent();
@@ -172,7 +174,7 @@ namespace Text_Grab.Views
 
         private void Window_LocationChanged(object sender, EventArgs e)
         {
-            if (IsLoaded == false)
+            if (IsLoaded == false || IsFreezeMode == true)
                 return;
 
             ResetGrabFrame();
@@ -871,6 +873,37 @@ namespace Text_Grab.Views
                 if (uIElement is WordBorder wb)
                     wb.ExitEdit();
             }
+        }
+
+        private async void FreezeToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = SearchBox;
+            ResetGrabFrame();
+            
+            if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
+                IsFreezeMode = true;
+            else
+                IsFreezeMode = false;
+
+            await Task.Delay(200);
+
+            if (IsFreezeMode == true)
+            {
+                ImageSource.Source = ImageMethods.GetWindowBoundsImage(this);
+                this.Background = new SolidColorBrush(Colors.DimGray);
+                RectanglesCanvas.Background.Opacity = 0;
+            }
+            else
+            {
+                ImageSource.Source = null;
+                RectanglesCanvas.Background.Opacity = 0.05;
+                this.Background = new SolidColorBrush(Colors.Transparent);
+            }
+            await Task.Delay(200);
+
+            if (searchBox != null)
+                await DrawRectanglesAroundWords(searchBox.Text);
+
         }
     }
 }
