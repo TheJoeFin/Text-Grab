@@ -118,7 +118,7 @@
                     VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="96" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
@@ -155,13 +155,18 @@
                     <TextBlock
                         x:Name="MatchesTXTBLK"
                         Grid.Column="1"
+                        MinWidth="76"
                         Margin="6"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Foreground="White"
-                        Text="Matches: 0" />
+                        Text="Matches: 0"
+                        Visibility="Collapsed" />
 
-                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <StackPanel
+                        Grid.Column="2"
+                        Margin="6,0"
+                        Orientation="Horizontal">
 
                         <controls:CollapsibleButton
                             x:Name="RefreshBTN"
@@ -216,6 +221,15 @@
                             IsSymbol="True"
                             SymbolText=""
                             ToolTip="Open Text Grab Settings" />
+
+                        <controls:CollapsibleButton
+                            x:Name="EditTextBTN"
+                            Margin="6,0,0,0"
+                            ButtonText="Edit Text Window"
+                            Click="EditTextBTN_Click"
+                            IsSymbol="True"
+                            SymbolText=""
+                            ToolTip="Open Edit Text Window" />
 
                     </StackPanel>
 

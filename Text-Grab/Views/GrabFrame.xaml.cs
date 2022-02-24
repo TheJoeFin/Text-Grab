@@ -685,6 +685,8 @@ namespace Text_Grab.Views
 
             if (sender is TextBox searchBox)
                 await DrawRectanglesAroundWords(searchBox.Text);
+
+            MatchesTXTBLK.Visibility = Visibility.Visible;
         }
 
         private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
@@ -904,6 +906,12 @@ namespace Text_Grab.Views
             if (searchBox != null)
                 await DrawRectanglesAroundWords(searchBox.Text);
 
+        }
+
+        private void EditTextBTN_Click(object sender, RoutedEventArgs e)
+        {
+            _ = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            IsFromEditWindow = true;            
         }
     }
 }
