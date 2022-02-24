@@ -13,10 +13,14 @@
     MinWidth="150"
     MinHeight="150"
     Activated="GrabFrameWindow_Activated"
+    AllowDrop="True"
     AllowsTransparency="True"
     Background="Transparent"
     Closed="Window_Closed"
     Deactivated="GrabFrameWindow_Deactivated"
+    DragLeave="GrabFrameWindow_DragLeave"
+    DragOver="GrabFrameWindow_DragOver"
+    Drop="GrabFrameWindow_Drop"
     Initialized="GrabFrameWindow_Initialized"
     LocationChanged="Window_LocationChanged"
     ResizeMode="CanResizeWithGrip"
@@ -43,7 +47,7 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
-            <Image x:Name="ImageSource" Grid.Row="1" />
+            <Image x:Name="GrabFrameImage" Grid.Row="1" />
             <Grid
                 Grid.Row="0"
                 VerticalAlignment="Top"

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -38,6 +40,8 @@ namespace Text_Grab.Views
         public bool IsWordEditMode { get; set; } = false;
 
         public bool IsFreezeMode { get; set; } = false;
+
+        private bool IsDragOver = false;
 
         public GrabFrame()
         {
@@ -197,9 +201,9 @@ namespace Text_Grab.Views
             ResetGrabFrame();
         }
 
-        private async Task DrawRectanglesAroundWords(string searchWord)
+        private async Task DrawRectanglesAroundWords(string searchWord = "")
         {
-            if (isDrawing == true)
+            if (isDrawing == true || IsDragOver == true)
                 return;
 
             isDrawing = true;
@@ -881,7 +885,7 @@ namespace Text_Grab.Views
         {
             TextBox searchBox = SearchBox;
             ResetGrabFrame();
-            
+
             if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
                 IsFreezeMode = true;
             else
@@ -891,13 +895,13 @@ namespace Text_Grab.Views
 
             if (IsFreezeMode == true)
             {
-                ImageSource.Source = ImageMethods.GetWindowBoundsImage(this);
+                GrabFrameImage.Source = ImageMethods.GetWindowBoundsImage(this);
                 this.Background = new SolidColorBrush(Colors.DimGray);
                 RectanglesCanvas.Background.Opacity = 0;
             }
             else
             {
-                ImageSource.Source = null;
+                GrabFrameImage.Source = null;
                 RectanglesCanvas.Background.Opacity = 0.05;
                 this.Background = new SolidColorBrush(Colors.Transparent);
             }
@@ -911,7 +915,75 @@ namespace Text_Grab.Views
         private void EditTextBTN_Click(object sender, RoutedEventArgs e)
         {
             _ = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-            IsFromEditWindow = true;            
+            IsFromEditWindow = true;
+        }
+
+        private async void GrabFrameWindow_Drop(object sender, DragEventArgs e)
+        {
+            // Mark the event as handled, so TextBox's native Drop handler is not called.
+            e.Handled = true;
+
+
+            var fileName = IsSingleFile(e);
+            if (fileName is null) return;
+
+            Uri fileURI = new(fileName);
+
+            try
+            {
+                BitmapImage droppedImage = new(fileURI);
+                GrabFrameImage.Source = droppedImage;
+                RectanglesCanvas.Background.Opacity = 0;
+                this.Background = new SolidColorBrush(Colors.DimGray);
+                ResetGrabFrame();
+                await Task.Delay(300);
+                IsFreezeMode = true;
+                FreezeToggleButton.IsChecked = true;
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Not an image");
+            }
+
+            IsDragOver = false;
+
+            await DrawRectanglesAroundWords();
+        }
+
+        private void GrabFrameWindow_DragOver(object sender, DragEventArgs e)
+        {
+            IsDragOver = true;
+            // As an arbitrary design decision, we only want to deal with a single file.
+            e.Effects = IsSingleFile(e) != null ? DragDropEffects.Copy : DragDropEffects.None;
+            // Mark the event as handled, so TextBox's native DragOver handler is not called.
+            e.Handled = true;
+        }
+
+        // If the data object in args is a single file, this method will return the filename.
+        // Otherwise, it returns null.
+        private string? IsSingleFile(DragEventArgs args)
+        {
+            // Check for files in the hovering data object.
+            if (args.Data.GetDataPresent(DataFormats.FileDrop, true))
+            {
+                var fileNames = args.Data.GetData(DataFormats.FileDrop, true) as string[];
+                // Check for a single file or folder.
+                if (fileNames?.Length is 1)
+                {
+                    // Check for a file (a directory will return false).
+                    if (File.Exists(fileNames[0]))
+                    {
+                        // At this point we know there is a single file.
+                        return fileNames[0];
+                    }
+                }
+            }
+            return null;
+        }
+
+        private void GrabFrameWindow_DragLeave(object sender, DragEventArgs e)
+        {
+            IsDragOver = false;
         }
     }
 }
