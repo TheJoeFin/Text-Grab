@@ -46,6 +46,8 @@ namespace Text_Grab.Views
         public GrabFrame()
         {
             InitializeComponent();
+            
+            this.PreviewMouseWheel += HandlePreviewMouseWheel;
 
             WindowResizer resizer = new(this);
             reDrawTimer.Interval = new(0, 0, 0, 0, 1200);
@@ -54,6 +56,28 @@ namespace Text_Grab.Views
             RoutedCommand newCmd = new();
             _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
             _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
+        }
+
+        private void HandlePreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            // Source: StackOverflow, read on Sep. 10, 2021
+            // https://stackoverflow.com/a/53698638/7438031
+
+            e.Handled = true;
+
+            if (e.Delta > 0)
+            {
+                this.Width += 100;
+                this.Height+= 100;
+            }
+            else if (e.Delta < 0)
+            {
+                if (this.Width > 120 && this.Height > 120)
+                {
+                    this.Width -= 100;
+                    this.Height -= 100;
+                }
+            }
         }
 
         private void GrabFrameWindow_Initialized(object sender, EventArgs e)
