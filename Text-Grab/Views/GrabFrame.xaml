@@ -168,6 +168,7 @@
                         Visibility="Collapsed" />
 
                     <StackPanel
+                        x:Name="ButtonsStackPanel"
                         Grid.Column="2"
                         Margin="6,0"
                         Orientation="Horizontal">

@@ -83,6 +83,7 @@ namespace Text_Grab.Views
         private void GrabFrameWindow_Initialized(object sender, EventArgs e)
         {
             WindowUtilities.SetWindowPosition(this);
+            CheckBottomRowButtonsVis();
         }
 
         private void Window_Closed(object? sender, EventArgs e)
@@ -216,8 +217,26 @@ namespace Text_Grab.Views
                 return;
 
             ResetGrabFrame();
+            CheckBottomRowButtonsVis();
 
             reDrawTimer.Start();
+        }
+
+        private void CheckBottomRowButtonsVis()
+        {
+            if (this.Width < 300)
+            {
+                SearchBox.Visibility = Visibility.Collapsed;
+                MatchesTXTBLK.Visibility = Visibility.Collapsed;
+                ClearBTN.Visibility = Visibility.Collapsed;
+                ButtonsStackPanel.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                SearchBox.Visibility = Visibility.Visible;
+                ClearBTN.Visibility = Visibility.Visible;
+                ButtonsStackPanel.Visibility = Visibility.Visible;
+            }
         }
 
         private void GrabFrameWindow_Deactivated(object sender, EventArgs e)
