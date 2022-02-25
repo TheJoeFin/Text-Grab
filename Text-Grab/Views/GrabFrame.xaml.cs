@@ -46,7 +46,7 @@ namespace Text_Grab.Views
         public GrabFrame()
         {
             InitializeComponent();
-            
+
             this.PreviewMouseWheel += HandlePreviewMouseWheel;
 
             WindowResizer resizer = new(this);
@@ -68,7 +68,7 @@ namespace Text_Grab.Views
             if (e.Delta > 0)
             {
                 this.Width += 100;
-                this.Height+= 100;
+                this.Height += 100;
             }
             else if (e.Delta < 0)
             {
@@ -222,7 +222,8 @@ namespace Text_Grab.Views
 
         private void GrabFrameWindow_Deactivated(object sender, EventArgs e)
         {
-            ResetGrabFrame();
+            if (IsWordEditMode != true && IsFreezeMode != true)
+                ResetGrabFrame();
         }
 
         private async Task DrawRectanglesAroundWords(string searchWord = "")
@@ -756,7 +757,8 @@ namespace Text_Grab.Views
 
         private void GrabFrameWindow_Activated(object sender, EventArgs e)
         {
-            reDrawTimer.Start();
+            if (IsWordEditMode != true && IsFreezeMode != true)
+                reDrawTimer.Start();
         }
 
         private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
