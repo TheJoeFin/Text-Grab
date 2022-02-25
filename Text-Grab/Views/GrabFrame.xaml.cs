@@ -68,14 +68,18 @@ namespace Text_Grab.Views
             if (e.Delta > 0)
             {
                 this.Width += 100;
+                this.Top -= 50;
                 this.Height += 100;
+                this.Left -= 50;
             }
             else if (e.Delta < 0)
             {
                 if (this.Width > 120 && this.Height > 120)
                 {
                     this.Width -= 100;
+                    this.Top += 50;
                     this.Height -= 100;
+                    this.Left += 50;
                 }
             }
         }
