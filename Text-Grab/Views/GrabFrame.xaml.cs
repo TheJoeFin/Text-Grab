@@ -48,6 +48,7 @@ namespace Text_Grab.Views
             InitializeComponent();
 
             this.PreviewMouseWheel += HandlePreviewMouseWheel;
+            SetRestoreState();
 
             WindowResizer resizer = new(this);
             reDrawTimer.Interval = new(0, 0, 0, 0, 1200);
@@ -222,6 +223,7 @@ namespace Text_Grab.Views
 
             ResetGrabFrame();
             CheckBottomRowButtonsVis();
+            SetRestoreState();
 
             reDrawTimer.Start();
         }
@@ -1033,6 +1035,29 @@ namespace Text_Grab.Views
         private void GrabFrameWindow_DragLeave(object sender, DragEventArgs e)
         {
             IsDragOver = false;
+        }
+
+        private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+
+        private void OnRestoreButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+                this.WindowState = WindowState.Normal;
+            else
+                this.WindowState = WindowState.Maximized;
+
+            SetRestoreState();
+        }
+
+        private void SetRestoreState()
+        {
+            if (WindowState == WindowState.Maximized)
+                RestoreTextlock.Text = "";
+            else
+                RestoreTextlock.Text = "";
         }
     }
 }

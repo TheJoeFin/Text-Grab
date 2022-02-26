@@ -61,6 +61,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel
                     Grid.Column="1"
+                    Grid.ColumnSpan="2"
                     HorizontalAlignment="Center"
                     Orientation="Horizontal">
                     <Image
@@ -89,18 +90,46 @@
                     </TextBlock>
                 </StackPanel>
 
-                <Button
-                    Grid.Column="2"
-                    Width="46"
-                    Height="24"
-                    Margin="0,-2,0,0"
-                    Click="OnCloseButtonClick"
-                    Style="{StaticResource TitleBarCloseButtonStyle}">
-                    <TextBlock
-                        FontFamily="Segoe MDL2 Assets"
-                        Foreground="White"
-                        Text="" />
-                </Button>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button
+                        Grid.Column="2"
+                        Width="46"
+                        Height="24"
+                        Margin="0,-2,0,0"
+                        Click="OnMinimizeButtonClick"
+                        Style="{StaticResource TitleBarButtonStyle}">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+                    <Button
+                        Grid.Column="2"
+                        Width="46"
+                        Height="24"
+                        Margin="0,-2,0,0"
+                        Click="OnRestoreButtonClick"
+                        Style="{StaticResource TitleBarButtonStyle}">
+                        <TextBlock
+                            x:Name="RestoreTextlock"
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+                    <Button
+                        Grid.Column="2"
+                        Width="46"
+                        Height="24"
+                        Margin="0,-2,0,0"
+                        Click="OnCloseButtonClick"
+                        Style="{StaticResource TitleBarCloseButtonStyle}">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+
+                </StackPanel>
             </Grid>
             <Canvas
                 x:Name="RectanglesCanvas"
