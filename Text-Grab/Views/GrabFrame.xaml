@@ -41,7 +41,7 @@
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
     <Border BorderBrush="#444444" BorderThickness="2,2,2,2">
-        <Grid>
+        <Grid ClipToBounds="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="24" />
                 <RowDefinition Height="*" />

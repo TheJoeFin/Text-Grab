@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -328,7 +329,16 @@ namespace Text_Grab.Views
 
             if (ocrResultOfWindow != null && ocrResultOfWindow.TextAngle != null)
             {
-                RotateTransform transform = new RotateTransform((double)ocrResultOfWindow.TextAngle)
+                RotateTransform transform = new((double)ocrResultOfWindow.TextAngle)
+                {
+                    CenterX = (Width - 4) / 2,
+                    CenterY = (Height - 60) / 2
+                };
+                RectanglesCanvas.RenderTransform = transform;
+            }
+            else
+            {
+                RotateTransform transform = new(0)
                 {
                     CenterX = (Width - 4) / 2,
                     CenterY = (Height - 60) / 2
@@ -338,7 +348,14 @@ namespace Text_Grab.Views
 
             if (TableToggleButton.IsChecked == true)
             {
-                AnalyzeAsTable(rectCanvasSize);
+                try
+                {
+                    AnalyzeAsTable(rectCanvasSize);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
             }
 
             List<UIElement> wordBordersRePlace = new();
@@ -461,7 +478,7 @@ namespace Text_Grab.Views
                 // check if should set this as top
                 if (i == 0)
                     rowTop = thisLine;
-                else
+                else if (i - 1 > 0)
                 {
                     int prevRow = rowAreas[i - 1];
                     if (thisLine - prevRow != hitGridSpacing)
@@ -476,7 +493,7 @@ namespace Text_Grab.Views
                     resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
                     rowCount++;
                 }
-                else
+                else if (i + 1 < rowAreas.Count)
                 {
                     int nextRow = rowAreas[i + 1];
                     if (nextRow - thisLine != hitGridSpacing)
@@ -525,7 +542,7 @@ namespace Text_Grab.Views
                 // check if should set this as top
                 if (i == 0)
                     columnLeft = thisLine;
-                else
+                else if (i - 1 > 0)
                 {
                     int prevColumn = columnAreas[i - 1];
                     if (thisLine - prevColumn != hitGridSpacing)
@@ -534,13 +551,13 @@ namespace Text_Grab.Views
                     }
                 }
 
-                // check to see if at bottom of row
+                // check to see if at last Column
                 if (i == columnAreas.Count - 1)
                 {
                     resultColumns.Add(new ResultColumn { Left = columnLeft, Right = thisLine, ID = columnCount });
                     columnCount++;
                 }
-                else
+                else if (i + 1 < columnAreas.Count)
                 {
                     int nextColumn = columnAreas[i + 1];
                     if (nextColumn - thisLine != hitGridSpacing)
