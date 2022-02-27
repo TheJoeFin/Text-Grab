@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,8 +11,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Media.Ocr;
@@ -30,11 +34,22 @@ namespace Text_Grab.Views
         private Point clickedPoint;
         private Border selectBorder = new();
 
+        private ResultTable? AnalyedResultTable;
+
         public bool IsFromEditWindow { get; set; } = false;
+
+        public bool IsWordEditMode { get; set; } = false;
+
+        public bool IsFreezeMode { get; set; } = false;
+
+        private bool IsDragOver = false;
 
         public GrabFrame()
         {
             InitializeComponent();
+
+            this.PreviewMouseWheel += HandlePreviewMouseWheel;
+            SetRestoreState();
 
             WindowResizer resizer = new(this);
             reDrawTimer.Interval = new(0, 0, 0, 0, 1200);
@@ -45,9 +60,36 @@ namespace Text_Grab.Views
             _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
         }
 
+        private void HandlePreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            // Source: StackOverflow, read on Sep. 10, 2021
+            // https://stackoverflow.com/a/53698638/7438031
+
+            e.Handled = true;
+
+            if (e.Delta > 0)
+            {
+                this.Width += 100;
+                this.Top -= 50;
+                this.Height += 100;
+                this.Left -= 50;
+            }
+            else if (e.Delta < 0)
+            {
+                if (this.Width > 120 && this.Height > 120)
+                {
+                    this.Width -= 100;
+                    this.Top += 50;
+                    this.Height -= 100;
+                    this.Left += 50;
+                }
+            }
+        }
+
         private void GrabFrameWindow_Initialized(object sender, EventArgs e)
         {
             WindowUtilities.SetWindowPosition(this);
+            CheckBottomRowButtonsVis();
         }
 
         private void Window_Closed(object? sender, EventArgs e)
@@ -113,19 +155,29 @@ namespace Text_Grab.Views
                 List<string> lineList = new();
                 StringBuilder outputString = new();
                 int? lastLineNum = 0;
+                int lastColumnNum = 0;
 
                 if (selectedBorders.FirstOrDefault() != null)
                     lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
 
+                selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
+                selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
+
+                int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
+
                 foreach (WordBorder border in selectedBorders)
                 {
-                    if (border.LineNumber != lastLineNum)
+                    if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
+                        lineList.Add("\t");
+                    lastColumnNum = border.ResultColumnID;
+
+                    if (border.ResultRowID != lastLineNum)
                     {
-                        outputString.Append(string.Join(' ', lineList));
+                        outputString.Append(string.Join(' ', lineList).Trim());
+                        outputString.Replace(" \t ", "\t");
                         outputString.Append(Environment.NewLine);
                         lineList.Clear();
-                        lastLineNum = border.LineNumber;
-
+                        lastLineNum = border.ResultRowID;
                     }
                     lineList.Add(border.Word);
                 }
@@ -133,7 +185,6 @@ namespace Text_Grab.Views
 
                 frameText = outputString.ToString();
             }
-
 
             if (IsFromEditWindow == false
                 && string.IsNullOrWhiteSpace(frameText) == false
@@ -158,7 +209,7 @@ namespace Text_Grab.Views
 
         private void Window_LocationChanged(object sender, EventArgs e)
         {
-            if (IsLoaded == false)
+            if (IsLoaded == false || IsFreezeMode == true)
                 return;
 
             ResetGrabFrame();
@@ -172,18 +223,38 @@ namespace Text_Grab.Views
                 return;
 
             ResetGrabFrame();
+            CheckBottomRowButtonsVis();
+            SetRestoreState();
 
             reDrawTimer.Start();
         }
 
-        private void GrabFrameWindow_Deactivated(object sender, EventArgs e)
+        private void CheckBottomRowButtonsVis()
         {
-            ResetGrabFrame();
+            if (this.Width < 300)
+            {
+                SearchBox.Visibility = Visibility.Collapsed;
+                MatchesTXTBLK.Visibility = Visibility.Collapsed;
+                ClearBTN.Visibility = Visibility.Collapsed;
+                ButtonsStackPanel.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                SearchBox.Visibility = Visibility.Visible;
+                ClearBTN.Visibility = Visibility.Visible;
+                ButtonsStackPanel.Visibility = Visibility.Visible;
+            }
         }
 
-        private async Task DrawRectanglesAroundWords(string searchWord)
+        private void GrabFrameWindow_Deactivated(object sender, EventArgs e)
         {
-            if (isDrawing == true)
+            if (IsWordEditMode != true && IsFreezeMode != true)
+                ResetGrabFrame();
+        }
+
+        private async Task DrawRectanglesAroundWords(string searchWord = "")
+        {
+            if (isDrawing == true || IsDragOver == true)
                 return;
 
             isDrawing = true;
@@ -221,8 +292,8 @@ namespace Text_Grab.Views
 
                     WordBorder wordBorderBox = new WordBorder
                     {
-                        Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX) + 6,
-                        Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY) + 6,
+                        Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX),
+                        Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY),
                         Word = wordString,
                         ToolTip = wordString,
                         LineNumber = lineNumber,
@@ -249,8 +320,8 @@ namespace Text_Grab.Views
 
                     wordBorders.Add(wordBorderBox);
                     _ = RectanglesCanvas.Children.Add(wordBorderBox);
-                    Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / dpi.DpiScaleX) - 3);
-                    Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / dpi.DpiScaleY) - 3);
+                    Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / dpi.DpiScaleX));
+                    Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / dpi.DpiScaleY));
                 }
 
                 lineNumber++;
@@ -258,15 +329,424 @@ namespace Text_Grab.Views
 
             if (ocrResultOfWindow != null && ocrResultOfWindow.TextAngle != null)
             {
-                RotateTransform transform = new RotateTransform((double)ocrResultOfWindow.TextAngle)
+                RotateTransform transform = new((double)ocrResultOfWindow.TextAngle)
                 {
                     CenterX = (Width - 4) / 2,
                     CenterY = (Height - 60) / 2
                 };
                 RectanglesCanvas.RenderTransform = transform;
             }
+            else
+            {
+                RotateTransform transform = new(0)
+                {
+                    CenterX = (Width - 4) / 2,
+                    CenterY = (Height - 60) / 2
+                };
+                RectanglesCanvas.RenderTransform = transform;
+            }
+
+            if (TableToggleButton.IsChecked == true)
+            {
+                try
+                {
+                    AnalyzeAsTable(rectCanvasSize);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+            }
+
+            List<UIElement> wordBordersRePlace = new();
+            foreach (UIElement child in RectanglesCanvas.Children)
+            {
+                if (child is WordBorder wordBorder)
+                    wordBordersRePlace.Add(wordBorder);
+            }
+            RectanglesCanvas.Children.Clear();
+            foreach (UIElement uie in wordBordersRePlace)
+            {
+                if (uie is WordBorder wordBorder)
+                {
+                    wordBorder.Width += 4;
+                    wordBorder.Height += 4;
+                    RectanglesCanvas.Children.Add(wordBorder);
+                    Canvas.SetLeft(wordBorder, Canvas.GetLeft(wordBorder) - 2);
+                    Canvas.SetTop(wordBorder, Canvas.GetTop(wordBorder) - 2);
+                }
+            }
+
+            if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
+            {
+                DrawTable(AnalyedResultTable);
+            }
+
+            if (IsWordEditMode == true)
+                EnterEditMode();
+
             MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
             isDrawing = false;
+        }
+
+        private void DrawTable(ResultTable resultTable)
+        {
+            // Draw the lines and bounds of the table
+            SolidColorBrush tableColor = new SolidColorBrush(Color.FromArgb(255, 40, 118, 126));
+
+            Border tableOutline = new()
+            {
+                Width = resultTable.BoundingRect.Width,
+                Height = resultTable.BoundingRect.Height,
+                BorderThickness = new Thickness(3),
+                BorderBrush = tableColor
+            };
+            RectanglesCanvas.Children.Add(tableOutline);
+            Canvas.SetTop(tableOutline, resultTable.BoundingRect.Y);
+            Canvas.SetLeft(tableOutline, resultTable.BoundingRect.X);
+
+            foreach (int columnLine in resultTable.ColumnLines)
+            {
+                Border vertLine = new()
+                {
+                    Width = 2,
+                    Height = resultTable.BoundingRect.Height,
+                    Background = tableColor
+                };
+                RectanglesCanvas.Children.Add(vertLine);
+                Canvas.SetTop(vertLine, resultTable.BoundingRect.Y);
+                Canvas.SetLeft(vertLine, columnLine);
+            }
+
+            foreach (int rowLine in resultTable.RowLines)
+            {
+                Border horzLine = new()
+                {
+                    Height = 2,
+                    Width = resultTable.BoundingRect.Width,
+                    Background = tableColor
+                };
+                RectanglesCanvas.Children.Add(horzLine);
+                Canvas.SetTop(horzLine, rowLine);
+                Canvas.SetLeft(horzLine, resultTable.BoundingRect.X);
+            }
+        }
+
+        private void AnalyzeAsTable(System.Drawing.Rectangle rectCanvasSize)
+        {
+            int hitGridSpacing = 3;
+
+            int numberOfVerticalLines = rectCanvasSize.Width / hitGridSpacing;
+            int numberOfHorizontalLines = rectCanvasSize.Height / hitGridSpacing;
+
+            List<ResultRow> resultRows = new();
+
+            List<int> rowAreas = new();
+            for (int i = 0; i < numberOfHorizontalLines; i++)
+            {
+                Border horzLine = new()
+                {
+                    Height = 1,
+                    Width = rectCanvasSize.Width,
+                    Opacity = 0,
+                    Background = new SolidColorBrush(Colors.Gray)
+                };
+                Rect horzLineRect = new(0, i * hitGridSpacing, horzLine.Width, horzLine.Height);
+                _ = RectanglesCanvas.Children.Add(horzLine);
+                Canvas.SetTop(horzLine, i * 3);
+
+                foreach (var child in RectanglesCanvas.Children)
+                {
+                    if (child is WordBorder wb)
+                    {
+                        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                        if (horzLineRect.IntersectsWith(wbRect) == true)
+                        {
+                            rowAreas.Add(i * hitGridSpacing);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            int rowTop = 0;
+            int rowCount = 0;
+            for (int i = 0; i < rowAreas.Count; i++)
+            {
+                int thisLine = rowAreas[i];
+
+                // check if should set this as top
+                if (i == 0)
+                    rowTop = thisLine;
+                else if (i - 1 > 0)
+                {
+                    int prevRow = rowAreas[i - 1];
+                    if (thisLine - prevRow != hitGridSpacing)
+                    {
+                        rowTop = thisLine;
+                    }
+                }
+
+                // check to see if at bottom of row
+                if (i == rowAreas.Count - 1)
+                {
+                    resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
+                    rowCount++;
+                }
+                else if (i + 1 < rowAreas.Count)
+                {
+                    int nextRow = rowAreas[i + 1];
+                    if (nextRow - thisLine != hitGridSpacing)
+                    {
+                        resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
+                        rowCount++;
+                    }
+                }
+            }
+
+            List<int> columnAreas = new();
+            for (int i = 0; i < numberOfVerticalLines; i++)
+            {
+                Border vertLine = new()
+                {
+                    Height = rectCanvasSize.Height,
+                    Width = 1,
+                    Opacity = 0,
+                    Background = new SolidColorBrush(Colors.Gray)
+                };
+                _ = RectanglesCanvas.Children.Add(vertLine);
+                Canvas.SetLeft(vertLine, i * hitGridSpacing);
+
+                Rect vertLineRect = new(i * hitGridSpacing, 0, vertLine.Width, vertLine.Height);
+                foreach (var child in RectanglesCanvas.Children)
+                {
+                    if (child is WordBorder wb)
+                    {
+                        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                        if (vertLineRect.IntersectsWith(wbRect) == true)
+                        {
+                            columnAreas.Add(i * hitGridSpacing);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            List<ResultColumn> resultColumns = new();
+            int columnLeft = 0;
+            int columnCount = 0;
+            for (int i = 0; i < columnAreas.Count; i++)
+            {
+                int thisLine = columnAreas[i];
+
+                // check if should set this as top
+                if (i == 0)
+                    columnLeft = thisLine;
+                else if (i - 1 > 0)
+                {
+                    int prevColumn = columnAreas[i - 1];
+                    if (thisLine - prevColumn != hitGridSpacing)
+                    {
+                        columnLeft = thisLine;
+                    }
+                }
+
+                // check to see if at last Column
+                if (i == columnAreas.Count - 1)
+                {
+                    resultColumns.Add(new ResultColumn { Left = columnLeft, Right = thisLine, ID = columnCount });
+                    columnCount++;
+                }
+                else if (i + 1 < columnAreas.Count)
+                {
+                    int nextColumn = columnAreas[i + 1];
+                    if (nextColumn - thisLine != hitGridSpacing)
+                    {
+                        resultColumns.Add(new ResultColumn { Left = columnLeft, Right = thisLine, ID = columnCount });
+                        columnCount++;
+                    }
+                }
+            }
+
+            Rect tableBoundingRect = new()
+            {
+                X = columnAreas.FirstOrDefault(),
+                Y = rowAreas.FirstOrDefault(),
+                Width = columnAreas.LastOrDefault() - columnAreas.FirstOrDefault(),
+                Height = rowAreas.LastOrDefault() - rowAreas.FirstOrDefault()
+            };
+
+            // try 4 times to refine the rows and columns for outliers
+            // on the fifth time set the word boundery properties
+            for (int r = 0; r < 5; r++)
+            {
+                int outlierThreshould = 2;
+
+                List<int> outlierRowIDs = new();
+
+                foreach (ResultRow row in resultRows)
+                {
+                    int numberOfIntersectingWords = 0;
+                    Border rowBorder = new()
+                    {
+                        Height = row.Bottom - row.Top,
+                        Width = tableBoundingRect.Width,
+                        Background = new SolidColorBrush(Colors.Red),
+                        Tag = row.ID
+                    };
+                    RectanglesCanvas.Children.Add(rowBorder);
+                    Canvas.SetLeft(rowBorder, tableBoundingRect.X);
+                    Canvas.SetTop(rowBorder, row.Top);
+
+                    Rect rowRect = new Rect(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
+                    foreach (var child in RectanglesCanvas.Children)
+                    {
+                        if (child is WordBorder wb)
+                        {
+                            Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                            if (rowRect.IntersectsWith(wbRect) == true)
+                            {
+                                numberOfIntersectingWords++;
+                                wb.ResultRowID = row.ID;
+                            }
+                        }
+                    }
+
+                    if (numberOfIntersectingWords <= outlierThreshould && r != 4)
+                        outlierRowIDs.Add(row.ID);
+                }
+
+                if (outlierRowIDs.Count > 0)
+                    mergeTheseRowIDs(resultRows, outlierRowIDs);
+
+
+                List<int> outlierColumnIDs = new();
+
+                foreach (ResultColumn column in resultColumns)
+                {
+                    int numberOfIntersectingWords = 0;
+                    Border columnBorder = new()
+                    {
+                        Height = tableBoundingRect.Height,
+                        Width = column.Right - column.Left,
+                        Background = new SolidColorBrush(Colors.Blue),
+                        Opacity = 0.2,
+                        Tag = column.ID
+                    };
+                    RectanglesCanvas.Children.Add(columnBorder);
+                    Canvas.SetLeft(columnBorder, column.Left);
+                    Canvas.SetTop(columnBorder, tableBoundingRect.Y);
+
+                    Rect columnRect = new Rect(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
+                    foreach (var child in RectanglesCanvas.Children)
+                    {
+                        if (child is WordBorder wb)
+                        {
+                            Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+                            if (columnRect.IntersectsWith(wbRect) == true)
+                            {
+                                numberOfIntersectingWords++;
+                                wb.ResultColumnID = column.ID;
+                            }
+                        }
+                    }
+
+                    if (numberOfIntersectingWords <= outlierThreshould)
+                        outlierColumnIDs.Add(column.ID);
+                }
+
+                if (outlierColumnIDs.Count > 0 && r != 4)
+                    mergetheseColumnIDs(resultColumns, outlierColumnIDs);
+            }
+
+            AnalyedResultTable = new ResultTable(resultColumns, resultRows);
+
+            // foreach (ResultRow row in resultRows)
+            // {
+            //     Border rowBorder = new()
+            //     {
+            //         Height = row.Bottom - row.Top,
+            //         Width = tableBoundingRect.Width,
+            //         Background = new SolidColorBrush(Colors.Red),
+            //         Opacity = 0.2,
+            //         Tag = row.ID
+            //     };
+            //     RectanglesCanvas.Children.Add(rowBorder);
+            //     Canvas.SetLeft(rowBorder, tableBoundingRect.X);
+            //     Canvas.SetTop(rowBorder, row.Top);
+            // }
+
+            // foreach (ResultColumn column in resultColumns)
+            // {
+            //     Border columnBorder = new()
+            //     {
+            //         Height = tableBoundingRect.Height,
+            //         Width = column.Right - column.Left,
+            //         Background = new SolidColorBrush(Colors.Blue),
+            //         Opacity = 0.2,
+            //         Tag = column.ID
+            //     };
+            //     RectanglesCanvas.Children.Add(columnBorder);
+            //     Canvas.SetLeft(columnBorder, column.Left);
+            //     Canvas.SetTop(columnBorder, tableBoundingRect.Y);
+            // }
+        }
+
+        private static void mergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
+        {
+            for (int i = 0; i < outlierColumnIDs.Count; i++)
+            {
+                for (int j = 0; j < resultColumns.Count; j++)
+                {
+                    ResultColumn jthColumn = resultColumns[j];
+                    if (jthColumn.ID == outlierColumnIDs[i])
+                    {
+                        if (j == 0)
+                        {
+                            // merge with next column if possible
+                            if (j + 1 < resultColumns.Count)
+                            {
+                                ResultColumn nextColumn = resultColumns[j + 1];
+                                nextColumn.Left = jthColumn.Left;
+                            }
+                        }
+                        else if (j == resultColumns.Count - 1)
+                        {
+                            // merge with previous column
+                            if (j - 1 >= 0)
+                            {
+                                ResultColumn prevColumn = resultColumns[j - 1];
+                                prevColumn.Right = jthColumn.Right;
+                            }
+                        }
+                        else
+                        {
+                            // merge with closet column
+                            ResultColumn prevColumn = resultColumns[j - 1];
+                            ResultColumn nextColumn = resultColumns[j + 1];
+                            int distToPrev = (int)(jthColumn.Left - prevColumn.Right);
+                            int distToNext = (int)(nextColumn.Left - jthColumn.Right);
+
+                            if (distToNext < distToPrev)
+                            {
+                                // merge with next column
+                                nextColumn.Left = jthColumn.Left;
+                            }
+                            else
+                            {
+                                // merge with prev column
+                                prevColumn.Right = jthColumn.Right;
+                            }
+                        }
+                        resultColumns.RemoveAt(j);
+                    }
+                }
+            }
+        }
+
+        private static void mergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
+        {
+
         }
 
         private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -276,6 +756,8 @@ namespace Text_Grab.Views
 
             if (sender is TextBox searchBox)
                 await DrawRectanglesAroundWords(searchBox.Text);
+
+            MatchesTXTBLK.Visibility = Visibility.Visible;
         }
 
         private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
@@ -317,7 +799,8 @@ namespace Text_Grab.Views
 
         private void GrabFrameWindow_Activated(object sender, EventArgs e)
         {
-            reDrawTimer.Start();
+            if (IsWordEditMode != true && IsFreezeMode != true)
+                reDrawTimer.Start();
         }
 
         private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -422,6 +905,176 @@ namespace Text_Grab.Views
                 foreach (WordBorder wb in wordBorders)
                     wb.Deselect();
             }
+        }
+
+        private async void TableToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = SearchBox;
+            ResetGrabFrame();
+
+            await Task.Delay(200);
+
+            if (searchBox != null)
+                await DrawRectanglesAroundWords(searchBox.Text);
+        }
+
+        private void EditToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (EditToggleButton.IsChecked is bool isEditMode && isEditMode == true)
+                EnterEditMode();
+            else
+                ExitEditMode();
+
+        }
+
+        private void EnterEditMode()
+        {
+            IsWordEditMode = true;
+
+            foreach (UIElement uIElement in RectanglesCanvas.Children)
+            {
+                if (uIElement is WordBorder wb)
+                    wb.EnterEdit();
+            }
+        }
+
+        private void ExitEditMode()
+        {
+            IsWordEditMode = false;
+
+            foreach (UIElement uIElement in RectanglesCanvas.Children)
+            {
+                if (uIElement is WordBorder wb)
+                    wb.ExitEdit();
+            }
+        }
+
+        private async void FreezeToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox searchBox = SearchBox;
+            ResetGrabFrame();
+
+            if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
+                IsFreezeMode = true;
+            else
+                IsFreezeMode = false;
+
+            await Task.Delay(200);
+
+            if (IsFreezeMode == true)
+            {
+                GrabFrameImage.Source = ImageMethods.GetWindowBoundsImage(this);
+                this.Background = new SolidColorBrush(Colors.DimGray);
+                RectanglesCanvas.Background.Opacity = 0;
+            }
+            else
+            {
+                GrabFrameImage.Source = null;
+                RectanglesCanvas.Background.Opacity = 0.05;
+                this.Background = new SolidColorBrush(Colors.Transparent);
+            }
+            await Task.Delay(200);
+
+            if (searchBox != null)
+                await DrawRectanglesAroundWords(searchBox.Text);
+
+        }
+
+        private void EditTextBTN_Click(object sender, RoutedEventArgs e)
+        {
+            _ = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            IsFromEditWindow = true;
+        }
+
+        private async void GrabFrameWindow_Drop(object sender, DragEventArgs e)
+        {
+            // Mark the event as handled, so TextBox's native Drop handler is not called.
+            e.Handled = true;
+
+
+            var fileName = IsSingleFile(e);
+            if (fileName is null) return;
+
+            Uri fileURI = new(fileName);
+
+            try
+            {
+                BitmapImage droppedImage = new(fileURI);
+                GrabFrameImage.Source = droppedImage;
+                RectanglesCanvas.Background.Opacity = 0;
+                this.Background = new SolidColorBrush(Colors.DimGray);
+                ResetGrabFrame();
+                await Task.Delay(300);
+                IsFreezeMode = true;
+                FreezeToggleButton.IsChecked = true;
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Not an image");
+            }
+
+            IsDragOver = false;
+
+            await DrawRectanglesAroundWords();
+        }
+
+        private void GrabFrameWindow_DragOver(object sender, DragEventArgs e)
+        {
+            IsDragOver = true;
+            // As an arbitrary design decision, we only want to deal with a single file.
+            e.Effects = IsSingleFile(e) != null ? DragDropEffects.Copy : DragDropEffects.None;
+            // Mark the event as handled, so TextBox's native DragOver handler is not called.
+            e.Handled = true;
+        }
+
+        // If the data object in args is a single file, this method will return the filename.
+        // Otherwise, it returns null.
+        private string? IsSingleFile(DragEventArgs args)
+        {
+            // Check for files in the hovering data object.
+            if (args.Data.GetDataPresent(DataFormats.FileDrop, true))
+            {
+                var fileNames = args.Data.GetData(DataFormats.FileDrop, true) as string[];
+                // Check for a single file or folder.
+                if (fileNames?.Length is 1)
+                {
+                    // Check for a file (a directory will return false).
+                    if (File.Exists(fileNames[0]))
+                    {
+                        // At this point we know there is a single file.
+                        return fileNames[0];
+                    }
+                }
+            }
+            return null;
+        }
+
+        private void GrabFrameWindow_DragLeave(object sender, DragEventArgs e)
+        {
+            IsDragOver = false;
+        }
+
+        private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+
+        private void OnRestoreButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+                this.WindowState = WindowState.Normal;
+            else
+                this.WindowState = WindowState.Maximized;
+
+            SetRestoreState();
+        }
+
+        private void SetRestoreState()
+        {
+            if (WindowState == WindowState.Maximized)
+                RestoreTextlock.Text = "";
+            else
+                RestoreTextlock.Text = "";
         }
     }
 }

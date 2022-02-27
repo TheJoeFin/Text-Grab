@@ -56,6 +56,9 @@ namespace Text_Grab.Views
 
             if (IsFreeze == false)
                 BackgroundBrush.Opacity = 0.2;
+
+            if (Settings.Default.FSGMakeSingleLineToggle == true)
+                SingleLineMenuItem.IsChecked = true;
         }
 
         private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
@@ -117,8 +120,8 @@ namespace Text_Grab.Views
 
         private void NewGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            WindowUtilities.OpenOrActivateWindow<GrabFrame>();
-            WindowUtilities.CloseAllFullscreenGrabs();
+            // WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+            // WindowUtilities.CloseAllFullscreenGrabs();
         }
 
         private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
@@ -228,6 +231,37 @@ namespace Text_Grab.Views
 
             string grabbedText = "";
 
+            if (NewGrabFrameMenuItem.IsChecked == true)
+            {
+                // Make a new GrabFrame and show it on screen
+                // Then place it where the user just drew the region
+                // Add space around the window to account for titlebar
+                // bottom bar and width of GrabFrame
+                System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+                DpiScale dpi = VisualTreeHelper.GetDpi(this);
+                int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
+                GrabFrame grabFrame = new();
+                grabFrame.Show();
+                double posLeft = Canvas.GetLeft(selectBorder); // * dpi.DpiScaleX;
+                double posTop = Canvas.GetTop(selectBorder); // * dpi.DpiScaleY;
+                grabFrame.Left = posLeft + (absPosPoint.X / dpi.PixelsPerDip);
+                grabFrame.Top = posTop + (absPosPoint.Y / dpi.PixelsPerDip);
+
+                grabFrame.Left -= (2 / dpi.PixelsPerDip);
+                grabFrame.Top -= (34 / dpi.PixelsPerDip);
+                // if (grabFrame.Top < 0)
+                //     grabFrame.Top = 0;
+
+                if (selectBorder.Width > 20 && selectBorder.Height > 20)
+                {
+                    grabFrame.Width = selectBorder.Width + 4;
+                    grabFrame.Height = selectBorder.Height + 72;
+                }
+                grabFrame.Activate();
+                WindowUtilities.CloseAllFullscreenGrabs();
+                return;
+            }
+
             try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
 
             if (regionScaled.Width < 3 || regionScaled.Height < 3)
@@ -267,6 +301,14 @@ namespace Text_Grab.Views
                 clippingGeometry.Rect = new Rect(
                 new System.Windows.Point(0, 0),
                 new System.Windows.Size(0, 0));
+            }
+        }
+
+        private void SingleLineMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem singleLineMenuItem)
+            {
+                Settings.Default.FSGMakeSingleLineToggle = singleLineMenuItem.IsChecked;
             }
         }
     }

@@ -8,13 +8,30 @@
     Name="WordBorderControl"
     d:DesignHeight="30"
     d:DesignWidth="80"
-    BorderBrush="#308E98"
-    BorderThickness="2"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
     MouseDown="WordBorderControl_MouseDown"
     mc:Ignorable="d">
-    <Grid
-        x:Name="MainGrid"
-        Background="White"
-        Opacity=".05" />
+    <Border
+        x:Name="WordBorderBorder"
+        BorderBrush="#308E98"
+        BorderThickness="1"
+        CornerRadius="2">
+        <Grid x:Name="MainGrid" ClipToBounds="True">
+            <Grid.Background>
+                <SolidColorBrush Opacity="0.1" Color="White" />
+            </Grid.Background>
+            <Viewbox>
+                <TextBox
+                    x:Name="EditWordTextBox"
+                    Margin="-1,-2,-1,-2"
+                    d:Text="Test g"
+                    FontFamily="Cascadia Code"
+                    FontWeight="Medium"
+                    Foreground="White"
+                    Style="{StaticResource TextBoxStyle1}"
+                    Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Visibility="Collapsed" />
+            </Viewbox>
+        </Grid>
+    </Border>
 </UserControl>

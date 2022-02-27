@@ -6,8 +6,6 @@
 		<RootNamespace>Text_Grab</RootNamespace>
     <Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
-		<DpiAware>false</DpiAware>
-		<DisableDpiAwareness>True</DisableDpiAwareness>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>t_ICON2.ico</ApplicationIcon>

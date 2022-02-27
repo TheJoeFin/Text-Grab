@@ -45,8 +45,9 @@
                 <ContextMenu>
                     <MenuItem
                         Name="SingleLineMenuItem"
-                        IsCheckable="True"
-                        Header="Make Result Text Single Line" />
+                        Header="Make Result Text Single Line"
+                        Click="SingleLineMenuItem_Click"
+                        IsCheckable="True" />
                     <MenuItem
                         Name="FreezeMenuItem"
                         Click="FreezeMenuItem_Click"
@@ -59,7 +60,8 @@
                     <MenuItem
                         Name="NewGrabFrameMenuItem"
                         Click="NewGrabFrameMenuItem_Click"
-                        Header="Grab Frame" />
+                        Header="Place Grab Frame"
+                        IsCheckable="True" />
                     <MenuItem
                         Name="NewEditTextMenuItem"
                         Click="NewEditTextMenuItem_Click"

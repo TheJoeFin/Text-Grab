@@ -48,10 +48,10 @@
     <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#1F5E65" />
     <SolidColorBrush x:Key="TextBox.IsDragging.Border" Color="#3CB1BE" />
     <Style x:Key="TextBoxStyle1" TargetType="{x:Type TextBox}">
-        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-        <Setter Property="BorderBrush" Value="{StaticResource TextBox.Static.Border}" />
+        <Setter Property="Background" Value="Black" />
+        <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="KeyboardNavigation.TabNavigation" Value="None" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />

@@ -13,10 +13,14 @@
     MinWidth="150"
     MinHeight="150"
     Activated="GrabFrameWindow_Activated"
+    AllowDrop="True"
     AllowsTransparency="True"
     Background="Transparent"
     Closed="Window_Closed"
     Deactivated="GrabFrameWindow_Deactivated"
+    DragLeave="GrabFrameWindow_DragLeave"
+    DragOver="GrabFrameWindow_DragOver"
+    Drop="GrabFrameWindow_Drop"
     Initialized="GrabFrameWindow_Initialized"
     LocationChanged="Window_LocationChanged"
     ResizeMode="CanResizeWithGrip"
@@ -37,12 +41,13 @@
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
     <Border BorderBrush="#444444" BorderThickness="2,2,2,2">
-        <Grid>
+        <Grid ClipToBounds="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="24" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
+            <Image x:Name="GrabFrameImage" Grid.Row="1" />
             <Grid
                 Grid.Row="0"
                 VerticalAlignment="Top"
@@ -56,6 +61,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel
                     Grid.Column="1"
+                    Grid.ColumnSpan="2"
                     HorizontalAlignment="Center"
                     Orientation="Horizontal">
                     <Image
@@ -84,20 +90,47 @@
                     </TextBlock>
                 </StackPanel>
 
-                <Button
-                    Grid.Column="2"
-                    Width="46"
-                    Height="24"
-                    Margin="0,-2,0,0"
-                    Click="OnCloseButtonClick"
-                    Style="{StaticResource TitleBarCloseButtonStyle}">
-                    <TextBlock
-                        FontFamily="Segoe MDL2 Assets"
-                        Foreground="White"
-                        Text="" />
-                </Button>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button
+                        Grid.Column="2"
+                        Width="46"
+                        Height="24"
+                        Margin="0,-2,0,0"
+                        Click="OnMinimizeButtonClick"
+                        Style="{StaticResource TitleBarButtonStyle}">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+                    <Button
+                        Grid.Column="2"
+                        Width="46"
+                        Height="24"
+                        Margin="0,-2,0,0"
+                        Click="OnRestoreButtonClick"
+                        Style="{StaticResource TitleBarButtonStyle}">
+                        <TextBlock
+                            x:Name="RestoreTextlock"
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+                    <Button
+                        Grid.Column="2"
+                        Width="46"
+                        Height="24"
+                        Margin="0,-2,0,0"
+                        Click="OnCloseButtonClick"
+                        Style="{StaticResource TitleBarCloseButtonStyle}">
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            Foreground="White"
+                            Text="" />
+                    </Button>
+
+                </StackPanel>
             </Grid>
-            <Image x:Name="ImageSource" Grid.Row="1" />
             <Canvas
                 x:Name="RectanglesCanvas"
                 Grid.Row="1"
@@ -117,12 +150,10 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="6*" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="96" />
-                        <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
                     <TextBox
                         x:Name="SearchBox"
@@ -144,36 +175,9 @@
                         IsSymbol="True"
                         SymbolText="" />
 
-                    <controls:CollapsibleButton
-                        x:Name="RefreshBTN"
-                        Grid.Column="1"
-                        Margin="0"
-                        ButtonText="Refresh"
-                        Click="RefreshBTN_Click"
-                        IsSymbol="True"
-                        SymbolText="" />
-
-                    <controls:CollapsibleButton
-                        x:Name="SettingsBTN"
-                        Grid.Column="2"
-                        Margin="6,0,0,0"
-                        ButtonText="Settings"
-                        Click="SettingsBTN_Click"
-                        IsSymbol="True"
-                        SymbolText="" />
-
-                    <TextBlock
-                        x:Name="MatchesTXTBLK"
-                        Grid.Column="3"
-                        Margin="6"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        Foreground="White"
-                        Text="Matches: 0" />
-
                     <CheckBox
                         x:Name="ExactMatchChkBx"
-                        Grid.Column="4"
+                        Grid.Column="1"
                         Margin="6"
                         VerticalAlignment="Center"
                         Click="ExactMatchChkBx_Click"
@@ -181,15 +185,98 @@
                         Foreground="White"
                         Visibility="Collapsed" />
 
+                    <TextBlock
+                        x:Name="MatchesTXTBLK"
+                        Grid.Column="1"
+                        MinWidth="76"
+                        Margin="6"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Foreground="White"
+                        Text="Matches: 0"
+                        Visibility="Collapsed" />
+
+                    <StackPanel
+                        x:Name="ButtonsStackPanel"
+                        Grid.Column="2"
+                        Margin="6,0"
+                        Orientation="Horizontal">
+
+                        <controls:CollapsibleButton
+                            x:Name="RefreshBTN"
+                            Margin="0"
+                            ButtonText="Refresh"
+                            Click="RefreshBTN_Click"
+                            IsSymbol="True"
+                            SymbolText=""
+                            ToolTip="Refresh Grab Frame OCR" />
+
+                        <ToggleButton
+                            x:Name="FreezeToggleButton"
+                            Margin="6,0,0,0"
+                            Padding="7,4"
+                            Click="FreezeToggleButton_Click"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Freeze the content within Grab Frame">
+                            <TextBlock FontFamily="Segoe MDL2 Assets">
+                                
+                            </TextBlock>
+                        </ToggleButton>
+
+                        <ToggleButton
+                            x:Name="TableToggleButton"
+                            Margin="6,0,0,0"
+                            Padding="7,4"
+                            Click="TableToggleButton_Click"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Analyze content as tables">
+                            <TextBlock FontFamily="Segoe MDL2 Assets">
+                                
+                            </TextBlock>
+                        </ToggleButton>
+
+                        <ToggleButton
+                            x:Name="EditToggleButton"
+                            Margin="6,0,0,0"
+                            Padding="7,4"
+                            Click="EditToggleButton_Click"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Edit individual words in Grab Frame">
+                            <TextBlock FontFamily="Segoe MDL2 Assets">
+                                
+                            </TextBlock>
+                        </ToggleButton>
+
+                        <controls:CollapsibleButton
+                            x:Name="SettingsBTN"
+                            Margin="6,0,0,0"
+                            ButtonText="Settings"
+                            Click="SettingsBTN_Click"
+                            IsSymbol="True"
+                            SymbolText=""
+                            ToolTip="Open Text Grab Settings" />
+
+                        <controls:CollapsibleButton
+                            x:Name="EditTextBTN"
+                            Margin="6,0,0,0"
+                            ButtonText="Edit Text Window"
+                            Click="EditTextBTN_Click"
+                            IsSymbol="True"
+                            SymbolText=""
+                            ToolTip="Open Edit Text Window" />
+
+                    </StackPanel>
+
                     <controls:CollapsibleButton
                         x:Name="GrabBTN"
-                        Grid.Column="5"
+                        Grid.Column="4"
                         Width="110"
                         Margin="0"
                         ButtonText="Grab"
                         CanChangeStyle="False"
                         Click="GrabBTN_Click"
-                        SymbolText="" />
+                        SymbolText=""
+                        ToolTip="Grab text in the Grab Frame" />
                 </Grid>
             </Border>
         </Grid>

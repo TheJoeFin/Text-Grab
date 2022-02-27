@@ -186,7 +186,7 @@ namespace Text_Grab.Utilities
             }
         }
 
-        internal static void OpenOrActivateWindow<T>() where T : Window, new()
+        internal static T OpenOrActivateWindow<T>() where T : Window, new()
         {
             WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -195,13 +195,14 @@ namespace Text_Grab.Utilities
                 if (window is T matchWindow)
                 {
                     matchWindow.Activate();
-                    return;
+                    return matchWindow;
                 }
             }
 
             // No Window Found, open a new one
             T newWindow = new T();
             newWindow.Show();
+            return newWindow;
         }
 
         public static void ShouldShutDown()
