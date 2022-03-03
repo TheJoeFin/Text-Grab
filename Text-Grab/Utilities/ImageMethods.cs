@@ -155,6 +155,15 @@ namespace Text_Grab
                 return "";
             }
 
+            bool isCJKLang = false;
+
+            if (selectedLanguage.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
+                isCJKLang = true;
+            else if (selectedLanguage.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
+                isCJKLang = true;
+            else if (selectedLanguage.LanguageTag.StartsWith("ko", StringComparison.InvariantCultureIgnoreCase) == true)
+                isCJKLang = true;
+
             XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
             CultureInfo culture = lang.GetEquivalentCulture();
 
@@ -212,7 +221,10 @@ namespace Text_Grab
                 {
                     List<string> wordArray = textLine.Split().ToList();
                     wordArray.Reverse();
-                    _ = text.Append(string.Join(' ', wordArray));
+                    if (isCJKLang == true)
+                        _ = text.Append(string.Join("", wordArray));
+                    else
+                        _ = text.Append(string.Join(' ', wordArray));
 
                     if (textLine.Length > 0)
                         _ = text.Append('\n');
@@ -291,7 +303,7 @@ namespace Text_Grab
             return bmp;
         }
 
-        private static Language? GetOCRLanguage()
+        public static Language? GetOCRLanguage()
         {
             // use currently selected Language
             string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;

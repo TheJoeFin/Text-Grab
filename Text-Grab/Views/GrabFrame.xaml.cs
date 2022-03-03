@@ -34,6 +34,8 @@ namespace Text_Grab.Views
         private Point clickedPoint;
         private Border selectBorder = new();
 
+        private bool isCJKLang = false;
+
         private ResultTable? AnalyedResultTable;
 
         public bool IsFromEditWindow { get; set; } = false;
@@ -172,7 +174,10 @@ namespace Text_Grab.Views
 
                     if (border.ResultRowID != lastLineNum)
                     {
-                        outputString.Append(string.Join(' ', lineList));
+                        if (isCJKLang == true)
+                            outputString.Append(string.Join("", lineList));
+                        else
+                            outputString.Append(string.Join(' ', lineList));
                         outputString.Replace(" \t ", "\t");
                         outputString.Append(Environment.NewLine);
                         lineList.Clear();
@@ -195,7 +200,11 @@ namespace Text_Grab.Views
 
                     lineList.Add(border.Word);
                 }
-                outputString.Append(string.Join(' ', lineList));
+
+                if (isCJKLang == true)
+                    outputString.Append(string.Join(" ", lineList));
+                else
+                    outputString.Append(string.Join(' ', lineList));
 
                 frameText = outputString.ToString();
             }
@@ -288,6 +297,18 @@ namespace Text_Grab.Views
 
             if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
                 ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
+
+            Windows.Globalization.Language? currentLang = ImageMethods.GetOCRLanguage();
+
+            if (currentLang is not null)
+            {
+                if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
+                    isCJKLang = true;
+                else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
+                    isCJKLang = true;
+                else if (currentLang.LanguageTag.StartsWith("ko", StringComparison.InvariantCultureIgnoreCase) == true)
+                    isCJKLang = true;
+            }
 
             if (ocrResultOfWindow == null)
                 return;
