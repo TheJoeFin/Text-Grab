@@ -954,30 +954,39 @@ namespace Text_Grab.Views
             TextBox searchBox = SearchBox;
             ResetGrabFrame();
 
-            if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
-                IsFreezeMode = true;
-            else
-                IsFreezeMode = false;
-
             await Task.Delay(200);
-
-            if (IsFreezeMode == true)
-            {
-                GrabFrameImage.Source = ImageMethods.GetWindowBoundsImage(this);
-                this.Background = new SolidColorBrush(Colors.DimGray);
-                RectanglesCanvas.Background.Opacity = 0;
-            }
+            if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
+                FreezeGrabFrame();
             else
-            {
-                GrabFrameImage.Source = null;
-                RectanglesCanvas.Background.Opacity = 0.05;
-                this.Background = new SolidColorBrush(Colors.Transparent);
-            }
+                UnfreezeGrabFrame();
+
             await Task.Delay(200);
 
             if (searchBox != null)
                 await DrawRectanglesAroundWords(searchBox.Text);
 
+        }
+
+        private void FreezeGrabFrame(BitmapImage? passedImage = null)
+        {
+            if (passedImage is not null)
+                GrabFrameImage.Source = passedImage;
+            else
+                GrabFrameImage.Source = ImageMethods.GetWindowBoundsImage(this);
+
+            Topmost = false;
+            this.Background = new SolidColorBrush(Colors.DimGray);
+            RectanglesCanvas.Background.Opacity = 0;
+            IsFreezeMode = true;
+        }
+
+        private void UnfreezeGrabFrame()
+        {
+            Topmost = true;
+            GrabFrameImage.Source = null;
+            RectanglesCanvas.Background.Opacity = 0.05;
+            this.Background = new SolidColorBrush(Colors.Transparent);
+            IsFreezeMode = false;
         }
 
         private void EditTextBTN_Click(object sender, RoutedEventArgs e)
@@ -999,17 +1008,16 @@ namespace Text_Grab.Views
 
             try
             {
-                BitmapImage droppedImage = new(fileURI);
-                GrabFrameImage.Source = droppedImage;
-                RectanglesCanvas.Background.Opacity = 0;
-                this.Background = new SolidColorBrush(Colors.DimGray);
                 ResetGrabFrame();
                 await Task.Delay(300);
-                IsFreezeMode = true;
+                BitmapImage droppedImage = new(fileURI);
                 FreezeToggleButton.IsChecked = true;
+                FreezeGrabFrame(droppedImage);
+                await Task.Delay(200);
             }
             catch (Exception)
             {
+                UnfreezeGrabFrame();
                 MessageBox.Show("Not an image");
             }
 
