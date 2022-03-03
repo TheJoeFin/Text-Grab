@@ -167,18 +167,32 @@ namespace Text_Grab.Views
 
                 foreach (WordBorder border in selectedBorders)
                 {
-                    if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
-                        lineList.Add("\t");
-                    lastColumnNum = border.ResultColumnID;
+                    if (lineList.Count == 0)
+                        lastLineNum = border.ResultRowID;
 
                     if (border.ResultRowID != lastLineNum)
                     {
-                        outputString.Append(string.Join(' ', lineList).Trim());
+                        outputString.Append(string.Join(' ', lineList));
                         outputString.Replace(" \t ", "\t");
                         outputString.Append(Environment.NewLine);
                         lineList.Clear();
                         lastLineNum = border.ResultRowID;
                     }
+
+                    if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
+                    {
+                        string borderWord = border.Word;
+                        int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+                        if (numberOfOffColumns < 0)
+                            lastColumnNum = 0;
+
+                        numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+
+                        if (numberOfOffColumns > 0)
+                            lineList.Add(new string('\t', numberOfOffColumns));
+                    }
+                    lastColumnNum = border.ResultColumnID;
+
                     lineList.Add(border.Word);
                 }
                 outputString.Append(string.Join(' ', lineList));
