@@ -30,7 +30,20 @@
                     Foreground="White"
                     Style="{StaticResource TextBoxStyle1}"
                     Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    Visibility="Collapsed" />
+                    Visibility="Collapsed">
+                    <TextBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem
+                                x:Name="TryToNumberMenuItem"
+                                Click="TryToNumberMenuItem_Click"
+                                Header="Try To Make _Numbers" />
+                            <MenuItem
+                                x:Name="TryToAlphaMenuItem"
+                                Click="TryToAlphaMenuItem_Click"
+                                Header="Try To Make _Letters" />
+                        </ContextMenu>
+                    </TextBox.ContextMenu>
+                </TextBox>
             </Viewbox>
         </Grid>
     </Border>
