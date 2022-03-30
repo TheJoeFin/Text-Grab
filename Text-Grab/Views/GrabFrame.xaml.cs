@@ -68,22 +68,23 @@ namespace Text_Grab.Views
             // https://stackoverflow.com/a/53698638/7438031
 
             e.Handled = true;
+            double aspectRatio = (this.Height - 66) / (this.Width - 4);
 
             if (e.Delta > 0)
             {
                 this.Width += 100;
-                this.Top -= 50;
-                this.Height += 100;
                 this.Left -= 50;
+                this.Height += 100 * aspectRatio;
+                this.Top -= 50 * aspectRatio;
             }
             else if (e.Delta < 0)
             {
                 if (this.Width > 120 && this.Height > 120)
                 {
                     this.Width -= 100;
-                    this.Top += 50;
-                    this.Height -= 100;
                     this.Left += 50;
+                    this.Height -= 100 * aspectRatio;
+                    this.Top += 50 * aspectRatio;
                 }
             }
         }
@@ -797,17 +798,13 @@ namespace Text_Grab.Views
 
         private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
         {
-            TextBox? searchBox = sender as TextBox;
-
-            if (searchBox != null)
+            if (SearchBox is TextBox searchBox)
                 searchBox.Text = "";
         }
 
         private async void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)
         {
-            TextBox searchBox = SearchBox;
-
-            if (searchBox != null)
+            if (SearchBox is TextBox searchBox)
                 await DrawRectanglesAroundWords(searchBox.Text);
         }
 
@@ -840,6 +837,12 @@ namespace Text_Grab.Views
 
         private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (e.RightButton == MouseButtonState.Pressed)
+            {
+                e.Handled = false;
+                return;
+            }
+
             isSelecting = true;
             clickedPoint = e.GetPosition(RectanglesCanvas);
             RectanglesCanvas.CaptureMouse();
@@ -953,13 +956,24 @@ namespace Text_Grab.Views
                 await DrawRectanglesAroundWords(searchBox.Text);
         }
 
-        private void EditToggleButton_Click(object sender, RoutedEventArgs e)
+        private async void EditToggleButton_Click(object sender, RoutedEventArgs e)
         {
             if (EditToggleButton.IsChecked is bool isEditMode && isEditMode == true)
+            {
+                if (IsFreezeMode == false)
+                {
+                    FreezeToggleButton.IsChecked = true;
+                    ResetGrabFrame();
+                    await Task.Delay(200);
+                    FreezeGrabFrame();
+                    if (SearchBox != null)
+                        await DrawRectanglesAroundWords(SearchBox.Text);
+                }
+
                 EnterEditMode();
+            }
             else
                 ExitEditMode();
-
         }
 
         private void EnterEditMode()
@@ -993,7 +1007,10 @@ namespace Text_Grab.Views
             if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
                 FreezeGrabFrame();
             else
+            {
+                ExitEditMode();
                 UnfreezeGrabFrame();
+            }
 
             await Task.Delay(200);
 
@@ -1118,6 +1135,37 @@ namespace Text_Grab.Views
                 RestoreTextlock.Text = "";
             else
                 RestoreTextlock.Text = "";
+        }
+
+        private void AspectRationMI_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem aspectMI)
+                return;
+
+            if (aspectMI.IsChecked == false)
+                GrabFrameImage.Stretch = Stretch.Fill;
+            else
+                GrabFrameImage.Stretch = Stretch.Uniform;
+        }
+
+        private async void FreezeMI_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsFreezeMode)
+            {
+                FreezeToggleButton.IsChecked = false;
+                UnfreezeGrabFrame();
+                ResetGrabFrame();
+            }
+            else
+            {
+                RectanglesCanvas.ContextMenu.IsOpen = false;
+                await Task.Delay(150);
+                FreezeToggleButton.IsChecked = true;
+                ResetGrabFrame();
+                FreezeGrabFrame();
+            }
+            if (SearchBox != null)
+                await DrawRectanglesAroundWords(SearchBox.Text);
         }
     }
 }

@@ -47,7 +47,12 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
-            <Image x:Name="GrabFrameImage" Grid.Row="1" />
+            <Image
+                x:Name="GrabFrameImage"
+                Grid.Row="1"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Stretch="Uniform" />
             <Grid
                 Grid.Row="0"
                 VerticalAlignment="Top"
@@ -142,6 +147,21 @@
                 <Canvas.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Canvas.Background>
+                <Canvas.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem
+                            x:Name="AspectRationMI"
+                            Checked="AspectRationMI_Checked"
+                            Header="Maintain Aspect Ratio"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Unchecked="AspectRationMI_Checked" />
+                        <MenuItem
+                            x:Name="FreezeMI"
+                            Click="FreezeMI_Click"
+                            Header="Toggle Freeze" />
+                    </ContextMenu>
+                </Canvas.ContextMenu>
             </Canvas>
             <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
                 <Grid
