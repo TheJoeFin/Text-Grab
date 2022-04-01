@@ -30,7 +30,7 @@
     WindowStyle="None"
     mc:Ignorable="d">
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/Text-Grab-Icon.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
