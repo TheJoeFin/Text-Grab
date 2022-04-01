@@ -835,11 +835,25 @@ namespace Text_Grab.Views
                 reDrawTimer.Start();
         }
 
-        private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        private async void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.RightButton == MouseButtonState.Pressed)
             {
                 e.Handled = false;
+                return;
+            }
+            else if (e.MiddleButton == MouseButtonState.Pressed)
+            {
+                e.Handled = true;
+                UnfreezeGrabFrame();
+                ResetGrabFrame();
+                await Task.Delay(150);
+                FreezeGrabFrame();
+
+                await Task.Delay(150);
+                if (SearchBox is TextBox searchBox)
+                    await DrawRectanglesAroundWords(searchBox.Text);
+
                 return;
             }
 
