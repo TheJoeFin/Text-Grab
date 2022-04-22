@@ -1066,6 +1066,7 @@ namespace Text_Grab.Views
             else
                 GrabFrameImage.Source = ImageMethods.GetWindowBoundsImage(this);
 
+            FreezeToggleButton.IsChecked = true;
             Topmost = false;
             this.Background = new SolidColorBrush(Colors.DimGray);
             RectanglesCanvas.Background.Opacity = 0;
@@ -1077,6 +1078,7 @@ namespace Text_Grab.Views
             Topmost = true;
             GrabFrameImage.Source = null;
             RectanglesCanvas.Background.Opacity = 0.05;
+            FreezeToggleButton.IsChecked = false;
             this.Background = new SolidColorBrush(Colors.Transparent);
             IsFreezeMode = false;
         }
