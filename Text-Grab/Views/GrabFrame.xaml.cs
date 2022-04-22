@@ -62,6 +62,32 @@ namespace Text_Grab.Views
             _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
         }
 
+        public void GrabFrame_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.PreviewKeyDown += Window_PreviewKeyDown;
+            this.PreviewKeyUp += Window_PreviewKeyUp;
+        }
+
+        private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
+        {
+            if (wasAltHeld == true && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
+            {
+                RectanglesCanvas.Visibility = Visibility.Visible;
+                wasAltHeld = false;
+            }
+        }
+
+        private bool wasAltHeld = false;
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (wasAltHeld == false && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
+            {
+                RectanglesCanvas.Visibility = Visibility.Collapsed;
+                wasAltHeld = true;
+            }
+        }
+
         private void HandlePreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             // Source: StackOverflow, read on Sep. 10, 2021

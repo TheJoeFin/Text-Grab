@@ -25,6 +25,7 @@
     LocationChanged="Window_LocationChanged"
     ResizeMode="CanResizeWithGrip"
     SizeChanged="Window_SizeChanged"
+    Loaded="GrabFrame_Loaded"
     Topmost="True"
     WindowStartupLocation="CenterOwner"
     WindowStyle="None"
