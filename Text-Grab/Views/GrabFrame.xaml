@@ -25,12 +25,13 @@
     LocationChanged="Window_LocationChanged"
     ResizeMode="CanResizeWithGrip"
     SizeChanged="Window_SizeChanged"
+    Loaded="GrabFrame_Loaded"
     Topmost="True"
     WindowStartupLocation="CenterOwner"
     WindowStyle="None"
     mc:Ignorable="d">
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/Text-Grab-Icon.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
@@ -47,7 +48,12 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
-            <Image x:Name="GrabFrameImage" Grid.Row="1" />
+            <Image
+                x:Name="GrabFrameImage"
+                Grid.Row="1"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Stretch="Uniform" />
             <Grid
                 Grid.Row="0"
                 VerticalAlignment="Top"
@@ -142,6 +148,21 @@
                 <Canvas.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Canvas.Background>
+                <Canvas.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem
+                            x:Name="AspectRationMI"
+                            Checked="AspectRationMI_Checked"
+                            Header="Maintain Aspect Ratio"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Unchecked="AspectRationMI_Checked" />
+                        <MenuItem
+                            x:Name="FreezeMI"
+                            Click="FreezeMI_Click"
+                            Header="Toggle Freeze" />
+                    </ContextMenu>
+                </Canvas.ContextMenu>
             </Canvas>
             <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
                 <Grid

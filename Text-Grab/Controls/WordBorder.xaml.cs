@@ -80,6 +80,10 @@ namespace Text_Grab.Controls
 
         private void WordBorderControl_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (e.RightButton == MouseButtonState.Pressed)
+                return;
+
+            e.Handled = true;
             if (IsSelected)
                 Deselect();
             else
@@ -88,6 +92,12 @@ namespace Text_Grab.Controls
 
         private async void WordBorderControl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            if (EditWordTextBox.Visibility == Visibility.Collapsed)
+            {
+                EnterEdit();
+                return;
+            }
+
             Clipboard.SetText(Word);
 
             if (Settings.Default.ShowToast
@@ -107,6 +117,16 @@ namespace Text_Grab.Controls
                 await Task.Delay(100);
                 Select();
             }
+        }
+
+        private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            Word = Word.TryFixToNumbers();
+        }
+
+        private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            Word = Word.TryFixToLetters();
         }
     }
 }
