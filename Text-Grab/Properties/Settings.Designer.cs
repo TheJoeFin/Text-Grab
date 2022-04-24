@@ -238,5 +238,17 @@ namespace Text_Grab.Properties {
                 this["FSGMakeSingleLineToggle"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool GlobalHotkeysEnabled {
+            get {
+                return ((bool)(this["GlobalHotkeysEnabled"]));
+            }
+            set {
+                this["GlobalHotkeysEnabled"] = value;
+            }
+        }
     }
 }

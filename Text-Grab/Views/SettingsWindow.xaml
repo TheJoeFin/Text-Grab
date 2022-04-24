@@ -119,25 +119,38 @@
                             Never automatically add text to the clipboard
                         </TextBlock>
                     </CheckBox>
-
-                    <CheckBox
-                        Name="RunInBackgroundChkBx"
+                    <Border
                         Margin="0,16,0,0"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
-                        <TextBlock Style="{StaticResource TextBodyNormal}">
-                            Run Text Grab in the background and enable hotkeys
-                        </TextBlock>
-                    </CheckBox>
-                    <TextBlock
-                        Margin="24,0"
-                        Foreground="LightGray"
-                        Style="{StaticResource TextBodyNormal}">
-                        <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run><LineBreak />
-                        <Run FontWeight="Bold">Global hotkeys:</Run><LineBreak />
-                        - Win+Shift+F new Full Screen Grab<LineBreak />
-                        - Win+Shift+G new Grab Frame<LineBreak />
-                        - Win+Shift+E new Edit Text Window</TextBlock>
+                        Padding="20,10"
+                        Background="#000"
+                        CornerRadius="20">
+                        <StackPanel>
+                            <CheckBox
+                                Name="RunInBackgroundChkBx"
+                                VerticalContentAlignment="Center"
+                                Style="{StaticResource labelText}">
+                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                    Run Text Grab in the background and enable hotkeys
+                                </TextBlock>
+                            </CheckBox>
+                            <TextBlock
+                                Margin="24,0"
+                                Foreground="LightGray"
+                                Style="{StaticResource TextBodyNormal}">
+                                <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run><LineBreak />
+                            </TextBlock>
+                            <CheckBox x:Name="GlobalHotkeysCheckbox" Style="{StaticResource labelText}">
+                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                    <Run FontWeight="Bold">Global hotkeys:</Run>
+                                </TextBlock>
+                            </CheckBox>
+                            <TextBlock Margin="24,0,50,0" Style="{StaticResource TextBodyNormal}">
+                                - Win+Shift+F new Full Screen Grab<LineBreak />
+                                - Win+Shift+G new Grab Frame<LineBreak />
+                                - Win+Shift+E new Edit Text Window</TextBlock>
+
+                        </StackPanel>
+                    </Border>
                     <CheckBox
                         Name="StartupOnLoginCheckBox"
                         Margin="0,16,0,0"

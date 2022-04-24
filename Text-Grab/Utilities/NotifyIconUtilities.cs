@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using Text_Grab.Properties;
 using Text_Grab.Views;
 
 namespace Text_Grab.Utilities;
@@ -70,16 +71,31 @@ public static class NotifyIconUtilities
 
     static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
     {
+        if (Settings.Default.GlobalHotkeysEnabled == false)
+            return;
+
         switch (e.Key)
         {
             case Keys.E:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { EditTextWindow etw = new(); etw.Show(); }));
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
+                { 
+                    EditTextWindow etw = new(); 
+                    etw.Show(); 
+                    etw.Activate();
+                }));
                 break;
             case Keys.F:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { WindowUtilities.LaunchFullScreenGrab(true); }));
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
+                { 
+                    WindowUtilities.LaunchFullScreenGrab(true); 
+                }));
                 break;
             case Keys.G:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { GrabFrame gf = new(); gf.Show(); }));
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
+                { 
+                    GrabFrame gf = new(); 
+                    gf.Show(); 
+                }));
                 break;
             default:
                 break;

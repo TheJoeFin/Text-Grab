@@ -24,6 +24,7 @@ public partial class SettingsWindow : Window
         NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
         RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
+        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
 
         if (ImplementAppOptions.IsPackaged())
         {
@@ -112,6 +113,9 @@ public partial class SettingsWindow : Window
             Settings.Default.StartupOnLogin = (bool)StartupOnLoginCheckBox.IsChecked;
             await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
         }
+
+        if (GlobalHotkeysCheckbox.IsChecked != null)
+            Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
 
         Settings.Default.Save();
         Close();
