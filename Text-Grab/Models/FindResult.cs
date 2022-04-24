@@ -2,18 +2,17 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Text_Grab.Models
+namespace Text_Grab.Models;
+
+public class FindResult
 {
-    public class FindResult
+    public string Text { get; set; } = "";
+    public int SelectionStart { get; set; }
+    public int SelectionLength
     {
-        public string Text { get; set; } = "";
-        public int SelectionStart { get; set; }
-        public int SelectionLength
+        get
         {
-            get
-            {
-                return Text.Length;
-            }
+            return Text.Length;
         }
     }
 }

@@ -5,114 +5,113 @@ using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 
-namespace Text_Grab
+namespace Text_Grab;
+
+/// <summary>
+/// Interaction logic for FirstRunWindow.xaml
+/// </summary>
+public partial class FirstRunWindow : Window
 {
-    /// <summary>
-    /// Interaction logic for FirstRunWindow.xaml
-    /// </summary>
-    public partial class FirstRunWindow : Window
+    public FirstRunWindow()
     {
-        public FirstRunWindow()
+        InitializeComponent();
+    }
+
+    private void OkayButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (System.Windows.Application.Current.Windows.Count == 1)
         {
-            InitializeComponent();
-        }
-
-        private void OkayButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (System.Windows.Application.Current.Windows.Count == 1)
-            {
-                switch (Settings.Default.DefaultLaunch)
-                {
-                    case "Fullscreen":
-                        WindowUtilities.LaunchFullScreenGrab(true);
-                        break;
-                    case "GrabFrame":
-                        WindowUtilities.OpenOrActivateWindow<GrabFrame>();
-                        break;
-                    case "EditText":
-                        WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            this.Close();
-        }
-
-        private void FirstRun_Loaded(object sender, RoutedEventArgs e)
-        {
-            // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
-
             switch (Settings.Default.DefaultLaunch)
             {
                 case "Fullscreen":
-                    FullScreenRDBTN.IsChecked = true;
+                    WindowUtilities.LaunchFullScreenGrab(true);
                     break;
                 case "GrabFrame":
-                    GrabFrameRDBTN.IsChecked = true;
+                    WindowUtilities.OpenOrActivateWindow<GrabFrame>();
                     break;
                 case "EditText":
-                    EditWindowRDBTN.IsChecked = true;
+                    WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
                     break;
                 default:
-                    EditWindowRDBTN.IsChecked = true;
                     break;
             }
         }
 
-        private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
+        this.Close();
+    }
+
+    private void FirstRun_Loaded(object sender, RoutedEventArgs e)
+    {
+        // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+
+        switch (Settings.Default.DefaultLaunch)
         {
-            // Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
-            Settings.Default.Save();
+            case "Fullscreen":
+                FullScreenRDBTN.IsChecked = true;
+                break;
+            case "GrabFrame":
+                GrabFrameRDBTN.IsChecked = true;
+                break;
+            case "EditText":
+                EditWindowRDBTN.IsChecked = true;
+                break;
+            default:
+                EditWindowRDBTN.IsChecked = true;
+                break;
         }
+    }
 
-        private void RadioButton_Checked(object sender, RoutedEventArgs e)
-        {
-            if (this.IsLoaded != true)
-                return;
+    private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        // Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
+        Settings.Default.Save();
+    }
 
-            if (GrabFrameRDBTN.IsChecked != null && (bool)GrabFrameRDBTN.IsChecked)
-                Settings.Default.DefaultLaunch = "GrabFrame";
-            else if (FullScreenRDBTN.IsChecked != null && (bool)FullScreenRDBTN.IsChecked)
-                Settings.Default.DefaultLaunch = "Fullscreen";
-            else
-                Settings.Default.DefaultLaunch = "EditText";
+    private void RadioButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (this.IsLoaded != true)
+            return;
 
-            Settings.Default.Save();
-        }
+        if (GrabFrameRDBTN.IsChecked != null && (bool)GrabFrameRDBTN.IsChecked)
+            Settings.Default.DefaultLaunch = "GrabFrame";
+        else if (FullScreenRDBTN.IsChecked != null && (bool)FullScreenRDBTN.IsChecked)
+            Settings.Default.DefaultLaunch = "Fullscreen";
+        else
+            Settings.Default.DefaultLaunch = "EditText";
 
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
-            e.Handled = true;
-        }
+        Settings.Default.Save();
+    }
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
-        {
-            WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+    private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
 
-            this.Close();
-        }
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
 
-        private void TryFullscreen_Click(object sender, RoutedEventArgs e)
-        {
-            WindowUtilities.LaunchFullScreenGrab(true);
-        }
+        this.Close();
+    }
 
-        private void TryGrabFrame_Click(object sender, RoutedEventArgs e)
-        {
-            WindowUtilities.OpenOrActivateWindow<GrabFrame>();
-        }
+    private void TryFullscreen_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.LaunchFullScreenGrab(true);
+    }
 
-        private void TryEditWindow_Click(object sender, RoutedEventArgs e)
-        {
-            WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-        }
+    private void TryGrabFrame_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+    }
 
-        private void Window_Closed(object? sender, EventArgs e)
-        {
-            WindowUtilities.ShouldShutDown();
-        }
+    private void TryEditWindow_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+    }
+
+    private void Window_Closed(object? sender, EventArgs e)
+    {
+        WindowUtilities.ShouldShutDown();
     }
 }

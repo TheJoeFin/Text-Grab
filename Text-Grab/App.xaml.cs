@@ -11,130 +11,129 @@ using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel;
 
-namespace Text_Grab
+namespace Text_Grab;
+
+/// <summary>
+/// Interaction logic for App.xaml
+/// </summary>
+public partial class App : System.Windows.Application
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : System.Windows.Application
+    public NotifyIcon? TextGrabIcon { get; set; }
+
+    public int NumberOfRunningInstances { get; set; } = 0;
+
+    void appStartup(object sender, StartupEventArgs e)
     {
-        public NotifyIcon? TextGrabIcon { get; set; }
+        NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
+        Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
-        public int NumberOfRunningInstances { get; set; } = 0;
+        // Register COM server and activator type
+        bool handledArgument = false;
 
-        void appStartup(object sender, StartupEventArgs e)
+        ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
-            NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
-            Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
-
-            // Register COM server and activator type
-            bool handledArgument = false;
-
-            ToastNotificationManagerCompat.OnActivated += toastArgs =>
+            string argsInvoked = toastArgs.Argument;
+            // Need to dispatch to UI thread if performing UI operations
+            Dispatcher.BeginInvoke((Action)(() =>
             {
-                string argsInvoked = toastArgs.Argument;
-                // Need to dispatch to UI thread if performing UI operations
-                Dispatcher.BeginInvoke((Action)(() =>
+                if (String.IsNullOrWhiteSpace(argsInvoked) == false)
                 {
-                    if (String.IsNullOrWhiteSpace(argsInvoked) == false)
-                    {
-                        EditTextWindow mtw = new EditTextWindow(argsInvoked);
-                        mtw.Show();
-                        handledArgument = true;
-                    }
-                }));
-            };
-
-            if (Settings.Default.RunInTheBackground == true
-                && NumberOfRunningInstances < 2)
-            {
-                NotifyIconUtilities.SetupNotifyIcon();
-
-                if (Settings.Default.StartupOnLogin == true)
+                    EditTextWindow mtw = new EditTextWindow(argsInvoked);
+                    mtw.Show();
                     handledArgument = true;
+                }
+            }));
+        };
+
+        if (Settings.Default.RunInTheBackground == true
+            && NumberOfRunningInstances < 2)
+        {
+            NotifyIconUtilities.SetupNotifyIcon();
+
+            if (Settings.Default.StartupOnLogin == true)
+                handledArgument = true;
+        }
+
+
+        for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
+        {
+            Debug.WriteLine($"ARG {i}:{e.Args[i]}");
+            if (e.Args[i].Contains("ToastActivated"))
+            {
+                Debug.WriteLine("Launched from toast");
+                handledArgument = true;
             }
-
-
-            for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
+            else if (e.Args[i] == "Settings")
             {
-                Debug.WriteLine($"ARG {i}:{e.Args[i]}");
-                if (e.Args[i].Contains("ToastActivated"))
-                {
-                    Debug.WriteLine("Launched from toast");
-                    handledArgument = true;
-                }
-                else if (e.Args[i] == "Settings")
-                {
-                    SettingsWindow sw = new SettingsWindow();
-                    sw.Show();
-                    handledArgument = true;
-                }
-                else if (e.Args[i] == "GrabFrame")
-                {
-                    GrabFrame gf = new GrabFrame();
-                    gf.Show();
-                    handledArgument = true;
-                }
-                else if (e.Args[i] == "Fullscreen")
-                {
-                    WindowUtilities.LaunchFullScreenGrab();
-                    handledArgument = true;
-                }
-                else if (e.Args[i] == "EditText")
-                {
-                    EditTextWindow manipulateTextWindow = new EditTextWindow();
-                    manipulateTextWindow.Show();
-                    handledArgument = true;
-                }
-                else if (File.Exists(e.Args[i]))
-                {
-                    EditTextWindow manipulateTextWindow = new EditTextWindow();
-                    manipulateTextWindow.OpenThisPath(e.Args[i]);
-                    manipulateTextWindow.Show();
-                    handledArgument = true;
-                }
+                SettingsWindow sw = new SettingsWindow();
+                sw.Show();
+                handledArgument = true;
             }
-
-            if (!handledArgument)
+            else if (e.Args[i] == "GrabFrame")
             {
-                if (Settings.Default.FirstRun)
-                {
-                    FirstRunWindow frw = new FirstRunWindow();
-                    frw.Show();
-
-                    Settings.Default.FirstRun = false;
-                    Settings.Default.Save();
-                }
-                else
-                {
-                    switch (Settings.Default.DefaultLaunch)
-                    {
-                        case "Fullscreen":
-                            WindowUtilities.LaunchFullScreenGrab();
-                            break;
-                        case "GrabFrame":
-                            GrabFrame gf = new GrabFrame();
-                            gf.Show();
-                            break;
-                        case "EditText":
-                            EditTextWindow manipulateTextWindow = new EditTextWindow();
-                            manipulateTextWindow.Show();
-                            break;
-                        default:
-                            EditTextWindow editTextWindow = new EditTextWindow();
-                            editTextWindow.Show();
-                            break;
-                    }
-                }
+                GrabFrame gf = new GrabFrame();
+                gf.Show();
+                handledArgument = true;
+            }
+            else if (e.Args[i] == "Fullscreen")
+            {
+                WindowUtilities.LaunchFullScreenGrab();
+                handledArgument = true;
+            }
+            else if (e.Args[i] == "EditText")
+            {
+                EditTextWindow manipulateTextWindow = new EditTextWindow();
+                manipulateTextWindow.Show();
+                handledArgument = true;
+            }
+            else if (File.Exists(e.Args[i]))
+            {
+                EditTextWindow manipulateTextWindow = new EditTextWindow();
+                manipulateTextWindow.OpenThisPath(e.Args[i]);
+                manipulateTextWindow.Show();
+                handledArgument = true;
             }
         }
 
-        private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        if (!handledArgument)
         {
-            // unhandled exceptions thrown from UI thread
-            Debug.WriteLine($"Unhandled exception: {e.Exception}");
-            e.Handled = true;
-            Current.Shutdown();
+            if (Settings.Default.FirstRun)
+            {
+                FirstRunWindow frw = new FirstRunWindow();
+                frw.Show();
+
+                Settings.Default.FirstRun = false;
+                Settings.Default.Save();
+            }
+            else
+            {
+                switch (Settings.Default.DefaultLaunch)
+                {
+                    case "Fullscreen":
+                        WindowUtilities.LaunchFullScreenGrab();
+                        break;
+                    case "GrabFrame":
+                        GrabFrame gf = new GrabFrame();
+                        gf.Show();
+                        break;
+                    case "EditText":
+                        EditTextWindow manipulateTextWindow = new EditTextWindow();
+                        manipulateTextWindow.Show();
+                        break;
+                    default:
+                        EditTextWindow editTextWindow = new EditTextWindow();
+                        editTextWindow.Show();
+                        break;
+                }
+            }
         }
+    }
+
+    private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        // unhandled exceptions thrown from UI thread
+        Debug.WriteLine($"Unhandled exception: {e.Exception}");
+        e.Handled = true;
+        Current.Shutdown();
     }
 }
