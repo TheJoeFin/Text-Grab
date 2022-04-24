@@ -1,7 +1,5 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Windows;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -27,7 +25,7 @@ public partial class SettingsWindow : Window
         RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
 
-        if (IsPackaged())
+        if (ImplementAppOptions.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
 
@@ -103,18 +101,7 @@ public partial class SettingsWindow : Window
         if (RunInBackgroundChkBx.IsChecked != null)
         {
             Settings.Default.RunInTheBackground = (bool)RunInBackgroundChkBx.IsChecked;
-
-            if ((bool)RunInBackgroundChkBx.IsChecked == true)
-            {
-                // Get strongly-typed current application
-                NotifyIconUtilities.SetupNotifyIcon();
-            }
-            else
-            {
-                App app = (App)App.Current;
-                if (app.TextGrabIcon != null)
-                    app.TextGrabIcon.Dispose();
-            }
+            ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
         }
 
         if (TryInsertCheckbox.IsChecked != null)
@@ -123,74 +110,11 @@ public partial class SettingsWindow : Window
         if (StartupOnLoginCheckBox.IsChecked != null)
         {
             Settings.Default.StartupOnLogin = (bool)StartupOnLoginCheckBox.IsChecked;
-
-            if (Settings.Default.StartupOnLogin == true)
-                await SetForStartup();
-            else
-                RemoveFromStartup();
+            await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
         }
-
 
         Settings.Default.Save();
         Close();
-    }
-
-    internal static bool IsPackaged()
-    {
-        try
-        {
-            // If we have a package ID then we are running in a packaged context
-            var dummy = Package.Current.Id;
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static async void RemoveFromStartup()
-    {
-        if (IsPackaged())
-        {
-            StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
-            Debug.WriteLine("Startup is " + startupTask.State.ToString());
-
-            startupTask.Disable();
-        }
-        else
-        {
-            string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-            RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
-            if (key is not null)
-            {
-                try { key.DeleteValue("Text-Grab"); }
-                catch (Exception) { }
-            }
-        }
-    }
-
-    private static async Task SetForStartup()
-    {
-        if (IsPackaged())
-        {
-            StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
-            Debug.WriteLine("Startup is " + startupTask.State.ToString());
-
-            StartupTaskState newState = await startupTask.RequestEnableAsync();
-        }
-        else
-        {
-            string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-            string? BaseDir = System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory);
-            RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
-            if (key is not null
-                && BaseDir is not null)
-            {
-                key.SetValue("Text-Grab", $"\"{BaseDir}\\Text-Grab.exe\"");
-            }
-        }
-        await Task.CompletedTask;
     }
 
     private void AboutBTN_Click(object sender, RoutedEventArgs e)

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Windows.ApplicationModel;
 
 namespace Text_Grab;
 
@@ -40,7 +43,7 @@ public partial class FirstRunWindow : Window
         this.Close();
     }
 
-    private void FirstRun_Loaded(object sender, RoutedEventArgs e)
+    private async void FirstRun_Loaded(object sender, RoutedEventArgs e)
     {
         // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
 
@@ -59,12 +62,38 @@ public partial class FirstRunWindow : Window
                 EditWindowRDBTN.IsChecked = true;
                 break;
         }
-    }
 
-    private void ShowToastCheckBox_Click(object sender, RoutedEventArgs e)
-    {
-        // Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
-        Settings.Default.Save();
+        if (ImplementAppOptions.IsPackaged())
+        {
+            StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
+
+            switch (startupTask.State)
+            {
+                case StartupTaskState.Disabled:
+                    // Task is disabled but can be enabled.
+                    StartupCheckbox.IsChecked = false;
+                    break;
+                case StartupTaskState.DisabledByUser:
+                    // Task is disabled and user must enable it manually.
+                    StartupCheckbox.IsChecked = false;
+                    StartupCheckbox.IsEnabled = false;
+
+                    StartupTextblock.Text += "\nDisabled in Task Manager";
+                    StartupTextblock.Foreground = new SolidColorBrush(Colors.Gray);
+                    break;
+                case StartupTaskState.Enabled:
+                    StartupCheckbox.IsChecked = true;
+                    break;
+            }
+        }
+        else
+        {
+            StartupCheckbox.IsChecked = Settings.Default.StartupOnLogin;
+        }
+
+        BackgroundCheckBox.IsChecked = Settings.Default.RunInTheBackground;
+
+        NotificationsCheckBox.IsChecked = Settings.Default.ShowToast;
     }
 
     private void RadioButton_Checked(object sender, RoutedEventArgs e)
@@ -113,5 +142,34 @@ public partial class FirstRunWindow : Window
     private void Window_Closed(object? sender, EventArgs e)
     {
         WindowUtilities.ShouldShutDown();
+    }
+
+    private void NotificationsCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        {
+            Settings.Default.ShowToast = (bool)checkBox.IsChecked;
+            Settings.Default.Save();
+        }
+    }
+
+    private void BackgroundCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        {
+            Settings.Default.RunInTheBackground = (bool)checkBox.IsChecked;
+            ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
+            Settings.Default.Save();
+        }
+    }
+
+    private async void StartupCheckbox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        {
+            Settings.Default.StartupOnLogin = (bool)checkBox.IsChecked;
+            await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
+            Settings.Default.Save();
+        }
     }
 }

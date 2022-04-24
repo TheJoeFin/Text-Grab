@@ -105,34 +105,6 @@
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
 
-                <!--<TextBlock
-                    Grid.Row="0"
-                    Grid.ColumnSpan="2"
-                    HorizontalAlignment="Center"
-                    FontSize="18"
-                    Foreground="White"
-                    Text="Show Toast When Copying Text" />
-
-                <Viewbox
-                    Grid.Row="1"
-                    Grid.Column="0"
-                    Margin="20">
-                    <Image
-                        Width="800"
-                        Height="620"
-                        Source="/Text-Grab;component/Images/Toast.png" />
-
-                </Viewbox>
-                <CheckBox
-                    x:Name="ShowToastCheckBox"
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    Margin="20"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    Content="Show Toast"
-                    Foreground="White" />-->
-
                 <TextBlock
                     Grid.Row="2"
                     Grid.ColumnSpan="3"
@@ -251,6 +223,66 @@
                 </StackPanel>
 
             </Grid>
+
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                Text Grab Options
+            </TextBlock>
+
+            <TextBlock Style="{StaticResource TextBody}">
+                Notifications are an easy way to jump into a some copied text.
+            </TextBlock>
+            <Viewbox
+                MaxHeight="160"
+                Margin="50,10"
+                HorizontalAlignment="Left">
+                <Image
+                    Width="800"
+                    Height="620"
+                    Source="/Text-Grab;component/Images/Toast.png" />
+            </Viewbox>
+            <CheckBox
+                x:Name="NotificationsCheckBox"
+                Margin="50,5,50,0"
+                Checked="NotificationsCheckBox_Checked"
+                IsChecked="True"
+                Unchecked="NotificationsCheckBox_Checked">
+                <TextBlock
+                    Margin="0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBody}">
+                    Enable Notifications
+                </TextBlock>
+            </CheckBox>
+
+            <TextBlock Style="{StaticResource TextBody}">
+                Running in the background enables shortcut keys and faster launch times.
+            </TextBlock>
+            <CheckBox
+                x:Name="BackgroundCheckBox"
+                Margin="50,5,50,0"
+                Checked="BackgroundCheckBox_Checked"
+                Unchecked="BackgroundCheckBox_Checked">
+                <TextBlock Margin="0" Style="{StaticResource TextBody}">
+                    Run Text Grab in the background
+                </TextBlock>
+            </CheckBox>
+
+            <TextBlock Style="{StaticResource TextBody}">
+                Launching Text Grab on startup keeps the app ready for quick access.
+            </TextBlock>
+            <CheckBox
+                x:Name="StartupCheckbox"
+                Margin="50,5,50,0"
+                Checked="StartupCheckbox_Checked"
+                Unchecked="StartupCheckbox_Checked">
+                <TextBlock
+                    x:Name="StartupTextblock"
+                    Margin="0"
+                    Style="{StaticResource TextBody}">
+                    Start Text Grab on startup
+                </TextBlock>
+            </CheckBox>
+
             <TextBlock Style="{StaticResource TextHeaderFirstRun}">
                 How Text Grab is Different
             </TextBlock>
