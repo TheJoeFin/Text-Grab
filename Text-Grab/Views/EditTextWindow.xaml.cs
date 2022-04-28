@@ -62,6 +62,8 @@ public partial class EditTextWindow : Window
 
     private int numberOfContextMenuItems;
 
+    private bool _IsAccessingClipboard { get; set; } = false;
+
     public EditTextWindow()
     {
         InitializeComponent();
@@ -165,28 +167,47 @@ public partial class EditTextWindow : Window
             WindowState = WindowState.Minimized;
         }
 
+        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
     }
 
     private async void Clipboard_ContentChanged(object? sender, object e)
     {
+        if (ClipboardWatcherMenuItem.IsChecked == false || _IsAccessingClipboard == true)
+            return;
+
+        _IsAccessingClipboard = true;
+        DataPackageView? dataPackageView = null;
+
+        try
         {
-            DataPackageView dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
-            if (dataPackageView.Contains(StandardDataFormats.Text))
+            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
+        }
+
+        if (dataPackageView is not null && dataPackageView.Contains(StandardDataFormats.Text))
+        {
+            string text = string.Empty;
+            try
             {
-                string text = await dataPackageView.GetTextAsync();
-                if (string.IsNullOrEmpty(text) == false)
-                {
-                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
-                }
+                text = await dataPackageView.GetTextAsync();
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"error with dataPackageView.GetTextAsync(). Exception Message: {ex.Message}");
             }
         };
+
+        _IsAccessingClipboard = false;
     }
 
     private void AddCopiedTextToTextBox(string textToAdd)
     {
-        if (ClipboardWatcherMenuItem.IsChecked)
-            PassedTextControl.AppendText(Environment.NewLine + textToAdd);
+        PassedTextControl.AppendText(Environment.NewLine + textToAdd);
     }
 
     private void Window_Initialized(object sender, EventArgs e)
