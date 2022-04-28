@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:system="clr-namespace:System;assembly=System.Runtime"
     Title="Text Grab Settings"
     Width="560"
     Height="600"
@@ -19,6 +20,8 @@
         <Style x:Key="labelText" TargetType="CheckBox">
             <Setter Property="Foreground" Value="White" />
         </Style>
+
+        <local:NumericValidationRule x:Key="NumericValidationRule" />
     </Window.Resources>
     <Border>
         <ScrollViewer
@@ -170,6 +173,29 @@
                         </TextBlock>
                     </CheckBox>
 
+                    <TextBlock x:Name="DelayTextblock" Style="{StaticResource TextBodyNormal}">
+                        Auto start Text Grab when you login
+                    </TextBlock>
+                    <TextBox x:Name="Int32Holder"
+                            VerticalAlignment="Center">
+                        <!--Text="{Binding Converter={cnv:TypeConverter}, ConverterParameter='Int32', Path=ValueToEdit.Value, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"-->
+                        <TextBox.Text>
+                            <Binding Path="InsertDelaySeconds"
+                                    Mode="TwoWay"
+                                    UpdateSourceTrigger="PropertyChanged"
+                                    Converter="{StaticResource NumericValidationRule}"
+                                    ConverterParameter="Int32"
+                                    ValidatesOnNotifyDataErrors="True"
+                                    ValidatesOnDataErrors="True"
+                                    NotifyOnValidationError="True">
+                                <Binding.ValidationRules>
+                                    <local:NumericValidationRule ValidationType="{x:Type system:Int32}"
+                                                                        ValidatesOnTargetUpdated="True" />
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                        <!--NumericValidationRule-->
+                    </TextBox>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
                     <controls:CollapsibleButton

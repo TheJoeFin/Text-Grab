@@ -12,6 +12,8 @@ namespace Text_Grab;
 /// </summary>
 public partial class SettingsWindow : Window
 {
+    public int InsertDelaySeconds { get; set; } = 3;
+
     public SettingsWindow()
     {
         InitializeComponent();
