@@ -8,245 +8,321 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Text_Grab.Properties {
-    
-    
+namespace Text_Grab.Properties
+{
+
+
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.1.0.0")]
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase
+    {
+
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
-        
-        public static Settings Default {
-            get {
+
+        public static Settings Default
+        {
+            get
+            {
                 return defaultInstance;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool FirstRun {
-            get {
+        public bool FirstRun
+        {
+            get
+            {
                 return ((bool)(this["FirstRun"]));
             }
-            set {
+            set
+            {
                 this["FirstRun"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool ShowToast {
-            get {
+        public bool ShowToast
+        {
+            get
+            {
                 return ((bool)(this["ShowToast"]));
             }
-            set {
+            set
+            {
                 this["ShowToast"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Fullscreen")]
-        public string DefaultLaunch {
-            get {
+        public string DefaultLaunch
+        {
+            get
+            {
                 return ((string)(this["DefaultLaunch"]));
             }
-            set {
+            set
+            {
                 this["DefaultLaunch"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool CorrectErrors {
-            get {
+        public bool CorrectErrors
+        {
+            get
+            {
                 return ((bool)(this["CorrectErrors"]));
             }
-            set {
+            set
+            {
                 this["CorrectErrors"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool EditWindowStartFullscreen {
-            get {
+        public bool EditWindowStartFullscreen
+        {
+            get
+            {
                 return ((bool)(this["EditWindowStartFullscreen"]));
             }
-            set {
+            set
+            {
                 this["EditWindowStartFullscreen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Segoe UI")]
-        public string FontFamilySetting {
-            get {
+        public string FontFamilySetting
+        {
+            get
+            {
                 return ((string)(this["FontFamilySetting"]));
             }
-            set {
+            set
+            {
                 this["FontFamilySetting"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("14")]
-        public double FontSizeSetting {
-            get {
+        public double FontSizeSetting
+        {
+            get
+            {
                 return ((double)(this["FontSizeSetting"]));
             }
-            set {
+            set
+            {
                 this["FontSizeSetting"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool IsFontBold {
-            get {
+        public bool IsFontBold
+        {
+            get
+            {
                 return ((bool)(this["IsFontBold"]));
             }
-            set {
+            set
+            {
                 this["IsFontBold"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool IsFontItalic {
-            get {
+        public bool IsFontItalic
+        {
+            get
+            {
                 return ((bool)(this["IsFontItalic"]));
             }
-            set {
+            set
+            {
                 this["IsFontItalic"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool IsFontUnderline {
-            get {
+        public bool IsFontUnderline
+        {
+            get
+            {
                 return ((bool)(this["IsFontUnderline"]));
             }
-            set {
+            set
+            {
                 this["IsFontUnderline"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool IsFontStrikeout {
-            get {
+        public bool IsFontStrikeout
+        {
+            get
+            {
                 return ((bool)(this["IsFontStrikeout"]));
             }
-            set {
+            set
+            {
                 this["IsFontStrikeout"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool NeverAutoUseClipboard {
-            get {
+        public bool NeverAutoUseClipboard
+        {
+            get
+            {
                 return ((bool)(this["NeverAutoUseClipboard"]));
             }
-            set {
+            set
+            {
                 this["NeverAutoUseClipboard"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string EditTextWindowSizeAndPosition {
-            get {
+        public string EditTextWindowSizeAndPosition
+        {
+            get
+            {
                 return ((string)(this["EditTextWindowSizeAndPosition"]));
             }
-            set {
+            set
+            {
                 this["EditTextWindowSizeAndPosition"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string GrabFrameWindowSizeAndPosition {
-            get {
+        public string GrabFrameWindowSizeAndPosition
+        {
+            get
+            {
                 return ((string)(this["GrabFrameWindowSizeAndPosition"]));
             }
-            set {
+            set
+            {
                 this["GrabFrameWindowSizeAndPosition"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool RunInTheBackground {
-            get {
+        public bool RunInTheBackground
+        {
+            get
+            {
                 return ((bool)(this["RunInTheBackground"]));
             }
-            set {
+            set
+            {
                 this["RunInTheBackground"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool TryInsert {
-            get {
+        public bool TryInsert
+        {
+            get
+            {
                 return ((bool)(this["TryInsert"]));
             }
-            set {
+            set
+            {
                 this["TryInsert"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public double InsertDelay
+        {
+            get
+            {
+                return ((double)(this["InsertDelay"]));
+            }
+            set
+            {
+                this["InsertDelay"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool StartupOnLogin {
-            get {
+        public bool StartupOnLogin
+        {
+            get
+            {
                 return ((bool)(this["StartupOnLogin"]));
             }
-            set {
+            set
+            {
                 this["StartupOnLogin"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool FSGMakeSingleLineToggle {
-            get {
+        public bool FSGMakeSingleLineToggle
+        {
+            get
+            {
                 return ((bool)(this["FSGMakeSingleLineToggle"]));
             }
-            set {
+            set
+            {
                 this["FSGMakeSingleLineToggle"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool GlobalHotkeysEnabled {
-            get {
+        public bool GlobalHotkeysEnabled
+        {
+            get
+            {
                 return ((bool)(this["GlobalHotkeysEnabled"]));
             }
-            set {
+            set
+            {
                 this["GlobalHotkeysEnabled"] = value;
             }
         }

@@ -50,6 +50,9 @@
     <Setting Name="TryInsert" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="InsertDelay" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
     <Setting Name="StartupOnLogin" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>

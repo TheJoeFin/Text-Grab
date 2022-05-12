@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using Text_Grab.Properties;
@@ -137,7 +138,7 @@ public static class WindowUtilities
         }
     }
 
-    internal static void CloseAllFullscreenGrabs()
+    internal static async void CloseAllFullscreenGrabs()
     {
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -166,6 +167,7 @@ public static class WindowUtilities
             && string.IsNullOrWhiteSpace(stringFromOCR) == false
             && isFromEditWindow == false)
         {
+            await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
             TryInsertString(stringFromOCR);
         }
 

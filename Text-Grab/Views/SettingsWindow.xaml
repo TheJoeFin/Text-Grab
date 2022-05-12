@@ -163,39 +163,40 @@
                             Auto start Text Grab when you login
                         </TextBlock>
                     </CheckBox>
-                    <CheckBox
-                        Name="TryInsertCheckbox"
-                        Margin="0,16,0,0"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
-                        <TextBlock Style="{StaticResource TextBodyNormal}">
-                            (Experimental) Try to Insert text in text fields after Fullscreen Grab
-                        </TextBlock>
-                    </CheckBox>
-
-                    <TextBlock x:Name="DelayTextblock" Style="{StaticResource TextBodyNormal}">
-                        Auto start Text Grab when you login
-                    </TextBlock>
-                    <TextBox x:Name="Int32Holder"
-                            VerticalAlignment="Center">
-                        <!--Text="{Binding Converter={cnv:TypeConverter}, ConverterParameter='Int32', Path=ValueToEdit.Value, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"-->
-                        <TextBox.Text>
-                            <Binding Path="InsertDelaySeconds"
-                                    Mode="TwoWay"
-                                    UpdateSourceTrigger="PropertyChanged"
-                                    Converter="{StaticResource NumericValidationRule}"
-                                    ConverterParameter="Int32"
-                                    ValidatesOnNotifyDataErrors="True"
-                                    ValidatesOnDataErrors="True"
-                                    NotifyOnValidationError="True">
-                                <Binding.ValidationRules>
-                                    <local:NumericValidationRule ValidationType="{x:Type system:Int32}"
-                                                                        ValidatesOnTargetUpdated="True" />
-                                </Binding.ValidationRules>
-                            </Binding>
-                        </TextBox.Text>
-                        <!--NumericValidationRule-->
-                    </TextBox>
+                        <Border
+                            Margin="0,16,0,0"
+                            Padding="20,10"
+                            Background="#000"
+                            CornerRadius="20">
+                            <StackPanel>
+                                <CheckBox
+                                    Name="TryInsertCheckbox"
+                                    Margin="0"
+                                    VerticalContentAlignment="Center"
+                                    Style="{StaticResource labelText}">
+                                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                                        (Experimental) Try to Insert text in text fields after Fullscreen Grab after: 
+                                    </TextBlock>
+                                </CheckBox>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox x:Name="SecondsTextBox" 
+                                            Text="3"
+                                            Padding="2"
+                                            Margin="24,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            BorderThickness="2"
+                                            TextChanged="ValidateTextIsNumber" 
+                                            Width="48" />
+                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}" Text="Seconds" />
+                                    <TextBlock Margin="12,0,0,0" 
+                                               Visibility="Collapsed" 
+                                               x:Name="DelayTimeErrorSeconds" 
+                                               VerticalAlignment="Center" 
+                                               Style="{StaticResource TextBodyNormal}" 
+                                               Text="⚠ Pick a number between 0 and 10" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
                     <controls:CollapsibleButton

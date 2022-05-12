@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
@@ -12,7 +14,7 @@ namespace Text_Grab;
 /// </summary>
 public partial class SettingsWindow : Window
 {
-    public int InsertDelaySeconds { get; set; } = 3;
+    public double InsertDelaySeconds { get; set; } = 3;
 
     public SettingsWindow()
     {
@@ -27,7 +29,8 @@ public partial class SettingsWindow : Window
         RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
-
+        InsertDelaySeconds = Settings.Default.InsertDelay;
+        SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
         if (ImplementAppOptions.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
@@ -69,6 +72,29 @@ public partial class SettingsWindow : Window
             default:
                 FullScreenRDBTN.IsChecked = true;
                 break;
+        }
+    }
+
+    private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
+    {
+        if (IsLoaded == false)
+            return;
+
+        if (sender is TextBox numberInputBox)
+        {
+            bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
+            if (wasAbleToConvert == true && parsedText > 0 && parsedText < 10)
+            {
+                InsertDelaySeconds = parsedText;
+                DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
+                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            }
+            else
+            {
+                InsertDelaySeconds = 3;
+                DelayTimeErrorSeconds.Visibility = Visibility.Visible;
+                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Red);
+            }
         }
     }
 
@@ -118,6 +144,9 @@ public partial class SettingsWindow : Window
 
         if (GlobalHotkeysCheckbox.IsChecked != null)
             Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
+
+        if (string.IsNullOrEmpty(SecondsTextBox.Text) == false)
+            Settings.Default.InsertDelay = InsertDelaySeconds;
 
         Settings.Default.Save();
         Close();
