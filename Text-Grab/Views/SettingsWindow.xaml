@@ -6,7 +6,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:system="clr-namespace:System;assembly=System.Runtime"
     Title="Text Grab Settings"
     Width="560"
     Height="600"
@@ -21,7 +20,6 @@
             <Setter Property="Foreground" Value="White" />
         </Style>
 
-        <local:NumericValidationRule x:Key="NumericValidationRule" />
     </Window.Resources>
     <Border>
         <ScrollViewer
@@ -126,7 +124,7 @@
                         Margin="0,16,0,0"
                         Padding="20,10"
                         Background="#000"
-                        CornerRadius="20">
+                        CornerRadius="6">
                         <StackPanel>
                             <CheckBox
                                 Name="RunInBackgroundChkBx"
@@ -167,7 +165,7 @@
                         Margin="0,16,0,0"
                         Padding="20,10"
                         Background="#000"
-                        CornerRadius="20">
+                        CornerRadius="6">
                         <StackPanel>
                             <CheckBox
                                 Name="TryInsertCheckbox"
