@@ -163,40 +163,45 @@
                             Auto start Text Grab when you login
                         </TextBlock>
                     </CheckBox>
-                        <Border
-                            Margin="0,16,0,0"
-                            Padding="20,10"
-                            Background="#000"
-                            CornerRadius="20">
-                            <StackPanel>
-                                <CheckBox
-                                    Name="TryInsertCheckbox"
-                                    Margin="0"
-                                    VerticalContentAlignment="Center"
-                                    Style="{StaticResource labelText}">
-                                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                                        (Experimental) Try to Insert text in text fields after Fullscreen Grab after: 
-                                    </TextBlock>
-                                </CheckBox>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBox x:Name="SecondsTextBox" 
-                                            Text="3"
-                                            Padding="2"
-                                            Margin="24,0,0,0"
-                                            HorizontalAlignment="Left"
-                                            BorderThickness="2"
-                                            TextChanged="ValidateTextIsNumber" 
-                                            Width="48" />
-                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}" Text="Seconds" />
-                                    <TextBlock Margin="12,0,0,0" 
-                                               Visibility="Collapsed" 
-                                               x:Name="DelayTimeErrorSeconds" 
-                                               VerticalAlignment="Center" 
-                                               Style="{StaticResource TextBodyNormal}" 
-                                               Text="⚠ Pick a number between 0 and 10" />
-                                </StackPanel>
+                    <Border
+                        Margin="0,16,0,0"
+                        Padding="20,10"
+                        Background="#000"
+                        CornerRadius="20">
+                        <StackPanel>
+                            <CheckBox
+                                Name="TryInsertCheckbox"
+                                Margin="0"
+                                VerticalContentAlignment="Center"
+                                Style="{StaticResource labelText}">
+                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                    (Experimental) Try to Insert text in text fields after Fullscreen Grab after:
+                                </TextBlock>
+                            </CheckBox>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox
+                                    x:Name="SecondsTextBox"
+                                    Width="48"
+                                    Margin="24,0,0,0"
+                                    Padding="2"
+                                    HorizontalAlignment="Left"
+                                    BorderThickness="2"
+                                    Text="3"
+                                    TextChanged="ValidateTextIsNumber" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="Seconds" />
+                                <TextBlock
+                                    x:Name="DelayTimeErrorSeconds"
+                                    Margin="12,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="⚠ Pick a number between 0 and 10"
+                                    Visibility="Collapsed" />
                             </StackPanel>
-                        </Border>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
                     <controls:CollapsibleButton
