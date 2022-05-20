@@ -145,11 +145,48 @@
                                     <Run FontWeight="Bold">Global hotkeys:</Run>
                                 </TextBlock>
                             </CheckBox>
-                            <TextBlock Margin="24,0,50,0" Style="{StaticResource TextBodyNormal}">
-                                - Win+Shift+F new Full Screen Grab<LineBreak />
-                                - Win+Shift+G new Grab Frame<LineBreak />
-                                - Win+Shift+E new Edit Text Window</TextBlock>
-
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="FullScreenHotkeyTextBox"
+                                    Width="20"
+                                    Padding="2"
+                                    BorderThickness="2"
+                                    Text="F"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="new Full Screen Grab" />
+                            </StackPanel>
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="GrabFrameHotkeyTextBox"
+                                    Width="20"
+                                    Padding="2"
+                                    BorderThickness="2"
+                                    Text="G"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="new Grab Frame" />
+                            </StackPanel>
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="EditTextHotKeyTextBox"
+                                    Width="20"
+                                    Padding="2"
+                                    BorderThickness="2"
+                                    Text="E"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="new Edit Text Window" />
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                     <CheckBox

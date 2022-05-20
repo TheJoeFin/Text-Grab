@@ -62,5 +62,14 @@
     <Setting Name="GlobalHotkeysEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="FullscreenGrabHotKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">F</Value>
+    </Setting>
+    <Setting Name="GrabFrameHotkey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">G</Value>
+    </Setting>
+    <Setting Name="EditWindowHotKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">E</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

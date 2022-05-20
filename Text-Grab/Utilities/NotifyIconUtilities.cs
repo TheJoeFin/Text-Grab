@@ -59,10 +59,20 @@ public static class NotifyIconUtilities
         //     // TODO Add a setting to customize doubleclick behavior
         //     EditTextWindow etw = new(); etw.Show();
         // };
+        KeysConverter keysConverter = new();
+        Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
+        Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
+        Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
 
-        HotKeyManager.RegisterHotKey(Keys.F, KeyModifiers.Windows | KeyModifiers.Shift);
-        HotKeyManager.RegisterHotKey(Keys.E, KeyModifiers.Windows | KeyModifiers.Shift);
-        HotKeyManager.RegisterHotKey(Keys.G, KeyModifiers.Windows | KeyModifiers.Shift);
+        if (fullscreenKey is not null)
+            HotKeyManager.RegisterHotKey(fullscreenKey.Value, KeyModifiers.Windows | KeyModifiers.Shift);
+        
+        if (grabFrameKey is not null)
+        HotKeyManager.RegisterHotKey(grabFrameKey.Value, KeyModifiers.Windows | KeyModifiers.Shift);
+
+        if (editWindowKey is not null)
+            HotKeyManager.RegisterHotKey(editWindowKey.Value, KeyModifiers.Windows | KeyModifiers.Shift);
+
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
 
         app.TextGrabIcon = icon;
@@ -74,31 +84,39 @@ public static class NotifyIconUtilities
         if (Settings.Default.GlobalHotkeysEnabled == false)
             return;
 
-        switch (e.Key)
+        KeysConverter keysConverter = new();
+        Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
+        Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
+        Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
+
+        if (fullscreenKey is null || grabFrameKey is null || editWindowKey is null)
+            return;
+
+        if (e.Key == editWindowKey.Value)
         {
-            case Keys.E:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
-                { 
-                    EditTextWindow etw = new(); 
-                    etw.Show(); 
-                    etw.Activate();
-                }));
-                break;
-            case Keys.F:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
-                { 
-                    WindowUtilities.LaunchFullScreenGrab(true); 
-                }));
-                break;
-            case Keys.G:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
-                { 
-                    GrabFrame gf = new(); 
-                    gf.Show(); 
-                }));
-                break;
-            default:
-                break;
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
+            { 
+                EditTextWindow etw = new(); 
+                etw.Show(); 
+                etw.Activate();
+            }));
+        }
+
+        if (e.Key == fullscreenKey.Value)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                WindowUtilities.LaunchFullScreenGrab(true);
+            }));
+        }
+
+        if (e.Key == grabFrameKey.Value)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                GrabFrame gf = new();
+                gf.Show();
+            }));
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -73,6 +74,10 @@ public partial class SettingsWindow : Window
                 FullScreenRDBTN.IsChecked = true;
                 break;
         }
+
+        FullScreenHotkeyTextBox.Text = Settings.Default.FullscreenGrabHotKey;
+        GrabFrameHotkeyTextBox.Text = Settings.Default.GrabFrameHotkey;
+        EditTextHotKeyTextBox.Text = Settings.Default.EditWindowHotKey;
     }
 
     private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
@@ -145,6 +150,28 @@ public partial class SettingsWindow : Window
         if (GlobalHotkeysCheckbox.IsChecked != null)
             Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
 
+        if (HotKeysAllDifferent() == true)
+        {
+            KeyConverter keyConverter = new();
+            Key? fullScreenKey = (Key?)keyConverter.ConvertFrom(FullScreenHotkeyTextBox.Text.ToUpper());
+            if (fullScreenKey is not null)
+                Settings.Default.FullscreenGrabHotKey = FullScreenHotkeyTextBox.Text.ToUpper();
+
+            Key? grabFrameKey = (Key?)keyConverter.ConvertFrom(GrabFrameHotkeyTextBox.Text.ToUpper());
+            if (grabFrameKey is not null)
+                Settings.Default.GrabFrameHotkey = GrabFrameHotkeyTextBox.Text.ToUpper();
+
+            Key? editWindowKey = (Key?)keyConverter.ConvertFrom(EditTextHotKeyTextBox.Text.ToUpper());
+            if (editWindowKey is not null)
+                Settings.Default.EditWindowHotKey = EditTextHotKeyTextBox.Text.ToUpper();
+        }
+        else
+        {
+            Settings.Default.FullscreenGrabHotKey = "F";
+            Settings.Default.GrabFrameHotkey = "G";
+            Settings.Default.EditWindowHotKey = "E";
+        }
+
         if (string.IsNullOrEmpty(SecondsTextBox.Text) == false)
             Settings.Default.InsertDelay = InsertDelaySeconds;
 
@@ -173,4 +200,46 @@ public partial class SettingsWindow : Window
     {
         WindowUtilities.ShouldShutDown();
     }
+
+    private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox hotkeytextbox)
+            return;
+
+        if (hotkeytextbox.Text.Length == 1 && hotkeytextbox.Text is not null)
+        {
+            KeyConverter keyConverter = new();
+            Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
+            if (convertedKey is not null && HotKeysAllDifferent())
+            {
+                hotkeytextbox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+                return;
+            }
+        }
+
+        hotkeytextbox.BorderBrush = new SolidColorBrush(Colors.Red);
+    }
+
+    private bool HotKeysAllDifferent()
+    {
+        if (EditTextHotKeyTextBox is null
+            || FullScreenHotkeyTextBox is null
+            || GrabFrameHotkeyTextBox is null)
+            return false;
+
+        if (GrabFrameHotkeyTextBox.Text.ToUpper() != FullScreenHotkeyTextBox.Text.ToUpper()
+            && FullScreenHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper())
+        {
+            FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            return true;
+        }
+
+        FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
+        GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
+        EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
+        return false;
+    }
 }
+
