@@ -50,6 +50,9 @@
     <Setting Name="TryInsert" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="InsertDelay" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
     <Setting Name="StartupOnLogin" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
@@ -58,6 +61,15 @@
     </Setting>
     <Setting Name="GlobalHotkeysEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="FullscreenGrabHotKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">F</Value>
+    </Setting>
+    <Setting Name="GrabFrameHotkey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">G</Value>
+    </Setting>
+    <Setting Name="EditWindowHotKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">E</Value>
     </Setting>
   </Settings>
 </SettingsFile>

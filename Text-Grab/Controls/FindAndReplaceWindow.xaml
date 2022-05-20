@@ -6,14 +6,14 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Find and Replace"
-    Width="480"
+    Width="540"
     Height="560"
     MinWidth="486"
     MinHeight="300"
     Background="{StaticResource DarkBackground}"
+    Closed="Window_Closed"
     KeyUp="Window_KeyUp"
     Loaded="FindAndReplacedLoaded"
-    Closed="Window_Closed"
     mc:Ignorable="d">
     <Window.CommandBindings>
         <CommandBinding
@@ -32,6 +32,10 @@
             CanExecute="ExtractPattern_CanExecute"
             Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
             Executed="ExtractPattern_Executed" />
+        <CommandBinding
+            CanExecute="DeleteAll_CanExecute"
+            Command="{x:Static local:FindAndReplaceWindow.DeleteAllCmd}"
+            Executed="DeleteAll_Executed" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -102,25 +106,13 @@
                 SymbolText=""
                 Visibility="Collapsed" />
 
-            <local:CollapsibleButton
-                x:Name="ReplaceAllButton"
-                Grid.Row="2"
-                Grid.Column="2"
-                Width="100"
-                Height="30"
-                Margin="0,6,6,0"
-                Padding="4"
-                ButtonText="Replace All"
-                Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
-                SymbolText=""
-                Visibility="Collapsed" />
-
             <StackPanel
                 x:Name="MoreOptionsHozStack"
                 Grid.Row="2"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
                 Margin="0,6,0,0"
+                HorizontalAlignment="Right"
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Collapsed">
@@ -148,11 +140,32 @@
 
                 <local:CollapsibleButton
                     x:Name="ExtractSimplePattern"
-                    Margin="10,0"
+                    Margin="0,0,6,0"
                     VerticalAlignment="Center"
                     ButtonText="Extract Pattern"
                     Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
                     SymbolText="" />
+
+                <local:CollapsibleButton
+                    x:Name="DeleteAllMatches"
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    Background="Red"
+                    ButtonText="Delete All"
+                    Command="{x:Static local:FindAndReplaceWindow.DeleteAllCmd}"
+                    SymbolText="" />
+
+                <local:CollapsibleButton
+                    x:Name="ReplaceAllButton"
+                    Grid.Row="2"
+                    Grid.Column="2"
+                    Width="100"
+                    Height="30"
+                    Margin="0,0,6,0"
+                    Padding="4"
+                    ButtonText="Replace All"
+                    Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
+                    SymbolText="" />
             </StackPanel>
 
         </Grid>

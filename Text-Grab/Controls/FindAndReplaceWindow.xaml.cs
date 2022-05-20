@@ -23,6 +23,7 @@ public partial class FindAndReplaceWindow : Window
     public static RoutedCommand ReplaceOneCmd = new();
     public static RoutedCommand ReplaceAllCmd = new();
     public static RoutedCommand ExtractPatternCmd = new();
+    public static RoutedCommand DeleteAllCmd = new();
     DispatcherTimer ChangeFindTextTimer = new();
 
     private string? Pattern { get; set; }
@@ -295,6 +296,56 @@ public partial class FindAndReplaceWindow : Window
         SearchForText();
     }
 
+    private void DeleteAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (Matches == null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
+            e.CanExecute = false;
+        else
+            e.CanExecute = true;
+    }
+
+    private void DeleteAll_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        var selection = ResultsListView.SelectedItems;
+
+        if (Matches == null
+            || Matches.Count < 1)
+            return;
+
+        if (selection.Count < 2)
+        {
+            for (int i = Matches.Count - 1; i >= 0; i--)
+            {
+                Match matchItem = Matches[i];
+                if (TextEditWindow != null)
+                {
+                    TextEditWindow.PassedTextControl.Select(matchItem.Index, matchItem.Length);
+                    TextEditWindow.PassedTextControl.SelectedText = "";
+                }
+            }
+        }
+        else
+        {
+            for (int j = selection.Count - 1; j >= 0; j--)
+            {
+                string? selectionItem = selection[j] as string;
+                if (selectionItem != null && TextEditWindow != null)
+                {
+                    string? intString = selectionItem.Split('\t').FirstOrDefault();
+                    if (intString != null)
+                    {
+                        int currentIndex = int.Parse(intString);
+                        currentIndex--;
+                        Match match = Matches[currentIndex];
+                        TextEditWindow.PassedTextControl.Select(match.Index, match.Length);
+                        TextEditWindow.PassedTextControl.SelectedText = "";
+                    }
+                }
+            }
+        }
+
+        SearchForText();
+    }
 
     private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {

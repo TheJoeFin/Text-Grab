@@ -19,6 +19,7 @@
         <Style x:Key="labelText" TargetType="CheckBox">
             <Setter Property="Foreground" Value="White" />
         </Style>
+
     </Window.Resources>
     <Border>
         <ScrollViewer
@@ -123,7 +124,7 @@
                         Margin="0,16,0,0"
                         Padding="20,10"
                         Background="#000"
-                        CornerRadius="20">
+                        CornerRadius="6">
                         <StackPanel>
                             <CheckBox
                                 Name="RunInBackgroundChkBx"
@@ -144,11 +145,48 @@
                                     <Run FontWeight="Bold">Global hotkeys:</Run>
                                 </TextBlock>
                             </CheckBox>
-                            <TextBlock Margin="24,0,50,0" Style="{StaticResource TextBodyNormal}">
-                                - Win+Shift+F new Full Screen Grab<LineBreak />
-                                - Win+Shift+G new Grab Frame<LineBreak />
-                                - Win+Shift+E new Edit Text Window</TextBlock>
-
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="FullScreenHotkeyTextBox"
+                                    Width="20"
+                                    Padding="2"
+                                    BorderThickness="2"
+                                    Text="F"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="new Full Screen Grab" />
+                            </StackPanel>
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="GrabFrameHotkeyTextBox"
+                                    Width="20"
+                                    Padding="2"
+                                    BorderThickness="2"
+                                    Text="G"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="new Grab Frame" />
+                            </StackPanel>
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="EditTextHotKeyTextBox"
+                                    Width="20"
+                                    Padding="2"
+                                    BorderThickness="2"
+                                    Text="E"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="new Edit Text Window" />
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                     <CheckBox
@@ -160,16 +198,45 @@
                             Auto start Text Grab when you login
                         </TextBlock>
                     </CheckBox>
-                    <CheckBox
-                        Name="TryInsertCheckbox"
+                    <Border
                         Margin="0,16,0,0"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
-                        <TextBlock Style="{StaticResource TextBodyNormal}">
-                            (Experimental) Try to Insert text in text fields after Fullscreen Grab
-                        </TextBlock>
-                    </CheckBox>
-
+                        Padding="20,10"
+                        Background="#000"
+                        CornerRadius="6">
+                        <StackPanel>
+                            <CheckBox
+                                Name="TryInsertCheckbox"
+                                Margin="0"
+                                VerticalContentAlignment="Center"
+                                Style="{StaticResource labelText}">
+                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                    (Experimental) Try to Insert text in text fields after Fullscreen Grab after:
+                                </TextBlock>
+                            </CheckBox>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox
+                                    x:Name="SecondsTextBox"
+                                    Width="48"
+                                    Margin="24,0,0,0"
+                                    Padding="2"
+                                    HorizontalAlignment="Left"
+                                    BorderThickness="2"
+                                    Text="3"
+                                    TextChanged="ValidateTextIsNumber" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="Seconds" />
+                                <TextBlock
+                                    x:Name="DelayTimeErrorSeconds"
+                                    Margin="12,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="⚠ Pick a number between 0 and 10"
+                                    Visibility="Collapsed" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
                     <controls:CollapsibleButton
