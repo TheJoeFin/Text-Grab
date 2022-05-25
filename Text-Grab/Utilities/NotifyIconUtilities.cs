@@ -50,7 +50,26 @@ public static class NotifyIconUtilities
         {
             // TODO Add a setting to customize click behavior
             if (e.Button == MouseButtons.Left)
-                WindowUtilities.LaunchFullScreenGrab(true);
+            {
+                switch (Settings.Default.DefaultLaunch)
+                {
+                    case "Fullscreen":
+                        WindowUtilities.LaunchFullScreenGrab(true);
+                        break;
+                    case "GrabFrame":
+                        GrabFrame gf = new GrabFrame();
+                        gf.Show();
+                        break;
+                    case "EditText":
+                        EditTextWindow manipulateTextWindow = new EditTextWindow();
+                        manipulateTextWindow.Show();
+                        break;
+                    default:
+                        EditTextWindow editTextWindow = new EditTextWindow();
+                        editTextWindow.Show();
+                        break;
+                }
+            }
         };
 
         // Double click just triggers the single click
