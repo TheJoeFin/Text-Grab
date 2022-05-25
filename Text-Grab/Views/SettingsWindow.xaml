@@ -238,7 +238,10 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                <StackPanel
+                    Grid.Row="1"
+                    Margin="0,40,0,0"
+                    Orientation="Horizontal">
                     <controls:CollapsibleButton
                         x:Name="CloseBTN"
                         ButtonText="Cancel"
