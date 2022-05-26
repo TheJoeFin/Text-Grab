@@ -186,6 +186,10 @@
                     x:Name="UnStackGroupMenuItem"
                     Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
                     Header="_Unstack Text (Select First Column)" />
+                <MenuItem
+                    x:Name="AddRemoveAtMenuItem"
+                    Click="AddRemoveAtMenuItem_Click"
+                    Header="_Add or Remove at..." />
             </MenuItem>
             <MenuItem Header="_Selection">
                 <MenuItem

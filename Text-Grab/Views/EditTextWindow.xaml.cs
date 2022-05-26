@@ -1194,4 +1194,10 @@ public partial class EditTextWindow : Window
     {
         WindowUtilities.LaunchFullScreenGrab(true, true, this);
     }
+
+    private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        AddOrRemoveWindow aorw = new();
+        aorw.Show();
+    }
 }
