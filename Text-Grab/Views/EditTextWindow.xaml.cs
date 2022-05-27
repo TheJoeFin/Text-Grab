@@ -240,7 +240,9 @@ public partial class EditTextWindow : Window
 
     private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (PassedTextControl.SelectedText.Contains(Environment.NewLine))
+        if (PassedTextControl.SelectedText.Contains(Environment.NewLine)
+            || PassedTextControl.SelectedText.Contains("\r")
+            || PassedTextControl.SelectedText.Contains("\n"))
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -553,7 +555,8 @@ public partial class EditTextWindow : Window
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string[] selectionLines = PassedTextControl.SelectedText.Split(Environment.NewLine);
+        string selection = Regex.Replace(PassedTextControl.SelectedText, @"(\r\n|\n|\r)", Environment.NewLine);
+        string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
         PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
@@ -561,7 +564,8 @@ public partial class EditTextWindow : Window
 
     private void UnstackGroupExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string[] selectionLines = PassedTextControl.SelectedText.Split(Environment.NewLine);
+        string selection = Regex.Replace(PassedTextControl.SelectedText, @"(\r\n|\n|\r)", Environment.NewLine);
+        string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
         PassedTextControl.Text = PassedTextControl.Text.UnstackGroups(numberOfLines);
@@ -686,11 +690,11 @@ public partial class EditTextWindow : Window
             return;
         }
 
-        string textToManipulate = PassedTextControl.Text;
+        StringBuilder textToManipulate = new StringBuilder(PassedTextControl.Text);
 
         textToManipulate = textToManipulate.Replace(selectedText, Environment.NewLine + selectedText);
 
-        PassedTextControl.Text = textToManipulate;
+        PassedTextControl.Text = textToManipulate.ToString();
     }
 
     private void SplitOnSelectionCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)

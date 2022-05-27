@@ -262,7 +262,9 @@ public static class StringMethods
     {
         StringBuilder sbUnstacked = new();
 
-        string[] splitString = stringToUnstack.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
+        stringToUnstack = Regex.Replace(stringToUnstack, @"(\r\n|\n|\r)", Environment.NewLine);
+
+        string[] splitString = stringToUnstack.Split(new string[] { Environment.NewLine }, StringSplitOptions.TrimEntries);
 
         int columnIterator = 0;
 
@@ -289,7 +291,9 @@ public static class StringMethods
     {
         StringBuilder sbUnstacked = new();
 
-        string[] splitInputString = stringGroupedToUnstack.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
+        stringGroupedToUnstack = Regex.Replace(stringGroupedToUnstack, @"(\r\n|\n|\r)", Environment.NewLine);
+
+        string[] splitInputString = stringGroupedToUnstack.Split(new string[] { Environment.NewLine }, StringSplitOptions.TrimEntries);
 
         int numberOfColumns = splitInputString.Count() / numberOfRows;
 
