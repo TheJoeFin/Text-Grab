@@ -6,45 +6,76 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Add Or Remove At"
-    Width="800"
-    Height="450"
+    Width="340"
+    Height="256"
+    Background="{StaticResource DarkBackground}"
+    KeyUp="Window_KeyUp"
+    Loaded="Window_Loaded"
+    ResizeMode="NoResize"
     mc:Ignorable="d">
-    <Grid>
+    <Window.CommandBindings>
+        <CommandBinding
+            CanExecute="AddRemove_CanExecute"
+            Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
+            Executed="AddRemove_Executed" />
+    </Window.CommandBindings>
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
 
         </Grid.RowDefinitions>
-        <TextBlock Text="Add or remove text on each line" />
+        <TextBlock Style="{StaticResource TextBodyNormal}" Text="Add or remove text on each line" />
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal">
+        <StackPanel
+            Grid.Row="1"
+            Margin="0,12"
+            Orientation="Horizontal">
             <RadioButton
                 x:Name="AddRadioButton"
                 Grid.Row="1"
-                Content="Add"
+                Margin="0,0,12,0"
+                VerticalContentAlignment="Center"
                 GroupName="AddOrRemoveRDBTNs"
-                IsChecked="True" />
+                IsChecked="True">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Add
+                </TextBlock>
+            </RadioButton>
             <RadioButton
                 x:Name="RemoveRadioButton"
                 Grid.Row="1"
-                Content="Remove"
+                VerticalContentAlignment="Center"
+                Checked="RemoveRadioButton_Checked"
                 GroupName="AddOrRemoveRDBTNs"
-                IsChecked="False" />
+                IsChecked="False"
+                Unchecked="RemoveRadioButton_Checked">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Remove
+                </TextBlock>
+            </RadioButton>
         </StackPanel>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBlock>
+            <TextBlock Style="{StaticResource TextBodyNormal}">
                 From The:
             </TextBlock>
             <RadioButton
                 x:Name="BeginningRDBTN"
                 Grid.Row="1"
-                Content="Beginning"
+                Margin="12,0,12,0"
+                VerticalContentAlignment="Center"
                 GroupName="PlaceRDBTNs"
-                IsChecked="True" />
+                IsChecked="True">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Beginning
+                </TextBlock>
+            </RadioButton>
             <!--<RadioButton
                 x:Name="MiddleRDBTN"
                 Grid.Row="1"
@@ -54,19 +85,47 @@
             <RadioButton
                 x:Name="EndRDBTN"
                 Grid.Row="1"
-                Content="End"
+                VerticalContentAlignment="Center"
                 GroupName="PlaceRDBTNs"
-                IsChecked="False" />
+                IsChecked="False">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    End
+                </TextBlock>
+            </RadioButton>
         </StackPanel>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal">
-            <TextBlock Width="128" Text="Number of characters" />
-            <TextBox x:Name="LengthTextBox" Width="50" />
+        <StackPanel
+            Grid.Row="3"
+            Margin="0,12"
+            Orientation="Horizontal">
+            <TextBlock
+                Width="164"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Number of characters" />
+            <TextBox
+                x:Name="LengthTextBox"
+                Width="50"
+                TextChanged="LengthTextBox_TextChanged" />
         </StackPanel>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal">
-            <TextBlock Width="128" Text="Text to add" />
-            <TextBox x:Name="TextToAddTextBox" Width="128" />
+            <TextBlock
+                Width="164"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Text to add" />
+            <TextBox
+                x:Name="TextToAddTextBox"
+                Width="128"
+                AcceptsTab="True"
+                TextChanged="TextToAddTextBox_TextChanged" />
         </StackPanel>
+        <local:CollapsibleButton
+            x:Name="DoneButton"
+            Grid.Row="7"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            ButtonText="Done"
+            Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
+            SymbolText="" />
     </Grid>
 </Window>

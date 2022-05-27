@@ -1198,6 +1198,6 @@ public partial class EditTextWindow : Window
     private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
     {
         AddOrRemoveWindow aorw = new();
-        aorw.Show();
+        aorw.ShowDialog();
     }
 }
