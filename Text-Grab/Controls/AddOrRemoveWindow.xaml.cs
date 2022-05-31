@@ -80,6 +80,8 @@ public partial class AddOrRemoveWindow : Window
                 etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.End);
             }
         }
+
+        Close();
     }
 
     private void RemoveRadioButton_Checked(object sender, RoutedEventArgs e)
