@@ -1233,6 +1233,10 @@ public partial class EditTextWindow : Window
     {
         string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
 
+        if (splitString.Length > 1)
+            if (splitString.LastOrDefault() == "")
+                Array.Resize(ref splitString, splitString.Length - 1);
+
         StringBuilder sb = new();
         foreach (string line in splitString)
         {
@@ -1246,6 +1250,6 @@ public partial class EditTextWindow : Window
             }
         }
 
-        PassedTextControl.Text = sb.ToString();
+        PassedTextControl.Text = sb.ToString().Trim();
     }
 }
