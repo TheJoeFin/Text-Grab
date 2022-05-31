@@ -99,25 +99,26 @@
             Margin="0,12"
             Orientation="Horizontal">
             <TextBlock
-                Width="164"
+                Width="184"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Number of characters" />
             <TextBox
                 x:Name="LengthTextBox"
+                IsEnabled="False"
                 Width="50"
-                TextChanged="LengthTextBox_TextChanged" />
+                TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal">
             <TextBlock
-                Width="164"
+                Width="106"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Text to add" />
             <TextBox
                 x:Name="TextToAddTextBox"
                 Width="128"
                 AcceptsTab="True"
-                TextChanged="TextToAddTextBox_TextChanged" />
+                TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
         <local:CollapsibleButton
             x:Name="DoneButton"
@@ -125,7 +126,7 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Bottom"
             ButtonText="Done"
-            Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
+            Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
             SymbolText="" />
     </Grid>
 </Window>

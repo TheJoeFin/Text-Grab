@@ -1,16 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace Text_Grab.Controls;
 
@@ -36,7 +27,7 @@ public partial class AddOrRemoveWindow : Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        if (Owner is not EditTextWindow etw)
+        if (Owner is not Window etw)
             return;
 
         double etwMidTop = etw.Top + (etw.Height / 2);
@@ -51,34 +42,42 @@ public partial class AddOrRemoveWindow : Window
 
     private void AddRemove_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (LengthToChange is null)
-            e.CanExecute = false;
-        else
+        if (AddRadioButton.IsChecked == true && string.IsNullOrEmpty(TextToAddTextBox.Text) == false)
             e.CanExecute = true;
+        else if (RemoveRadioButton.IsChecked == true && LengthToChange is not null)
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
     }
 
     private void AddRemove_Executed(object sender, ExecutedRoutedEventArgs e)
     {
+        if (Owner is not EditTextWindow etwOwner)
+            return;
+
         if (AddRadioButton.IsChecked == true)
         {
             if (BeginningRDBTN.IsChecked == true)
             {
-
+                etwOwner.AddCharsToEachLine(TextToAddTextBox.Text, SpotInLine.Beginning);
             }
             else
             {
-
+                etwOwner.AddCharsToEachLine(TextToAddTextBox.Text, SpotInLine.End);
             }
         }
         else
         {
+            if (LengthToChange is null)
+                return;
+
             if (BeginningRDBTN.IsChecked == true)
             {
-
+                etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.Beginning);
             }
             else
             {
-
+                etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.End);
             }
         }
     }
@@ -89,34 +88,40 @@ public partial class AddOrRemoveWindow : Window
             return;
 
         if (removeRadioButton.IsChecked == true)
-            TextToAddTextBox.IsEnabled = false;
-        else
-            TextToAddTextBox.IsEnabled = true;
-    }
-
-    private void LengthTextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (sender is not TextBox lengthTextBox)
-            return;
-
-        if (lengthTextBox.Text is String textFromBox)
         {
-            bool success = Int32.TryParse(textFromBox, out int lengthString);
-
-            if (success == false)
-                LengthToChange = null;
-            else
-                LengthToChange = lengthString;
+            TextToAddTextBox.IsEnabled = false;
+            LengthTextBox.IsEnabled = true;
+        }
+        else
+        {
+            TextToAddTextBox.IsEnabled = true;
+            LengthTextBox.IsEnabled = false;
         }
     }
 
-    private void TextToAddTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (sender is not TextBox addTextTextBox)
             return;
 
-        if (addTextTextBox.Text is String textFromBox)
-            TextToAdd = textFromBox;
+        if (AddRadioButton.IsChecked == true)
+        {
+            if (addTextTextBox.Text is String textFromBox)
+                TextToAdd = textFromBox;
+
+        }
+        else
+        {
+            if (LengthTextBox.Text is String textFromBox)
+            {
+                bool success = Int32.TryParse(textFromBox, out int lengthString);
+
+                if (success == false)
+                    LengthToChange = null;
+                else
+                    LengthToChange = lengthString;
+            }
+        }
     }
 
     private void Window_KeyUp(object sender, KeyEventArgs e)
