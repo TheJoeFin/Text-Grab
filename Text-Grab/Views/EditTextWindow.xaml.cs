@@ -1198,4 +1198,62 @@ public partial class EditTextWindow : Window
     {
         WindowUtilities.LaunchFullScreenGrab(true, true, this);
     }
+
+    private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        AddOrRemoveWindow aorw = new();
+        aorw.Owner = this;
+        aorw.ShowDialog();
+    }
+
+    public void RemoveCharsFromEachLine(int numberOfChars, SpotInLine spotInLine)
+    {
+        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+
+        StringBuilder sb = new();
+        foreach (string line in splitString)
+        {
+            int lineLength = line.Length;
+            if (lineLength <= numberOfChars)
+            {
+                sb.AppendLine();
+                continue;
+            }
+
+            if (spotInLine == SpotInLine.Beginning)
+            {
+                sb.AppendLine(line.Substring(numberOfChars));
+            }
+            else if (spotInLine == SpotInLine.End)
+            {
+                sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
+            }
+        }
+
+        PassedTextControl.Text = sb.ToString();
+    }
+
+    public void AddCharsToEachLine(string stringToAdd, SpotInLine spotInLine)
+    {
+        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+
+        if (splitString.Length > 1)
+            if (splitString.LastOrDefault() == "")
+                Array.Resize(ref splitString, splitString.Length - 1);
+
+        StringBuilder sb = new();
+        foreach (string line in splitString)
+        {
+            if (spotInLine == SpotInLine.Beginning)
+            {
+                sb.AppendLine(stringToAdd + line);
+            }
+            else if (spotInLine == SpotInLine.End)
+            {
+                sb.AppendLine(line + stringToAdd);
+            }
+        }
+
+        PassedTextControl.Text = sb.ToString().Trim();
+    }
 }
