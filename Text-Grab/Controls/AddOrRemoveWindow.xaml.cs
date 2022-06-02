@@ -36,7 +36,7 @@ public partial class AddOrRemoveWindow : Window
         double thisMidTop = etwMidTop - (this.Height / 2);
         double thisMidLeft = etwMidLeft - (this.Width / 2);
 
-        this.Top = etwMidTop;
+        this.Top = thisMidTop;
         this.Left = thisMidLeft;
     }
 
