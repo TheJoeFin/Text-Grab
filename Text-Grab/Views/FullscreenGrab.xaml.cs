@@ -58,8 +58,7 @@ public partial class FullscreenGrab : Window
         this.KeyDown += FullscreenGrab_KeyDown;
         this.KeyUp += FullscreenGrab_KeyUp;
 
-        if (IsFreeze == false)
-            BackgroundBrush.Opacity = 0.2;
+        SetImageToBackground();
 
         if (Settings.Default.FSGMakeSingleLineToggle == true)
             SingleLineMenuItem.IsChecked = true;
@@ -88,6 +87,12 @@ public partial class FullscreenGrab : Window
         {
             case Key.Escape:
                 WindowUtilities.CloseAllFullscreenGrabs();
+                break;
+            case Key.G:
+                NewGrabFrameMenuItem.IsChecked = !NewEditTextMenuItem.IsChecked;
+                break;
+            case Key.S:
+                SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
                 break;
             default:
                 break;
@@ -345,6 +350,7 @@ public partial class FullscreenGrab : Window
         if (sender is MenuItem singleLineMenuItem)
         {
             Settings.Default.FSGMakeSingleLineToggle = singleLineMenuItem.IsChecked;
+            Settings.Default.Save();
         }
     }
 }
