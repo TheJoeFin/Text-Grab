@@ -40,7 +40,7 @@ public partial class GrabFrame : Window
 
     public bool IsFromEditWindow { get; set; } = false;
 
-    public bool IsWordEditMode { get; set; } = false;
+    public bool IsWordEditMode { get; set; } = true;
 
     public bool IsFreezeMode { get; set; } = false;
 
@@ -300,6 +300,13 @@ public partial class GrabFrame : Window
     {
         if (IsWordEditMode != true && IsFreezeMode != true)
             ResetGrabFrame();
+        else
+        {
+            RectanglesCanvas.Visibility = Visibility.Visible;
+            if (Keyboard.Modifiers != ModifierKeys.Alt)
+                wasAltHeld = false;
+        }
+
     }
 
     private async Task DrawRectanglesAroundWords(string searchWord = "")
@@ -1047,10 +1054,7 @@ public partial class GrabFrame : Window
         if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
             FreezeGrabFrame();
         else
-        {
-            ExitEditMode();
             UnfreezeGrabFrame();
-        }
 
         await Task.Delay(200);
 

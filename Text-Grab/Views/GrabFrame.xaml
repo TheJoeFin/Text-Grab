@@ -261,6 +261,7 @@
                             Margin="6,0,0,0"
                             Padding="7,4"
                             Click="EditToggleButton_Click"
+                            IsChecked="True"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="Edit individual words in Grab Frame">
                             <TextBlock FontFamily="Segoe MDL2 Assets">
