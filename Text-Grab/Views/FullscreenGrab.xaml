@@ -74,5 +74,93 @@
                 </ContextMenu>
             </Canvas.ContextMenu>
         </Canvas>
+        <StackPanel 
+            Margin="0"
+            Orientation="Horizontal"
+            VerticalAlignment="Top" 
+            Background="{StaticResource DarkControlBackground}"
+            HorizontalAlignment="Center">
+            <ToggleButton 
+                Padding="12" 
+                Margin="4,0,0,4"
+                Style="{StaticResource ToggleSymbolButton}">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Text=""
+                    FontSize="20"
+                    ToolTip="Freeze what is on screens"
+                    FontFamily="Segoe MDL2 Assets" />
+            </ToggleButton>
+            <ToggleButton 
+                Padding="12" 
+                Margin="0,0,0,4"
+                IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
+                Style="{StaticResource ToggleSymbolButton}">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Text=""
+                    FontSize="20"
+                    ToolTip="(S) Make result a single line"
+                    FontFamily="Segoe MDL2 Assets" />
+            </ToggleButton>
+
+            <ToggleButton 
+                Padding="12" 
+                Margin="4,0,0,4"
+                IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
+                Style="{StaticResource ToggleSymbolButton}">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Text=""
+                    FontSize="20"
+                    ToolTip="(G) Place a Grab Frame"
+                    FontFamily="Segoe MDL2 Assets" />
+            </ToggleButton>
+            <ToggleButton 
+                Padding="12" 
+                Margin="0,0,0,4"
+                Style="{StaticResource ToggleSymbolButton}">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Text=""
+                    FontSize="20"
+                    ToolTip="(E) Put result in Edit Text Window"
+                    FontFamily="Segoe MDL2 Assets" />
+            </ToggleButton>
+            <Button 
+                Padding="12" 
+                Width="48"
+                Margin="0,0,0,4" 
+                Background="#444444"
+                Click="SettingsMenuItem_Click"
+                Style="{StaticResource SymbolButton}">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Text=""
+                    FontSize="20"
+                    ToolTip="Settings"
+                    FontFamily="Segoe MDL2 Assets" />
+            </Button>
+            <Button 
+                Padding="12" 
+                Margin="4,0,4,4" 
+                Width="48"
+                Click="CancelMenuItem_Click"
+                Style="{StaticResource SymbolButton}">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Foreground="White"
+                    Text=""
+                    FontSize="20"
+                    ToolTip="(Esc) Cancel"
+                    FontFamily="Segoe MDL2 Assets" />
+            </Button>
+        </StackPanel>
     </Grid>
 </Window>
