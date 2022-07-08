@@ -56,6 +56,7 @@ public partial class GrabFrame : Window
         WindowResizer resizer = new(this);
         reDrawTimer.Interval = new(0, 0, 0, 0, 1200);
         reDrawTimer.Tick += ReDrawTimer_Tick;
+        reDrawTimer.Start();
 
         RoutedCommand newCmd = new();
         _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
