@@ -551,6 +551,11 @@ public partial class EditTextWindow : Window
     public void AddThisText(string textToAdd)
     {
         PassedTextControl.SelectedText = textToAdd;
+
+        string lastTwoChars = PassedTextControl.Text.Substring(PassedTextControl.Text.Length - 2, 2);
+        if (lastTwoChars != Environment.NewLine)
+            PassedTextControl.Text += Environment.NewLine;
+        PassedTextControl.Select(PassedTextControl.Text.Length, 0);
     }
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
