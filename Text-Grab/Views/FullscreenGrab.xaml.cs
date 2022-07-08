@@ -89,10 +89,14 @@ public partial class FullscreenGrab : Window
                 WindowUtilities.CloseAllFullscreenGrabs();
                 break;
             case Key.G:
-                NewGrabFrameMenuItem.IsChecked = !NewEditTextMenuItem.IsChecked;
+                NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
                 break;
             case Key.S:
                 SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
+                break;
+            case Key.F:
+                FreezeMenuItem.IsChecked = !FreezeMenuItem.IsChecked;
+                FreezeMenuItem_Click();
                 break;
             default:
                 break;
@@ -156,12 +160,19 @@ public partial class FullscreenGrab : Window
         WindowUtilities.CloseAllFullscreenGrabs();
     }
 
-    private async void FreezeMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void FreezeMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
-        BackgroundBrush.Opacity = 0;
-        RegionClickCanvas.ContextMenu.IsOpen = false;
-        await Task.Delay(150);
-        SetImageToBackground();
+        if (FreezeMenuItem.IsChecked == true)
+        {
+            BackgroundBrush.Opacity = 0;
+            RegionClickCanvas.ContextMenu.IsOpen = false;
+            await Task.Delay(150);
+            SetImageToBackground();
+        }
+        else
+        {
+            BackgroundImage.Source = null;
+        }
     }
 
     private void CancelMenuItem_Click(object sender, RoutedEventArgs e)

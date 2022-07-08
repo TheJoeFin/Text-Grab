@@ -51,12 +51,10 @@
                     <MenuItem
                         Name="FreezeMenuItem"
                         Click="FreezeMenuItem_Click"
+                        IsCheckable="True"
+                        IsChecked="True"
                         Header="Freeze" />
                     <Separator />
-                    <MenuItem
-                        Name="SettingsMenuItem"
-                        Click="SettingsMenuItem_Click"
-                        Header="Settings" />
                     <MenuItem
                         Name="NewGrabFrameMenuItem"
                         Click="NewGrabFrameMenuItem_Click"
@@ -66,6 +64,10 @@
                         Name="NewEditTextMenuItem"
                         Click="NewEditTextMenuItem_Click"
                         Header="Edit Text Window" />
+                    <MenuItem
+                        Name="SettingsMenuItem"
+                        Click="SettingsMenuItem_Click"
+                        Header="Settings" />
                     <Separator />
                     <MenuItem
                         Name="CancelMenuItem"
@@ -83,18 +85,6 @@
             <ToggleButton 
                 Padding="12" 
                 Margin="4,0,0,4"
-                Style="{StaticResource ToggleSymbolButton}">
-                <TextBlock
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Text=""
-                    FontSize="20"
-                    ToolTip="Freeze what is on screens"
-                    FontFamily="Segoe MDL2 Assets" />
-            </ToggleButton>
-            <ToggleButton 
-                Padding="12" 
-                Margin="0,0,0,4"
                 IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
                 Style="{StaticResource ToggleSymbolButton}">
                 <TextBlock
@@ -103,6 +93,20 @@
                     Text=""
                     FontSize="20"
                     ToolTip="(S) Make result a single line"
+                    FontFamily="Segoe MDL2 Assets" />
+            </ToggleButton>
+            <ToggleButton 
+                Padding="12" 
+                Margin="0,0,0,4"
+                Click="FreezeMenuItem_Click"
+                IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
+                Style="{StaticResource ToggleSymbolButton}">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Text=""
+                    FontSize="20"
+                    ToolTip="(F) Freeze what is on screens"
                     FontFamily="Segoe MDL2 Assets" />
             </ToggleButton>
 
@@ -119,23 +123,24 @@
                     ToolTip="(G) Place a Grab Frame"
                     FontFamily="Segoe MDL2 Assets" />
             </ToggleButton>
-            <ToggleButton 
+            <Button 
                 Padding="12" 
+                Width="48"
                 Margin="0,0,0,4"
-                Style="{StaticResource ToggleSymbolButton}">
+                Click="NewEditTextMenuItem_Click"
+                Style="{StaticResource SymbolButton}">
                 <TextBlock
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Text=""
                     FontSize="20"
-                    ToolTip="(E) Put result in Edit Text Window"
+                    ToolTip="Open an Edit Text Window"
                     FontFamily="Segoe MDL2 Assets" />
-            </ToggleButton>
+            </Button>
             <Button 
                 Padding="12" 
                 Width="48"
                 Margin="0,0,0,4" 
-                Background="#444444"
                 Click="SettingsMenuItem_Click"
                 Style="{StaticResource SymbolButton}">
                 <TextBlock
