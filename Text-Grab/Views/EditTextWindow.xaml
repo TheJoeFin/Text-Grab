@@ -385,7 +385,7 @@
                     ButtonText="Open Grab Frame"
                     Click="OpenGrabFrame_Click"
                     IsSymbol="True"
-                    SymbolText=""
+                    SymbolText=""
                     ToolTip="Open Grab Frame (CTRL + G)" />
                 <controls:CollapsibleButton
                     x:Name="SearchButton"
