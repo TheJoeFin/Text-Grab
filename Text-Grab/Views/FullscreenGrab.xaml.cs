@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Windows.Globalization;
 
 namespace Text_Grab.Views;
 
@@ -64,6 +65,16 @@ public partial class FullscreenGrab : Window
             SingleLineMenuItem.IsChecked = true;
 
         TopButtonsStackPanel.Visibility = Visibility.Visible;
+
+        LoadOcrLanguages();
+    }
+
+    private void LoadOcrLanguages()
+    {
+        Language? firstLang = ImageMethods.GetOCRLanguage();
+
+        if (firstLang is not null)
+            OcrLanguageTagTextBlock.Text = firstLang.LanguageTag;
     }
 
     private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)

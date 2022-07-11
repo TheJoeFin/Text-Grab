@@ -96,6 +96,11 @@
             VerticalAlignment="Top"
             Background="{StaticResource DarkControlBackground}"
             Orientation="Horizontal">
+            <TextBlock
+                x:Name="OcrLanguageTagTextBlock" 
+                FontFamily="Segoe UI"
+                Style="{StaticResource SymbolTextStyle}" 
+                Text="Lang"/>
             <ToggleButton
                 Margin="4,0,0,4"
                 IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
