@@ -62,6 +62,8 @@ public partial class FullscreenGrab : Window
 
         if (Settings.Default.FSGMakeSingleLineToggle == true)
             SingleLineMenuItem.IsChecked = true;
+
+        TopButtonsStackPanel.Visibility = Visibility.Visible;
     }
 
     private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
@@ -109,6 +111,7 @@ public partial class FullscreenGrab : Window
             return;
 
         isSelecting = true;
+        TopButtonsStackPanel.Visibility = Visibility.Collapsed;
         RegionClickCanvas.CaptureMouse();
         CursorClipper.ClipCursor(this);
         clickedPoint = e.GetPosition(this);
@@ -251,6 +254,7 @@ public partial class FullscreenGrab : Window
         CursorClipper.UnClipCursor();
         RegionClickCanvas.ReleaseMouseCapture();
         Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+        TopButtonsStackPanel.Visibility = Visibility.Visible;
 
         System.Windows.Point mPt = GetMousePos();
         System.Windows.Point movingPoint = e.GetPosition(this);
