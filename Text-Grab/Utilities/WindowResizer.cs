@@ -279,22 +279,10 @@ public class WindowResizer
 
         var lMmi = lMmiTmp.Value;
 
-        // If it is the primary screen, use the rcWork variable
-        if (lPrimaryScreen.Equals(lCurrentScreen) == true)
-        {
-            lMmi.ptMaxPosition.X = lPrimaryScreenInfo.rcWork.Left;
-            lMmi.ptMaxPosition.Y = lPrimaryScreenInfo.rcWork.Top;
-            lMmi.ptMaxSize.X = lPrimaryScreenInfo.rcWork.Right - lPrimaryScreenInfo.rcWork.Left;
-            lMmi.ptMaxSize.Y = lPrimaryScreenInfo.rcWork.Bottom - lPrimaryScreenInfo.rcWork.Top;
-        }
-        // Otherwise it's the rcMonitor values
-        else
-        {
-            lMmi.ptMaxPosition.X = lPrimaryScreenInfo.rcMonitor.Left;
-            lMmi.ptMaxPosition.Y = lPrimaryScreenInfo.rcMonitor.Top;
-            lMmi.ptMaxSize.X = lPrimaryScreenInfo.rcMonitor.Right - lPrimaryScreenInfo.rcMonitor.Left;
-            lMmi.ptMaxSize.Y = lPrimaryScreenInfo.rcMonitor.Bottom - lPrimaryScreenInfo.rcMonitor.Top;
-        }
+        lMmi.ptMaxPosition.X = lPrimaryScreenInfo.rcWork.Left;
+        lMmi.ptMaxPosition.Y = lPrimaryScreenInfo.rcWork.Top;
+        lMmi.ptMaxSize.X = lPrimaryScreenInfo.rcWork.Right - lPrimaryScreenInfo.rcWork.Left;
+        lMmi.ptMaxSize.Y = lPrimaryScreenInfo.rcWork.Bottom - lPrimaryScreenInfo.rcWork.Top;
 
         // Set min size
         var minSize = mTransformToDevice.Transform(new Point(mWindow.MinWidth, mWindow.MinHeight));
