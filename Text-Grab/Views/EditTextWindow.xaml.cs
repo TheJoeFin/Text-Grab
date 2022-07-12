@@ -62,6 +62,9 @@ public partial class EditTextWindow : Window
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
 
     private int numberOfContextMenuItems;
+    private bool IsDragOver;
+
+    private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
 
     private bool _IsAccessingClipboard { get; set; } = false;
 
@@ -1207,9 +1210,6 @@ public partial class EditTextWindow : Window
         ocrResults.AppendLine(chosenFolderPath);
         ocrResults.AppendLine(DateTime.Now.ToString()).AppendLine();
 
-        List<string> imageExtensions = new()
-        { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
-
         IEnumerable<String>? files = null;
         IEnumerable<String>? folders = null;
         try
@@ -1314,5 +1314,112 @@ public partial class EditTextWindow : Window
         }
 
         PassedTextControl.Text = sb.ToString().Trim();
+    }
+
+    private async void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        // Mark the event as handled, so TextBox's native Drop handler is not called.
+
+        if (e.Data.GetDataPresent("Text"))
+            return;
+
+        e.Handled = true;
+
+        var fileName = IsSingleFile(e);
+        if (fileName is null)
+            return;
+
+        if (imageExtensions.Contains(Path.GetExtension(fileName)) == false && IsBinary(fileName) == false)
+        {
+            OpenThisPath(fileName);
+            return;
+        }
+
+        Uri fileURI = new(fileName);
+
+        try
+        {
+            BitmapImage droppedImage = new(fileURI);
+            Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
+            PassedTextControl.AppendText(await ImageMethods.ExtractText(bmp));
+        }
+        catch (Exception)
+        {
+            System.Windows.MessageBox.Show("Failed to read file");
+        }
+    }
+
+    private void ETWindow_DragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        // As an arbitrary design decision, we only want to deal with a single file.
+        bool isText = e.Data.GetDataPresent("Text");
+
+        if (isText)
+        {
+            e.Handled = false;
+            return;
+        }
+
+        if (IsSingleFile(e) is not null)
+            e.Effects = System.Windows.DragDropEffects.Copy;
+        else
+            e.Effects = System.Windows.DragDropEffects.None;
+        // Mark the event as handled, so TextBox's native DragOver handler is not called.
+        e.Handled = true;
+    }
+
+    // If the data object in args is a single file, this method will return the filename.
+    // Otherwise, it returns null.
+    private string? IsSingleFile(System.Windows.DragEventArgs args)
+    {
+        // Check for files in the hovering data object.
+        if (args.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
+        {
+            var fileNames = args.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
+            // Check for a single file or folder.
+            if (fileNames?.Length is 1)
+            {
+                // Check for a file (a directory will return false).
+                if (File.Exists(fileNames[0]))
+                {
+                    // At this point we know there is a single file.
+                    return fileNames[0];
+                }
+            }
+        }
+        return null;
+    }
+
+    // from StackOverflow user bytedev read on July 12th 2022
+    // https://stackoverflow.com/a/64038750/7438031
+    public bool IsBinary(string filePath, int requiredConsecutiveNul = 1)
+    {
+        const int charsToCheck = 8000;
+        const char nulChar = '\0';
+
+        int nulCount = 0;
+
+        using (var streamReader = new StreamReader(filePath))
+        {
+            for (var i = 0; i < charsToCheck; i++)
+            {
+                if (streamReader.EndOfStream)
+                    return false;
+
+                if ((char)streamReader.Read() == nulChar)
+                {
+                    nulCount++;
+
+                    if (nulCount >= requiredConsecutiveNul)
+                        return true;
+                }
+                else
+                {
+                    nulCount = 0;
+                }
+            }
+        }
+
+        return false;
     }
 }
