@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Input;
 using Text_Grab.Properties;
 using Text_Grab.Views;
 
@@ -172,6 +173,18 @@ public static class WindowUtilities
         }
 
         ShouldShutDown();
+    }
+
+    internal static void FullscreenKeyDown(System.Windows.Input.KeyEventArgs e)
+    {
+        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+        if (e.Key == Key.Escape)
+            CloseAllFullscreenGrabs();
+
+        foreach (Window window in allWindows)
+            if (window is FullscreenGrab fsg)
+                fsg.KeyPressed(e);
     }
 
     internal static void TryInsertString(string stringToInsert)
