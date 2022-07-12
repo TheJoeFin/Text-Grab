@@ -14,6 +14,7 @@ using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
 using Text_Grab.Properties;
@@ -1191,6 +1192,59 @@ public partial class EditTextWindow : Window
                 PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
             }
         }
+    }
+
+    private async void ReadFolderOfImages_Click(object sender, RoutedEventArgs e)
+    {
+        FolderBrowserDialog folderBrowserDialog = new();
+        DialogResult result = folderBrowserDialog.ShowDialog();
+
+        if (result is not System.Windows.Forms.DialogResult.OK)
+            return;
+
+        StringBuilder ocrResults = new();
+        string chosenFolderPath = folderBrowserDialog.SelectedPath;
+        ocrResults.AppendLine(chosenFolderPath);
+        ocrResults.AppendLine(DateTime.Now.ToString()).AppendLine();
+
+        List<string> imageExtensions = new()
+        { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
+
+        IEnumerable<String>? files = null;
+        IEnumerable<String>? folders = null;
+        try
+        {
+            files = Directory.EnumerateFiles(chosenFolderPath);
+            folders = Directory.EnumerateDirectories(chosenFolderPath);
+        }
+        catch (System.Exception ex)
+        {
+            PassedTextControl.AppendText($"Failed to read directory: {ex.Message}{Environment.NewLine}");
+        }
+
+        if (files is null)
+            return;
+
+        foreach (string file in files)
+        {
+            if (imageExtensions.Contains(Path.GetExtension(file)) == false)
+                continue;
+
+            Uri fileURI = new(file);
+            ocrResults.AppendLine(Path.GetFileName(file));
+            try
+            {
+                BitmapImage droppedImage = new(fileURI);
+                Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
+                ocrResults.AppendLine(await ImageMethods.ExtractText(bmp));
+            }
+            catch (System.Exception ex)
+            {
+                ocrResults.AppendLine($"Failed to read {file}: {ex.Message}{Environment.NewLine}");
+            }
+        }
+
+        PassedTextControl.AppendText(ocrResults.ToString());
     }
 
     private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)

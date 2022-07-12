@@ -277,6 +277,10 @@
                     Header="_Watch Clipboard For Changes"
                     IsCheckable="True"
                     IsChecked="False" />
+                <MenuItem
+                    x:Name="ReadFolderOfImages"
+                    Header="_Extract Text from Images in Folder"
+                    Click="ReadFolderOfImages_Click" />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem
