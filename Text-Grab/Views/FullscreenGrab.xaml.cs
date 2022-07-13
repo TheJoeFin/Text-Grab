@@ -276,6 +276,9 @@ public partial class FullscreenGrab : Window
                     SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
                 else
                     SingleLineMenuItem.IsChecked = isActive.Value;
+
+                Settings.Default.FSGMakeSingleLineToggle = SingleLineMenuItem.IsChecked;
+                Settings.Default.Save();
                 break;
             case Key.F:
                 if (isActive == null)
@@ -415,8 +418,5 @@ public partial class FullscreenGrab : Window
             isActive = mi.IsChecked;
 
         WindowUtilities.FullscreenKeyDown(Key.S, isActive);
-
-        Settings.Default.FSGMakeSingleLineToggle = SingleLineMenuItem.IsChecked;
-        Settings.Default.Save();
     }
 }
