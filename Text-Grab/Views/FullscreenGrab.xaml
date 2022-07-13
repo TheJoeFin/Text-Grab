@@ -103,6 +103,7 @@
                 Text="Lang"/>
             <ToggleButton
                 Margin="4,0,0,4"
+                Click="SingleLineMenuItem_Click"
                 IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
                 Style="{StaticResource ToggleSymbolButton}">
                 <TextBlock

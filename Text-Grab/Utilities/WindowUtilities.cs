@@ -175,16 +175,16 @@ public static class WindowUtilities
         ShouldShutDown();
     }
 
-    internal static void FullscreenKeyDown(System.Windows.Input.KeyEventArgs e)
+    internal static void FullscreenKeyDown(Key key, bool? isActive = null)
     {
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
-        if (e.Key == Key.Escape)
+        if (key == Key.Escape)
             CloseAllFullscreenGrabs();
 
         foreach (Window window in allWindows)
             if (window is FullscreenGrab fsg)
-                fsg.KeyPressed(e);
+                fsg.KeyPressed(key, isActive);
     }
 
     internal static void TryInsertString(string stringToInsert)

@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Properties;
@@ -96,7 +97,7 @@ public partial class FullscreenGrab : Window
 
     private void FullscreenGrab_KeyDown(object sender, KeyEventArgs e)
     {
-        WindowUtilities.FullscreenKeyDown(e);
+        WindowUtilities.FullscreenKeyDown(e.Key);
     }
 
     private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -238,9 +239,9 @@ public partial class FullscreenGrab : Window
         Canvas.SetTop(selectBorder, top - 1);
     }
 
-    internal void KeyPressed(KeyEventArgs e)
+    internal void KeyPressed(Key key, bool? isActive = null)
     {
-        switch (e.Key)
+        switch (key)
         {
             // This case is handled in the WindowUtilities.FullscreenKeyDown
             // case Key.Escape:
@@ -250,8 +251,11 @@ public partial class FullscreenGrab : Window
                 NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
                 break;
             case Key.S:
-                SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
-                SingleLineMenuItem_Click();
+                if (isActive == null)
+                    SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
+                else
+                    SingleLineMenuItem.IsChecked = isActive.Value;
+                // SingleLineMenuItem_Click();
                 break;
             case Key.F:
                 FreezeMenuItem.IsChecked = !FreezeMenuItem.IsChecked;
@@ -380,6 +384,14 @@ public partial class FullscreenGrab : Window
 
     private void SingleLineMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
+        bool isActive = false;
+        if (sender is ToggleButton tb && tb.IsChecked is not null)
+            isActive = tb.IsChecked.Value;
+        else if (sender is MenuItem mi)
+            isActive = mi.IsChecked;
+
+        WindowUtilities.FullscreenKeyDown(Key.S, isActive);
+
         Settings.Default.FSGMakeSingleLineToggle = SingleLineMenuItem.IsChecked;
         Settings.Default.Save();
     }
