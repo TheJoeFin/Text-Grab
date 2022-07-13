@@ -125,6 +125,7 @@
             <ToggleButton
                 Margin="4,0,0,4"
                 IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
+                Click="NewGrabFrameMenuItem_Click"
                 Style="{StaticResource ToggleSymbolButton}">
                 <TextBlock
                     Style="{StaticResource SymbolTextStyle}"

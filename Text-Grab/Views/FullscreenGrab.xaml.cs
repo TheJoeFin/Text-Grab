@@ -148,8 +148,13 @@ public partial class FullscreenGrab : Window
 
     private void NewGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        // WindowUtilities.OpenOrActivateWindow<GrabFrame>();
-        // WindowUtilities.CloseAllFullscreenGrabs();
+        bool isActive = false;
+        if (sender is ToggleButton tb && tb.IsChecked is not null)
+            isActive = tb.IsChecked.Value;
+        else if (sender is MenuItem mi)
+            isActive = mi.IsChecked;
+
+        WindowUtilities.FullscreenKeyDown(Key.G, isActive);
     }
 
     private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
@@ -158,14 +163,27 @@ public partial class FullscreenGrab : Window
         WindowUtilities.CloseAllFullscreenGrabs();
     }
 
-    private async void FreezeMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    private void FreezeMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        bool isActive = false;
+        if (sender is ToggleButton tb && tb.IsChecked is not null)
+            isActive = tb.IsChecked.Value;
+        else if (sender is MenuItem mi)
+            isActive = mi.IsChecked;
+
+        WindowUtilities.FullscreenKeyDown(Key.F, isActive);
+    }
+
+    private async void FreezeUnfreeze(bool Activate)
     {
         if (FreezeMenuItem.IsChecked == true)
         {
+            TopButtonsStackPanel.Visibility = Visibility.Collapsed;
             BackgroundBrush.Opacity = 0;
             RegionClickCanvas.ContextMenu.IsOpen = false;
             await Task.Delay(150);
             SetImageToBackground();
+            TopButtonsStackPanel.Visibility = Visibility.Visible;
         }
         else
         {
@@ -248,18 +266,24 @@ public partial class FullscreenGrab : Window
             //     WindowUtilities.CloseAllFullscreenGrabs();
             //     break;
             case Key.G:
-                NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
+                if (isActive == null)
+                    NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
+                else
+                    NewGrabFrameMenuItem.IsChecked = isActive.Value;
                 break;
             case Key.S:
                 if (isActive == null)
                     SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
                 else
                     SingleLineMenuItem.IsChecked = isActive.Value;
-                // SingleLineMenuItem_Click();
                 break;
             case Key.F:
-                FreezeMenuItem.IsChecked = !FreezeMenuItem.IsChecked;
-                FreezeMenuItem_Click();
+                if (isActive == null)
+                    FreezeMenuItem.IsChecked = !FreezeMenuItem.IsChecked;
+                else
+                    FreezeMenuItem.IsChecked = isActive.Value;
+
+                FreezeUnfreeze(FreezeMenuItem.IsChecked);
                 break;
             default:
                 break;
