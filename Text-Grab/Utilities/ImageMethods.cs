@@ -168,21 +168,10 @@ public static class ImageMethods
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
         CultureInfo culture = lang.GetEquivalentCulture();
 
-        bool scaleBMP = true;
-
-        if (singlePoint != null
-            || bmp.Width * 1.5 > OcrEngine.MaxImageDimension)
-        {
-            scaleBMP = false;
-        }
-
-        double scaleFactor = await GetIdealScaleFactor(bmp);
-
-        Bitmap scaledBitmap;
-        if (scaleBMP)
-            scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
-        else
-            scaledBitmap = ScaleBitmapUniform(bmp, 1.0);
+        double scale = await GetIdealScaleFactor(bmp);
+        Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
+        if (singlePoint is not null)
+            singlePoint = new System.Windows.Point(singlePoint.Value.X * scale, singlePoint.Value.Y * scale);
 
         StringBuilder text = new();
 
@@ -195,8 +184,6 @@ public static class ImageMethods
 
             OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
             OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
-
-
 
             List<double> heightsList = new();
 
