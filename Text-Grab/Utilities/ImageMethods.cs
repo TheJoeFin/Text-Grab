@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
@@ -175,6 +176,8 @@ public static class ImageMethods
             scaleBMP = false;
         }
 
+        double scaleFactor = await GetIdealScaleFactor(bmp);
+
         Bitmap scaledBitmap;
         if (scaleBMP)
             scaledBitmap = ScaleBitmapUniform(bmp, 1.5);
@@ -193,7 +196,9 @@ public static class ImageMethods
             OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
             OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
 
-            ResultTable rt = new ResultTable(ocrResult);
+
+
+            List<double> heightsList = new();
 
             if (singlePoint == null)
             {
@@ -208,9 +213,13 @@ public static class ImageMethods
                     {
                         if (ocrWord.BoundingRect.Contains(fPoint))
                             _ = text.Append(ocrWord.Text);
+
+                        heightsList.Add(ocrWord.BoundingRect.Height);
                     }
                 }
             }
+
+            // Debug.WriteLine($"Average line word heights: {heightsList.Average()}");
         }
         if (culture.TextInfo.IsRightToLeft)
         {
@@ -237,12 +246,12 @@ public static class ImageMethods
         }
     }
 
-    public static async Task<OcrResult?> GetOcrResultFromRegion(Rectangle region)
+    public static async Task<(OcrResult?, double)> GetOcrResultFromRegion(Rectangle region)
     {
         Language? selectedLanguage = GetOCRLanguage();
         if (selectedLanguage == null)
         {
-            return null;
+            return (null, 0.0);
         }
 
         Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -250,10 +259,13 @@ public static class ImageMethods
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
+        double scale = await GetIdealScaleFactor(bmp);
+        Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
+
         OcrResult? ocrResult;
         await using (MemoryStream memory = new())
         {
-            bmp.Save(memory, ImageFormat.Bmp);
+            scaledBitmap.Save(memory, ImageFormat.Bmp);
             memory.Position = 0;
             BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
             SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
@@ -261,7 +273,7 @@ public static class ImageMethods
             OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
             ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
         }
-        return ocrResult;
+        return (ocrResult, scale);
     }
 
     public static Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)
@@ -280,8 +292,51 @@ public static class ImageMethods
             tbmpImg.Source = bitmapimage;
             tbmpImg.Transform = new ScaleTransform(scale, scale);
             tbmpImg.EndInit();
-            return BitmapSourceToBitmap(tbmpImg.Source);
+            return BitmapSourceToBitmap(tbmpImg);
         }
+    }
+
+    public async static Task<double> GetIdealScaleFactor(Bitmap bitmap)
+    {
+        List<double> heightsList = new();
+        double scaleFactor = 1.5;
+
+        await using (MemoryStream memory = new())
+        {
+            bitmap.Save(memory, ImageFormat.Bmp);
+            memory.Position = 0;
+            BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+            SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+            Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+
+            OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
+            OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
+            foreach (OcrLine ocrLine in ocrResult.Lines)
+                foreach (OcrWord ocrWord in ocrLine.Words)
+                    heightsList.Add(ocrWord.BoundingRect.Height);
+        }
+
+        double lineHeight = 10;
+
+        if (heightsList.Count > 0)
+            lineHeight = heightsList.Average();
+
+        // Ideal Line Height is 40px
+        const double idealLineHeight = 40.0;
+
+        scaleFactor = idealLineHeight / lineHeight;
+
+        if (bitmap.Width * scaleFactor > OcrEngine.MaxImageDimension || bitmap.Height * scaleFactor > OcrEngine.MaxImageDimension)
+        {
+            int largerDim = Math.Max(bitmap.Width, bitmap.Height);
+            // find the largest possible scale factor, because the ideal scale factor is too high
+
+            scaleFactor = OcrEngine.MaxImageDimension / largerDim;
+        }
+
+
+        return scaleFactor;
     }
 
     public static Bitmap BitmapSourceToBitmap(BitmapSource source)

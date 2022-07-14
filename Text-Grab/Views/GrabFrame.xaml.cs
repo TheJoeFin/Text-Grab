@@ -330,8 +330,10 @@ public partial class GrabFrame : Window
             Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
         };
 
+        double scale = 1;
+
         if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
-            ocrResultOfWindow = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
+            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
 
         Windows.Globalization.Language? currentLang = ImageMethods.GetOCRLanguage();
 
@@ -362,8 +364,8 @@ public partial class GrabFrame : Window
 
                 WordBorder wordBorderBox = new WordBorder
                 {
-                    Width = (ocrWord.BoundingRect.Width / dpi.DpiScaleX),
-                    Height = (ocrWord.BoundingRect.Height / dpi.DpiScaleY),
+                    Width = (ocrWord.BoundingRect.Width / (dpi.DpiScaleX * scale)),
+                    Height = (ocrWord.BoundingRect.Height / (dpi.DpiScaleY * scale)),
                     Word = wordString,
                     ToolTip = wordString,
                     LineNumber = lineNumber,
@@ -390,8 +392,8 @@ public partial class GrabFrame : Window
 
                 wordBorders.Add(wordBorderBox);
                 _ = RectanglesCanvas.Children.Add(wordBorderBox);
-                Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / dpi.DpiScaleX));
-                Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / dpi.DpiScaleY));
+                Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / (dpi.DpiScaleX * scale)));
+                Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / (dpi.DpiScaleY * scale)));
             }
 
             lineNumber++;
