@@ -91,9 +91,6 @@ public partial class FullscreenGrab : Window
             
             count++;
         }
-
-        if (firstLang is not null)
-            OcrLanguageTagTextBlock.Text = firstLang.LanguageTag;
     }
 
     private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)

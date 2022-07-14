@@ -96,11 +96,6 @@
             Background="{StaticResource DarkControlBackground}"
             Orientation="Horizontal"
             Visibility="Collapsed">
-            <TextBlock
-                x:Name="OcrLanguageTagTextBlock"
-                FontFamily="Segoe UI"
-                Style="{StaticResource SymbolTextStyle}"
-                Text="Lang" />
             <ComboBox x:Name="LanguagesComboBox">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
