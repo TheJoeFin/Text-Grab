@@ -390,10 +390,14 @@ public partial class FullscreenGrab : Window
         if (regionScaled.Width < 3 || regionScaled.Height < 3)
         {
             BackgroundBrush.Opacity = 0;
-            grabbedText = await ImageMethods.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled));
+            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
+            grabbedText = await ImageMethods.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
         else
-            grabbedText = await ImageMethods.GetRegionsText(this, regionScaled);
+        {
+            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
+            grabbedText = await ImageMethods.GetRegionsText(this, regionScaled, selectedOcrLang);
+        }
 
         if (Settings.Default.CorrectErrors)
             grabbedText.TryFixEveryWordLetterNumberErrors();

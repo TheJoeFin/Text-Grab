@@ -172,7 +172,7 @@ public partial class GrabFrame : Window
                 X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
                 Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
             };
-            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize);
+            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize, null);
         }
 
         if (wordBorders.Count > 0)
@@ -230,7 +230,7 @@ public partial class GrabFrame : Window
             }
 
             if (isCJKLang == true)
-                outputString.Append(string.Join(" ", lineList));
+                outputString.Append(string.Join("", lineList));
             else
                 outputString.Append(string.Join(' ', lineList));
 
