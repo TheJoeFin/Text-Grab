@@ -16,16 +16,16 @@
     WindowStyle="None"
     mc:Ignorable="d">
 
-<Window.Resources>
-    <Style TargetType="TextBlock" x:Key="SymbolTextStyle">
-        <Setter Property="HorizontalAlignment" Value="Center" />
-        <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-        <Setter Property="FontSize" Value="16" />
-        <Setter Property="Margin" Value="4" />
-        <Setter Property="Foreground" Value="White" />
-    </Style>
-</Window.Resources>
+    <Window.Resources>
+        <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Viewbox>
@@ -90,17 +90,29 @@
         </Canvas>
         <StackPanel
             x:Name="TopButtonsStackPanel"
-            Visibility="Collapsed"
             Margin="0"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
             Background="{StaticResource DarkControlBackground}"
-            Orientation="Horizontal">
+            Orientation="Horizontal"
+            Visibility="Collapsed">
             <TextBlock
-                x:Name="OcrLanguageTagTextBlock" 
+                x:Name="OcrLanguageTagTextBlock"
                 FontFamily="Segoe UI"
-                Style="{StaticResource SymbolTextStyle}" 
-                Text="Lang"/>
+                Style="{StaticResource SymbolTextStyle}"
+                Text="Lang" />
+            <ComboBox x:Name="LanguagesComboBox">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontFamily="Segoe UI"
+                            Style="{StaticResource SymbolTextStyle}"
+                            Text="{Binding LanguageTag}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
             <ToggleButton
                 Margin="4,0,0,4"
                 Click="SingleLineMenuItem_Click"
@@ -124,8 +136,8 @@
 
             <ToggleButton
                 Margin="4,0,0,4"
-                IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
                 Click="NewGrabFrameMenuItem_Click"
+                IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
                 Style="{StaticResource ToggleSymbolButton}">
                 <TextBlock
                     Style="{StaticResource SymbolTextStyle}"

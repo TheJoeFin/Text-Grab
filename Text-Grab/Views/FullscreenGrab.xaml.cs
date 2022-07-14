@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Globalization;
+using Windows.Media.Ocr;
 
 namespace Text_Grab.Views;
 
@@ -72,7 +74,23 @@ public partial class FullscreenGrab : Window
 
     private void LoadOcrLanguages()
     {
+        if (LanguagesComboBox.Items.Count > 0)
+            return;
+
+        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
         Language? firstLang = ImageMethods.GetOCRLanguage();
+
+        int count = 0;
+
+        foreach (Language language in possibleOCRLangs)
+        {
+            LanguagesComboBox.Items.Add(language);
+
+            if (language.LanguageTag == firstLang?.LanguageTag)
+                LanguagesComboBox.SelectedIndex = count;
+            
+            count++;
+        }
 
         if (firstLang is not null)
             OcrLanguageTagTextBlock.Text = firstLang.LanguageTag;
