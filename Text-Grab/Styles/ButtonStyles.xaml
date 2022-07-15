@@ -734,9 +734,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
-                    <Border
-                        x:Name="border"
-                        SnapsToDevicePixels="true">
+                    <Border x:Name="border" SnapsToDevicePixels="true">
                         <ContentPresenter
                             x:Name="contentPresenter"
                             Margin="0"

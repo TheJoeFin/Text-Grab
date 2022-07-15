@@ -75,7 +75,7 @@ public static class ImageMethods
         }
     }
 
-    internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion)
+    internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
     {
         Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         Graphics g = Graphics.FromImage(bmp);
@@ -93,7 +93,7 @@ public static class ImageMethods
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
         bmp = PadImage(bmp);
 
-        string? ocrText = await ExtractText(bmp);
+        string? ocrText = await ExtractText(bmp, null, language);
 
         if (ocrText != null)
             return ocrText.Trim();
@@ -130,7 +130,7 @@ public static class ImageMethods
         return BitmapToImageSource(bmp);
     }
 
-    internal static async Task<string> GetClickedWord(Window passedWindow, System.Windows.Point clickedPoint)
+    internal static async Task<string> GetClickedWord(Window passedWindow, System.Windows.Point clickedPoint, Language? OcrLang)
     {
         DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
         Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -144,17 +144,17 @@ public static class ImageMethods
 
         System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
-        string ocrText = await ExtractText(bmp, adjustedPoint);
+        string ocrText = await ExtractText(bmp, adjustedPoint, OcrLang);
         return ocrText.Trim();
     }
 
-    public static async Task<string> ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null)
+    public static async Task<string> ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null, Language? selectedLanguage = null)
     {
-        Language? selectedLanguage = GetOCRLanguage();
+        if (selectedLanguage is null)
+            selectedLanguage = GetOCRLanguage();
+
         if (selectedLanguage == null)
-        {
             return "";
-        }
 
         bool isCJKLang = false;
 
@@ -189,7 +189,17 @@ public static class ImageMethods
 
             if (singlePoint == null)
             {
-                foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
+                if (isCJKLang == false)
+                    foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
+                else
+                {
+                    foreach (OcrLine ocrLine in ocrResult.Lines)
+                    {
+                        foreach (OcrWord ocrWord in ocrLine.Words)
+                            _ = text.Append(ocrWord.Text);
+                        text.Append(Environment.NewLine);
+                    }
+                }
             }
             else
             {

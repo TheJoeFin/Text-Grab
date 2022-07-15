@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Globalization;
+using Windows.Media.Ocr;
 
 namespace Text_Grab.Views;
 
@@ -72,10 +74,23 @@ public partial class FullscreenGrab : Window
 
     private void LoadOcrLanguages()
     {
+        if (LanguagesComboBox.Items.Count > 0)
+            return;
+
+        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
         Language? firstLang = ImageMethods.GetOCRLanguage();
 
-        if (firstLang is not null)
-            OcrLanguageTagTextBlock.Text = firstLang.LanguageTag;
+        int count = 0;
+
+        foreach (Language language in possibleOCRLangs)
+        {
+            LanguagesComboBox.Items.Add(language);
+
+            if (language.LanguageTag == firstLang?.LanguageTag)
+                LanguagesComboBox.SelectedIndex = count;
+            
+            count++;
+        }
     }
 
     private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
@@ -372,10 +387,14 @@ public partial class FullscreenGrab : Window
         if (regionScaled.Width < 3 || regionScaled.Height < 3)
         {
             BackgroundBrush.Opacity = 0;
-            grabbedText = await ImageMethods.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled));
+            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
+            grabbedText = await ImageMethods.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
         else
-            grabbedText = await ImageMethods.GetRegionsText(this, regionScaled);
+        {
+            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
+            grabbedText = await ImageMethods.GetRegionsText(this, regionScaled, selectedOcrLang);
+        }
 
         if (Settings.Default.CorrectErrors)
             grabbedText.TryFixEveryWordLetterNumberErrors();
