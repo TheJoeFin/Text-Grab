@@ -96,7 +96,7 @@
             Background="{StaticResource DarkControlBackground}"
             Orientation="Horizontal"
             Visibility="Collapsed">
-            <ComboBox x:Name="LanguagesComboBox">
+            <ComboBox x:Name="LanguagesComboBox" SelectionChanged="LanguagesComboBox_SelectionChanged">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock
