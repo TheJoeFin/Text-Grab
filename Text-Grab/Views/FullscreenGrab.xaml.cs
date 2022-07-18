@@ -44,6 +44,8 @@ public partial class FullscreenGrab : Window
 
     public bool IsFreeze { get; set; } = false;
 
+    private bool isComboBoxReady = false;
+
     public FullscreenGrab()
     {
         InitializeComponent();
@@ -91,6 +93,8 @@ public partial class FullscreenGrab : Window
             
             count++;
         }
+
+        isComboBoxReady = true;
     }
 
     private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
@@ -303,6 +307,24 @@ public partial class FullscreenGrab : Window
 
                 FreezeUnfreeze(FreezeMenuItem.IsChecked);
                 break;
+            case Key.D1:
+            case Key.D2:
+            case Key.D3:
+            case Key.D4:
+            case Key.D5:
+            case Key.D6:
+            case Key.D7:
+            case Key.D8:
+            case Key.D9:
+                int numberPressed = (int)key - 34; // D1 casts to 35, D2 to 36, etc.
+                int numberOfLanguages = LanguagesComboBox.Items.Count;
+
+                if (numberPressed <= numberOfLanguages 
+                    && numberPressed - 1 >= 0
+                    && numberPressed - 1 != LanguagesComboBox.SelectedIndex 
+                    && isComboBoxReady == true)
+                    LanguagesComboBox.SelectedIndex = numberPressed - 1;
+                break;
             default:
                 break;
         }
@@ -437,5 +459,46 @@ public partial class FullscreenGrab : Window
             isActive = mi.IsChecked;
 
         WindowUtilities.FullscreenKeyDown(Key.S, isActive);
+    }
+
+    private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ComboBox languageCmbBox || isComboBoxReady == false)
+            return;
+
+        int selection = languageCmbBox.SelectedIndex;
+
+        switch (selection)
+        {
+            case 0:
+                WindowUtilities.FullscreenKeyDown(Key.D1);
+                break;
+            case 1:
+                WindowUtilities.FullscreenKeyDown(Key.D2);
+                break;
+            case 2:
+                WindowUtilities.FullscreenKeyDown(Key.D3);
+                break;
+            case 3:
+                WindowUtilities.FullscreenKeyDown(Key.D4);
+                break;
+            case 4:
+                WindowUtilities.FullscreenKeyDown(Key.D5);
+                break;
+            case 5:
+                WindowUtilities.FullscreenKeyDown(Key.D6);
+                break;
+            case 6:
+                WindowUtilities.FullscreenKeyDown(Key.D7);
+                break;
+            case 7:
+                WindowUtilities.FullscreenKeyDown(Key.D8);
+                break;
+            case 8:
+                WindowUtilities.FullscreenKeyDown(Key.D9);
+                break;
+            default:
+                break;
+        }
     }
 }
