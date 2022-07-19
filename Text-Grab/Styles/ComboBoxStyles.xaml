@@ -43,10 +43,10 @@
         <GradientStop Offset="0.0" Color="#071818" />
         <GradientStop Offset="1.0" Color="#071818" />
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="ComboBox.Static.Border" Color="#FFACACAC" />
+    <SolidColorBrush x:Key="ComboBox.Static.Border" Color="Transparent" />
     <SolidColorBrush x:Key="ComboBox.Static.Glyph" Color="#FF606060" />
     <SolidColorBrush x:Key="ComboBox.Static.Editable.Background" Color="#444444" />
-    <SolidColorBrush x:Key="ComboBox.Static.Editable.Border" Color="#FFABADB3" />
+    <SolidColorBrush x:Key="ComboBox.Static.Editable.Border" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.Static.Editable.Button.Background" Color="#444444" />
     <SolidColorBrush x:Key="ComboBox.Static.Editable.Button.Border" Color="#444444" />
     <LinearGradientBrush x:Key="ComboBox.MouseOver.Background" StartPoint="0,0" EndPoint="0,1">
@@ -69,17 +69,17 @@
     <SolidColorBrush x:Key="ComboBox.Pressed.Border" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Glyph" Color="#FF000000" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Background" Color="#444444" />
-    <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Border" Color="#FF569DE5" />
+    <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Border" Color="#1E595F" />
     <LinearGradientBrush x:Key="ComboBox.Pressed.Editable.Button.Background" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Offset="0.0" Color="#444444" />
         <GradientStop Offset="1.0" Color="#1E595F" />
     </LinearGradientBrush>
     <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Button.Border" Color="#FF569DE5" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Background" Color="#444444" />
-    <SolidColorBrush x:Key="ComboBox.Disabled.Border" Color="#FFD9D9D9" />
+    <SolidColorBrush x:Key="ComboBox.Disabled.Border" Color="Transparent" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Glyph" Color="#FFBFBFBF" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Background" Color="#444444" />
-    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Border" Color="#FFBFBFBF" />
+    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Border" Color="Transparent" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Button.Background" Color="#444444" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Button.Border" Color="#444444" />
     <Style x:Key="ComboBoxToggleButton" TargetType="{x:Type ToggleButton}">

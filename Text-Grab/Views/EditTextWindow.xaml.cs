@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -21,7 +22,11 @@ using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Globalization;
+using Windows.Graphics.Imaging;
+using Windows.Media.Ocr;
 using Windows.System;
+using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 
 namespace Text_Grab;
 
@@ -1251,6 +1256,55 @@ public partial class EditTextWindow : Window
     {
         await Task.Delay(2000);
         WindowUtilities.LaunchFullScreenGrab(true, true, this);
+    }
+
+    private async void ExpMI_click(object sender, RoutedEventArgs e)
+    {
+        string correctString = "Times-Roman Helvetica Courier Palatino-Roman Helvetica-Narrow Bookman-Demi\r\n";
+        string correctString2 = "Arial Times New Roman Georgia Segoe Rockwell Condensed Couier New\r\n";
+
+        // Uri fileURI = new(@"C:\Users\jfinney\Documents\Text Grab\Text-Grab\Text-Grab\Images\font_sample.png");
+        Uri fileURI = new(@"C:\Users\jfinney\Documents\Text Grab\Text-Grab\Text-Grab\Images\FontTest.png");
+        BitmapImage droppedImage = new(fileURI);
+        Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
+
+        for (int i = 1; i < 300; i++)
+        {
+            double scale = .01 * i;
+            Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
+            StringBuilder sb = new();
+            List<double> heightsList = new();
+            await using (MemoryStream memory = new())
+            {
+                scaledBitmap.Save(memory, ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+                SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+                Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+
+                OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
+                OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
+                foreach (OcrLine ocrLine in ocrResult.Lines)
+                {
+                    sb.AppendLine(ocrLine.Text);
+                    foreach (OcrWord ocrWord in ocrLine.Words)
+                    {
+                        heightsList.Add(ocrWord.BoundingRect.Height);
+                    }
+                }
+
+            }
+            string ocrstring = StringMethods.MakeStringSingleLine(sb.ToString());
+            bool correctOcr = ocrstring == correctString2;
+
+            int averageHeight = 0;
+
+            if (heightsList.Count > 0)
+                averageHeight = (int)heightsList.Average();
+
+            PassedTextControl.AppendText($"{averageHeight}\t{correctOcr}{Environment.NewLine}");
+        }
     }
 
     private void FSGFreezeenuItem_Click(object sender, RoutedEventArgs e)
