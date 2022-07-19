@@ -328,10 +328,6 @@
                     x:Name="AboutMenuItem"
                     Click="AboutMenuItem_Click"
                     Header="_About" />
-                <MenuItem
-                    x:Name="ExpMI"
-                    Click="ExpMI_click"
-                    Header="Run Experiment" />
             </MenuItem>
         </Menu>
         <TextBox
