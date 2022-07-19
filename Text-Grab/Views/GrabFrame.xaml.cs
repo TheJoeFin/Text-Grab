@@ -54,7 +54,7 @@ public partial class GrabFrame : Window
         SetRestoreState();
 
         WindowResizer resizer = new(this);
-        reDrawTimer.Interval = new(0, 0, 0, 0, 1200);
+        reDrawTimer.Interval = new(0, 0, 0, 0, 1500);
         reDrawTimer.Tick += ReDrawTimer_Tick;
         reDrawTimer.Start();
 
