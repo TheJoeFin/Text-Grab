@@ -112,15 +112,14 @@ public static class ImageMethods
         int windowHeight = (int)(passedWindow.ActualHeight * dpi.DpiScaleY);
 
         System.Windows.Point absPosPoint = passedWindow.GetAbsolutePosition();
-        
-        // TODO Test with Windows 10
-        int thisCorrectedLeft = (int)(absPosPoint.X); // * dpi.DpiScaleX);
-        int thisCorrectedTop = (int)(absPosPoint.Y); // * dpi.DpiScaleY);
+
+        int thisCorrectedLeft = (int)(absPosPoint.X);
+        int thisCorrectedTop = (int)(absPosPoint.Y);
 
         if (isGrabFrame == true)
         {
-            thisCorrectedLeft += (int)(2 * dpi.DpiScaleX);
-            thisCorrectedTop += (int)(26 * dpi.DpiScaleY);
+            thisCorrectedLeft = (int)((absPosPoint.X + 2) * dpi.DpiScaleX);
+            thisCorrectedTop = (int)((absPosPoint.Y + 26) * dpi.DpiScaleY);
             windowWidth -= (int)(4 * dpi.DpiScaleX);
             windowHeight -= (int)(70 * dpi.DpiScaleY);
         }
