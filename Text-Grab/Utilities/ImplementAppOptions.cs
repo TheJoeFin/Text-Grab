@@ -29,7 +29,10 @@ internal class ImplementAppOptions
         {
             App app = (App)App.Current;
             if (app.TextGrabIcon != null)
+            {
                 app.TextGrabIcon.Dispose();
+                app.TextGrabIcon = null;
+            }
         }
     }
 
