@@ -90,7 +90,7 @@ public partial class FullscreenGrab : Window
 
             if (language.LanguageTag == firstLang?.LanguageTag)
                 LanguagesComboBox.SelectedIndex = count;
-            
+
             count++;
         }
 
@@ -319,9 +319,9 @@ public partial class FullscreenGrab : Window
                 int numberPressed = (int)key - 34; // D1 casts to 35, D2 to 36, etc.
                 int numberOfLanguages = LanguagesComboBox.Items.Count;
 
-                if (numberPressed <= numberOfLanguages 
+                if (numberPressed <= numberOfLanguages
                     && numberPressed - 1 >= 0
-                    && numberPressed - 1 != LanguagesComboBox.SelectedIndex 
+                    && numberPressed - 1 != LanguagesComboBox.SelectedIndex
                     && isComboBoxReady == true)
                     LanguagesComboBox.SelectedIndex = numberPressed - 1;
                 break;
@@ -430,7 +430,7 @@ public partial class FullscreenGrab : Window
 
             if (Settings.Default.NeverAutoUseClipboard == false
                 && EditWindow is null)
-                Clipboard.SetText(grabbedText);
+                Clipboard.SetDataObject(grabbedText, true);
 
             if (Settings.Default.ShowToast
                 && EditWindow is null)

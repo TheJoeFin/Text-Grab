@@ -437,7 +437,7 @@ public partial class EditTextWindow : Window
     private void CopyCloseBTN_Click(object sender, RoutedEventArgs e)
     {
         string clipboardText = PassedTextControl.Text;
-        System.Windows.Clipboard.SetText(clipboardText);
+        System.Windows.Clipboard.SetDataObject(clipboardText, true);
         this.Close();
     }
 

@@ -25,10 +25,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public string Word
     {
         get { return (string)GetValue(WordProperty); }
-        set 
-        { 
-            SetValue(WordProperty, value); 
-            PropertyChanged?.Invoke(this,new PropertyChangedEventArgs(nameof(Word)));
+        set
+        {
+            SetValue(WordProperty, value);
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Word)));
         }
     }
 
@@ -98,7 +98,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             return;
         }
 
-        Clipboard.SetText(Word);
+        Clipboard.SetDataObject(Word, true);
 
         if (Settings.Default.ShowToast
             && IsFromEditWindow == false)

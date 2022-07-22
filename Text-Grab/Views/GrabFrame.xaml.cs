@@ -240,7 +240,7 @@ public partial class GrabFrame : Window
         if (IsFromEditWindow == false
             && string.IsNullOrWhiteSpace(frameText) == false
             && Settings.Default.NeverAutoUseClipboard == false)
-            Clipboard.SetText(frameText);
+            Clipboard.SetDataObject(frameText, true);
 
         if (Settings.Default.ShowToast == true
             && IsFromEditWindow == false)
