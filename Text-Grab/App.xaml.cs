@@ -132,6 +132,11 @@ public partial class App : System.Windows.Application
         }
     }
 
+    private void appExit(object sender, ExitEventArgs e)
+    {
+        TextGrabIcon?.Dispose();
+    }
+
     private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         // unhandled exceptions thrown from UI thread

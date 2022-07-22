@@ -33,7 +33,7 @@ public static class NotifyIconUtilities
         editTextWindowItem.Click += (s, e) => { EditTextWindow etw = new(); etw.Show(); };
 
         ToolStripMenuItem? exitItem = new("&Close");
-        exitItem.Click += (s, e) => { icon.Dispose(); System.Windows.Application.Current.Shutdown(); };
+        exitItem.Click += (s, e) => { System.Windows.Application.Current.Shutdown(); };
 
         contextMenu.Items.AddRange(
             new ToolStripMenuItem[] {
