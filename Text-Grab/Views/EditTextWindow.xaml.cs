@@ -67,7 +67,6 @@ public partial class EditTextWindow : Window
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
 
     private int numberOfContextMenuItems;
-    private bool IsDragOver;
 
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
 
