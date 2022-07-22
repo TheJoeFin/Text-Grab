@@ -94,6 +94,7 @@ public static class NotifyIconUtilities
         if (editWindowKey is not null)
             app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(editWindowKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
 
+        HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
 
         app.TextGrabIcon = icon;
@@ -102,6 +103,8 @@ public static class NotifyIconUtilities
     private static void trayIcon_Disposed(object? sender, EventArgs e)
     {
         App app = (App)App.Current;
+
+        HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
 
         foreach (int hotKeyId in app.HotKeyIds)
             HotKeyManager.UnregisterHotKey(hotKeyId);
