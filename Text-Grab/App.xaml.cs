@@ -1,6 +1,7 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -19,6 +20,8 @@ namespace Text_Grab;
 public partial class App : System.Windows.Application
 {
     public NotifyIcon? TextGrabIcon { get; set; }
+
+    public List<int> HotKeyIds { get; set; } = new();
 
     public int NumberOfRunningInstances { get; set; } = 0;
 

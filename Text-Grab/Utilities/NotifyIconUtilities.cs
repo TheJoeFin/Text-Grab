@@ -72,6 +72,8 @@ public static class NotifyIconUtilities
             }
         };
 
+        icon.Disposed += trayIcon_Disposed;
+
         // Double click just triggers the single click
         // icon.DoubleClick += (s, e) =>
         // {
@@ -84,19 +86,26 @@ public static class NotifyIconUtilities
         Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
 
         if (fullscreenKey is not null)
-            HotKeyManager.RegisterHotKey(fullscreenKey.Value, KeyModifiers.Windows | KeyModifiers.Shift);
-        
+            app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(fullscreenKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
+
         if (grabFrameKey is not null)
-        HotKeyManager.RegisterHotKey(grabFrameKey.Value, KeyModifiers.Windows | KeyModifiers.Shift);
+            app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(grabFrameKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
 
         if (editWindowKey is not null)
-            HotKeyManager.RegisterHotKey(editWindowKey.Value, KeyModifiers.Windows | KeyModifiers.Shift);
+            app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(editWindowKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
 
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
 
         app.TextGrabIcon = icon;
     }
 
+    private static void trayIcon_Disposed(object? sender, EventArgs e)
+    {
+        App app = (App)App.Current;
+
+        foreach (int hotKeyId in app.HotKeyIds)
+            HotKeyManager.UnregisterHotKey(hotKeyId);
+    }
 
     static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
     {
@@ -113,10 +122,10 @@ public static class NotifyIconUtilities
 
         if (e.Key == editWindowKey.Value)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => 
-            { 
-                EditTextWindow etw = new(); 
-                etw.Show(); 
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                EditTextWindow etw = new();
+                etw.Show();
                 etw.Activate();
             }));
         }
