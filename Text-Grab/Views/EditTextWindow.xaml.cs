@@ -1209,10 +1209,8 @@ public partial class EditTextWindow : Window
         if (result is not System.Windows.Forms.DialogResult.OK)
             return;
 
-        StringBuilder ocrResults = new();
+        Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
-        ocrResults.AppendLine(chosenFolderPath);
-        ocrResults.AppendLine(DateTime.Now.ToString()).AppendLine();
 
         IEnumerable<String>? files = null;
         IEnumerable<String>? folders = null;
@@ -1228,6 +1226,16 @@ public partial class EditTextWindow : Window
 
         if (files is null)
             return;
+
+        PassedTextControl.AppendText(chosenFolderPath);
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText(DateTime.Now.ToString());
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText($"{files.Where(x => imageExtensions.Contains(Path.GetExtension(x))).Count()} image files found");
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText(Environment.NewLine);
+
+        StringBuilder ocrResults = new();
 
         foreach (string file in files)
         {
@@ -1249,6 +1257,7 @@ public partial class EditTextWindow : Window
         }
 
         PassedTextControl.AppendText(ocrResults.ToString());
+        Mouse.OverrideCursor = null;
     }
 
     private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)
