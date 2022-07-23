@@ -11,7 +11,7 @@
   <Identity
     Name="40087JoeFinApps.TextGrab"
     Publisher="CN=153F3B0F-BA3D-4964-8098-71AC78A1DF6A"
-    Version="2.6.0.0" />
+    Version="2.7.0.0" />
 
   <Properties>
     <DisplayName>Text Grab</DisplayName>
