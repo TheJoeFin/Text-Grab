@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Text_Grab.Models;
+﻿namespace Text_Grab.Models;
 
 public class FindResult
 {

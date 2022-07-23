@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 using Windows.Foundation;
 using Windows.Media.Ocr;
 

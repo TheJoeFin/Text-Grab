@@ -10,6 +10,7 @@
     Margin="10,10,0,10"
     HorizontalAlignment="Left"
     HorizontalContentAlignment="Left"
+    d:DataContext="{d:DesignInstance Type=local:CollapsibleButton}"
     d:DesignHeight="30"
     d:DesignWidth="120"
     Loaded="CollapsibleButton_Loaded"

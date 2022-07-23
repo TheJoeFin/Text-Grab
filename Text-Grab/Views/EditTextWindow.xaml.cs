@@ -249,8 +249,8 @@ public partial class EditTextWindow : Window
     private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (PassedTextControl.SelectedText.Contains(Environment.NewLine)
-            || PassedTextControl.SelectedText.Contains("\r")
-            || PassedTextControl.SelectedText.Contains("\n"))
+            || PassedTextControl.SelectedText.Contains('\r')
+            || PassedTextControl.SelectedText.Contains('\n'))
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -611,8 +611,8 @@ public partial class EditTextWindow : Window
     {
         if (string.IsNullOrEmpty(PassedTextControl.SelectedText)
             || PassedTextControl.SelectedText.Contains(Environment.NewLine)
-            || PassedTextControl.SelectedText.Contains("\r")
-            || PassedTextControl.SelectedText.Contains("\n"))
+            || PassedTextControl.SelectedText.Contains('\r')
+            || PassedTextControl.SelectedText.Contains('\n'))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -642,7 +642,7 @@ public partial class EditTextWindow : Window
             if (line.Length >= selectionPositionInLine
                 && line.Length >= (selectionPositionInLine + selectionLength))
             {
-                if (line.Substring(selectionPositionInLine, selectionLength) != selectionText)
+                if (line.AsSpan(selectionPositionInLine, selectionLength) != selectionText)
                     sb.Append(line.Insert(selectionPositionInLine, selectionText));
                 else
                     sb.Append(line);
@@ -1185,11 +1185,11 @@ public partial class EditTextWindow : Window
                 listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
                 foreach (string folder in folders)
                 {
-                    listOfNames.Append($"{folder.Substring(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
                 }
                 foreach (string file in files)
                 {
-                    listOfNames.Append($"{file.Substring(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+                    listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
                 }
 
                 PassedTextControl.AppendText(listOfNames.ToString());
@@ -1383,7 +1383,7 @@ public partial class EditTextWindow : Window
 
     // If the data object in args is a single file, this method will return the filename.
     // Otherwise, it returns null.
-    private string? IsSingleFile(System.Windows.DragEventArgs args)
+    private static string? IsSingleFile(System.Windows.DragEventArgs args)
     {
         // Check for files in the hovering data object.
         if (args.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
@@ -1405,7 +1405,7 @@ public partial class EditTextWindow : Window
 
     // from StackOverflow user bytedev read on July 12th 2022
     // https://stackoverflow.com/a/64038750/7438031
-    public bool IsBinary(string filePath, int requiredConsecutiveNul = 1)
+    public static bool IsBinary(string filePath, int requiredConsecutiveNul = 1)
     {
         const int charsToCheck = 8000;
         const char nulChar = '\0';

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +9,6 @@ using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
-using Windows.ApplicationModel;
 
 namespace Text_Grab;
 

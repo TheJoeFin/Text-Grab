@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,10 +8,10 @@ namespace Text_Grab.Utilities;
 
 public static class StringMethods
 {
-    public static List<Char> specialCharList = new()
+    public static readonly List<Char> specialCharList = new()
     { '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
 
-    public static List<Char> ReservedChars = new()
+    public static readonly List<Char> ReservedChars = new()
     { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
 
     public static string TryFixToLetters(this string fixToLetters)
@@ -295,7 +294,7 @@ public static class StringMethods
 
         string[] splitInputString = stringGroupedToUnstack.Split(new string[] { Environment.NewLine }, StringSplitOptions.TrimEntries);
 
-        int numberOfColumns = splitInputString.Count() / numberOfRows;
+        int numberOfColumns = splitInputString.Length / numberOfRows;
 
         for (int j = 0; j < numberOfRows; j++)
         {
@@ -306,7 +305,7 @@ public static class StringMethods
             {
                 int lineNumberToAppend = j + (i * numberOfRows);
 
-                if (lineNumberToAppend - 1 > splitInputString.Count())
+                if (lineNumberToAppend - 1 > splitInputString.Length)
                     break;
 
                 if (i != 0)

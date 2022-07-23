@@ -1138,7 +1138,7 @@ public partial class GrabFrame : Window
 
     // If the data object in args is a single file, this method will return the filename.
     // Otherwise, it returns null.
-    private string? IsSingleFile(DragEventArgs args)
+    private static string? IsSingleFile(DragEventArgs args)
     {
         // Check for files in the hovering data object.
         if (args.Data.GetDataPresent(DataFormats.FileDrop, true))

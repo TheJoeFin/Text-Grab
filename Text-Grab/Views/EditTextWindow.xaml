@@ -279,8 +279,8 @@
                     IsChecked="False" />
                 <MenuItem
                     x:Name="ReadFolderOfImages"
-                    Header="_Extract Text from Images in Folder"
-                    Click="ReadFolderOfImages_Click" />
+                    Click="ReadFolderOfImages_Click"
+                    Header="_Extract Text from Images in Folder" />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem
@@ -335,16 +335,16 @@
             Grid.Row="1"
             AcceptsReturn="True"
             AcceptsTab="True"
+            AllowDrop="True"
             AutoWordSelection="True"
             Background="{StaticResource DarkControlBackground}"
             ContextMenuOpening="PassedTextControl_ContextMenuOpening"
             FontSize="16"
             Foreground="White"
-            AllowDrop="True"
-            PreviewDragOver="ETWindow_DragOver"
-            PreviewDrop="ETWindow_Drop" 
             HorizontalScrollBarVisibility="Auto"
             IsInactiveSelectionHighlightEnabled="True"
+            PreviewDragOver="ETWindow_DragOver"
+            PreviewDrop="ETWindow_Drop"
             SelectionChanged="PassedTextControl_SelectionChanged"
             SizeChanged="PassedTextControl_SizeChanged"
             SpellCheck.IsEnabled="True"

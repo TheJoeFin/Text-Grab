@@ -104,8 +104,8 @@
                 Text="Number of characters" />
             <TextBox
                 x:Name="LengthTextBox"
-                IsEnabled="False"
                 Width="50"
+                IsEnabled="False"
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
 
