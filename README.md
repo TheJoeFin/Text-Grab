@@ -1,10 +1,8 @@
 # Text-Grab
 
-This is a minimal Windows utility which makes all visible text available for copy and paste. 
+This is a minimal optical character recognition (OCR) utility for Windows which makes all visible text available to be copied. 
 
-Too often there is text on the screen but it is unable to be selected. This happens when text is saved in an image, in a video, or the text within an application. 
-
-The OCR is done locally by [Windows 10 API](https://docs.microsoft.com/en-us/uwp/api/Windows.Media.Ocr). This enables Text Grab to have essentially no UI and not require a constantly running background process.
+Too often text is trapped within images, videos, or within parts of applications and cannot be selected. Text Grab takes a screenshot, passes that image to the OCR engine, then puts the text into the clipboard for use anywhere. The OCR is done locally by [Windows API](https://docs.microsoft.com/en-us/uwp/api/Windows.Media.Ocr). This enables Text Grab to have essentially no UI and not require a constantly running background process. Working with text can be much more than just copying text from images, so Text Grab has a range of different modes to make working with text fast and easy. 
 
 ## How to Install
 
@@ -74,6 +72,7 @@ There are several tools with in the Edit Text Window which make it quick and eas
 - Extract regular expressions
 - Remove duplicate lines
 - Convert stacked data to table format
+- Copy text from every image in a folder
 - And more!
 
 
