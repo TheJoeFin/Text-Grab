@@ -34,11 +34,11 @@ public static class ImageMethods
 
         // Create a compatible bitmap
         Bitmap dest = new(width, height, image.PixelFormat);
-        using (Graphics gd = Graphics.FromImage(dest))
-        {
-            gd.Clear(image.GetPixel(0, 0));
-            gd.DrawImageUnscaled(image, 8, 8);
-        }
+        using Graphics gd = Graphics.FromImage(dest);
+
+        gd.Clear(image.GetPixel(0, 0));
+        gd.DrawImageUnscaled(image, 8, 8);
+
         return dest;
     }
 
@@ -46,31 +46,30 @@ public static class ImageMethods
     {
         // BitmapImage bitmapImage = new BitmapImage(new Uri("../Images/test.png", UriKind.Relative));
 
-        using (MemoryStream outStream = new())
-        {
-            BitmapEncoder enc = new BmpBitmapEncoder();
-            enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-            enc.Save(outStream);
-            Bitmap bitmap = new(outStream);
+        using MemoryStream outStream = new();
 
-            return new Bitmap(bitmap);
-        }
+        BitmapEncoder enc = new BmpBitmapEncoder();
+        enc.Frames.Add(BitmapFrame.Create(bitmapImage));
+        enc.Save(outStream);
+        Bitmap bitmap = new(outStream);
+
+        return new Bitmap(bitmap);
     }
 
     internal static BitmapImage BitmapToImageSource(Bitmap bitmap)
     {
-        using (MemoryStream memory = new())
-        {
-            bitmap.Save(memory, ImageFormat.Bmp);
-            memory.Position = 0;
-            BitmapImage bitmapimage = new();
-            bitmapimage.BeginInit();
-            bitmapimage.StreamSource = memory;
-            bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
-            bitmapimage.EndInit();
+        using MemoryStream memory = new();
 
-            return bitmapimage;
-        }
+        bitmap.Save(memory, ImageFormat.Bmp);
+        memory.Position = 0;
+        BitmapImage bitmapimage = new();
+        bitmapimage.BeginInit();
+        bitmapimage.StreamSource = memory;
+        bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+        bitmapimage.EndInit();
+        bitmapimage.Freeze();
+
+        return bitmapimage;
     }
 
     internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
@@ -174,49 +173,50 @@ public static class ImageMethods
 
         StringBuilder text = new();
 
-        await using (MemoryStream memory = new())
+        await using MemoryStream memory = new();
+
+        scaledBitmap.Save(memory, ImageFormat.Bmp);
+        memory.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+        SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
+        OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
+        List<double> heightsList = new();
+
+        if (singlePoint == null)
         {
-            scaledBitmap.Save(memory, ImageFormat.Bmp);
-            memory.Position = 0;
-            BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
-            SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
-
-            OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
-            OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
-
-            List<double> heightsList = new();
-
-            if (singlePoint == null)
-            {
-                if (isCJKLang == false)
-                    foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
-                else
-                {
-                    foreach (OcrLine ocrLine in ocrResult.Lines)
-                    {
-                        foreach (OcrWord ocrWord in ocrLine.Words)
-                            _ = text.Append(ocrWord.Text);
-                        text.Append(Environment.NewLine);
-                    }
-                }
-            }
+            if (isCJKLang == false)
+                foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
             else
             {
-                Windows.Foundation.Point fPoint = new Windows.Foundation.Point(singlePoint.Value.X, singlePoint.Value.Y);
                 foreach (OcrLine ocrLine in ocrResult.Lines)
                 {
                     foreach (OcrWord ocrWord in ocrLine.Words)
-                    {
-                        if (ocrWord.BoundingRect.Contains(fPoint))
-                            _ = text.Append(ocrWord.Text);
-
-                        heightsList.Add(ocrWord.BoundingRect.Height);
-                    }
+                        _ = text.Append(ocrWord.Text);
+                    text.Append(Environment.NewLine);
                 }
             }
-
-            // Debug.WriteLine($"Average line word heights: {heightsList.Average()}");
         }
+        else
+        {
+            Windows.Foundation.Point fPoint = new Windows.Foundation.Point(singlePoint.Value.X, singlePoint.Value.Y);
+            foreach (OcrLine ocrLine in ocrResult.Lines)
+            {
+                foreach (OcrWord ocrWord in ocrLine.Words)
+                {
+                    if (ocrWord.BoundingRect.Contains(fPoint))
+                        _ = text.Append(ocrWord.Text);
+
+                    heightsList.Add(ocrWord.BoundingRect.Height);
+                }
+            }
+        }
+
+        // Debug.WriteLine($"Average line word heights: {heightsList.Average()}");
+
+
         if (culture.TextInfo.IsRightToLeft)
         {
             string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
@@ -259,37 +259,40 @@ public static class ImageMethods
         Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
 
         OcrResult? ocrResult;
-        await using (MemoryStream memory = new())
-        {
-            scaledBitmap.Save(memory, ImageFormat.Bmp);
-            memory.Position = 0;
-            BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
-            SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+        await using MemoryStream memory = new();
 
-            OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
-            ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
-        }
+        scaledBitmap.Save(memory, ImageFormat.Bmp);
+        memory.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+        SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
+        ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
         return (ocrResult, scale);
     }
 
     public static Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)
     {
-        using (MemoryStream memory = new())
-        {
-            passedBitmap.Save(memory, ImageFormat.Bmp);
-            memory.Position = 0;
-            BitmapImage bitmapimage = new();
-            bitmapimage.BeginInit();
-            bitmapimage.StreamSource = memory;
-            bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
-            bitmapimage.EndInit();
-            TransformedBitmap tbmpImg = new();
-            tbmpImg.BeginInit();
-            tbmpImg.Source = bitmapimage;
-            tbmpImg.Transform = new ScaleTransform(scale, scale);
-            tbmpImg.EndInit();
-            return BitmapSourceToBitmap(tbmpImg);
-        }
+        using MemoryStream memory = new();
+
+        passedBitmap.Save(memory, ImageFormat.Bmp);
+        memory.Position = 0;
+        BitmapImage bitmapimage = new();
+        bitmapimage.BeginInit();
+        bitmapimage.StreamSource = memory;
+        bitmapimage.CacheOption = BitmapCacheOption.None;
+        bitmapimage.EndInit();
+        bitmapimage.Freeze();
+        TransformedBitmap tbmpImg = new();
+
+        tbmpImg.BeginInit();
+        tbmpImg.Source = bitmapimage;
+        tbmpImg.Transform = new ScaleTransform(scale, scale);
+        tbmpImg.EndInit();
+        tbmpImg.Freeze();
+        return BitmapSourceToBitmap(tbmpImg);
+
     }
 
     public async static Task<double> GetIdealScaleFactor(Bitmap bitmap)
@@ -297,21 +300,20 @@ public static class ImageMethods
         List<double> heightsList = new();
         double scaleFactor = 1.5;
 
-        await using (MemoryStream memory = new())
-        {
-            bitmap.Save(memory, ImageFormat.Bmp);
-            memory.Position = 0;
-            BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
-            SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
-            Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+        await using MemoryStream memory = new();
 
-            OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
-            OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+        bitmap.Save(memory, ImageFormat.Bmp);
+        memory.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+        SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+        Language? selectedLanguage = ImageMethods.GetOCRLanguage();
 
-            foreach (OcrLine ocrLine in ocrResult.Lines)
-                foreach (OcrWord ocrWord in ocrLine.Words)
-                    heightsList.Add(ocrWord.BoundingRect.Height);
-        }
+        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
+        OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
+        foreach (OcrLine ocrLine in ocrResult.Lines)
+            foreach (OcrWord ocrWord in ocrLine.Words)
+                heightsList.Add(ocrWord.BoundingRect.Height);
 
         double lineHeight = 10;
 
