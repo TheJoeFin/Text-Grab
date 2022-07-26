@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -72,6 +73,13 @@ public partial class FullscreenGrab : Window
         TopButtonsStackPanel.Visibility = Visibility.Visible;
 
         LoadOcrLanguages();
+    }
+
+    private void Window_Unloaded(object sender, RoutedEventArgs e)
+    {
+        BackgroundImage.Source = null;
+        this.KeyDown -= FullscreenGrab_KeyDown;
+        this.KeyUp -= FullscreenGrab_KeyUp;
     }
 
     private void LoadOcrLanguages()

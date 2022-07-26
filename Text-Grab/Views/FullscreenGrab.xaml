@@ -10,6 +10,7 @@
     Height="450"
     AllowsTransparency="True"
     Background="Transparent"
+    Unloaded="Window_Unloaded"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
     Topmost="True"
