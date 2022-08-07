@@ -50,7 +50,6 @@ public partial class GrabFrame : Window
     {
         InitializeComponent();
 
-        this.PreviewMouseWheel += HandlePreviewMouseWheel;
         SetRestoreState();
 
         WindowResizer resizer = new(this);
@@ -65,8 +64,54 @@ public partial class GrabFrame : Window
 
     public void GrabFrame_Loaded(object sender, RoutedEventArgs e)
     {
+        this.PreviewMouseWheel += HandlePreviewMouseWheel;
         this.PreviewKeyDown += Window_PreviewKeyDown;
         this.PreviewKeyUp += Window_PreviewKeyUp;
+    }
+
+    public void GrabFrame_Unloaded(object sender, RoutedEventArgs e)
+    {
+        this.Activated -= GrabFrameWindow_Activated;
+        this.Closed -= Window_Closed;
+        this.Deactivated -= GrabFrameWindow_Deactivated;
+        this.DragLeave -= GrabFrameWindow_DragLeave;
+        this.DragOver -= GrabFrameWindow_DragOver;
+        this.Loaded -= GrabFrame_Loaded;
+        this.LocationChanged -= Window_LocationChanged;
+        this.SizeChanged -= Window_SizeChanged;
+        this.Unloaded -= GrabFrame_Unloaded;
+        this.PreviewMouseWheel -= HandlePreviewMouseWheel;
+        this.PreviewKeyDown -= Window_PreviewKeyDown;
+        this.PreviewKeyUp -= Window_PreviewKeyUp;
+
+        reDrawTimer.Stop();
+        reDrawTimer.Tick -= ReDrawTimer_Tick;
+
+        MinimizeButton.Click -= OnMinimizeButtonClick;
+        RestoreButton.Click -= OnRestoreButtonClick;
+        CloseButton.Click -= OnCloseButtonClick;
+
+        RectanglesCanvas.MouseDown -= RectanglesCanvas_MouseDown;
+        RectanglesCanvas.MouseMove -= RectanglesCanvas_MouseMove;
+        RectanglesCanvas.MouseUp -= RectanglesCanvas_MouseUp;
+
+        AspectRationMI.Checked -= AspectRationMI_Checked;
+        AspectRationMI.Unchecked -= AspectRationMI_Checked;
+        FreezeMI.Click -= FreezeMI_Click;
+
+        SearchBox.GotFocus -= SearchBox_GotFocus;
+        SearchBox.TextChanged -= SearchBox_TextChanged;
+
+        ClearBTN.Click -= ClearBTN_Click;
+        ExactMatchChkBx.Click -= ExactMatchChkBx_Click;
+
+        RefreshBTN.Click -= RefreshBTN_Click;
+        FreezeToggleButton.Click -= FreezeToggleButton_Click;
+        TableToggleButton.Click -= TableToggleButton_Click;
+        EditToggleButton.Click -= EditToggleButton_Click;
+        SettingsBTN.Click -= SettingsBTN_Click;
+        EditTextBTN.Click -= EditTextBTN_Click;
+        GrabBTN.Click -= GrabBTN_Click;
     }
 
     private void Window_PreviewKeyUp(object sender, KeyEventArgs e)

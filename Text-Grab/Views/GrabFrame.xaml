@@ -27,6 +27,7 @@
     ResizeMode="CanResizeWithGrip"
     SizeChanged="Window_SizeChanged"
     Topmost="True"
+    Unloaded="GrabFrame_Unloaded"
     WindowStartupLocation="CenterOwner"
     WindowStyle="None"
     mc:Ignorable="d">
@@ -98,6 +99,7 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <Button
+                        x:Name="MinimizeButton"
                         Grid.Column="2"
                         Width="46"
                         Height="24"
@@ -110,6 +112,7 @@
                             Text="" />
                     </Button>
                     <Button
+                        x:Name="RestoreButton"
                         Grid.Column="2"
                         Width="46"
                         Height="24"
@@ -123,6 +126,7 @@
                             Text="" />
                     </Button>
                     <Button
+                        x:Name="CloseButton"
                         Grid.Column="2"
                         Width="46"
                         Height="24"
