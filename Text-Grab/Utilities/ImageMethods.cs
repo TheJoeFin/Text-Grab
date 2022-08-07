@@ -33,7 +33,7 @@ public static class ImageMethods
         int height = Math.Max(image.Height + 16, minH + 16);
 
         // Create a compatible bitmap
-        Bitmap dest = new(width, height, image.PixelFormat);
+        using Bitmap dest = new(width, height, image.PixelFormat);
         using Graphics gd = Graphics.FromImage(dest);
 
         gd.Clear(image.GetPixel(0, 0));
@@ -51,7 +51,8 @@ public static class ImageMethods
         BitmapEncoder enc = new BmpBitmapEncoder();
         enc.Frames.Add(BitmapFrame.Create(bitmapImage));
         enc.Save(outStream);
-        Bitmap bitmap = new(outStream);
+        using Bitmap bitmap = new(outStream);
+        outStream.Flush();
 
         return new Bitmap(bitmap);
     }
@@ -69,13 +70,15 @@ public static class ImageMethods
         bitmapimage.EndInit();
         bitmapimage.Freeze();
 
+        memory.Flush();
+
         return bitmapimage;
     }
 
     internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
     {
         Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        Graphics g = Graphics.FromImage(bmp);
+        using Graphics g = Graphics.FromImage(bmp);
 
         System.Windows.Point absPosPoint;
 
@@ -121,25 +124,26 @@ public static class ImageMethods
             windowHeight -= (int)(70 * dpi.DpiScaleY);
         }
 
-        Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        Graphics g = Graphics.FromImage(bmp);
+        using Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+
         return BitmapToImageSource(bmp);
     }
 
     internal static async Task<string> GetClickedWord(Window passedWindow, System.Windows.Point clickedPoint, Language? OcrLang)
     {
         DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
-        Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        Graphics g = Graphics.FromImage(bmp);
+        using Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
 
         System.Windows.Point absPosPoint = passedWindow.GetAbsolutePosition();
         int thisCorrectedLeft = (int)absPosPoint.X;
         int thisCorrectedTop = (int)absPosPoint.Y;
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-
+        
         System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
         string ocrText = await ExtractText(bmp, adjustedPoint, OcrLang);
@@ -167,7 +171,7 @@ public static class ImageMethods
         CultureInfo culture = lang.GetEquivalentCulture();
 
         double scale = await GetIdealScaleFactor(bmp);
-        Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
+        using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
         if (singlePoint is not null)
             singlePoint = new System.Windows.Point(singlePoint.Value.X * scale, singlePoint.Value.Y * scale);
 
@@ -178,7 +182,9 @@ public static class ImageMethods
         scaledBitmap.Save(memory, ImageFormat.Bmp);
         memory.Position = 0;
         BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
-        SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+        await memory.FlushAsync();
 
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
         OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
@@ -250,13 +256,13 @@ public static class ImageMethods
             return (null, 0.0);
         }
 
-        Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        Graphics g = Graphics.FromImage(bmp);
+        using Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
         double scale = await GetIdealScaleFactor(bmp);
-        Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
+        using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
 
         OcrResult? ocrResult;
         await using MemoryStream memory = new();
@@ -264,7 +270,9 @@ public static class ImageMethods
         scaledBitmap.Save(memory, ImageFormat.Bmp);
         memory.Position = 0;
         BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
-        SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+        await memory.FlushAsync();
 
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
         ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
@@ -284,8 +292,10 @@ public static class ImageMethods
         bitmapimage.CacheOption = BitmapCacheOption.None;
         bitmapimage.EndInit();
         bitmapimage.Freeze();
-        TransformedBitmap tbmpImg = new();
 
+        memory.Flush();
+
+        TransformedBitmap tbmpImg = new();
         tbmpImg.BeginInit();
         tbmpImg.Source = bitmapimage;
         tbmpImg.Transform = new ScaleTransform(scale, scale);
@@ -305,8 +315,10 @@ public static class ImageMethods
         bitmap.Save(memory, ImageFormat.Bmp);
         memory.Position = 0;
         BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
-        SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
         Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+
+        memory.Flush();
 
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
         OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);

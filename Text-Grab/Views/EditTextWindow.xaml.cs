@@ -364,11 +364,10 @@ public partial class EditTextWindow : Window
         OpenedFilePath = pathOfFileToOpen;
         Title = $"Edit Text | {pathOfFileToOpen.Split('\\').LastOrDefault()}";
 
-        using (StreamReader sr = File.OpenText(pathOfFileToOpen))
-        {
-            string s = await sr.ReadToEndAsync();
-            PassedTextControl.Text = s;
-        }
+        using StreamReader sr = File.OpenText(pathOfFileToOpen);
+        
+        string s = await sr.ReadToEndAsync();
+        PassedTextControl.Text = s;
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -1247,6 +1246,7 @@ public partial class EditTextWindow : Window
             try
             {
                 BitmapImage droppedImage = new(fileURI);
+                droppedImage.Freeze();
                 Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
                 ocrResults.AppendLine(await ImageMethods.ExtractText(bmp));
             }
@@ -1353,6 +1353,7 @@ public partial class EditTextWindow : Window
         try
         {
             BitmapImage droppedImage = new(fileURI);
+            droppedImage.Freeze();
             Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
             PassedTextControl.AppendText(await ImageMethods.ExtractText(bmp));
         }
@@ -1412,24 +1413,23 @@ public partial class EditTextWindow : Window
 
         int nulCount = 0;
 
-        using (var streamReader = new StreamReader(filePath))
+        using StreamReader streamReader = new(filePath);
+        
+        for (var i = 0; i < charsToCheck; i++)
         {
-            for (var i = 0; i < charsToCheck; i++)
+            if (streamReader.EndOfStream)
+                return false;
+
+            if ((char)streamReader.Read() == nulChar)
             {
-                if (streamReader.EndOfStream)
-                    return false;
+                nulCount++;
 
-                if ((char)streamReader.Read() == nulChar)
-                {
-                    nulCount++;
-
-                    if (nulCount >= requiredConsecutiveNul)
-                        return true;
-                }
-                else
-                {
-                    nulCount = 0;
-                }
+                if (nulCount >= requiredConsecutiveNul)
+                    return true;
+            }
+            else
+            {
+                nulCount = 0;
             }
         }
 
