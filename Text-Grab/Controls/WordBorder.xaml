@@ -10,6 +10,7 @@
     d:DesignWidth="80"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
     MouseDown="WordBorderControl_MouseDown"
+    Unloaded="WordBorderControl_Unloaded"
     mc:Ignorable="d">
     <Border
         x:Name="WordBorderBorder"

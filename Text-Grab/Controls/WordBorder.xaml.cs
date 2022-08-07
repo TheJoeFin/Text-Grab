@@ -18,8 +18,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public bool WasRegionSelected { get; set; } = false;
 
-    // public string Word { get; set; } = "";
-
     public bool IsEditing { get; set; } = false;
 
     public string Word
@@ -35,7 +33,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     // Using a DependencyProperty as the backing store for Word.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty WordProperty =
         DependencyProperty.Register("Word", typeof(string), typeof(WordBorder), new PropertyMetadata(""));
-
 
 
     public int LineNumber { get; set; } = 0;
@@ -127,5 +124,15 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
     {
         Word = Word.TryFixToLetters();
+    }
+
+    private void WordBorderControl_Unloaded(object sender, RoutedEventArgs e)
+    {
+        this.MouseDoubleClick -= WordBorderControl_MouseDoubleClick;
+        this.MouseDown -= WordBorderControl_MouseDown;
+        this.Unloaded -= WordBorderControl_Unloaded;
+
+        TryToAlphaMenuItem.Click -= TryToAlphaMenuItem_Click;
+        TryToNumberMenuItem.Click -= TryToNumberMenuItem_Click;
     }
 }
