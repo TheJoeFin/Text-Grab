@@ -78,6 +78,29 @@ public partial class FullscreenGrab : Window
     private void Window_Unloaded(object sender, RoutedEventArgs e)
     {
         BackgroundImage.Source = null;
+        this.Loaded -= Window_Loaded;
+        this.Unloaded -= Window_Unloaded;
+
+        RegionClickCanvas.MouseDown -= RegionClickCanvas_MouseDown;
+        RegionClickCanvas.MouseMove -= RegionClickCanvas_MouseMove;
+        RegionClickCanvas.MouseUp -= RegionClickCanvas_MouseUp;
+
+        SingleLineMenuItem.Click -= SingleLineMenuItem_Click;
+        FreezeMenuItem.Click -= FreezeMenuItem_Click;
+        NewGrabFrameMenuItem.Click -= NewGrabFrameMenuItem_Click;
+        NewEditTextMenuItem.Click -= NewEditTextMenuItem_Click;
+        SettingsMenuItem.Click -= SettingsMenuItem_Click;
+        CancelMenuItem.Click -= CancelMenuItem_Click;
+
+        LanguagesComboBox.SelectionChanged -= LanguagesComboBox_SelectionChanged;
+
+        SingleLineToggleButton.Click -= SingleLineMenuItem_Click;
+        FreezeToggleButton.Click -= FreezeMenuItem_Click;
+        NewGrabFrameToggleButton.Click -= NewGrabFrameMenuItem_Click;
+        NewEditTextButton.Click -= NewEditTextMenuItem_Click;
+        SettingsButton.Click -= SettingsMenuItem_Click;
+        CancelButton.Click -= CancelMenuItem_Click;
+
         this.KeyDown -= FullscreenGrab_KeyDown;
         this.KeyUp -= FullscreenGrab_KeyUp;
     }
