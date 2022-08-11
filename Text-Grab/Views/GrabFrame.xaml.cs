@@ -303,7 +303,7 @@ public partial class GrabFrame : Window
         MatchesTXTBLK.Text = "Matches: 0";
     }
 
-    private void Window_LocationChanged(object sender, EventArgs e)
+    private void Window_LocationChanged(object? sender, EventArgs e)
     {
         if (IsLoaded == false || IsFreezeMode == true)
             return;
@@ -342,7 +342,7 @@ public partial class GrabFrame : Window
         }
     }
 
-    private void GrabFrameWindow_Deactivated(object sender, EventArgs e)
+    private void GrabFrameWindow_Deactivated(object? sender, EventArgs e)
     {
         if (IsWordEditMode != true && IsFreezeMode != true)
             ResetGrabFrame();
@@ -910,7 +910,7 @@ public partial class GrabFrame : Window
         WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
     }
 
-    private void GrabFrameWindow_Activated(object sender, EventArgs e)
+    private void GrabFrameWindow_Activated(object? sender, EventArgs e)
     {
         if (IsWordEditMode != true && IsFreezeMode != true)
             reDrawTimer.Start();
