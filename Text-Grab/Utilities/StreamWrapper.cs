@@ -88,27 +88,27 @@ public class WrappingStream : Stream
     /// <summary>
     /// Begins an asynchronous read operation.
     /// </summary>
-    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
     {
         ThrowIfDisposed();
 
-        if (m_streamBase is not null)
+        if (m_streamBase is not null && callback is not null && state is not null)
             return m_streamBase.BeginRead(buffer, offset, count, callback, state);
 
-        return null;
+        return new NullAsyncResult();
     }
 
     /// <summary>
     /// Begins an asynchronous write operation.
     /// </summary>
-    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
     {
         ThrowIfDisposed();
 
-        if (m_streamBase is not null)
+        if (m_streamBase is not null && callback is not null && state is not null)
             return m_streamBase.BeginWrite(buffer, offset, count, callback, state);
 
-        return null;
+        return new NullAsyncResult();
     }
 
     /// <summary>
