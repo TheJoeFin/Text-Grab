@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
@@ -47,12 +48,13 @@ public static class ImageMethods
         // BitmapImage bitmapImage = new BitmapImage(new Uri("../Images/test.png", UriKind.Relative));
 
         using MemoryStream outStream = new();
+        using WrappingStream wrapper = new(outStream);
 
         BitmapEncoder enc = new BmpBitmapEncoder();
         enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-        enc.Save(outStream);
-        using Bitmap bitmap = new(outStream);
-        outStream.Flush();
+        enc.Save(wrapper);
+        using Bitmap bitmap = new(wrapper);
+        wrapper.Flush();
 
         return new Bitmap(bitmap);
     }
@@ -60,24 +62,27 @@ public static class ImageMethods
     internal static BitmapImage BitmapToImageSource(Bitmap bitmap)
     {
         using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
-        bitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
+        bitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
         BitmapImage bitmapimage = new();
         bitmapimage.BeginInit();
-        bitmapimage.StreamSource = memory;
+        bitmapimage.StreamSource = wrapper;
         bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
         bitmapimage.EndInit();
+        bitmapimage.StreamSource = null;
         bitmapimage.Freeze();
 
         memory.Flush();
+        wrapper.Flush();
 
         return bitmapimage;
     }
 
     internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
     {
-        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
 
         System.Windows.Point absPosPoint;
@@ -91,7 +96,7 @@ public static class ImageMethods
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-        bmp = PadImage(bmp);
+        // bmp = PadImage(bmp);
 
         string? ocrText = await ExtractText(bmp, null, language);
 
@@ -143,7 +148,7 @@ public static class ImageMethods
         int thisCorrectedTop = (int)absPosPoint.Y;
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-        
+
         System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
         string ocrText = await ExtractText(bmp, adjustedPoint, OcrLang);
@@ -170,7 +175,10 @@ public static class ImageMethods
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
         CultureInfo culture = lang.GetEquivalentCulture();
 
-        double scale = await GetIdealScaleFactor(bmp);
+        double scale = 1.0;
+        try { scale = await GetIdealScaleFactor(bmp); }
+        catch (Exception ex) { Debug.WriteLine($"Failed to get ideal scale factor: {ex.Message}"); }
+
         using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
         if (singlePoint is not null)
             singlePoint = new System.Windows.Point(singlePoint.Value.X * scale, singlePoint.Value.Y * scale);
@@ -178,13 +186,14 @@ public static class ImageMethods
         StringBuilder text = new();
 
         await using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
         scaledBitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
-        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+        wrapper.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(wrapper.AsRandomAccessStream());
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
-        await memory.FlushAsync();
+        await wrapper.FlushAsync();
 
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
         OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
@@ -261,18 +270,21 @@ public static class ImageMethods
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
-        double scale = await GetIdealScaleFactor(bmp);
+        double scale = 1;
+        try { scale = await GetIdealScaleFactor(bmp); }
+        catch (Exception ex) { Debug.WriteLine($"Failed to get ideal scale factor: {ex.Message}"); }
         using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
 
         OcrResult? ocrResult;
         await using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
-        scaledBitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
-        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+        scaledBitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(wrapper.AsRandomAccessStream());
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
-        await memory.FlushAsync();
+        await wrapper.FlushAsync();
 
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
         ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
@@ -283,17 +295,18 @@ public static class ImageMethods
     public static Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)
     {
         using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
-        passedBitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
+        passedBitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
         BitmapImage bitmapimage = new();
         bitmapimage.BeginInit();
-        bitmapimage.StreamSource = memory;
+        bitmapimage.StreamSource = wrapper;
         bitmapimage.CacheOption = BitmapCacheOption.None;
         bitmapimage.EndInit();
         bitmapimage.Freeze();
 
-        memory.Flush();
+        wrapper.Flush();
 
         TransformedBitmap tbmpImg = new();
         tbmpImg.BeginInit();
@@ -310,15 +323,16 @@ public static class ImageMethods
         List<double> heightsList = new();
         double scaleFactor = 1.5;
 
-        await using MemoryStream memory = new();
+        using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
-        bitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
-        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+        bitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(wrapper.AsRandomAccessStream());
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
         Language? selectedLanguage = ImageMethods.GetOCRLanguage();
 
-        memory.Flush();
+        wrapper.Flush();
 
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
         OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
