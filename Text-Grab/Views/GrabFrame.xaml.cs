@@ -53,7 +53,7 @@ public partial class GrabFrame : Window
         SetRestoreState();
 
         WindowResizer resizer = new(this);
-        reDrawTimer.Interval = new(0, 0, 0, 0, 1500);
+        reDrawTimer.Interval = new(0, 0, 0, 0, 500);
         reDrawTimer.Tick += ReDrawTimer_Tick;
         reDrawTimer.Start();
 
@@ -139,15 +139,26 @@ public partial class GrabFrame : Window
         // Source: StackOverflow, read on Sep. 10, 2021
         // https://stackoverflow.com/a/53698638/7438031
 
+        if (this.WindowState == WindowState.Maximized)
+            return;
+
         e.Handled = true;
+        ResetGrabFrame();
         double aspectRatio = (this.Height - 66) / (this.Width - 4);
+
+        bool isShiftDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+        bool isCtrlDown = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
 
         if (e.Delta > 0)
         {
             this.Width += 100;
             this.Left -= 50;
-            this.Height += 100 * aspectRatio;
-            this.Top -= 50 * aspectRatio;
+
+            if (!isShiftDown)
+            {
+                this.Height += 100 * aspectRatio;
+                this.Top -= 50 * aspectRatio;
+            }
         }
         else if (e.Delta < 0)
         {
@@ -155,8 +166,12 @@ public partial class GrabFrame : Window
             {
                 this.Width -= 100;
                 this.Left += 50;
-                this.Height -= 100 * aspectRatio;
-                this.Top += 50 * aspectRatio;
+
+                if (!isShiftDown)
+                {
+                    this.Height -= 100 * aspectRatio;
+                    this.Top += 50 * aspectRatio;
+                }
             }
         }
     }
@@ -310,6 +325,7 @@ public partial class GrabFrame : Window
 
         ResetGrabFrame();
 
+        reDrawTimer.Stop();
         reDrawTimer.Start();
     }
 
@@ -322,6 +338,7 @@ public partial class GrabFrame : Window
         CheckBottomRowButtonsVis();
         SetRestoreState();
 
+        reDrawTimer.Stop();
         reDrawTimer.Start();
     }
 
