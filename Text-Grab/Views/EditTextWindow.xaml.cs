@@ -364,10 +364,17 @@ public partial class EditTextWindow : Window
         OpenedFilePath = pathOfFileToOpen;
         Title = $"Edit Text | {pathOfFileToOpen.Split('\\').LastOrDefault()}";
 
-        using StreamReader sr = File.OpenText(pathOfFileToOpen);
-        
-        string s = await sr.ReadToEndAsync();
-        PassedTextControl.Text = s;
+        try
+        {
+            using StreamReader sr = File.OpenText(pathOfFileToOpen);
+
+            string s = await sr.ReadToEndAsync();
+            PassedTextControl.Text = s;
+        }
+        catch (System.Exception ex)
+        {
+            System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+        }
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -1413,25 +1420,29 @@ public partial class EditTextWindow : Window
 
         int nulCount = 0;
 
-        using StreamReader streamReader = new(filePath);
-        
-        for (var i = 0; i < charsToCheck; i++)
+        try
         {
-            if (streamReader.EndOfStream)
-                return false;
+            using StreamReader streamReader = new(filePath);
 
-            if ((char)streamReader.Read() == nulChar)
+            for (var i = 0; i < charsToCheck; i++)
             {
-                nulCount++;
+                if (streamReader.EndOfStream)
+                    return false;
 
-                if (nulCount >= requiredConsecutiveNul)
-                    return true;
-            }
-            else
-            {
-                nulCount = 0;
+                if ((char)streamReader.Read() == nulChar)
+                {
+                    nulCount++;
+
+                    if (nulCount >= requiredConsecutiveNul)
+                        return true;
+                }
+                else
+                {
+                    nulCount = 0;
+                }
             }
         }
+        catch (System.Exception) { }
 
         return false;
     }
