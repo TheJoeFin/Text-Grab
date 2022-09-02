@@ -95,7 +95,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             return;
         }
 
-        Clipboard.SetDataObject(Word, true);
+        try { Clipboard.SetDataObject(Word, true); } catch { }
 
         if (Settings.Default.ShowToast
             && IsFromEditWindow == false)

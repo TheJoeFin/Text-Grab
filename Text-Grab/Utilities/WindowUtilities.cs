@@ -94,9 +94,6 @@ public static class WindowUtilities
                         (int)(window.Left + (window.Width / 2)),
                         (int)(window.Top + (window.Height / 2)));
                 screenHasWindow = screen.Bounds.Contains(windowCenter);
-
-                // if (window is EditTextWindow)
-                //     isEditWindowOpen = true;
             }
 
             if (allWindows.Count < 1)

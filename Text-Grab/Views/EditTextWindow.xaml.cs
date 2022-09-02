@@ -443,7 +443,7 @@ public partial class EditTextWindow : Window
     private void CopyCloseBTN_Click(object sender, RoutedEventArgs e)
     {
         string clipboardText = PassedTextControl.Text;
-        System.Windows.Clipboard.SetDataObject(clipboardText, true);
+        try { System.Windows.Clipboard.SetDataObject(clipboardText, true); } catch { }
         this.Close();
     }
 

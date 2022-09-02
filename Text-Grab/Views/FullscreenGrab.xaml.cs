@@ -461,7 +461,7 @@ public partial class FullscreenGrab : Window
 
             if (Settings.Default.NeverAutoUseClipboard == false
                 && EditWindow is null)
-                Clipboard.SetDataObject(grabbedText, true);
+                try { Clipboard.SetDataObject(grabbedText, true); } catch { }
 
             if (Settings.Default.ShowToast
                 && EditWindow is null)
