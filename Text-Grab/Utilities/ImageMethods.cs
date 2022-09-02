@@ -33,7 +33,7 @@ public static class ImageMethods
         int height = Math.Max(image.Height + 16, minH + 16);
 
         // Create a compatible bitmap
-        using Bitmap dest = new(width, height, image.PixelFormat);
+        Bitmap dest = new(width, height, image.PixelFormat);
         using Graphics gd = Graphics.FromImage(dest);
 
         gd.Clear(image.GetPixel(0, 0));
@@ -77,9 +77,6 @@ public static class ImageMethods
 
     internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
     {
-        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics g = Graphics.FromImage(bmp);
-
         System.Windows.Point absPosPoint;
 
         if (passedWindow == null)
@@ -89,6 +86,9 @@ public static class ImageMethods
 
         int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
+
+        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
         bmp = PadImage(bmp);
@@ -143,7 +143,7 @@ public static class ImageMethods
         int thisCorrectedTop = (int)absPosPoint.Y;
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-        
+
         System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
 
         string ocrText = await ExtractText(bmp, adjustedPoint, OcrLang);
@@ -311,7 +311,6 @@ public static class ImageMethods
         double scaleFactor = 1.5;
 
         await using MemoryStream memory = new();
-
         bitmap.Save(memory, ImageFormat.Bmp);
         memory.Position = 0;
         BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
