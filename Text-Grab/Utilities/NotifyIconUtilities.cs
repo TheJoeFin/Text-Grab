@@ -94,6 +94,7 @@ public static class NotifyIconUtilities
         if (editWindowKey is not null)
             app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(editWindowKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
 
+        app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(Keys.Q, KeyModifiers.Windows | KeyModifiers.Shift));
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
 
@@ -132,21 +133,27 @@ public static class NotifyIconUtilities
                 etw.Activate();
             }));
         }
-
-        if (e.Key == fullscreenKey.Value)
+        else if (e.Key == fullscreenKey.Value)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 WindowUtilities.LaunchFullScreenGrab(true);
             }));
         }
-
-        if (e.Key == grabFrameKey.Value)
+        else if (e.Key == grabFrameKey.Value)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 GrabFrame gf = new();
                 gf.Show();
+            }));
+        }
+        else if (e.Key == Keys.Q)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                QuickSimpleLookup qsl = new();
+                qsl.Show();
             }));
         }
     }
