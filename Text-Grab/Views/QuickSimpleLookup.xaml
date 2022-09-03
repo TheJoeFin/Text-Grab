@@ -17,10 +17,26 @@
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBox
-            x:Name="SearchBox"
-            Grid.Row="0"
-            TextChanged="SearchBox_TextChanged" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBox
+                x:Name="SearchBox"
+                Grid.Column="0"
+                Height="28"
+                Padding="4"
+                PreviewKeyDown="SearchBox_PreviewKeyDown"
+                VerticalAlignment="Center"
+                TextChanged="SearchBox_TextChanged" />
+            <Button
+                x:Name="ParseBTN"
+                Grid.Column="1"
+                Click="ParseBTN_Click"
+                Content="Parse 📋" />
+        </Grid>
         <DataGrid
             x:Name="MainDataGrid"
             Grid.Row="1"

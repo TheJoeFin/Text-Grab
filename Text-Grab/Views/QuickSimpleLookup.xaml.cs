@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using Text_Grab.Models;
 
 namespace Text_Grab.Views;
 
@@ -35,6 +29,8 @@ public partial class QuickSimpleLookup : Window
 
         MainDataGrid.ItemsSource = null;
         MainDataGrid.ItemsSource = ItemsDictionary;
+
+        SearchBox.Focus();
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -51,28 +47,76 @@ public partial class QuickSimpleLookup : Window
 
         foreach (LookupItem lItem in ItemsDictionary)
         {
-            if (lItem.shortValue.Contains(searchingBox.Text) || lItem.longValue.Contains(searchingBox.Text))
+            if (lItem.shortValue.ToLower().Contains(searchingBox.Text.ToLower())
+                || lItem.longValue.ToLower().Contains(searchingBox.Text.ToLower()))
                 filteredList.Add(lItem);
         }
 
         MainDataGrid.ItemsSource = filteredList;
     }
-}
 
-
-public class LookupItem
-{
-    public string shortValue { get; set; } = string.Empty;
-    public string longValue { get; set; } = string.Empty;
-
-    public LookupItem()
+    private void ParseBTN_Click(object sender, RoutedEventArgs e)
     {
+        string clipboardContent = Clipboard.GetText();
 
+        if (string.IsNullOrEmpty(clipboardContent)) return;
+
+        MainDataGrid.ItemsSource = null;
+
+        List<string> rows = clipboardContent.Split(Environment.NewLine).ToList();
+
+        foreach (string row in rows)
+        {
+            List<string> cells = row.Split('\t').ToList();
+            LookupItem newRow = new LookupItem();
+            if (cells.FirstOrDefault() is String firstCell)
+                newRow.shortValue = firstCell;
+
+            newRow.longValue = "";
+            if (cells.Count > 1 && cells[1] is String)
+                newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+
+            ItemsDictionary.Add(newRow);
+        }
+
+        MainDataGrid.ItemsSource = ItemsDictionary;
     }
 
-    public LookupItem(string sv, string lv)
+    private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        shortValue = sv;
-        longValue = lv;
+        if (e.Key == Key.Enter
+            && sender is TextBox searchbox)
+        {
+            e.Handled = true;
+
+            if (string.IsNullOrEmpty(searchbox.Text))
+            {
+                this.Close();
+                return;
+            }
+
+            if (MainDataGrid.ItemsSource is List<LookupItem> lookUpList 
+                && lookUpList.FirstOrDefault() is LookupItem firstLookupItem)
+            {
+                string textVal = firstLookupItem.longValue as string;
+
+                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                    textVal = firstLookupItem.shortValue as string;
+
+                if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+                    textVal = String.Join(" ", new string[] { firstLookupItem.shortValue as string, firstLookupItem.longValue as string });
+
+                try
+                {
+                    Clipboard.SetText(textVal);
+                    this.Close();
+                }
+                catch (Exception)
+                {
+                    Debug.WriteLine("Failed to set clipboard text");
+                }
+            }
+
+        }
     }
 }
