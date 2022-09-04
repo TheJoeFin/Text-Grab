@@ -9,6 +9,7 @@
     Width="800"
     Height="400"
     Background="{StaticResource DarkBackground}"
+    Closing="Window_Closing"
     Loaded="Window_Loaded"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -17,6 +18,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -42,20 +44,33 @@
             x:Name="MainDataGrid"
             Grid.Row="1"
             AutoGenerateColumns="False"
+            Background="Transparent"
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
-            ItemsSource="{Binding Source=ItemsDictionary}">
+            ItemsSource="{Binding Source=ItemsDictionary}"
+            MinRowHeight="14"
+            RowBackground="Transparent">
             <DataGrid.Columns>
                 <DataGridTextColumn
                     Width="*"
                     Binding="{Binding shortValue}"
+                    Foreground="White"
                     Header="Left Value" />
                 <DataGridTextColumn
                     Width="3*"
                     Binding="{Binding longValue}"
+                    Foreground="White"
                     Header="Right Value" />
             </DataGrid.Columns>
         </DataGrid>
+
+        <TextBlock
+            x:Name="RowCountTextBlock"
+            Grid.Row="2"
+            Padding="2"
+            HorizontalAlignment="Center"
+            Foreground="White"
+            Text="0 Rows" />
     </Grid>
 </Window>

@@ -15,4 +15,8 @@ public class LookupItem
         shortValue = sv;
         longValue = lv;
     }
+
+    public override string ToString() => $"{shortValue} {longValue}";
+
+    public string ToCSVString() => $"{shortValue},{longValue}";
 }

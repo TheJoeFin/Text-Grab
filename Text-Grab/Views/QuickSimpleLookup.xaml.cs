@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.IO.IsolatedStorage;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -16,20 +20,27 @@ public partial class QuickSimpleLookup : Window
 {
     public List<LookupItem> ItemsDictionary { get; set; } = new List<LookupItem>();
 
+    string cacheFilename = "QuickSimpleLookupCache.csv";
+
     public QuickSimpleLookup()
     {
         InitializeComponent();
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        ItemsDictionary.Add(new LookupItem("T1234-55", "hello there"));
-        ItemsDictionary.Add(new LookupItem("T2345-66", "it me"));
-        ItemsDictionary.Add(new LookupItem("T3456-77", "here we go"));
+        string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
+        string cachePath = $"{exePath}\\{cacheFilename}";
+        if (File.Exists(cachePath))
+        {
+            string cacheRAW = await File.ReadAllTextAsync(cachePath);
+            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
+        }
 
         MainDataGrid.ItemsSource = null;
         MainDataGrid.ItemsSource = ItemsDictionary;
 
+        UpdateRowCount();
         SearchBox.Focus();
     }
 
@@ -53,6 +64,14 @@ public partial class QuickSimpleLookup : Window
         }
 
         MainDataGrid.ItemsSource = filteredList;
+
+        UpdateRowCount();
+    }
+
+    private void UpdateRowCount()
+    {
+        if (MainDataGrid.ItemsSource is List<LookupItem> list)
+            RowCountTextBlock.Text = $"{list.Count} Rows";
     }
 
     private void ParseBTN_Click(object sender, RoutedEventArgs e)
@@ -63,11 +82,20 @@ public partial class QuickSimpleLookup : Window
 
         MainDataGrid.ItemsSource = null;
 
+        ItemsDictionary.AddRange(ParseStringToRows(clipboardContent));
+
+        MainDataGrid.ItemsSource = ItemsDictionary;
+    }
+
+    private static IEnumerable<LookupItem> ParseStringToRows(string clipboardContent, bool isCSV = false)
+    {
         List<string> rows = clipboardContent.Split(Environment.NewLine).ToList();
+
+        char splitChar = isCSV ? ',' : '\t';
 
         foreach (string row in rows)
         {
-            List<string> cells = row.Split('\t').ToList();
+            List<string> cells = row.Split(splitChar).ToList();
             LookupItem newRow = new LookupItem();
             if (cells.FirstOrDefault() is String firstCell)
                 newRow.shortValue = firstCell;
@@ -76,10 +104,9 @@ public partial class QuickSimpleLookup : Window
             if (cells.Count > 1 && cells[1] is String)
                 newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
 
-            ItemsDictionary.Add(newRow);
+            if (!string.IsNullOrWhiteSpace(newRow.ToString()))
+                yield return newRow;
         }
-
-        MainDataGrid.ItemsSource = ItemsDictionary;
     }
 
     private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -135,5 +162,24 @@ public partial class QuickSimpleLookup : Window
                 Debug.WriteLine("Failed to set clipboard text");
             }
         }
+    }
+
+    private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        await WriteDataToCSV();
+    }
+
+    private async Task WriteDataToCSV()
+    {
+        string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
+
+        StringBuilder csvContents = new();
+
+        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave) return;
+
+        foreach (LookupItem lookupItem in itemsToSave)
+            csvContents.AppendLine(lookupItem.ToCSVString());
+
+        await File.WriteAllTextAsync($"{exePath}\\{cacheFilename}", csvContents.ToString());
     }
 }
