@@ -140,6 +140,5 @@ public partial class App : System.Windows.Application
         // unhandled exceptions thrown from UI thread
         Debug.WriteLine($"Unhandled exception: {e.Exception}");
         e.Handled = true;
-        Current.Shutdown();
     }
 }

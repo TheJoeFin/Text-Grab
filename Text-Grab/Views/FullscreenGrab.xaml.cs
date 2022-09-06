@@ -402,6 +402,10 @@ public partial class FullscreenGrab : Window
             (int)(selectBorder.Width * m.M11),
             (int)(selectBorder.Height * m.M22));
 
+        clippingGeometry.Rect = new Rect(
+            new System.Windows.Point(0, 0),
+            new System.Windows.Size(0, 0));
+
         string grabbedText = "";
 
         if (NewGrabFrameMenuItem.IsChecked == true)
@@ -475,9 +479,6 @@ public partial class FullscreenGrab : Window
         else
         {
             BackgroundBrush.Opacity = .2;
-            clippingGeometry.Rect = new Rect(
-            new System.Windows.Point(0, 0),
-            new System.Windows.Size(0, 0));
         }
     }
 
