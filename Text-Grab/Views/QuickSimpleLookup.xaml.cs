@@ -51,7 +51,14 @@ public partial class QuickSimpleLookup : Window
         MainDataGrid.ItemsSource = null;
 
         if (string.IsNullOrEmpty(searchingBox.Text))
+        {
             MainDataGrid.ItemsSource = ItemsDictionary;
+            MainDataGrid.CanUserAddRows = true;
+        }
+        else
+        {
+            MainDataGrid.CanUserAddRows = false;
+        }
 
 
         List<LookupItem> filteredList = new List<LookupItem>();
@@ -171,6 +178,9 @@ public partial class QuickSimpleLookup : Window
 
     private async Task WriteDataToCSV()
     {
+        if (SearchBox.Text is string text && !string.IsNullOrEmpty(text))
+            return;
+
         string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
 
         StringBuilder csvContents = new();
