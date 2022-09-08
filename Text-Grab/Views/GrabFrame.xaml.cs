@@ -383,6 +383,9 @@ public partial class GrabFrame : Window
 
         isDrawing = true;
 
+        if (string.IsNullOrWhiteSpace(searchWord))
+            searchWord = SearchBox.Text;
+
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
 
@@ -901,7 +904,7 @@ public partial class GrabFrame : Window
     private void ReSearchTimer_Tick(object? sender, EventArgs e)
     {
         reSearchTimer.Stop();
-        if (SearchBox.Text is not string searchText) return;
+        if (SearchBox.Text is not string searchText || string.IsNullOrWhiteSpace(searchText)) return;
 
         foreach (UIElement uIElement in RectanglesCanvas.Children)
         {
