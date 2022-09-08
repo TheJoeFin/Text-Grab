@@ -29,6 +29,7 @@ public partial class GrabFrame : Window
     private bool isDrawing = false;
     private OcrResult? ocrResultOfWindow;
     private ObservableCollection<WordBorder> wordBorders = new();
+    private DispatcherTimer reSearchTimer = new();
     private DispatcherTimer reDrawTimer = new();
     private bool isSelecting;
     private Point clickedPoint;
@@ -56,6 +57,9 @@ public partial class GrabFrame : Window
         reDrawTimer.Interval = new(0, 0, 0, 0, 500);
         reDrawTimer.Tick += ReDrawTimer_Tick;
         reDrawTimer.Start();
+
+        reSearchTimer.Interval = new(0, 0, 0, 0, 300);
+        reSearchTimer.Tick += ReSearchTimer_Tick;
 
         RoutedCommand newCmd = new();
         _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
@@ -883,13 +887,33 @@ public partial class GrabFrame : Window
 
     }
 
-    private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (IsLoaded == false)
             return;
 
-        if (sender is TextBox searchBox)
-            await DrawRectanglesAroundWords(searchBox.Text);
+        if (sender is not TextBox searchBox) return;
+
+        reSearchTimer.Stop();
+        reSearchTimer.Start();
+    }
+
+    private void ReSearchTimer_Tick(object? sender, EventArgs e)
+    {
+        reSearchTimer.Stop();
+        if (SearchBox.Text is not string searchText) return;
+
+        foreach (UIElement uIElement in RectanglesCanvas.Children)
+        {
+            if (uIElement is WordBorder wb)
+            {
+                if (!string.IsNullOrWhiteSpace(searchText)
+                    && wb.Word.ToLower().Contains(searchText.ToLower()))
+                    wb.Select();
+                else
+                    wb.Deselect();
+            }
+        }
 
         MatchesTXTBLK.Visibility = Visibility.Visible;
     }
