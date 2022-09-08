@@ -11,6 +11,7 @@
     Background="{StaticResource DarkBackground}"
     Closing="Window_Closing"
     Loaded="Window_Loaded"
+    Topmost="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
 

@@ -41,6 +41,8 @@ public partial class QuickSimpleLookup : Window
         MainDataGrid.ItemsSource = ItemsDictionary;
 
         UpdateRowCount();
+        Topmost = false;
+        Activate();
         SearchBox.Focus();
     }
 
@@ -118,7 +120,7 @@ public partial class QuickSimpleLookup : Window
 
     private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        switch(e.Key)
+        switch (e.Key)
         {
             case Key.Enter:
                 e.Handled = true;
