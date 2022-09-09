@@ -175,6 +175,24 @@ public partial class EditTextWindow : Window
             WindowState = WindowState.Minimized;
         }
 
+        if (Settings.Default.EditWindowIsOnTop)
+        {
+            AlwaysOnTop.IsChecked = true;
+            Topmost = true;
+        }
+
+        if (!Settings.Default.EditWindowIsWordWrapOn)
+        {
+            WrapTextMenuItem.IsChecked = false;
+            PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+        }
+
+        if (Settings.Default.EditWindowBottomBarIsHidden)
+        {
+            HideBottomBarMenuItem.IsChecked = true;
+            BottomBar.Visibility = Visibility.Collapsed;
+        }
+
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
     }
@@ -584,6 +602,8 @@ public partial class EditTextWindow : Window
             PassedTextControl.TextWrapping = TextWrapping.Wrap;
         else
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+
+        Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
 
     private void TrimEachLineMenuItem_Click(object sender, RoutedEventArgs e)
@@ -833,18 +853,29 @@ public partial class EditTextWindow : Window
         if (IsLoaded == false)
             return;
 
-        if (Topmost == false)
+        if (sender is MenuItem aotMi && aotMi.IsChecked == true)
             Topmost = true;
         else
             Topmost = false;
+
+        Settings.Default.EditWindowIsOnTop = Topmost;
     }
 
     private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (BottomBar.Visibility == Visibility.Visible)
+        if (IsLoaded == false)
+            return;
+
+        if (sender is MenuItem bbMi && bbMi.IsChecked == true)
+        {
             BottomBar.Visibility = Visibility.Collapsed;
+            Settings.Default.EditWindowBottomBarIsHidden = true;
+        }
         else
+        {
             BottomBar.Visibility = Visibility.Visible;
+            Settings.Default.EditWindowBottomBarIsHidden = false;
+        }
     }
 
     private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
