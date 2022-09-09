@@ -175,6 +175,24 @@ public partial class EditTextWindow : Window
             WindowState = WindowState.Minimized;
         }
 
+        if (Settings.Default.EditWindowIsOnTop)
+        {
+            AlwaysOnTop.IsChecked = true;
+            Topmost = true;
+        }
+
+        if (!Settings.Default.EditWindowIsWordWrapOn)
+        {
+            WrapTextMenuItem.IsChecked = false;
+            PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+        }
+
+        if (Settings.Default.EditWindowBottomBarIsHidden)
+        {
+            HideBottomBarMenuItem.IsChecked = true;
+            BottomBar.Visibility = Visibility.Collapsed;
+        }
+
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
     }
@@ -359,22 +377,61 @@ public partial class EditTextWindow : Window
         }
     }
 
-    internal async void OpenThisPath(string pathOfFileToOpen)
+    internal async void OpenThisPath(string pathOfFileToOpen, bool isMultipleFiles = false)
     {
         OpenedFilePath = pathOfFileToOpen;
-        Title = $"Edit Text | {pathOfFileToOpen.Split('\\').LastOrDefault()}";
 
-        try
-        {
-            using StreamReader sr = File.OpenText(pathOfFileToOpen);
+        StringBuilder stringBuilder = new();
 
-            string s = await sr.ReadToEndAsync();
-            PassedTextControl.Text = s;
-        }
-        catch (System.Exception ex)
+        if (isMultipleFiles)
         {
-            System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+            stringBuilder.AppendLine(pathOfFileToOpen);
         }
+
+        if (imageExtensions.Contains(Path.GetExtension(OpenedFilePath).ToLower()))
+        {
+            Uri fileURI = new(OpenedFilePath);
+
+            try
+            {
+                BitmapImage droppedImage = new(fileURI);
+                droppedImage.Freeze();
+                Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
+                stringBuilder.Append(await ImageMethods.ExtractText(bmp));
+            }
+            catch (Exception)
+            {
+                System.Windows.MessageBox.Show("Failed to read file");
+            }
+        }
+        else
+        {
+            // Continue with along trying to open a text file.
+
+            if (!isMultipleFiles && string.IsNullOrWhiteSpace(PassedTextControl.Text))
+                Title = $"Edit Text | {Path.GetFileName(OpenedFilePath)}";
+
+            try
+            {
+                using StreamReader sr = File.OpenText(pathOfFileToOpen);
+
+                string s = await sr.ReadToEndAsync();
+
+                stringBuilder.Append(s);
+            }
+            catch (System.Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+            }
+        }
+
+        if (isMultipleFiles)
+        {
+            stringBuilder.Append(Environment.NewLine);
+            stringBuilder.Append(Environment.NewLine);
+        }
+
+        PassedTextControl.AppendText(stringBuilder.ToString());
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -545,6 +602,8 @@ public partial class EditTextWindow : Window
             PassedTextControl.TextWrapping = TextWrapping.Wrap;
         else
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+
+        Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
 
     private void TrimEachLineMenuItem_Click(object sender, RoutedEventArgs e)
@@ -794,18 +853,29 @@ public partial class EditTextWindow : Window
         if (IsLoaded == false)
             return;
 
-        if (Topmost == false)
+        if (sender is MenuItem aotMi && aotMi.IsChecked == true)
             Topmost = true;
         else
             Topmost = false;
+
+        Settings.Default.EditWindowIsOnTop = Topmost;
     }
 
     private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (BottomBar.Visibility == Visibility.Visible)
+        if (IsLoaded == false)
+            return;
+
+        if (sender is MenuItem bbMi && bbMi.IsChecked == true)
+        {
             BottomBar.Visibility = Visibility.Collapsed;
+            Settings.Default.EditWindowBottomBarIsHidden = true;
+        }
         else
+        {
             BottomBar.Visibility = Visibility.Visible;
+            Settings.Default.EditWindowBottomBarIsHidden = false;
+        }
     }
 
     private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
@@ -1336,7 +1406,7 @@ public partial class EditTextWindow : Window
         PassedTextControl.Text = sb.ToString().Trim();
     }
 
-    private async void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
+    private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
     {
         // Mark the event as handled, so TextBox's native Drop handler is not called.
 
@@ -1344,30 +1414,28 @@ public partial class EditTextWindow : Window
             return;
 
         e.Handled = true;
+        Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
 
-        var fileName = IsSingleFile(e);
-        if (fileName is null)
-            return;
-
-        if (imageExtensions.Contains(Path.GetExtension(fileName)) == false && IsBinary(fileName) == false)
+        if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
         {
-            OpenThisPath(fileName);
-            return;
+            var fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
+            // Check for a single file or folder.
+            if (fileNames?.Length is 1)
+            {
+                // Check for a file (a directory will return false).
+                if (File.Exists(fileNames[0]))
+                    OpenThisPath(fileNames[0], false);
+            }
+            else if (fileNames?.Length > 1)
+            {
+                foreach (string possibleFilePath in fileNames)
+                {
+                    if (File.Exists(possibleFilePath))
+                        OpenThisPath(possibleFilePath, true);
+                }
+            }
         }
-
-        Uri fileURI = new(fileName);
-
-        try
-        {
-            BitmapImage droppedImage = new(fileURI);
-            droppedImage.Freeze();
-            Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-            PassedTextControl.AppendText(await ImageMethods.ExtractText(bmp));
-        }
-        catch (Exception)
-        {
-            System.Windows.MessageBox.Show("Failed to read file");
-        }
+        Mouse.OverrideCursor = null;
     }
 
     private void ETWindow_DragOver(object sender, System.Windows.DragEventArgs e)
@@ -1381,10 +1449,8 @@ public partial class EditTextWindow : Window
             return;
         }
 
-        if (IsSingleFile(e) is not null)
-            e.Effects = System.Windows.DragDropEffects.Copy;
-        else
-            e.Effects = System.Windows.DragDropEffects.None;
+        e.Effects = System.Windows.DragDropEffects.Copy;
+
         // Mark the event as handled, so TextBox's native DragOver handler is not called.
         e.Handled = true;
     }

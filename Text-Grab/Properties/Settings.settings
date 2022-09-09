@@ -71,5 +71,17 @@
     <Setting Name="EditWindowHotKey" Type="System.String" Scope="User">
       <Value Profile="(Default)">E</Value>
     </Setting>
+    <Setting Name="EditWindowIsWordWrapOn" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="EditWindowIsOnTop" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="LastUsedLang" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="EditWindowBottomBarIsHidden" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
