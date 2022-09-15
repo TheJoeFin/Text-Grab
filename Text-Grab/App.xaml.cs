@@ -23,7 +23,7 @@ public partial class App : System.Windows.Application
 
     public int NumberOfRunningInstances { get; set; } = 0;
 
-    void appStartup(object sender, StartupEventArgs e)
+    async void appStartup(object sender, StartupEventArgs e)
     {
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
@@ -83,15 +83,22 @@ public partial class App : System.Windows.Application
             }
             else if (e.Args[i] == "EditText")
             {
-                EditTextWindow manipulateTextWindow = new EditTextWindow();
+                EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
                 handledArgument = true;
             }
             else if (File.Exists(e.Args[i]))
             {
-                EditTextWindow manipulateTextWindow = new EditTextWindow();
+                EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.OpenThisPath(e.Args[i]);
                 manipulateTextWindow.Show();
+                handledArgument = true;
+            }
+            else if (Directory.Exists(e.Args[i]))
+            {
+                EditTextWindow manipulateTextWindow = new();
+                manipulateTextWindow.Show();
+                await manipulateTextWindow.OcrAllImagesInFolder(e.Args[i]);
                 handledArgument = true;
             }
         }

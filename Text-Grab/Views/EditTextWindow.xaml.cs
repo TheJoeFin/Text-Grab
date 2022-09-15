@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -1285,15 +1286,20 @@ public partial class EditTextWindow : Window
         if (result is not System.Windows.Forms.DialogResult.OK)
             return;
 
-        Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
 
+        if (Directory.Exists(chosenFolderPath))
+            await OcrAllImagesInFolder(chosenFolderPath);
+    }
+
+    public async Task OcrAllImagesInFolder(string folderPath)
+    {
         IEnumerable<String>? files = null;
         IEnumerable<String>? folders = null;
         try
         {
-            files = Directory.EnumerateFiles(chosenFolderPath);
-            folders = Directory.EnumerateDirectories(chosenFolderPath);
+            files = Directory.EnumerateFiles(folderPath);
+            folders = Directory.EnumerateDirectories(folderPath);
         }
         catch (System.Exception ex)
         {
@@ -1303,7 +1309,7 @@ public partial class EditTextWindow : Window
         if (files is null)
             return;
 
-        PassedTextControl.AppendText(chosenFolderPath);
+        PassedTextControl.AppendText(folderPath);
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(DateTime.Now.ToString());
         PassedTextControl.AppendText(Environment.NewLine);
@@ -1318,23 +1324,32 @@ public partial class EditTextWindow : Window
             if (imageExtensions.Contains(Path.GetExtension(file)) == false)
                 continue;
 
-            Uri fileURI = new(file);
-            ocrResults.AppendLine(Path.GetFileName(file));
-            try
-            {
-                BitmapImage droppedImage = new(fileURI);
-                droppedImage.Freeze();
-                Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-                ocrResults.AppendLine(await ImageMethods.ExtractText(bmp));
-            }
-            catch (System.Exception ex)
-            {
-                ocrResults.AppendLine($"Failed to read {file}: {ex.Message}{Environment.NewLine}");
-            }
+            PassedTextControl.AppendText(await OcrFile(file));
         }
 
         PassedTextControl.AppendText(ocrResults.ToString());
+    }
+
+    private async Task<string> OcrFile(string path)
+    {
+        StringBuilder returnString = new();
+        Uri fileURI = new(path);
+        returnString.AppendLine(Path.GetFileName(path));
+        try
+        {
+            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+            BitmapImage droppedImage = new(fileURI);
+            droppedImage.Freeze();
+            Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
+            returnString.AppendLine(await ImageMethods.ExtractText(bmp));
+        }
+        catch (System.Exception ex)
+        {
+            returnString.AppendLine($"Failed to read {path}: {ex.Message}{Environment.NewLine}");
+        }
+
         Mouse.OverrideCursor = null;
+        return returnString.ToString();
     }
 
     private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)
