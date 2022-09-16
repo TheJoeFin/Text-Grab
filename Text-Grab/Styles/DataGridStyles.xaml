@@ -98,7 +98,8 @@
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background" Value="{StaticResource DarkTeal}" />
                 <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                <Setter Property="BorderBrush" Value="{StaticResource DarkTeal}" />
+                <Setter Property="BorderBrush" Value="{StaticResource Teal}" />
+                <Setter Property="BorderThickness" Value="2" />
             </Trigger>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter Property="Background" Value="{StaticResource DarkTeal}" />
@@ -108,9 +109,9 @@
                     <Condition Property="IsSelected" Value="true" />
                     <Condition Property="Selector.IsSelectionActive" Value="false" />
                 </MultiTrigger.Conditions>
-                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}" />
+                <Setter Property="Background" Value="Black" />
                 <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}" />
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}}" />
+                <Setter Property="Foreground" Value="Gray" />
             </MultiTrigger>
             <Trigger Property="IsEnabled" Value="false">
                 <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />

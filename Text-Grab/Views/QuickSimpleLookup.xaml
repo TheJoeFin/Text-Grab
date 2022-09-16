@@ -40,8 +40,12 @@
             <Button
                 x:Name="ParseBTN"
                 Grid.Column="1"
+                Padding="12,4"
+                Background="{StaticResource DarkTeal}"
                 Click="ParseBTN_Click"
-                Content="Parse 📋" />
+                Content="Parse 📋"
+                FontSize="18"
+                Foreground="White" />
         </Grid>
         <DataGrid
             x:Name="MainDataGrid"
@@ -67,7 +71,7 @@
                             Background="{StaticResource DarkControlBackground}"
                             FontSize="14"
                             Foreground="White"
-                            Text="Short Text" />
+                            Text="Ctrl + Enter to copy" />
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -99,7 +103,7 @@
                             Background="{StaticResource DarkControlBackground}"
                             FontSize="14"
                             Foreground="White"
-                            Text="Right Value" />
+                            Text="Press Enter to copy" />
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

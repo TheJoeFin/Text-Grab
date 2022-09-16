@@ -130,6 +130,14 @@ public partial class QuickSimpleLookup : Window
                 if (sender is TextBox searchBox)
                     ClearOrExit(searchBox);
                 break;
+            case Key.Down:
+                if (MainDataGrid.SelectedCells is null)
+                {
+                    MainDataGrid.SelectedIndex = 0;
+                    var firstCells = MainDataGrid.SelectedCells?.FirstOrDefault();
+                    MainDataGrid.Focus();
+                }
+                break;
             default:
                 break;
         }
@@ -150,26 +158,33 @@ public partial class QuickSimpleLookup : Window
 
     private void PutValueIntoClipboard()
     {
-        if (MainDataGrid.ItemsSource is List<LookupItem> lookUpList
-                        && lookUpList.FirstOrDefault() is LookupItem firstLookupItem)
+        if (MainDataGrid.ItemsSource is not List<LookupItem> lookUpList
+            || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
+            return;
+
+        LookupItem lookupItem = firstLookupItem;
+
+        if (MainDataGrid.SelectedItem is LookupItem selectedLookupItem)
         {
-            string textVal = firstLookupItem.longValue as string;
+            lookupItem = selectedLookupItem;
+        }
 
-            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-                textVal = firstLookupItem.shortValue as string;
+        string textVal = lookupItem.longValue as string;
 
-            if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
-                textVal = String.Join(" ", new string[] { firstLookupItem.shortValue as string, firstLookupItem.longValue as string });
+        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            textVal = lookupItem.shortValue as string;
 
-            try
-            {
-                Clipboard.SetText(textVal);
-                this.Close();
-            }
-            catch (Exception)
-            {
-                Debug.WriteLine("Failed to set clipboard text");
-            }
+        if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+            textVal = String.Join(" ", new string[] { lookupItem.shortValue as string, lookupItem.longValue as string });
+
+        try
+        {
+            Clipboard.SetText(textVal);
+            this.Close();
+        }
+        catch (Exception)
+        {
+            Debug.WriteLine("Failed to set clipboard text");
         }
     }
 
