@@ -16,6 +16,7 @@
                 <ResourceDictionary Source="/Styles/ListViewStyles.xaml" />
                 <ResourceDictionary Source="/Styles/ComboBoxStyles.xaml" />
                 <ResourceDictionary Source="/Styles/ContextMenuStyles.xaml" />
+                <ResourceDictionary Source="/Styles/DataGridStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

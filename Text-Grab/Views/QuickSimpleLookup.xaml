@@ -11,6 +11,7 @@
     Background="{StaticResource DarkBackground}"
     Closing="Window_Closing"
     Loaded="Window_Loaded"
+    PreviewKeyDown="SearchBox_PreviewKeyDown"
     Topmost="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -30,10 +31,11 @@
             <TextBox
                 x:Name="SearchBox"
                 Grid.Column="0"
-                Height="28"
-                Padding="4"
+                Padding="8"
                 VerticalAlignment="Center"
-                PreviewKeyDown="SearchBox_PreviewKeyDown"
+                Background="{StaticResource DarkControlBackground}"
+                FontSize="16"
+                Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
             <Button
                 x:Name="ParseBTN"
@@ -44,25 +46,83 @@
         <DataGrid
             x:Name="MainDataGrid"
             Grid.Row="1"
+            AlternatingRowBackground="{StaticResource DarkBackground}"
             AutoGenerateColumns="False"
             Background="Transparent"
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
+            CellStyle="{DynamicResource DataGridCellStyleDark}"
+            ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
             ItemsSource="{Binding Source=ItemsDictionary}"
             MinRowHeight="14"
-            RowBackground="Transparent">
+            RowBackground="Transparent"
+            RowStyle="{DynamicResource DataGridRowStyleDark}">
             <DataGrid.Columns>
-                <DataGridTextColumn
-                    Width="*"
-                    Binding="{Binding shortValue}"
-                    Foreground="White"
-                    Header="Left Value" />
-                <DataGridTextColumn
-                    Width="3*"
-                    Binding="{Binding longValue}"
-                    Foreground="White"
-                    Header="Right Value" />
+                <DataGridTemplateColumn Width="*">
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock
+                            Padding="6"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource DarkControlBackground}"
+                            FontSize="14"
+                            Foreground="White"
+                            Text="Short Text" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                Padding="6"
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                Foreground="White"
+                                Text="{Binding shortValue}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <TextBox
+                                Padding="6"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource Teal}"
+                                FontSize="14"
+                                Foreground="Black"
+                                Text="{Binding shortValue}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Width="3*">
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock
+                            Padding="6"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource DarkControlBackground}"
+                            FontSize="14"
+                            Foreground="White"
+                            Text="Right Value" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                Padding="6"
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                Foreground="White"
+                                Text="{Binding longValue}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <TextBox
+                                Padding="6"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource Teal}"
+                                FontSize="14"
+                                Foreground="Black"
+                                Text="{Binding longValue}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 
