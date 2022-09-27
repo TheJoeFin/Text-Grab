@@ -64,12 +64,23 @@ public partial class QuickSimpleLookup : Window
         else
             MainDataGrid.CanUserAddRows = false;
 
+        List<string> searchArray = SearchBox.Text.ToLower().Split().ToList();
+        searchArray.Sort();
+
         List<LookupItem> filteredList = new List<LookupItem>();
 
         foreach (LookupItem lItem in ItemsDictionary)
         {
-            if (lItem.shortValue.ToLower().Contains(searchingBox.Text.ToLower())
-                || lItem.longValue.ToLower().Contains(searchingBox.Text.ToLower()))
+            string lItemAsString = lItem.ToString().ToLower();
+            bool matchAllSearchWords = true;
+
+            foreach (var searchWord in searchArray)
+            {
+                if (lItemAsString.Contains(searchWord) == false)
+                    matchAllSearchWords = false;
+            }
+
+            if (matchAllSearchWords)
                 filteredList.Add(lItem);
         }
 
@@ -98,6 +109,8 @@ public partial class QuickSimpleLookup : Window
         ItemsDictionary.AddRange(ParseStringToRows(clipboardContent));
 
         MainDataGrid.ItemsSource = ItemsDictionary;
+
+        UpdateRowCount();
     }
 
     private static IEnumerable<LookupItem> ParseStringToRows(string clipboardContent, bool isCSV = false)
