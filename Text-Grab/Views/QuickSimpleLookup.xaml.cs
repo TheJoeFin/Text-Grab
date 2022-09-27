@@ -45,6 +45,9 @@ public partial class QuickSimpleLookup : Window
         Topmost = false;
         Activate();
         SearchBox.Focus();
+
+        if (MainDataGrid.Items.Count > 0)
+            MainDataGrid.SelectedIndex = 0;
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -71,6 +74,9 @@ public partial class QuickSimpleLookup : Window
         }
 
         MainDataGrid.ItemsSource = filteredList;
+
+        if (MainDataGrid.Items.Count > 0)
+            MainDataGrid.SelectedIndex = 0;
 
         UpdateRowCount();
     }
@@ -128,11 +134,9 @@ public partial class QuickSimpleLookup : Window
                 ClearOrExit();
                 break;
             case Key.Down:
-                if (MainDataGrid.SelectedCells is null)
+                if (SearchBox.IsFocused)
                 {
-                    MainDataGrid.SelectedIndex = 0;
-                    var firstCells = MainDataGrid.SelectedCells?.FirstOrDefault();
-                    MainDataGrid.Focus();
+                    MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
                 }
                 break;
             default:
@@ -145,7 +149,10 @@ public partial class QuickSimpleLookup : Window
         if (string.IsNullOrEmpty(SearchBox.Text))
             this.Close();
         else
+        {
             SearchBox.Text = "";
+            SearchBox.Focus();
+        }
     }
 
     private void PutValueIntoClipboard()
