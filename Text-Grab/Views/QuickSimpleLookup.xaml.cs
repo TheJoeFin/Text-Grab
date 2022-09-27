@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.IsolatedStorage;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +18,8 @@ namespace Text_Grab.Views;
 public partial class QuickSimpleLookup : Window
 {
     public List<LookupItem> ItemsDictionary { get; set; } = new List<LookupItem>();
+
+
 
     string cacheFilename = "QuickSimpleLookupCache.csv";
 
@@ -58,10 +59,7 @@ public partial class QuickSimpleLookup : Window
             MainDataGrid.CanUserAddRows = true;
         }
         else
-        {
             MainDataGrid.CanUserAddRows = false;
-        }
-
 
         List<LookupItem> filteredList = new List<LookupItem>();
 
@@ -127,8 +125,7 @@ public partial class QuickSimpleLookup : Window
                 PutValueIntoClipboard();
                 break;
             case Key.Escape:
-                if (sender is TextBox searchBox)
-                    ClearOrExit(searchBox);
+                ClearOrExit();
                 break;
             case Key.Down:
                 if (MainDataGrid.SelectedCells is null)
@@ -143,17 +140,12 @@ public partial class QuickSimpleLookup : Window
         }
     }
 
-    private void ClearOrExit(TextBox searchBox)
+    private void ClearOrExit()
     {
-        if (string.IsNullOrEmpty(searchBox.Text))
-        {
+        if (string.IsNullOrEmpty(SearchBox.Text))
             this.Close();
-            return;
-        }
         else
-        {
-            searchBox.Text = "";
-        }
+            SearchBox.Text = "";
     }
 
     private void PutValueIntoClipboard()
@@ -176,6 +168,21 @@ public partial class QuickSimpleLookup : Window
 
         if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
             textVal = String.Join(" ", new string[] { lookupItem.shortValue as string, lookupItem.longValue as string });
+
+        if ((Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+        {
+            StringBuilder sb = new();
+            // Copy all of the filtered results into the clipboard
+            foreach (object item in MainDataGrid.ItemsSource)
+            {
+                if (item is not LookupItem luItem) continue;
+
+                sb.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
+            }
+
+            textVal = sb.ToString();
+        }
 
         try
         {
