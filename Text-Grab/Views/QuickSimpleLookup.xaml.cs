@@ -35,8 +35,17 @@ public partial class QuickSimpleLookup : Window
         string cachePath = $"{exePath}\\{cacheFilename}";
         if (File.Exists(cachePath))
         {
-            string cacheRAW = await File.ReadAllTextAsync(cachePath);
-            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
+            try
+            {
+                using FileStream fs = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using StreamReader sr = new(fs, Encoding.Default);
+                string cacheRAW = await sr.ReadToEndAsync();
+                ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Failed to read Quick Simple Lookup csv file. {ex.Message}");
+            }
         }
 
         MainDataGrid.ItemsSource = null;
@@ -53,7 +62,7 @@ public partial class QuickSimpleLookup : Window
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (sender is not TextBox searchingBox || !IsLoaded) 
+        if (sender is not TextBox searchingBox || !IsLoaded)
             return;
 
         MainDataGrid.ItemsSource = null;
@@ -104,7 +113,7 @@ public partial class QuickSimpleLookup : Window
     {
         string clipboardContent = Clipboard.GetText();
 
-        if (string.IsNullOrEmpty(clipboardContent)) 
+        if (string.IsNullOrEmpty(clipboardContent))
             return;
 
         MainDataGrid.ItemsSource = null;
@@ -144,7 +153,7 @@ public partial class QuickSimpleLookup : Window
         switch (e.Key)
         {
             case Key.Enter:
-                if (IsEditingDataGrid) 
+                if (IsEditingDataGrid)
                     return;
                 e.Handled = true;
                 PutValueIntoClipboard();
@@ -200,7 +209,7 @@ public partial class QuickSimpleLookup : Window
             // Copy all of the filtered results into the clipboard
             foreach (object item in MainDataGrid.ItemsSource)
             {
-                if (item is not LookupItem luItem) 
+                if (item is not LookupItem luItem)
                     continue;
 
                 sb.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
@@ -223,9 +232,9 @@ public partial class QuickSimpleLookup : Window
         }
     }
 
-    private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        await WriteDataToCSV();
+
     }
 
     private async Task WriteDataToCSV()
@@ -237,7 +246,7 @@ public partial class QuickSimpleLookup : Window
 
         StringBuilder csvContents = new();
 
-        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave) 
+        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave)
             return;
 
         foreach (LookupItem lookupItem in itemsToSave)
@@ -281,8 +290,18 @@ public partial class QuickSimpleLookup : Window
 
         try
         {
-            string cacheRAW = await File.ReadAllTextAsync(csvToOpenPath);
-            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
+            try
+            {
+                using FileStream fs = new(csvToOpenPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using StreamReader sr = new(fs, Encoding.Default);
+                string cacheRAW = await sr.ReadToEndAsync();
+
+                ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Failed to read csv file. {ex.Message}");
+            }
 
             MainDataGrid.ItemsSource = null;
             MainDataGrid.ItemsSource = ItemsDictionary;
@@ -294,6 +313,6 @@ public partial class QuickSimpleLookup : Window
         {
             System.Windows.Forms.MessageBox.Show($"Failed To parse file, {ex.Message}");
         }
-        
+
     }
 }
