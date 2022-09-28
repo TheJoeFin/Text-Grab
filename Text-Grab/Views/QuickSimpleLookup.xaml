@@ -70,7 +70,11 @@
                         <MenuItem
                             x:Name="ParseClipboardMenuItem"
                             Click="ParseBTN_Click"
-                            Header="Parse Clipboard" />
+                            Header="Parse Excel Copied Table" />
+                        <MenuItem
+                            x:Name="ParseCSVFileMenuItem"
+                            Click="ParseCSVFileMenuItem_Click"
+                            Header="Parse CSV File" />
                     </MenuItem>
                 </Menu>
             </StackPanel>
@@ -81,10 +85,10 @@
             AlternatingRowBackground="{StaticResource DarkBackground}"
             AutoGenerateColumns="False"
             Background="Transparent"
+            BeginningEdit="MainDataGrid_BeginningEdit"
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
-            BeginningEdit="MainDataGrid_BeginningEdit"
             CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"

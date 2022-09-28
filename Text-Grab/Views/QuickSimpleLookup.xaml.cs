@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -260,5 +261,39 @@ public partial class QuickSimpleLookup : Window
     private void MainDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
         IsEditingDataGrid = true;
+    }
+
+    private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        // Create OpenFileDialog 
+        Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+
+        // Set filter for file extension and default file extension 
+        dlg.DefaultExt = ".csv";
+        dlg.Filter = "Comma Separated Values File (.csv)|*.csv";
+
+        bool? result = dlg.ShowDialog();
+
+        if (result == false || dlg.CheckFileExists == false)
+            return;
+
+        string csvToOpenPath = dlg.FileName;
+
+        try
+        {
+            string cacheRAW = await File.ReadAllTextAsync(csvToOpenPath);
+            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
+
+            MainDataGrid.ItemsSource = null;
+            MainDataGrid.ItemsSource = ItemsDictionary;
+
+            SaveBTN.Visibility = Visibility.Visible;
+            UpdateRowCount();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.Forms.MessageBox.Show($"Failed To parse file, {ex.Message}");
+        }
+        
     }
 }
