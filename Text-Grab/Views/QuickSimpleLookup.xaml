@@ -16,6 +16,14 @@
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
 
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+
+        </Style>
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -164,12 +172,20 @@
             </DataGrid.Columns>
         </DataGrid>
 
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <TextBlock Padding="10,4">
+                Shift + Enter to copy every row.
+            </TextBlock>
+            <TextBlock Padding="10,4">
+                Shift + Ctrl + Enter to copy all results.
+            </TextBlock>
+        </StackPanel>
+
         <TextBlock
             x:Name="RowCountTextBlock"
             Grid.Row="2"
-            Padding="2"
-            HorizontalAlignment="Center"
-            Foreground="White"
+            Padding="10,4"
+            HorizontalAlignment="Right"
             Text="0 Rows" />
     </Grid>
 </Window>
