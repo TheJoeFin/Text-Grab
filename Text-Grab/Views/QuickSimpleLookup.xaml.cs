@@ -19,7 +19,7 @@ public partial class QuickSimpleLookup : Window
 {
     public List<LookupItem> ItemsDictionary { get; set; } = new List<LookupItem>();
 
-
+    public bool IsEditingDataGrid { get; set; } = false;
 
     string cacheFilename = "QuickSimpleLookupCache.csv";
 
@@ -52,7 +52,8 @@ public partial class QuickSimpleLookup : Window
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (sender is not TextBox searchingBox || !IsLoaded) return;
+        if (sender is not TextBox searchingBox || !IsLoaded) 
+            return;
 
         MainDataGrid.ItemsSource = null;
 
@@ -102,7 +103,8 @@ public partial class QuickSimpleLookup : Window
     {
         string clipboardContent = Clipboard.GetText();
 
-        if (string.IsNullOrEmpty(clipboardContent)) return;
+        if (string.IsNullOrEmpty(clipboardContent)) 
+            return;
 
         MainDataGrid.ItemsSource = null;
 
@@ -111,6 +113,7 @@ public partial class QuickSimpleLookup : Window
         MainDataGrid.ItemsSource = ItemsDictionary;
 
         UpdateRowCount();
+        SaveBTN.Visibility = Visibility.Visible;
     }
 
     private static IEnumerable<LookupItem> ParseStringToRows(string clipboardContent, bool isCSV = false)
@@ -140,6 +143,8 @@ public partial class QuickSimpleLookup : Window
         switch (e.Key)
         {
             case Key.Enter:
+                if (IsEditingDataGrid) 
+                    return;
                 e.Handled = true;
                 PutValueIntoClipboard();
                 break;
@@ -148,9 +153,7 @@ public partial class QuickSimpleLookup : Window
                 break;
             case Key.Down:
                 if (SearchBox.IsFocused)
-                {
                     MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
-                }
                 break;
             default:
                 break;
@@ -196,13 +199,17 @@ public partial class QuickSimpleLookup : Window
             // Copy all of the filtered results into the clipboard
             foreach (object item in MainDataGrid.ItemsSource)
             {
-                if (item is not LookupItem luItem) continue;
+                if (item is not LookupItem luItem) 
+                    continue;
 
                 sb.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
             }
 
             textVal = sb.ToString();
         }
+
+        if (string.IsNullOrEmpty(textVal))
+            return;
 
         try
         {
@@ -229,11 +236,29 @@ public partial class QuickSimpleLookup : Window
 
         StringBuilder csvContents = new();
 
-        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave) return;
+        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave) 
+            return;
 
         foreach (LookupItem lookupItem in itemsToSave)
             csvContents.AppendLine(lookupItem.ToCSVString());
 
         await File.WriteAllTextAsync($"{exePath}\\{cacheFilename}", csvContents.ToString());
+    }
+
+    private void MainDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+    {
+        SaveBTN.Visibility = Visibility.Visible;
+        IsEditingDataGrid = false;
+    }
+
+    private async void SaveBTN_Click(object sender, RoutedEventArgs e)
+    {
+        await WriteDataToCSV();
+        SaveBTN.Visibility = Visibility.Collapsed;
+    }
+
+    private void MainDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+    {
+        IsEditingDataGrid = true;
     }
 }

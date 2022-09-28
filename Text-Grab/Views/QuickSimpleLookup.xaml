@@ -37,15 +37,43 @@
                 FontSize="16"
                 Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
-            <Button
-                x:Name="ParseBTN"
-                Grid.Column="1"
-                Padding="12,4"
-                Background="{StaticResource DarkTeal}"
-                Click="ParseBTN_Click"
-                Content="Parse 📋"
-                FontSize="18"
-                Foreground="White" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button
+                    x:Name="SaveBTN"
+                    Padding="12,6"
+                    Background="{StaticResource DarkTeal}"
+                    Click="SaveBTN_Click"
+                    Content="💾"
+                    FontSize="16"
+                    Foreground="White"
+                    Visibility="Collapsed" />
+                <Menu
+                    Grid.Column="1"
+                    Background="{StaticResource DarkBackground}"
+                    Foreground="White"
+                    IsMainMenu="True"
+                    ToolTip="Save Lookup Data">
+                    <MenuItem>
+                        <MenuItem.Header>
+                            <TextBlock
+                                Height="40"
+                                Padding="4,12"
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                Text="" />
+                        </MenuItem.Header>
+                        <MenuItem
+                            x:Name="SaveMenuItem"
+                            Click="SaveBTN_Click"
+                            Header="Save Lookup Data" />
+                        <MenuItem
+                            x:Name="ParseClipboardMenuItem"
+                            Click="ParseBTN_Click"
+                            Header="Parse Clipboard" />
+                    </MenuItem>
+                </Menu>
+            </StackPanel>
         </Grid>
         <DataGrid
             x:Name="MainDataGrid"
@@ -56,6 +84,8 @@
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
+            BeginningEdit="MainDataGrid_BeginningEdit"
+            CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
             ItemsSource="{Binding Source=ItemsDictionary}"
