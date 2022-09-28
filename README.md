@@ -1,6 +1,6 @@
 # Text-Grab
 
-This is a minimal optical character recognition (OCR) utility for Windows which makes all visible text available to be copied. 
+This is a minimal optical character recognition (OCR) utility for Windows 10/11 which makes all visible text available to be copied. 
 
 Too often text is trapped within images, videos, or within parts of applications and cannot be selected. Text Grab takes a screenshot, passes that image to the OCR engine, then puts the text into the clipboard for use anywhere. The OCR is done locally by [Windows API](https://docs.microsoft.com/en-us/uwp/api/Windows.Media.Ocr). This enables Text Grab to have essentially no UI and not require a constantly running background process. Working with text can be much more than just copying text from images, so Text Grab has a range of different modes to make working with text fast and easy. 
 
@@ -75,6 +75,15 @@ There are several tools with in the Edit Text Window which make it quick and eas
 - Copy text from every image in a folder
 - And more!
 
+### Bonus. Command Line Interface
+
+Arguments
+- `Fullscreen` launches into Fullscreen Grab mode
+- `GrabFrame` launches a new Grab Frame
+- `EditText` launches a new Edit Text Window
+- "Settings` opens Text Grab settings
+- `"file path"` Text Grab will open the file if it is a Text file, but if it is an image file it will OCR the file and place the results into a new Edit Text Window.
+- `"folder path"` e.g. `.\Text-Grab.exe "C:\Users\myPC\Downloads"` Text Grab will launch a new Edit Text Window and scan all images in that directory.
 
 ## Principles
 Text Grab is designed to have multiple modes, from minimal to fully featured; all focused on productivity. By using Windows 10’s OCR capabilities Text Grab can launch quickly without needing to run in the background. Pinning Text Grab to the Taskbar enables launching via keyboard shortcut. Now with version 2.4 when the background process is enabled Text Grab can be activated from anywhere using global hotkeys. The full-screen mode is designed to be used hundreds of times a day. Reducing clicks and menus means saving time, which is the primary focus of Text Grab. The Grab Frame tool can be positioned on top of any text content for quick OCR any time. When it comes to manipulating the text you've copied the Edit Text Window offers a wide range of tools to speed up common tasks and take the raw text into clean usable content.
