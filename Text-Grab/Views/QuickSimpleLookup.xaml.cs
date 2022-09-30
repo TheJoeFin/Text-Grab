@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab.Models;
+using Text_Grab.Properties;
 
 namespace Text_Grab.Views;
 
@@ -33,25 +35,14 @@ public partial class QuickSimpleLookup : Window
     {
         string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
         string cachePath = $"{exePath}\\{cacheFilename}";
+
+        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation) == false
+            && File.Exists(Settings.Default.LookupFileLocation))
+            cachePath = Settings.Default.LookupFileLocation;
+
         if (File.Exists(cachePath))
-        {
-            try
-            {
-                using FileStream fs = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using StreamReader sr = new(fs, Encoding.Default);
-                string cacheRAW = await sr.ReadToEndAsync();
-                ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Failed to read Quick Simple Lookup csv file. {ex.Message}");
-            }
-        }
+            await ReadCsvFileIntoQuickSimpleLookup(cachePath);
 
-        MainDataGrid.ItemsSource = null;
-        MainDataGrid.ItemsSource = ItemsDictionary;
-
-        UpdateRowCount();
         Topmost = false;
         Activate();
         SearchBox.Focus();
@@ -148,7 +139,7 @@ public partial class QuickSimpleLookup : Window
         }
     }
 
-    private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    private async void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         switch (e.Key)
         {
@@ -164,6 +155,13 @@ public partial class QuickSimpleLookup : Window
             case Key.Down:
                 if (SearchBox.IsFocused)
                     MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+                break;
+            case Key.S:
+                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
+                {
+                    await WriteDataToCSV();
+                    SaveBTN.Visibility = Visibility.Collapsed;
+                }
                 break;
             default:
                 break;
@@ -242,7 +240,16 @@ public partial class QuickSimpleLookup : Window
         if (SearchBox.Text is string text && !string.IsNullOrEmpty(text))
             return;
 
-        string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
+        string saveLookupFilePath = $"C:\\{cacheFilename}";
+        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
+        {
+            string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
+            saveLookupFilePath = $"{exePath}\\{cacheFilename}";
+        }
+        else
+        {
+            saveLookupFilePath = Settings.Default.LookupFileLocation;
+        }
 
         StringBuilder csvContents = new();
 
@@ -252,7 +259,7 @@ public partial class QuickSimpleLookup : Window
         foreach (LookupItem lookupItem in itemsToSave)
             csvContents.AppendLine(lookupItem.ToCSVString());
 
-        await File.WriteAllTextAsync($"{exePath}\\{cacheFilename}", csvContents.ToString());
+        await File.WriteAllTextAsync(saveLookupFilePath, csvContents.ToString());
     }
 
     private void MainDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -288,31 +295,62 @@ public partial class QuickSimpleLookup : Window
 
         string csvToOpenPath = dlg.FileName;
 
+        await ReadCsvFileIntoQuickSimpleLookup(csvToOpenPath);
+        SaveBTN.Visibility = Visibility.Visible;
+    }
+
+    private async Task ReadCsvFileIntoQuickSimpleLookup(string csvToOpenPath)
+    {
         try
         {
-            try
-            {
-                using FileStream fs = new(csvToOpenPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using StreamReader sr = new(fs, Encoding.Default);
-                string cacheRAW = await sr.ReadToEndAsync();
+            using FileStream fs = new(csvToOpenPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using StreamReader sr = new(fs, Encoding.Default);
+            string cacheRAW = await sr.ReadToEndAsync();
 
-                ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Failed to read csv file. {ex.Message}");
-            }
-
-            MainDataGrid.ItemsSource = null;
-            MainDataGrid.ItemsSource = ItemsDictionary;
-
-            SaveBTN.Visibility = Visibility.Visible;
-            UpdateRowCount();
+            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
         }
         catch (Exception ex)
         {
-            System.Windows.Forms.MessageBox.Show($"Failed To parse file, {ex.Message}");
+            System.Windows.Forms.MessageBox.Show($"Failed to read csv file. {ex.Message}");
         }
 
+        MainDataGrid.ItemsSource = null;
+        MainDataGrid.ItemsSource = ItemsDictionary;
+
+        UpdateRowCount();
+    }
+
+    private async void PickSaveLocation_Click(object sender, RoutedEventArgs e)
+    {
+        SaveFileDialog dlg = new();
+
+        dlg.AddExtension = true;
+        dlg.DefaultExt = ".csv";
+        dlg.InitialDirectory = "C:\\";
+        dlg.FileName = "QuickSimpleLookupDataFile.csv";
+        dlg.OverwritePrompt = false;
+
+        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation) == false)
+        {
+            dlg.InitialDirectory = Settings.Default.LookupFileLocation;
+            dlg.FileName = Path.GetFileName(Settings.Default.LookupFileLocation);
+        }
+
+        var result = dlg.ShowDialog();
+
+        if (result == false || dlg.CheckPathExists == false)
+            return;
+
+        Settings.Default.LookupFileLocation = dlg.FileName;
+        Settings.Default.Save();
+
+        if (dlg.CheckFileExists)
+        {
+            // clear and load the new file
+            ItemsDictionary.Clear();
+            await ReadCsvFileIntoQuickSimpleLookup(dlg.FileName);
+        }
+        else
+            await WriteDataToCSV();
     }
 }

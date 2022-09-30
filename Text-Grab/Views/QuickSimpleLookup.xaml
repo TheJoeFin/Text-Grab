@@ -76,6 +76,10 @@
                             Click="SaveBTN_Click"
                             Header="Save Lookup Data" />
                         <MenuItem
+                            x:Name="PickSaveLocation"
+                            Click="PickSaveLocation_Click"
+                            Header="Change Lookup Data File Location" />
+                        <MenuItem
                             x:Name="ParseClipboardMenuItem"
                             Click="ParseBTN_Click"
                             Header="Parse Excel Copied Table" />
