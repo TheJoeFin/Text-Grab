@@ -16,7 +16,7 @@ public static class NotifyIconUtilities
             return;
         }
 
-        NotifyIcon icon = new NotifyIcon();
+        NotifyIcon icon = new();
         icon.Text = "Text Grab";
         icon.Icon = new System.Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico", UriKind.Relative)).Stream);
         icon.Visible = true;
@@ -60,15 +60,19 @@ public static class NotifyIconUtilities
                         WindowUtilities.LaunchFullScreenGrab(true);
                         break;
                     case "GrabFrame":
-                        GrabFrame gf = new GrabFrame();
+                        GrabFrame gf = new();
                         gf.Show();
                         break;
                     case "EditText":
-                        EditTextWindow manipulateTextWindow = new EditTextWindow();
+                        EditTextWindow manipulateTextWindow = new();
                         manipulateTextWindow.Show();
                         break;
+                    case "QuickLookup":
+                        QuickSimpleLookup qsl = new();
+                        qsl.Show();
+                        break;
                     default:
-                        EditTextWindow editTextWindow = new EditTextWindow();
+                        EditTextWindow editTextWindow = new();
                         editTextWindow.Show();
                         break;
                 }

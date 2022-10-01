@@ -97,6 +97,14 @@
                             Edit Text Window
                         </TextBlock>
                     </RadioButton>
+                    <RadioButton
+                        x:Name="QuickLookupRDBTN"
+                        VerticalContentAlignment="Center"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Quick Simple Lookup
+                        </TextBlock>
+                    </RadioButton>
 
                     <!--  Pick Language  -->
 

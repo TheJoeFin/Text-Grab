@@ -70,6 +70,9 @@ public partial class SettingsWindow : Window
             case "EditText":
                 EditTextRDBTN.IsChecked = true;
                 break;
+            case "QuickLookup":
+                QuickLookupRDBTN.IsChecked = true;
+                break;
             default:
                 FullScreenRDBTN.IsChecked = true;
                 break;
@@ -125,6 +128,8 @@ public partial class SettingsWindow : Window
             Settings.Default.DefaultLaunch = "GrabFrame";
         else if (EditTextRDBTN.IsChecked == true)
             Settings.Default.DefaultLaunch = "EditText";
+        else if (QuickLookupRDBTN.IsChecked == true)
+            Settings.Default.DefaultLaunch = "QuickLookup";
 
         if (ErrorCorrectBox.IsChecked != null)
             Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
