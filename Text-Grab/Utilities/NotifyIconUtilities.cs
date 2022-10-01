@@ -25,6 +25,8 @@ public static class NotifyIconUtilities
 
         ToolStripMenuItem? settingsItem = new("&Settings");
         settingsItem.Click += (s, e) => { SettingsWindow sw = new(); sw.Show(); };
+        ToolStripMenuItem? quickSimpleLookupItem = new("&Quick Simple Lookup");
+        quickSimpleLookupItem.Click += (s, e) => { QuickSimpleLookup qsl = new(); qsl.Show(); };
         ToolStripMenuItem? fullscreenGrabItem = new("&Fullscreen Grab");
         fullscreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(true); };
         ToolStripMenuItem? grabFrameItem = new("&Grab Frame");
@@ -37,10 +39,11 @@ public static class NotifyIconUtilities
 
         contextMenu.Items.AddRange(
             new ToolStripMenuItem[] {
-                settingsItem,
                 fullscreenGrabItem,
                 grabFrameItem,
                 editTextWindowItem,
+                quickSimpleLookupItem,
+                settingsItem,
                 exitItem
             }
         );

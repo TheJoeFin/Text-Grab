@@ -27,6 +27,10 @@
                 Arguments="Settings"
                 Description="Open Text Grab Settings" />
             <JumpTask
+                Title="Quick Lookup"
+                Arguments="QuickLookup"
+                Description="Quickly search through a simple, flexible, list of values" />
+            <JumpTask
                 Title="Edit Text"
                 Arguments="EditText"
                 Description="Open Text Edit Window" />
