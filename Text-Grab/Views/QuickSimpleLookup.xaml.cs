@@ -174,7 +174,7 @@ public partial class QuickSimpleLookup : Window
             this.Close();
         else
         {
-            SearchBox.Text = "";
+            SearchBox.Clear();
             SearchBox.Focus();
         }
     }
@@ -270,6 +270,9 @@ public partial class QuickSimpleLookup : Window
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+            SearchBox.Clear();
+
         await WriteDataToCSV();
         SaveBTN.Visibility = Visibility.Collapsed;
     }

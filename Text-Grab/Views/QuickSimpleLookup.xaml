@@ -78,7 +78,7 @@
                         <MenuItem
                             x:Name="PickSaveLocation"
                             Click="PickSaveLocation_Click"
-                            Header="Change Lookup Data File Location" />
+                            Header="Change Lookup Data File Location..." />
                         <MenuItem
                             x:Name="ParseClipboardMenuItem"
                             Click="ParseBTN_Click"
@@ -86,7 +86,7 @@
                         <MenuItem
                             x:Name="ParseCSVFileMenuItem"
                             Click="ParseCSVFileMenuItem_Click"
-                            Header="Parse CSV File" />
+                            Header="Add Rows from CSV File..." />
                     </MenuItem>
                 </Menu>
             </StackPanel>
@@ -165,6 +165,7 @@
                         <DataTemplate>
                             <TextBox
                                 Padding="6"
+                                AcceptsTab="True"
                                 VerticalAlignment="Center"
                                 Background="{StaticResource Teal}"
                                 FontSize="14"
