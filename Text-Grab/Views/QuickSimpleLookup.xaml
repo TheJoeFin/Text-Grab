@@ -2,10 +2,10 @@
     x:Class="Text_Grab.Views.QuickSimpleLookup"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="clr-namespace:Text_Grab.Controls"
     Title="Quick Simple Lookup"
     Width="800"
     Height="400"
@@ -18,7 +18,7 @@
     mc:Ignorable="d">
 
     <Window.Resources>
-        <Style TargetType="TextBlock" x:Key="CellTextBlock">
+        <Style x:Key="CellTextBlock" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="6" />
@@ -50,6 +50,7 @@
             <TextBox
                 x:Name="SearchBox"
                 Grid.Column="0"
+                Margin="4,0,0,0"
                 Padding="8"
                 VerticalAlignment="Center"
                 Background="{StaticResource DarkControlBackground}"
@@ -66,21 +67,21 @@
                     IsSymbol="True"
                     SymbolText=""
                     ToolTip="New Fullscreen Grab (CTRL + F)" />
-                <Button
+                <controls:CollapsibleButton
                     x:Name="SaveBTN"
-                    Padding="12,6"
                     Background="{StaticResource DarkTeal}"
+                    ButtonText="Save Lookup Data"
                     Click="SaveBTN_Click"
-                    Content="💾"
-                    FontSize="16"
-                    Foreground="White"
+                    IsSymbol="True"
+                    SymbolText=""
+                    ToolTip="Save Lookup Data"
                     Visibility="Collapsed" />
                 <Menu
                     Grid.Column="1"
+                    VerticalAlignment="Center"
                     Background="{StaticResource DarkBackground}"
                     Foreground="White"
-                    IsMainMenu="True"
-                    ToolTip="Save Lookup Data">
+                    IsMainMenu="True">
                     <MenuItem>
                         <MenuItem.Header>
                             <TextBlock
@@ -132,44 +133,38 @@
                 <DataGridTemplateColumn Width="*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
-                            Style="{StaticResource CellTextBlock}"
                             Background="{StaticResource DarkControlBackground}"
+                            Style="{StaticResource CellTextBlock}"
                             Text="Ctrl + Enter to copy" />
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock
-                                Style="{StaticResource CellTextBlock}"
-                                Text="{Binding shortValue}" />
+                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding shortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
-                            <TextBox
-                                Loaded="EditingTextBox_Loaded"
-                                Text="{Binding shortValue}" />
+                            <TextBox Loaded="EditingTextBox_Loaded" Text="{Binding shortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Width="3*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
-                            Style="{StaticResource CellTextBlock}"
                             Background="{StaticResource DarkControlBackground}"
+                            Style="{StaticResource CellTextBlock}"
                             Text="Press Enter to copy" />
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock
-                                Style="{StaticResource CellTextBlock}"
-                                Text="{Binding longValue}" />
+                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding longValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
                             <TextBox
-                                Loaded="EditingTextBox_Loaded"
                                 AcceptsTab="True"
+                                Loaded="EditingTextBox_Loaded"
                                 Text="{Binding longValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
@@ -190,8 +185,8 @@
             x:Name="RowCountTextBlock"
             Grid.Row="2"
             Padding="10,4"
-            Style="{StaticResource CellTextBlock}"
             HorizontalAlignment="Right"
+            Style="{StaticResource CellTextBlock}"
             Text="0 Rows" />
     </Grid>
 </Window>
