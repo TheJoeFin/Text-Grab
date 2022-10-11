@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
     Title="Quick Simple Lookup"
     Width="800"
     Height="400"
@@ -46,6 +47,15 @@
                 Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <controls:CollapsibleButton
+                    x:Name="NewFullscreen"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    ButtonText="New Fullscreen Grab"
+                    Click="NewFullscreen_Click"
+                    IsSymbol="True"
+                    SymbolText=""
+                    ToolTip="New Fullscreen Grab (CTRL + F)" />
                 <Button
                     x:Name="SaveBTN"
                     Padding="12,6"

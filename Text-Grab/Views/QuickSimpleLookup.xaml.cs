@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Utilities;
 
 namespace Text_Grab.Views;
 
@@ -148,19 +148,32 @@ public partial class QuickSimpleLookup : Window
                     return;
                 e.Handled = true;
                 PutValueIntoClipboard();
+                e.Handled = true;
                 break;
             case Key.Escape:
                 ClearOrExit();
+                e.Handled = true;
                 break;
             case Key.Down:
                 if (SearchBox.IsFocused)
+                {
                     MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+                    e.Handled = true;
+                }
                 break;
             case Key.S:
                 if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
                 {
                     await WriteDataToCSV();
                     SaveBTN.Visibility = Visibility.Collapsed;
+                    e.Handled = true;
+                }
+                break;
+            case Key.F:
+                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
+                {
+                    WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
+                    e.Handled = true;
                 }
                 break;
             default:
@@ -355,5 +368,10 @@ public partial class QuickSimpleLookup : Window
         }
         else
             await WriteDataToCSV();
+    }
+
+    private void NewFullscreen_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
     }
 }
