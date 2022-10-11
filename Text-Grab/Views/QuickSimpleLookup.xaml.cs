@@ -20,7 +20,7 @@ namespace Text_Grab.Views;
 /// </summary>
 public partial class QuickSimpleLookup : Window
 {
-    public List<LookupItem> ItemsDictionary { get; set; } = new List<LookupItem>();
+    public List<LookupItem> ItemsDictionary { get; set; } = new();
 
     public bool IsEditingDataGrid { get; set; } = false;
 
@@ -308,6 +308,15 @@ public partial class QuickSimpleLookup : Window
     private void MainDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
         IsEditingDataGrid = true;
+    }
+
+    private void EditingTextBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TextBox tb)
+            return;
+
+        tb.Focus();
+        tb.SelectAll();
     }
 
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)

@@ -18,10 +18,20 @@
     mc:Ignorable="d">
 
     <Window.Resources>
-        <Style TargetType="TextBlock">
+        <Style TargetType="TextBlock" x:Key="CellTextBlock">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontSize" Value="14" />
-
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="3,5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{StaticResource DarkTeal}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="SelectionBrush" Value="White" />
+            <Setter Property="SelectionOpacity" Value="0.2" />
         </Style>
     </Window.Resources>
 
@@ -122,31 +132,21 @@
                 <DataGridTemplateColumn Width="*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
-                            Padding="6"
-                            VerticalAlignment="Center"
+                            Style="{StaticResource CellTextBlock}"
                             Background="{StaticResource DarkControlBackground}"
-                            FontSize="14"
-                            Foreground="White"
                             Text="Ctrl + Enter to copy" />
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock
-                                Padding="6"
-                                VerticalAlignment="Center"
-                                FontSize="14"
-                                Foreground="White"
+                                Style="{StaticResource CellTextBlock}"
                                 Text="{Binding shortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
                             <TextBox
-                                Padding="6"
-                                VerticalAlignment="Center"
-                                Background="{StaticResource Teal}"
-                                FontSize="14"
-                                Foreground="Black"
+                                Loaded="EditingTextBox_Loaded"
                                 Text="{Binding shortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
@@ -154,32 +154,22 @@
                 <DataGridTemplateColumn Width="3*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
-                            Padding="6"
-                            VerticalAlignment="Center"
+                            Style="{StaticResource CellTextBlock}"
                             Background="{StaticResource DarkControlBackground}"
-                            FontSize="14"
-                            Foreground="White"
                             Text="Press Enter to copy" />
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock
-                                Padding="6"
-                                VerticalAlignment="Center"
-                                FontSize="14"
-                                Foreground="White"
+                                Style="{StaticResource CellTextBlock}"
                                 Text="{Binding longValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
                             <TextBox
-                                Padding="6"
+                                Loaded="EditingTextBox_Loaded"
                                 AcceptsTab="True"
-                                VerticalAlignment="Center"
-                                Background="{StaticResource Teal}"
-                                FontSize="14"
-                                Foreground="Black"
                                 Text="{Binding longValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
@@ -188,10 +178,10 @@
         </DataGrid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBlock Padding="10,4">
+            <TextBlock Padding="10,4" Style="{StaticResource CellTextBlock}">
                 Shift + Enter to copy every row.
             </TextBlock>
-            <TextBlock Padding="10,4">
+            <TextBlock Padding="10,4" Style="{StaticResource CellTextBlock}">
                 Shift + Ctrl + Enter to copy all results.
             </TextBlock>
         </StackPanel>
@@ -200,6 +190,7 @@
             x:Name="RowCountTextBlock"
             Grid.Row="2"
             Padding="10,4"
+            Style="{StaticResource CellTextBlock}"
             HorizontalAlignment="Right"
             Text="0 Rows" />
     </Grid>
