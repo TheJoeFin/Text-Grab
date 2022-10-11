@@ -269,6 +269,11 @@
                     Header="New _Grab Frame" />
                 <Separator />
                 <MenuItem
+                    x:Name="QuickSimpleLookupMenuItem"
+                    Click="LaunchQuickSimpleLookup"
+                    Header="Add From _Quick Simple Lookup" />
+                <Separator />
+                <MenuItem
                     x:Name="ListFilesMenuItem"
                     Click="ListFilesMenuItem_Click"
                     Header="_List Files and Folders From Folder..." />
