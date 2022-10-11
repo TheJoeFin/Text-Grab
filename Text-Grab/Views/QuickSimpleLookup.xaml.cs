@@ -26,6 +26,8 @@ public partial class QuickSimpleLookup : Window
 
     string cacheFilename = "QuickSimpleLookupCache.csv";
 
+    public TextBox? DestinationTextBox;
+
     public QuickSimpleLookup()
     {
         InitializeComponent();
@@ -232,15 +234,28 @@ public partial class QuickSimpleLookup : Window
         if (string.IsNullOrEmpty(textVal))
             return;
 
-        try
+        if (DestinationTextBox is not null)
         {
-            Clipboard.SetText(textVal);
-            this.Close();
+            // Do it this way instead of append text because it inserts the text at the cursor
+            // Then puts the cursor at the end of the newly added text
+            // AppendText() just adds the text to the end no matter what.
+            DestinationTextBox.SelectedText = textVal;
+            DestinationTextBox.Select(DestinationTextBox.SelectionStart + textVal.Length, 0);
+            DestinationTextBox.Focus();
         }
-        catch (Exception)
+        else
         {
-            Debug.WriteLine("Failed to set clipboard text");
+            try
+            {
+                Clipboard.SetText(textVal);
+            }
+            catch (Exception)
+            {
+                Debug.WriteLine("Failed to set clipboard text");
+            }
         }
+
+        this.Close();
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

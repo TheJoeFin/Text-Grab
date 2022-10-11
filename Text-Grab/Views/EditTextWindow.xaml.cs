@@ -154,6 +154,10 @@ public partial class EditTextWindow : Window
         _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
 
+        RoutedCommand NewLookupCommand = new();
+        _ = NewLookupCommand.InputGestures.Add(new KeyGesture(Key.Q, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(NewLookupCommand, LaunchQuickSimpleLookup));
+
         PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
         if (PassedTextControl.ContextMenu != null)
             numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
@@ -1353,6 +1357,15 @@ public partial class EditTextWindow : Window
         AddOrRemoveWindow aorw = new();
         aorw.Owner = this;
         aorw.ShowDialog();
+    }
+
+    private void LaunchQuickSimpleLookup(object sender, RoutedEventArgs e)
+    {
+        QuickSimpleLookup qsl = new()
+        {
+            DestinationTextBox = PassedTextControl
+        };
+        qsl.Show();
     }
 
     public void RemoveCharsFromEachLine(int numberOfChars, SpotInLine spotInLine)
