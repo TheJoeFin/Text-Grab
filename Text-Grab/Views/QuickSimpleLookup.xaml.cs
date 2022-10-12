@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -24,9 +25,13 @@ public partial class QuickSimpleLookup : Window
 
     public bool IsEditingDataGrid { get; set; } = false;
 
-    string cacheFilename = "QuickSimpleLookupCache.csv";
-
     public TextBox? DestinationTextBox;
+
+    private string cacheFilename = "QuickSimpleLookupCache.csv";
+
+    private int rowCount = 0;
+
+    private string valueUnderEdit = string.Empty;
 
     public QuickSimpleLookup()
     {
@@ -119,7 +124,10 @@ public partial class QuickSimpleLookup : Window
     private void UpdateRowCount()
     {
         if (MainDataGrid.ItemsSource is List<LookupItem> list)
-            RowCountTextBlock.Text = $"{list.Count} Rows";
+        {
+            rowCount = list.Count;
+            RowCountTextBlock.Text = $"{rowCount} Rows";
+        }
     }
 
     private void ParseBTN_Click(object sender, RoutedEventArgs e)
@@ -173,6 +181,8 @@ public partial class QuickSimpleLookup : Window
                 e.Handled = true;
                 break;
             case Key.Escape:
+                if (IsEditingDataGrid)
+                    return;
                 ClearOrExit();
                 e.Handled = true;
                 break;
@@ -312,8 +322,19 @@ public partial class QuickSimpleLookup : Window
 
     private void MainDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
-        SaveBTN.Visibility = Visibility.Visible;
         IsEditingDataGrid = false;
+
+        if (e.EditAction == DataGridEditAction.Cancel)
+            return;
+
+        var child = VisualTreeHelper.GetChild(e.EditingElement, 0);
+        if (child is TextBox editedBox
+            && valueUnderEdit != editedBox.Text)
+        {
+            SaveBTN.Visibility = Visibility.Visible;
+            valueUnderEdit = string.Empty;
+            UpdateRowCount();
+        }
     }
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
@@ -330,10 +351,23 @@ public partial class QuickSimpleLookup : Window
         IsEditingDataGrid = true;
     }
 
+    private void MainDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MainDataGrid.ItemsSource is List<LookupItem> list
+            && list.Count < rowCount)
+        {
+            // A row has been deleted
+            SaveBTN.Visibility = Visibility.Visible;
+            UpdateRowCount();
+        }
+    }
+
     private void EditingTextBox_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not TextBox tb)
             return;
+
+        valueUnderEdit = tb.Text;
 
         tb.Focus();
         tb.SelectAll();

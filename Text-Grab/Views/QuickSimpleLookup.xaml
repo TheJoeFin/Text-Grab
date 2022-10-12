@@ -122,6 +122,7 @@
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
+            SelectionChanged="MainDataGrid_SelectionChanged"
             CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
