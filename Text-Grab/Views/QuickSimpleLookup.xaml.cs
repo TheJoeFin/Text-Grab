@@ -378,7 +378,7 @@ public partial class QuickSimpleLookup : Window
 
         var result = dlg.ShowDialog();
 
-        if (result == false || dlg.CheckPathExists == false)
+        if (result == false)
             return;
 
         Settings.Default.LookupFileLocation = dlg.FileName;
