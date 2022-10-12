@@ -125,7 +125,7 @@
             CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
-            ItemsSource="{Binding Source=ItemsDictionary}"
+            ItemsSource="{Binding ItemsDictionary}"
             MinRowHeight="14"
             RowBackground="Transparent"
             RowStyle="{DynamicResource DataGridRowStyleDark}">
