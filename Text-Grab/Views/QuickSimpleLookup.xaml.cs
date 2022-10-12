@@ -354,6 +354,7 @@ public partial class QuickSimpleLookup : Window
     private void MainDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (MainDataGrid.ItemsSource is List<LookupItem> list
+            && string.IsNullOrEmpty(SearchBox.Text)
             && list.Count < rowCount)
         {
             // A row has been deleted
