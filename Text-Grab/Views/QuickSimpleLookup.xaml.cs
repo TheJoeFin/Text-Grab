@@ -51,6 +51,26 @@ public partial class QuickSimpleLookup : Window
 
         if (MainDataGrid.Items.Count > 0)
             MainDataGrid.SelectedIndex = 0;
+        else
+            PopulateSampleData();
+    }
+
+    private void PopulateSampleData()
+    {
+        LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly");
+        ItemsDictionary.Add(sampleItem1);
+
+        LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File");
+        ItemsDictionary.Add(sampleItem2);
+
+        LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices");
+        ItemsDictionary.Add(sampleItem3);
+
+        LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.");
+        ItemsDictionary.Add(sampleItem4);
+
+        MainDataGrid.ItemsSource = null;
+        MainDataGrid.ItemsSource = ItemsDictionary;
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -384,7 +404,7 @@ public partial class QuickSimpleLookup : Window
         Settings.Default.LookupFileLocation = dlg.FileName;
         Settings.Default.Save();
 
-        if (dlg.CheckFileExists)
+        if (File.Exists(dlg.FileName))
         {
             // clear and load the new file
             ItemsDictionary.Clear();
