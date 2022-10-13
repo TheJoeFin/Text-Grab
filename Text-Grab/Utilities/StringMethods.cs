@@ -342,18 +342,10 @@ public static class StringMethods
 
     public static bool IsSpaceJoiningLanguage(this string wordToBeChecked)
     {
-        Regex broadCJK = new(@"\p{IsCJKUnifiedIdeographs}|\p{IsHiragana}|\p{IsKatakana}");
-        Match cjkMatch = broadCJK.Match(wordToBeChecked);
+        Regex broadCJP = new(@"\p{IsCJKUnifiedIdeographs}|{IsCJKSymbolsandPunctuation}|{IsHiragana}|{IsKatakana}|{IsHalfwidthandFullwidthForms}");
 
-        if (cjkMatch.Success)
-        {
-            Regex checkForKorean = new(@"\p{IsHangulSyllables}");
-            Match koreanMatch = checkForKorean.Match(wordToBeChecked);
-            if (koreanMatch.Success)
-                return true;
-
+        if (broadCJP.IsMatch(wordToBeChecked))
             return false;
-        }
 
         return true;
     }
