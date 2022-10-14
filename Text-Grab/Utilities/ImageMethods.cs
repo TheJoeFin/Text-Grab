@@ -17,6 +17,7 @@ using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using Windows.Security.Isolation;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
@@ -159,15 +160,6 @@ public static class ImageMethods
         if (selectedLanguage == null)
             return "";
 
-        bool isCJKLang = false;
-
-        if (selectedLanguage.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
-            isCJKLang = true;
-        else if (selectedLanguage.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
-            isCJKLang = true;
-        else if (selectedLanguage.LanguageTag.StartsWith("ko", StringComparison.InvariantCultureIgnoreCase) == true)
-            isCJKLang = true;
-
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
         CultureInfo culture = lang.GetEquivalentCulture();
 
@@ -232,15 +224,22 @@ public static class ImageMethods
             _ = text.Clear();
             foreach (string textLine in textListLines)
             {
+                bool firstWord = true;
                 List<string> wordArray = textLine.Split().ToList();
                 wordArray.Reverse();
-                if (isCJKLang == true)
-                    _ = text.Append(string.Join("", wordArray));
-                else
-                    _ = text.Append(string.Join(' ', wordArray));
+
+                foreach (string wordText in wordArray)
+                {
+                    if (wordText.IsSpaceJoiningLanguage() && !firstWord)
+                        _ = text.Append(' ').Append(wordText);
+                    else
+                        _ = text.Append(wordText);
+
+                    firstWord = false;
+                }
 
                 if (textLine.Length > 0)
-                    _ = text.Append('\n');
+                    _ = text.Append(Environment.NewLine);
             }
             return text.ToString();
         }
