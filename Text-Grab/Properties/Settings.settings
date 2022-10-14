@@ -86,5 +86,8 @@
     <Setting Name="LookupFileLocation" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="LookupHotKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Q</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

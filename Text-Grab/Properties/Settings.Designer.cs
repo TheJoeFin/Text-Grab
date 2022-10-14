@@ -358,5 +358,17 @@ namespace Text_Grab.Properties {
                 this["LookupFileLocation"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Q")]
+        public string LookupHotKey {
+            get {
+                return ((string)(this["LookupHotKey"]));
+            }
+            set {
+                this["LookupHotKey"] = value;
+            }
+        }
     }
 }

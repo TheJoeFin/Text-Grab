@@ -81,6 +81,7 @@ public partial class SettingsWindow : Window
         FullScreenHotkeyTextBox.Text = Settings.Default.FullscreenGrabHotKey;
         GrabFrameHotkeyTextBox.Text = Settings.Default.GrabFrameHotkey;
         EditTextHotKeyTextBox.Text = Settings.Default.EditWindowHotKey;
+        LookupHotKeyTextBox.Text = Settings.Default.LookupHotKey;
     }
 
     private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
@@ -155,7 +156,7 @@ public partial class SettingsWindow : Window
         if (GlobalHotkeysCheckbox.IsChecked != null)
             Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
 
-        if (HotKeysAllDifferent() == true)
+        if (HotKeysAllDifferent())
         {
             KeyConverter keyConverter = new();
             Key? fullScreenKey = (Key?)keyConverter.ConvertFrom(FullScreenHotkeyTextBox.Text.ToUpper());
@@ -169,18 +170,32 @@ public partial class SettingsWindow : Window
             Key? editWindowKey = (Key?)keyConverter.ConvertFrom(EditTextHotKeyTextBox.Text.ToUpper());
             if (editWindowKey is not null)
                 Settings.Default.EditWindowHotKey = EditTextHotKeyTextBox.Text.ToUpper();
+
+            Key? lookupKey = (Key?)keyConverter.ConvertFrom(LookupHotKeyTextBox.Text.ToUpper());
+            if (lookupKey is not null)
+                Settings.Default.LookupHotKey = LookupHotKeyTextBox.Text.ToUpper();
         }
         else
         {
             Settings.Default.FullscreenGrabHotKey = "F";
             Settings.Default.GrabFrameHotkey = "G";
             Settings.Default.EditWindowHotKey = "E";
+            Settings.Default.LookupHotKey = "Q";
         }
 
         if (string.IsNullOrEmpty(SecondsTextBox.Text) == false)
             Settings.Default.InsertDelay = InsertDelaySeconds;
 
         Settings.Default.Save();
+
+        App app = (App)App.Current;
+        if (app.TextGrabIcon != null)
+        {
+            NotifyIconUtilities.UnregisterHotkeys(app);
+            NotifyIconUtilities.RegisterHotKeys(app);
+        }
+
+
         Close();
     }
 
@@ -229,21 +244,28 @@ public partial class SettingsWindow : Window
     {
         if (EditTextHotKeyTextBox is null
             || FullScreenHotkeyTextBox is null
-            || GrabFrameHotkeyTextBox is null)
+            || GrabFrameHotkeyTextBox is null
+            || LookupHotKeyTextBox is null)
             return false;
 
         if (GrabFrameHotkeyTextBox.Text.ToUpper() != FullScreenHotkeyTextBox.Text.ToUpper()
-            && FullScreenHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper())
+            && GrabFrameHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper()
+            && GrabFrameHotkeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper()
+            && FullScreenHotkeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper()
+            && FullScreenHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper()
+            && EditTextHotKeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper())
         {
             FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
             GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
             EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            LookupHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
             return true;
         }
 
         FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
         GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
         EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
+        LookupHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
         return false;
     }
 }

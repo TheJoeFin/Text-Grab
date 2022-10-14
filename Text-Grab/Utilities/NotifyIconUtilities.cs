@@ -87,10 +87,18 @@ public static class NotifyIconUtilities
         //     // TODO Add a setting to customize doubleclick behavior
         //     EditTextWindow etw = new(); etw.Show();
         // };
+        RegisterHotKeys(app);
+
+        app.TextGrabIcon = icon;
+    }
+
+    public static void RegisterHotKeys(App app)
+    {
         KeysConverter keysConverter = new();
         Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
         Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
         Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
+        Keys? LookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
 
         if (fullscreenKey is not null)
             app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(fullscreenKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
@@ -101,21 +109,26 @@ public static class NotifyIconUtilities
         if (editWindowKey is not null)
             app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(editWindowKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
 
-        app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(Keys.Q, KeyModifiers.Windows | KeyModifiers.Shift));
+        if (LookupKey is not null)
+            app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(LookupKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
+
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
+    }
 
-        app.TextGrabIcon = icon;
+    public static void UnregisterHotkeys(App app)
+    {
+        HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
+
+        foreach (int hotKeyId in app.HotKeyIds)
+            HotKeyManager.UnregisterHotKey(hotKeyId);
     }
 
     private static void trayIcon_Disposed(object? sender, EventArgs e)
     {
         App app = (App)App.Current;
 
-        HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
-
-        foreach (int hotKeyId in app.HotKeyIds)
-            HotKeyManager.UnregisterHotKey(hotKeyId);
+        UnregisterHotkeys(app);
     }
 
     static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
@@ -127,6 +140,7 @@ public static class NotifyIconUtilities
         Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
         Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
         Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
+        Keys? lookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
 
         if (fullscreenKey is null || grabFrameKey is null || editWindowKey is null)
             return;
@@ -155,7 +169,7 @@ public static class NotifyIconUtilities
                 gf.Show();
             }));
         }
-        else if (e.Key == Keys.Q)
+        else if (e.Key == lookupKey)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
