@@ -12,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
@@ -193,16 +194,20 @@ public static class ImageMethods
 
         if (singlePoint == null)
         {
-            if (isCJKLang == false)
-                foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
-            else
+            foreach (OcrLine ocrLine in ocrResult.Lines)
             {
-                foreach (OcrLine ocrLine in ocrResult.Lines)
+                bool isFirstWord = true;
+                foreach (OcrWord ocrWord in ocrLine.Words)
                 {
-                    foreach (OcrWord ocrWord in ocrLine.Words)
+                    if (ocrWord.Text.IsSpaceJoiningLanguage() && !isFirstWord)
+                        _ = text.Append(' ').Append(ocrWord.Text);
+                    else
                         _ = text.Append(ocrWord.Text);
-                    text.Append(Environment.NewLine);
+
+                    isFirstWord = false;
                 }
+
+                text.Append(Environment.NewLine);
             }
         }
         else
@@ -219,9 +224,6 @@ public static class ImageMethods
                 }
             }
         }
-
-        // Debug.WriteLine($"Average line word heights: {heightsList.Average()}");
-
 
         if (culture.TextInfo.IsRightToLeft)
         {
