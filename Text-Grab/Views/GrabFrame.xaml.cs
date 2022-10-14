@@ -424,6 +424,29 @@ public partial class GrabFrame : Window
 
         foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
         {
+            double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
+            double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
+            double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
+            double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
+
+            Rect lineRect = new()
+            {
+                X = left,
+                Y = top,
+                Width = Math.Abs(right - left),
+                Height = Math.Abs(bottom - top)
+            };
+
+            WordBorder wordBorderBox = new WordBorder
+            {
+                Width = (lineRect.Width / (dpi.DpiScaleX * scale)),
+                Height = (lineRect.Height / (dpi.DpiScaleY * scale)),
+                Word = ocrLine.Text,
+                ToolTip = ocrLine.Text,
+                LineNumber = lineNumber,
+                IsFromEditWindow = IsFromEditWindow
+            };
+
             foreach (OcrWord ocrWord in ocrLine.Words)
             {
                 string wordString = ocrWord.Text;
@@ -431,7 +454,7 @@ public partial class GrabFrame : Window
                 if (Settings.Default.CorrectErrors)
                     wordString = wordString.TryFixEveryWordLetterNumberErrors();
 
-                WordBorder wordBorderBox = new WordBorder
+                WordBorder awordBorderBox = new WordBorder
                 {
                     Width = (ocrWord.BoundingRect.Width / (dpi.DpiScaleX * scale)),
                     Height = (ocrWord.BoundingRect.Height / (dpi.DpiScaleY * scale)),
@@ -459,11 +482,11 @@ public partial class GrabFrame : Window
                     }
                 }
 
-                wordBorders.Add(wordBorderBox);
-                _ = RectanglesCanvas.Children.Add(wordBorderBox);
-                Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / (dpi.DpiScaleX * scale)));
-                Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / (dpi.DpiScaleY * scale)));
             }
+            wordBorders.Add(wordBorderBox);
+            _ = RectanglesCanvas.Children.Add(wordBorderBox);
+            Canvas.SetLeft(wordBorderBox, (lineRect.Left / (dpi.DpiScaleX * scale)));
+            Canvas.SetTop(wordBorderBox, (lineRect.Top / (dpi.DpiScaleY * scale)));
 
             lineNumber++;
         }
