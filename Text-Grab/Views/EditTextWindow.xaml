@@ -254,7 +254,8 @@
                 <MenuItem
                     x:Name="FullScreenGrabMenuItem"
                     Click="FullScreenGrabMenuItem_Click"
-                    Header="New _Fullscreen Grab" />
+                    Header="New _Fullscreen Grab"
+                    InputGestureText="Ctrl + F" />
                 <MenuItem
                     x:Name="FSGFreezeenuItem"
                     Click="FSGFreezeenuItem_Click"
@@ -266,12 +267,14 @@
                 <MenuItem
                     x:Name="GrabFrameMenuItem"
                     Click="GrabFrameMenuItem_Click"
-                    Header="New _Grab Frame" />
+                    Header="New _Grab Frame"
+                    InputGestureText="Ctrl + G" />
                 <Separator />
                 <MenuItem
                     x:Name="QuickSimpleLookupMenuItem"
                     Click="LaunchQuickSimpleLookup"
-                    Header="Add From _Quick Simple Lookup" />
+                    Header="Add From _Quick Simple Lookup"
+                    InputGestureText="Ctrl + Q" />
                 <Separator />
                 <MenuItem
                     x:Name="ListFilesMenuItem"
