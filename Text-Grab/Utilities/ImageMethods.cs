@@ -254,17 +254,22 @@ public static class ImageMethods
                 List<string> wordArray = textLine.Split().ToList();
                 wordArray.Reverse();
 
-                foreach (string wordText in wordArray)
+                if (isSpaceJoiningOCRLang)
+                    text.Append(string.Join(' ', wordArray));
+                else
                 {
-                    bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
+                    foreach (string wordText in wordArray)
+                    {
+                        bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
 
-                    if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
-                        _ = text.Append(wordText);
-                    else
-                        _ = text.Append(' ').Append(wordText);
+                        if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
+                            _ = text.Append(wordText);
+                        else
+                            _ = text.Append(' ').Append(wordText);
 
-                    firstWord = false;
-                    isPrevWordSpaceJoining = isThisWordSpaceJoining;
+                        firstWord = false;
+                        isPrevWordSpaceJoining = isThisWordSpaceJoining;
+                    }
                 }
 
                 if (textLine.Length > 0)
