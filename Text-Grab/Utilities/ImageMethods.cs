@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.Globalization;
@@ -248,13 +249,16 @@ public static class ImageMethods
         }
     }
 
-    public static async Task<(OcrResult?, double)> GetOcrResultFromRegion(Rectangle region)
+    public static async Task<(OcrResult?, double)> GetOcrResultFromRegion(Rectangle region, Language? language)
     {
-        Language? selectedLanguage = GetOCRLanguage();
+        Language? selectedLanguage = null;
+        if (language is null)
+            selectedLanguage = GetOCRLanguage();
+        else
+            selectedLanguage = language;
+
         if (selectedLanguage == null)
-        {
             return (null, 0.0);
-        }
 
         using Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
@@ -371,8 +375,11 @@ public static class ImageMethods
     {
         // use currently selected Language
         string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-
         Language? selectedLanguage = new(inputLang);
+
+        if (!string.IsNullOrEmpty(Settings.Default.LastUsedLang))
+            selectedLanguage = new(Settings.Default.LastUsedLang);
+
         List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
 
         if (possibleOCRLangs.Count < 1)

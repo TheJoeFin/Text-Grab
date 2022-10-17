@@ -50,6 +50,8 @@ public partial class GrabFrame : Window
 
     private bool wasAltHeld = false;
 
+    private bool isLanguageBoxLoaded = false;
+
     public GrabFrame()
     {
         InitializeComponent();
@@ -421,11 +423,10 @@ public partial class GrabFrame : Window
         };
 
         double scale = 1;
+        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
 
         if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
-
-        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
+            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize, currentLang);
 
         if (currentLang is not null)
         {
@@ -1351,6 +1352,36 @@ public partial class GrabFrame : Window
                 LanguagesComboBox.SelectedIndex = count;
 
             count++;
+        }
+
+        isLanguageBoxLoaded = true;
+    }
+
+    private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!isLanguageBoxLoaded || sender is not ComboBox langComboBox)
+            return;
+
+        Language? pickedLang = langComboBox.SelectedItem as Language;
+
+        if (pickedLang != null)
+        {
+            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
+            Settings.Default.Save();
+        }
+
+        ResetGrabFrame();
+
+        reDrawTimer.Stop();
+        reDrawTimer.Start();
+    }
+
+    private void LanguagesComboBox_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            Settings.Default.LastUsedLang = String.Empty;
+            Settings.Default.Save();
         }
     }
 }

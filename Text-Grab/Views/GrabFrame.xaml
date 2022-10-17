@@ -147,15 +147,15 @@
 
                 </StackPanel>
             </Grid>
-            <Border Grid.Row="1" x:Name="RectanglesBorder">
+            <Border x:Name="RectanglesBorder" Grid.Row="1">
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
                 <Canvas
                     x:Name="RectanglesCanvas"
                     Margin="-4,-2,0,0"
-                    IsHitTestVisible="True"
                     Background="Transparent"
+                    IsHitTestVisible="True"
                     MouseDown="RectanglesCanvas_MouseDown"
                     MouseMove="RectanglesCanvas_MouseMove"
                     MouseUp="RectanglesCanvas_MouseUp">
@@ -230,7 +230,12 @@
                         Text="Matches: 0"
                         Visibility="Collapsed" />
 
-                    <ComboBox x:Name="LanguagesComboBox" Grid.Column="2" >
+                    <ComboBox
+                        x:Name="LanguagesComboBox"
+                        Grid.Column="2"
+                        MinWidth="60"
+                        PreviewMouseDown="LanguagesComboBox_MouseDown"
+                        SelectionChanged="LanguagesComboBox_SelectionChanged">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock
