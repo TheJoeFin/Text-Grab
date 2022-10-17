@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
@@ -201,31 +202,8 @@ public static class ImageMethods
 
         if (singlePoint == null)
         {
-            if (isSpaceJoiningOCRLang == true)
-                foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
-            else
-            {
-                foreach (OcrLine ocrLine in ocrResult.Lines)
-                {
-                    bool isFirstWord = true;
-                    bool isPrevWordSpaceJoining = false;
-
-                    foreach (OcrWord ocrWord in ocrLine.Words)
-                    {
-                        bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(ocrWord.Text);
-
-                        if (isFirstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
-                            _ = text.Append(ocrWord.Text);
-                        else
-                            _ = text.Append(' ').Append(ocrWord.Text);
-
-                        isFirstWord = false;
-                        isPrevWordSpaceJoining = isThisWordSpaceJoining;
-                    }
-
-                    text.Append(Environment.NewLine);
-                }
-            }
+            foreach (OcrLine ocrLine in ocrResult.Lines)
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text, regexSpaceJoiningWord);
         }
         else
         {
@@ -243,38 +221,38 @@ public static class ImageMethods
         }
 
         if (culture.TextInfo.IsRightToLeft)
-        {
-            string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+            ReverseWordsForRightToLeft(text, regexSpaceJoiningWord);
+        
+        return text.ToString();
+    }
 
-            _ = text.Clear();
-            foreach (string textLine in textListLines)
+    private static void ReverseWordsForRightToLeft(StringBuilder text, Regex regexSpaceJoiningWord)
+    {
+        string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+
+        _ = text.Clear();
+        foreach (string textLine in textListLines)
+        {
+            bool firstWord = true;
+            bool isPrevWordSpaceJoining = false;
+            List<string> wordArray = textLine.Split().ToList();
+            wordArray.Reverse();
+
+            foreach (string wordText in wordArray)
             {
-                bool firstWord = true;
-                bool isPrevWordSpaceJoining = false;
-                List<string> wordArray = textLine.Split().ToList();
-                wordArray.Reverse();
+                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
 
-                foreach (string wordText in wordArray)
-                {
-                    bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
+                if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
+                    _ = text.Append(wordText);
+                else
+                    _ = text.Append(' ').Append(wordText);
 
-                    if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
-                        _ = text.Append(wordText);
-                    else
-                        _ = text.Append(' ').Append(wordText);
-
-                    firstWord = false;
-                    isPrevWordSpaceJoining = isThisWordSpaceJoining;
-                }
-
-                if (textLine.Length > 0)
-                    _ = text.Append(Environment.NewLine);
+                firstWord = false;
+                isPrevWordSpaceJoining = isThisWordSpaceJoining;
             }
-            return text.ToString();
-        }
-        else
-        {
-            return text.ToString();
+
+            if (textLine.Length > 0)
+                _ = text.Append(Environment.NewLine);
         }
     }
 
