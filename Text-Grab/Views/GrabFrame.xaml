@@ -33,6 +33,15 @@
     mc:Ignorable="d">
     <Window.Resources>
         <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+
+        <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
@@ -100,7 +109,6 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <Button
                         x:Name="MinimizeButton"
-                        Grid.Column="2"
                         Width="46"
                         Height="24"
                         Margin="0,-2,0,0"
@@ -113,7 +121,6 @@
                     </Button>
                     <Button
                         x:Name="RestoreButton"
-                        Grid.Column="2"
                         Width="46"
                         Height="24"
                         Margin="0,-2,0,0"
@@ -127,7 +134,6 @@
                     </Button>
                     <Button
                         x:Name="CloseButton"
-                        Grid.Column="2"
                         Width="46"
                         Height="24"
                         Margin="0,-2,0,0"
@@ -180,6 +186,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
                     <TextBox
@@ -223,12 +230,24 @@
                         Text="Matches: 0"
                         Visibility="Collapsed" />
 
+                    <ComboBox x:Name="LanguagesComboBox" Grid.Column="2" >
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontFamily="Segoe UI"
+                                    Style="{StaticResource SymbolTextStyle}"
+                                    Text="{Binding LanguageTag}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
                     <StackPanel
                         x:Name="ButtonsStackPanel"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="6,0"
                         Orientation="Horizontal">
-
                         <controls:CollapsibleButton
                             x:Name="RefreshBTN"
                             Margin="0"

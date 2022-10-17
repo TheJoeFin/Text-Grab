@@ -17,6 +17,7 @@ using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Windows.Globalization;
 using Windows.Media.Ocr;
 
 namespace Text_Grab.Views;
@@ -47,9 +48,13 @@ public partial class GrabFrame : Window
 
     private bool IsDragOver = false;
 
+    private bool wasAltHeld = false;
+
     public GrabFrame()
     {
         InitializeComponent();
+
+        LoadOcrLanguages();
 
         SetRestoreState();
 
@@ -71,6 +76,8 @@ public partial class GrabFrame : Window
         this.PreviewMouseWheel += HandlePreviewMouseWheel;
         this.PreviewKeyDown += Window_PreviewKeyDown;
         this.PreviewKeyUp += Window_PreviewKeyUp;
+
+        CheckBottomRowButtonsVis();
     }
 
     public void GrabFrame_Unloaded(object sender, RoutedEventArgs e)
@@ -126,8 +133,6 @@ public partial class GrabFrame : Window
             wasAltHeld = false;
         }
     }
-
-    private bool wasAltHeld = false;
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -236,7 +241,8 @@ public partial class GrabFrame : Window
                 X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
                 Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
             };
-            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize, null);
+            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
+            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize, selectedOcrLang);
         }
 
         if (wordBorders.Count > 0)
@@ -350,17 +356,29 @@ public partial class GrabFrame : Window
     {
         if (this.Width < 300)
         {
+            ButtonsStackPanel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            ButtonsStackPanel.Visibility = Visibility.Visible;
+        }
+
+        if (this.Width < 460)
+        {
             SearchBox.Visibility = Visibility.Collapsed;
             MatchesTXTBLK.Visibility = Visibility.Collapsed;
             ClearBTN.Visibility = Visibility.Collapsed;
-            ButtonsStackPanel.Visibility = Visibility.Collapsed;
         }
         else
         {
             SearchBox.Visibility = Visibility.Visible;
             ClearBTN.Visibility = Visibility.Visible;
-            ButtonsStackPanel.Visibility = Visibility.Visible;
         }
+
+        if (this.Width < 580)
+            LanguagesComboBox.Visibility = Visibility.Collapsed;
+        else
+            LanguagesComboBox.Visibility = Visibility.Visible;
     }
 
     private void GrabFrameWindow_Deactivated(object? sender, EventArgs e)
@@ -407,7 +425,7 @@ public partial class GrabFrame : Window
         if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
             (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
 
-        Windows.Globalization.Language? currentLang = ImageMethods.GetOCRLanguage();
+        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
 
         if (currentLang is not null)
         {
@@ -1313,5 +1331,26 @@ public partial class GrabFrame : Window
         }
         if (SearchBox != null)
             await DrawRectanglesAroundWords(SearchBox.Text);
+    }
+
+    private void LoadOcrLanguages()
+    {
+        if (LanguagesComboBox.Items.Count > 0)
+            return;
+
+        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
+        Language? firstLang = ImageMethods.GetOCRLanguage();
+
+        int count = 0;
+
+        foreach (Language language in possibleOCRLangs)
+        {
+            LanguagesComboBox.Items.Add(language);
+
+            if (language.LanguageTag == firstLang?.LanguageTag)
+                LanguagesComboBox.SelectedIndex = count;
+
+            count++;
+        }
     }
 }
