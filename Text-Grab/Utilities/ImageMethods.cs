@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -17,7 +18,6 @@ using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
-using Windows.Security.Isolation;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
@@ -160,6 +160,13 @@ public static class ImageMethods
         if (selectedLanguage == null)
             return "";
 
+        bool isSpaceJoiningOCRLang = true;
+
+        if (selectedLanguage.LanguageTag.StartsWith("zh-", StringComparison.InvariantCultureIgnoreCase) == true)
+            isSpaceJoiningOCRLang = false;
+        else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase) == true)
+            isSpaceJoiningOCRLang = false;
+
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
         CultureInfo culture = lang.GetEquivalentCulture();
 
@@ -184,23 +191,19 @@ public static class ImageMethods
 
         List<double> heightsList = new();
 
+        // (when OCR language is zh or ja)
+        // matches words in a space-joining language, which contains:
+        // - one letter that is not in "other letters" (CJK characters are "other letters")
+        // - one number digit
+        // - any words longer than one character
+        // Chinese and Japanese characters are single-character words
+        // when a word is one punctuation/symbol, join it without spaces
+        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
+
         if (singlePoint == null)
         {
             foreach (OcrLine ocrLine in ocrResult.Lines)
-            {
-                bool isFirstWord = true;
-                foreach (OcrWord ocrWord in ocrLine.Words)
-                {
-                    if (ocrWord.Text.IsSpaceJoiningLanguage() && !isFirstWord)
-                        _ = text.Append(' ').Append(ocrWord.Text);
-                    else
-                        _ = text.Append(ocrWord.Text);
-
-                    isFirstWord = false;
-                }
-
-                text.Append(Environment.NewLine);
-            }
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text, regexSpaceJoiningWord);
         }
         else
         {
@@ -218,34 +221,38 @@ public static class ImageMethods
         }
 
         if (culture.TextInfo.IsRightToLeft)
-        {
-            string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+            ReverseWordsForRightToLeft(text, regexSpaceJoiningWord);
+        
+        return text.ToString();
+    }
 
-            _ = text.Clear();
-            foreach (string textLine in textListLines)
+    private static void ReverseWordsForRightToLeft(StringBuilder text, Regex regexSpaceJoiningWord)
+    {
+        string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+
+        _ = text.Clear();
+        foreach (string textLine in textListLines)
+        {
+            bool firstWord = true;
+            bool isPrevWordSpaceJoining = false;
+            List<string> wordArray = textLine.Split().ToList();
+            wordArray.Reverse();
+
+            foreach (string wordText in wordArray)
             {
-                bool firstWord = true;
-                List<string> wordArray = textLine.Split().ToList();
-                wordArray.Reverse();
+                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
 
-                foreach (string wordText in wordArray)
-                {
-                    if (wordText.IsSpaceJoiningLanguage() && !firstWord)
-                        _ = text.Append(' ').Append(wordText);
-                    else
-                        _ = text.Append(wordText);
+                if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
+                    _ = text.Append(wordText);
+                else
+                    _ = text.Append(' ').Append(wordText);
 
-                    firstWord = false;
-                }
-
-                if (textLine.Length > 0)
-                    _ = text.Append(Environment.NewLine);
+                firstWord = false;
+                isPrevWordSpaceJoining = isThisWordSpaceJoining;
             }
-            return text.ToString();
-        }
-        else
-        {
-            return text.ToString();
+
+            if (textLine.Length > 0)
+                _ = text.Append(Environment.NewLine);
         }
     }
 
