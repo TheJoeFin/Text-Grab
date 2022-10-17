@@ -11,6 +11,14 @@ public static class OcrExtensions
 
     public static void GetTextFromOcrLine(this OcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
+        // (when OCR language is zh or ja)
+        // matches words in a space-joining language, which contains:
+        // - one letter that is not in "other letters" (CJK characters are "other letters")
+        // - one number digit
+        // - any words longer than one character
+        // Chinese and Japanese characters are single-character words
+        // when a word is one punctuation/symbol, join it without spaces
+
         if (isSpaceJoiningOCRLang == true)
             text.AppendLine(ocrLine.Text);
         else

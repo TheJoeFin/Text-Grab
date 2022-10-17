@@ -191,14 +191,6 @@ public static class ImageMethods
 
         List<double> heightsList = new();
 
-        // (when OCR language is zh or ja)
-        // matches words in a space-joining language, which contains:
-        // - one letter that is not in "other letters" (CJK characters are "other letters")
-        // - one number digit
-        // - any words longer than one character
-        // Chinese and Japanese characters are single-character words
-        // when a word is one punctuation/symbol, join it without spaces
-
         if (singlePoint == null)
         {
             foreach (OcrLine ocrLine in ocrResult.Lines)
