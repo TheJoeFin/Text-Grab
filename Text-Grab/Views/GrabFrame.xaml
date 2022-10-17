@@ -141,33 +141,35 @@
 
                 </StackPanel>
             </Grid>
-            <Canvas
-                x:Name="RectanglesCanvas"
-                Grid.Row="1"
-                Margin="-4,-2,0,0"
-                IsHitTestVisible="True"
-                MouseDown="RectanglesCanvas_MouseDown"
-                MouseMove="RectanglesCanvas_MouseMove"
-                MouseUp="RectanglesCanvas_MouseUp">
-                <Canvas.Background>
+            <Border Grid.Row="1" x:Name="RectanglesBorder">
+                <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
-                </Canvas.Background>
-                <Canvas.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem
-                            x:Name="AspectRationMI"
-                            Checked="AspectRationMI_Checked"
-                            Header="Maintain Aspect Ratio"
-                            IsCheckable="True"
-                            IsChecked="True"
-                            Unchecked="AspectRationMI_Checked" />
-                        <MenuItem
-                            x:Name="FreezeMI"
-                            Click="FreezeMI_Click"
-                            Header="Toggle Freeze" />
-                    </ContextMenu>
-                </Canvas.ContextMenu>
-            </Canvas>
+                </Border.Background>
+                <Canvas
+                    x:Name="RectanglesCanvas"
+                    Margin="-4,-2,0,0"
+                    IsHitTestVisible="True"
+                    Background="Transparent"
+                    MouseDown="RectanglesCanvas_MouseDown"
+                    MouseMove="RectanglesCanvas_MouseMove"
+                    MouseUp="RectanglesCanvas_MouseUp">
+                    <Canvas.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem
+                                x:Name="AspectRationMI"
+                                Checked="AspectRationMI_Checked"
+                                Header="Maintain Aspect Ratio"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Unchecked="AspectRationMI_Checked" />
+                            <MenuItem
+                                x:Name="FreezeMI"
+                                Click="FreezeMI_Click"
+                                Header="Toggle Freeze" />
+                        </ContextMenu>
+                    </Canvas.ContextMenu>
+                </Canvas>
+            </Border>
             <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
                 <Grid
                     Height="30"

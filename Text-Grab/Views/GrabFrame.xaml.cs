@@ -372,6 +372,9 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Visibility = Visibility.Visible;
             if (Keyboard.Modifiers != ModifierKeys.Alt)
                 wasAltHeld = false;
+
+            if (!IsFreezeMode)
+                FreezeGrabFrame();
         }
 
     }
@@ -1171,7 +1174,7 @@ public partial class GrabFrame : Window
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
         this.Background = new SolidColorBrush(Colors.DimGray);
-        RectanglesCanvas.Background.Opacity = 0;
+        RectanglesBorder.Background.Opacity = 0;
         IsFreezeMode = true;
     }
 
@@ -1179,7 +1182,7 @@ public partial class GrabFrame : Window
     {
         Topmost = true;
         GrabFrameImage.Source = null;
-        RectanglesCanvas.Background.Opacity = 0.05;
+        RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         this.Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
