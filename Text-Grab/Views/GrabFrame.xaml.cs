@@ -35,7 +35,7 @@ public partial class GrabFrame : Window
     private Point clickedPoint;
     private Border selectBorder = new();
 
-    private bool isCJKLang = false;
+    private bool isSpaceJoining = true;
 
     private ResultTable? AnalyedResultTable;
 
@@ -266,10 +266,10 @@ public partial class GrabFrame : Window
 
                 if (border.ResultRowID != lastLineNum)
                 {
-                    if (isCJKLang == true)
-                        outputString.Append(string.Join("", lineList));
-                    else
+                    if (isSpaceJoining)
                         outputString.Append(string.Join(' ', lineList));
+                    else
+                        outputString.Append(string.Join("", lineList));
                     outputString.Replace(" \t ", "\t");
                     outputString.Append(Environment.NewLine);
                     lineList.Clear();
@@ -293,10 +293,10 @@ public partial class GrabFrame : Window
                 lineList.Add(border.Word);
             }
 
-            if (isCJKLang == true)
-                outputString.Append(string.Join("", lineList));
-            else
+            if (isSpaceJoining)
                 outputString.Append(string.Join(' ', lineList));
+            else
+                outputString.Append(string.Join("", lineList));
 
             frameText = outputString.ToString();
         }
@@ -409,11 +409,9 @@ public partial class GrabFrame : Window
         if (currentLang is not null)
         {
             if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
+                isSpaceJoining = false;
             else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
-            else if (currentLang.LanguageTag.StartsWith("ko", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
+                isSpaceJoining = false;
         }
 
         if (ocrResultOfWindow == null)
@@ -429,6 +427,10 @@ public partial class GrabFrame : Window
             double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
             double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
 
+            StringBuilder lineText = new();
+
+            ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
+
             Rect lineRect = new()
             {
                 X = left,
@@ -441,47 +443,28 @@ public partial class GrabFrame : Window
             {
                 Width = (lineRect.Width / (dpi.DpiScaleX * scale)),
                 Height = (lineRect.Height / (dpi.DpiScaleY * scale)),
-                Word = ocrLine.Text,
+                Word = lineText.ToString().Trim(),
                 ToolTip = ocrLine.Text,
                 LineNumber = lineNumber,
                 IsFromEditWindow = IsFromEditWindow
             };
 
-            foreach (OcrWord ocrWord in ocrLine.Words)
+            if ((bool)ExactMatchChkBx.IsChecked!)
             {
-                string wordString = ocrWord.Text;
-
-                if (Settings.Default.CorrectErrors)
-                    wordString = wordString.TryFixEveryWordLetterNumberErrors();
-
-                WordBorder awordBorderBox = new WordBorder
+                if (lineText.ToString().Equals(searchWord, StringComparison.CurrentCulture))
                 {
-                    Width = (ocrWord.BoundingRect.Width / (dpi.DpiScaleX * scale)),
-                    Height = (ocrWord.BoundingRect.Height / (dpi.DpiScaleY * scale)),
-                    Word = wordString,
-                    ToolTip = wordString,
-                    LineNumber = lineNumber,
-                    IsFromEditWindow = IsFromEditWindow
-                };
-
-                if ((bool)ExactMatchChkBx.IsChecked!)
-                {
-                    if (wordString.Equals(searchWord, StringComparison.CurrentCulture))
-                    {
-                        wordBorderBox.Select();
-                        numberOfMatches++;
-                    }
+                    wordBorderBox.Select();
+                    numberOfMatches++;
                 }
-                else
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(searchWord)
+                    && lineText.ToString().Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    if (!string.IsNullOrWhiteSpace(searchWord)
-                        && wordString.Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        wordBorderBox.Select();
-                        numberOfMatches++;
-                    }
+                    wordBorderBox.Select();
+                    numberOfMatches++;
                 }
-
             }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);

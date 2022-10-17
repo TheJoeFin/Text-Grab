@@ -198,12 +198,11 @@ public static class ImageMethods
         // - any words longer than one character
         // Chinese and Japanese characters are single-character words
         // when a word is one punctuation/symbol, join it without spaces
-        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
 
         if (singlePoint == null)
         {
             foreach (OcrLine ocrLine in ocrResult.Lines)
-                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text, regexSpaceJoiningWord);
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
         }
         else
         {
@@ -221,14 +220,15 @@ public static class ImageMethods
         }
 
         if (culture.TextInfo.IsRightToLeft)
-            ReverseWordsForRightToLeft(text, regexSpaceJoiningWord);
+            ReverseWordsForRightToLeft(text);
         
         return text.ToString();
     }
 
-    private static void ReverseWordsForRightToLeft(StringBuilder text, Regex regexSpaceJoiningWord)
+    private static void ReverseWordsForRightToLeft(StringBuilder text)
     {
         string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
 
         _ = text.Clear();
         foreach (string textLine in textListLines)

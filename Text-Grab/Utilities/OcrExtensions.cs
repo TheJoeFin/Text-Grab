@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using Text_Grab.Properties;
 using Windows.Media.Ocr;
 
 namespace Text_Grab.Utilities;
@@ -8,7 +9,7 @@ namespace Text_Grab.Utilities;
 public static class OcrExtensions
 {
 
-    public static void GetTextFromOcrLine(this OcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text, Regex regexSpaceJoiningWord)
+    public static void GetTextFromOcrLine(this OcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
         if (isSpaceJoiningOCRLang == true)
             text.AppendLine(ocrLine.Text);
@@ -17,20 +18,27 @@ public static class OcrExtensions
             bool isFirstWord = true;
             bool isPrevWordSpaceJoining = false;
 
+            Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
+
             foreach (OcrWord ocrWord in ocrLine.Words)
             {
-                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(ocrWord.Text);
+                string wordString;
+
+                if (Settings.Default.CorrectErrors)
+                    wordString = ocrWord.Text.TryFixEveryWordLetterNumberErrors();
+                else
+                    wordString = ocrWord.Text;
+
+                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordString);
 
                 if (isFirstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
-                    _ = text.Append(ocrWord.Text);
+                    _ = text.Append(wordString);
                 else
-                    _ = text.Append(' ').Append(ocrWord.Text);
+                    _ = text.Append(' ').Append(wordString);
 
                 isFirstWord = false;
                 isPrevWordSpaceJoining = isThisWordSpaceJoining;
             }
-
-            text.Append(Environment.NewLine);
         }
     }
 }
