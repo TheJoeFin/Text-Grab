@@ -339,14 +339,4 @@ public static class StringMethods
         Regex regex = new(stringToRemove);
         return regex.Replace(stringToBeEdited, "");
     }
-
-    public static bool IsSpaceJoiningLanguage(this string wordToBeChecked)
-    {
-        Regex broadCJP = new(@"\p{IsCJKUnifiedIdeographs}|{IsCJKSymbolsandPunctuation}|{IsHiragana}|{IsKatakana}|{IsHalfwidthandFullwidthForms}");
-
-        if (broadCJP.IsMatch(wordToBeChecked))
-            return false;
-
-        return true;
-    }
 }
