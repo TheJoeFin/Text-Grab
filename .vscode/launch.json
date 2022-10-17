@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Text-Grab/bin/Debug/net6.0-windows10.0.19041.0/Text-Grab.exe",
+            "program": "${workspaceFolder}/Text-Grab/bin/Debug/net6.0-windows10.0.20348.0/Text-Grab.exe",
             "args": [],
             "cwd": "${workspaceFolder}/Text-Grab",
             "console": "internalConsole",

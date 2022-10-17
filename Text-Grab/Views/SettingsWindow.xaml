@@ -97,6 +97,14 @@
                             Edit Text Window
                         </TextBlock>
                     </RadioButton>
+                    <RadioButton
+                        x:Name="QuickLookupRDBTN"
+                        VerticalContentAlignment="Center"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Quick Simple Lookup
+                        </TextBlock>
+                    </RadioButton>
 
                     <!--  Pick Language  -->
 
@@ -186,6 +194,20 @@
                                     Margin="8,0,0,0"
                                     Style="{StaticResource TextBodyNormal}"
                                     Text="new Edit Text Window" />
+                            </StackPanel>
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="LookupHotKeyTextBox"
+                                    Width="20"
+                                    Padding="2"
+                                    BorderThickness="2"
+                                    Text="Q"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="Launch Quick Simple Lookup" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
