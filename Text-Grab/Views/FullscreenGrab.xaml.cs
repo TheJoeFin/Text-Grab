@@ -39,7 +39,7 @@ public partial class FullscreenGrab : Window
     double xShiftDelta;
     double yShiftDelta;
 
-    public EditTextWindow? EditWindow { get; set; }
+    public TextBox? DestinationTextBox { get; set; }
 
     public string? textFromOCR;
 
@@ -464,15 +464,22 @@ public partial class FullscreenGrab : Window
             textFromOCR = grabbedText;
 
             if (Settings.Default.NeverAutoUseClipboard == false
-                && EditWindow is null)
+                && DestinationTextBox is null)
                 try { Clipboard.SetDataObject(grabbedText, true); } catch { }
 
             if (Settings.Default.ShowToast
-                && EditWindow is null)
+                && DestinationTextBox is null)
                 NotificationUtilities.ShowToast(grabbedText);
 
-            if (EditWindow is not null)
-                EditWindow.AddThisText(grabbedText);
+            if (DestinationTextBox is not null)
+            {
+                // Do it this way instead of append text because it inserts the text at the cursor
+                // Then puts the cursor at the end of the newly added text
+                // AppendText() just adds the text to the end no matter what.
+                DestinationTextBox.SelectedText = grabbedText;
+                DestinationTextBox.Select(DestinationTextBox.SelectionStart + grabbedText.Length, 0);
+                DestinationTextBox.Focus();
+            }
 
             WindowUtilities.CloseAllFullscreenGrabs();
         }

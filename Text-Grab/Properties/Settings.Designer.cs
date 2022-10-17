@@ -346,5 +346,29 @@ namespace Text_Grab.Properties {
                 this["EditWindowBottomBarIsHidden"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LookupFileLocation {
+            get {
+                return ((string)(this["LookupFileLocation"]));
+            }
+            set {
+                this["LookupFileLocation"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Q")]
+        public string LookupHotKey {
+            get {
+                return ((string)(this["LookupHotKey"]));
+            }
+            set {
+                this["LookupHotKey"] = value;
+            }
+        }
     }
 }

@@ -155,6 +155,10 @@ public partial class EditTextWindow : Window
         _ = UnstackCommand.InputGestures.Add(new KeyGesture(Key.U, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(UnstackCommand, UnstackExecuted));
 
+        RoutedCommand NewLookupCommand = new();
+        _ = NewLookupCommand.InputGestures.Add(new KeyGesture(Key.Q, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(NewLookupCommand, LaunchQuickSimpleLookup));
+
         PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
         if (PassedTextControl.ContextMenu != null)
             numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
@@ -171,7 +175,7 @@ public partial class EditTextWindow : Window
             && string.IsNullOrWhiteSpace(OpenedFilePath) == true
             && LaunchedFromNotification == false)
         {
-            WindowUtilities.LaunchFullScreenGrab(true, false, this);
+            WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
             LaunchFullscreenOnLoad.IsChecked = true;
             WindowState = WindowState.Minimized;
         }
@@ -490,7 +494,7 @@ public partial class EditTextWindow : Window
 
     private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(openAnyway: true, editWindow: this);
+        WindowUtilities.LaunchFullScreenGrab(openAnyway: true, destinationTextBox: PassedTextControl);
     }
 
     private void keyedCtrlG(object sender, ExecutedRoutedEventArgs e)
@@ -624,12 +628,12 @@ public partial class EditTextWindow : Window
 
     public void AddThisText(string textToAdd)
     {
-        PassedTextControl.SelectedText = textToAdd;
+        PassedTextControl.AppendText(textToAdd);
 
-        string lastTwoChars = PassedTextControl.Text.Substring(PassedTextControl.Text.Length - 2, 2);
-        if (lastTwoChars != Environment.NewLine)
-            PassedTextControl.Text += Environment.NewLine;
-        PassedTextControl.Select(PassedTextControl.Text.Length, 0);
+        // string lastTwoChars = PassedTextControl.Text.Substring(PassedTextControl.Text.Length - 2, 2);
+        // if (lastTwoChars != Environment.NewLine)
+        //     PassedTextControl.Text += Environment.NewLine;
+        // PassedTextControl.Select(PassedTextControl.Text.Length, 0);
     }
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -824,7 +828,7 @@ public partial class EditTextWindow : Window
 
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(true, editWindow: this);
+        WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: PassedTextControl);
     }
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1014,7 +1018,7 @@ public partial class EditTextWindow : Window
             }
             if (window is FullscreenGrab fullscreenGrab)
             {
-                fullscreenGrab.EditWindow = null;
+                fullscreenGrab.DestinationTextBox = null;
             }
             if (window is FindAndReplaceWindow findAndReplaceWindow)
             {
@@ -1133,7 +1137,7 @@ public partial class EditTextWindow : Window
 
     private void FullScreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(true, editWindow: this);
+        WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: PassedTextControl);
     }
 
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1355,12 +1359,12 @@ public partial class EditTextWindow : Window
     private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)
     {
         await Task.Delay(2000);
-        WindowUtilities.LaunchFullScreenGrab(true, true, this);
+        WindowUtilities.LaunchFullScreenGrab(true, true, PassedTextControl);
     }
 
     private void FSGFreezeenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(true, true, this);
+        WindowUtilities.LaunchFullScreenGrab(true, true, PassedTextControl);
     }
 
     private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1368,6 +1372,15 @@ public partial class EditTextWindow : Window
         AddOrRemoveWindow aorw = new();
         aorw.Owner = this;
         aorw.ShowDialog();
+    }
+
+    private void LaunchQuickSimpleLookup(object sender, RoutedEventArgs e)
+    {
+        QuickSimpleLookup qsl = new()
+        {
+            DestinationTextBox = PassedTextControl
+        };
+        qsl.Show();
     }
 
     public void RemoveCharsFromEachLine(int numberOfChars, SpotInLine spotInLine)

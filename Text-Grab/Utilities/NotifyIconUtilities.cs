@@ -16,7 +16,7 @@ public static class NotifyIconUtilities
             return;
         }
 
-        NotifyIcon icon = new NotifyIcon();
+        NotifyIcon icon = new();
         icon.Text = "Text Grab";
         icon.Icon = new System.Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico", UriKind.Relative)).Stream);
         icon.Visible = true;
@@ -25,6 +25,8 @@ public static class NotifyIconUtilities
 
         ToolStripMenuItem? settingsItem = new("&Settings");
         settingsItem.Click += (s, e) => { SettingsWindow sw = new(); sw.Show(); };
+        ToolStripMenuItem? quickSimpleLookupItem = new("&Quick Simple Lookup");
+        quickSimpleLookupItem.Click += (s, e) => { QuickSimpleLookup qsl = new(); qsl.Show(); };
         ToolStripMenuItem? fullscreenGrabItem = new("&Fullscreen Grab");
         fullscreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(true); };
         ToolStripMenuItem? grabFrameItem = new("&Grab Frame");
@@ -37,10 +39,11 @@ public static class NotifyIconUtilities
 
         contextMenu.Items.AddRange(
             new ToolStripMenuItem[] {
-                settingsItem,
                 fullscreenGrabItem,
                 grabFrameItem,
                 editTextWindowItem,
+                quickSimpleLookupItem,
+                settingsItem,
                 exitItem
             }
         );
@@ -57,15 +60,19 @@ public static class NotifyIconUtilities
                         WindowUtilities.LaunchFullScreenGrab(true);
                         break;
                     case "GrabFrame":
-                        GrabFrame gf = new GrabFrame();
+                        GrabFrame gf = new();
                         gf.Show();
                         break;
                     case "EditText":
-                        EditTextWindow manipulateTextWindow = new EditTextWindow();
+                        EditTextWindow manipulateTextWindow = new();
                         manipulateTextWindow.Show();
                         break;
+                    case "QuickLookup":
+                        QuickSimpleLookup qsl = new();
+                        qsl.Show();
+                        break;
                     default:
-                        EditTextWindow editTextWindow = new EditTextWindow();
+                        EditTextWindow editTextWindow = new();
                         editTextWindow.Show();
                         break;
                 }
@@ -80,10 +87,18 @@ public static class NotifyIconUtilities
         //     // TODO Add a setting to customize doubleclick behavior
         //     EditTextWindow etw = new(); etw.Show();
         // };
+        RegisterHotKeys(app);
+
+        app.TextGrabIcon = icon;
+    }
+
+    public static void RegisterHotKeys(App app)
+    {
         KeysConverter keysConverter = new();
         Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
         Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
         Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
+        Keys? LookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
 
         if (fullscreenKey is not null)
             app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(fullscreenKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
@@ -94,20 +109,26 @@ public static class NotifyIconUtilities
         if (editWindowKey is not null)
             app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(editWindowKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
 
+        if (LookupKey is not null)
+            app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(LookupKey.Value, KeyModifiers.Windows | KeyModifiers.Shift));
+
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
+    }
 
-        app.TextGrabIcon = icon;
+    public static void UnregisterHotkeys(App app)
+    {
+        HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
+
+        foreach (int hotKeyId in app.HotKeyIds)
+            HotKeyManager.UnregisterHotKey(hotKeyId);
     }
 
     private static void trayIcon_Disposed(object? sender, EventArgs e)
     {
         App app = (App)App.Current;
 
-        HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
-
-        foreach (int hotKeyId in app.HotKeyIds)
-            HotKeyManager.UnregisterHotKey(hotKeyId);
+        UnregisterHotkeys(app);
     }
 
     static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
@@ -119,6 +140,7 @@ public static class NotifyIconUtilities
         Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
         Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
         Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
+        Keys? lookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
 
         if (fullscreenKey is null || grabFrameKey is null || editWindowKey is null)
             return;
@@ -132,21 +154,27 @@ public static class NotifyIconUtilities
                 etw.Activate();
             }));
         }
-
-        if (e.Key == fullscreenKey.Value)
+        else if (e.Key == fullscreenKey.Value)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 WindowUtilities.LaunchFullScreenGrab(true);
             }));
         }
-
-        if (e.Key == grabFrameKey.Value)
+        else if (e.Key == grabFrameKey.Value)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 GrabFrame gf = new();
                 gf.Show();
+            }));
+        }
+        else if (e.Key == lookupKey)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                QuickSimpleLookup qsl = new();
+                qsl.Show();
             }));
         }
     }
