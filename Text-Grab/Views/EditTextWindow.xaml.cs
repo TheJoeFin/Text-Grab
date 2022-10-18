@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,6 +14,7 @@ using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
@@ -23,11 +22,7 @@ using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Globalization;
-using Windows.Graphics.Imaging;
-using Windows.Media.Ocr;
 using Windows.System;
-using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 
 namespace Text_Grab;
 
@@ -1539,5 +1534,20 @@ public partial class EditTextWindow : Window
         catch (System.Exception) { }
 
         return false;
+    }
+
+    private async void OpenFileInTesseractMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+        dlg.DefaultExt = ".txt";
+        dlg.Filter = "Images| *.png;*.jpg;*.jpeg;*.tiff;.bmp";
+
+        bool? result = dlg.ShowDialog();
+
+        if (result != true
+            || !File.Exists(dlg.FileName))
+            return;
+
+        PassedTextControl.AppendText(await TesseractHelper.GetTextFromImage(dlg.FileName));
     }
 }
