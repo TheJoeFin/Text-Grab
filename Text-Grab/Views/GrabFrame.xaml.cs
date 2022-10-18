@@ -332,7 +332,7 @@ public partial class GrabFrame : Window
 
     private void Window_LocationChanged(object? sender, EventArgs e)
     {
-        if (IsLoaded == false || IsFreezeMode == true)
+        if (IsLoaded == false || IsFreezeMode == true || isMiddleDown)
             return;
 
         ResetGrabFrame();
@@ -988,34 +988,33 @@ public partial class GrabFrame : Window
             reDrawTimer.Start();
     }
 
-    private async void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+    private bool isMiddleDown = false;
+
+    private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.RightButton == MouseButtonState.Pressed)
         {
             e.Handled = false;
             return;
         }
-        else if (e.MiddleButton == MouseButtonState.Pressed)
-        {
-            e.Handled = true;
-            UnfreezeGrabFrame();
-            ResetGrabFrame();
-            await Task.Delay(150);
-            FreezeGrabFrame();
-
-            await Task.Delay(150);
-            if (SearchBox is TextBox searchBox)
-                await DrawRectanglesAroundWords(searchBox.Text);
-
-            return;
-        }
 
         isSelecting = true;
         clickedPoint = e.GetPosition(RectanglesCanvas);
         RectanglesCanvas.CaptureMouse();
-        CursorClipper.ClipCursor(RectanglesCanvas);
         selectBorder.Height = 1;
         selectBorder.Width = 1;
+
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            e.Handled = true;
+
+            isMiddleDown = true;
+            ResetGrabFrame();
+            UnfreezeGrabFrame();
+            return;
+        }
+
+        CursorClipper.ClipCursor(RectanglesCanvas);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch (Exception) { }
 
@@ -1035,6 +1034,18 @@ public partial class GrabFrame : Window
         CursorClipper.UnClipCursor();
         RectanglesCanvas.ReleaseMouseCapture();
 
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            isMiddleDown = false;
+            FreezeGrabFrame();
+
+            await Task.Delay(150);
+            if (SearchBox is TextBox searchBox)
+                await DrawRectanglesAroundWords(searchBox.Text);
+
+            return;
+        }
+
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
         await Task.Delay(50);
@@ -1043,13 +1054,24 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
-        if (isSelecting == false)
+        if (!isSelecting && !isMiddleDown)
             return;
 
         Point movingPoint = e.GetPosition(RectanglesCanvas);
 
         var left = Math.Min(clickedPoint.X, movingPoint.X);
         var top = Math.Min(clickedPoint.Y, movingPoint.Y);
+
+        if (isMiddleDown)
+        {
+            double xShiftDelta = (movingPoint.X - clickedPoint.X);
+            double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+
+            Top += yShiftDelta;
+            Left += xShiftDelta;
+
+            return;
+        }
 
         selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
