@@ -505,6 +505,14 @@ public partial class FullscreenGrab : Window
         if (sender is not ComboBox languageCmbBox || isComboBoxReady == false)
             return;
 
+        Language? pickedLang = languageCmbBox.SelectedItem as Language;
+
+        if (pickedLang != null)
+        {
+            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
+            Settings.Default.Save();
+        }
+
         int selection = languageCmbBox.SelectedIndex;
 
         switch (selection)
@@ -538,6 +546,15 @@ public partial class FullscreenGrab : Window
                 break;
             default:
                 break;
+        }
+    }
+
+    private void LanguagesComboBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            Settings.Default.LastUsedLang = String.Empty;
+            Settings.Default.Save();
         }
     }
 }

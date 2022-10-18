@@ -17,6 +17,7 @@ using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Windows.Globalization;
 using Windows.Media.Ocr;
 
 namespace Text_Grab.Views;
@@ -35,7 +36,7 @@ public partial class GrabFrame : Window
     private Point clickedPoint;
     private Border selectBorder = new();
 
-    private bool isCJKLang = false;
+    private bool isSpaceJoining = true;
 
     private ResultTable? AnalyedResultTable;
 
@@ -47,9 +48,15 @@ public partial class GrabFrame : Window
 
     private bool IsDragOver = false;
 
+    private bool wasAltHeld = false;
+
+    private bool isLanguageBoxLoaded = false;
+
     public GrabFrame()
     {
         InitializeComponent();
+
+        LoadOcrLanguages();
 
         SetRestoreState();
 
@@ -71,6 +78,8 @@ public partial class GrabFrame : Window
         this.PreviewMouseWheel += HandlePreviewMouseWheel;
         this.PreviewKeyDown += Window_PreviewKeyDown;
         this.PreviewKeyUp += Window_PreviewKeyUp;
+
+        CheckBottomRowButtonsVis();
     }
 
     public void GrabFrame_Unloaded(object sender, RoutedEventArgs e)
@@ -126,8 +135,6 @@ public partial class GrabFrame : Window
             wasAltHeld = false;
         }
     }
-
-    private bool wasAltHeld = false;
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -236,7 +243,8 @@ public partial class GrabFrame : Window
                 X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
                 Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
             };
-            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize, null);
+            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
+            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize, selectedOcrLang);
         }
 
         if (wordBorders.Count > 0)
@@ -266,10 +274,10 @@ public partial class GrabFrame : Window
 
                 if (border.ResultRowID != lastLineNum)
                 {
-                    if (isCJKLang == true)
-                        outputString.Append(string.Join("", lineList));
-                    else
+                    if (isSpaceJoining)
                         outputString.Append(string.Join(' ', lineList));
+                    else
+                        outputString.Append(string.Join("", lineList));
                     outputString.Replace(" \t ", "\t");
                     outputString.Append(Environment.NewLine);
                     lineList.Clear();
@@ -293,10 +301,10 @@ public partial class GrabFrame : Window
                 lineList.Add(border.Word);
             }
 
-            if (isCJKLang == true)
-                outputString.Append(string.Join("", lineList));
-            else
+            if (isSpaceJoining)
                 outputString.Append(string.Join(' ', lineList));
+            else
+                outputString.Append(string.Join("", lineList));
 
             frameText = outputString.ToString();
         }
@@ -324,7 +332,7 @@ public partial class GrabFrame : Window
 
     private void Window_LocationChanged(object? sender, EventArgs e)
     {
-        if (IsLoaded == false || IsFreezeMode == true)
+        if (IsLoaded == false || IsFreezeMode == true || isMiddleDown)
             return;
 
         ResetGrabFrame();
@@ -350,17 +358,29 @@ public partial class GrabFrame : Window
     {
         if (this.Width < 300)
         {
+            ButtonsStackPanel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            ButtonsStackPanel.Visibility = Visibility.Visible;
+        }
+
+        if (this.Width < 460)
+        {
             SearchBox.Visibility = Visibility.Collapsed;
             MatchesTXTBLK.Visibility = Visibility.Collapsed;
             ClearBTN.Visibility = Visibility.Collapsed;
-            ButtonsStackPanel.Visibility = Visibility.Collapsed;
         }
         else
         {
             SearchBox.Visibility = Visibility.Visible;
             ClearBTN.Visibility = Visibility.Visible;
-            ButtonsStackPanel.Visibility = Visibility.Visible;
         }
+
+        if (this.Width < 580)
+            LanguagesComboBox.Visibility = Visibility.Collapsed;
+        else
+            LanguagesComboBox.Visibility = Visibility.Visible;
     }
 
     private void GrabFrameWindow_Deactivated(object? sender, EventArgs e)
@@ -372,6 +392,9 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Visibility = Visibility.Visible;
             if (Keyboard.Modifiers != ModifierKeys.Alt)
                 wasAltHeld = false;
+
+            if (!IsFreezeMode)
+                FreezeGrabFrame();
         }
 
     }
@@ -400,20 +423,17 @@ public partial class GrabFrame : Window
         };
 
         double scale = 1;
+        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
 
         if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
-
-        Windows.Globalization.Language? currentLang = ImageMethods.GetOCRLanguage();
+            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize, currentLang);
 
         if (currentLang is not null)
         {
             if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
+                isSpaceJoining = false;
             else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
-            else if (currentLang.LanguageTag.StartsWith("ko", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
+                isSpaceJoining = false;
         }
 
         if (ocrResultOfWindow == null)
@@ -424,46 +444,54 @@ public partial class GrabFrame : Window
 
         foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
         {
-            foreach (OcrWord ocrWord in ocrLine.Words)
+            double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
+            double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
+            double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
+            double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
+
+            StringBuilder lineText = new();
+
+            ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
+
+            Rect lineRect = new()
             {
-                string wordString = ocrWord.Text;
+                X = left,
+                Y = top,
+                Width = Math.Abs(right - left),
+                Height = Math.Abs(bottom - top)
+            };
 
-                if (Settings.Default.CorrectErrors)
-                    wordString = wordString.TryFixEveryWordLetterNumberErrors();
+            WordBorder wordBorderBox = new WordBorder
+            {
+                Width = (lineRect.Width / (dpi.DpiScaleX * scale)),
+                Height = (lineRect.Height / (dpi.DpiScaleY * scale)),
+                Word = lineText.ToString().Trim(),
+                ToolTip = ocrLine.Text,
+                LineNumber = lineNumber,
+                IsFromEditWindow = IsFromEditWindow
+            };
 
-                WordBorder wordBorderBox = new WordBorder
+            if ((bool)ExactMatchChkBx.IsChecked!)
+            {
+                if (lineText.ToString().Equals(searchWord, StringComparison.CurrentCulture))
                 {
-                    Width = (ocrWord.BoundingRect.Width / (dpi.DpiScaleX * scale)),
-                    Height = (ocrWord.BoundingRect.Height / (dpi.DpiScaleY * scale)),
-                    Word = wordString,
-                    ToolTip = wordString,
-                    LineNumber = lineNumber,
-                    IsFromEditWindow = IsFromEditWindow
-                };
-
-                if ((bool)ExactMatchChkBx.IsChecked!)
-                {
-                    if (wordString.Equals(searchWord, StringComparison.CurrentCulture))
-                    {
-                        wordBorderBox.Select();
-                        numberOfMatches++;
-                    }
+                    wordBorderBox.Select();
+                    numberOfMatches++;
                 }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(searchWord)
-                        && wordString.Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        wordBorderBox.Select();
-                        numberOfMatches++;
-                    }
-                }
-
-                wordBorders.Add(wordBorderBox);
-                _ = RectanglesCanvas.Children.Add(wordBorderBox);
-                Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / (dpi.DpiScaleX * scale)));
-                Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / (dpi.DpiScaleY * scale)));
             }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(searchWord)
+                    && lineText.ToString().Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    wordBorderBox.Select();
+                    numberOfMatches++;
+                }
+            }
+            wordBorders.Add(wordBorderBox);
+            _ = RectanglesCanvas.Children.Add(wordBorderBox);
+            Canvas.SetLeft(wordBorderBox, (lineRect.Left / (dpi.DpiScaleX * scale)));
+            Canvas.SetTop(wordBorderBox, (lineRect.Top / (dpi.DpiScaleY * scale)));
 
             lineNumber++;
         }
@@ -960,34 +988,33 @@ public partial class GrabFrame : Window
             reDrawTimer.Start();
     }
 
-    private async void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+    private bool isMiddleDown = false;
+
+    private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.RightButton == MouseButtonState.Pressed)
         {
             e.Handled = false;
             return;
         }
-        else if (e.MiddleButton == MouseButtonState.Pressed)
-        {
-            e.Handled = true;
-            UnfreezeGrabFrame();
-            ResetGrabFrame();
-            await Task.Delay(150);
-            FreezeGrabFrame();
-
-            await Task.Delay(150);
-            if (SearchBox is TextBox searchBox)
-                await DrawRectanglesAroundWords(searchBox.Text);
-
-            return;
-        }
 
         isSelecting = true;
         clickedPoint = e.GetPosition(RectanglesCanvas);
         RectanglesCanvas.CaptureMouse();
-        CursorClipper.ClipCursor(RectanglesCanvas);
         selectBorder.Height = 1;
         selectBorder.Width = 1;
+
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            e.Handled = true;
+
+            isMiddleDown = true;
+            ResetGrabFrame();
+            UnfreezeGrabFrame();
+            return;
+        }
+
+        CursorClipper.ClipCursor(RectanglesCanvas);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch (Exception) { }
 
@@ -1007,6 +1034,18 @@ public partial class GrabFrame : Window
         CursorClipper.UnClipCursor();
         RectanglesCanvas.ReleaseMouseCapture();
 
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            isMiddleDown = false;
+            FreezeGrabFrame();
+
+            await Task.Delay(150);
+            if (SearchBox is TextBox searchBox)
+                await DrawRectanglesAroundWords(searchBox.Text);
+
+            return;
+        }
+
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
         await Task.Delay(50);
@@ -1015,13 +1054,24 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
-        if (isSelecting == false)
+        if (!isSelecting && !isMiddleDown)
             return;
 
         Point movingPoint = e.GetPosition(RectanglesCanvas);
 
         var left = Math.Min(clickedPoint.X, movingPoint.X);
         var top = Math.Min(clickedPoint.Y, movingPoint.Y);
+
+        if (isMiddleDown)
+        {
+            double xShiftDelta = (movingPoint.X - clickedPoint.X);
+            double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+
+            Top += yShiftDelta;
+            Left += xShiftDelta;
+
+            return;
+        }
 
         selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
@@ -1165,7 +1215,7 @@ public partial class GrabFrame : Window
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
         this.Background = new SolidColorBrush(Colors.DimGray);
-        RectanglesCanvas.Background.Opacity = 0;
+        RectanglesBorder.Background.Opacity = 0;
         IsFreezeMode = true;
     }
 
@@ -1173,7 +1223,7 @@ public partial class GrabFrame : Window
     {
         Topmost = true;
         GrabFrameImage.Source = null;
-        RectanglesCanvas.Background.Opacity = 0.05;
+        RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         this.Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
@@ -1304,5 +1354,56 @@ public partial class GrabFrame : Window
         }
         if (SearchBox != null)
             await DrawRectanglesAroundWords(SearchBox.Text);
+    }
+
+    private void LoadOcrLanguages()
+    {
+        if (LanguagesComboBox.Items.Count > 0)
+            return;
+
+        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
+        Language? firstLang = ImageMethods.GetOCRLanguage();
+
+        int count = 0;
+
+        foreach (Language language in possibleOCRLangs)
+        {
+            LanguagesComboBox.Items.Add(language);
+
+            if (language.LanguageTag == firstLang?.LanguageTag)
+                LanguagesComboBox.SelectedIndex = count;
+
+            count++;
+        }
+
+        isLanguageBoxLoaded = true;
+    }
+
+    private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!isLanguageBoxLoaded || sender is not ComboBox langComboBox)
+            return;
+
+        Language? pickedLang = langComboBox.SelectedItem as Language;
+
+        if (pickedLang != null)
+        {
+            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
+            Settings.Default.Save();
+        }
+
+        ResetGrabFrame();
+
+        reDrawTimer.Stop();
+        reDrawTimer.Start();
+    }
+
+    private void LanguagesComboBox_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            Settings.Default.LastUsedLang = String.Empty;
+            Settings.Default.Save();
+        }
     }
 }
