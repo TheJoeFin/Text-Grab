@@ -19,6 +19,7 @@ using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using ZXing.Windows.Compatibility;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
@@ -214,8 +215,30 @@ public static class ImageMethods
 
         if (culture.TextInfo.IsRightToLeft)
             ReverseWordsForRightToLeft(text);
-        
+
+        string barcodeResult = TryToReadBarcodes(scaledBitmap);
+
+        if (!string.IsNullOrWhiteSpace(barcodeResult))
+            text.AppendLine(barcodeResult);
+
         return text.ToString();
+    }
+
+    private static string TryToReadBarcodes(Bitmap bitmap)
+    {
+        BarcodeReader barcodeReader = new()
+        {
+            AutoRotate = true,
+            Options = new ZXing.Common.DecodingOptions { TryHarder = true }
+        };
+
+        using MemoryStream ms = new();
+        bitmap.Save(ms, ImageFormat.Bmp);
+        ZXing.Result result = barcodeReader.Decode(bitmap);
+
+        if (result is null)
+            return string.Empty;
+        return result.Text;
     }
 
     private static void ReverseWordsForRightToLeft(StringBuilder text)
