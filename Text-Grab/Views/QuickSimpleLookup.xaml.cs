@@ -230,38 +230,47 @@ public partial class QuickSimpleLookup : Window
             || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
             return;
 
-        LookupItem lookupItem = firstLookupItem;
+        List<LookupItem> selectedLookupItems = new();
 
-        if (MainDataGrid.SelectedItem is LookupItem selectedLookupItem)
+        foreach (object item in MainDataGrid.SelectedItems)
         {
-            lookupItem = selectedLookupItem;
+            if (item is LookupItem selectedLookupItem)
+                selectedLookupItems.Add(selectedLookupItem);
         }
 
-        string textVal = lookupItem.longValue as string;
+        if (selectedLookupItems.Count == 0)
+            selectedLookupItems.Add(firstLookupItem);
 
-        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            textVal = lookupItem.shortValue as string;
+        StringBuilder stringBuilder = new();
 
-        if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
-            textVal = String.Join(" ", new string[] { lookupItem.shortValue as string, lookupItem.longValue as string });
+        // string textVal = lookupItem.longValue as string;
 
         if ((Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
             && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
         {
-            StringBuilder sb = new();
             // Copy all of the filtered results into the clipboard
             foreach (object item in MainDataGrid.ItemsSource)
             {
                 if (item is not LookupItem luItem)
                     continue;
 
-                sb.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
+                stringBuilder.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
             }
-
-            textVal = sb.ToString();
+        }
+        else
+        {
+            foreach (LookupItem lItem in selectedLookupItems)
+            {
+                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                    stringBuilder.AppendLine(lItem.shortValue);
+                else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+                    stringBuilder.AppendLine(String.Join(" ", new string[] { lItem.shortValue, lItem.longValue }));
+                else
+                    stringBuilder.AppendLine(lItem.longValue);
+            }
         }
 
-        if (string.IsNullOrEmpty(textVal))
+        if (string.IsNullOrEmpty(stringBuilder.ToString()))
             return;
 
         if (DestinationTextBox is not null)
@@ -269,15 +278,15 @@ public partial class QuickSimpleLookup : Window
             // Do it this way instead of append text because it inserts the text at the cursor
             // Then puts the cursor at the end of the newly added text
             // AppendText() just adds the text to the end no matter what.
-            DestinationTextBox.SelectedText = textVal;
-            DestinationTextBox.Select(DestinationTextBox.SelectionStart + textVal.Length, 0);
+            DestinationTextBox.SelectedText = stringBuilder.ToString();
+            DestinationTextBox.Select(DestinationTextBox.SelectionStart + stringBuilder.ToString().Length, 0);
             DestinationTextBox.Focus();
         }
         else
         {
             try
             {
-                Clipboard.SetText(textVal);
+                Clipboard.SetText(stringBuilder.ToString());
             }
             catch (Exception)
             {
