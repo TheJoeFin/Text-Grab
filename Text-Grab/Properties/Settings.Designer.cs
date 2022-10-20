@@ -370,5 +370,17 @@ namespace Text_Grab.Properties {
                 this["LookupHotKey"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool TryToReadBarcodes {
+            get {
+                return ((bool)(this["TryToReadBarcodes"]));
+            }
+            set {
+                this["TryToReadBarcodes"] = value;
+            }
+        }
     }
 }

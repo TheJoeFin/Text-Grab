@@ -89,5 +89,8 @@
     <Setting Name="LookupHotKey" Type="System.String" Scope="User">
       <Value Profile="(Default)">Q</Value>
     </Setting>
+    <Setting Name="TryToReadBarcodes" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

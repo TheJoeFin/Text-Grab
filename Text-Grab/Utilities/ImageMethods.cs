@@ -19,6 +19,7 @@ using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using ZXing.Windows.Compatibility;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
@@ -104,7 +105,7 @@ public static class ImageMethods
             return "";
     }
 
-    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    internal static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
     {
         bool isGrabFrame = false;
         if (passedWindow is GrabFrame)
@@ -127,11 +128,16 @@ public static class ImageMethods
             windowHeight -= (int)(70 * dpi.DpiScaleY);
         }
 
-        using Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        return bmp;
+    }
 
+    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    {
+        Bitmap bmp = GetWindowsBoundsBitmap(passedWindow);
         return BitmapToImageSource(bmp);
     }
 
@@ -214,8 +220,31 @@ public static class ImageMethods
 
         if (culture.TextInfo.IsRightToLeft)
             ReverseWordsForRightToLeft(text);
-        
+
+        if (Settings.Default.TryToReadBarcodes)
+        {
+            string barcodeResult = TryToReadBarcodes(scaledBitmap);
+
+            if (!string.IsNullOrWhiteSpace(barcodeResult))
+                text.AppendLine(barcodeResult);
+        }
+
         return text.ToString();
+    }
+
+    private static string TryToReadBarcodes(Bitmap bitmap)
+    {
+        BarcodeReader barcodeReader = new()
+        {
+            AutoRotate = true,
+            Options = new ZXing.Common.DecodingOptions { TryHarder = true }
+        };
+
+        ZXing.Result result = barcodeReader.Decode(bitmap);
+
+        if (result is null)
+            return string.Empty;
+        return result.Text;
     }
 
     private static void ReverseWordsForRightToLeft(StringBuilder text)

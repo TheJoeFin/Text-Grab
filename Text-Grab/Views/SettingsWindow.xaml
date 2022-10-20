@@ -11,6 +11,7 @@
     Height="600"
     MinWidth="200"
     MinHeight="300"
+    d:Height="1200"
     Background="{StaticResource DarkControlBackground}"
     Closed="Window_Closed"
     Loaded="Window_Loaded"
@@ -259,6 +260,16 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+                    <CheckBox
+                        Name="ReadBarcodesBarcode"
+                        Margin="0,16,0,0"
+                        VerticalContentAlignment="Center"
+                        IsChecked="True"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Try to read barcodes (Disabling may speed up results)
+                        </TextBlock>
+                    </CheckBox>
                 </StackPanel>
                 <StackPanel
                     Grid.Row="1"

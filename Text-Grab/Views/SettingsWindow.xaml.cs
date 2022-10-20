@@ -30,8 +30,12 @@ public partial class SettingsWindow : Window
         RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
+        ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
+
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
+        
+        
         if (ImplementAppOptions.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
@@ -155,6 +159,9 @@ public partial class SettingsWindow : Window
 
         if (GlobalHotkeysCheckbox.IsChecked != null)
             Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
+
+        if (ReadBarcodesBarcode.IsChecked != null)
+            Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;
 
         if (HotKeysAllDifferent())
         {
