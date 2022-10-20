@@ -465,10 +465,10 @@ public partial class GrabFrame : Window
                 Height = Math.Abs(bottom - top)
             };
 
-            WordBorder wordBorderBox = new WordBorder
+            WordBorder wordBorderBox = new()
             {
-                Width = (lineRect.Width / (dpi.DpiScaleX * scale)),
-                Height = (lineRect.Height / (dpi.DpiScaleY * scale)),
+                Width = ((lineRect.Width + 60) / (dpi.DpiScaleX * scale)),
+                Height = ((lineRect.Height + 16) / (dpi.DpiScaleY * scale)),
                 Word = lineText.ToString().Trim(),
                 ToolTip = ocrLine.Text,
                 LineNumber = lineNumber,
@@ -494,8 +494,8 @@ public partial class GrabFrame : Window
             }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
-            Canvas.SetLeft(wordBorderBox, (lineRect.Left / (dpi.DpiScaleX * scale)));
-            Canvas.SetTop(wordBorderBox, (lineRect.Top / (dpi.DpiScaleY * scale)));
+            Canvas.SetLeft(wordBorderBox, (lineRect.Left - 36) / (dpi.DpiScaleX * scale));
+            Canvas.SetTop(wordBorderBox, (lineRect.Top - 10) / (dpi.DpiScaleY * scale));
 
             lineNumber++;
         }
@@ -558,35 +558,26 @@ public partial class GrabFrame : Window
 
             WordBorder wb = new();
             wb.Word = result.Text;
-            wb.Width = diffs.X / dpi.DpiScaleX;
-            wb.Height = diffs.Y / dpi.DpiScaleY;
+            wb.Width = diffs.X / dpi.DpiScaleX + 12;
+            wb.Height = diffs.Y / dpi.DpiScaleY + 12;
             wb.SetAsBarcode();
             wordBorders.Add(wb);
             _ = RectanglesCanvas.Children.Add(wb);
-            double left = minPoint.X / (dpi.DpiScaleX);
-            double top = minPoint.Y / (dpi.DpiScaleY);
+            double left = minPoint.X / (dpi.DpiScaleX) - 6;
+            double top = minPoint.Y / (dpi.DpiScaleY) - 6;
             Canvas.SetLeft(wb, left);
             Canvas.SetTop(wb, top);
         }
 
-        List<UIElement> wordBordersRePlace = new();
+        List<WordBorder> wordBordersRePlace = new();
         foreach (UIElement child in RectanglesCanvas.Children)
         {
             if (child is WordBorder wordBorder)
                 wordBordersRePlace.Add(wordBorder);
         }
         RectanglesCanvas.Children.Clear();
-        foreach (UIElement uie in wordBordersRePlace)
-        {
-            if (uie is WordBorder wordBorder)
-            {
-                wordBorder.Width += 4;
-                wordBorder.Height += 4;
-                RectanglesCanvas.Children.Add(wordBorder);
-                Canvas.SetLeft(wordBorder, Canvas.GetLeft(wordBorder) - 2);
-                Canvas.SetTop(wordBorder, Canvas.GetTop(wordBorder) - 2);
-            }
-        }
+        foreach (WordBorder wordBorder in wordBordersRePlace)
+            RectanglesCanvas.Children.Add(wordBorder);
 
         if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
         {

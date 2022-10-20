@@ -14,9 +14,9 @@
     mc:Ignorable="d">
     <Border
         x:Name="WordBorderBorder"
-        Margin="-4,0,0,0"
+        Margin="0,0,0,0"
         BorderBrush="#308E98"
-        BorderThickness="10,2,2,2"
+        BorderThickness="8,1,1,1"
         CornerRadius="2">
         <Grid x:Name="MainGrid" ClipToBounds="True">
             <Grid.Background>
@@ -28,7 +28,7 @@
                         x:Name="EditWordTextBox"
                         Margin="-1,-2,-1,-2"
                         d:Text="Test g"
-                        FontFamily="Cascadia Code"
+                        FontFamily="Segoe UI"
                         FontWeight="Medium"
                         Foreground="White"
                         Style="{StaticResource TextBoxStyle1}"
