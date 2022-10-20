@@ -73,6 +73,8 @@ public partial class EditTextWindow : Window
 
     private bool _IsAccessingClipboard { get; set; } = false;
 
+    private WindowState? prevWindowState;
+
     public EditTextWindow()
     {
         InitializeComponent();
@@ -177,6 +179,7 @@ public partial class EditTextWindow : Window
         {
             WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
             LaunchFullscreenOnLoad.IsChecked = true;
+            prevWindowState = this.WindowState;
             WindowState = WindowState.Minimized;
         }
 
@@ -265,7 +268,12 @@ public partial class EditTextWindow : Window
 
     private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
     {
-        PassedTextControl.Focus();
+        if (Settings.Default.EditWindowStartFullscreen && prevWindowState is not null)
+        {
+            this.WindowState = prevWindowState.Value;
+            prevWindowState = null;
+        }
+
         UpdateLineAndColumnText();
     }
 
@@ -802,7 +810,7 @@ public partial class EditTextWindow : Window
             e.CanExecute = true;
     }
 
-    private static void CheckForGrabFrameOrLaunch()
+    private void CheckForGrabFrameOrLaunch()
     {
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -815,15 +823,24 @@ public partial class EditTextWindow : Window
                 return;
             }
         }
-
+        Keyboard.Focus(PassedTextControl);
+        PassedTextControl.IsInactiveSelectionHighlightEnabled = true;
+        PassedTextControl.SelectedText = " ";
+        CopyCloseBTN.Focus();
         GrabFrame gf = new();
         gf.IsFromEditWindow = true;
+        gf.DestinationTextBox = PassedTextControl;
         gf.Show();
     }
 
     private void OpenGrabFrame_Click(object sender, RoutedEventArgs e)
     {
         CheckForGrabFrameOrLaunch();
+    }
+
+    public System.Windows.Controls.TextBox GetMainTextBox()
+    {
+        return PassedTextControl;
     }
 
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)

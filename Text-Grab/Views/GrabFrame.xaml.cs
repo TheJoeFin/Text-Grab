@@ -56,6 +56,10 @@ public partial class GrabFrame : Window
 
     private bool isLanguageBoxLoaded = false;
 
+    public string FrameText { get; private set; } = string.Empty;
+
+    public TextBox? DestinationTextBox { get; set; }
+
     public GrabFrame()
     {
         InitializeComponent();
@@ -232,98 +236,27 @@ public partial class GrabFrame : Window
         Close();
     }
 
-    private async void GrabBTN_Click(object sender, RoutedEventArgs e)
+    private void GrabBTN_Click(object sender, RoutedEventArgs e)
     {
-        string frameText = "";
 
-        if (wordBorders.Where(w => w.IsSelected == true).ToList().Count == 0)
-        {
-            Point windowPosition = this.GetAbsolutePosition();
-            DpiScale dpi = VisualTreeHelper.GetDpi(this);
-            System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
-            {
-                Width = (int)((ActualWidth + 2) * dpi.DpiScaleX),
-                Height = (int)((Height - 64) * dpi.DpiScaleY),
-                X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
-                Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
-            };
-            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
-            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize, selectedOcrLang);
-        }
-
-        if (wordBorders.Count > 0)
-        {
-            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
-
-            if (selectedBorders.Count == 0)
-                selectedBorders.AddRange(wordBorders);
-
-            List<string> lineList = new();
-            StringBuilder outputString = new();
-            int? lastLineNum = 0;
-            int lastColumnNum = 0;
-
-            if (selectedBorders.FirstOrDefault() != null)
-                lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
-
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
-
-            int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
-
-            foreach (WordBorder border in selectedBorders)
-            {
-                if (lineList.Count == 0)
-                    lastLineNum = border.ResultRowID;
-
-                if (border.ResultRowID != lastLineNum)
-                {
-                    if (isSpaceJoining)
-                        outputString.Append(string.Join(' ', lineList));
-                    else
-                        outputString.Append(string.Join("", lineList));
-                    outputString.Replace(" \t ", "\t");
-                    outputString.Append(Environment.NewLine);
-                    lineList.Clear();
-                    lastLineNum = border.ResultRowID;
-                }
-
-                if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
-                {
-                    string borderWord = border.Word;
-                    int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-                    if (numberOfOffColumns < 0)
-                        lastColumnNum = 0;
-
-                    numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-
-                    if (numberOfOffColumns > 0)
-                        lineList.Add(new string('\t', numberOfOffColumns));
-                }
-                lastColumnNum = border.ResultColumnID;
-
-                lineList.Add(border.Word);
-            }
-
-            if (isSpaceJoining)
-                outputString.Append(string.Join(' ', lineList));
-            else
-                outputString.Append(string.Join("", lineList));
-
-            frameText = outputString.ToString();
-        }
 
         if (IsFromEditWindow == false
-            && string.IsNullOrWhiteSpace(frameText) == false
+            && string.IsNullOrWhiteSpace(FrameText) == false
             && Settings.Default.NeverAutoUseClipboard == false)
-            try { Clipboard.SetDataObject(frameText, true); } catch { }
+            try { Clipboard.SetDataObject(FrameText, true); } catch { }
 
         if (Settings.Default.ShowToast == true
             && IsFromEditWindow == false)
-            NotificationUtilities.ShowToast(frameText);
+            NotificationUtilities.ShowToast(FrameText);
 
-        if (IsFromEditWindow == true && string.IsNullOrWhiteSpace(frameText) == false)
-            WindowUtilities.AddTextToOpenWindow(frameText);
+        if (IsFromEditWindow == true
+            && string.IsNullOrWhiteSpace(FrameText) == false
+            && DestinationTextBox is not null)
+        {
+            DestinationTextBox.Select(DestinationTextBox.SelectionStart + DestinationTextBox.SelectionLength, 0);
+            DestinationTextBox.AppendText(Environment.NewLine);
+            UpdateFrameText();
+        }
     }
 
     private void ResetGrabFrame()
@@ -332,6 +265,7 @@ public partial class GrabFrame : Window
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
         MatchesTXTBLK.Text = "Matches: 0";
+        UpdateFrameText();
     }
 
     private void Window_LocationChanged(object? sender, EventArgs e)
@@ -589,6 +523,8 @@ public partial class GrabFrame : Window
 
         MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
         isDrawing = false;
+
+        UpdateFrameText();
     }
 
     private void DrawTable(ResultTable resultTable)
@@ -965,11 +901,17 @@ public partial class GrabFrame : Window
     private void ReSearchTimer_Tick(object? sender, EventArgs e)
     {
         reSearchTimer.Stop();
-        if (SearchBox.Text is not string searchText || string.IsNullOrWhiteSpace(searchText)) return;
+        if (SearchBox.Text is not string searchText)
+            return;
 
-        foreach (UIElement uIElement in RectanglesCanvas.Children)
+        if (string.IsNullOrWhiteSpace(searchText))
         {
-            if (uIElement is WordBorder wb)
+            foreach (WordBorder wb in wordBorders)
+                wb.Deselect();
+        }
+        else
+        {
+            foreach (WordBorder wb in wordBorders)
             {
                 if (!string.IsNullOrWhiteSpace(searchText)
                     && wb.Word.ToLower().Contains(searchText.ToLower()))
@@ -979,7 +921,27 @@ public partial class GrabFrame : Window
             }
         }
 
+        UpdateFrameText();
+
         MatchesTXTBLK.Visibility = Visibility.Visible;
+    }
+
+    private void UpdateFrameText()
+    {
+        string[] selectedWbs = wordBorders.Where(w => w.IsSelected).Select(t => t.Word).ToArray();
+
+        StringBuilder stringBuilder = new();
+        if (selectedWbs.Length > 0)
+            stringBuilder.AppendJoin(Environment.NewLine, selectedWbs);
+        else
+            stringBuilder.AppendJoin(Environment.NewLine, wordBorders.Select(w => w.Word).ToArray());
+
+        FrameText = stringBuilder.ToString();
+
+        if (IsFromEditWindow && DestinationTextBox is not null)
+        {
+            DestinationTextBox.SelectedText = FrameText;
+        }
     }
 
     private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
@@ -1019,6 +981,8 @@ public partial class GrabFrame : Window
     {
         if (IsWordEditMode != true && IsFreezeMode != true)
             reDrawTimer.Start();
+        else
+            UpdateFrameText();
     }
 
     private bool isMiddleDown = false;
@@ -1165,6 +1129,9 @@ public partial class GrabFrame : Window
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
         }
+
+        if (finalCheck)
+            UpdateFrameText();
     }
 
     private async void TableToggleButton_Click(object sender, RoutedEventArgs e)
@@ -1264,8 +1231,11 @@ public partial class GrabFrame : Window
 
     private void EditTextBTN_Click(object sender, RoutedEventArgs e)
     {
-        _ = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+        EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+        DestinationTextBox = etw.GetMainTextBox();
         IsFromEditWindow = true;
+
+        UpdateFrameText();
     }
 
     private async void GrabFrameWindow_Drop(object sender, DragEventArgs e)
