@@ -465,6 +465,35 @@ public partial class GrabFrame : Window
             }
         }
 
+        if (Settings.Default.TryToReadBarcodes)
+            TryToReadBarcodes(dpi);
+
+        List<WordBorder> wordBordersRePlace = new();
+        foreach (UIElement child in RectanglesCanvas.Children)
+        {
+            if (child is WordBorder wordBorder)
+                wordBordersRePlace.Add(wordBorder);
+        }
+        RectanglesCanvas.Children.Clear();
+        foreach (WordBorder wordBorder in wordBordersRePlace)
+            RectanglesCanvas.Children.Add(wordBorder);
+
+        if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
+        {
+            DrawTable(AnalyedResultTable);
+        }
+
+        if (IsWordEditMode == true)
+            EnterEditMode();
+
+        MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
+        isDrawing = false;
+
+        UpdateFrameText();
+    }
+
+    private void TryToReadBarcodes(DpiScale dpi)
+    {
         System.Drawing.Bitmap bitmapOfGrabFrame = ImageMethods.GetWindowsBoundsBitmap(this);
 
         BarcodeReader barcodeReader = new()
@@ -502,29 +531,6 @@ public partial class GrabFrame : Window
             Canvas.SetLeft(wb, left);
             Canvas.SetTop(wb, top);
         }
-
-        List<WordBorder> wordBordersRePlace = new();
-        foreach (UIElement child in RectanglesCanvas.Children)
-        {
-            if (child is WordBorder wordBorder)
-                wordBordersRePlace.Add(wordBorder);
-        }
-        RectanglesCanvas.Children.Clear();
-        foreach (WordBorder wordBorder in wordBordersRePlace)
-            RectanglesCanvas.Children.Add(wordBorder);
-
-        if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
-        {
-            DrawTable(AnalyedResultTable);
-        }
-
-        if (IsWordEditMode == true)
-            EnterEditMode();
-
-        MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
-        isDrawing = false;
-
-        UpdateFrameText();
     }
 
     private void DrawTable(ResultTable resultTable)

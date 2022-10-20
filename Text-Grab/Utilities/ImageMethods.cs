@@ -221,10 +221,13 @@ public static class ImageMethods
         if (culture.TextInfo.IsRightToLeft)
             ReverseWordsForRightToLeft(text);
 
-        string barcodeResult = TryToReadBarcodes(scaledBitmap);
+        if (Settings.Default.TryToReadBarcodes)
+        {
+            string barcodeResult = TryToReadBarcodes(scaledBitmap);
 
-        if (!string.IsNullOrWhiteSpace(barcodeResult))
-            text.AppendLine(barcodeResult);
+            if (!string.IsNullOrWhiteSpace(barcodeResult))
+                text.AppendLine(barcodeResult);
+        }
 
         return text.ToString();
     }
