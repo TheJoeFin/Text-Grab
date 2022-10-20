@@ -931,10 +931,72 @@ public partial class GrabFrame : Window
         string[] selectedWbs = wordBorders.Where(w => w.IsSelected).Select(t => t.Word).ToArray();
 
         StringBuilder stringBuilder = new();
-        if (selectedWbs.Length > 0)
-            stringBuilder.AppendJoin(Environment.NewLine, selectedWbs);
+
+        if (TableToggleButton.IsChecked == true)
+        {
+            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
+
+            if (selectedBorders.Count == 0)
+                selectedBorders.AddRange(wordBorders);
+
+            List<string> lineList = new();
+            int? lastLineNum = 0;
+            int lastColumnNum = 0;
+
+            if (selectedBorders.FirstOrDefault() != null)
+                lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
+
+            selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
+            selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
+
+            int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
+
+            foreach (WordBorder border in selectedBorders)
+            {
+                if (lineList.Count == 0)
+                    lastLineNum = border.ResultRowID;
+
+                if (border.ResultRowID != lastLineNum)
+                {
+                    if (isSpaceJoining)
+                        stringBuilder.Append(string.Join(' ', lineList));
+                    else
+                        stringBuilder.Append(string.Join("", lineList));
+                    stringBuilder.Replace(" \t ", "\t");
+                    stringBuilder.Append(Environment.NewLine);
+                    lineList.Clear();
+                    lastLineNum = border.ResultRowID;
+                }
+
+                if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
+                {
+                    string borderWord = border.Word;
+                    int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+                    if (numberOfOffColumns < 0)
+                        lastColumnNum = 0;
+
+                    numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+
+                    if (numberOfOffColumns > 0)
+                        lineList.Add(new string('\t', numberOfOffColumns));
+                }
+                lastColumnNum = border.ResultColumnID;
+
+                lineList.Add(border.Word);
+            }
+
+            if (isSpaceJoining)
+                stringBuilder.Append(string.Join(' ', lineList));
+            else
+                stringBuilder.Append(string.Join("", lineList));
+        }
         else
-            stringBuilder.AppendJoin(Environment.NewLine, wordBorders.Select(w => w.Word).ToArray());
+        {
+            if (selectedWbs.Length > 0)
+                stringBuilder.AppendJoin(Environment.NewLine, selectedWbs);
+            else
+                stringBuilder.AppendJoin(Environment.NewLine, wordBorders.Select(w => w.Word).ToArray());
+        }
 
         FrameText = stringBuilder.ToString();
 
