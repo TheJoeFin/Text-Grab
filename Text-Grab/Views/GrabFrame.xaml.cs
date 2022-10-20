@@ -1146,7 +1146,7 @@ public partial class GrabFrame : Window
                     wordBorder.Select();
                     wordBorder.WasRegionSelected = true;
                 }
-                else
+                else if (!finalCheck)
                 {
                     if (wordBorder.IsSelected)
                         wordBorder.Deselect();

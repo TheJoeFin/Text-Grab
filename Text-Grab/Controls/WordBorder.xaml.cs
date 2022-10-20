@@ -69,11 +69,13 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void EnterEdit()
     {
         EditWordTextBox.Visibility = Visibility.Visible;
+        Background = new SolidColorBrush(Colors.Black);
     }
 
     public void ExitEdit()
     {
         EditWordTextBox.Visibility = Visibility.Collapsed;
+        Background = new SolidColorBrush(Colors.Transparent);
     }
 
     public void SetAsBarcode()

@@ -9,44 +9,46 @@
     d:DesignHeight="30"
     d:DesignWidth="80"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
-    MouseDown="WordBorderControl_MouseDown"
     ToolTip="{Binding Path=Word, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
     Unloaded="WordBorderControl_Unloaded"
     mc:Ignorable="d">
     <Border
         x:Name="WordBorderBorder"
+        Margin="-4,0,0,0"
         BorderBrush="#308E98"
-        BorderThickness="1"
+        BorderThickness="10,2,2,2"
         CornerRadius="2">
         <Grid x:Name="MainGrid" ClipToBounds="True">
             <Grid.Background>
                 <SolidColorBrush Opacity="0.1" Color="White" />
             </Grid.Background>
-            <Viewbox x:Name="EditTextViewBox" Stretch="Uniform">
-                <TextBox
-                    x:Name="EditWordTextBox"
-                    Margin="-1,-2,-1,-2"
-                    d:Text="Test g"
-                    FontFamily="Cascadia Code"
-                    FontWeight="Medium"
-                    Foreground="White"
-                    Style="{StaticResource TextBoxStyle1}"
-                    Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    Visibility="Collapsed">
-                    <TextBox.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem
-                                x:Name="TryToNumberMenuItem"
-                                Click="TryToNumberMenuItem_Click"
-                                Header="Try To Make _Numbers" />
-                            <MenuItem
-                                x:Name="TryToAlphaMenuItem"
-                                Click="TryToAlphaMenuItem_Click"
-                                Header="Try To Make _Letters" />
-                        </ContextMenu>
-                    </TextBox.ContextMenu>
-                </TextBox>
-            </Viewbox>
+            <Border Padding="0">
+                <Viewbox x:Name="EditTextViewBox" Stretch="Uniform">
+                    <TextBox
+                        x:Name="EditWordTextBox"
+                        Margin="-1,-2,-1,-2"
+                        d:Text="Test g"
+                        FontFamily="Cascadia Code"
+                        FontWeight="Medium"
+                        Foreground="White"
+                        Style="{StaticResource TextBoxStyle1}"
+                        Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Visibility="Collapsed">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem
+                                    x:Name="TryToNumberMenuItem"
+                                    Click="TryToNumberMenuItem_Click"
+                                    Header="Try To Make _Numbers" />
+                                <MenuItem
+                                    x:Name="TryToAlphaMenuItem"
+                                    Click="TryToAlphaMenuItem_Click"
+                                    Header="Try To Make _Letters" />
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
+                </Viewbox>
+            </Border>
         </Grid>
     </Border>
 </UserControl>
