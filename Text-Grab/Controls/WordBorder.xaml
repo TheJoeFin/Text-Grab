@@ -10,6 +10,7 @@
     d:DesignWidth="80"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
     MouseDown="WordBorderControl_MouseDown"
+    ToolTip="{Binding Path=Word, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
     Unloaded="WordBorderControl_Unloaded"
     mc:Ignorable="d">
     <Border
@@ -21,7 +22,7 @@
             <Grid.Background>
                 <SolidColorBrush Opacity="0.1" Color="White" />
             </Grid.Background>
-            <Viewbox>
+            <Viewbox x:Name="EditTextViewBox" Stretch="Uniform">
                 <TextBox
                     x:Name="EditWordTextBox"
                     Margin="-1,-2,-1,-2"

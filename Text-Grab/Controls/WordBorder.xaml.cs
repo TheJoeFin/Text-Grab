@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -73,6 +74,19 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void ExitEdit()
     {
         EditWordTextBox.Visibility = Visibility.Collapsed;
+    }
+
+    public void SetAsBarcode()
+    {
+        EditWordTextBox.TextWrapping = TextWrapping.Wrap;
+        EditWordTextBox.TextAlignment = TextAlignment.Center;
+        
+        EditWordTextBox.Width = this.Width - 2;
+        EditWordTextBox.Height = this.Height - 2;
+        EditWordTextBox.FontSize = 14;
+
+        if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
+            EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
     }
 
     private void WordBorderControl_MouseDown(object sender, MouseButtonEventArgs e)

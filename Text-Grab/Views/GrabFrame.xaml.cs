@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,8 +18,11 @@ using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Windows.Devices.Display.Core;
 using Windows.Globalization;
 using Windows.Media.Ocr;
+using ZXing;
+using ZXing.Windows.Compatibility;
 
 namespace Text_Grab.Views;
 
@@ -525,6 +529,44 @@ public partial class GrabFrame : Window
             {
                 Debug.WriteLine(ex.Message);
             }
+        }
+
+        System.Drawing.Bitmap bitmapOfGrabFrame = ImageMethods.GetWindowsBoundsBitmap(this);
+
+        BarcodeReader barcodeReader = new()
+        {
+            AutoRotate = true,
+            Options = new ZXing.Common.DecodingOptions { TryHarder = true }
+        };
+
+        ZXing.Result result = barcodeReader.Decode(bitmapOfGrabFrame);
+
+        if (result is not null)
+        {
+            ResultPoint[] rawPoints = result.ResultPoints;
+
+            float[] xs = rawPoints.Reverse().Take(4).Select(x => x.X).ToArray();
+            float[] ys = rawPoints.Reverse().Take(4).Select(x => x.Y).ToArray();
+
+            Point minPoint = new Point(xs.Min(), ys.Min());
+            Point maxPoint = new Point(xs.Max(), ys.Max());
+            Point diffs = new Point(maxPoint.X - minPoint.X, maxPoint.Y - minPoint.Y);
+
+            if (diffs.Y < 5)
+                diffs.Y = diffs.X / 10;
+
+
+            WordBorder wb = new();
+            wb.Word = result.Text;
+            wb.Width = diffs.X / dpi.DpiScaleX;
+            wb.Height = diffs.Y / dpi.DpiScaleY;
+            wb.SetAsBarcode();
+            wordBorders.Add(wb);
+            _ = RectanglesCanvas.Children.Add(wb);
+            double left = minPoint.X / (dpi.DpiScaleX);
+            double top = minPoint.Y / (dpi.DpiScaleY);
+            Canvas.SetLeft(wb, left);
+            Canvas.SetTop(wb, top);
         }
 
         List<UIElement> wordBordersRePlace = new();

@@ -105,7 +105,7 @@ public static class ImageMethods
             return "";
     }
 
-    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    internal static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
     {
         bool isGrabFrame = false;
         if (passedWindow is GrabFrame)
@@ -128,11 +128,16 @@ public static class ImageMethods
             windowHeight -= (int)(70 * dpi.DpiScaleY);
         }
 
-        using Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        return bmp;
+    }
 
+    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    {
+        Bitmap bmp = GetWindowsBoundsBitmap(passedWindow);
         return BitmapToImageSource(bmp);
     }
 
@@ -232,8 +237,6 @@ public static class ImageMethods
             Options = new ZXing.Common.DecodingOptions { TryHarder = true }
         };
 
-        using MemoryStream ms = new();
-        bitmap.Save(ms, ImageFormat.Bmp);
         ZXing.Result result = barcodeReader.Decode(bitmap);
 
         if (result is null)
