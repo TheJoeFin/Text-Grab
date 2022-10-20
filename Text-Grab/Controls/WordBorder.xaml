@@ -22,33 +22,31 @@
             <Grid.Background>
                 <SolidColorBrush Opacity="0.1" Color="White" />
             </Grid.Background>
-            <Border Padding="0">
-                <Viewbox x:Name="EditTextViewBox" Stretch="Uniform">
-                    <TextBox
-                        x:Name="EditWordTextBox"
-                        Margin="-1,-2,-1,-2"
-                        d:Text="Test g"
-                        FontFamily="Segoe UI"
-                        FontWeight="Medium"
-                        Foreground="White"
-                        Style="{StaticResource TextBoxStyle1}"
-                        Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                        Visibility="Collapsed">
-                        <TextBox.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem
-                                    x:Name="TryToNumberMenuItem"
-                                    Click="TryToNumberMenuItem_Click"
-                                    Header="Try To Make _Numbers" />
-                                <MenuItem
-                                    x:Name="TryToAlphaMenuItem"
-                                    Click="TryToAlphaMenuItem_Click"
-                                    Header="Try To Make _Letters" />
-                            </ContextMenu>
-                        </TextBox.ContextMenu>
-                    </TextBox>
-                </Viewbox>
-            </Border>
+            <Viewbox x:Name="EditTextViewBox">
+                <TextBox
+                    x:Name="EditWordTextBox"
+                    Margin="-1,-3,-1,-1"
+                    d:Text="Test g"
+                    FontFamily="Segoe UI"
+                    FontWeight="Medium"
+                    Foreground="White"
+                    Style="{StaticResource TextBoxStyle1}"
+                    Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Visibility="Collapsed">
+                    <TextBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem
+                                x:Name="TryToNumberMenuItem"
+                                Click="TryToNumberMenuItem_Click"
+                                Header="Try To Make _Numbers" />
+                            <MenuItem
+                                x:Name="TryToAlphaMenuItem"
+                                Click="TryToAlphaMenuItem_Click"
+                                Header="Try To Make _Letters" />
+                        </ContextMenu>
+                    </TextBox.ContextMenu>
+                </TextBox>
+            </Viewbox>
         </Grid>
     </Border>
 </UserControl>

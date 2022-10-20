@@ -467,8 +467,8 @@ public partial class GrabFrame : Window
 
             WordBorder wordBorderBox = new()
             {
-                Width = ((lineRect.Width + 60) / (dpi.DpiScaleX * scale)),
-                Height = ((lineRect.Height + 16) / (dpi.DpiScaleY * scale)),
+                Width = (lineRect.Width / (dpi.DpiScaleX * scale)) + 16,
+                Height = (lineRect.Height / (dpi.DpiScaleY * scale)) + 4,
                 Word = lineText.ToString().Trim(),
                 ToolTip = ocrLine.Text,
                 LineNumber = lineNumber,
@@ -494,8 +494,8 @@ public partial class GrabFrame : Window
             }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
-            Canvas.SetLeft(wordBorderBox, (lineRect.Left - 36) / (dpi.DpiScaleX * scale));
-            Canvas.SetTop(wordBorderBox, (lineRect.Top - 10) / (dpi.DpiScaleY * scale));
+            Canvas.SetLeft(wordBorderBox, (lineRect.Left / (dpi.DpiScaleX * scale)) - 10);
+            Canvas.SetTop(wordBorderBox, (lineRect.Top / (dpi.DpiScaleY * scale)) - 2);
 
             lineNumber++;
         }

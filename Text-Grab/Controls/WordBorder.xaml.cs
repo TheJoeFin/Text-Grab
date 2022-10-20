@@ -69,20 +69,24 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void EnterEdit()
     {
         EditWordTextBox.Visibility = Visibility.Visible;
-        Background = new SolidColorBrush(Colors.Black);
+        MainGrid.Background = new SolidColorBrush(Colors.Black);
     }
 
     public void ExitEdit()
     {
         EditWordTextBox.Visibility = Visibility.Collapsed;
-        Background = new SolidColorBrush(Colors.Transparent);
+        MainGrid.Background = new SolidColorBrush(Colors.White)
+        {
+            Opacity = 0.1
+        };
+
     }
 
     public void SetAsBarcode()
     {
         EditWordTextBox.TextWrapping = TextWrapping.Wrap;
         EditWordTextBox.TextAlignment = TextAlignment.Center;
-        
+
         EditWordTextBox.Width = this.Width - 2;
         EditWordTextBox.Height = this.Height - 2;
         EditWordTextBox.FontSize = 14;
