@@ -35,6 +35,9 @@ public partial class FirstRunWindow : Window
                 case "EditText":
                     WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
                     break;
+                case "QuickLookup":
+                    WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
+                    break;
                 default:
                     break;
             }
@@ -45,8 +48,6 @@ public partial class FirstRunWindow : Window
 
     private async void FirstRun_Loaded(object sender, RoutedEventArgs e)
     {
-        // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
-
         switch (Settings.Default.DefaultLaunch)
         {
             case "Fullscreen":
@@ -57,6 +58,9 @@ public partial class FirstRunWindow : Window
                 break;
             case "EditText":
                 EditWindowRDBTN.IsChecked = true;
+                break;
+            case "QuickLookup":
+                QuickLookupRDBTN.IsChecked = true;
                 break;
             default:
                 EditWindowRDBTN.IsChecked = true;
@@ -101,10 +105,12 @@ public partial class FirstRunWindow : Window
         if (this.IsLoaded != true)
             return;
 
-        if (GrabFrameRDBTN.IsChecked != null && (bool)GrabFrameRDBTN.IsChecked)
+        if (GrabFrameRDBTN.IsChecked is bool gfOn && gfOn)
             Settings.Default.DefaultLaunch = "GrabFrame";
-        else if (FullScreenRDBTN.IsChecked != null && (bool)FullScreenRDBTN.IsChecked)
+        else if (FullScreenRDBTN.IsChecked is bool fsgOn && fsgOn)
             Settings.Default.DefaultLaunch = "Fullscreen";
+        else if (QuickLookupRDBTN.IsChecked is bool qslOn && qslOn)
+            Settings.Default.DefaultLaunch = "QuickLookup";
         else
             Settings.Default.DefaultLaunch = "EditText";
 
@@ -137,6 +143,11 @@ public partial class FirstRunWindow : Window
     private void TryEditWindow_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+    }
+
+    private void TryQuickLookup_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
     }
 
     private void Window_Closed(object? sender, EventArgs e)
