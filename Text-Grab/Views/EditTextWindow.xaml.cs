@@ -1039,7 +1039,7 @@ public partial class EditTextWindow : Window
             }
             if (window is FindAndReplaceWindow findAndReplaceWindow)
             {
-                findAndReplaceWindow.Close();
+                findAndReplaceWindow.ShouldCloseWithThisETW(this);
             }
         }
 
