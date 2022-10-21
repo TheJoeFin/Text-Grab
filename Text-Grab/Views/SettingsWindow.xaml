@@ -21,6 +21,12 @@
             <Setter Property="Foreground" Value="White" />
         </Style>
 
+        <Style x:Key="ShortCutTextBox" TargetType="TextBox">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Padding" Value="0,2" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="TextAlignment" Value="Center" />
+        </Style>
     </Window.Resources>
     <Border>
         <ScrollViewer
@@ -46,7 +52,7 @@
                             VerticalAlignment="Center"
                             Foreground="White"
                             Style="{StaticResource TextBodyNormal}"
-                            Text="Version 2.7.1" />
+                            Text="Version 3.0.0" />
 
                         <controls:CollapsibleButton
                             x:Name="AboutBTN"
@@ -158,9 +164,7 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="FullScreenHotkeyTextBox"
-                                    Width="20"
-                                    Padding="2"
-                                    BorderThickness="2"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="F"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -172,9 +176,7 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="GrabFrameHotkeyTextBox"
-                                    Width="20"
-                                    Padding="2"
-                                    BorderThickness="2"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="G"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -186,9 +188,7 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="EditTextHotKeyTextBox"
-                                    Width="20"
-                                    Padding="2"
-                                    BorderThickness="2"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="E"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -200,9 +200,7 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="LookupHotKeyTextBox"
-                                    Width="20"
-                                    Padding="2"
-                                    BorderThickness="2"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="Q"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
