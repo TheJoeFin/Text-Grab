@@ -95,6 +95,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
@@ -107,7 +108,7 @@
 
                 <TextBlock
                     Grid.Row="2"
-                    Grid.ColumnSpan="3"
+                    Grid.ColumnSpan="4"
                     Margin="0,30,0,10"
                     HorizontalAlignment="Center"
                     Style="{StaticResource TextHeader}"
@@ -218,6 +219,42 @@
                             FontSize="14"
                             Foreground="SkyBlue">
                             Try Edit Text Window
+                        </Hyperlink>
+                    </TextBlock>
+                </StackPanel>
+
+                <RadioButton
+                    x:Name="QuickLookupRDBTN"
+                    Grid.Row="3"
+                    Grid.Column="3"
+                    HorizontalAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Checked="RadioButton_Checked"
+                    GroupName="DefaultLaunch">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Quick Simple Lookup
+                    </TextBlock>
+                </RadioButton>
+                <StackPanel
+                    Grid.Row="4"
+                    Grid.Column="3"
+                    Orientation="Vertical">
+                    <Viewbox
+                        Grid.Row="4"
+                        Grid.Column="2"
+                        Margin="20">
+                        <Image
+                            Width="800"
+                            Height="620"
+                            Source="/Text-Grab;component/Images/Quick-Simple-Lookup.png" />
+                    </Viewbox>
+                    <TextBlock HorizontalAlignment="Center">
+                        <Hyperlink
+                            x:Name="TryQuickLookup"
+                            Click="TryQuickLookup_Click"
+                            FontSize="14"
+                            Foreground="SkyBlue">
+                            Try Quick Simple Lookup
                         </Hyperlink>
                     </TextBlock>
                 </StackPanel>

@@ -17,6 +17,7 @@
     AllowsTransparency="True"
     Background="Transparent"
     Closed="Window_Closed"
+    Closing="GrabFrameWindow_Closing"
     Deactivated="GrabFrameWindow_Deactivated"
     DragLeave="GrabFrameWindow_DragLeave"
     DragOver="GrabFrameWindow_DragOver"
