@@ -37,7 +37,7 @@ Get the code:
 - Open `\Text-Grab\` Folder in VS Code (Same folder as .sln file)
 - Key F5 to launch with debugger
 
-## Text Grab works in Three Modes
+## Text Grab has Four Modes
 
 ### 1. Full-Screen Mode
 ![Select text from a region](images/2-3-Full-Screen-Grab-med.gif)
@@ -75,6 +75,17 @@ There are several tools with in the Edit Text Window which make it quick and eas
 - Copy text from every image in a folder
 - And more!
 
+### 4. Quick Simple Lookup
+![Quick Simple Lookup](images/Quick-Simple-Lookup.gif)
+
+This mode of Text Grab is not about OCR, but instead it is about retreiving frequently used text. Think of Quick Simple Lookup as your long term memory. Use it to store frequently used URLs, emails, part numbers, etc. Basically a custom dictionary you can edit and recall instantly at any time. The workflow for Quick Simple Lookup is designed to be fast and functional, here is how it works.
+
+1. Press the hotkey (Default is Win + Shift + Q)
+2. Begin typing to filter the lookup to the item you want
+3. When what you want is the first result, press enter
+4. Then paste the value you just copied into the application you are using
+
+
 ### Bonus. Command Line Interface
 
 Arguments
@@ -91,3 +102,7 @@ Text Grab is designed to have multiple modes, from minimal to fully featured; al
 ### Thanks for using Text Grab
 Hopefully this simple app makes you more productive and saves you time from transcribing text.
 If you have any questions or feedback reach out on Twitter [@TheJoeFin](http://www.twitter.com/thejoefin) or by email joe@textgrab.net
+
+
+### Pssst, on a Mac?
+Check out the awesome app Text Sniper! It is very similar to Text Grab but for Mac! And if you use my [affiliate link here](https://gumroad.com/a/984365907/NYNNM) you will support Text Grab development as well! 

@@ -22,6 +22,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Images\Quick-Simple-Lookup.png" />
 	  <None Remove="t_ICON2.ico" />
 	</ItemGroup>
 
@@ -47,6 +48,7 @@
 		<Resource Include="Images\EditTextWindow.png" />
 		<Resource Include="Images\Fullscreen.png" />
 		<Resource Include="Images\Grab-Frame.png" />
+		<Resource Include="Images\Quick-Simple-Lookup.png" />
 		<Resource Include="Images\Text-Grab-Icon.png" />
 		<Resource Include="Images\t_32.png" />
 		<Resource Include="Images\Toast.png" />

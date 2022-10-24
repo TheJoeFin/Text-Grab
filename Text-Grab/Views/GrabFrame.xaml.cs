@@ -1477,4 +1477,11 @@ public partial class GrabFrame : Window
             Settings.Default.Save();
         }
     }
+
+    private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        FrameText = "";
+        wordBorders.Clear();
+        UpdateFrameText();
+    }
 }
