@@ -246,7 +246,7 @@
                         <Image
                             Width="800"
                             Height="620"
-                            Source="/Text-Grab;component/Images/EditTextWindow.png" />
+                            Source="/Text-Grab;component/Images/Quick-Simple-Lookup.png" />
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
