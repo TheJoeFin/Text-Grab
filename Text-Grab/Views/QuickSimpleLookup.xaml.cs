@@ -40,7 +40,7 @@ public partial class QuickSimpleLookup : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
+        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
         string cachePath = $"{exePath}\\{cacheFilename}";
 
         if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation) == false
