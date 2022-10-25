@@ -34,9 +34,17 @@ public static class TesseractHelper
         process.WaitForExit();
 
         if (process.HasExited)
-            return await sr.ReadToEndAsync();
+        {
+            string returningResult = await sr.ReadToEndAsync();
+            
+            if (!string.IsNullOrWhiteSpace(returningResult))
+                return returningResult;
+
+            returningResult = await errorReader.ReadToEndAsync();
+
+            return returningResult;
+        }
         else
             return string.Empty;
     }
-
 }
