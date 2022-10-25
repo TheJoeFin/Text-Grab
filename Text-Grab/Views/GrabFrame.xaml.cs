@@ -401,8 +401,8 @@ public partial class GrabFrame : Window
 
             WordBorder wordBorderBox = new()
             {
-                Width = (lineRect.Width / (dpi.DpiScaleX * scale)) + 16,
-                Height = (lineRect.Height / (dpi.DpiScaleY * scale)) + 4,
+                Width = lineRect.Width / (dpi.DpiScaleX * scale),
+                Height = lineRect.Height / (dpi.DpiScaleY * scale),
                 Word = lineText.ToString().Trim(),
                 ToolTip = ocrLine.Text,
                 LineNumber = lineNumber,
@@ -428,8 +428,8 @@ public partial class GrabFrame : Window
             }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
-            Canvas.SetLeft(wordBorderBox, (lineRect.Left / (dpi.DpiScaleX * scale)) - 10);
-            Canvas.SetTop(wordBorderBox, (lineRect.Top / (dpi.DpiScaleY * scale)) - 2);
+            Canvas.SetLeft(wordBorderBox, lineRect.Left / (dpi.DpiScaleX * scale));
+            Canvas.SetTop(wordBorderBox, lineRect.Top / (dpi.DpiScaleY * scale));
 
             lineNumber++;
         }
@@ -476,7 +476,18 @@ public partial class GrabFrame : Window
         }
         RectanglesCanvas.Children.Clear();
         foreach (WordBorder wordBorder in wordBordersRePlace)
+        {
+            // First the Word borders are placed smaller, then table analysis occurs.
+            // After table can be analyzed with the position of the word borders they are adjusted 
+            wordBorder.Width += 16;
+            wordBorder.Height += 4;
+            double leftWB = Canvas.GetLeft(wordBorder);
+            double topWB = Canvas.GetTop(wordBorder);
+            Canvas.SetLeft(wordBorder, leftWB - 10);
+            Canvas.SetTop(wordBorder, topWB - 2);
             RectanglesCanvas.Children.Add(wordBorder);
+        }
+
 
         if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
         {
