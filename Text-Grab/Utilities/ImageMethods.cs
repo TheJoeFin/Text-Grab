@@ -177,10 +177,13 @@ public static class ImageMethods
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
         CultureInfo culture = lang.GetEquivalentCulture();
 
-        double scale = await GetIdealScaleFactor(bmp);
-        using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
-        if (singlePoint is not null)
-            singlePoint = new System.Windows.Point(singlePoint.Value.X * scale, singlePoint.Value.Y * scale);
+        Bitmap scaledBitmap = bmp;
+
+        if (singlePoint is null)
+        {
+            double scale = await GetIdealScaleFactor(bmp);
+            scaledBitmap = ScaleBitmapUniform(bmp, scale);
+        }
 
         StringBuilder text = new();
 
@@ -221,7 +224,7 @@ public static class ImageMethods
         if (culture.TextInfo.IsRightToLeft)
             ReverseWordsForRightToLeft(text);
 
-        if (Settings.Default.TryToReadBarcodes)
+        if (Settings.Default.TryToReadBarcodes && singlePoint is null)
         {
             string barcodeResult = TryToReadBarcodes(scaledBitmap);
 
