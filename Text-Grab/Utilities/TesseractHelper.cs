@@ -15,7 +15,7 @@ public static class TesseractHelper
         ProcessStartInfo psi = new()
         {
             FileName = tesExePath,
-            Arguments = $"{pathToFile} - -l eng",
+            Arguments = $"\"{pathToFile}\" - -l eng",
             RedirectStandardOutput = true,
             UseShellExecute = false,
             CreateNoWindow = true,
