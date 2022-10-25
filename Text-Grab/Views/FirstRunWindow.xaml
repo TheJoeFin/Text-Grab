@@ -13,7 +13,7 @@
     MinWidth="200"
     MinHeight="200"
     Padding="50"
-    d:Height="3000"
+    d:Height="5000"
     Background="{StaticResource DarkControlBackground}"
     Closed="Window_Closed"
     Loaded="FirstRun_Loaded"
@@ -42,53 +42,12 @@
 
             <TextBlock Style="{StaticResource TextBody}">
                 Text Grab has three different modes for working with text.<LineBreak />
-                1. Full Screen - Similar to taking a screenshot<LineBreak />
+                1. Full-Screen - Similar to taking a screenshot, but for copying text<LineBreak />
                 2. Grab Frame - An overlay for picking and finding text on screen<LineBreak />
-                3. Edit Text - A window with tools for fixing and changing text<LineBreak />
+                3. Edit Text - Like Notepad, but with tools for fixing and changing text<LineBreak />
+                4. Quick Simple Lookup - An editable list of text items to quickly search and copy.<LineBreak />
                 <LineBreak />
                 Right click on Text Grab in the Start Menu, or on the Taskbar to launch the different modes. The mode can be changed in the settings at any time.</TextBlock>
-
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                How Full Screen works
-            </TextBlock>
-            <TextBlock Style="{StaticResource TextBody}">
-                Like a screenshot tool but instead of a photo output you get the text within the selection. This works two different ways:<LineBreak />
-                1. Draw a rectangle around the text you wish to copy<LineBreak />
-                2. Click on a single word you wish to copy<LineBreak />
-                • Both methods use the built-in Windows 10 OCR engine.<LineBreak />
-                • If there is no result Text Grab returns to Selection Mode to try again.<LineBreak />
-                • When text is recognized from the screen it gets put in your Windows clipboard.<LineBreak />
-                • Then paste using Ctrl + V into any program.<LineBreak />
-                • To view a history of your clipboard use the Windows 10 clipboard manager by pressing Win+V.<LineBreak />
-            </TextBlock>
-
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                How Grab Frame works
-            </TextBlock>
-            <TextBlock Style="{StaticResource TextBody}">
-                • The Grab Frame is a window which can be moved or resized. It stays on top of other windows and will read all of the text within the border.<LineBreak />
-                • Click or drag to select Word Borders then add them to the clipboard by clicking &quot;Grab&quot;.<LineBreak />
-                • If there is no search string or clicked word borders then the Grab Frame reads all text within the window and copies it to the clipboard.<LineBreak />
-            </TextBlock>
-
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                What the Edit Text Window can do
-            </TextBlock>
-            <TextBlock Style="{StaticResource TextBody}">
-                • Similar to Notepad, the Edit Text Window is a &quot;Pure Text&quot; editing experience, with no formatting.<LineBreak />
-                • This means copying text into or out of the Window will remove all formatting, but linebreaks and tabs will remain.<LineBreak />
-                • Gather text using Fullscreen Grabs or Grab Frames.<LineBreak />
-                • There are several tools with in the Edit Text Window which make it quick and easy to fix or change text.</TextBlock>
-            <TextBlock Margin="70,0,0,0" Style="{StaticResource TextBody}">
-                - Make text into a single line<LineBreak />
-                - Toggle between UPPERCASE, lowercase, and Titlecase<LineBreak />
-                - Trim spaces and empty lines<LineBreak />
-                - Isolate selected text<LineBreak />
-                - Replace reserved characters<LineBreak />
-                - Find and replace<LineBreak />
-                - Extract regular expressions<LineBreak />
-                - And more!<LineBreak />
-            </TextBlock>
 
             <Grid MaxWidth="2000">
                 <Grid.ColumnDefinitions>
@@ -124,7 +83,7 @@
                     Foreground="White"
                     GroupName="DefaultLaunch">
                     <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Fullscreen
+                        Full-Screen
                     </TextBlock>
                 </RadioButton>
                 <StackPanel
@@ -138,7 +97,7 @@
                         <Image
                             Width="800"
                             Height="620"
-                            Source="/Text-Grab;component/Images/Fullscreen.png" />
+                            Source="/Text-Grab;component/Images/FSG.jpg" />
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
@@ -146,7 +105,7 @@
                             Click="TryFullscreen_Click"
                             FontSize="14"
                             Foreground="SkyBlue">
-                            Try Full Screen
+                            Try a Full-Screen Grab
                         </Hyperlink>
                     </TextBlock>
                 </StackPanel>
@@ -174,7 +133,7 @@
                         <Image
                             Width="800"
                             Height="620"
-                            Source="/Text-Grab;component/Images/Grab-Frame.png" />
+                            Source="/Text-Grab;component/Images/GF.jpg" />
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
@@ -182,7 +141,7 @@
                             Click="TryGrabFrame_Click"
                             FontSize="14"
                             Foreground="SkyBlue">
-                            Try Grab Frame
+                            Show a Grab Frame
                         </Hyperlink>
                     </TextBlock>
                 </StackPanel>
@@ -210,7 +169,7 @@
                         <Image
                             Width="800"
                             Height="620"
-                            Source="/Text-Grab;component/Images/EditTextWindow.png" />
+                            Source="/Text-Grab;component/Images/ETW.jpg" />
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
@@ -218,7 +177,7 @@
                             Click="TryEditWindow_Click"
                             FontSize="14"
                             Foreground="SkyBlue">
-                            Try Edit Text Window
+                            Open an Edit Window
                         </Hyperlink>
                     </TextBlock>
                 </StackPanel>
@@ -246,7 +205,7 @@
                         <Image
                             Width="800"
                             Height="620"
-                            Source="/Text-Grab;component/Images/Quick-Simple-Lookup.png" />
+                            Source="/Text-Grab;component/Images/QSL.jpg" />
                     </Viewbox>
                     <TextBlock HorizontalAlignment="Center">
                         <Hyperlink
@@ -254,19 +213,97 @@
                             Click="TryQuickLookup_Click"
                             FontSize="14"
                             Foreground="SkyBlue">
-                            Try Quick Simple Lookup
+                            Launch Quick Simple Lookup
                         </Hyperlink>
                     </TextBlock>
                 </StackPanel>
-
             </Grid>
 
             <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                Text Grab Options
+                How Full-Screen works
+            </TextBlock>
+
+            <Image
+                MaxWidth="600"
+                Margin="0,30,0,0"
+                HorizontalAlignment="Left"
+                Source="/Text-Grab;component/Images/FSG.jpg"
+                Stretch="Uniform" />
+
+            <TextBlock Style="{StaticResource TextBody}">
+                Like a screenshot tool but instead of a photo output you get the text within the selection. This works two different ways:<LineBreak />
+                1. Draw a rectangle around the text you wish to copy<LineBreak />
+                2. Click on a single word you wish to copy<LineBreak />
+                • Both methods use the built-in Windows 10 OCR engine.<LineBreak />
+                • If there is no result Text Grab returns to Selection Mode to try again.<LineBreak />
+                • When text is recognized from the screen it gets put in your Windows clipboard.<LineBreak />
+                • Then paste using Ctrl + V into any program.<LineBreak />
+                • To view a history of your clipboard use the Windows 10 clipboard manager by pressing Win+V.</TextBlock>
+
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                How Grab Frame works
+            </TextBlock>
+            <Image
+                MaxWidth="600"
+                Margin="0,30,0,0"
+                HorizontalAlignment="Left"
+                Source="/Text-Grab;component/Images/GF.jpg"
+                Stretch="Uniform" />
+            <TextBlock Style="{StaticResource TextBody}">
+                • The Grab Frame is a window which can be moved or resized. It stays on top of other windows and will read all of the text within the border.<LineBreak />
+                • Click or drag to select Word Borders then add them to the clipboard by clicking &quot;Grab&quot;.<LineBreak />
+                • Drop an image onto the Grab Frame to view the image and copy text.<LineBreak />
+                • Pause the Grab Frame and scroll to zoom in on a piece of text.<LineBreak />
+                • Edit each line to correct any errors and fix up the results to be perfect.<LineBreak />
+                • Table mode will draw a grid around the lines to be pasted into a table easily.<LineBreak />
+                • If there is no search string or clicked word borders then the Grab Frame reads all text within the window and copies it to the clipboard.</TextBlock>
+
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                What the Edit Text Window can do
+            </TextBlock>
+            <Image
+                MaxWidth="600"
+                Margin="0,30,0,0"
+                HorizontalAlignment="Left"
+                Source="/Text-Grab;component/Images/ETW.jpg"
+                Stretch="Uniform" />
+            <TextBlock Style="{StaticResource TextBody}">
+                • Similar to Notepad, the Edit Text Window is a &quot;Pure Text&quot; editing experience, with no formatting.<LineBreak />
+                • This means copying text into or out of the Window will remove all formatting, but linebreaks and tabs will remain.<LineBreak />
+                • Gather text using Fullscreen Grabs or Grab Frames.<LineBreak />
+                • There are several tools with in the Edit Text Window which make it quick and easy to fix or change text.</TextBlock>
+            <TextBlock Margin="70,0,0,0" Style="{StaticResource TextBody}">
+                - Make text into a single line<LineBreak />
+                - Toggle between UPPERCASE, lowercase, and Titlecase<LineBreak />
+                - Trim spaces and empty lines<LineBreak />
+                - Isolate selected text<LineBreak />
+                - Replace reserved characters<LineBreak />
+                - Find and replace<LineBreak />
+                - Extract regular expressions<LineBreak />
+                - And more!</TextBlock>
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                Where does Quick Simple Lookup fit in?
+            </TextBlock>
+            <Image
+                MaxWidth="600"
+                Margin="0,30,0,0"
+                HorizontalAlignment="Left"
+                Source="/Text-Grab;component/Images/QSL.jpg"
+                Stretch="Uniform" />
+            <TextBlock Style="{StaticResource TextBody}">
+                • Unlike Full-Screen or Grab Frame modes Quick Simple Lookup does not use OCR.<LineBreak />
+                • Fast to launch and load the lookup table. (default hotkey Win+Shift+Q)<LineBreak />
+                • Search for any item in any way you like to filter results quickly.<LineBreak />
+                • Press Enter to copy the looup value and close the window in a snap!<LineBreak />
+                • Now paste the text into the app you need it.<LineBreak />
+            </TextBlock>
+
+            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                Application Options
             </TextBlock>
 
             <TextBlock Style="{StaticResource TextBody}">
-                Notifications are an easy way to jump into a some copied text.
+                Clicking on notifications puts the copied text into an Edit Text Window to be copied, corrected, changed, amended, or more!
             </TextBlock>
             <Viewbox
                 MaxHeight="160"
