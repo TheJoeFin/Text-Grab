@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,7 +17,6 @@ using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
-using Windows.Devices.Display.Core;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 using ZXing;
@@ -39,6 +37,10 @@ public partial class GrabFrame : Window
     private bool isSelecting;
     private Point clickedPoint;
     private Border selectBorder = new();
+
+    private ImageSource? frameContentImageSource;
+
+    private ImageSource? droppedImageSource;
 
     private bool isSpaceJoining = true;
 
@@ -139,7 +141,7 @@ public partial class GrabFrame : Window
     {
         if (wasAltHeld == true && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
         {
-            RectanglesCanvas.Visibility = Visibility.Visible;
+            RectanglesCanvas.Opacity = 1;
             wasAltHeld = false;
         }
     }
@@ -148,7 +150,7 @@ public partial class GrabFrame : Window
     {
         if (wasAltHeld == false && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
         {
-            RectanglesCanvas.Visibility = Visibility.Collapsed;
+            RectanglesCanvas.Opacity = 0.1;
             wasAltHeld = true;
         }
     }
@@ -225,10 +227,9 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         ResetGrabFrame();
 
-        TextBox searchBox = SearchBox;
-
-        if (searchBox != null)
-            await DrawRectanglesAroundWords(searchBox.Text);
+        frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+        if (SearchBox.Text is string searchText)
+            await DrawRectanglesAroundWords(searchText);
     }
 
     private void OnCloseButtonClick(object sender, RoutedEventArgs e)
@@ -238,8 +239,6 @@ public partial class GrabFrame : Window
 
     private void GrabBTN_Click(object sender, RoutedEventArgs e)
     {
-
-
         if (IsFromEditWindow == false
             && string.IsNullOrWhiteSpace(FrameText) == false
             && Settings.Default.NeverAutoUseClipboard == false)
@@ -262,6 +261,7 @@ public partial class GrabFrame : Window
     private void ResetGrabFrame()
     {
         ocrResultOfWindow = null;
+        frameContentImageSource = null;
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
         MatchesTXTBLK.Text = "Matches: 0";
@@ -270,7 +270,7 @@ public partial class GrabFrame : Window
 
     private void Window_LocationChanged(object? sender, EventArgs e)
     {
-        if (IsLoaded == false || IsFreezeMode == true || isMiddleDown)
+        if (!IsLoaded || IsFreezeMode || isMiddleDown)
             return;
 
         ResetGrabFrame();
@@ -281,7 +281,7 @@ public partial class GrabFrame : Window
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         ResetGrabFrame();
@@ -323,11 +323,11 @@ public partial class GrabFrame : Window
 
     private void GrabFrameWindow_Deactivated(object? sender, EventArgs e)
     {
-        if (IsWordEditMode != true && IsFreezeMode != true)
+        if (!IsWordEditMode && !IsFreezeMode)
             ResetGrabFrame();
         else
         {
-            RectanglesCanvas.Visibility = Visibility.Visible;
+            RectanglesCanvas.Opacity = 1;
             if (Keyboard.Modifiers != ModifierKeys.Alt)
                 wasAltHeld = false;
 
@@ -339,7 +339,7 @@ public partial class GrabFrame : Window
 
     private async Task DrawRectanglesAroundWords(string searchWord = "")
     {
-        if (isDrawing == true || IsDragOver == true)
+        if (isDrawing || IsDragOver)
             return;
 
         isDrawing = true;
@@ -1029,10 +1029,10 @@ public partial class GrabFrame : Window
             searchBox.Text = "";
     }
 
-    private async void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)
+    private void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)
     {
-        if (SearchBox is TextBox searchBox)
-            await DrawRectanglesAroundWords(searchBox.Text);
+        reSearchTimer.Stop();
+        reSearchTimer.Start();
     }
 
     private void ClearBTN_Click(object sender, RoutedEventArgs e)
@@ -1040,15 +1040,13 @@ public partial class GrabFrame : Window
         SearchBox.Text = "";
     }
 
-    private async void RefreshBTN_Click(object sender, RoutedEventArgs e)
+    private void RefreshBTN_Click(object sender, RoutedEventArgs e)
     {
         TextBox searchBox = SearchBox;
         ResetGrabFrame();
 
-        await Task.Delay(200);
-
-        if (searchBox != null)
-            await DrawRectanglesAroundWords(searchBox.Text);
+        reDrawTimer.Stop();
+        reDrawTimer.Start();
     }
 
     private void SettingsBTN_Click(object sender, RoutedEventArgs e)
@@ -1058,7 +1056,8 @@ public partial class GrabFrame : Window
 
     private void GrabFrameWindow_Activated(object? sender, EventArgs e)
     {
-        if (IsWordEditMode != true && IsFreezeMode != true)
+        RectanglesCanvas.Opacity = 1;
+        if (!IsWordEditMode && !IsFreezeMode)
             reDrawTimer.Start();
         else
             UpdateFrameText();
@@ -1115,10 +1114,8 @@ public partial class GrabFrame : Window
             isMiddleDown = false;
             FreezeGrabFrame();
 
-            await Task.Delay(150);
-            if (SearchBox is TextBox searchBox)
-                await DrawRectanglesAroundWords(searchBox.Text);
-
+            reDrawTimer.Stop();
+            reDrawTimer.Start();
             return;
         }
 
@@ -1213,29 +1210,27 @@ public partial class GrabFrame : Window
             UpdateFrameText();
     }
 
-    private async void TableToggleButton_Click(object sender, RoutedEventArgs e)
+    private void TableToggleButton_Click(object sender, RoutedEventArgs e)
     {
         TextBox searchBox = SearchBox;
         ResetGrabFrame();
 
-        await Task.Delay(200);
-
-        if (searchBox != null)
-            await DrawRectanglesAroundWords(searchBox.Text);
+        reDrawTimer.Stop();
+        reDrawTimer.Start();
     }
 
     private async void EditToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        if (EditToggleButton.IsChecked is bool isEditMode && isEditMode == true)
+        if (EditToggleButton.IsChecked is bool isEditMode && isEditMode)
         {
-            if (IsFreezeMode == false)
+            if (!IsFreezeMode)
             {
                 FreezeToggleButton.IsChecked = true;
                 ResetGrabFrame();
                 await Task.Delay(200);
                 FreezeGrabFrame();
-                if (SearchBox != null)
-                    await DrawRectanglesAroundWords(SearchBox.Text);
+                reDrawTimer.Stop();
+                reDrawTimer.Start();
             }
 
             EnterEditMode();
@@ -1272,24 +1267,28 @@ public partial class GrabFrame : Window
         ResetGrabFrame();
 
         await Task.Delay(200);
-        if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode == true)
+        if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode)
             FreezeGrabFrame();
         else
             UnfreezeGrabFrame();
 
         await Task.Delay(200);
 
-        if (searchBox != null)
-            await DrawRectanglesAroundWords(searchBox.Text);
-
+        reDrawTimer.Stop();
+        reDrawTimer.Start();
     }
 
-    private void FreezeGrabFrame(BitmapImage? passedImage = null)
+    private void FreezeGrabFrame()
     {
-        if (passedImage is not null)
-            GrabFrameImage.Source = passedImage;
+        if (droppedImageSource is not null)
+            GrabFrameImage.Source = droppedImageSource;
+        else if (frameContentImageSource is not null)
+            GrabFrameImage.Source = frameContentImageSource;
         else
-            GrabFrameImage.Source = ImageMethods.GetWindowBoundsImage(this);
+        {
+            frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+            GrabFrameImage.Source = frameContentImageSource;
+        }
 
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
@@ -1302,6 +1301,8 @@ public partial class GrabFrame : Window
     {
         Topmost = true;
         GrabFrameImage.Source = null;
+        frameContentImageSource = null;
+        droppedImageSource = null;
         RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         this.Background = new SolidColorBrush(Colors.Transparent);
@@ -1321,21 +1322,21 @@ public partial class GrabFrame : Window
     {
         // Mark the event as handled, so TextBox's native Drop handler is not called.
         e.Handled = true;
-
-
         var fileName = IsSingleFile(e);
         if (fileName is null) return;
 
+        Activate();
         Uri fileURI = new(fileName);
+        droppedImageSource = null;
 
         try
         {
             ResetGrabFrame();
             await Task.Delay(300);
             BitmapImage droppedImage = new(fileURI);
+            droppedImageSource = droppedImage;
             FreezeToggleButton.IsChecked = true;
-            FreezeGrabFrame(droppedImage);
-            await Task.Delay(200);
+            FreezeGrabFrame();
         }
         catch (Exception)
         {
@@ -1345,7 +1346,8 @@ public partial class GrabFrame : Window
 
         IsDragOver = false;
 
-        await DrawRectanglesAroundWords();
+        reDrawTimer.Start();
+        reDrawTimer.Start();
     }
 
     private void GrabFrameWindow_DragOver(object sender, DragEventArgs e)
@@ -1434,8 +1436,9 @@ public partial class GrabFrame : Window
             ResetGrabFrame();
             FreezeGrabFrame();
         }
-        if (SearchBox != null)
-            await DrawRectanglesAroundWords(SearchBox.Text);
+
+        reDrawTimer.Stop();
+        reDrawTimer.Start();
     }
 
     private void LoadOcrLanguages()
