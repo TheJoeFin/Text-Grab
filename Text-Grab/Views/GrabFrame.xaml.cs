@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,11 @@ using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Windows.Devices.Display.Core;
+using Windows.Globalization;
 using Windows.Media.Ocr;
+using ZXing;
+using ZXing.Windows.Compatibility;
 
 namespace Text_Grab.Views;
 
@@ -35,7 +40,7 @@ public partial class GrabFrame : Window
     private Point clickedPoint;
     private Border selectBorder = new();
 
-    private bool isCJKLang = false;
+    private bool isSpaceJoining = true;
 
     private ResultTable? AnalyedResultTable;
 
@@ -47,9 +52,19 @@ public partial class GrabFrame : Window
 
     private bool IsDragOver = false;
 
+    private bool wasAltHeld = false;
+
+    private bool isLanguageBoxLoaded = false;
+
+    public string FrameText { get; private set; } = string.Empty;
+
+    public TextBox? DestinationTextBox { get; set; }
+
     public GrabFrame()
     {
         InitializeComponent();
+
+        LoadOcrLanguages();
 
         SetRestoreState();
 
@@ -71,6 +86,8 @@ public partial class GrabFrame : Window
         this.PreviewMouseWheel += HandlePreviewMouseWheel;
         this.PreviewKeyDown += Window_PreviewKeyDown;
         this.PreviewKeyUp += Window_PreviewKeyUp;
+
+        CheckBottomRowButtonsVis();
     }
 
     public void GrabFrame_Unloaded(object sender, RoutedEventArgs e)
@@ -126,8 +143,6 @@ public partial class GrabFrame : Window
             wasAltHeld = false;
         }
     }
-
-    private bool wasAltHeld = false;
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -221,97 +236,27 @@ public partial class GrabFrame : Window
         Close();
     }
 
-    private async void GrabBTN_Click(object sender, RoutedEventArgs e)
+    private void GrabBTN_Click(object sender, RoutedEventArgs e)
     {
-        string frameText = "";
 
-        if (wordBorders.Where(w => w.IsSelected == true).ToList().Count == 0)
-        {
-            Point windowPosition = this.GetAbsolutePosition();
-            DpiScale dpi = VisualTreeHelper.GetDpi(this);
-            System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
-            {
-                Width = (int)((ActualWidth + 2) * dpi.DpiScaleX),
-                Height = (int)((Height - 64) * dpi.DpiScaleY),
-                X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
-                Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
-            };
-            frameText = await ImageMethods.GetRegionsText(null, rectCanvasSize, null);
-        }
-
-        if (wordBorders.Count > 0)
-        {
-            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
-
-            if (selectedBorders.Count == 0)
-                selectedBorders.AddRange(wordBorders);
-
-            List<string> lineList = new();
-            StringBuilder outputString = new();
-            int? lastLineNum = 0;
-            int lastColumnNum = 0;
-
-            if (selectedBorders.FirstOrDefault() != null)
-                lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
-
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
-
-            int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
-
-            foreach (WordBorder border in selectedBorders)
-            {
-                if (lineList.Count == 0)
-                    lastLineNum = border.ResultRowID;
-
-                if (border.ResultRowID != lastLineNum)
-                {
-                    if (isCJKLang == true)
-                        outputString.Append(string.Join("", lineList));
-                    else
-                        outputString.Append(string.Join(' ', lineList));
-                    outputString.Replace(" \t ", "\t");
-                    outputString.Append(Environment.NewLine);
-                    lineList.Clear();
-                    lastLineNum = border.ResultRowID;
-                }
-
-                if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
-                {
-                    string borderWord = border.Word;
-                    int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-                    if (numberOfOffColumns < 0)
-                        lastColumnNum = 0;
-
-                    numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-
-                    if (numberOfOffColumns > 0)
-                        lineList.Add(new string('\t', numberOfOffColumns));
-                }
-                lastColumnNum = border.ResultColumnID;
-
-                lineList.Add(border.Word);
-            }
-
-            if (isCJKLang == true)
-                outputString.Append(string.Join("", lineList));
-            else
-                outputString.Append(string.Join(' ', lineList));
-
-            frameText = outputString.ToString();
-        }
 
         if (IsFromEditWindow == false
-            && string.IsNullOrWhiteSpace(frameText) == false
+            && string.IsNullOrWhiteSpace(FrameText) == false
             && Settings.Default.NeverAutoUseClipboard == false)
-            try { Clipboard.SetDataObject(frameText, true); } catch { }
+            try { Clipboard.SetDataObject(FrameText, true); } catch { }
 
         if (Settings.Default.ShowToast == true
             && IsFromEditWindow == false)
-            NotificationUtilities.ShowToast(frameText);
+            NotificationUtilities.ShowToast(FrameText);
 
-        if (IsFromEditWindow == true && string.IsNullOrWhiteSpace(frameText) == false)
-            WindowUtilities.AddTextToOpenWindow(frameText);
+        if (IsFromEditWindow == true
+            && string.IsNullOrWhiteSpace(FrameText) == false
+            && DestinationTextBox is not null)
+        {
+            DestinationTextBox.Select(DestinationTextBox.SelectionStart + DestinationTextBox.SelectionLength, 0);
+            DestinationTextBox.AppendText(Environment.NewLine);
+            UpdateFrameText();
+        }
     }
 
     private void ResetGrabFrame()
@@ -320,11 +265,12 @@ public partial class GrabFrame : Window
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
         MatchesTXTBLK.Text = "Matches: 0";
+        UpdateFrameText();
     }
 
     private void Window_LocationChanged(object? sender, EventArgs e)
     {
-        if (IsLoaded == false || IsFreezeMode == true)
+        if (IsLoaded == false || IsFreezeMode == true || isMiddleDown)
             return;
 
         ResetGrabFrame();
@@ -350,17 +296,29 @@ public partial class GrabFrame : Window
     {
         if (this.Width < 300)
         {
+            ButtonsStackPanel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            ButtonsStackPanel.Visibility = Visibility.Visible;
+        }
+
+        if (this.Width < 460)
+        {
             SearchBox.Visibility = Visibility.Collapsed;
             MatchesTXTBLK.Visibility = Visibility.Collapsed;
             ClearBTN.Visibility = Visibility.Collapsed;
-            ButtonsStackPanel.Visibility = Visibility.Collapsed;
         }
         else
         {
             SearchBox.Visibility = Visibility.Visible;
             ClearBTN.Visibility = Visibility.Visible;
-            ButtonsStackPanel.Visibility = Visibility.Visible;
         }
+
+        if (this.Width < 580)
+            LanguagesComboBox.Visibility = Visibility.Collapsed;
+        else
+            LanguagesComboBox.Visibility = Visibility.Visible;
     }
 
     private void GrabFrameWindow_Deactivated(object? sender, EventArgs e)
@@ -372,6 +330,9 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Visibility = Visibility.Visible;
             if (Keyboard.Modifiers != ModifierKeys.Alt)
                 wasAltHeld = false;
+
+            if (!IsFreezeMode)
+                FreezeGrabFrame();
         }
 
     }
@@ -400,20 +361,17 @@ public partial class GrabFrame : Window
         };
 
         double scale = 1;
+        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
 
         if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize);
-
-        Windows.Globalization.Language? currentLang = ImageMethods.GetOCRLanguage();
+            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize, currentLang);
 
         if (currentLang is not null)
         {
             if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
+                isSpaceJoining = false;
             else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
-            else if (currentLang.LanguageTag.StartsWith("ko", StringComparison.InvariantCultureIgnoreCase) == true)
-                isCJKLang = true;
+                isSpaceJoining = false;
         }
 
         if (ocrResultOfWindow == null)
@@ -424,46 +382,54 @@ public partial class GrabFrame : Window
 
         foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
         {
-            foreach (OcrWord ocrWord in ocrLine.Words)
+            double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
+            double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
+            double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
+            double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
+
+            StringBuilder lineText = new();
+
+            ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
+
+            Rect lineRect = new()
             {
-                string wordString = ocrWord.Text;
+                X = left,
+                Y = top,
+                Width = Math.Abs(right - left),
+                Height = Math.Abs(bottom - top)
+            };
 
-                if (Settings.Default.CorrectErrors)
-                    wordString = wordString.TryFixEveryWordLetterNumberErrors();
+            WordBorder wordBorderBox = new()
+            {
+                Width = lineRect.Width / (dpi.DpiScaleX * scale),
+                Height = lineRect.Height / (dpi.DpiScaleY * scale),
+                Word = lineText.ToString().Trim(),
+                ToolTip = ocrLine.Text,
+                LineNumber = lineNumber,
+                IsFromEditWindow = IsFromEditWindow
+            };
 
-                WordBorder wordBorderBox = new WordBorder
+            if ((bool)ExactMatchChkBx.IsChecked!)
+            {
+                if (lineText.ToString().Equals(searchWord, StringComparison.CurrentCulture))
                 {
-                    Width = (ocrWord.BoundingRect.Width / (dpi.DpiScaleX * scale)),
-                    Height = (ocrWord.BoundingRect.Height / (dpi.DpiScaleY * scale)),
-                    Word = wordString,
-                    ToolTip = wordString,
-                    LineNumber = lineNumber,
-                    IsFromEditWindow = IsFromEditWindow
-                };
-
-                if ((bool)ExactMatchChkBx.IsChecked!)
-                {
-                    if (wordString.Equals(searchWord, StringComparison.CurrentCulture))
-                    {
-                        wordBorderBox.Select();
-                        numberOfMatches++;
-                    }
+                    wordBorderBox.Select();
+                    numberOfMatches++;
                 }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(searchWord)
-                        && wordString.Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        wordBorderBox.Select();
-                        numberOfMatches++;
-                    }
-                }
-
-                wordBorders.Add(wordBorderBox);
-                _ = RectanglesCanvas.Children.Add(wordBorderBox);
-                Canvas.SetLeft(wordBorderBox, (ocrWord.BoundingRect.Left / (dpi.DpiScaleX * scale)));
-                Canvas.SetTop(wordBorderBox, (ocrWord.BoundingRect.Top / (dpi.DpiScaleY * scale)));
             }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(searchWord)
+                    && lineText.ToString().Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    wordBorderBox.Select();
+                    numberOfMatches++;
+                }
+            }
+            wordBorders.Add(wordBorderBox);
+            _ = RectanglesCanvas.Children.Add(wordBorderBox);
+            Canvas.SetLeft(wordBorderBox, lineRect.Left / (dpi.DpiScaleX * scale));
+            Canvas.SetTop(wordBorderBox, lineRect.Top / (dpi.DpiScaleY * scale));
 
             lineNumber++;
         }
@@ -499,24 +465,29 @@ public partial class GrabFrame : Window
             }
         }
 
-        List<UIElement> wordBordersRePlace = new();
+        if (Settings.Default.TryToReadBarcodes)
+            TryToReadBarcodes(dpi);
+
+        List<WordBorder> wordBordersRePlace = new();
         foreach (UIElement child in RectanglesCanvas.Children)
         {
             if (child is WordBorder wordBorder)
                 wordBordersRePlace.Add(wordBorder);
         }
         RectanglesCanvas.Children.Clear();
-        foreach (UIElement uie in wordBordersRePlace)
+        foreach (WordBorder wordBorder in wordBordersRePlace)
         {
-            if (uie is WordBorder wordBorder)
-            {
-                wordBorder.Width += 4;
-                wordBorder.Height += 4;
-                RectanglesCanvas.Children.Add(wordBorder);
-                Canvas.SetLeft(wordBorder, Canvas.GetLeft(wordBorder) - 2);
-                Canvas.SetTop(wordBorder, Canvas.GetTop(wordBorder) - 2);
-            }
+            // First the Word borders are placed smaller, then table analysis occurs.
+            // After table can be analyzed with the position of the word borders they are adjusted 
+            wordBorder.Width += 16;
+            wordBorder.Height += 4;
+            double leftWB = Canvas.GetLeft(wordBorder);
+            double topWB = Canvas.GetTop(wordBorder);
+            Canvas.SetLeft(wordBorder, leftWB - 10);
+            Canvas.SetTop(wordBorder, topWB - 2);
+            RectanglesCanvas.Children.Add(wordBorder);
         }
+
 
         if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
         {
@@ -528,6 +499,49 @@ public partial class GrabFrame : Window
 
         MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
         isDrawing = false;
+
+        UpdateFrameText();
+    }
+
+    private void TryToReadBarcodes(DpiScale dpi)
+    {
+        System.Drawing.Bitmap bitmapOfGrabFrame = ImageMethods.GetWindowsBoundsBitmap(this);
+
+        BarcodeReader barcodeReader = new()
+        {
+            AutoRotate = true,
+            Options = new ZXing.Common.DecodingOptions { TryHarder = true }
+        };
+
+        ZXing.Result result = barcodeReader.Decode(bitmapOfGrabFrame);
+
+        if (result is not null)
+        {
+            ResultPoint[] rawPoints = result.ResultPoints;
+
+            float[] xs = rawPoints.Reverse().Take(4).Select(x => x.X).ToArray();
+            float[] ys = rawPoints.Reverse().Take(4).Select(x => x.Y).ToArray();
+
+            Point minPoint = new Point(xs.Min(), ys.Min());
+            Point maxPoint = new Point(xs.Max(), ys.Max());
+            Point diffs = new Point(maxPoint.X - minPoint.X, maxPoint.Y - minPoint.Y);
+
+            if (diffs.Y < 5)
+                diffs.Y = diffs.X / 10;
+
+
+            WordBorder wb = new();
+            wb.Word = result.Text;
+            wb.Width = diffs.X / dpi.DpiScaleX + 12;
+            wb.Height = diffs.Y / dpi.DpiScaleY + 12;
+            wb.SetAsBarcode();
+            wordBorders.Add(wb);
+            _ = RectanglesCanvas.Children.Add(wb);
+            double left = minPoint.X / (dpi.DpiScaleX) - 6;
+            double top = minPoint.Y / (dpi.DpiScaleY) - 6;
+            Canvas.SetLeft(wb, left);
+            Canvas.SetTop(wb, top);
+        }
     }
 
     private void DrawTable(ResultTable resultTable)
@@ -904,11 +918,17 @@ public partial class GrabFrame : Window
     private void ReSearchTimer_Tick(object? sender, EventArgs e)
     {
         reSearchTimer.Stop();
-        if (SearchBox.Text is not string searchText || string.IsNullOrWhiteSpace(searchText)) return;
+        if (SearchBox.Text is not string searchText)
+            return;
 
-        foreach (UIElement uIElement in RectanglesCanvas.Children)
+        if (string.IsNullOrWhiteSpace(searchText))
         {
-            if (uIElement is WordBorder wb)
+            foreach (WordBorder wb in wordBorders)
+                wb.Deselect();
+        }
+        else
+        {
+            foreach (WordBorder wb in wordBorders)
             {
                 if (!string.IsNullOrWhiteSpace(searchText)
                     && wb.Word.ToLower().Contains(searchText.ToLower()))
@@ -918,7 +938,89 @@ public partial class GrabFrame : Window
             }
         }
 
+        UpdateFrameText();
+
         MatchesTXTBLK.Visibility = Visibility.Visible;
+    }
+
+    private void UpdateFrameText()
+    {
+        string[] selectedWbs = wordBorders.Where(w => w.IsSelected).Select(t => t.Word).ToArray();
+
+        StringBuilder stringBuilder = new();
+
+        if (TableToggleButton.IsChecked == true)
+        {
+            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
+
+            if (selectedBorders.Count == 0)
+                selectedBorders.AddRange(wordBorders);
+
+            List<string> lineList = new();
+            int? lastLineNum = 0;
+            int lastColumnNum = 0;
+
+            if (selectedBorders.FirstOrDefault() != null)
+                lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
+
+            selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
+            selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
+
+            int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
+
+            foreach (WordBorder border in selectedBorders)
+            {
+                if (lineList.Count == 0)
+                    lastLineNum = border.ResultRowID;
+
+                if (border.ResultRowID != lastLineNum)
+                {
+                    if (isSpaceJoining)
+                        stringBuilder.Append(string.Join(' ', lineList));
+                    else
+                        stringBuilder.Append(string.Join("", lineList));
+                    stringBuilder.Replace(" \t ", "\t");
+                    stringBuilder.Append(Environment.NewLine);
+                    lineList.Clear();
+                    lastLineNum = border.ResultRowID;
+                }
+
+                if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
+                {
+                    string borderWord = border.Word;
+                    int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+                    if (numberOfOffColumns < 0)
+                        lastColumnNum = 0;
+
+                    numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+
+                    if (numberOfOffColumns > 0)
+                        lineList.Add(new string('\t', numberOfOffColumns));
+                }
+                lastColumnNum = border.ResultColumnID;
+
+                lineList.Add(border.Word);
+            }
+
+            if (isSpaceJoining)
+                stringBuilder.Append(string.Join(' ', lineList));
+            else
+                stringBuilder.Append(string.Join("", lineList));
+        }
+        else
+        {
+            if (selectedWbs.Length > 0)
+                stringBuilder.AppendJoin(Environment.NewLine, selectedWbs);
+            else
+                stringBuilder.AppendJoin(Environment.NewLine, wordBorders.Select(w => w.Word).ToArray());
+        }
+
+        FrameText = stringBuilder.ToString();
+
+        if (IsFromEditWindow && DestinationTextBox is not null)
+        {
+            DestinationTextBox.SelectedText = FrameText;
+        }
     }
 
     private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
@@ -958,36 +1060,37 @@ public partial class GrabFrame : Window
     {
         if (IsWordEditMode != true && IsFreezeMode != true)
             reDrawTimer.Start();
+        else
+            UpdateFrameText();
     }
 
-    private async void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+    private bool isMiddleDown = false;
+
+    private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.RightButton == MouseButtonState.Pressed)
         {
             e.Handled = false;
             return;
         }
-        else if (e.MiddleButton == MouseButtonState.Pressed)
-        {
-            e.Handled = true;
-            UnfreezeGrabFrame();
-            ResetGrabFrame();
-            await Task.Delay(150);
-            FreezeGrabFrame();
-
-            await Task.Delay(150);
-            if (SearchBox is TextBox searchBox)
-                await DrawRectanglesAroundWords(searchBox.Text);
-
-            return;
-        }
 
         isSelecting = true;
         clickedPoint = e.GetPosition(RectanglesCanvas);
         RectanglesCanvas.CaptureMouse();
-        CursorClipper.ClipCursor(RectanglesCanvas);
         selectBorder.Height = 1;
         selectBorder.Width = 1;
+
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            e.Handled = true;
+
+            isMiddleDown = true;
+            ResetGrabFrame();
+            UnfreezeGrabFrame();
+            return;
+        }
+
+        CursorClipper.ClipCursor(RectanglesCanvas);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch (Exception) { }
 
@@ -1007,6 +1110,18 @@ public partial class GrabFrame : Window
         CursorClipper.UnClipCursor();
         RectanglesCanvas.ReleaseMouseCapture();
 
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            isMiddleDown = false;
+            FreezeGrabFrame();
+
+            await Task.Delay(150);
+            if (SearchBox is TextBox searchBox)
+                await DrawRectanglesAroundWords(searchBox.Text);
+
+            return;
+        }
+
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
         await Task.Delay(50);
@@ -1015,13 +1130,24 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
-        if (isSelecting == false)
+        if (!isSelecting && !isMiddleDown)
             return;
 
         Point movingPoint = e.GetPosition(RectanglesCanvas);
 
         var left = Math.Min(clickedPoint.X, movingPoint.X);
         var top = Math.Min(clickedPoint.Y, movingPoint.Y);
+
+        if (isMiddleDown)
+        {
+            double xShiftDelta = (movingPoint.X - clickedPoint.X);
+            double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+
+            Top += yShiftDelta;
+            Left += xShiftDelta;
+
+            return;
+        }
 
         selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
@@ -1054,7 +1180,7 @@ public partial class GrabFrame : Window
                     wordBorder.Select();
                     wordBorder.WasRegionSelected = true;
                 }
-                else
+                else if (!finalCheck)
                 {
                     if (wordBorder.IsSelected)
                         wordBorder.Deselect();
@@ -1082,6 +1208,9 @@ public partial class GrabFrame : Window
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
         }
+
+        if (finalCheck)
+            UpdateFrameText();
     }
 
     private async void TableToggleButton_Click(object sender, RoutedEventArgs e)
@@ -1165,7 +1294,7 @@ public partial class GrabFrame : Window
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
         this.Background = new SolidColorBrush(Colors.DimGray);
-        RectanglesCanvas.Background.Opacity = 0;
+        RectanglesBorder.Background.Opacity = 0;
         IsFreezeMode = true;
     }
 
@@ -1173,7 +1302,7 @@ public partial class GrabFrame : Window
     {
         Topmost = true;
         GrabFrameImage.Source = null;
-        RectanglesCanvas.Background.Opacity = 0.05;
+        RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         this.Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
@@ -1181,8 +1310,11 @@ public partial class GrabFrame : Window
 
     private void EditTextBTN_Click(object sender, RoutedEventArgs e)
     {
-        _ = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+        EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+        DestinationTextBox = etw.GetMainTextBox();
         IsFromEditWindow = true;
+
+        UpdateFrameText();
     }
 
     private async void GrabFrameWindow_Drop(object sender, DragEventArgs e)
@@ -1304,5 +1436,63 @@ public partial class GrabFrame : Window
         }
         if (SearchBox != null)
             await DrawRectanglesAroundWords(SearchBox.Text);
+    }
+
+    private void LoadOcrLanguages()
+    {
+        if (LanguagesComboBox.Items.Count > 0)
+            return;
+
+        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
+        Language? firstLang = ImageMethods.GetOCRLanguage();
+
+        int count = 0;
+
+        foreach (Language language in possibleOCRLangs)
+        {
+            LanguagesComboBox.Items.Add(language);
+
+            if (language.LanguageTag == firstLang?.LanguageTag)
+                LanguagesComboBox.SelectedIndex = count;
+
+            count++;
+        }
+
+        isLanguageBoxLoaded = true;
+    }
+
+    private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!isLanguageBoxLoaded || sender is not ComboBox langComboBox)
+            return;
+
+        Language? pickedLang = langComboBox.SelectedItem as Language;
+
+        if (pickedLang != null)
+        {
+            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
+            Settings.Default.Save();
+        }
+
+        ResetGrabFrame();
+
+        reDrawTimer.Stop();
+        reDrawTimer.Start();
+    }
+
+    private void LanguagesComboBox_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            Settings.Default.LastUsedLang = String.Empty;
+            Settings.Default.Save();
+        }
+    }
+
+    private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        FrameText = "";
+        wordBorders.Clear();
+        UpdateFrameText();
     }
 }

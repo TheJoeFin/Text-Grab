@@ -24,6 +24,7 @@ public partial class FindAndReplaceWindow : Window
     public static RoutedCommand ReplaceAllCmd = new();
     public static RoutedCommand ExtractPatternCmd = new();
     public static RoutedCommand DeleteAllCmd = new();
+    public static RoutedCommand CopyMatchesCmd = new();
     DispatcherTimer ChangeFindTextTimer = new();
 
     private string? Pattern { get; set; }
@@ -42,7 +43,12 @@ public partial class FindAndReplaceWindow : Window
     private void Window_Closed(object? sender, EventArgs e)
     {
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
-        ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
+    }
+
+    public void ShouldCloseWithThisETW(EditTextWindow etw)
+    {
+        if (TextEditWindow is not null && etw == TextEditWindow)
+            Close();
     }
 
     private void ChangeFindText_Tick(object? sender, EventArgs? e)
@@ -54,10 +60,22 @@ public partial class FindAndReplaceWindow : Window
     private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
     {
         if (TextEditWindow != null)
+        {
             TextEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+
+            double etwMidTop = TextEditWindow.Top + (TextEditWindow.Height / 2);
+            double etwMidLeft = TextEditWindow.Left + (TextEditWindow.Width / 2);
+
+            double thisMidTop = etwMidTop - (this.Height / 2);
+            double thisMidLeft = etwMidLeft - (this.Width / 2);
+
+            this.Top = thisMidTop;
+            this.Left = thisMidLeft;
+        }
 
         if (string.IsNullOrWhiteSpace(FindTextBox.Text) == false)
             SearchForText();
+
     }
 
     private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
@@ -215,6 +233,7 @@ public partial class FindAndReplaceWindow : Window
         ReplaceButton.Visibility = optionsVisibility;
         ReplaceAllButton.Visibility = optionsVisibility;
         MoreOptionsHozStack.Visibility = optionsVisibility;
+        EvenMoreOptionsHozStack.Visibility = optionsVisibility;
     }
 
     private void ReplaceAll_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -347,6 +366,55 @@ public partial class FindAndReplaceWindow : Window
         SearchForText();
     }
 
+    private void CopyMatchesCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (Matches == null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
+            e.CanExecute = false;
+        else
+            e.CanExecute = true;
+    }
+
+    private void CopyMatchesCmd_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        var selection = ResultsListView.SelectedItems;
+
+        if (Matches == null
+            || Matches.Count < 1)
+            return;
+
+        StringBuilder stringBuilder = new();
+
+        if (selection.Count < 2)
+        {
+            for (int i = Matches.Count - 1; i >= 0; i--)
+            {
+                stringBuilder.AppendLine(Matches[i].Value);
+            }
+        }
+        else
+        {
+            for (int j = selection.Count - 1; j >= 0; j--)
+            {
+                string? selectionItem = selection[j] as string;
+                if (selectionItem != null && TextEditWindow != null)
+                {
+                    string? intString = selectionItem.Split('\t').FirstOrDefault();
+                    if (intString != null)
+                    {
+                        int currentIndex = int.Parse(intString);
+                        currentIndex--;
+                        Match match = Matches[currentIndex];
+                        stringBuilder.AppendLine(Matches[currentIndex].Value);
+                    }
+                }
+            }
+        }
+
+        EditTextWindow etw = new();
+        etw.AddThisText(stringBuilder.ToString());
+        etw.Show();
+    }
+
     private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(FindTextBox.Text))
@@ -368,6 +436,7 @@ public partial class FindAndReplaceWindow : Window
         {
             ChangeFindTextTimer.Stop();
             SearchForText();
+            e.Handled = true;
         }
         else
         {

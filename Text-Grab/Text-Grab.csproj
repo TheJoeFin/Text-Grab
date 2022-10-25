@@ -22,6 +22,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Images\ETW.jpg" />
+	  <None Remove="Images\FSG.jpg" />
+	  <None Remove="Images\GF.jpg" />
+	  <None Remove="Images\QSL.jpg" />
 	  <None Remove="t_ICON2.ico" />
 	</ItemGroup>
 
@@ -39,12 +43,15 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.2" />
 		<PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+		<PackageReference Include="ZXing.Net" Version="0.16.8" />
+		<PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.10" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="Images\EditTextWindow.png" />
-		<Resource Include="Images\Fullscreen.png" />
-		<Resource Include="Images\Grab-Frame.png" />
+		<Resource Include="Images\ETW.jpg" />
+		<Resource Include="Images\FSG.jpg" />
+		<Resource Include="Images\GF.jpg" />
+		<Resource Include="Images\QSL.jpg" />
 		<Resource Include="Images\Text-Grab-Icon.png" />
 		<Resource Include="Images\t_32.png" />
 		<Resource Include="Images\Toast.png" />

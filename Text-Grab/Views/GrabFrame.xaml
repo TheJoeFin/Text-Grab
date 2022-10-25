@@ -17,6 +17,7 @@
     AllowsTransparency="True"
     Background="Transparent"
     Closed="Window_Closed"
+    Closing="GrabFrameWindow_Closing"
     Deactivated="GrabFrameWindow_Deactivated"
     DragLeave="GrabFrameWindow_DragLeave"
     DragOver="GrabFrameWindow_DragOver"
@@ -33,6 +34,15 @@
     mc:Ignorable="d">
     <Window.Resources>
         <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+
+        <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
@@ -100,7 +110,6 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <Button
                         x:Name="MinimizeButton"
-                        Grid.Column="2"
                         Width="46"
                         Height="24"
                         Margin="0,-2,0,0"
@@ -113,7 +122,6 @@
                     </Button>
                     <Button
                         x:Name="RestoreButton"
-                        Grid.Column="2"
                         Width="46"
                         Height="24"
                         Margin="0,-2,0,0"
@@ -127,7 +135,6 @@
                     </Button>
                     <Button
                         x:Name="CloseButton"
-                        Grid.Column="2"
                         Width="46"
                         Height="24"
                         Margin="0,-2,0,0"
@@ -141,33 +148,35 @@
 
                 </StackPanel>
             </Grid>
-            <Canvas
-                x:Name="RectanglesCanvas"
-                Grid.Row="1"
-                Margin="-4,-2,0,0"
-                IsHitTestVisible="True"
-                MouseDown="RectanglesCanvas_MouseDown"
-                MouseMove="RectanglesCanvas_MouseMove"
-                MouseUp="RectanglesCanvas_MouseUp">
-                <Canvas.Background>
+            <Border x:Name="RectanglesBorder" Grid.Row="1">
+                <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
-                </Canvas.Background>
-                <Canvas.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem
-                            x:Name="AspectRationMI"
-                            Checked="AspectRationMI_Checked"
-                            Header="Maintain Aspect Ratio"
-                            IsCheckable="True"
-                            IsChecked="True"
-                            Unchecked="AspectRationMI_Checked" />
-                        <MenuItem
-                            x:Name="FreezeMI"
-                            Click="FreezeMI_Click"
-                            Header="Toggle Freeze" />
-                    </ContextMenu>
-                </Canvas.ContextMenu>
-            </Canvas>
+                </Border.Background>
+                <Canvas
+                    x:Name="RectanglesCanvas"
+                    Margin="-4,-2,0,0"
+                    Background="Transparent"
+                    IsHitTestVisible="True"
+                    MouseDown="RectanglesCanvas_MouseDown"
+                    MouseMove="RectanglesCanvas_MouseMove"
+                    MouseUp="RectanglesCanvas_MouseUp">
+                    <Canvas.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem
+                                x:Name="AspectRationMI"
+                                Checked="AspectRationMI_Checked"
+                                Header="Maintain Aspect Ratio"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Unchecked="AspectRationMI_Checked" />
+                            <MenuItem
+                                x:Name="FreezeMI"
+                                Click="FreezeMI_Click"
+                                Header="Toggle Freeze" />
+                        </ContextMenu>
+                    </Canvas.ContextMenu>
+                </Canvas>
+            </Border>
             <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
                 <Grid
                     Height="30"
@@ -176,6 +185,7 @@
                     VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="110" />
@@ -221,12 +231,29 @@
                         Text="Matches: 0"
                         Visibility="Collapsed" />
 
+                    <ComboBox
+                        x:Name="LanguagesComboBox"
+                        Grid.Column="2"
+                        MinWidth="60"
+                        PreviewMouseDown="LanguagesComboBox_MouseDown"
+                        SelectionChanged="LanguagesComboBox_SelectionChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontFamily="Segoe UI"
+                                    Style="{StaticResource SymbolTextStyle}"
+                                    Text="{Binding LanguageTag}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
                     <StackPanel
                         x:Name="ButtonsStackPanel"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="6,0"
                         Orientation="Horizontal">
-
                         <controls:CollapsibleButton
                             x:Name="RefreshBTN"
                             Margin="0"

@@ -6,9 +6,9 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Find and Replace"
-    Width="540"
+    Width="520"
     Height="560"
-    MinWidth="486"
+    MinWidth="400"
     MinHeight="300"
     Background="{StaticResource DarkBackground}"
     Closed="Window_Closed"
@@ -36,6 +36,10 @@
             CanExecute="DeleteAll_CanExecute"
             Command="{x:Static local:FindAndReplaceWindow.DeleteAllCmd}"
             Executed="DeleteAll_Executed" />
+        <CommandBinding
+            CanExecute="CopyMatchesCmd_CanExecute"
+            Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}"
+            Executed="CopyMatchesCmd_Executed" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -52,6 +56,7 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
@@ -77,7 +82,7 @@
                 x:Name="FindButton"
                 Grid.Row="0"
                 Grid.Column="2"
-                Width="100"
+                Width="110"
                 Margin="0,6,6,0"
                 Padding="4"
                 ButtonText="Find"
@@ -97,7 +102,7 @@
                 x:Name="ReplaceButton"
                 Grid.Row="1"
                 Grid.Column="2"
-                Width="100"
+                Width="110"
                 Margin="0,6,6,0"
                 Padding="4"
                 d:Visibility="Visible"
@@ -128,28 +133,11 @@
                     </TextBlock>
                 </CheckBox>
 
-                <CheckBox
-                    x:Name="UsePaternCheckBox"
-                    Margin="6"
-                    VerticalAlignment="Center"
-                    VerticalContentAlignment="Center">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Regex
-                    </TextBlock>
-                </CheckBox>
-
-                <local:CollapsibleButton
-                    x:Name="ExtractSimplePattern"
-                    Margin="0,0,6,0"
-                    VerticalAlignment="Center"
-                    ButtonText="Extract Pattern"
-                    Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
-                    SymbolText="" />
-
                 <local:CollapsibleButton
                     x:Name="DeleteAllMatches"
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
+                    Width="110"
                     Background="Red"
                     ButtonText="Delete All"
                     Command="{x:Static local:FindAndReplaceWindow.DeleteAllCmd}"
@@ -159,13 +147,51 @@
                     x:Name="ReplaceAllButton"
                     Grid.Row="2"
                     Grid.Column="2"
-                    Width="100"
+                    Width="110"
                     Height="30"
                     Margin="0,0,6,0"
                     Padding="4"
                     ButtonText="Replace All"
                     Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
                     SymbolText="" />
+            </StackPanel>
+            <StackPanel
+                x:Name="EvenMoreOptionsHozStack"
+                Grid.Row="3"
+                Grid.Column="1"
+                Grid.ColumnSpan="2"
+                Margin="0,6,0,0"
+                HorizontalAlignment="Right"
+                d:Visibility="Visible"
+                Orientation="Horizontal"
+                Visibility="Collapsed">
+                <CheckBox
+                    x:Name="UsePaternCheckBox"
+                    Margin="6"
+                    VerticalAlignment="Center"
+                    VerticalContentAlignment="Center">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Search With Regex
+                    </TextBlock>
+                </CheckBox>
+
+                <local:CollapsibleButton
+                    x:Name="ExtractSimplePattern"
+                    Width="110"
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    ButtonText="Extract Regex"
+                    Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
+                    SymbolText="" />
+
+                <local:CollapsibleButton
+                    x:Name="MatchesToEditWindow"
+                    Margin="0,0,6,0"
+                    Width="110"
+                    VerticalAlignment="Center"
+                    ButtonText="Edit Matches"
+                    Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}"
+                    SymbolText="" />
             </StackPanel>
 
         </Grid>

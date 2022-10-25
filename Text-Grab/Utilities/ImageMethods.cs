@@ -13,11 +13,13 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using ZXing.Windows.Compatibility;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
@@ -103,7 +105,7 @@ public static class ImageMethods
             return "";
     }
 
-    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    internal static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
     {
         bool isGrabFrame = false;
         if (passedWindow is GrabFrame)
@@ -126,11 +128,16 @@ public static class ImageMethods
             windowHeight -= (int)(70 * dpi.DpiScaleY);
         }
 
-        using Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        return bmp;
+    }
 
+    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    {
+        Bitmap bmp = GetWindowsBoundsBitmap(passedWindow);
         return BitmapToImageSource(bmp);
     }
 
@@ -191,19 +198,10 @@ public static class ImageMethods
 
         List<double> heightsList = new();
 
-        // (when OCR language is zh or ja)
-        // matches words in a space-joining language, which contains:
-        // - one letter that is not in "other letters" (CJK characters are "other letters")
-        // - one number digit
-        // - any words longer than one character
-        // Chinese and Japanese characters are single-character words
-        // when a word is one punctuation/symbol, join it without spaces
-        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
-
         if (singlePoint == null)
         {
             foreach (OcrLine ocrLine in ocrResult.Lines)
-                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text, regexSpaceJoiningWord);
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
         }
         else
         {
@@ -221,14 +219,38 @@ public static class ImageMethods
         }
 
         if (culture.TextInfo.IsRightToLeft)
-            ReverseWordsForRightToLeft(text, regexSpaceJoiningWord);
-        
+            ReverseWordsForRightToLeft(text);
+
+        if (Settings.Default.TryToReadBarcodes)
+        {
+            string barcodeResult = TryToReadBarcodes(scaledBitmap);
+
+            if (!string.IsNullOrWhiteSpace(barcodeResult))
+                text.AppendLine(barcodeResult);
+        }
+
         return text.ToString();
     }
 
-    private static void ReverseWordsForRightToLeft(StringBuilder text, Regex regexSpaceJoiningWord)
+    private static string TryToReadBarcodes(Bitmap bitmap)
+    {
+        BarcodeReader barcodeReader = new()
+        {
+            AutoRotate = true,
+            Options = new ZXing.Common.DecodingOptions { TryHarder = true }
+        };
+
+        ZXing.Result result = barcodeReader.Decode(bitmap);
+
+        if (result is null)
+            return string.Empty;
+        return result.Text;
+    }
+
+    private static void ReverseWordsForRightToLeft(StringBuilder text)
     {
         string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
 
         _ = text.Clear();
         foreach (string textLine in textListLines)
@@ -256,13 +278,16 @@ public static class ImageMethods
         }
     }
 
-    public static async Task<(OcrResult?, double)> GetOcrResultFromRegion(Rectangle region)
+    public static async Task<(OcrResult?, double)> GetOcrResultFromRegion(Rectangle region, Language? language)
     {
-        Language? selectedLanguage = GetOCRLanguage();
+        Language? selectedLanguage = null;
+        if (language is null)
+            selectedLanguage = GetOCRLanguage();
+        else
+            selectedLanguage = language;
+
         if (selectedLanguage == null)
-        {
             return (null, 0.0);
-        }
 
         using Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
@@ -379,8 +404,11 @@ public static class ImageMethods
     {
         // use currently selected Language
         string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-
         Language? selectedLanguage = new(inputLang);
+
+        if (!string.IsNullOrEmpty(Settings.Default.LastUsedLang))
+            selectedLanguage = new(Settings.Default.LastUsedLang);
+
         List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
 
         if (possibleOCRLangs.Count < 1)
