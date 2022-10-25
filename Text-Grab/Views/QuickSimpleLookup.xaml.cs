@@ -310,7 +310,7 @@ public partial class QuickSimpleLookup : Window
         string saveLookupFilePath = $"C:\\{cacheFilename}";
         if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
         {
-            string? exePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location);
+            string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
             saveLookupFilePath = $"{exePath}\\{cacheFilename}";
         }
         else
