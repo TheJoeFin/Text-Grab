@@ -29,11 +29,13 @@ public static class StringMethods
 
         fixToNumbers = fixToNumbers.Replace('o', '0');
         fixToNumbers = fixToNumbers.Replace('O', '0');
-        fixToNumbers = fixToNumbers.Replace('g', '9');
+        fixToNumbers = fixToNumbers.Replace('Q', '0');
+        fixToNumbers = fixToNumbers.Replace('c', '0');
+        fixToNumbers = fixToNumbers.Replace('C', '0');
         fixToNumbers = fixToNumbers.Replace('i', '1');
         fixToNumbers = fixToNumbers.Replace('I', '1');
         fixToNumbers = fixToNumbers.Replace('l', '1');
-        fixToNumbers = fixToNumbers.Replace('Q', '0');
+        fixToNumbers = fixToNumbers.Replace('g', '9');
 
         return fixToNumbers;
     }
