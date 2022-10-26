@@ -11,7 +11,7 @@
   <Identity
     Name="40087JoeFinApps.TextGrab"
     Publisher="CN=153F3B0F-BA3D-4964-8098-71AC78A1DF6A"
-    Version="2.7.1.0" />
+    Version="3.0.0.0" />
 
   <Properties>
     <DisplayName>Text Grab</DisplayName>
@@ -62,7 +62,7 @@
 		
       <uap:VisualElements
         DisplayName="Text Grab"
-        Description="Text-Grab-Package"
+        Description="Text Grab is a tool to gather and manipulate text using a range of tools like OCR, Regex, and more"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">
