@@ -714,23 +714,26 @@ public partial class EditTextWindow : Window
 
         int selectionLength = PassedTextControl.SelectionLength;
 
+        if (string.IsNullOrEmpty(splitString.Last()))
+            splitString = splitString.SkipLast(1).ToArray();
+
         StringBuilder sb = new();
         foreach (string line in splitString)
         {
             if (line.Length >= selectionPositionInLine
                 && line.Length >= (selectionPositionInLine + selectionLength))
             {
-                if (line.AsSpan(selectionPositionInLine, selectionLength) != selectionText)
+                if (line.Substring(selectionPositionInLine, selectionLength) != selectionText)
                     sb.Append(line.Insert(selectionPositionInLine, selectionText));
                 else
                     sb.Append(line);
             }
             else
             {
-                if (line.Length == selectionPositionInLine)
+                if (line.Length > selectionPositionInLine)
                     sb.Append(line.Insert(selectionPositionInLine, selectionText));
                 else
-                    sb.Append(line);
+                    sb.Append(line).Append(selectionText.PadLeft((selectionPositionInLine + selectionLength) - line.Length));
             }
             sb.Append(Environment.NewLine);
         }
