@@ -17,6 +17,11 @@ public partial class SettingsWindow : Window
 {
     public double InsertDelaySeconds { get; set; } = 3;
 
+    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
+    private Brush BadBrush = new SolidColorBrush(Colors.Red);
+
+
+
     public SettingsWindow()
     {
         InitializeComponent();
@@ -34,8 +39,8 @@ public partial class SettingsWindow : Window
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
-        
-        
+
+
         if (ImplementAppOptions.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
@@ -230,21 +235,28 @@ public partial class SettingsWindow : Window
 
     private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (sender is not TextBox hotkeytextbox)
+        if (sender is not TextBox hotkeytextbox
+            || hotkeytextbox.Text is null
+            || !IsLoaded)
             return;
 
-        if (hotkeytextbox.Text.Length == 1 && hotkeytextbox.Text is not null)
+        if (string.IsNullOrEmpty(hotkeytextbox.Text))
         {
-            KeyConverter keyConverter = new();
-            Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
-            if (convertedKey is not null && HotKeysAllDifferent())
-            {
-                hotkeytextbox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-                return;
-            }
+            hotkeytextbox.BorderBrush = GoodBrush;
+            return;
         }
 
-        hotkeytextbox.BorderBrush = new SolidColorBrush(Colors.Red);
+        hotkeytextbox.Text = hotkeytextbox.Text[0].ToString();
+
+        KeyConverter keyConverter = new();
+        Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
+        if (convertedKey is not null && HotKeysAllDifferent())
+        {
+            hotkeytextbox.BorderBrush = GoodBrush;
+            return;
+        }
+
+        hotkeytextbox.BorderBrush = BadBrush;
     }
 
     private bool HotKeysAllDifferent()
@@ -255,25 +267,69 @@ public partial class SettingsWindow : Window
             || LookupHotKeyTextBox is null)
             return false;
 
-        if (GrabFrameHotkeyTextBox.Text.ToUpper() != FullScreenHotkeyTextBox.Text.ToUpper()
-            && GrabFrameHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper()
-            && GrabFrameHotkeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper()
-            && FullScreenHotkeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper()
-            && FullScreenHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper()
-            && EditTextHotKeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper())
+        string gfKey = GrabFrameHotkeyTextBox.Text.Trim().ToUpper();
+        string fsgKey = FullScreenHotkeyTextBox.Text.Trim().ToUpper();
+        string etwKey = EditTextHotKeyTextBox.Text.Trim().ToUpper();
+        string qslKey = LookupHotKeyTextBox.Text.Trim().ToUpper();
+
+        bool anyMatchingKeys = false;
+
+        if (!string.IsNullOrEmpty(gfKey))
         {
-            FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            LookupHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            return true;
+            if (gfKey == fsgKey
+                || gfKey == etwKey
+                || gfKey == qslKey)
+            {
+                GrabFrameHotkeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                GrabFrameHotkeyTextBox.BorderBrush = GoodBrush;
         }
 
-        FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        LookupHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        return false;
+        if (!string.IsNullOrEmpty(fsgKey))
+        {
+            if (fsgKey == gfKey
+                || fsgKey == etwKey
+                || fsgKey == qslKey)
+            {
+                FullScreenHotkeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                FullScreenHotkeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (!string.IsNullOrEmpty(etwKey))
+        {
+            if (etwKey == gfKey
+                || etwKey == fsgKey
+                || etwKey == qslKey)
+            {
+                EditTextHotKeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                EditTextHotKeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (!string.IsNullOrEmpty(qslKey))
+        {
+            if (qslKey == gfKey
+                || qslKey == fsgKey
+                || qslKey == etwKey)
+            {
+                LookupHotKeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                LookupHotKeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (anyMatchingKeys)
+            return false;
+
+        return true;
     }
 }
 

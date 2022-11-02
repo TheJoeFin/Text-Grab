@@ -144,7 +144,7 @@
                             </TextBlock>
                             <CheckBox x:Name="GlobalHotkeysCheckbox" Style="{StaticResource labelText}">
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
-                                    <Run FontWeight="Bold">Global hotkeys:</Run>
+                                    <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
                                 </TextBlock>
                             </CheckBox>
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
@@ -152,6 +152,7 @@
                                 <TextBox
                                     x:Name="FullScreenHotkeyTextBox"
                                     Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
                                     Text="F"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -164,6 +165,7 @@
                                 <TextBox
                                     x:Name="GrabFrameHotkeyTextBox"
                                     Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
                                     Text="G"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -176,6 +178,7 @@
                                 <TextBox
                                     x:Name="EditTextHotKeyTextBox"
                                     Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
                                     Text="E"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -188,6 +191,7 @@
                                 <TextBox
                                     x:Name="LookupHotKeyTextBox"
                                     Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
                                     Text="Q"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock

@@ -142,10 +142,7 @@ public static class NotifyIconUtilities
         Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
         Keys? lookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
 
-        if (fullscreenKey is null || grabFrameKey is null || editWindowKey is null)
-            return;
-
-        if (e.Key == editWindowKey.Value)
+        if (editWindowKey is not null && e.Key == editWindowKey.Value)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
@@ -154,14 +151,14 @@ public static class NotifyIconUtilities
                 etw.Activate();
             }));
         }
-        else if (e.Key == fullscreenKey.Value)
+        else if (fullscreenKey is not null && e.Key == fullscreenKey.Value)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 WindowUtilities.LaunchFullScreenGrab(true);
             }));
         }
-        else if (e.Key == grabFrameKey.Value)
+        else if (grabFrameKey is not null && e.Key == grabFrameKey.Value)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
@@ -169,7 +166,7 @@ public static class NotifyIconUtilities
                 gf.Show();
             }));
         }
-        else if (e.Key == lookupKey)
+        else if (lookupKey is not null && e.Key == lookupKey)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
