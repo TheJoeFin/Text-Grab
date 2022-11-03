@@ -246,6 +246,14 @@
                             Try to read barcodes (Disabling may speed up results)
                         </TextBlock>
                     </CheckBox>
+
+                    <CheckBox
+                        Name="UseTesseractCheckBox"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Use Tesseract to perform OCR if it is installed
+                        </TextBlock>
+                    </CheckBox>
                 </StackPanel>
                 <StackPanel
                     Grid.Row="1"

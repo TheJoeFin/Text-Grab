@@ -382,5 +382,17 @@ namespace Text_Grab.Properties {
                 this["TryToReadBarcodes"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UserTesseract {
+            get {
+                return ((bool)(this["UserTesseract"]));
+            }
+            set {
+                this["UserTesseract"] = value;
+            }
+        }
     }
 }

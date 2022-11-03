@@ -31,6 +31,7 @@ public partial class SettingsWindow : Window
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
+        UseTesseractCheckBox.IsChecked = Settings.Default.UserTesseract;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -124,8 +125,8 @@ public partial class SettingsWindow : Window
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
-        if (ShowToastCheckBox.IsChecked != null)
-            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
+        if (ShowToastCheckBox.IsChecked is bool showToast)
+            Settings.Default.ShowToast = showToast;
 
         if (FullScreenRDBTN.IsChecked == true)
             Settings.Default.DefaultLaunch = "Fullscreen";
@@ -136,32 +137,35 @@ public partial class SettingsWindow : Window
         else if (QuickLookupRDBTN.IsChecked == true)
             Settings.Default.DefaultLaunch = "QuickLookup";
 
-        if (ErrorCorrectBox.IsChecked != null)
-            Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
+        if (ErrorCorrectBox.IsChecked is bool errorCorrect)
+            Settings.Default.CorrectErrors = errorCorrect;
 
-        if (NeverUseClipboardChkBx.IsChecked != null)
-            Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
+        if (NeverUseClipboardChkBx.IsChecked is bool neverClipboard)
+            Settings.Default.NeverAutoUseClipboard = neverClipboard;
 
-        if (RunInBackgroundChkBx.IsChecked != null)
+        if (RunInBackgroundChkBx.IsChecked is bool runInBackaground)
         {
-            Settings.Default.RunInTheBackground = (bool)RunInBackgroundChkBx.IsChecked;
+            Settings.Default.RunInTheBackground = runInBackaground;
             ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
         }
 
-        if (TryInsertCheckbox.IsChecked != null)
-            Settings.Default.TryInsert = (bool)TryInsertCheckbox.IsChecked;
+        if (TryInsertCheckbox.IsChecked is bool tryInsert)
+            Settings.Default.TryInsert = tryInsert;
 
-        if (StartupOnLoginCheckBox.IsChecked != null)
+        if (StartupOnLoginCheckBox.IsChecked is bool startupOnLogin)
         {
-            Settings.Default.StartupOnLogin = (bool)StartupOnLoginCheckBox.IsChecked;
+            Settings.Default.StartupOnLogin = startupOnLogin;
             await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
         }
 
-        if (GlobalHotkeysCheckbox.IsChecked != null)
-            Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
+        if (GlobalHotkeysCheckbox.IsChecked is bool globalHotKeys)
+            Settings.Default.GlobalHotkeysEnabled = globalHotKeys;
 
-        if (ReadBarcodesBarcode.IsChecked != null)
-            Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;
+        if (ReadBarcodesBarcode.IsChecked is bool readBarcodes)
+            Settings.Default.TryToReadBarcodes = readBarcodes;
+
+        if (UseTesseractCheckBox.IsChecked is bool useTesseract)
+            Settings.Default.UserTesseract = useTesseract;
 
         if (HotKeysAllDifferent())
         {
