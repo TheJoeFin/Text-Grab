@@ -181,7 +181,7 @@ public static class ImageMethods
 
         if (singlePoint is null)
         {
-            double scale = await GetIdealScaleFactor(bmp);
+            double scale = await GetIdealScaleFactor(bmp, selectedLanguage);
             scaledBitmap = ScaleBitmapUniform(bmp, scale);
         }
 
@@ -297,7 +297,7 @@ public static class ImageMethods
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
-        double scale = await GetIdealScaleFactor(bmp);
+        double scale = await GetIdealScaleFactor(bmp, selectedLanguage);
         using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
 
         OcrResult? ocrResult;
@@ -341,7 +341,7 @@ public static class ImageMethods
 
     }
 
-    public async static Task<double> GetIdealScaleFactor(Bitmap bitmap)
+    public async static Task<double> GetIdealScaleFactor(Bitmap bitmap, Language? selectedLanguage)
     {
         List<double> heightsList = new();
         double scaleFactor = 1.5;
@@ -351,7 +351,9 @@ public static class ImageMethods
         memory.Position = 0;
         BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
-        Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+
+        if (selectedLanguage is null)
+            selectedLanguage = ImageMethods.GetOCRLanguage();
 
         memory.Flush();
 

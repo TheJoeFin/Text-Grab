@@ -1333,46 +1333,110 @@ public partial class EditTextWindow : Window
         if (files is null)
             return;
 
+        List<string> imageFiles = files.Where(x => imageExtensions.Contains(Path.GetExtension(x))).ToList();
+
+        if (imageFiles.Count() == 0)
+        {
+            PassedTextControl.AppendText($"{folderPath} contains no images");
+            return;
+        }
+
         PassedTextControl.AppendText(folderPath);
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(DateTime.Now.ToString());
         PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"{files.Where(x => imageExtensions.Contains(Path.GetExtension(x))).Count()} image files found");
+        PassedTextControl.AppendText($"{imageFiles.Count()} image files found");
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(Environment.NewLine);
 
         StringBuilder ocrResults = new();
 
-        foreach (string file in files)
+        Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+        ParallelOptions parallelOptions = new()
         {
-            if (imageExtensions.Contains(Path.GetExtension(file)) == false)
-                continue;
+            MaxDegreeOfParallelism = 6
+        };
 
-            PassedTextControl.AppendText(await OcrFile(file));
+        Stopwatch stopwatch = new();
+        stopwatch.Start();
+        Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+
+        // This worked in ~35seconds for downloads
+        // but left TextGrab.exe with 1.6GB of RAM usage
+        // await Parallel.ForEachAsync(imageFiles, parallelOptions, async (ocrFile, CancellationToken) =>
+        // {
+        //     string resultString = await OcrFile(ocrFile, selectedLanguage);
+
+        //     await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+        //     {
+        //         PassedTextControl.AppendText(Path.GetFileName(ocrFile));
+        //         PassedTextControl.AppendText(resultString);
+        //     });
+        // });
+
+        List<AsyncOcrFileResult> ocrFileResults = new();
+        foreach (string path in imageFiles)
+        {
+            AsyncOcrFileResult ocrFileResult = new(path);
+            ocrFileResults.Add(ocrFileResult);
         }
 
+        // Initial test left this with about 800MB of RAM
+        // and compelted in ~30sec
+        await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, CancellationToken) =>
+        {
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, false);
+            await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                PassedTextControl.AppendText(ocrFile.OcrResult);
+            });
+        });
+
+        // foreach (AsyncOcrFileResult aofr in ocrFileResults)
+        //     ocrResults.AppendLine(aofr.OcrResult);
+
         PassedTextControl.AppendText(ocrResults.ToString());
+
+        Mouse.OverrideCursor = null;
+        stopwatch.Stop();
+
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count()} images");
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText($"----- from {folderPath}");
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
     }
 
-    private async Task<string> OcrFile(string path)
+    private async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
     {
         StringBuilder returnString = new();
         Uri fileURI = new(path);
         returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             BitmapImage droppedImage = new(fileURI);
             droppedImage.Freeze();
             Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-            returnString.AppendLine(await ImageMethods.ExtractText(bmp));
+            string ocrdText = await ImageMethods.ExtractText(bmp, null, selectedLanguage);
+
+            if (!string.IsNullOrWhiteSpace(ocrdText))
+            {
+                returnString.AppendLine(ocrdText);
+
+                if (writeResultToTextFile && Path.GetDirectoryName(path) is string dir)
+                {
+                    using StreamWriter outputFile = new StreamWriter(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
+                    outputFile.WriteLine(ocrdText);
+                }
+            }
         }
         catch (System.Exception ex)
         {
             returnString.AppendLine($"Failed to read {path}: {ex.Message}{Environment.NewLine}");
         }
 
-        Mouse.OverrideCursor = null;
         return returnString.ToString();
     }
 
@@ -1559,5 +1623,16 @@ public partial class EditTextWindow : Window
         catch (System.Exception) { }
 
         return false;
+    }
+}
+
+public record AsyncOcrFileResult
+{
+    public string FilePath { get; init; }
+    public string? OcrResult { get; set; }
+
+    public AsyncOcrFileResult(string filePath)
+    {
+        FilePath = filePath;
     }
 }
