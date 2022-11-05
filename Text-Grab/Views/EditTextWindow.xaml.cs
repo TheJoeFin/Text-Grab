@@ -161,6 +161,10 @@ public partial class EditTextWindow : Window
         _ = NewLookupCommand.InputGestures.Add(new KeyGesture(Key.Q, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(NewLookupCommand, LaunchQuickSimpleLookup));
 
+        RoutedCommand EscapeKeyed = new();
+        _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));
+        _ = CommandBindings.Add(new CommandBinding(EscapeKeyed, KeyedEscape));
+
         PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
         if (PassedTextControl.ContextMenu != null)
             numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
@@ -203,6 +207,12 @@ public partial class EditTextWindow : Window
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+    }
+
+    private void KeyedEscape(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (cancellationTokenForDirOCR is not null)
+            cancellationTokenForDirOCR.Cancel();
     }
 
     private async void Clipboard_ContentChanged(object? sender, object e)
@@ -1316,6 +1326,8 @@ public partial class EditTextWindow : Window
             await OcrAllImagesInFolder(chosenFolderPath);
     }
 
+    CancellationTokenSource? cancellationTokenForDirOCR;
+
     public async Task OcrAllImagesInFolder(string folderPath)
     {
         IEnumerable<String>? files = null;
@@ -1335,7 +1347,7 @@ public partial class EditTextWindow : Window
 
         List<string> imageFiles = files.Where(x => imageExtensions.Contains(Path.GetExtension(x))).ToList();
 
-        if (imageFiles.Count() == 0)
+        if (imageFiles.Count == 0)
         {
             PassedTextControl.AppendText($"{folderPath} contains no images");
             return;
@@ -1345,34 +1357,25 @@ public partial class EditTextWindow : Window
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(DateTime.Now.ToString());
         PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"{imageFiles.Count()} image files found");
+        PassedTextControl.AppendText($"{imageFiles.Count} image files found");
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText("Press Escape to cancel");
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(Environment.NewLine);
-
-        StringBuilder ocrResults = new();
 
         Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+        cancellationTokenForDirOCR = new();
+        CancellationToken token = cancellationTokenForDirOCR.Token;
+
         ParallelOptions parallelOptions = new()
         {
-            MaxDegreeOfParallelism = 6
+            MaxDegreeOfParallelism = 6,
+            CancellationToken = cancellationTokenForDirOCR.Token
         };
 
         Stopwatch stopwatch = new();
         stopwatch.Start();
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-
-        // This worked in ~35seconds for downloads
-        // but left TextGrab.exe with 1.6GB of RAM usage
-        // await Parallel.ForEachAsync(imageFiles, parallelOptions, async (ocrFile, CancellationToken) =>
-        // {
-        //     string resultString = await OcrFile(ocrFile, selectedLanguage);
-
-        //     await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
-        //     {
-        //         PassedTextControl.AppendText(Path.GetFileName(ocrFile));
-        //         PassedTextControl.AppendText(resultString);
-        //     });
-        // });
 
         List<AsyncOcrFileResult> ocrFileResults = new();
         foreach (string path in imageFiles)
@@ -1381,35 +1384,47 @@ public partial class EditTextWindow : Window
             ocrFileResults.Add(ocrFileResult);
         }
 
-        // Initial test left this with about 800MB of RAM
-        // and compelted in ~30sec
-        await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, CancellationToken) =>
+        try
         {
-            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, false);
-            await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+            await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, ct) =>
             {
-                PassedTextControl.AppendText(ocrFile.OcrResult);
+                ct.ThrowIfCancellationRequested();
+
+                ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, false);
+
+                // to get the TextBox to update whenever OCR Finishes:
+                await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    PassedTextControl.AppendText(ocrFile.OcrResult);
+                });
             });
-        });
 
-        // foreach (AsyncOcrFileResult aofr in ocrFileResults)
-        //     ocrResults.AppendLine(aofr.OcrResult);
-
-        PassedTextControl.AppendText(ocrResults.ToString());
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
+        }
+        catch (OperationCanceledException)
+        {
+            PassedTextControl.AppendText(Environment.NewLine);
+            int countCompleted = ocrFileResults.Where(r => r.OcrResult is not null).Count();
+            PassedTextControl.AppendText($"----- CANCELLED OCR OF {ocrFileResults.Count - countCompleted}, Completed {countCompleted} images");
+        }
+        finally
+        {
+            cancellationTokenForDirOCR.Dispose();
+        }
 
         Mouse.OverrideCursor = null;
         stopwatch.Stop();
 
         PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count()} images");
-        PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText($"----- from {folderPath}");
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
+
+        cancellationTokenForDirOCR = null;
     }
 
-    private async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
+    private static async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
     {
         StringBuilder returnString = new();
         Uri fileURI = new(path);
