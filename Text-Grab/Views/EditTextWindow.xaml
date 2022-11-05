@@ -288,7 +288,11 @@
                 <MenuItem
                     x:Name="ReadFolderOfImages"
                     Click="ReadFolderOfImages_Click"
-                    Header="_Extract Text from Images in Folder" />
+                    Header="_Extract Text from Images in Folder..." />
+                <MenuItem
+                    x:Name="ReadFolderOfImagesWriteTxtFiles"
+                    Click="ReadFolderOfImagesWriteTxtFiles_Click"
+                    Header="Write ._Txt File For Each Image in Folder..." />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem

@@ -1323,12 +1323,26 @@ public partial class EditTextWindow : Window
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
 
         if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath);
+            await OcrAllImagesInFolder(chosenFolderPath, false);
+    }
+
+    private async void ReadFolderOfImagesWriteTxtFiles_Click(object sender, RoutedEventArgs e)
+    {
+        FolderBrowserDialog folderBrowserDialog = new();
+        DialogResult result = folderBrowserDialog.ShowDialog();
+
+        if (result is not System.Windows.Forms.DialogResult.OK)
+            return;
+
+        string chosenFolderPath = folderBrowserDialog.SelectedPath;
+
+        if (Directory.Exists(chosenFolderPath))
+            await OcrAllImagesInFolder(chosenFolderPath, true);
     }
 
     CancellationTokenSource? cancellationTokenForDirOCR;
 
-    public async Task OcrAllImagesInFolder(string folderPath)
+    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles)
     {
         IEnumerable<String>? files = null;
         IEnumerable<String>? folders = null;
@@ -1390,13 +1404,16 @@ public partial class EditTextWindow : Window
             {
                 ct.ThrowIfCancellationRequested();
 
-                ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, false);
+                ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
 
                 // to get the TextBox to update whenever OCR Finishes:
-                await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                if (!writeToTextFiles)
                 {
-                    PassedTextControl.AppendText(ocrFile.OcrResult);
-                });
+                    await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        PassedTextControl.AppendText(ocrFile.OcrResult);
+                    });
+                }
             });
 
             PassedTextControl.AppendText(Environment.NewLine);
