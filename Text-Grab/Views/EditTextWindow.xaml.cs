@@ -27,7 +27,9 @@ using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
 using Windows.System;
+using static System.Net.Mime.MediaTypeNames;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Text_Grab;
 
@@ -1322,8 +1324,17 @@ public partial class EditTextWindow : Window
 
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
 
+        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to OCR images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
+
+        if (resultRecursive == MessageBoxResult.Cancel)
+            return;
+
+        bool isRecursive = false;
+        if (resultRecursive == MessageBoxResult.Yes)
+            isRecursive = true;
+
         if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath, false);
+            await OcrAllImagesInFolder(chosenFolderPath, false, isRecursive);
     }
 
     private async void ReadFolderOfImagesWriteTxtFiles_Click(object sender, RoutedEventArgs e)
@@ -1336,20 +1347,32 @@ public partial class EditTextWindow : Window
 
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
 
+        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to make .txt files with the OCR result for all images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
+
+        if (resultRecursive == MessageBoxResult.Cancel)
+            return;
+
+        bool isRecursive = false;
+        if (resultRecursive == MessageBoxResult.Yes)
+            isRecursive = true;
+
         if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath, true);
+            await OcrAllImagesInFolder(chosenFolderPath, true, isRecursive);
     }
 
     CancellationTokenSource? cancellationTokenForDirOCR;
 
-    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles)
+    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles, bool recrusive)
     {
         IEnumerable<String>? files = null;
-        IEnumerable<String>? folders = null;
+
+        SearchOption searchOption = SearchOption.TopDirectoryOnly;
+        if (recrusive)
+            searchOption = SearchOption.AllDirectories;
+
         try
         {
-            files = Directory.EnumerateFiles(folderPath);
-            folders = Directory.EnumerateDirectories(folderPath);
+            files = Directory.GetFiles(folderPath, "*.*", searchOption);
         }
         catch (System.Exception ex)
         {
@@ -1369,9 +1392,7 @@ public partial class EditTextWindow : Window
 
         PassedTextControl.AppendText(folderPath);
         PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText(DateTime.Now.ToString());
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"{imageFiles.Count} image files found");
+        PassedTextControl.AppendText($"{imageFiles.Count} images found");
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText("Press Escape to cancel");
         PassedTextControl.AppendText(Environment.NewLine);
@@ -1475,11 +1496,6 @@ public partial class EditTextWindow : Window
     private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)
     {
         await Task.Delay(2000);
-        WindowUtilities.LaunchFullScreenGrab(true, true, PassedTextControl);
-    }
-
-    private void FSGFreezeenuItem_Click(object sender, RoutedEventArgs e)
-    {
         WindowUtilities.LaunchFullScreenGrab(true, true, PassedTextControl);
     }
 

@@ -257,10 +257,6 @@
                     Header="New _Fullscreen Grab"
                     InputGestureText="Ctrl + F" />
                 <MenuItem
-                    x:Name="FSGFreezeenuItem"
-                    Click="FSGFreezeenuItem_Click"
-                    Header="Fullscreen Grab with freeze" />
-                <MenuItem
                     x:Name="FSGDelayMenuItem"
                     Click="FSGDelayMenuItem_Click"
                     Header="Fullscreen with 2 second _delay and freeze" />
@@ -275,16 +271,16 @@
                     Click="LaunchQuickSimpleLookup"
                     Header="Add From _Quick Simple Lookup"
                     InputGestureText="Ctrl + Q" />
-                <Separator />
-                <MenuItem
-                    x:Name="ListFilesMenuItem"
-                    Click="ListFilesMenuItem_Click"
-                    Header="_List Files and Folders From Folder..." />
                 <MenuItem
                     x:Name="ClipboardWatcherMenuItem"
                     Header="_Watch Clipboard For Changes"
                     IsCheckable="True"
                     IsChecked="False" />
+                <Separator />
+                <MenuItem
+                    x:Name="ListFilesMenuItem"
+                    Click="ListFilesMenuItem_Click"
+                    Header="_List Files and Folders From Folder..." />
                 <MenuItem
                     x:Name="ReadFolderOfImages"
                     Click="ReadFolderOfImages_Click"
