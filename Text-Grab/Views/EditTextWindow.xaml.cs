@@ -203,6 +203,14 @@ public partial class EditTextWindow : Window
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+
+        CollapsibleButton colbtn = new()
+        {
+            ButtonText = "DOPE",
+            SymbolText = "",
+            Command = IsolateSelectionCmd
+        };
+        BottomBarSP.Children.Add(colbtn);
     }
 
     private async void Clipboard_ContentChanged(object? sender, object e)

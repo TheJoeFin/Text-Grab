@@ -366,7 +366,7 @@
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal" x:Name="BottomBarSP">
                 <controls:CollapsibleButton
                     x:Name="CopyCloseBTN"
                     Background="#CC7000"
