@@ -21,6 +21,32 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public bool IsEditing { get; set; } = false;
 
+    private SolidColorBrush matchingBackground = new SolidColorBrush(Colors.Black);
+    private SolidColorBrush contrastingForeground = new SolidColorBrush(Colors.White);
+
+    public SolidColorBrush MatchingBackground
+    {
+        get { return matchingBackground; }
+        set 
+        { 
+            matchingBackground = value;
+            MainGrid.Background = matchingBackground;
+
+            byte r = matchingBackground.Color.R;  // extract red
+            byte g = matchingBackground.Color.G;  // extract green
+            byte b = matchingBackground.Color.B;  // extract blue
+
+            double luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per ITU-R BT.709
+
+            if (luma > 180)
+            {
+                contrastingForeground = new SolidColorBrush(Colors.Black);
+                EditWordTextBox.Foreground = contrastingForeground;
+            }
+        }
+    }
+
+
     public string Word
     {
         get { return (string)GetValue(WordProperty); }
@@ -57,29 +83,30 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         IsSelected = true;
         WordBorderBorder.BorderBrush = new SolidColorBrush(Colors.Yellow);
         EditWordTextBox.Foreground = new SolidColorBrush(Colors.Yellow);
+        MainGrid.Background = new SolidColorBrush(Colors.Black);
     }
 
     public void Deselect()
     {
         IsSelected = false;
         WordBorderBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 48, 142, 152));
-        EditWordTextBox.Foreground = new SolidColorBrush(Colors.White);
+        EditWordTextBox.Foreground = contrastingForeground;
+        MainGrid.Background = matchingBackground;
     }
 
     public void EnterEdit()
     {
         EditWordTextBox.Visibility = Visibility.Visible;
-        MainGrid.Background = new SolidColorBrush(Colors.Black);
+        MainGrid.Background = matchingBackground;
     }
 
     public void ExitEdit()
     {
         EditWordTextBox.Visibility = Visibility.Collapsed;
-        MainGrid.Background = new SolidColorBrush(Colors.White)
+        MainGrid.Background = new SolidColorBrush(matchingBackground.Color)
         {
             Opacity = 0.1
         };
-
     }
 
     public void SetAsBarcode()

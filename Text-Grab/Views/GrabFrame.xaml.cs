@@ -377,6 +377,11 @@ public partial class GrabFrame : Window
         if (ocrResultOfWindow == null)
             return;
 
+        System.Drawing.Bitmap? bmp = null;
+
+        if (frameContentImageSource is BitmapImage bmpImg)
+            bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+
         int numberOfMatches = 0;
         int lineNumber = 0;
 
@@ -399,6 +404,23 @@ public partial class GrabFrame : Window
                 Height = Math.Abs(bottom - top)
             };
 
+            SolidColorBrush backgroundBrush = new(Colors.Black);
+
+            if (bmp is not null)
+            {
+                double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
+                double boxLeft = lineRect.Left / (dpi.DpiScaleX * scale);
+                double boxTop = lineRect.Top / (dpi.DpiScaleY * scale);
+
+                double leftFraction = boxLeft / RectanglesCanvas.ActualWidth;
+                double topFraction = boxTop / RectanglesCanvas.ActualHeight;
+
+                int pxLeft = Math.Clamp((int)(leftFraction * bmp.Width) - 1, 0, bmp.Width - 1);
+                int pxTop = Math.Clamp((int)(topFraction * bmp.Height) - 2, 0, bmp.Height - 1);
+                System.Drawing.Color pxColor = bmp.GetPixel(pxLeft, pxTop);
+                backgroundBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(pxColor.R, pxColor.G, pxColor.B));
+            }
+
             WordBorder wordBorderBox = new()
             {
                 Width = lineRect.Width / (dpi.DpiScaleX * scale),
@@ -406,7 +428,8 @@ public partial class GrabFrame : Window
                 Word = lineText.ToString().Trim(),
                 ToolTip = ocrLine.Text,
                 LineNumber = lineNumber,
-                IsFromEditWindow = IsFromEditWindow
+                IsFromEditWindow = IsFromEditWindow,
+                MatchingBackground = backgroundBrush,
             };
 
             if ((bool)ExactMatchChkBx.IsChecked!)
@@ -488,7 +511,6 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Children.Add(wordBorder);
         }
 
-
         if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
         {
             DrawTable(AnalyedResultTable);
@@ -501,6 +523,7 @@ public partial class GrabFrame : Window
         isDrawing = false;
 
         UpdateFrameText();
+        bmp?.Dispose();
     }
 
     private void TryToReadBarcodes(DpiScale dpi)
