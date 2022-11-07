@@ -1433,6 +1433,7 @@ public partial class EditTextWindow : Window
                     await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         PassedTextControl.AppendText(ocrFile.OcrResult);
+                        PassedTextControl.ScrollToEnd();
                     });
                 }
             });
@@ -1458,7 +1459,9 @@ public partial class EditTextWindow : Window
         PassedTextControl.AppendText($"----- from {folderPath}");
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
+        PassedTextControl.ScrollToEnd();
 
+        GC.Collect();
         cancellationTokenForDirOCR = null;
     }
 
