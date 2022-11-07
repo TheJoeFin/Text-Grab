@@ -411,14 +411,39 @@ public partial class GrabFrame : Window
                 double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
                 double boxLeft = lineRect.Left / (dpi.DpiScaleX * scale);
                 double boxTop = lineRect.Top / (dpi.DpiScaleY * scale);
+                double boxRight = lineRect.Right / (dpi.DpiScaleX * scale);
+                double boxBottom = lineRect.Bottom / (dpi.DpiScaleY * scale);
 
                 double leftFraction = boxLeft / RectanglesCanvas.ActualWidth;
                 double topFraction = boxTop / RectanglesCanvas.ActualHeight;
+                double rightFraction = boxRight / RectanglesCanvas.ActualWidth;
+                double bottomFraction = boxBottom / RectanglesCanvas.ActualHeight;
 
                 int pxLeft = Math.Clamp((int)(leftFraction * bmp.Width) - 1, 0, bmp.Width - 1);
                 int pxTop = Math.Clamp((int)(topFraction * bmp.Height) - 2, 0, bmp.Height - 1);
-                System.Drawing.Color pxColor = bmp.GetPixel(pxLeft, pxTop);
-                backgroundBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(pxColor.R, pxColor.G, pxColor.B));
+                int pxRight = Math.Clamp((int)(rightFraction * bmp.Width) + 1, 0, bmp.Width - 1);
+                int pxBottom = Math.Clamp((int)(bottomFraction * bmp.Height) + 1, 0, bmp.Height - 1);
+                System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
+                System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
+                System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
+                System.Drawing.Color pxColorLeftBottom = bmp.GetPixel(pxLeft, pxBottom);
+
+                List<System.Windows.Media.Color> MediaColorList = new()
+                {
+                    ColorHelper.MediaColorFromDrawingColor(pxColorLeftTop),
+                    ColorHelper.MediaColorFromDrawingColor(pxColorRightTop),
+                    ColorHelper.MediaColorFromDrawingColor(pxColorRightBottom),
+                    ColorHelper.MediaColorFromDrawingColor(pxColorLeftBottom),
+                };
+
+                System.Windows.Media.Color? MostCommonColor = MediaColorList.GroupBy(c => c)
+                            .OrderBy(g => g.Count())
+                            .LastOrDefault()?.Key;
+
+                backgroundBrush = ColorHelper.SolidColorBrushFromDrawingColor(pxColorLeftTop);
+
+                if (MostCommonColor is not null)
+                    backgroundBrush = new SolidColorBrush(MostCommonColor.Value);
             }
 
             WordBorder wordBorderBox = new()
