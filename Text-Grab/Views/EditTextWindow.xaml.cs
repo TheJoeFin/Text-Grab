@@ -89,8 +89,14 @@ public partial class EditTextWindow : Window
             string rawEncodedString = possiblyEndcodedString.Substring(5);
             try
             {
-                byte[] hexEncodedBytes = Convert.FromHexString(rawEncodedString);
-                string copiedText = Encoding.UTF8.GetString(hexEncodedBytes);
+                // restore the padding '=' in base64 string
+                switch (rawEncodedString.Length % 4)
+                {
+                    case 2: rawEncodedString += "=="; break;
+                    case 3: rawEncodedString += "="; break;
+                }
+                byte[] encodedBytes = Convert.FromBase64String(rawEncodedString);
+                string copiedText = Encoding.UTF8.GetString(encodedBytes);
                 PassedTextControl.Text = copiedText;
             }
             catch (Exception ex)
