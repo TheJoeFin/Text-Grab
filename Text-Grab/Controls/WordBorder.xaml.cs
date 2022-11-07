@@ -97,6 +97,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void EnterEdit()
     {
         EditWordTextBox.Visibility = Visibility.Visible;
+        MainGrid.Background = matchingBackground;
     }
 
     public void ExitEdit()
