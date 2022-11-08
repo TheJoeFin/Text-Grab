@@ -197,12 +197,17 @@
                     Click="FindAndReplaceMenuItem_Click"
                     Header="Find and Replace" />
                 <Separator />
-                <MenuItem Command="ApplicationCommands.SelectAll" />
+                <MenuItem
+                    x:Name="SelectWordMenuItem"
+                    Click="SelectWordMenuItem_Click"
+                    Header="Select _Word"
+                    InputGestureText="Ctrl + W"/>
                 <MenuItem
                     x:Name="SelectLineMenuItem"
                     Click="SelectLineMenuItem_Click"
                     Header="Select _Line"
                     InputGestureText="Ctrl + L" />
+                <MenuItem Command="ApplicationCommands.SelectAll" />
                 <Separator />
                 <MenuItem
                     x:Name="MoveLineUpMenuItem"
