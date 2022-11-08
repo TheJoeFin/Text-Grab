@@ -104,7 +104,7 @@ public partial class App : System.Windows.Application
             {
                 EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
-                await manipulateTextWindow.OcrAllImagesInFolder(e.Args[i]);
+                await manipulateTextWindow.OcrAllImagesInFolder(e.Args[i], false, false);
                 handledArgument = true;
             }
         }
