@@ -35,7 +35,7 @@ public static class StringMethods
         }
     }
 
-    public static (int, int) CursorWordBounderies(this string sourceString, int caretIndex)
+    public static (int, int) CursorWordBoundaries(this string sourceString, int caretIndex)
     {
         List<int> indicesOfBreaks = sourceString.FindAllIndicesOfString(" ").ToList();
         List<int> indicesOfNewLines = sourceString.FindAllIndicesOfString(Environment.NewLine).ToList();
