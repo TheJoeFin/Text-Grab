@@ -27,6 +27,7 @@
                     FontFamily="Segoe UI"
                     FontWeight="Medium"
                     Foreground="White"
+                    ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
                     Background="Transparent"
                     Style="{StaticResource TextBoxStyle1}"
                     Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"

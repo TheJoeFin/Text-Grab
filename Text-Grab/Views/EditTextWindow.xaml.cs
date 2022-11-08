@@ -87,8 +87,14 @@ public partial class EditTextWindow : Window
             string rawEncodedString = possiblyEndcodedString.Substring(5);
             try
             {
-                byte[] hexEncodedBytes = Convert.FromHexString(rawEncodedString);
-                string copiedText = Encoding.UTF8.GetString(hexEncodedBytes);
+                // restore the padding '=' in base64 string
+                switch (rawEncodedString.Length % 4)
+                {
+                    case 2: rawEncodedString += "=="; break;
+                    case 3: rawEncodedString += "="; break;
+                }
+                byte[] encodedBytes = Convert.FromBase64String(rawEncodedString);
+                string copiedText = Encoding.UTF8.GetString(encodedBytes);
                 PassedTextControl.Text = copiedText;
             }
             catch (Exception ex)
@@ -158,6 +164,10 @@ public partial class EditTextWindow : Window
         RoutedCommand NewLookupCommand = new();
         _ = NewLookupCommand.InputGestures.Add(new KeyGesture(Key.Q, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(NewLookupCommand, LaunchQuickSimpleLookup));
+
+        RoutedCommand selectWordCommand = new();
+        _ = selectWordCommand.InputGestures.Add(new KeyGesture(Key.W, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(selectWordCommand, SelectWord));
 
         RoutedCommand EscapeKeyed = new();
         _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));
@@ -937,6 +947,18 @@ public partial class EditTextWindow : Window
         }
     }
 
+    private void SelectWordMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SelectWord();
+    }
+
+    private void SelectWord(object? sender = null, ExecutedRoutedEventArgs? e = null)
+    {
+        (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(PassedTextControl.CaretIndex);
+
+        PassedTextControl.Select(wordStart, wordLength);
+    }
+
     private void SelectLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
         string selectedText = PassedTextControl.SelectedText;
@@ -1185,6 +1207,14 @@ public partial class EditTextWindow : Window
         PassedTextControl.ContextMenu = baseContextMenu;
         caretIndex = PassedTextControl.CaretIndex;
 
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+        {
+            (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(caretIndex);
+            possibleURL = PassedTextControl.Text.Substring(wordStart, wordLength);
+        }
+
         cmdIndex = 0;
         spellingError = PassedTextControl.GetSpellingError(caretIndex);
         if (spellingError != null
@@ -1211,8 +1241,7 @@ public partial class EditTextWindow : Window
                 cmdIndex++;
             }
 
-            Separator separatorMenuItem1 = new();
-            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem1);
+            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, new Separator());
             cmdIndex++;
             MenuItem ignoreAllMI = new();
             ignoreAllMI.Header = "Ignore All";
@@ -1220,9 +1249,25 @@ public partial class EditTextWindow : Window
             ignoreAllMI.CommandTarget = PassedTextControl;
             PassedTextControl.ContextMenu.Items.Insert(cmdIndex, ignoreAllMI);
             cmdIndex++;
-            Separator separatorMenuItem2 = new();
-            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem2);
+            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, new Separator());
         }
+
+        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
+        {
+            string headerText = $"Try to go to: {possibleURL}";
+            if (headerText.Length > 36)
+                headerText = headerText.Substring(0, 36) + "...";
+
+            MenuItem urlMi = new();
+            urlMi.Header = headerText;
+            urlMi.Click += (sender, e) =>
+            {
+                Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
+            };
+            PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
+            PassedTextControl.ContextMenu?.Items.Insert(0, urlMi);
+        }
+
     }
 
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
