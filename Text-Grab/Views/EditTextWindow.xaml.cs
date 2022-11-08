@@ -1417,7 +1417,7 @@ public partial class EditTextWindow : Window
         if (files is null)
             return;
 
-        List<string> imageFiles = files.Where(x => imageExtensions.Contains(Path.GetExtension(x))).ToList();
+        List<string> imageFiles = files.Where(x => imageExtensions.Contains(Path.GetExtension(x).ToLower())).ToList();
 
         if (imageFiles.Count == 0)
         {
