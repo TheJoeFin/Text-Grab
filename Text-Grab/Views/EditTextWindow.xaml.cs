@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -19,16 +18,13 @@ using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
-using Windows.Graphics.Imaging;
-using Windows.Media.Ocr;
 using Windows.System;
-using static System.Net.Mime.MediaTypeNames;
-using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Text_Grab;
@@ -86,7 +82,7 @@ public partial class EditTextWindow : Window
     {
         InitializeComponent();
 
-        if (isEncoded == true)
+        if (isEncoded)
         {
             string rawEncodedString = possiblyEndcodedString.Substring(5);
             try
@@ -180,8 +176,8 @@ public partial class EditTextWindow : Window
         }
 
         if (Settings.Default.EditWindowStartFullscreen
-            && string.IsNullOrWhiteSpace(OpenedFilePath) == true
-            && LaunchedFromNotification == false)
+            && string.IsNullOrWhiteSpace(OpenedFilePath)
+            && !LaunchedFromNotification)
         {
             WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
             LaunchFullscreenOnLoad.IsChecked = true;
@@ -219,7 +215,7 @@ public partial class EditTextWindow : Window
 
     private async void Clipboard_ContentChanged(object? sender, object e)
     {
-        if (ClipboardWatcherMenuItem.IsChecked == false || _IsAccessingClipboard == true)
+        if (ClipboardWatcherMenuItem.IsChecked == false || _IsAccessingClipboard)
             return;
 
         _IsAccessingClipboard = true;
@@ -267,9 +263,9 @@ public partial class EditTextWindow : Window
     {
         PassedTextControl.FontFamily = new System.Windows.Media.FontFamily(Settings.Default.FontFamilySetting);
         PassedTextControl.FontSize = Settings.Default.FontSizeSetting;
-        if (Settings.Default.IsFontBold == true)
+        if (Settings.Default.IsFontBold)
             PassedTextControl.FontWeight = FontWeights.Bold;
-        if (Settings.Default.IsFontItalic == true)
+        if (Settings.Default.IsFontItalic)
             PassedTextControl.FontStyle = FontStyles.Italic;
 
         TextDecorationCollection tdc = new();
@@ -311,11 +307,11 @@ public partial class EditTextWindow : Window
 
         foreach (char letter in text)
         {
-            if (char.IsLetter(letter) == true)
+            if (char.IsLetter(letter))
                 containsLetters = true;
         }
 
-        if (containsLetters == true)
+        if (containsLetters)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -367,18 +363,18 @@ public partial class EditTextWindow : Window
 
         foreach (char letter in textToModify)
         {
-            if (char.IsLower(letter) == true)
+            if (char.IsLower(letter))
             {
                 isAllUpper = false;
             }
-            if (char.IsUpper(letter) == true)
+            if (char.IsUpper(letter))
             {
                 isAllLower = false;
             }
         }
 
-        if (isAllLower == false
-            && isAllUpper == true)
+        if (!isAllLower
+            && isAllUpper)
             return CurrentCase.Lower;
 
         return CurrentCase.Camel;
@@ -395,8 +391,8 @@ public partial class EditTextWindow : Window
 
         bool? result = dlg.ShowDialog();
 
-        if (result == true
-            && dlg.CheckFileExists == true)
+        if (result is bool isTrueResult
+            && File.Exists(dlg.FileName))
         {
             OpenThisPath(dlg.FileName);
         }
@@ -542,7 +538,7 @@ public partial class EditTextWindow : Window
                 RestoreDirectory = true,
             };
 
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() is bool isOkayOrAccept)
             {
                 File.WriteAllText(dialog.FileName, fileText);
                 OpenedFilePath = dialog.FileName;
@@ -580,7 +576,7 @@ public partial class EditTextWindow : Window
             RestoreDirectory = true,
         };
 
-        if (dialog.ShowDialog() == true)
+        if (dialog.ShowDialog() is bool isOkayOrAccept)
         {
             File.WriteAllText(dialog.FileName, fileText);
             OpenedFilePath = dialog.FileName;
@@ -605,22 +601,21 @@ public partial class EditTextWindow : Window
         else
             textToOperateOn = PassedTextControl.Text;
 
-        int n = 0;
-        foreach (var c in textToOperateOn)
+
+        if (textToOperateOn.Contains(Environment.NewLine)
+            || textToOperateOn.Contains('\r')
+            || textToOperateOn.Contains('\n'))
         {
-            if (c == '\n' || c == '\r')
-                n++;
+            e.CanExecute = true;
+            return;
         }
 
-        if (n < 2)
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        e.CanExecute = false;
     }
 
     private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         if ((bool)WrapTextMenuItem.IsChecked)
@@ -639,7 +634,7 @@ public partial class EditTextWindow : Window
         string finalString = "";
         foreach (string line in stringSplit)
         {
-            if (string.IsNullOrWhiteSpace(line) == false)
+            if (!string.IsNullOrWhiteSpace(line))
                 finalString += line.Trim() + Environment.NewLine;
         }
 
@@ -649,11 +644,6 @@ public partial class EditTextWindow : Window
     public void AddThisText(string textToAdd)
     {
         PassedTextControl.AppendText(textToAdd);
-
-        // string lastTwoChars = PassedTextControl.Text.Substring(PassedTextControl.Text.Length - 2, 2);
-        // if (lastTwoChars != Environment.NewLine)
-        //     PassedTextControl.Text += Environment.NewLine;
-        // PassedTextControl.Select(PassedTextControl.Text.Length, 0);
     }
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -813,7 +803,7 @@ public partial class EditTextWindow : Window
 
     private void IsolateSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(PassedTextControl.SelectedText) == false)
+        if (!string.IsNullOrEmpty(PassedTextControl.SelectedText))
             PassedTextControl.Text = PassedTextControl.SelectedText;
     }
 
@@ -887,10 +877,10 @@ public partial class EditTextWindow : Window
 
     private void AlwaysOnTop_Checked(object sender, RoutedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
-        if (sender is MenuItem aotMi && aotMi.IsChecked == true)
+        if (sender is MenuItem aotMi && aotMi.IsChecked)
             Topmost = true;
         else
             Topmost = false;
@@ -900,10 +890,10 @@ public partial class EditTextWindow : Window
 
     private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
-        if (sender is MenuItem bbMi && bbMi.IsChecked == true)
+        if (sender is MenuItem bbMi && bbMi.IsChecked)
         {
             BottomBar.Visibility = Visibility.Collapsed;
             Settings.Default.EditWindowBottomBarIsHidden = true;
@@ -972,7 +962,7 @@ public partial class EditTextWindow : Window
             if (selectionIndex > newLineIndex)
                 startSelectionIndex = newLineIndex + Environment.NewLine.Length;
 
-            if (foundEnd == false
+            if (!foundEnd
                 && newLineIndex >= selectionEndIndex)
             {
                 stopSelectionIndex = newLineIndex;
@@ -1094,7 +1084,7 @@ public partial class EditTextWindow : Window
             }
         }
 
-        if (containsAnyReservedChars == true)
+        if (containsAnyReservedChars)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -1532,13 +1522,16 @@ public partial class EditTextWindow : Window
                 continue;
             }
 
-            if (spotInLine == SpotInLine.Beginning)
+            switch (spotInLine)
             {
-                sb.AppendLine(line.Substring(numberOfChars));
-            }
-            else if (spotInLine == SpotInLine.End)
-            {
-                sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
+                case SpotInLine.Beginning:
+                    sb.AppendLine(line.Substring(numberOfChars));
+                    break;
+                case SpotInLine.End:
+                    sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -1556,13 +1549,16 @@ public partial class EditTextWindow : Window
         StringBuilder sb = new();
         foreach (string line in splitString)
         {
-            if (spotInLine == SpotInLine.Beginning)
+            switch (spotInLine)
             {
-                sb.AppendLine(stringToAdd + line);
-            }
-            else if (spotInLine == SpotInLine.End)
-            {
-                sb.AppendLine(line + stringToAdd);
+                case SpotInLine.Beginning:
+                    sb.AppendLine(stringToAdd + line);
+                    break;
+                case SpotInLine.End:
+                    sb.AppendLine(line + stringToAdd);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -1603,7 +1599,7 @@ public partial class EditTextWindow : Window
 
     private void ETWindow_DragOver(object sender, System.Windows.DragEventArgs e)
     {
-        // As an arbitrary design decision, we only want to deal with a single file.
+        // If dropping raw text onto the ETW let the default drag/drop events occur
         bool isText = e.Data.GetDataPresent("Text");
 
         if (isText)
@@ -1612,78 +1608,8 @@ public partial class EditTextWindow : Window
             return;
         }
 
+        // After here we will now allow the dropping of "non-text" content
         e.Effects = System.Windows.DragDropEffects.Copy;
-
-        // Mark the event as handled, so TextBox's native DragOver handler is not called.
         e.Handled = true;
-    }
-
-    // If the data object in args is a single file, this method will return the filename.
-    // Otherwise, it returns null.
-    private static string? IsSingleFile(System.Windows.DragEventArgs args)
-    {
-        // Check for files in the hovering data object.
-        if (args.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
-        {
-            var fileNames = args.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
-            // Check for a single file or folder.
-            if (fileNames?.Length is 1)
-            {
-                // Check for a file (a directory will return false).
-                if (File.Exists(fileNames[0]))
-                {
-                    // At this point we know there is a single file.
-                    return fileNames[0];
-                }
-            }
-        }
-        return null;
-    }
-
-    // from StackOverflow user bytedev read on July 12th 2022
-    // https://stackoverflow.com/a/64038750/7438031
-    public static bool IsBinary(string filePath, int requiredConsecutiveNul = 1)
-    {
-        const int charsToCheck = 8000;
-        const char nulChar = '\0';
-
-        int nulCount = 0;
-
-        try
-        {
-            using StreamReader streamReader = new(filePath);
-
-            for (var i = 0; i < charsToCheck; i++)
-            {
-                if (streamReader.EndOfStream)
-                    return false;
-
-                if ((char)streamReader.Read() == nulChar)
-                {
-                    nulCount++;
-
-                    if (nulCount >= requiredConsecutiveNul)
-                        return true;
-                }
-                else
-                {
-                    nulCount = 0;
-                }
-            }
-        }
-        catch (System.Exception) { }
-
-        return false;
-    }
-}
-
-public record AsyncOcrFileResult
-{
-    public string FilePath { get; init; }
-    public string? OcrResult { get; set; }
-
-    public AsyncOcrFileResult(string filePath)
-    {
-        FilePath = filePath;
     }
 }
