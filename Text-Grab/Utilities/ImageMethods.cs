@@ -7,16 +7,20 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Properties;
+using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using ZXing.Windows.Compatibility;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
@@ -34,7 +38,7 @@ public static class ImageMethods
         int height = Math.Max(image.Height + 16, minH + 16);
 
         // Create a compatible bitmap
-        using Bitmap dest = new(width, height, image.PixelFormat);
+        Bitmap dest = new(width, height, image.PixelFormat);
         using Graphics gd = Graphics.FromImage(dest);
 
         gd.Clear(image.GetPixel(0, 0));
@@ -82,7 +86,7 @@ public static class ImageMethods
 
     internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
     {
-        using Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
 
         System.Windows.Point absPosPoint;
@@ -95,6 +99,9 @@ public static class ImageMethods
         int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
 
+        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
+
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
         // bmp = PadImage(bmp);
 
@@ -106,7 +113,7 @@ public static class ImageMethods
             return "";
     }
 
-    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    internal static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
     {
         bool isGrabFrame = false;
         if (passedWindow is GrabFrame)
@@ -129,11 +136,16 @@ public static class ImageMethods
             windowHeight -= (int)(70 * dpi.DpiScaleY);
         }
 
-        using Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        return bmp;
+    }
 
+    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    {
+        Bitmap bmp = GetWindowsBoundsBitmap(passedWindow);
         return BitmapToImageSource(bmp);
     }
 
@@ -163,25 +175,26 @@ public static class ImageMethods
         if (selectedLanguage == null)
             return "";
 
-        bool isCJKLang = false;
+        bool isSpaceJoiningOCRLang = true;
 
-        if (selectedLanguage.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
-            isCJKLang = true;
-        else if (selectedLanguage.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
-            isCJKLang = true;
-        else if (selectedLanguage.LanguageTag.StartsWith("ko", StringComparison.InvariantCultureIgnoreCase) == true)
-            isCJKLang = true;
+        if (selectedLanguage.LanguageTag.StartsWith("zh-", StringComparison.InvariantCultureIgnoreCase) == true)
+            isSpaceJoiningOCRLang = false;
+        else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase) == true)
+            isSpaceJoiningOCRLang = false;
 
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
         CultureInfo culture = lang.GetEquivalentCulture();
 
-        double scale = 1.0;
-        try { scale = await GetIdealScaleFactor(bmp); }
-        catch (Exception ex) { Debug.WriteLine($"Failed to get ideal scale factor: {ex.Message}"); }
+        Bitmap scaledBitmap = bmp;
 
-        using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
-        if (singlePoint is not null)
-            singlePoint = new System.Windows.Point(singlePoint.Value.X * scale, singlePoint.Value.Y * scale);
+        if (singlePoint is null)
+        {
+            double scale = 1.0;
+            try { scale = await GetIdealScaleFactor(bmp, selectedLanguage); }
+            catch (Exception ex) { Debug.WriteLine($"Failed to get ideal scale factor: {ex.Message}"); }
+
+            scaledBitmap = ScaleBitmapUniform(bmp, scale);
+        }
 
         StringBuilder text = new();
 
@@ -202,17 +215,8 @@ public static class ImageMethods
 
         if (singlePoint == null)
         {
-            if (isCJKLang == false)
-                foreach (OcrLine line in ocrResult.Lines) text.AppendLine(line.Text);
-            else
-            {
-                foreach (OcrLine ocrLine in ocrResult.Lines)
-                {
-                    foreach (OcrWord ocrWord in ocrLine.Words)
-                        _ = text.Append(ocrWord.Text);
-                    text.Append(Environment.NewLine);
-                }
-            }
+            foreach (OcrLine ocrLine in ocrResult.Lines)
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
         }
         else
         {
@@ -229,41 +233,76 @@ public static class ImageMethods
             }
         }
 
-        // Debug.WriteLine($"Average line word heights: {heightsList.Average()}");
-
-
         if (culture.TextInfo.IsRightToLeft)
+            ReverseWordsForRightToLeft(text);
+
+        if (Settings.Default.TryToReadBarcodes && singlePoint is null)
         {
-            string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+            string barcodeResult = TryToReadBarcodes(scaledBitmap);
 
-            _ = text.Clear();
-            foreach (string textLine in textListLines)
-            {
-                List<string> wordArray = textLine.Split().ToList();
-                wordArray.Reverse();
-                if (isCJKLang == true)
-                    _ = text.Append(string.Join("", wordArray));
-                else
-                    _ = text.Append(string.Join(' ', wordArray));
-
-                if (textLine.Length > 0)
-                    _ = text.Append('\n');
-            }
-            return text.ToString();
+            if (!string.IsNullOrWhiteSpace(barcodeResult))
+                text.AppendLine(barcodeResult);
         }
-        else
+
+        return text.ToString();
+    }
+
+    private static string TryToReadBarcodes(Bitmap bitmap)
+    {
+        BarcodeReader barcodeReader = new()
         {
-            return text.ToString();
+            AutoRotate = true,
+            Options = new ZXing.Common.DecodingOptions { TryHarder = true }
+        };
+
+        ZXing.Result result = barcodeReader.Decode(bitmap);
+
+        if (result is null)
+            return string.Empty;
+        return result.Text;
+    }
+
+    private static void ReverseWordsForRightToLeft(StringBuilder text)
+    {
+        string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
+
+        _ = text.Clear();
+        foreach (string textLine in textListLines)
+        {
+            bool firstWord = true;
+            bool isPrevWordSpaceJoining = false;
+            List<string> wordArray = textLine.Split().ToList();
+            wordArray.Reverse();
+
+            foreach (string wordText in wordArray)
+            {
+                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
+
+                if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
+                    _ = text.Append(wordText);
+                else
+                    _ = text.Append(' ').Append(wordText);
+
+                firstWord = false;
+                isPrevWordSpaceJoining = isThisWordSpaceJoining;
+            }
+
+            if (textLine.Length > 0)
+                _ = text.Append(Environment.NewLine);
         }
     }
 
-    public static async Task<(OcrResult?, double)> GetOcrResultFromRegion(Rectangle region)
+    public static async Task<(OcrResult?, double)> GetOcrResultFromRegion(Rectangle region, Language? language)
     {
-        Language? selectedLanguage = GetOCRLanguage();
+        Language? selectedLanguage = null;
+        if (language is null)
+            selectedLanguage = GetOCRLanguage();
+        else
+            selectedLanguage = language;
+
         if (selectedLanguage == null)
-        {
             return (null, 0.0);
-        }
 
         using Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
@@ -271,7 +310,7 @@ public static class ImageMethods
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
         double scale = 1;
-        try { scale = await GetIdealScaleFactor(bmp); }
+        try { scale = await GetIdealScaleFactor(bmp, selectedLanguage); }
         catch (Exception ex) { Debug.WriteLine($"Failed to get ideal scale factor: {ex.Message}"); }
         using Bitmap scaledBitmap = ScaleBitmapUniform(bmp, scale);
 
@@ -318,19 +357,20 @@ public static class ImageMethods
 
     }
 
-    public async static Task<double> GetIdealScaleFactor(Bitmap bitmap)
+    public async static Task<double> GetIdealScaleFactor(Bitmap bitmap, Language? selectedLanguage)
     {
         List<double> heightsList = new();
         double scaleFactor = 1.5;
 
         using MemoryStream memory = new();
         using WrappingStream wrapper = new(memory);
-
         bitmap.Save(wrapper, ImageFormat.Bmp);
         wrapper.Position = 0;
         BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(wrapper.AsRandomAccessStream());
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
-        Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+
+        if (selectedLanguage is null)
+            selectedLanguage = ImageMethods.GetOCRLanguage();
 
         wrapper.Flush();
 
@@ -386,8 +426,11 @@ public static class ImageMethods
     {
         // use currently selected Language
         string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-
         Language? selectedLanguage = new(inputLang);
+
+        if (!string.IsNullOrEmpty(Settings.Default.LastUsedLang))
+            selectedLanguage = new(Settings.Default.LastUsedLang);
+
         List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
 
         if (possibleOCRLangs.Count < 1)

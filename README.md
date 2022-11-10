@@ -1,6 +1,6 @@
 # Text-Grab
 
-This is a minimal optical character recognition (OCR) utility for Windows which makes all visible text available to be copied. 
+This is a minimal optical character recognition (OCR) utility for Windows 10/11 which makes all visible text available to be copied. 
 
 Too often text is trapped within images, videos, or within parts of applications and cannot be selected. Text Grab takes a screenshot, passes that image to the OCR engine, then puts the text into the clipboard for use anywhere. The OCR is done locally by [Windows API](https://docs.microsoft.com/en-us/uwp/api/Windows.Media.Ocr). This enables Text Grab to have essentially no UI and not require a constantly running background process. Working with text can be much more than just copying text from images, so Text Grab has a range of different modes to make working with text fast and easy. 
 
@@ -37,7 +37,7 @@ Get the code:
 - Open `\Text-Grab\` Folder in VS Code (Same folder as .sln file)
 - Key F5 to launch with debugger
 
-## Text Grab works in Three Modes
+## Text Grab has Four Modes
 
 ### 1. Full-Screen Mode
 ![Select text from a region](images/2-3-Full-Screen-Grab-med.gif)
@@ -75,6 +75,26 @@ There are several tools with in the Edit Text Window which make it quick and eas
 - Copy text from every image in a folder
 - And more!
 
+### 4. Quick Simple Lookup
+![Quick Simple Lookup](images/Quick-Simple-Lookup.gif)
+
+This mode of Text Grab is not about OCR, but instead it is about retreiving frequently used text. Think of Quick Simple Lookup as your long term memory. Use it to store frequently used URLs, emails, part numbers, etc. Basically a custom dictionary you can edit and recall instantly at any time. The workflow for Quick Simple Lookup is designed to be fast and functional, here is how it works.
+
+1. Press the hotkey (Default is Win + Shift + Q)
+2. Begin typing to filter the lookup to the item you want
+3. When what you want is the first result, press enter
+4. Then paste the value you just copied into the application you are using
+
+
+### Bonus. Command Line Interface
+
+Arguments
+- `Fullscreen` launches into Fullscreen Grab mode
+- `GrabFrame` launches a new Grab Frame
+- `EditText` launches a new Edit Text Window
+- "Settings` opens Text Grab settings
+- `"file path"` Text Grab will open the file if it is a Text file, but if it is an image file it will OCR the file and place the results into a new Edit Text Window.
+- `"folder path"` e.g. `.\Text-Grab.exe "C:\Users\myPC\Downloads"` Text Grab will launch a new Edit Text Window and scan all images in that directory.
 
 ## Principles
 Text Grab is designed to have multiple modes, from minimal to fully featured; all focused on productivity. By using Windows 10’s OCR capabilities Text Grab can launch quickly without needing to run in the background. Pinning Text Grab to the Taskbar enables launching via keyboard shortcut. Now with version 2.4 when the background process is enabled Text Grab can be activated from anywhere using global hotkeys. The full-screen mode is designed to be used hundreds of times a day. Reducing clicks and menus means saving time, which is the primary focus of Text Grab. The Grab Frame tool can be positioned on top of any text content for quick OCR any time. When it comes to manipulating the text you've copied the Edit Text Window offers a wide range of tools to speed up common tasks and take the raw text into clean usable content.
@@ -82,3 +102,7 @@ Text Grab is designed to have multiple modes, from minimal to fully featured; al
 ### Thanks for using Text Grab
 Hopefully this simple app makes you more productive and saves you time from transcribing text.
 If you have any questions or feedback reach out on Twitter [@TheJoeFin](http://www.twitter.com/thejoefin) or by email joe@textgrab.net
+
+
+### Pssst, on a Mac?
+Check out the awesome app Text Sniper! It is very similar to Text Grab but for Mac! And if you use my [affiliate link here](https://gumroad.com/a/984365907/NYNNM) you will support Text Grab development as well! 

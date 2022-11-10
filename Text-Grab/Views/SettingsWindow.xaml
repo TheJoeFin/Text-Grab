@@ -7,19 +7,28 @@
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Text Grab Settings"
-    Width="560"
+    Width="580"
     Height="600"
     MinWidth="200"
     MinHeight="300"
+    d:Height="1200"
     Background="{StaticResource DarkControlBackground}"
     Closed="Window_Closed"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="labelText" TargetType="CheckBox">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Foreground" Value="White" />
+            <Setter Property="Margin" Value="0,16,0,0" />
         </Style>
 
+        <Style x:Key="ShortCutTextBox" TargetType="TextBox">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Padding" Value="0,2" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="TextAlignment" Value="Center" />
+        </Style>
     </Window.Resources>
     <Border>
         <ScrollViewer
@@ -45,7 +54,7 @@
                             VerticalAlignment="Center"
                             Foreground="White"
                             Style="{StaticResource TextBodyNormal}"
-                            Text="Version 2.7.0" />
+                            Text="Version 3.0.0" />
 
                         <controls:CollapsibleButton
                             x:Name="AboutBTN"
@@ -57,11 +66,7 @@
                     </Grid>
 
                     <!--  Show Toast on success  -->
-                    <CheckBox
-                        Name="ShowToastCheckBox"
-                        Margin="0,12,0,0"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
+                    <CheckBox Name="ShowToastCheckBox" Style="{StaticResource labelText}">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Show Toast when text is copied. Opens window to display and edit text.
                         </TextBlock>
@@ -97,25 +102,25 @@
                             Edit Text Window
                         </TextBlock>
                     </RadioButton>
+                    <RadioButton
+                        x:Name="QuickLookupRDBTN"
+                        VerticalContentAlignment="Center"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Quick Simple Lookup
+                        </TextBlock>
+                    </RadioButton>
 
                     <!--  Pick Language  -->
 
                     <!--    -->
-                    <CheckBox
-                        Name="ErrorCorrectBox"
-                        Margin="0,16,0,0"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
+                    <CheckBox Name="ErrorCorrectBox" Style="{StaticResource labelText}">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Try to correct confusions between numbers and letters
                         </TextBlock>
                     </CheckBox>
 
-                    <CheckBox
-                        Name="NeverUseClipboardChkBx"
-                        Margin="0,16,0,0"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
+                    <CheckBox Name="NeverUseClipboardChkBx" Style="{StaticResource labelText}">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Never automatically add text to the clipboard
                         </TextBlock>
@@ -126,32 +131,28 @@
                         Background="#000"
                         CornerRadius="6">
                         <StackPanel>
-                            <CheckBox
-                                Name="RunInBackgroundChkBx"
-                                VerticalContentAlignment="Center"
-                                Style="{StaticResource labelText}">
+                            <CheckBox Name="RunInBackgroundChkBx" Style="{StaticResource labelText}">
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
                                     Run Text Grab in the background and enable hotkeys
                                 </TextBlock>
                             </CheckBox>
                             <TextBlock
-                                Margin="24,0"
+                                Margin="24,0,0,0"
                                 Foreground="LightGray"
                                 Style="{StaticResource TextBodyNormal}">
-                                <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run><LineBreak />
+                                <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run>
                             </TextBlock>
                             <CheckBox x:Name="GlobalHotkeysCheckbox" Style="{StaticResource labelText}">
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
-                                    <Run FontWeight="Bold">Global hotkeys:</Run>
+                                    <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
                                 </TextBlock>
                             </CheckBox>
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="FullScreenHotkeyTextBox"
-                                    Width="20"
-                                    Padding="2"
-                                    BorderThickness="2"
+                                    Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
                                     Text="F"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -163,9 +164,8 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="GrabFrameHotkeyTextBox"
-                                    Width="20"
-                                    Padding="2"
-                                    BorderThickness="2"
+                                    Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
                                     Text="G"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -177,9 +177,8 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="EditTextHotKeyTextBox"
-                                    Width="20"
-                                    Padding="2"
-                                    BorderThickness="2"
+                                    Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
                                     Text="E"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -187,33 +186,38 @@
                                     Style="{StaticResource TextBodyNormal}"
                                     Text="new Edit Text Window" />
                             </StackPanel>
+                            <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <TextBox
+                                    x:Name="LookupHotKeyTextBox"
+                                    Style="{StaticResource ShortCutTextBox}"
+                                    CharacterCasing="Upper"
+                                    Text="Q"
+                                    TextChanged="HotkeyTextBox_TextChanged" />
+                                <TextBlock
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="Launch Quick Simple Lookup" />
+                            </StackPanel>
                         </StackPanel>
                     </Border>
-                    <CheckBox
-                        Name="StartupOnLoginCheckBox"
-                        Margin="0,16,0,0"
-                        VerticalContentAlignment="Center"
-                        Style="{StaticResource labelText}">
+                    <CheckBox Name="StartupOnLoginCheckBox" Style="{StaticResource labelText}">
                         <TextBlock x:Name="StartupTextBlock" Style="{StaticResource TextBodyNormal}">
                             Auto start Text Grab when you login
                         </TextBlock>
                     </CheckBox>
                     <Border
                         Margin="0,16,0,0"
-                        Padding="20,10"
+                        Padding="24,0,20,16"
                         Background="#000"
                         CornerRadius="6">
                         <StackPanel>
-                            <CheckBox
-                                Name="TryInsertCheckbox"
-                                Margin="0"
-                                VerticalContentAlignment="Center"
-                                Style="{StaticResource labelText}">
+                            <CheckBox Name="TryInsertCheckbox" Style="{StaticResource labelText}">
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
                                     (Experimental) Try to Insert text in text fields after Fullscreen Grab after:
                                 </TextBlock>
                             </CheckBox>
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                                 <TextBox
                                     x:Name="SecondsTextBox"
                                     Width="48"
@@ -224,6 +228,7 @@
                                     Text="3"
                                     TextChanged="ValidateTextIsNumber" />
                                 <TextBlock
+                                    Margin="4,0,0,0"
                                     VerticalAlignment="Center"
                                     Style="{StaticResource TextBodyNormal}"
                                     Text="Seconds" />
@@ -237,6 +242,14 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+                    <CheckBox
+                        Name="ReadBarcodesBarcode"
+                        IsChecked="True"
+                        Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Try to read barcodes (Disabling may speed up results)
+                        </TextBlock>
+                    </CheckBox>
                 </StackPanel>
                 <StackPanel
                     Grid.Row="1"

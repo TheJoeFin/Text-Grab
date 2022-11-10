@@ -24,16 +24,75 @@ public static class StringMethods
         return fixToLetters;
     }
 
+    public static IEnumerable<int> FindAllIndicesOfString(this string sourceString, string stringToFind)
+    {
+        int stepsToSearch = 1 + sourceString.Length - stringToFind.Length;
+
+        for (int i = 0; i < stepsToSearch; i++)
+        {
+            if (sourceString.Substring(i, stringToFind.Length) == stringToFind)
+                yield return i;
+        }
+    }
+
+    public static (int, int) CursorWordBoundaries(this string sourceString, int caretIndex)
+    {
+        List<int> indicesOfBreaks = sourceString.FindAllIndicesOfString(" ").ToList();
+        List<int> indicesOfNewLines = sourceString.FindAllIndicesOfString(Environment.NewLine).ToList();
+
+        indicesOfBreaks.AddRange(indicesOfNewLines);
+        indicesOfBreaks.Sort();
+        indicesOfBreaks = indicesOfBreaks.Distinct().ToList();
+
+        if (indicesOfBreaks.Count == 0)
+            return (0, sourceString.Length);
+
+        int breakLeft = 0;
+        int breakRight = sourceString.Length;
+
+        bool lookingForGap = true;
+        int i = 0;
+
+        if (caretIndex > indicesOfBreaks.Last())
+            return (indicesOfBreaks.Last(), sourceString.Length - indicesOfBreaks.Last());
+
+        while (lookingForGap)
+        {
+            if (indicesOfBreaks[i] >= caretIndex)
+            {
+                breakRight = indicesOfBreaks[i];
+
+                if (i > 0)
+                    breakLeft = indicesOfBreaks[i - 1] + 1;
+
+                lookingForGap = false;
+            }
+
+            i++;
+            if (indicesOfBreaks.Count - 1 < i)
+                lookingForGap = false;
+        }
+
+        char lastChar = sourceString.Substring(breakLeft, 1).Last();
+
+        if (lastChar == '\n')
+            breakLeft++;
+
+        return (breakLeft, breakRight - breakLeft);
+    }
+
     public static string TryFixToNumbers(this string fixToNumbers)
     {
 
         fixToNumbers = fixToNumbers.Replace('o', '0');
         fixToNumbers = fixToNumbers.Replace('O', '0');
-        fixToNumbers = fixToNumbers.Replace('g', '9');
+        fixToNumbers = fixToNumbers.Replace('Q', '0');
+        fixToNumbers = fixToNumbers.Replace('c', '0');
+        fixToNumbers = fixToNumbers.Replace('C', '0');
         fixToNumbers = fixToNumbers.Replace('i', '1');
         fixToNumbers = fixToNumbers.Replace('I', '1');
         fixToNumbers = fixToNumbers.Replace('l', '1');
-        fixToNumbers = fixToNumbers.Replace('Q', '0');
+        fixToNumbers = fixToNumbers.Replace('g', '9');
 
         return fixToNumbers;
     }

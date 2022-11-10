@@ -39,7 +39,7 @@ public partial class FullscreenGrab : Window
     double xShiftDelta;
     double yShiftDelta;
 
-    public EditTextWindow? EditWindow { get; set; }
+    public TextBox? DestinationTextBox { get; set; }
 
     public string? textFromOCR;
 
@@ -409,6 +409,10 @@ public partial class FullscreenGrab : Window
             (int)(selectBorder.Width * m.M11),
             (int)(selectBorder.Height * m.M22));
 
+        clippingGeometry.Rect = new Rect(
+            new System.Windows.Point(0, 0),
+            new System.Windows.Size(0, 0));
+
         string grabbedText = "";
 
         if (NewGrabFrameMenuItem.IsChecked == true)
@@ -467,24 +471,28 @@ public partial class FullscreenGrab : Window
             textFromOCR = grabbedText;
 
             if (Settings.Default.NeverAutoUseClipboard == false
-                && EditWindow is null)
-                Clipboard.SetDataObject(grabbedText, true);
+                && DestinationTextBox is null)
+                try { Clipboard.SetDataObject(grabbedText, true); } catch { }
 
             if (Settings.Default.ShowToast
-                && EditWindow is null)
+                && DestinationTextBox is null)
                 NotificationUtilities.ShowToast(grabbedText);
 
-            if (EditWindow is not null)
-                EditWindow.AddThisText(grabbedText);
+            if (DestinationTextBox is not null)
+            {
+                // Do it this way instead of append text because it inserts the text at the cursor
+                // Then puts the cursor at the end of the newly added text
+                // AppendText() just adds the text to the end no matter what.
+                DestinationTextBox.SelectedText = grabbedText;
+                DestinationTextBox.Select(DestinationTextBox.SelectionStart + grabbedText.Length, 0);
+                DestinationTextBox.Focus();
+            }
 
             WindowUtilities.CloseAllFullscreenGrabs();
         }
         else
         {
             BackgroundBrush.Opacity = .2;
-            clippingGeometry.Rect = new Rect(
-            new System.Windows.Point(0, 0),
-            new System.Windows.Size(0, 0));
         }
     }
 
@@ -503,6 +511,14 @@ public partial class FullscreenGrab : Window
     {
         if (sender is not ComboBox languageCmbBox || isComboBoxReady == false)
             return;
+
+        Language? pickedLang = languageCmbBox.SelectedItem as Language;
+
+        if (pickedLang != null)
+        {
+            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
+            Settings.Default.Save();
+        }
 
         int selection = languageCmbBox.SelectedIndex;
 
@@ -537,6 +553,15 @@ public partial class FullscreenGrab : Window
                 break;
             default:
                 break;
+        }
+    }
+
+    private void LanguagesComboBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            Settings.Default.LastUsedLang = String.Empty;
+            Settings.Default.Save();
         }
     }
 }

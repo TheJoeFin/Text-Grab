@@ -76,7 +76,7 @@ public static class WindowUtilities
 
     public static void LaunchFullScreenGrab(bool openAnyway = false,
                                             bool setBackgroundImage = false,
-                                            EditTextWindow? editWindow = null)
+                                            System.Windows.Controls.TextBox? destinationTextBox = null)
     {
         Screen[] allScreens = Screen.AllScreens;
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
@@ -94,9 +94,6 @@ public static class WindowUtilities
                         (int)(window.Left + (window.Width / 2)),
                         (int)(window.Top + (window.Height / 2)));
                 screenHasWindow = screen.Bounds.Contains(windowCenter);
-
-                // if (window is EditTextWindow)
-                //     isEditWindowOpen = true;
             }
 
             if (allWindows.Count < 1)
@@ -109,7 +106,7 @@ public static class WindowUtilities
                     WindowStartupLocation = WindowStartupLocation.Manual,
                     Width = 200,
                     Height = 200,
-                    EditWindow = editWindow,
+                    DestinationTextBox = destinationTextBox,
                     IsFreeze = setBackgroundImage,
                     WindowState = WindowState.Normal
                 };
@@ -153,11 +150,12 @@ public static class WindowUtilities
                 if (string.IsNullOrWhiteSpace(fsg.textFromOCR) == false)
                     stringFromOCR = fsg.textFromOCR;
 
-                if (fsg.EditWindow is not null)
+                if (fsg.DestinationTextBox is not null)
                 {
+                    // TODO 3.0 Find out how to re normaize an ETW when FSG had it minimzed 
                     isFromEditWindow = true;
-                    if (fsg.EditWindow.WindowState == WindowState.Minimized)
-                        fsg.EditWindow.WindowState = WindowState.Normal;
+                    // if (fsg.EditWindow.WindowState == WindowState.Minimized)
+                    //     fsg.EditWindow.WindowState = WindowState.Normal;
                 }
 
                 fsg.Close();

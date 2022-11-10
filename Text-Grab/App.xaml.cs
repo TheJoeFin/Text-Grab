@@ -23,7 +23,7 @@ public partial class App : System.Windows.Application
 
     public int NumberOfRunningInstances { get; set; } = 0;
 
-    void appStartup(object sender, StartupEventArgs e)
+    async void appStartup(object sender, StartupEventArgs e)
     {
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
@@ -39,7 +39,7 @@ public partial class App : System.Windows.Application
             {
                 if (String.IsNullOrWhiteSpace(argsInvoked) == false)
                 {
-                    EditTextWindow mtw = new EditTextWindow(argsInvoked);
+                    EditTextWindow mtw = new(argsInvoked);
                     mtw.Show();
                     handledArgument = true;
                 }
@@ -66,13 +66,13 @@ public partial class App : System.Windows.Application
             }
             else if (e.Args[i] == "Settings")
             {
-                SettingsWindow sw = new SettingsWindow();
+                SettingsWindow sw = new();
                 sw.Show();
                 handledArgument = true;
             }
             else if (e.Args[i] == "GrabFrame")
             {
-                GrabFrame gf = new GrabFrame();
+                GrabFrame gf = new();
                 gf.Show();
                 handledArgument = true;
             }
@@ -83,15 +83,28 @@ public partial class App : System.Windows.Application
             }
             else if (e.Args[i] == "EditText")
             {
-                EditTextWindow manipulateTextWindow = new EditTextWindow();
+                EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
+                handledArgument = true;
+            }
+            else if (e.Args[i] == "QuickLookup")
+            {
+                QuickSimpleLookup qsl = new();
+                qsl.Show();
                 handledArgument = true;
             }
             else if (File.Exists(e.Args[i]))
             {
-                EditTextWindow manipulateTextWindow = new EditTextWindow();
+                EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.OpenThisPath(e.Args[i]);
                 manipulateTextWindow.Show();
+                handledArgument = true;
+            }
+            else if (Directory.Exists(e.Args[i]))
+            {
+                EditTextWindow manipulateTextWindow = new();
+                manipulateTextWindow.Show();
+                await manipulateTextWindow.OcrAllImagesInFolder(e.Args[i], false, false);
                 handledArgument = true;
             }
         }
@@ -100,7 +113,7 @@ public partial class App : System.Windows.Application
         {
             if (Settings.Default.FirstRun)
             {
-                FirstRunWindow frw = new FirstRunWindow();
+                FirstRunWindow frw = new();
                 frw.Show();
 
                 Settings.Default.FirstRun = false;
@@ -114,15 +127,19 @@ public partial class App : System.Windows.Application
                         WindowUtilities.LaunchFullScreenGrab();
                         break;
                     case "GrabFrame":
-                        GrabFrame gf = new GrabFrame();
+                        GrabFrame gf = new();
                         gf.Show();
                         break;
                     case "EditText":
-                        EditTextWindow manipulateTextWindow = new EditTextWindow();
+                        EditTextWindow manipulateTextWindow = new();
                         manipulateTextWindow.Show();
                         break;
+                    case "QuickLookup":
+                        QuickSimpleLookup quickSimpleLookup = new();
+                        quickSimpleLookup.Show();
+                        break;
                     default:
-                        EditTextWindow editTextWindow = new EditTextWindow();
+                        EditTextWindow editTextWindow = new();
                         editTextWindow.Show();
                         break;
                 }
@@ -140,6 +157,5 @@ public partial class App : System.Windows.Application
         // unhandled exceptions thrown from UI thread
         Debug.WriteLine($"Unhandled exception: {e.Exception}");
         e.Handled = true;
-        Current.Shutdown();
     }
 }

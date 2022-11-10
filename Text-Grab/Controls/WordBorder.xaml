@@ -9,26 +9,26 @@
     d:DesignHeight="30"
     d:DesignWidth="80"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
-    MouseDown="WordBorderControl_MouseDown"
+    ToolTip="{Binding Path=Word, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
     Unloaded="WordBorderControl_Unloaded"
     mc:Ignorable="d">
     <Border
         x:Name="WordBorderBorder"
+        Margin="0,0,0,0"
         BorderBrush="#308E98"
-        BorderThickness="1"
+        BorderThickness="8,0,0,1"
         CornerRadius="2">
         <Grid x:Name="MainGrid" ClipToBounds="True">
-            <Grid.Background>
-                <SolidColorBrush Opacity="0.1" Color="White" />
-            </Grid.Background>
-            <Viewbox>
+            <Viewbox x:Name="EditTextViewBox">
                 <TextBox
                     x:Name="EditWordTextBox"
-                    Margin="-1,-2,-1,-2"
+                    Margin="-1,-3,-1,-1"
                     d:Text="Test g"
-                    FontFamily="Cascadia Code"
+                    FontFamily="Segoe UI"
                     FontWeight="Medium"
                     Foreground="White"
+                    ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
+                    Background="Transparent"
                     Style="{StaticResource TextBoxStyle1}"
                     Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     Visibility="Collapsed">
