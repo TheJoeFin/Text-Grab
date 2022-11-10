@@ -99,11 +99,8 @@ public static class ImageMethods
         int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
 
-        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics g = Graphics.FromImage(bmp);
-
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-        // bmp = PadImage(bmp);
+        bmp = PadImage(bmp);
 
         string? ocrText = await ExtractText(bmp, null, language);
 

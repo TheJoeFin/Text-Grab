@@ -54,6 +54,7 @@ public partial class FullscreenGrab : Window
 
     public void SetImageToBackground()
     {
+        BackgroundImage.Source = null;
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
         BackgroundBrush.Opacity = 0.2;
     }
@@ -79,7 +80,7 @@ public partial class FullscreenGrab : Window
     {
         BackgroundImage.Source = null;
         BackgroundImage.UpdateLayout();
-        EditWindow = null;
+        // EditWindow = null;
         currentScreen = null;
         dpiScale = null;
         Language = null;
@@ -494,6 +495,8 @@ public partial class FullscreenGrab : Window
         {
             BackgroundBrush.Opacity = .2;
         }
+
+        GC.Collect();
     }
 
     private void SingleLineMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
