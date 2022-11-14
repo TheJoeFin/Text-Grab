@@ -23,6 +23,7 @@ using ZXing.Windows.Compatibility;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
+using Point = System.Windows.Point;
 
 namespace Text_Grab;
 
@@ -48,8 +49,6 @@ public static class ImageMethods
 
     internal static Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
     {
-        // BitmapImage bitmapImage = new BitmapImage(new Uri("../Images/test.png", UriKind.Relative));
-
         using MemoryStream outStream = new();
 
         BitmapEncoder enc = new BmpBitmapEncoder();
@@ -99,10 +98,10 @@ public static class ImageMethods
 
         string? ocrText = await ExtractText(bmp, null, language);
 
-        if (ocrText != null)
-            return ocrText.Trim();
-        else
+        if (string.IsNullOrWhiteSpace(ocrText))
             return "";
+
+        return ocrText.Trim();
     }
 
     internal static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
@@ -120,7 +119,7 @@ public static class ImageMethods
         int thisCorrectedLeft = (int)(absPosPoint.X);
         int thisCorrectedTop = (int)(absPosPoint.Y);
 
-        if (isGrabFrame == true)
+        if (isGrabFrame)
         {
             thisCorrectedLeft = (int)((absPosPoint.X + 2) * dpi.DpiScaleX);
             thisCorrectedTop = (int)((absPosPoint.Y + 26) * dpi.DpiScaleY);
@@ -141,25 +140,25 @@ public static class ImageMethods
         return BitmapToImageSource(bmp);
     }
 
-    internal static async Task<string> GetClickedWord(Window passedWindow, System.Windows.Point clickedPoint, Language? OcrLang)
+    internal static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language? OcrLang)
     {
         DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
         using Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
 
-        System.Windows.Point absPosPoint = passedWindow.GetAbsolutePosition();
+        Point absPosPoint = passedWindow.GetAbsolutePosition();
         int thisCorrectedLeft = (int)absPosPoint.X;
         int thisCorrectedTop = (int)absPosPoint.Y;
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
-        System.Windows.Point adjustedPoint = new System.Windows.Point(clickedPoint.X, clickedPoint.Y);
+        Point adjustedPoint = new(clickedPoint.X, clickedPoint.Y);
 
         string ocrText = await ExtractText(bmp, adjustedPoint, OcrLang);
         return ocrText.Trim();
     }
 
-    public static async Task<string> ExtractText(Bitmap bmp, System.Windows.Point? singlePoint = null, Language? selectedLanguage = null)
+    public static async Task<string> ExtractText(Bitmap bmp, Point? singlePoint = null, Language? selectedLanguage = null)
     {
         if (selectedLanguage is null)
             selectedLanguage = GetOCRLanguage();
@@ -201,25 +200,11 @@ public static class ImageMethods
 
         List<double> heightsList = new();
 
-        if (singlePoint == null)
-        {
+        if (singlePoint is Point clickedPoint)
+            GetTextFromClickedWord(clickedPoint, text, ocrResult, heightsList);
+        else
             foreach (OcrLine ocrLine in ocrResult.Lines)
                 ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
-        }
-        else
-        {
-            Windows.Foundation.Point fPoint = new Windows.Foundation.Point(singlePoint.Value.X, singlePoint.Value.Y);
-            foreach (OcrLine ocrLine in ocrResult.Lines)
-            {
-                foreach (OcrWord ocrWord in ocrLine.Words)
-                {
-                    if (ocrWord.BoundingRect.Contains(fPoint))
-                        _ = text.Append(ocrWord.Text);
-
-                    heightsList.Add(ocrWord.BoundingRect.Height);
-                }
-            }
-        }
 
         if (culture.TextInfo.IsRightToLeft)
             ReverseWordsForRightToLeft(text);
@@ -233,6 +218,21 @@ public static class ImageMethods
         }
 
         return text.ToString();
+    }
+
+    private static void GetTextFromClickedWord(Point singlePoint, StringBuilder text, OcrResult ocrResult, List<double> heightsList)
+    {
+        Windows.Foundation.Point fPoint = new Windows.Foundation.Point(singlePoint.X, singlePoint.Y);
+        foreach (OcrLine ocrLine in ocrResult.Lines)
+        {
+            foreach (OcrWord ocrWord in ocrLine.Words)
+            {
+                if (ocrWord.BoundingRect.Contains(fPoint))
+                    _ = text.Append(ocrWord.Text);
+
+                heightsList.Add(ocrWord.BoundingRect.Height);
+            }
+        }
     }
 
     private static string TryToReadBarcodes(Bitmap bitmap)
@@ -382,7 +382,6 @@ public static class ImageMethods
             scaleFactor = OcrEngine.MaxImageDimension / largerDim;
         }
 
-
         return scaleFactor;
     }
 
@@ -427,7 +426,7 @@ public static class ImageMethods
             List<Language>? similarLanguages = possibleOCRLangs.Where(
                 la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
 
-            if (similarLanguages != null)
+            if (similarLanguages is not null)
             {
                 selectedLanguage = similarLanguages.Count > 0
                     ? similarLanguages.FirstOrDefault()
