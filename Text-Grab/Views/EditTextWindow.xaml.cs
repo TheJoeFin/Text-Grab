@@ -1541,6 +1541,7 @@ public partial class EditTextWindow : Window
     {
         AddOrRemoveWindow aorw = new();
         aorw.Owner = this;
+        aorw.SelectedTextFromEditTextWindow = PassedTextControl.SelectedText;
         aorw.ShowDialog();
     }
 

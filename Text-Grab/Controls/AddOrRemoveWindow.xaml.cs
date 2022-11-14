@@ -20,6 +20,8 @@ public partial class AddOrRemoveWindow : Window
 
     public AddRemove AddRemove { get; set; } = AddRemove.Add;
 
+    public string SelectedTextFromEditTextWindow { get; set; } = "";
+
     public AddOrRemoveWindow()
     {
         InitializeComponent();
@@ -27,17 +29,8 @@ public partial class AddOrRemoveWindow : Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        if (Owner is not Window etw)
-            return;
-
-        double etwMidTop = etw.Top + (etw.Height / 2);
-        double etwMidLeft = etw.Left + (etw.Width / 2);
-
-        double thisMidTop = etwMidTop - (this.Height / 2);
-        double thisMidLeft = etwMidLeft - (this.Width / 2);
-
-        this.Top = thisMidTop;
-        this.Left = thisMidLeft;
+        TextToAddTextBox.Text = SelectedTextFromEditTextWindow;
+        LengthTextBox.Text = SelectedTextFromEditTextWindow.Length.ToString();
     }
 
     private void AddRemove_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -58,13 +51,9 @@ public partial class AddOrRemoveWindow : Window
         if (AddRadioButton.IsChecked is true)
         {
             if (BeginningRDBTN.IsChecked is true)
-            {
                 etwOwner.AddCharsToEachLine(TextToAddTextBox.Text, SpotInLine.Beginning);
-            }
             else
-            {
                 etwOwner.AddCharsToEachLine(TextToAddTextBox.Text, SpotInLine.End);
-            }
         }
         else
         {
@@ -72,13 +61,9 @@ public partial class AddOrRemoveWindow : Window
                 return;
 
             if (BeginningRDBTN.IsChecked is true)
-            {
                 etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.Beginning);
-            }
             else
-            {
                 etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.End);
-            }
         }
 
         Close();
@@ -106,23 +91,17 @@ public partial class AddOrRemoveWindow : Window
         if (sender is not TextBox addTextTextBox)
             return;
 
-        if (AddRadioButton.IsChecked is true)
-        {
-            if (addTextTextBox.Text is String textFromBox)
-                TextToAdd = textFromBox;
+        if (AddRadioButton.IsChecked is true && addTextTextBox.Text is String textFromBox)
+            TextToAdd = textFromBox;
 
-        }
-        else
+        if (LengthTextBox.Text is String textFromLengthBox)
         {
-            if (LengthTextBox.Text is String textFromBox)
-            {
-                bool success = Int32.TryParse(textFromBox, out int lengthString);
+            bool success = Int32.TryParse(textFromLengthBox, out int lengthString);
 
-                if (!success)
-                    LengthToChange = null;
-                else
-                    LengthToChange = lengthString;
-            }
+            if (!success)
+                LengthToChange = null;
+            else
+                LengthToChange = lengthString;
         }
     }
 
