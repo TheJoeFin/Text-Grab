@@ -19,7 +19,7 @@ public static class OcrExtensions
         // Chinese and Japanese characters are single-character words
         // when a word is one punctuation/symbol, join it without spaces
 
-        if (isSpaceJoiningOCRLang == true)
+        if (isSpaceJoiningOCRLang)
             text.AppendLine(ocrLine.Text);
         else
         {

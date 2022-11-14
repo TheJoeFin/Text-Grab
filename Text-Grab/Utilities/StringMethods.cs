@@ -184,7 +184,7 @@ public static class StringMethods
 
         foreach (char characterToCheck in stringToCamel)
         {
-            if (isSpaceOrNewLine == true
+            if (isSpaceOrNewLine
                 && char.IsLetter(characterToCheck))
             {
                 isSpaceOrNewLine = false;
@@ -383,12 +383,8 @@ public static class StringMethods
         List<string> uniqueLines = new();
 
         foreach (string originalLine in splitString)
-        {
-            if (uniqueLines.Contains(originalLine) == false)
-            {
+            if (!uniqueLines.Contains(originalLine))
                 uniqueLines.Add(originalLine);
-            }
-        }
 
         return string.Join(Environment.NewLine, uniqueLines.ToArray());
     }

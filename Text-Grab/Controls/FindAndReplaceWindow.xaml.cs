@@ -73,7 +73,7 @@ public partial class FindAndReplaceWindow : Window
             this.Left = thisMidLeft;
         }
 
-        if (string.IsNullOrWhiteSpace(FindTextBox.Text) == false)
+        if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
             SearchForText();
 
     }
@@ -93,14 +93,14 @@ public partial class FindAndReplaceWindow : Window
 
         Pattern = FindTextBox.Text;
 
-        if (UsePaternCheckBox.IsChecked == false)
+        if (UsePaternCheckBox.IsChecked is false)
         {
             Pattern = Pattern.EscapeSpecialRegexChars();
         }
 
         try
         {
-            if (ExactMatchCheckBox.IsChecked == true)
+            if (ExactMatchCheckBox.IsChecked is true)
                 Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline);
             else
                 Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
@@ -149,12 +149,12 @@ public partial class FindAndReplaceWindow : Window
 
                 StringBuilder previewString = new();
 
-                if (atBeginning == false)
+                if (!atBeginning)
                     previewString.Append("...");
 
                 previewString.Append(StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine());
 
-                if (atEnd == false)
+                if (!atEnd)
                     previewString.Append("...");
 
                 ResultsListView.Items.Add($"{count} \t At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
@@ -226,7 +226,7 @@ public partial class FindAndReplaceWindow : Window
     private void MoreOptionsToggleButton_Click(object sender, RoutedEventArgs e)
     {
         Visibility optionsVisibility = Visibility.Collapsed;
-        if (MoreOptionsToggleButton.IsChecked == true)
+        if (MoreOptionsToggleButton.IsChecked is true)
             optionsVisibility = Visibility.Visible;
 
         ReplaceTextBox.Visibility = optionsVisibility;
@@ -453,7 +453,7 @@ public partial class FindAndReplaceWindow : Window
     {
         if (e.Key == Key.Escape)
         {
-            if (string.IsNullOrWhiteSpace(FindTextBox.Text) == false)
+            if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
                 FindTextBox.Clear();
             else
                 this.Close();

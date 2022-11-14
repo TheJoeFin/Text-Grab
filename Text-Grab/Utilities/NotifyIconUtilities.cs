@@ -105,7 +105,7 @@ public static class NotifyIconUtilities
 
     static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
     {
-        if (Settings.Default.GlobalHotkeysEnabled == false)
+        if (!Settings.Default.GlobalHotkeysEnabled)
             return;
 
         KeysConverter keysConverter = new();

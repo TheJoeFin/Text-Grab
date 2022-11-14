@@ -168,9 +168,9 @@ public static class ImageMethods
 
         bool isSpaceJoiningOCRLang = true;
 
-        if (selectedLanguage.LanguageTag.StartsWith("zh-", StringComparison.InvariantCultureIgnoreCase) == true)
+        if (selectedLanguage.LanguageTag.StartsWith("zh-", StringComparison.InvariantCultureIgnoreCase))
             isSpaceJoiningOCRLang = false;
-        else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase) == true)
+        else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase))
             isSpaceJoiningOCRLang = false;
 
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);

@@ -138,7 +138,7 @@ public static class WindowUtilities
         {
             if (window is FullscreenGrab fsg)
             {
-                if (string.IsNullOrWhiteSpace(fsg.textFromOCR) == false)
+                if (!string.IsNullOrWhiteSpace(fsg.textFromOCR))
                     stringFromOCR = fsg.textFromOCR;
 
                 if (fsg.DestinationTextBox is not null)
@@ -153,9 +153,9 @@ public static class WindowUtilities
             }
         }
 
-        if (Settings.Default.TryInsert == true
-            && string.IsNullOrWhiteSpace(stringFromOCR) == false
-            && isFromEditWindow == false)
+        if (Settings.Default.TryInsert
+            && !string.IsNullOrWhiteSpace(stringFromOCR)
+            && !isFromEditWindow)
         {
             await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
             TryInsertString(stringFromOCR);

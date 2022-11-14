@@ -139,7 +139,7 @@ public partial class GrabFrame : Window
 
     private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
     {
-        if (wasAltHeld == true && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
+        if (wasAltHeld && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
         {
             RectanglesCanvas.Opacity = 1;
             wasAltHeld = false;
@@ -148,7 +148,7 @@ public partial class GrabFrame : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (wasAltHeld == false && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
+        if (!wasAltHeld && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
         {
             RectanglesCanvas.Opacity = 0.1;
             wasAltHeld = true;
@@ -214,7 +214,7 @@ public partial class GrabFrame : Window
 
     private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(SearchBox.Text) == false && SearchBox.Text != "Search For Text...")
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text) && SearchBox.Text != "Search For Text...")
             SearchBox.Text = "";
         else if (RectanglesCanvas.Children.Count > 0)
             ResetGrabFrame();
@@ -239,17 +239,17 @@ public partial class GrabFrame : Window
 
     private void GrabBTN_Click(object sender, RoutedEventArgs e)
     {
-        if (IsFromEditWindow == false
-            && string.IsNullOrWhiteSpace(FrameText) == false
-            && Settings.Default.NeverAutoUseClipboard == false)
+        if (!IsFromEditWindow
+            && !string.IsNullOrWhiteSpace(FrameText)
+            && !Settings.Default.NeverAutoUseClipboard)
             try { Clipboard.SetDataObject(FrameText, true); } catch { }
 
-        if (Settings.Default.ShowToast == true
-            && IsFromEditWindow == false)
+        if (Settings.Default.ShowToast
+            && !IsFromEditWindow)
             NotificationUtilities.ShowToast(FrameText);
 
-        if (IsFromEditWindow == true
-            && string.IsNullOrWhiteSpace(FrameText) == false
+        if (IsFromEditWindow
+            && !string.IsNullOrWhiteSpace(FrameText)
             && DestinationTextBox is not null)
         {
             DestinationTextBox.Select(DestinationTextBox.SelectionStart + DestinationTextBox.SelectionLength, 0);
@@ -368,9 +368,9 @@ public partial class GrabFrame : Window
 
         if (currentLang is not null)
         {
-            if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
+            if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase))
                 isSpaceJoining = false;
-            else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
+            else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase))
                 isSpaceJoining = false;
         }
 
@@ -501,7 +501,7 @@ public partial class GrabFrame : Window
             RectanglesCanvas.RenderTransform = transform;
         }
 
-        if (TableToggleButton.IsChecked == true)
+        if (TableToggleButton.IsChecked is true)
         {
             try
             {
@@ -536,12 +536,12 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Children.Add(wordBorder);
         }
 
-        if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
+        if (TableToggleButton.IsChecked is true && AnalyedResultTable is not null)
         {
             DrawTable(AnalyedResultTable);
         }
 
-        if (IsWordEditMode == true)
+        if (IsWordEditMode)
             EnterEditMode();
 
         MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
@@ -663,7 +663,7 @@ public partial class GrabFrame : Window
                 if (child is WordBorder wb)
                 {
                     Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                    if (horzLineRect.IntersectsWith(wbRect) == true)
+                    if (horzLineRect.IntersectsWith(wbRect))
                     {
                         rowAreas.Add(i * hitGridSpacing);
                         break;
@@ -726,7 +726,7 @@ public partial class GrabFrame : Window
                 if (child is WordBorder wb)
                 {
                     Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                    if (vertLineRect.IntersectsWith(wbRect) == true)
+                    if (vertLineRect.IntersectsWith(wbRect))
                     {
                         columnAreas.Add(i * hitGridSpacing);
                         break;
@@ -807,7 +807,7 @@ public partial class GrabFrame : Window
                     if (child is WordBorder wb)
                     {
                         Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                        if (rowRect.IntersectsWith(wbRect) == true)
+                        if (rowRect.IntersectsWith(wbRect))
                         {
                             numberOfIntersectingWords++;
                             wb.ResultRowID = row.ID;
@@ -846,7 +846,7 @@ public partial class GrabFrame : Window
                     if (child is WordBorder wb)
                     {
                         Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                        if (columnRect.IntersectsWith(wbRect) == true)
+                        if (columnRect.IntersectsWith(wbRect))
                         {
                             numberOfIntersectingWords++;
                             wb.ResultColumnID = column.ID;
@@ -954,7 +954,7 @@ public partial class GrabFrame : Window
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         if (sender is not TextBox searchBox) return;
@@ -997,9 +997,9 @@ public partial class GrabFrame : Window
 
         StringBuilder stringBuilder = new();
 
-        if (TableToggleButton.IsChecked == true)
+        if (TableToggleButton.IsChecked is true)
         {
-            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
+            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected).ToList();
 
             if (selectedBorders.Count == 0)
                 selectedBorders.AddRange(wordBorders);
@@ -1220,7 +1220,7 @@ public partial class GrabFrame : Window
             {
                 clickedEmptySpace = false;
 
-                if (smallSelction == false)
+                if (!smallSelction)
                 {
                     wordBorder.Select();
                     wordBorder.WasRegionSelected = true;
@@ -1237,18 +1237,18 @@ public partial class GrabFrame : Window
             }
             else
             {
-                if (wordBorder.WasRegionSelected == true
-                    && smallSelction == false)
+                if (wordBorder.WasRegionSelected
+                    && !smallSelction)
                     wordBorder.Deselect();
             }
 
-            if (finalCheck == true)
+            if (finalCheck)
                 wordBorder.WasRegionSelected = false;
         }
 
-        if (clickedEmptySpace == true
-            && smallSelction == true
-            && finalCheck == true)
+        if (clickedEmptySpace
+            && smallSelction
+            && finalCheck)
         {
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
@@ -1462,7 +1462,7 @@ public partial class GrabFrame : Window
         if (sender is not MenuItem aspectMI)
             return;
 
-        if (aspectMI.IsChecked == false)
+        if (aspectMI.IsChecked is false)
             GrabFrameImage.Stretch = Stretch.Fill;
         else
             GrabFrameImage.Stretch = Stretch.Uniform;

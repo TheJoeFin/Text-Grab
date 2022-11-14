@@ -172,10 +172,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         try { Clipboard.SetDataObject(Word, true); } catch { }
 
         if (Settings.Default.ShowToast
-            && IsFromEditWindow == false)
+            && !IsFromEditWindow)
             NotificationUtilities.ShowToast(Word);
 
-        if (IsFromEditWindow == true)
+        if (IsFromEditWindow)
             WindowUtilities.AddTextToOpenWindow(Word);
 
         if (IsSelected)

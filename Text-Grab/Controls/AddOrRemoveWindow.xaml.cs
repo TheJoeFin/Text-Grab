@@ -42,9 +42,9 @@ public partial class AddOrRemoveWindow : Window
 
     private void AddRemove_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (AddRadioButton.IsChecked == true && string.IsNullOrEmpty(TextToAddTextBox.Text) == false)
+        if (AddRadioButton.IsChecked is true && !string.IsNullOrEmpty(TextToAddTextBox.Text))
             e.CanExecute = true;
-        else if (RemoveRadioButton.IsChecked == true && LengthToChange is not null)
+        else if (RemoveRadioButton.IsChecked is true && LengthToChange is not null)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -55,9 +55,9 @@ public partial class AddOrRemoveWindow : Window
         if (Owner is not EditTextWindow etwOwner)
             return;
 
-        if (AddRadioButton.IsChecked == true)
+        if (AddRadioButton.IsChecked is true)
         {
-            if (BeginningRDBTN.IsChecked == true)
+            if (BeginningRDBTN.IsChecked is true)
             {
                 etwOwner.AddCharsToEachLine(TextToAddTextBox.Text, SpotInLine.Beginning);
             }
@@ -71,7 +71,7 @@ public partial class AddOrRemoveWindow : Window
             if (LengthToChange is null)
                 return;
 
-            if (BeginningRDBTN.IsChecked == true)
+            if (BeginningRDBTN.IsChecked is true)
             {
                 etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.Beginning);
             }
@@ -89,7 +89,7 @@ public partial class AddOrRemoveWindow : Window
         if (sender is not RadioButton removeRadioButton)
             return;
 
-        if (removeRadioButton.IsChecked == true)
+        if (removeRadioButton.IsChecked is true)
         {
             TextToAddTextBox.IsEnabled = false;
             LengthTextBox.IsEnabled = true;
@@ -106,7 +106,7 @@ public partial class AddOrRemoveWindow : Window
         if (sender is not TextBox addTextTextBox)
             return;
 
-        if (AddRadioButton.IsChecked == true)
+        if (AddRadioButton.IsChecked is true)
         {
             if (addTextTextBox.Text is String textFromBox)
                 TextToAdd = textFromBox;
@@ -118,7 +118,7 @@ public partial class AddOrRemoveWindow : Window
             {
                 bool success = Int32.TryParse(textFromBox, out int lengthString);
 
-                if (success == false)
+                if (!success)
                     LengthToChange = null;
                 else
                     LengthToChange = lengthString;
@@ -130,7 +130,8 @@ public partial class AddOrRemoveWindow : Window
     {
         if (e.Key == Key.Escape)
         {
-            if (string.IsNullOrWhiteSpace(TextToAddTextBox.Text) == false || string.IsNullOrEmpty(LengthTextBox.Text) == false)
+            if (!string.IsNullOrWhiteSpace(TextToAddTextBox.Text)
+                || !string.IsNullOrEmpty(LengthTextBox.Text))
             {
                 LengthTextBox.Clear();
                 TextToAddTextBox.Clear();

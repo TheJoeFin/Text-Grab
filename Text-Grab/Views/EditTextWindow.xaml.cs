@@ -225,7 +225,7 @@ public partial class EditTextWindow : Window
 
     private async void Clipboard_ContentChanged(object? sender, object e)
     {
-        if (ClipboardWatcherMenuItem.IsChecked == false || _IsAccessingClipboard)
+        if (ClipboardWatcherMenuItem.IsChecked is false || _IsAccessingClipboard)
             return;
 
         _IsAccessingClipboard = true;
@@ -475,7 +475,7 @@ public partial class EditTextWindow : Window
         int selectionIndex = PassedTextControl.SelectionStart;
         int indexOfNextNewline = textBoxText.Length;
 
-        if (PassedTextControl.Text.EndsWith(Environment.NewLine) == false)
+        if (!PassedTextControl.Text.EndsWith(Environment.NewLine))
         {
             PassedTextControl.Text += Environment.NewLine;
         }
@@ -969,7 +969,7 @@ public partial class EditTextWindow : Window
         int selectionLength = PassedTextControl.SelectionLength;
         string textBoxText = PassedTextControl.Text;
 
-        if (textBoxText.EndsWith(Environment.NewLine) == false)
+        if (!textBoxText.EndsWith(Environment.NewLine))
             textBoxText += Environment.NewLine;
 
         IEnumerable<int> allNewLines = textBoxText.AllIndexesOf(Environment.NewLine);

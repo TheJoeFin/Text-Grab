@@ -131,7 +131,7 @@ public partial class App : System.Windows.Application
         // Need to dispatch to UI thread if performing UI operations
         Dispatcher.BeginInvoke((Action)(() =>
         {
-            if (String.IsNullOrWhiteSpace(argsInvoked) == false)
+            if (!String.IsNullOrWhiteSpace(argsInvoked))
             {
                 EditTextWindow mtw = new(argsInvoked);
                 mtw.Show();

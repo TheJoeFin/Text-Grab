@@ -67,7 +67,7 @@ public partial class FullscreenGrab : Window
 
         SetImageToBackground();
 
-        if (Settings.Default.FSGMakeSingleLineToggle == true)
+        if (Settings.Default.FSGMakeSingleLineToggle)
             SingleLineMenuItem.IsChecked = true;
 
         TopButtonsStackPanel.Visibility = Visibility.Visible;
@@ -226,7 +226,7 @@ public partial class FullscreenGrab : Window
 
     private async void FreezeUnfreeze(bool Activate)
     {
-        if (FreezeMenuItem.IsChecked == true)
+        if (FreezeMenuItem.IsChecked is true)
         {
             TopButtonsStackPanel.Visibility = Visibility.Collapsed;
             BackgroundBrush.Opacity = 0;
@@ -353,7 +353,7 @@ public partial class FullscreenGrab : Window
                 if (numberPressed <= numberOfLanguages
                     && numberPressed - 1 >= 0
                     && numberPressed - 1 != LanguagesComboBox.SelectedIndex
-                    && isComboBoxReady == true)
+                    && isComboBoxReady)
                     LanguagesComboBox.SelectedIndex = numberPressed - 1;
                 break;
             default:
@@ -363,7 +363,7 @@ public partial class FullscreenGrab : Window
 
     private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
-        if (isSelecting == false)
+        if (!isSelecting)
             return;
 
         isSelecting = false;
@@ -408,7 +408,7 @@ public partial class FullscreenGrab : Window
 
         string grabbedText = "";
 
-        if (NewGrabFrameMenuItem.IsChecked == true)
+        if (NewGrabFrameMenuItem.IsChecked is true)
         {
             // Make a new GrabFrame and show it on screen
             // Then place it where the user just drew the region
@@ -456,14 +456,14 @@ public partial class FullscreenGrab : Window
         if (Settings.Default.CorrectErrors)
             grabbedText.TryFixEveryWordLetterNumberErrors();
 
-        if (SingleLineMenuItem.IsChecked == true)
+        if (SingleLineMenuItem.IsChecked is true)
             grabbedText = grabbedText.MakeStringSingleLine();
 
-        if (string.IsNullOrWhiteSpace(grabbedText) == false)
+        if (!string.IsNullOrWhiteSpace(grabbedText))
         {
             textFromOCR = grabbedText;
 
-            if (Settings.Default.NeverAutoUseClipboard == false
+            if (!Settings.Default.NeverAutoUseClipboard
                 && DestinationTextBox is null)
                 try { Clipboard.SetDataObject(grabbedText, true); } catch { }
 
@@ -502,7 +502,7 @@ public partial class FullscreenGrab : Window
 
     private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is not ComboBox languageCmbBox || isComboBoxReady == false)
+        if (sender is not ComboBox languageCmbBox || !isComboBoxReady)
             return;
 
         Language? pickedLang = languageCmbBox.SelectedItem as Language;
