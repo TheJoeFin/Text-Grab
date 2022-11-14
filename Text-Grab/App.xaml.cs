@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Threading;
@@ -33,29 +34,27 @@ public partial class App : System.Windows.Application
 
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
-            string argsInvoked = toastArgs.Argument;
-            // Need to dispatch to UI thread if performing UI operations
-            Dispatcher.BeginInvoke((Action)(() =>
-            {
-                if (String.IsNullOrWhiteSpace(argsInvoked) == false)
-                {
-                    EditTextWindow mtw = new(argsInvoked);
-                    mtw.Show();
-                    handledArgument = true;
-                }
-            }));
+            handledArgument = LaunchFromToast(toastArgs, handledArgument);
         };
 
-        if (Settings.Default.RunInTheBackground == true
-            && NumberOfRunningInstances < 2)
+        handledArgument = HandleNotifyIcon(handledArgument);
+        handledArgument = await HandleStartupArgs(e, handledArgument);
+
+        if (!handledArgument)
         {
-            NotifyIconUtilities.SetupNotifyIcon();
-
-            if (Settings.Default.StartupOnLogin == true)
-                handledArgument = true;
+            if (Settings.Default.FirstRun)
+            {
+                ShowAndSetFirstRun();
+            }
+            else
+            {
+                DefaultLaunch();
+            }
         }
+    }
 
-
+    private static async Task<bool> HandleStartupArgs(StartupEventArgs e, bool handledArgument)
+    {
         for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
         {
             Debug.WriteLine($"ARG {i}:{e.Args[i]}");
@@ -109,41 +108,71 @@ public partial class App : System.Windows.Application
             }
         }
 
-        if (!handledArgument)
-        {
-            if (Settings.Default.FirstRun)
-            {
-                FirstRunWindow frw = new();
-                frw.Show();
+        return handledArgument;
+    }
 
-                Settings.Default.FirstRun = false;
-                Settings.Default.Save();
-            }
-            else
+    private bool HandleNotifyIcon(bool handledArgument)
+    {
+        if (Settings.Default.RunInTheBackground
+            && NumberOfRunningInstances < 2)
+        {
+            NotifyIconUtilities.SetupNotifyIcon();
+
+            if (Settings.Default.StartupOnLogin)
+                handledArgument = true;
+        }
+
+        return handledArgument;
+    }
+
+    private bool LaunchFromToast(ToastNotificationActivatedEventArgsCompat toastArgs, bool handledArgument)
+    {
+        string argsInvoked = toastArgs.Argument;
+        // Need to dispatch to UI thread if performing UI operations
+        Dispatcher.BeginInvoke((Action)(() =>
+        {
+            if (String.IsNullOrWhiteSpace(argsInvoked) == false)
             {
-                switch (Settings.Default.DefaultLaunch)
-                {
-                    case "Fullscreen":
-                        WindowUtilities.LaunchFullScreenGrab();
-                        break;
-                    case "GrabFrame":
-                        GrabFrame gf = new();
-                        gf.Show();
-                        break;
-                    case "EditText":
-                        EditTextWindow manipulateTextWindow = new();
-                        manipulateTextWindow.Show();
-                        break;
-                    case "QuickLookup":
-                        QuickSimpleLookup quickSimpleLookup = new();
-                        quickSimpleLookup.Show();
-                        break;
-                    default:
-                        EditTextWindow editTextWindow = new();
-                        editTextWindow.Show();
-                        break;
-                }
+                EditTextWindow mtw = new(argsInvoked);
+                mtw.Show();
+                handledArgument = true;
             }
+        }));
+        return handledArgument;
+    }
+
+    private static void ShowAndSetFirstRun()
+    {
+        FirstRunWindow frw = new();
+        frw.Show();
+
+        Settings.Default.FirstRun = false;
+        Settings.Default.Save();
+    }
+
+    public static void DefaultLaunch()
+    {
+        switch (Settings.Default.DefaultLaunch)
+        {
+            case "Fullscreen":
+                WindowUtilities.LaunchFullScreenGrab();
+                break;
+            case "GrabFrame":
+                GrabFrame gf = new();
+                gf.Show();
+                break;
+            case "EditText":
+                EditTextWindow manipulateTextWindow = new();
+                manipulateTextWindow.Show();
+                break;
+            case "QuickLookup":
+                QuickSimpleLookup quickSimpleLookup = new();
+                quickSimpleLookup.Show();
+                break;
+            default:
+                EditTextWindow editTextWindow = new();
+                editTextWindow.Show();
+                break;
         }
     }
 

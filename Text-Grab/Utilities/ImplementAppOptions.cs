@@ -7,17 +7,17 @@ namespace Text_Grab.Utilities;
 
 internal class ImplementAppOptions
 {
-    public static async Task ImplementStartupOption(bool startupOption)
+    public static async Task ImplementStartupOption(bool startupOnLogin)
     {
-        if (startupOption == true)
+        if (startupOnLogin)
             await SetForStartup();
         else
             RemoveFromStartup();
     }
 
-    public static void ImplementBackgroundOption(bool backgroundOption)
+    public static void ImplementBackgroundOption(bool runInBackground)
     {
-        if (backgroundOption == true)
+        if (runInBackground)
         {
             // Get strongly-typed current application
             NotifyIconUtilities.SetupNotifyIcon();
