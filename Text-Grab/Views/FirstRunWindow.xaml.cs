@@ -24,18 +24,19 @@ public partial class FirstRunWindow : Window
     {
         if (System.Windows.Application.Current.Windows.Count == 1)
         {
-            switch (Settings.Default.DefaultLaunch)
+            DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+            switch (defaultLaunchSetting)
             {
-                case "Fullscreen":
+                case DefaultLaunchSetting.Fullscreen:
                     WindowUtilities.LaunchFullScreenGrab(true);
                     break;
-                case "GrabFrame":
+                case DefaultLaunchSetting.GrabFrame:
                     WindowUtilities.OpenOrActivateWindow<GrabFrame>();
                     break;
-                case "EditText":
+                case DefaultLaunchSetting.EditText:
                     WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
                     break;
-                case "QuickLookup":
+                case DefaultLaunchSetting.QuickLookup:
                     WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
                     break;
                 default:
@@ -48,18 +49,19 @@ public partial class FirstRunWindow : Window
 
     private async void FirstRun_Loaded(object sender, RoutedEventArgs e)
     {
-        switch (Settings.Default.DefaultLaunch)
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        switch (defaultLaunchSetting)
         {
-            case "Fullscreen":
+            case DefaultLaunchSetting.Fullscreen:
                 FullScreenRDBTN.IsChecked = true;
                 break;
-            case "GrabFrame":
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrameRDBTN.IsChecked = true;
                 break;
-            case "EditText":
+            case DefaultLaunchSetting.EditText:
                 EditWindowRDBTN.IsChecked = true;
                 break;
-            case "QuickLookup":
+            case DefaultLaunchSetting.QuickLookup:
                 QuickLookupRDBTN.IsChecked = true;
                 break;
             default:

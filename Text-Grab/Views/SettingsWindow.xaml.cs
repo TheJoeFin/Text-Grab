@@ -68,18 +68,19 @@ public partial class SettingsWindow : Window
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        switch (Settings.Default.DefaultLaunch)
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        switch (defaultLaunchSetting)
         {
-            case "Fullscreen":
+            case DefaultLaunchSetting.Fullscreen:
                 FullScreenRDBTN.IsChecked = true;
                 break;
-            case "GrabFrame":
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrameRDBTN.IsChecked = true;
                 break;
-            case "EditText":
+            case DefaultLaunchSetting.EditText:
                 EditTextRDBTN.IsChecked = true;
                 break;
-            case "QuickLookup":
+            case DefaultLaunchSetting.QuickLookup:
                 QuickLookupRDBTN.IsChecked = true;
                 break;
             default:

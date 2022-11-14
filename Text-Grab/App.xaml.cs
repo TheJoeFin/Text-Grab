@@ -152,20 +152,22 @@ public partial class App : System.Windows.Application
 
     public static void DefaultLaunch()
     {
-        switch (Settings.Default.DefaultLaunch)
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+
+        switch (defaultLaunchSetting)
         {
-            case "Fullscreen":
+            case DefaultLaunchSetting.Fullscreen:
                 WindowUtilities.LaunchFullScreenGrab();
                 break;
-            case "GrabFrame":
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrame gf = new();
                 gf.Show();
                 break;
-            case "EditText":
+            case DefaultLaunchSetting.EditText:
                 EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
                 break;
-            case "QuickLookup":
+            case DefaultLaunchSetting.QuickLookup:
                 QuickSimpleLookup quickSimpleLookup = new();
                 quickSimpleLookup.Show();
                 break;
