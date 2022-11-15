@@ -34,111 +34,128 @@ public partial class App : System.Windows.Application
 
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
-            handledArgument = LaunchFromToast(toastArgs, handledArgument);
+            LaunchFromToast(toastArgs);
         };
 
-        handledArgument = HandleNotifyIcon(handledArgument);
-        handledArgument = await HandleStartupArgs(e, handledArgument);
+        handledArgument = HandleNotifyIcon();
 
-        if (!handledArgument)
+        if (!handledArgument && e.Args.Length > 0)
+            handledArgument = await HandleStartupArgs(e.Args);
+
+        if (handledArgument)
+            return;
+
+        if (Settings.Default.FirstRun)
         {
-            if (Settings.Default.FirstRun)
-            {
-                ShowAndSetFirstRun();
-            }
-            else
-            {
-                DefaultLaunch();
-            }
+            ShowAndSetFirstRun();
+            return;
         }
+
+        DefaultLaunch();
     }
 
-    private static async Task<bool> HandleStartupArgs(StartupEventArgs e, bool handledArgument)
+    private static async Task<bool> HandleStartupArgs(string[] args)
     {
-        for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
+        string currentArgument = args[0];
+
+        if (currentArgument.Contains("ToastActivated"))
         {
-            Debug.WriteLine($"ARG {i}:{e.Args[i]}");
-            if (e.Args[i].Contains("ToastActivated"))
-            {
-                Debug.WriteLine("Launched from toast");
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "Settings")
-            {
-                SettingsWindow sw = new();
-                sw.Show();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "GrabFrame")
-            {
+            Debug.WriteLine("Launched from toast");
+            return true;
+        }
+        else if (currentArgument == "Settings")
+        {
+            SettingsWindow sw = new();
+            sw.Show();
+            return true;
+        }
+
+        bool isStandardMode = Enum.TryParse<DefaultLaunchSetting>(currentArgument, true, out DefaultLaunchSetting launchMode);
+
+        if (isStandardMode)
+        {
+            LaunchStandardMode(launchMode);
+            return true;
+        }
+
+        bool openedFile = TryToOpenFile(currentArgument);
+        if (openedFile)
+            return true;
+
+        return await CheckForOcringFolder(currentArgument);
+    }
+
+    private static bool TryToOpenFile(string possiblePath)
+    {
+        if (!File.Exists(possiblePath))
+            return false;
+
+        EditTextWindow manipulateTextWindow = new();
+        manipulateTextWindow.OpenThisPath(possiblePath);
+        manipulateTextWindow.Show();
+        return true;
+    }
+
+    private static async Task<bool> CheckForOcringFolder(string currentArgument)
+    {
+        if (!Directory.Exists(currentArgument))
+            return false;
+
+        EditTextWindow manipulateTextWindow = new();
+        manipulateTextWindow.Show();
+        await manipulateTextWindow.OcrAllImagesInFolder(currentArgument, false, false);
+        return true;
+    }
+
+    private static void LaunchStandardMode(DefaultLaunchSetting launchMode)
+    {
+        switch (launchMode)
+        {
+            case DefaultLaunchSetting.EditText:
+                EditTextWindow manipulateTextWindow = new();
+                manipulateTextWindow.Show();
+                break;
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrame gf = new();
                 gf.Show();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "Fullscreen")
-            {
+                break;
+            case DefaultLaunchSetting.Fullscreen:
                 WindowUtilities.LaunchFullScreenGrab();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "EditText")
-            {
-                EditTextWindow manipulateTextWindow = new();
-                manipulateTextWindow.Show();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "QuickLookup")
-            {
+                break;
+            case DefaultLaunchSetting.QuickLookup:
                 QuickSimpleLookup qsl = new();
                 qsl.Show();
-                handledArgument = true;
-            }
-            else if (File.Exists(e.Args[i]))
-            {
-                EditTextWindow manipulateTextWindow = new();
-                manipulateTextWindow.OpenThisPath(e.Args[i]);
-                manipulateTextWindow.Show();
-                handledArgument = true;
-            }
-            else if (Directory.Exists(e.Args[i]))
-            {
-                EditTextWindow manipulateTextWindow = new();
-                manipulateTextWindow.Show();
-                await manipulateTextWindow.OcrAllImagesInFolder(e.Args[i], false, false);
-                handledArgument = true;
-            }
+                break;
+            default:
+                break;
         }
-
-        return handledArgument;
     }
 
-    private bool HandleNotifyIcon(bool handledArgument)
+    private bool HandleNotifyIcon()
     {
-        if (Settings.Default.RunInTheBackground
-            && NumberOfRunningInstances < 2)
+        if (Settings.Default.RunInTheBackground && NumberOfRunningInstances < 2)
         {
             NotifyIconUtilities.SetupNotifyIcon();
 
             if (Settings.Default.StartupOnLogin)
-                handledArgument = true;
+                return true;
         }
 
-        return handledArgument;
+        return false;
     }
 
-    private bool LaunchFromToast(ToastNotificationActivatedEventArgsCompat toastArgs, bool handledArgument)
+    private void LaunchFromToast(ToastNotificationActivatedEventArgsCompat toastArgs)
     {
         string argsInvoked = toastArgs.Argument;
+        if (String.IsNullOrWhiteSpace(argsInvoked))
+            return;
+
         // Need to dispatch to UI thread if performing UI operations
         Dispatcher.BeginInvoke((Action)(() =>
         {
-            if (!String.IsNullOrWhiteSpace(argsInvoked))
-            {
-                EditTextWindow mtw = new(argsInvoked);
-                mtw.Show();
-                handledArgument = true;
-            }
+            EditTextWindow mtw = new(argsInvoked);
+            mtw.Show();
         }));
-        return handledArgument;
     }
 
     private static void ShowAndSetFirstRun()
