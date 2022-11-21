@@ -47,7 +47,7 @@ public static class ImageMethods
         return dest;
     }
 
-    internal static Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
+    public static Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
     {
         using MemoryStream outStream = new();
 
@@ -60,7 +60,7 @@ public static class ImageMethods
         return new Bitmap(bitmap);
     }
 
-    internal static BitmapImage BitmapToImageSource(Bitmap bitmap)
+    public static BitmapImage BitmapToImageSource(Bitmap bitmap)
     {
         using MemoryStream memory = new();
 
@@ -78,7 +78,7 @@ public static class ImageMethods
         return bitmapimage;
     }
 
-    internal static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
+    public static async Task<string> GetRegionsText(Window? passedWindow, Rectangle selectedRegion, Language? language)
     {
         System.Windows.Point absPosPoint;
 
@@ -104,7 +104,7 @@ public static class ImageMethods
         return ocrText.Trim();
     }
 
-    internal static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
+    public static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
     {
         bool isGrabFrame = false;
         if (passedWindow is GrabFrame)
@@ -134,13 +134,13 @@ public static class ImageMethods
         return bmp;
     }
 
-    internal static ImageSource GetWindowBoundsImage(Window passedWindow)
+    public static ImageSource GetWindowBoundsImage(Window passedWindow)
     {
         Bitmap bmp = GetWindowsBoundsBitmap(passedWindow);
         return BitmapToImageSource(bmp);
     }
 
-    internal static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language? OcrLang)
+    public static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language? OcrLang)
     {
         DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
         using Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -435,5 +435,14 @@ public static class ImageMethods
         }
 
         return selectedLanguage;
+    }
+
+    public static async Task<string> OcrAbsoluteFilePath(string absolutePath)
+    {
+        Uri fileURI = new(absolutePath, UriKind.Absolute);
+        BitmapImage droppedImage = new(fileURI);
+        droppedImage.Freeze();
+        Bitmap bmp = BitmapImageToBitmap(droppedImage);
+        return await ExtractText(bmp);
     }
 }

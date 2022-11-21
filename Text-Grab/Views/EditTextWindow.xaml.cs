@@ -421,14 +421,9 @@ public partial class EditTextWindow : Window
 
         if (imageExtensions.Contains(Path.GetExtension(OpenedFilePath).ToLower()))
         {
-            Uri fileURI = new(OpenedFilePath);
-
             try
             {
-                BitmapImage droppedImage = new(fileURI);
-                droppedImage.Freeze();
-                Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-                stringBuilder.Append(await ImageMethods.ExtractText(bmp));
+                stringBuilder.Append(await ImageMethods.OcrAbsoluteFilePath(OpenedFilePath));
             }
             catch (Exception)
             {
@@ -1503,14 +1498,10 @@ public partial class EditTextWindow : Window
     private static async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
     {
         StringBuilder returnString = new();
-        Uri fileURI = new(path);
         returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            BitmapImage droppedImage = new(fileURI);
-            droppedImage.Freeze();
-            Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-            string ocrdText = await ImageMethods.ExtractText(bmp, null, selectedLanguage);
+            string ocrdText = await ImageMethods.OcrAbsoluteFilePath(path);
 
             if (!string.IsNullOrWhiteSpace(ocrdText))
             {
