@@ -52,9 +52,13 @@ Couier New
 
     private string getPathToImages(string imageRelativePath)
     {
-        var codeBaseUrl = new Uri(System.AppDomain.CurrentDomain.BaseDirectory);
-        var codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-        var dirPath = Path.GetDirectoryName(codeBasePath);
+        Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
+        string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
+        string? dirPath = Path.GetDirectoryName(codeBasePath);
+
+        if (dirPath is null)
+            dirPath = "";
+
         return Path.Combine(dirPath, imageRelativePath);
     }
 }
