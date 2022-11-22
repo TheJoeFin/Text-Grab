@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Reflection;
 using System.Windows.Media.Imaging;
 using Text_Grab;
 
@@ -19,10 +20,10 @@ Helvetica-Narrow
 Bookman-Demi
 ";
 
-        string testImagePath = @"C:\Users\jfinney\Documents\Text Grab\Text-Grab\Text-Grab\Images\font_sample.png";
+        string testImagePath = @".\Images\font_sample.png";
 
         // When
-        string ocrTextResult = await ImageMethods.OcrAbsoluteFilePath(testImagePath);
+        string ocrTextResult = await ImageMethods.OcrAbsoluteFilePath(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -40,12 +41,20 @@ Rockwell Condensed
 Couier New
 ";
 
-        string testImagePath = @"C:\Users\jfinney\Documents\Text Grab\Text-Grab\Text-Grab\Images\FontTest.png";
-
+        string testImagePath = @".\Images\FontTest.png";
+        Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await ImageMethods.OcrAbsoluteFilePath(testImagePath);
+        string ocrTextResult = await ImageMethods.OcrAbsoluteFilePath(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
+    }
+
+    private string getPathToImages(string imageRelativePath)
+    {
+        var codeBaseUrl = new Uri(System.AppDomain.CurrentDomain.BaseDirectory);
+        var codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
+        var dirPath = Path.GetDirectoryName(codeBasePath);
+        return Path.Combine(dirPath, imageRelativePath);
     }
 }

@@ -25,4 +25,13 @@
     <ProjectReference Include="..\Text-Grab\Text-Grab.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Images\FontTest.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Images\font_sample.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
