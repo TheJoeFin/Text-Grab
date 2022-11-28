@@ -366,16 +366,11 @@ public partial class GrabFrame : Window
         if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
             (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize, currentLang);
 
-        if (currentLang is not null)
-        {
-            if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase))
-                isSpaceJoining = false;
-            else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase))
-                isSpaceJoining = false;
-        }
-
         if (ocrResultOfWindow == null)
             return;
+
+        if (currentLang is not null)
+            isSpaceJoining = ImageMethods.IsLanguageSpaceJoining(currentLang);
 
         System.Drawing.Bitmap? bmp = null;
 

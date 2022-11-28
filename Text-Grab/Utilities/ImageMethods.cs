@@ -166,12 +166,7 @@ public static class ImageMethods
         if (selectedLanguage == null)
             return "";
 
-        bool isSpaceJoiningOCRLang = true;
-
-        if (selectedLanguage.LanguageTag.StartsWith("zh-", StringComparison.InvariantCultureIgnoreCase))
-            isSpaceJoiningOCRLang = false;
-        else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase))
-            isSpaceJoiningOCRLang = false;
+        bool isSpaceJoiningOCRLang = IsLanguageSpaceJoining(selectedLanguage);
 
         XmlLanguage lang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
         CultureInfo culture = lang.GetEquivalentCulture();
@@ -218,6 +213,15 @@ public static class ImageMethods
         }
 
         return text.ToString();
+    }
+
+    public static bool IsLanguageSpaceJoining(Language selectedLanguage)
+    {
+        if (selectedLanguage.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase))
+            return false;
+        else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase))
+            return false;
+        return true;
     }
 
     private static void GetTextFromClickedWord(Point singlePoint, StringBuilder text, OcrResult ocrResult, List<double> heightsList)
