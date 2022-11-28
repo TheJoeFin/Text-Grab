@@ -83,35 +83,92 @@ public partial class EditTextWindow : Window
         InitializeComponent();
 
         if (isEncoded)
-        {
-            string rawEncodedString = possiblyEndcodedString.Substring(5);
-            try
-            {
-                // restore the padding '=' in base64 string
-                switch (rawEncodedString.Length % 4)
-                {
-                    case 2: rawEncodedString += "=="; break;
-                    case 3: rawEncodedString += "="; break;
-                }
-                byte[] encodedBytes = Convert.FromBase64String(rawEncodedString);
-                string copiedText = Encoding.UTF8.GetString(encodedBytes);
-                PassedTextControl.Text = copiedText;
-            }
-            catch (Exception ex)
-            {
-                PassedTextControl.Text = rawEncodedString;
-                PassedTextControl.Text += ex.Message;
-            }
-        }
+            ReadEncodedString(possiblyEndcodedString);
         else
-        {
             PassedTextControl.Text = possiblyEndcodedString;
-        }
 
         LaunchedFromNotification = true;
     }
 
+    private void ReadEncodedString(string possiblyEndcodedString)
+    {
+        string rawEncodedString = possiblyEndcodedString.Substring(5);
+        try
+        {
+            // restore the padding '=' in base64 string
+            switch (rawEncodedString.Length % 4)
+            {
+                case 2: rawEncodedString += "=="; break;
+                case 3: rawEncodedString += "="; break;
+            }
+            byte[] encodedBytes = Convert.FromBase64String(rawEncodedString);
+            string copiedText = Encoding.UTF8.GetString(encodedBytes);
+            PassedTextControl.Text = copiedText;
+        }
+        catch (Exception ex)
+        {
+            PassedTextControl.Text = rawEncodedString;
+            PassedTextControl.Text += ex.Message;
+        }
+    }
+
     private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        SetupRoutedCommands();
+
+        PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
+        if (PassedTextControl.ContextMenu != null)
+            numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
+
+        CheckRightToLeftLanguage();
+
+        RestoreWindowSettings();
+
+        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
+        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+    }
+
+    private void RestoreWindowSettings()
+    {
+        if (Settings.Default.EditWindowStartFullscreen
+                    && string.IsNullOrWhiteSpace(OpenedFilePath)
+                    && !LaunchedFromNotification)
+        {
+            WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
+            LaunchFullscreenOnLoad.IsChecked = true;
+            prevWindowState = this.WindowState;
+            WindowState = WindowState.Minimized;
+        }
+
+        if (Settings.Default.EditWindowIsOnTop)
+        {
+            AlwaysOnTop.IsChecked = true;
+            Topmost = true;
+        }
+
+        if (!Settings.Default.EditWindowIsWordWrapOn)
+        {
+            WrapTextMenuItem.IsChecked = false;
+            PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+        }
+
+        if (Settings.Default.EditWindowBottomBarIsHidden)
+        {
+            HideBottomBarMenuItem.IsChecked = true;
+            BottomBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void CheckRightToLeftLanguage()
+    {
+        string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
+        XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
+        selectedCultureInfo = lang.GetEquivalentCulture();
+        if (selectedCultureInfo.TextInfo.IsRightToLeft)
+            PassedTextControl.TextAlignment = TextAlignment.Right;
+    }
+
+    private void SetupRoutedCommands()
     {
         RoutedCommand newFullscreenGrab = new();
         _ = newFullscreenGrab.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control));
@@ -172,49 +229,6 @@ public partial class EditTextWindow : Window
         RoutedCommand EscapeKeyed = new();
         _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));
         _ = CommandBindings.Add(new CommandBinding(EscapeKeyed, KeyedEscape));
-
-        PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
-        if (PassedTextControl.ContextMenu != null)
-            numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
-
-        string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-        XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
-        selectedCultureInfo = lang.GetEquivalentCulture();
-        if (selectedCultureInfo.TextInfo.IsRightToLeft)
-        {
-            PassedTextControl.TextAlignment = TextAlignment.Right;
-        }
-
-        if (Settings.Default.EditWindowStartFullscreen
-            && string.IsNullOrWhiteSpace(OpenedFilePath)
-            && !LaunchedFromNotification)
-        {
-            WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
-            LaunchFullscreenOnLoad.IsChecked = true;
-            prevWindowState = this.WindowState;
-            WindowState = WindowState.Minimized;
-        }
-
-        if (Settings.Default.EditWindowIsOnTop)
-        {
-            AlwaysOnTop.IsChecked = true;
-            Topmost = true;
-        }
-
-        if (!Settings.Default.EditWindowIsWordWrapOn)
-        {
-            WrapTextMenuItem.IsChecked = false;
-            PassedTextControl.TextWrapping = TextWrapping.NoWrap;
-        }
-
-        if (Settings.Default.EditWindowBottomBarIsHidden)
-        {
-            HideBottomBarMenuItem.IsChecked = true;
-            BottomBar.Visibility = Visibility.Collapsed;
-        }
-
-        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
-        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
     }
 
     private void KeyedEscape(object sender, ExecutedRoutedEventArgs e)
@@ -307,19 +321,12 @@ public partial class EditTextWindow : Window
 
     private void ToggleCaseCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        string text;
         bool containsLetters = false;
-
-        if (PassedTextControl.SelectionLength == 0)
-            text = PassedTextControl.Text;
-        else
-            text = PassedTextControl.SelectedText;
+        string text = GetSelectedTextOrAllText();
 
         foreach (char letter in text)
-        {
             if (char.IsLetter(letter))
                 containsLetters = true;
-        }
 
         if (containsLetters)
             e.CanExecute = true;
@@ -330,15 +337,10 @@ public partial class EditTextWindow : Window
 
     private void ToggleCase(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string textToModify;
-
-        if (PassedTextControl.SelectionLength == 0)
-            textToModify = PassedTextControl.Text;
-        else
-            textToModify = PassedTextControl.SelectedText;
+        string textToModify = GetSelectedTextOrAllText();
 
         if (CaseStatusOfToggle == CurrentCase.Unknown)
-            CaseStatusOfToggle = DetermineToggleCase(textToModify);
+            CaseStatusOfToggle = StringMethods.DetermineToggleCase(textToModify);
 
         TextInfo currentTI = selectedCultureInfo.TextInfo;
 
@@ -366,28 +368,14 @@ public partial class EditTextWindow : Window
             PassedTextControl.SelectedText = textToModify;
     }
 
-    private static CurrentCase DetermineToggleCase(string textToModify)
+    private string GetSelectedTextOrAllText()
     {
-        bool isAllLower = true;
-        bool isAllUpper = true;
-
-        foreach (char letter in textToModify)
-        {
-            if (char.IsLower(letter))
-            {
-                isAllUpper = false;
-            }
-            if (char.IsUpper(letter))
-            {
-                isAllLower = false;
-            }
-        }
-
-        if (!isAllLower
-            && isAllUpper)
-            return CurrentCase.Lower;
-
-        return CurrentCase.Camel;
+        string textToModify;
+        if (PassedTextControl.SelectionLength == 0)
+            textToModify = PassedTextControl.Text;
+        else
+            textToModify = PassedTextControl.SelectedText;
+        return textToModify;
     }
 
     private void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
@@ -599,13 +587,7 @@ public partial class EditTextWindow : Window
 
     private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        string textToOperateOn;
-
-        if (PassedTextControl.SelectedText.Length > 0)
-            textToOperateOn = PassedTextControl.SelectedText;
-        else
-            textToOperateOn = PassedTextControl.Text;
-
+        string textToOperateOn = GetSelectedTextOrAllText();
 
         if (textToOperateOn.Contains(Environment.NewLine)
             || textToOperateOn.Contains('\r')
@@ -638,10 +620,8 @@ public partial class EditTextWindow : Window
 
         string finalString = "";
         foreach (string line in stringSplit)
-        {
             if (!string.IsNullOrWhiteSpace(line))
                 finalString += line.Trim() + Environment.NewLine;
-        }
 
         PassedTextControl.Text = finalString;
     }
@@ -1052,17 +1032,11 @@ public partial class EditTextWindow : Window
         foreach (Window window in allWindows)
         {
             if (window is GrabFrame grabFrame)
-            {
                 grabFrame.IsFromEditWindow = false;
-            }
-            if (window is FullscreenGrab fullscreenGrab)
-            {
+            else if (window is FullscreenGrab fullscreenGrab)
                 fullscreenGrab.DestinationTextBox = null;
-            }
-            if (window is FindAndReplaceWindow findAndReplaceWindow)
-            {
+            else if (window is FindAndReplaceWindow findAndReplaceWindow)
                 findAndReplaceWindow.ShouldCloseWithThisETW(this);
-            }
         }
 
         WindowUtilities.ShouldShutDown();
@@ -1071,13 +1045,9 @@ public partial class EditTextWindow : Window
     private void ReplaceReservedCharsCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
         if (PassedTextControl.SelectionLength > 0)
-        {
             PassedTextControl.SelectedText = PassedTextControl.SelectedText.ReplaceReservedCharacters();
-        }
         else
-        {
             PassedTextControl.Text = PassedTextControl.Text.ReplaceReservedCharacters();
-        }
     }
 
     private void ReplaceReservedCharsCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1195,9 +1165,7 @@ public partial class EditTextWindow : Window
 
         while (baseContextMenu != null
             && baseContextMenu.Items.Count > numberOfContextMenuItems)
-        {
             baseContextMenu.Items.RemoveAt(0);
-        }
 
         PassedTextControl.ContextMenu = baseContextMenu;
         caretIndex = PassedTextControl.CaretIndex;
@@ -1292,13 +1260,9 @@ public partial class EditTextWindow : Window
             int numbOfSelectedLines = selStopLine - selStartLine;
 
             if (numbOfSelectedLines > 0)
-            {
                 BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
-            }
             else
-            {
                 BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
-            }
         }
     }
 

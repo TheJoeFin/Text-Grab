@@ -206,6 +206,30 @@ public static class StringMethods
         return toReturn;
     }
 
+    public static CurrentCase DetermineToggleCase(string textToModify)
+    {
+        bool isAllLower = true;
+        bool isAllUpper = true;
+
+        foreach (char letter in textToModify)
+        {
+            if (char.IsLower(letter))
+            {
+                isAllUpper = false;
+            }
+            if (char.IsUpper(letter))
+            {
+                isAllLower = false;
+            }
+        }
+
+        if (!isAllLower
+            && isAllUpper)
+            return CurrentCase.Lower;
+
+        return CurrentCase.Camel;
+    }
+
     public enum CharType { Letter, Number, Space, Special, Other };
 
     public class CharRun
