@@ -13,6 +13,7 @@ using Text_Grab.Properties;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using Windows.Storage.Streams;
 using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
 using Point = System.Windows.Point;
 
@@ -100,6 +101,22 @@ public static class OcrExtensions
 
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
         return await ocrEngine.RecognizeAsync(softwareBmp);
+    }
+
+    public async static Task<string> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, Language language)
+    {
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(randomAccessStream);
+        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(language);
+        OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
+
+        StringBuilder stringBuilder = new();
+
+        foreach (OcrLine line in ocrResult.Lines)
+            line.GetTextFromOcrLine(LanguageUtilities.IsLanguageSpaceJoining(language), stringBuilder);
+
+        return stringBuilder.ToString();
     }
 
     public async static Task<string> GetTextFromEntireBitmap(Bitmap bitmap, Language language)

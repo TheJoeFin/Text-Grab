@@ -22,6 +22,7 @@ using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
+using Windows.Storage.Streams;
 using Windows.System;
 using MessageBox = System.Windows.MessageBox;
 
@@ -62,6 +63,8 @@ public partial class EditTextWindow : Window
     public static RoutedCommand DeleteAllSelectionPatternCmd = new();
 
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
+
+    public static RoutedCommand PasteCommand = new();
 
     private int numberOfContextMenuItems;
 
@@ -124,6 +127,93 @@ public partial class EditTextWindow : Window
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+    }
+
+    private void CanPasteExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        _IsAccessingClipboard = true;
+        DataPackageView? dataPackageView = null;
+
+        try
+        {
+            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
+            e.CanExecute = false;
+        }
+        finally
+        {
+            _IsAccessingClipboard = false;
+        }
+
+        if (dataPackageView is null)
+        {
+            e.CanExecute = false;
+            return;
+        }
+
+        if (dataPackageView.Contains(StandardDataFormats.Text))
+            e.CanExecute = true;
+        else if (dataPackageView.Contains(StandardDataFormats.Bitmap))
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
+    }
+
+    private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
+    {
+        _IsAccessingClipboard = true;
+        DataPackageView? dataPackageView = null;
+
+        try
+        {
+            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
+        }
+
+        if (dataPackageView is null)
+        {
+            _IsAccessingClipboard = false;
+            return;
+        }
+
+        if (dataPackageView.Contains(StandardDataFormats.Text))
+        {
+            try
+            {
+                string textFromClipboard = await dataPackageView.GetTextAsync();
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(textFromClipboard); }));
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"error with dataPackageView.GetTextAsync(). Exception Message: {ex.Message}");
+            }
+        }
+        else if (dataPackageView.Contains(StandardDataFormats.Bitmap))
+        {
+            try
+            {
+                RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
+                using IRandomAccessStream stream = await streamReference.OpenReadAsync();
+                string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"error with dataPackageView.GetBitmapAsync(). Exception Message: {ex.Message}");
+            }
+        }
+
+        _IsAccessingClipboard = false;
+
+        if (e is not null)
+            e.Handled = true;
     }
 
     private void RestoreWindowSettings()
@@ -221,9 +311,21 @@ public partial class EditTextWindow : Window
         _ = selectWordCommand.InputGestures.Add(new KeyGesture(Key.W, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(selectWordCommand, SelectWord));
 
+        System.Windows.DataObject.AddPastingHandler(PassedTextControl, OnPaste);
+
+        RoutedCommand pasteCommand = new();
+        _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
+
         RoutedCommand EscapeKeyed = new();
         _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));
         _ = CommandBindings.Add(new CommandBinding(EscapeKeyed, KeyedEscape));
+    }
+
+    private void OnPaste(object sender, DataObjectPastingEventArgs e)
+    {
+        e.Handled = true;
+        PasteExecuted(sender);
     }
 
     private void KeyedEscape(object sender, ExecutedRoutedEventArgs e)
@@ -268,7 +370,7 @@ public partial class EditTextWindow : Window
 
     private void AddCopiedTextToTextBox(string textToAdd)
     {
-        PassedTextControl.AppendText(Environment.NewLine + textToAdd);
+        PassedTextControl.SelectedText = textToAdd;
     }
 
     private void Window_Initialized(object sender, EventArgs e)
