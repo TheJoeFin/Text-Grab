@@ -14,8 +14,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Markup;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -161,10 +159,7 @@ public partial class EditTextWindow : Window
 
     private void CheckRightToLeftLanguage()
     {
-        string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-        XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
-        selectedCultureInfo = lang.GetEquivalentCulture();
-        if (selectedCultureInfo.TextInfo.IsRightToLeft)
+        if (LanguageUtilities.IsLanguageRightToLeft(LanguageUtilities.GetCurrentInputLanguage()))
             PassedTextControl.TextAlignment = TextAlignment.Right;
     }
 

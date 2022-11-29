@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Input;
+using System.Windows.Markup;
 using Text_Grab.Properties;
 using Windows.Globalization;
 using Windows.Media.Ocr;
@@ -20,11 +22,23 @@ public static class LanguageUtilities
         return true;
     }
 
-    public static Language GetOCRLanguage()
+    public static bool IsLanguageRightToLeft(Language language)
+    {
+        XmlLanguage lang = XmlLanguage.GetLanguage(language.LanguageTag);
+        CultureInfo culture = lang.GetEquivalentCulture();
+        return culture.TextInfo.IsRightToLeft;
+    }
+
+    public static Language GetCurrentInputLanguage()
     {
         // use currently selected Language
         string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-        Language selectedLanguage = new(inputLang);
+        return new(inputLang);
+    }
+
+    public static Language GetOCRLanguage()
+    {
+        Language selectedLanguage = GetCurrentInputLanguage();
 
         if (!string.IsNullOrEmpty(Settings.Default.LastUsedLang))
             selectedLanguage = new(Settings.Default.LastUsedLang);

@@ -442,6 +442,9 @@ public partial class FullscreenGrab : Window
 
         Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
 
+        if (selectedOcrLang is null)
+            selectedOcrLang = LanguageUtilities.GetOCRLanguage();
+
         if (regionScaled.Width < 3 || regionScaled.Height < 3)
         {
             BackgroundBrush.Opacity = 0;

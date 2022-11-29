@@ -2,15 +2,12 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Markup;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Properties;
 using Windows.Globalization;
@@ -65,31 +62,22 @@ public static class OcrExtensions
         }
     }
 
-    public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language? language)
+    public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language language)
     {
         Point absPosPoint = passedWindow.GetAbsolutePosition();
-
-        if (language is null)
-            language = LanguageUtilities.GetOCRLanguage();
 
         int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
 
-        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics g = Graphics.FromImage(bmp);
-
-        g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-        bmp = ImageMethods.PadImage(bmp);
+        Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
+        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
         return await GetTextFromEntireBitmap(bmp, language);
     }
 
     public static async Task<(OcrResult, double)> GetOcrResultFromRegion(Rectangle region, Language language)
     {
-        using Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics g = Graphics.FromImage(bmp);
-
-        g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
 
         double scale = await GetIdealScaleFactorForOCR(bmp, language);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
@@ -127,10 +115,7 @@ public static class OcrExtensions
         foreach (OcrLine ocrLine in ocrResult.Lines)
             ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
 
-        XmlLanguage lang = XmlLanguage.GetLanguage(language.LanguageTag);
-        CultureInfo culture = lang.GetEquivalentCulture();
-
-        if (culture.TextInfo.IsRightToLeft)
+        if (LanguageUtilities.IsLanguageRightToLeft(language))
             StringMethods.ReverseWordsForRightToLeft(text);
 
         if (Settings.Default.TryToReadBarcodes)
@@ -154,23 +139,10 @@ public static class OcrExtensions
         return await GetTextFromEntireBitmap(bmp, language);
     }
 
-    public static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language? OcrLang)
+    public static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language OcrLang)
     {
-        if (OcrLang is null)
-            OcrLang = LanguageUtilities.GetOCRLanguage();
-
-        DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
-        using Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics g = Graphics.FromImage(bmp);
-
-        Point absPosPoint = passedWindow.GetAbsolutePosition();
-        int thisCorrectedLeft = (int)absPosPoint.X;
-        int thisCorrectedTop = (int)absPosPoint.Y;
-
-        g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-
-        Point adjustedPoint = new(clickedPoint.X, clickedPoint.Y);
-        string ocrText = await GetTextFromClickedWord(adjustedPoint, bmp, OcrLang);
+        using Bitmap bmp = ImageMethods.GetWindowsBoundsBitmap(passedWindow);
+        string ocrText = await GetTextFromClickedWord(clickedPoint, bmp, OcrLang);
         return ocrText.Trim();
     }
 

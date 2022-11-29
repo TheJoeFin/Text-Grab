@@ -63,6 +63,16 @@ public static class ImageMethods
         return bitmapimage;
     }
 
+    public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region)
+    {
+        Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
+
+        g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        bmp = PadImage(bmp);
+        return bmp;
+    }
+
     public static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
     {
         bool isGrabFrame = false;
