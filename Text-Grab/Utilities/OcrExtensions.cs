@@ -2,16 +2,22 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Windows.Input;
+using System.Windows;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Text_Grab.Properties;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
+using Point = System.Windows.Point;
 
 namespace Text_Grab.Utilities;
 
@@ -59,6 +65,25 @@ public static class OcrExtensions
         }
     }
 
+    public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language? language)
+    {
+        Point absPosPoint = passedWindow.GetAbsolutePosition();
+
+        if (language is null)
+            language = LanguageUtilities.GetOCRLanguage();
+
+        int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
+        int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
+
+        Bitmap bmp = new(selectedRegion.Width, selectedRegion.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
+
+        g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        bmp = ImageMethods.PadImage(bmp);
+
+        return await GetTextFromEntireBitmap(bmp, language);
+    }
+
     public static async Task<(OcrResult, double)> GetOcrResultFromRegion(Rectangle region, Language language)
     {
         using Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -66,7 +91,7 @@ public static class OcrExtensions
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
 
-        double scale = await ImageMethods.GetIdealScaleFactor(bmp, language);
+        double scale = await GetIdealScaleFactorForOCR(bmp, language);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
 
         OcrResult ocrResult = await GetOcrResultFromBitmap(scaledBitmap, language);
@@ -89,36 +114,112 @@ public static class OcrExtensions
         return await ocrEngine.RecognizeAsync(softwareBmp);
     }
 
-    public static Language GetOCRLanguage()
+    public async static Task<string> GetTextFromEntireBitmap(Bitmap bitmap, Language language)
     {
-        // use currently selected Language
-        string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-        Language selectedLanguage = new(inputLang);
+        double scale = await GetIdealScaleFactorForOCR(bitmap, language);
+        Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
 
-        if (!string.IsNullOrEmpty(Settings.Default.LastUsedLang))
-            selectedLanguage = new(Settings.Default.LastUsedLang);
+        StringBuilder text = new();
 
-        List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(scaledBitmap, language);
+        bool isSpaceJoiningOCRLang = LanguageUtilities.IsLanguageSpaceJoining(language);
 
-        if (possibleOCRLangs.Count == 0)
+        foreach (OcrLine ocrLine in ocrResult.Lines)
+            ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
+
+        XmlLanguage lang = XmlLanguage.GetLanguage(language.LanguageTag);
+        CultureInfo culture = lang.GetEquivalentCulture();
+
+        if (culture.TextInfo.IsRightToLeft)
+            StringMethods.ReverseWordsForRightToLeft(text);
+
+        if (Settings.Default.TryToReadBarcodes)
         {
-            System.Windows.MessageBox.Show("No possible OCR languages are installed.", "Text Grab");
-            throw new Exception("No possible OCR languages are installed");
+            string barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
+
+            if (!string.IsNullOrWhiteSpace(barcodeResult))
+                text.AppendLine(barcodeResult);
         }
 
-        // If the selected input language or last used language is not a possible OCR Language
-        // then we need to find a similar language to use
-        if (possibleOCRLangs.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
-        {
-            List<Language> similarLanguages = possibleOCRLangs.Where(
-                la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
+        return text.ToString();
+    }
 
-            if (similarLanguages is not null && similarLanguages.Count > 0)
-                selectedLanguage = similarLanguages.First();
-            else
-                selectedLanguage = possibleOCRLangs.First();
+    public static async Task<string> OcrAbsoluteFilePath(string absolutePath)
+    {
+        Uri fileURI = new(absolutePath, UriKind.Absolute);
+        BitmapImage droppedImage = new(fileURI);
+        droppedImage.Freeze();
+        Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
+        Language language = LanguageUtilities.GetOCRLanguage();
+        return await GetTextFromEntireBitmap(bmp, language);
+    }
+
+    public static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language? OcrLang)
+    {
+        if (OcrLang is null)
+            OcrLang = LanguageUtilities.GetOCRLanguage();
+
+        DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
+        using Bitmap bmp = new((int)(passedWindow.ActualWidth * dpi.DpiScaleX), (int)(passedWindow.ActualHeight * dpi.DpiScaleY), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
+
+        Point absPosPoint = passedWindow.GetAbsolutePosition();
+        int thisCorrectedLeft = (int)absPosPoint.X;
+        int thisCorrectedTop = (int)absPosPoint.Y;
+
+        g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+
+        Point adjustedPoint = new(clickedPoint.X, clickedPoint.Y);
+        string ocrText = await GetTextFromClickedWord(adjustedPoint, bmp, OcrLang);
+        return ocrText.Trim();
+    }
+
+    private static async Task<string> GetTextFromClickedWord(Point singlePoint, Bitmap bitmap, Language language)
+    {
+        return GetTextFromClickedWord(singlePoint, await OcrExtensions.GetOcrResultFromBitmap(bitmap, language));
+    }
+
+    private static string GetTextFromClickedWord(Point singlePoint, OcrResult ocrResult)
+    {
+        Windows.Foundation.Point fPoint = new(singlePoint.X, singlePoint.Y);
+
+        foreach (OcrLine ocrLine in ocrResult.Lines)
+            foreach (OcrWord ocrWord in ocrLine.Words)
+                if (ocrWord.BoundingRect.Contains(fPoint))
+                    return ocrWord.Text;
+
+        return string.Empty;
+    }
+
+    public async static Task<double> GetIdealScaleFactorForOCR(Bitmap bitmap, Language selectedLanguage)
+    {
+        List<double> heightsList = new();
+        double scaleFactor = 1.5;
+
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(bitmap, selectedLanguage);
+
+        foreach (OcrLine ocrLine in ocrResult.Lines)
+            foreach (OcrWord ocrWord in ocrLine.Words)
+                heightsList.Add(ocrWord.BoundingRect.Height);
+
+        double lineHeight = 10;
+
+        if (heightsList.Count > 0)
+            lineHeight = heightsList.Average();
+
+        // Ideal Line Height is 40px
+        const double idealLineHeight = 40.0;
+
+        scaleFactor = idealLineHeight / lineHeight;
+
+        if (bitmap.Width * scaleFactor > OcrEngine.MaxImageDimension || bitmap.Height * scaleFactor > OcrEngine.MaxImageDimension)
+        {
+            int largerDim = Math.Max(bitmap.Width, bitmap.Height);
+            // find the largest possible scale factor, because the ideal scale factor is too high
+
+            scaleFactor = OcrEngine.MaxImageDimension / largerDim;
         }
 
-        return selectedLanguage;
+        return scaleFactor;
     }
 }

@@ -411,7 +411,7 @@ public partial class EditTextWindow : Window
         {
             try
             {
-                stringBuilder.Append(await ImageMethods.OcrAbsoluteFilePath(OpenedFilePath));
+                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePath(OpenedFilePath));
             }
             catch (Exception)
             {
@@ -1392,7 +1392,7 @@ public partial class EditTextWindow : Window
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(Environment.NewLine);
 
-        Language? selectedLanguage = OcrExtensions.GetOCRLanguage();
+        Language? selectedLanguage = LanguageUtilities.GetOCRLanguage();
         cancellationTokenForDirOCR = new();
         CancellationToken token = cancellationTokenForDirOCR.Token;
 
@@ -1465,7 +1465,7 @@ public partial class EditTextWindow : Window
         returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrdText = await ImageMethods.OcrAbsoluteFilePath(path);
+            string ocrdText = await OcrExtensions.OcrAbsoluteFilePath(path);
 
             if (!string.IsNullOrWhiteSpace(ocrdText))
             {

@@ -1,8 +1,4 @@
-using System;
-using System.Drawing;
-using System.Reflection;
-using System.Windows.Media.Imaging;
-using Text_Grab;
+using Text_Grab.Utilities;
 
 namespace Tests;
 
@@ -23,7 +19,7 @@ Bookman-Demi
         string testImagePath = @".\Images\font_sample.png";
 
         // When
-        string ocrTextResult = await ImageMethods.OcrAbsoluteFilePath(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -44,7 +40,7 @@ Couier New
         string testImagePath = @".\Images\FontTest.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await ImageMethods.OcrAbsoluteFilePath(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);

@@ -363,7 +363,7 @@ public partial class GrabFrame : Window
         double scale = 1;
         Language? currentLang = LanguagesComboBox.SelectedItem as Language;
         if (currentLang is null)
-            currentLang = OcrExtensions.GetOCRLanguage();
+            currentLang = LanguageUtilities.GetOCRLanguage();
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
             (ocrResultOfWindow, scale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, currentLang);
@@ -371,7 +371,7 @@ public partial class GrabFrame : Window
         if (ocrResultOfWindow is null)
             return;
 
-        isSpaceJoining = ImageMethods.IsLanguageSpaceJoining(currentLang);
+        isSpaceJoining = LanguageUtilities.IsLanguageSpaceJoining(currentLang);
 
         System.Drawing.Bitmap? bmp = null;
 
@@ -1491,7 +1491,7 @@ public partial class GrabFrame : Window
             return;
 
         IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
-        Language firstLang = OcrExtensions.GetOCRLanguage();
+        Language firstLang = LanguageUtilities.GetOCRLanguage();
 
         int count = 0;
 

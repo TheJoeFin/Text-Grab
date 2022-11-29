@@ -418,4 +418,35 @@ public static class StringMethods
         Regex regex = new(stringToRemove);
         return regex.Replace(stringToBeEdited, "");
     }
+
+    public static void ReverseWordsForRightToLeft(StringBuilder text)
+    {
+        string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
+
+        _ = text.Clear();
+        foreach (string textLine in textListLines)
+        {
+            bool firstWord = true;
+            bool isPrevWordSpaceJoining = false;
+            List<string> wordArray = textLine.Split().ToList();
+            wordArray.Reverse();
+
+            foreach (string wordText in wordArray)
+            {
+                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
+
+                if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
+                    _ = text.Append(wordText);
+                else
+                    _ = text.Append(' ').Append(wordText);
+
+                firstWord = false;
+                isPrevWordSpaceJoining = isThisWordSpaceJoining;
+            }
+
+            if (textLine.Length > 0)
+                _ = text.Append(Environment.NewLine);
+        }
+    }
 }

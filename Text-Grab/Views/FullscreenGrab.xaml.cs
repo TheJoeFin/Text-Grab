@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -111,7 +110,7 @@ public partial class FullscreenGrab : Window
             return;
 
         IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
-        Language firstLang = OcrExtensions.GetOCRLanguage();
+        Language firstLang = LanguageUtilities.GetOCRLanguage();
 
         int count = 0;
 
@@ -441,16 +440,16 @@ public partial class FullscreenGrab : Window
 
         try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
 
+        Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
+
         if (regionScaled.Width < 3 || regionScaled.Height < 3)
         {
             BackgroundBrush.Opacity = 0;
-            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
-            grabbedText = await ImageMethods.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
+            grabbedText = await OcrExtensions.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
         else
         {
-            Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
-            grabbedText = await ImageMethods.GetRegionsText(this, regionScaled, selectedOcrLang);
+            grabbedText = await OcrExtensions.GetRegionsText(this, regionScaled, selectedOcrLang);
         }
 
         if (Settings.Default.CorrectErrors)
