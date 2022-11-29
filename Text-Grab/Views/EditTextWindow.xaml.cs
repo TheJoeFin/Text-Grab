@@ -1392,7 +1392,7 @@ public partial class EditTextWindow : Window
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(Environment.NewLine);
 
-        Language? selectedLanguage = ImageMethods.GetOCRLanguage();
+        Language? selectedLanguage = OcrExtensions.GetOCRLanguage();
         cancellationTokenForDirOCR = new();
         CancellationToken token = cancellationTokenForDirOCR.Token;
 

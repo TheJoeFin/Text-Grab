@@ -111,7 +111,7 @@ public partial class FullscreenGrab : Window
             return;
 
         IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
-        Language? firstLang = ImageMethods.GetOCRLanguage();
+        Language firstLang = OcrExtensions.GetOCRLanguage();
 
         int count = 0;
 
