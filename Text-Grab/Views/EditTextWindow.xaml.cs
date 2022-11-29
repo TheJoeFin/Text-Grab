@@ -311,21 +311,13 @@ public partial class EditTextWindow : Window
         _ = selectWordCommand.InputGestures.Add(new KeyGesture(Key.W, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(selectWordCommand, SelectWord));
 
-        System.Windows.DataObject.AddPastingHandler(PassedTextControl, OnPaste);
-
         RoutedCommand pasteCommand = new();
-        _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control));
+        _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
 
         RoutedCommand EscapeKeyed = new();
         _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));
         _ = CommandBindings.Add(new CommandBinding(EscapeKeyed, KeyedEscape));
-    }
-
-    private void OnPaste(object sender, DataObjectPastingEventArgs e)
-    {
-        e.Handled = true;
-        PasteExecuted(sender);
     }
 
     private void KeyedEscape(object sender, ExecutedRoutedEventArgs e)
@@ -371,6 +363,10 @@ public partial class EditTextWindow : Window
     private void AddCopiedTextToTextBox(string textToAdd)
     {
         PassedTextControl.SelectedText = textToAdd;
+        int currentSelectionIndex = PassedTextControl.SelectionStart;
+        int currentSelectionLength = PassedTextControl.SelectionLength;
+
+        PassedTextControl.Select(currentSelectionIndex + currentSelectionLength, 0);
     }
 
     private void Window_Initialized(object sender, EventArgs e)

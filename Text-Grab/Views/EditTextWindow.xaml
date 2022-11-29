@@ -31,9 +31,9 @@
             <MenuItem Command="ApplicationCommands.Cut" />
             <MenuItem Command="ApplicationCommands.Copy" />
             <MenuItem 
-                Header="Paste" 
+                Header="OCR Paste" 
                 Command="{x:Static local:EditTextWindow.PasteCommand}" 
-                InputGestureText="Ctrl + V" />
+                InputGestureText="Ctrl + Shift + V" />
             <Separator />
             <MenuItem
                 Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
@@ -153,9 +153,9 @@
                 <MenuItem Command="ApplicationCommands.Cut" />
                 <MenuItem Command="ApplicationCommands.Copy" />
                 <MenuItem 
-                    Header="Paste" 
+                    Header="OCR Paste" 
                     Command="{x:Static local:EditTextWindow.PasteCommand}" 
-                    InputGestureText="Ctrl + V" />
+                    InputGestureText="Ctrl + Shift + V" />
                 <Separator />
                 <MenuItem
                     x:Name="SingleLineMenuItem"
