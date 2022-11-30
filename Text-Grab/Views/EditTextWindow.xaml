@@ -30,6 +30,7 @@
             <Separator />
             <MenuItem Command="ApplicationCommands.Cut" />
             <MenuItem Command="ApplicationCommands.Copy" />
+            <MenuItem Command="ApplicationCommands.Paste" />
             <MenuItem 
                 Header="OCR Paste" 
                 Command="{x:Static local:EditTextWindow.PasteCommand}" 
@@ -152,6 +153,7 @@
                 <Separator />
                 <MenuItem Command="ApplicationCommands.Cut" />
                 <MenuItem Command="ApplicationCommands.Copy" />
+                <MenuItem Command="ApplicationCommands.Paste" />
                 <MenuItem 
                     Header="OCR Paste" 
                     Command="{x:Static local:EditTextWindow.PasteCommand}" 
