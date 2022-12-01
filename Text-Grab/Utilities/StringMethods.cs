@@ -449,4 +449,61 @@ public static class StringMethods
                 _ = text.Append(Environment.NewLine);
         }
     }
+
+    public static string RemoveFromEachLine(this string stringToEdit, int numberOfChars, SpotInLine spotInLine)
+    {
+        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+
+        StringBuilder sb = new();
+        foreach (string line in splitString)
+        {
+            int lineLength = line.Length;
+            if (lineLength <= numberOfChars)
+            {
+                sb.AppendLine();
+                continue;
+            }
+
+            switch (spotInLine)
+            {
+                case SpotInLine.Beginning:
+                    sb.AppendLine(line.Substring(numberOfChars));
+                    break;
+                case SpotInLine.End:
+                    sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    public static string AddCharsToEachLine(this string stringToEdit, string stringToAdd, SpotInLine spotInLine)
+    {
+        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+
+        if (splitString.Length > 1)
+            if (splitString.LastOrDefault() == "")
+                Array.Resize(ref splitString, splitString.Length - 1);
+
+        StringBuilder sb = new();
+        foreach (string line in splitString)
+        {
+            switch (spotInLine)
+            {
+                case SpotInLine.Beginning:
+                    sb.AppendLine(stringToAdd + line);
+                    break;
+                case SpotInLine.End:
+                    sb.AppendLine(line + stringToAdd);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return sb.ToString().Trim();
+    }
 }

@@ -1379,26 +1379,27 @@ public partial class EditTextWindow : Window
             string chosenFolderPath = folderBrowserDialog1.SelectedPath;
             try
             {
-                IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
-                IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
-                StringBuilder listOfNames = new StringBuilder();
-                listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
-                foreach (string folder in folders)
-                {
-                    listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
-                }
-                foreach (string file in files)
-                {
-                    listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
-                }
-
-                PassedTextControl.AppendText(listOfNames.ToString());
+                PassedTextControl.AppendText(ListFilesFoldersInDirectory(chosenFolderPath));
             }
             catch (System.Exception ex)
             {
                 PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
             }
         }
+    }
+
+    private static string ListFilesFoldersInDirectory(string chosenFolderPath)
+    {
+        IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
+        IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
+        StringBuilder listOfNames = new StringBuilder();
+        listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+        foreach (string folder in folders)
+            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+
+        foreach (string file in files)
+            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+        return listOfNames.ToString();
     }
 
     private async void ReadFolderOfImages_Click(object sender, RoutedEventArgs e)
@@ -1508,22 +1509,7 @@ public partial class EditTextWindow : Window
 
         try
         {
-            await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, ct) =>
-            {
-                ct.ThrowIfCancellationRequested();
-
-                ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
-
-                // to get the TextBox to update whenever OCR Finishes:
-                if (!writeToTextFiles)
-                {
-                    await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        PassedTextControl.AppendText(ocrFile.OcrResult);
-                        PassedTextControl.ScrollToEnd();
-                    });
-                }
-            });
+            await OcrAllImagesInParallel(writeToTextFiles, selectedLanguage, parallelOptions, ocrFileResults);
 
             PassedTextControl.AppendText(Environment.NewLine);
             PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
@@ -1550,6 +1536,26 @@ public partial class EditTextWindow : Window
 
         GC.Collect();
         cancellationTokenForDirOCR = null;
+    }
+
+    private async Task OcrAllImagesInParallel(bool writeToTextFiles, Language selectedLanguage, ParallelOptions parallelOptions, List<AsyncOcrFileResult> ocrFileResults)
+    {
+        await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, ct) =>
+        {
+            ct.ThrowIfCancellationRequested();
+
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
+
+            // to get the TextBox to update whenever OCR Finishes:
+            if (!writeToTextFiles)
+            {
+                await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    PassedTextControl.AppendText(ocrFile.OcrResult);
+                    PassedTextControl.ScrollToEnd();
+                });
+            }
+        });
     }
 
     private static async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
@@ -1602,61 +1608,14 @@ public partial class EditTextWindow : Window
         qsl.Show();
     }
 
-    public void RemoveCharsFromEachLine(int numberOfChars, SpotInLine spotInLine)
+    public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
-        StringBuilder sb = new();
-        foreach (string line in splitString)
-        {
-            int lineLength = line.Length;
-            if (lineLength <= numberOfChars)
-            {
-                sb.AppendLine();
-                continue;
-            }
-
-            switch (spotInLine)
-            {
-                case SpotInLine.Beginning:
-                    sb.AppendLine(line.Substring(numberOfChars));
-                    break;
-                case SpotInLine.End:
-                    sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        PassedTextControl.Text = sb.ToString();
+        PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
     }
 
-    public void AddCharsToEachLine(string stringToAdd, SpotInLine spotInLine)
+    public void AddCharsToEditTextWindow(string stringToAdd, SpotInLine spotInLine)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
-        if (splitString.Length > 1)
-            if (splitString.LastOrDefault() == "")
-                Array.Resize(ref splitString, splitString.Length - 1);
-
-        StringBuilder sb = new();
-        foreach (string line in splitString)
-        {
-            switch (spotInLine)
-            {
-                case SpotInLine.Beginning:
-                    sb.AppendLine(stringToAdd + line);
-                    break;
-                case SpotInLine.End:
-                    sb.AppendLine(line + stringToAdd);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        PassedTextControl.Text = sb.ToString().Trim();
+        PassedTextControl.Text = PassedTextControl.Text.AddCharsToEachLine(stringToAdd, spotInLine);
     }
 
     private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
@@ -1671,7 +1630,7 @@ public partial class EditTextWindow : Window
 
         if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
         {
-            var fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
+            string[]? fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
             // Check for a single file or folder.
             if (fileNames?.Length is 1)
             {

@@ -51,9 +51,9 @@ public partial class AddOrRemoveWindow : Window
         if (AddRadioButton.IsChecked is true)
         {
             if (BeginningRDBTN.IsChecked is true)
-                etwOwner.AddCharsToEachLine(TextToAddTextBox.Text, SpotInLine.Beginning);
+                etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.Beginning);
             else
-                etwOwner.AddCharsToEachLine(TextToAddTextBox.Text, SpotInLine.End);
+                etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.End);
         }
         else
         {
@@ -61,9 +61,9 @@ public partial class AddOrRemoveWindow : Window
                 return;
 
             if (BeginningRDBTN.IsChecked is true)
-                etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.Beginning);
+                etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.Beginning);
             else
-                etwOwner.RemoveCharsFromEachLine(LengthToChange.Value, SpotInLine.End);
+                etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.End);
         }
 
         Close();
