@@ -508,28 +508,13 @@ public partial class EditTextWindow : Window
             }
             catch (Exception)
             {
-                System.Windows.MessageBox.Show("Failed to read file");
+                System.Windows.MessageBox.Show($"Failed to read {OpenedFilePath}");
             }
         }
         else
         {
             // Continue with along trying to open a text file.
-
-            if (!isMultipleFiles && string.IsNullOrWhiteSpace(PassedTextControl.Text))
-                Title = $"Edit Text | {Path.GetFileName(OpenedFilePath)}";
-
-            try
-            {
-                using StreamReader sr = File.OpenText(pathOfFileToOpen);
-
-                string s = await sr.ReadToEndAsync();
-
-                stringBuilder.Append(s);
-            }
-            catch (System.Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
-            }
+            await TryToOpenTextFile(pathOfFileToOpen, isMultipleFiles, stringBuilder);
         }
 
         if (isMultipleFiles)
@@ -539,6 +524,25 @@ public partial class EditTextWindow : Window
         }
 
         PassedTextControl.AppendText(stringBuilder.ToString());
+    }
+
+    private async Task TryToOpenTextFile(string pathOfFileToOpen, bool isMultipleFiles, StringBuilder stringBuilder)
+    {
+        if (!isMultipleFiles && string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            Title = $"Edit Text | {Path.GetFileName(OpenedFilePath)}";
+
+        try
+        {
+            using StreamReader sr = File.OpenText(pathOfFileToOpen);
+
+            string s = await sr.ReadToEndAsync();
+
+            stringBuilder.Append(s);
+        }
+        catch (System.Exception ex)
+        {
+            System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+        }
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -823,12 +827,7 @@ public partial class EditTextWindow : Window
 
     private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        string workingString = string.Empty;
-
-        if (PassedTextControl.SelectionLength == 0)
-            workingString = PassedTextControl.Text;
-        else
-            workingString = PassedTextControl.SelectedText;
+        string workingString = GetSelectedTextOrAllText();
 
         workingString = workingString.TryFixToNumbers();
 
@@ -839,12 +838,7 @@ public partial class EditTextWindow : Window
     }
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        string workingString = string.Empty;
-
-        if (PassedTextControl.SelectionLength == 0)
-            workingString = PassedTextControl.Text;
-        else
-            workingString = PassedTextControl.SelectedText;
+        string workingString = GetSelectedTextOrAllText();
 
         workingString = workingString.TryFixToLetters();
 
@@ -933,19 +927,7 @@ public partial class EditTextWindow : Window
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
-
-        foreach (Window window in allWindows)
-        {
-            if (window is SettingsWindow sw)
-            {
-                sw.Activate();
-                return;
-            }
-        }
-
-        SettingsWindow nsw = new();
-        nsw.Show();
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
     }
 
     private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1029,64 +1011,19 @@ public partial class EditTextWindow : Window
 
     private void SelectLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selectedText = PassedTextControl.SelectedText;
-        int selectionIndex = PassedTextControl.SelectionStart;
-        int selectionEndIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
-        if (selectedText.EndsWith(Environment.NewLine))
-            selectionEndIndex -= Environment.NewLine.Length;
-        int selectionLength = PassedTextControl.SelectionLength;
-        string textBoxText = PassedTextControl.Text;
+        (int lineStart, int lineLength) = PassedTextControl.Text.GetStartAndLengthOfLineAtPosition(PassedTextControl.SelectionStart);
 
-        if (!textBoxText.EndsWith(Environment.NewLine))
-            textBoxText += Environment.NewLine;
-
-        IEnumerable<int> allNewLines = textBoxText.AllIndexesOf(Environment.NewLine);
-        int lastLine = allNewLines.LastOrDefault();
-        bool foundEnd = false;
-
-        int startSelectionIndex = 0;
-        int stopSelectionIndex = 0;
-
-        foreach (int newLineIndex in allNewLines)
-        {
-            if (selectionIndex > newLineIndex)
-                startSelectionIndex = newLineIndex + Environment.NewLine.Length;
-
-            if (!foundEnd
-                && newLineIndex >= selectionEndIndex)
-            {
-                stopSelectionIndex = newLineIndex;
-                foundEnd = true;
-            }
-        }
-
-        if (selectionEndIndex > lastLine)
-            stopSelectionIndex = textBoxText.Length;
-
-        selectionLength = stopSelectionIndex - startSelectionIndex + Environment.NewLine.Length;
-        if (selectionLength < 0)
-            selectionLength = 0;
-
-        PassedTextControl.Select(startSelectionIndex, selectionLength);
+        PassedTextControl.Select(lineStart, lineLength);
     }
 
     private void LaunchFindAndReplace()
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        FindAndReplaceWindow farw = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
 
-        foreach (Window window in allWindows)
-        {
-            if (window is FindAndReplaceWindow openFindReplaceWindow)
-            {
-                openFindReplaceWindow.Activate();
-                return;
-            }
-        }
-
-        FindAndReplaceWindow farw = new();
         farw.StringFromWindow = PassedTextControl.Text;
         farw.TextEditWindow = this;
         farw.Show();
+
 
         if (PassedTextControl.SelectedText.Length > 0)
         {
@@ -1221,19 +1158,7 @@ public partial class EditTextWindow : Window
 
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
-
-        foreach (Window window in allWindows)
-        {
-            if (window is FirstRunWindow firstRunWindowOpen)
-            {
-                firstRunWindowOpen.Activate();
-                return;
-            }
-        }
-
-        FirstRunWindow frw = new();
-        frw.Show();
+        WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
     }
 
 
@@ -1251,30 +1176,30 @@ public partial class EditTextWindow : Window
     {
         PassedTextControl.ContextMenu = null;
 
-        int caretIndex, cmdIndex;
-        SpellingError spellingError;
 
         ContextMenu? baseContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
 
-        while (baseContextMenu != null
+        while (baseContextMenu is not null
             && baseContextMenu.Items.Count > numberOfContextMenuItems)
             baseContextMenu.Items.RemoveAt(0);
 
         PassedTextControl.ContextMenu = baseContextMenu;
-        caretIndex = PassedTextControl.CaretIndex;
 
-        string possibleURL = PassedTextControl.SelectedText;
+        int caretIndex = PassedTextControl.CaretIndex;
 
-        if (string.IsNullOrEmpty(possibleURL))
-        {
-            (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(caretIndex);
-            possibleURL = PassedTextControl.Text.Substring(wordStart, wordLength);
-        }
+        AddPossibleSpellingErrorsToRightClickMenu(caretIndex);
 
-        cmdIndex = 0;
+        AddPossibleURLToRightClickMenu(caretIndex);
+
+    }
+
+    private void AddPossibleSpellingErrorsToRightClickMenu(int caretIndex)
+    {
+        int cmdIndex = 0;
+        SpellingError spellingError;
         spellingError = PassedTextControl.GetSpellingError(caretIndex);
-        if (spellingError != null
-            && PassedTextControl.ContextMenu != null)
+        if (spellingError is not null
+            && PassedTextControl.ContextMenu is not null)
         {
             foreach (string str in spellingError.Suggestions)
             {
@@ -1307,12 +1232,23 @@ public partial class EditTextWindow : Window
             cmdIndex++;
             PassedTextControl.ContextMenu.Items.Insert(cmdIndex, new Separator());
         }
+    }
+
+    private void AddPossibleURLToRightClickMenu(int caretIndex)
+    {
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+        {
+            (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(caretIndex);
+            possibleURL = PassedTextControl.Text.Substring(wordStart, wordLength);
+        }
 
         if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
         {
             string headerText = $"Try to go to: {possibleURL}";
             if (headerText.Length > 36)
-                headerText = headerText.Substring(0, 36) + "...";
+                headerText = string.Concat(headerText.AsSpan(0, 36), "...");
 
             MenuItem urlMi = new();
             urlMi.Header = headerText;
@@ -1323,7 +1259,6 @@ public partial class EditTextWindow : Window
             PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
             PassedTextControl.ContextMenu?.Items.Insert(0, urlMi);
         }
-
     }
 
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
@@ -1379,26 +1314,27 @@ public partial class EditTextWindow : Window
             string chosenFolderPath = folderBrowserDialog1.SelectedPath;
             try
             {
-                IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
-                IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
-                StringBuilder listOfNames = new StringBuilder();
-                listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
-                foreach (string folder in folders)
-                {
-                    listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
-                }
-                foreach (string file in files)
-                {
-                    listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
-                }
-
-                PassedTextControl.AppendText(listOfNames.ToString());
+                PassedTextControl.AppendText(ListFilesFoldersInDirectory(chosenFolderPath));
             }
             catch (System.Exception ex)
             {
                 PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
             }
         }
+    }
+
+    private static string ListFilesFoldersInDirectory(string chosenFolderPath)
+    {
+        IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
+        IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
+        StringBuilder listOfNames = new StringBuilder();
+        listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+        foreach (string folder in folders)
+            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+
+        foreach (string file in files)
+            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+        return listOfNames.ToString();
     }
 
     private async void ReadFolderOfImages_Click(object sender, RoutedEventArgs e)
@@ -1485,16 +1421,7 @@ public partial class EditTextWindow : Window
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(Environment.NewLine);
 
-        Language? selectedLanguage = LanguageUtilities.GetOCRLanguage();
         cancellationTokenForDirOCR = new();
-        CancellationToken token = cancellationTokenForDirOCR.Token;
-
-        ParallelOptions parallelOptions = new()
-        {
-            MaxDegreeOfParallelism = 6,
-            CancellationToken = cancellationTokenForDirOCR.Token
-        };
-
         Stopwatch stopwatch = new();
         stopwatch.Start();
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
@@ -1508,22 +1435,7 @@ public partial class EditTextWindow : Window
 
         try
         {
-            await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, ct) =>
-            {
-                ct.ThrowIfCancellationRequested();
-
-                ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
-
-                // to get the TextBox to update whenever OCR Finishes:
-                if (!writeToTextFiles)
-                {
-                    await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        PassedTextControl.AppendText(ocrFile.OcrResult);
-                        PassedTextControl.ScrollToEnd();
-                    });
-                }
-            });
+            await OcrAllImagesInParallel(writeToTextFiles, ocrFileResults);
 
             PassedTextControl.AppendText(Environment.NewLine);
             PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
@@ -1550,6 +1462,37 @@ public partial class EditTextWindow : Window
 
         GC.Collect();
         cancellationTokenForDirOCR = null;
+    }
+
+    private async Task OcrAllImagesInParallel(bool writeToTextFiles, List<AsyncOcrFileResult> ocrFileResults)
+    {
+        if (cancellationTokenForDirOCR is null)
+            return;
+
+        Language? selectedLanguage = LanguageUtilities.GetOCRLanguage();
+
+        ParallelOptions parallelOptions = new()
+        {
+            MaxDegreeOfParallelism = 6,
+            CancellationToken = cancellationTokenForDirOCR.Token
+        };
+
+        await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, ct) =>
+        {
+            ct.ThrowIfCancellationRequested();
+
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
+
+            // to get the TextBox to update whenever OCR Finishes:
+            if (!writeToTextFiles)
+            {
+                await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    PassedTextControl.AppendText(ocrFile.OcrResult);
+                    PassedTextControl.ScrollToEnd();
+                });
+            }
+        });
     }
 
     private static async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
@@ -1602,61 +1545,14 @@ public partial class EditTextWindow : Window
         qsl.Show();
     }
 
-    public void RemoveCharsFromEachLine(int numberOfChars, SpotInLine spotInLine)
+    public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
-        StringBuilder sb = new();
-        foreach (string line in splitString)
-        {
-            int lineLength = line.Length;
-            if (lineLength <= numberOfChars)
-            {
-                sb.AppendLine();
-                continue;
-            }
-
-            switch (spotInLine)
-            {
-                case SpotInLine.Beginning:
-                    sb.AppendLine(line.Substring(numberOfChars));
-                    break;
-                case SpotInLine.End:
-                    sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        PassedTextControl.Text = sb.ToString();
+        PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
     }
 
-    public void AddCharsToEachLine(string stringToAdd, SpotInLine spotInLine)
+    public void AddCharsToEditTextWindow(string stringToAdd, SpotInLine spotInLine)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
-        if (splitString.Length > 1)
-            if (splitString.LastOrDefault() == "")
-                Array.Resize(ref splitString, splitString.Length - 1);
-
-        StringBuilder sb = new();
-        foreach (string line in splitString)
-        {
-            switch (spotInLine)
-            {
-                case SpotInLine.Beginning:
-                    sb.AppendLine(stringToAdd + line);
-                    break;
-                case SpotInLine.End:
-                    sb.AppendLine(line + stringToAdd);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        PassedTextControl.Text = sb.ToString().Trim();
+        PassedTextControl.Text = PassedTextControl.Text.AddCharsToEachLine(stringToAdd, spotInLine);
     }
 
     private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
@@ -1671,7 +1567,7 @@ public partial class EditTextWindow : Window
 
         if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
         {
-            var fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
+            string[]? fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
             // Check for a single file or folder.
             if (fileNames?.Length is 1)
             {
