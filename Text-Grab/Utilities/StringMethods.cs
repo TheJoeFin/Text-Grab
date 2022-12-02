@@ -14,14 +14,14 @@ public static class StringMethods
     public static readonly List<Char> ReservedChars = new()
     { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
 
-    public static string TryFixToLetters(this string fixToLetters)
+    public static IEnumerable<int> AllIndexesOf(this string str, string searchstring)
     {
-        fixToLetters = fixToLetters.Replace('0', 'o');
-        fixToLetters = fixToLetters.Replace('4', 'h');
-        fixToLetters = fixToLetters.Replace('9', 'g');
-        fixToLetters = fixToLetters.Replace('1', 'l');
-
-        return fixToLetters;
+        int minIndex = str.IndexOf(searchstring);
+        while (minIndex != -1)
+        {
+            yield return minIndex;
+            minIndex = str.IndexOf(searchstring, minIndex + searchstring.Length);
+        }
     }
 
     public static IEnumerable<int> FindAllIndicesOfString(this string sourceString, string stringToFind)
@@ -79,6 +79,51 @@ public static class StringMethods
             breakLeft++;
 
         return (breakLeft, breakRight - breakLeft);
+    }
+
+    public static (int, int) GetStartAndLengthOfLineAtPosition(this string text, int position)
+    {
+        if (!text.EndsWith(Environment.NewLine))
+            text += Environment.NewLine;
+
+        IEnumerable<int> allNewLines = text.AllIndexesOf(Environment.NewLine);
+        int lastLine = allNewLines.LastOrDefault();
+        bool foundEnd = false;
+
+        int startSelectionIndex = 0;
+        int stopSelectionIndex = 0;
+
+        foreach (int newLineIndex in allNewLines)
+        {
+            if (position > newLineIndex)
+                startSelectionIndex = newLineIndex + Environment.NewLine.Length;
+
+            if (!foundEnd
+                && newLineIndex >= position)
+            {
+                stopSelectionIndex = newLineIndex;
+                foundEnd = true;
+            }
+        }
+
+        if (position > lastLine)
+            stopSelectionIndex = text.Length;
+
+        int selectionLength = stopSelectionIndex - startSelectionIndex + Environment.NewLine.Length;
+        if (selectionLength < 0)
+            selectionLength = 0;
+
+        return (startSelectionIndex, selectionLength);
+    }
+
+    public static string TryFixToLetters(this string fixToLetters)
+    {
+        fixToLetters = fixToLetters.Replace('0', 'o');
+        fixToLetters = fixToLetters.Replace('4', 'h');
+        fixToLetters = fixToLetters.Replace('9', 'g');
+        fixToLetters = fixToLetters.Replace('1', 'l');
+
+        return fixToLetters;
     }
 
     public static string TryFixToNumbers(this string fixToNumbers)
