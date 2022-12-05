@@ -446,6 +446,8 @@ public partial class GrabFrame : Window
             {
                 Width = lineRect.Width / (dpi.DpiScaleX * scale),
                 Height = lineRect.Height / (dpi.DpiScaleY * scale),
+                Top = lineRect.Y,
+                Left = lineRect.X,
                 Word = lineText.ToString().Trim(),
                 ToolTip = ocrLine.Text,
                 LineNumber = lineNumber,
@@ -472,8 +474,10 @@ public partial class GrabFrame : Window
             }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
-            Canvas.SetLeft(wordBorderBox, lineRect.Left / (dpi.DpiScaleX * scale));
-            Canvas.SetTop(wordBorderBox, lineRect.Top / (dpi.DpiScaleY * scale));
+            wordBorderBox.Left = lineRect.Left / (dpi.DpiScaleX * scale);
+            wordBorderBox.Top = lineRect.Top / (dpi.DpiScaleY * scale);
+            Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
+            Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
 
             lineNumber++;
         }
@@ -638,61 +642,7 @@ public partial class GrabFrame : Window
 
         if (TableToggleButton.IsChecked is true)
         {
-            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected).ToList();
-
-            if (selectedBorders.Count == 0)
-                selectedBorders.AddRange(wordBorders);
-
-            List<string> lineList = new();
-            int? lastLineNum = 0;
-            int lastColumnNum = 0;
-
-            if (selectedBorders.FirstOrDefault() != null)
-                lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
-
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
-
-            int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
-
-            foreach (WordBorder border in selectedBorders)
-            {
-                if (lineList.Count == 0)
-                    lastLineNum = border.ResultRowID;
-
-                if (border.ResultRowID != lastLineNum)
-                {
-                    if (isSpaceJoining)
-                        stringBuilder.Append(string.Join(' ', lineList));
-                    else
-                        stringBuilder.Append(string.Join("", lineList));
-                    stringBuilder.Replace(" \t ", "\t");
-                    stringBuilder.Append(Environment.NewLine);
-                    lineList.Clear();
-                    lastLineNum = border.ResultRowID;
-                }
-
-                if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
-                {
-                    string borderWord = border.Word;
-                    int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-                    if (numberOfOffColumns < 0)
-                        lastColumnNum = 0;
-
-                    numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-
-                    if (numberOfOffColumns > 0)
-                        lineList.Add(new string('\t', numberOfOffColumns));
-                }
-                lastColumnNum = border.ResultColumnID;
-
-                lineList.Add(border.Word);
-            }
-
-            if (isSpaceJoining)
-                stringBuilder.Append(string.Join(' ', lineList));
-            else
-                stringBuilder.Append(string.Join("", lineList));
+            ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders.ToList(), isSpaceJoining);
         }
         else
         {

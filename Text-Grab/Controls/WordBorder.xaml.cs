@@ -47,7 +47,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         }
     }
 
-
     public string Word
     {
         get { return (string)GetValue(WordProperty); }
@@ -68,6 +67,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public int ResultRowID { get; set; } = 0;
 
     public int ResultColumnID { get; set; } = 0;
+
+    public double Top { get; set; } = 0;
+
+    public double Left { get; set; } = 0;
 
     public bool IsFromEditWindow { get; set; } = false;
 

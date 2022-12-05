@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -127,54 +129,43 @@ public class ResultTable
         int numberOfVerticalLines = rectCanvasSize.Width / hitGridSpacing;
         int numberOfHorizontalLines = rectCanvasSize.Height / hitGridSpacing;
 
-        List<ResultRow> resultRows = new();
         Canvas tableIntersectionCanvas = new();
 
         List<Rect> wbRects = new();
         foreach (WordBorder wb in wordBorders)
         {
-            Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
+            Rect wbRect = new Rect(wb.Left, wb.Top, wb.Width, wb.Height);
             wbRects.Add(wbRect);
         }
 
-        List<int> rowAreas = new();
+        List<int> rowAreas = CalculateRowAreas(rectCanvasSize, hitGridSpacing, numberOfHorizontalLines, tableIntersectionCanvas, wbRects);
+        List<ResultRow> resultRows = CalculateResultRows(hitGridSpacing, rowAreas);
 
-        for (int i = 0; i < numberOfHorizontalLines; i++)
+        List<int> columnAreas = CalculateColumnAreas(rectCanvasSize, hitGridSpacing, numberOfVerticalLines, tableIntersectionCanvas, wbRects);
+        List<ResultColumn> resultColumns = CalculateResultColumns(hitGridSpacing, columnAreas);
+
+        Rect tableBoundingRect = new()
         {
-            Border horzLine = new()
-            {
-                Height = 1,
-                Width = rectCanvasSize.Width,
-                Opacity = 0,
-                Background = new SolidColorBrush(Colors.Gray)
-            };
-            Rect horzLineRect = new(0, i * hitGridSpacing, horzLine.Width, horzLine.Height);
-            _ = tableIntersectionCanvas.Children.Add(horzLine);
-            Canvas.SetTop(horzLine, i * 3);
+            X = columnAreas.FirstOrDefault(),
+            Y = rowAreas.FirstOrDefault(),
+            Width = columnAreas.LastOrDefault() - columnAreas.FirstOrDefault(),
+            Height = rowAreas.LastOrDefault() - rowAreas.FirstOrDefault()
+        };
 
-            foreach (Rect wbRect in wbRects)
-            {
-                if (horzLineRect.IntersectsWith(wbRect))
-                {
-                    rowAreas.Add(i * hitGridSpacing);
-                    break;
-                }
-            }
+        wordBorders = CombineOutliers(wordBorders, resultRows, tableIntersectionCanvas, resultColumns, tableBoundingRect);
 
-            //foreach (var child in tableIntersectionCanvas.Children)
-            //{
-            //    if (child is WordBorder wb)
-            //    {
-            //        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-            //        if (horzLineRect.IntersectsWith(wbRect))
-            //        {
-            //            rowAreas.Add(i * hitGridSpacing);
-            //            break;
-            //        }
-            //    }
-            //}
-        }
+        Rows.Clear();
+        Rows.AddRange(resultRows);
+        Columns.Clear();
+        Columns.AddRange(resultColumns);
 
+        ParseRowAndColumnLines();
+        DrawTable();
+    }
+
+    private static List<ResultRow> CalculateResultRows(int hitGridSpacing, List<int> rowAreas)
+    {
+        List<ResultRow> resultRows = new();
         int rowTop = 0;
         int rowCount = 0;
         for (int i = 0; i < rowAreas.Count; i++)
@@ -210,44 +201,129 @@ public class ResultTable
             }
         }
 
-        List<int> columnAreas = new();
-        for (int i = 0; i < numberOfVerticalLines; i++)
+        return resultRows;
+    }
+
+    private static List<int> CalculateRowAreas(Rectangle rectCanvasSize, int hitGridSpacing, int numberOfHorizontalLines, Canvas tableIntersectionCanvas, List<Rect> wbRects)
+    {
+        List<int> rowAreas = new();
+
+        for (int i = 0; i < numberOfHorizontalLines; i++)
         {
-            Border vertLine = new()
+            Border horzLine = new()
             {
-                Height = rectCanvasSize.Height,
-                Width = 1,
+                Height = 1,
+                Width = rectCanvasSize.Width,
                 Opacity = 0,
                 Background = new SolidColorBrush(Colors.Gray)
             };
-            _ = tableIntersectionCanvas.Children.Add(vertLine);
-            Canvas.SetLeft(vertLine, i * hitGridSpacing);
+            Rect horzLineRect = new(0, i * hitGridSpacing, horzLine.Width, horzLine.Height);
+            _ = tableIntersectionCanvas.Children.Add(horzLine);
+            Canvas.SetTop(horzLine, i * 3);
 
-            Rect vertLineRect = new(i * hitGridSpacing, 0, vertLine.Width, vertLine.Height);
-
-            foreach (Rect wbRect in wbRects)
-            {
-                if (vertLineRect.IntersectsWith(wbRect))
-                {
-                    columnAreas.Add(i * hitGridSpacing);
-                    break;
-                }
-            }
-
-            //foreach (var child in tableIntersectionCanvas.Children)
-            //{
-            //    if (child is WordBorder wb)
-            //    {
-            //        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-            //        if (vertLineRect.IntersectsWith(wbRect))
-            //        {
-            //            columnAreas.Add(i * hitGridSpacing);
-            //            break;
-            //        }
-            //    }
-            //}
+            CheckInersectionsWithWordBorders(hitGridSpacing, wbRects, rowAreas, i, horzLineRect);
         }
 
+        return rowAreas;
+    }
+
+    private static void CheckInersectionsWithWordBorders(int hitGridSpacing, List<Rect> wbRects, List<int> rowAreas, int i, Rect horzLineRect)
+    {
+        foreach (Rect wbRect in wbRects)
+        {
+            if (horzLineRect.IntersectsWith(wbRect))
+            {
+                rowAreas.Add(i * hitGridSpacing);
+                break;
+            }
+        }
+    }
+
+    private static List<WordBorder> CombineOutliers(List<WordBorder> wordBorders, List<ResultRow> resultRows, Canvas tableIntersectionCanvas, List<ResultColumn> resultColumns, Rect tableBoundingRect)
+    {
+        // try 4 times to refine the rows and columns for outliers
+        // on the fifth time set the word boundery properties
+        for (int r = 0; r < 5; r++)
+        {
+            int outlierThreshould = 2;
+
+            List<int> outlierRowIDs = new();
+
+            foreach (ResultRow row in resultRows)
+            {
+                int numberOfIntersectingWords = 0;
+                Border rowBorder = new()
+                {
+                    Height = row.Bottom - row.Top,
+                    Width = tableBoundingRect.Width,
+                    Background = new SolidColorBrush(Colors.Red),
+                    Tag = row.ID
+                };
+                tableIntersectionCanvas.Children.Add(rowBorder);
+                Canvas.SetLeft(rowBorder, tableBoundingRect.X);
+                Canvas.SetTop(rowBorder, row.Top);
+
+                Rect rowRect = new Rect(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
+
+                foreach (WordBorder wb in wordBorders)
+                {
+                    Rect wbRect = new Rect(wb.Left, wb.Top, wb.Width, wb.Height);
+                    if (rowRect.IntersectsWith(wbRect))
+                    {
+                        numberOfIntersectingWords++;
+                        wb.ResultRowID = row.ID;
+                    }
+                }
+
+                if (numberOfIntersectingWords <= outlierThreshould && r != 4)
+                    outlierRowIDs.Add(row.ID);
+            }
+
+            if (outlierRowIDs.Count > 0)
+                mergeTheseRowIDs(resultRows, outlierRowIDs);
+
+
+            List<int> outlierColumnIDs = new();
+
+            foreach (ResultColumn column in resultColumns)
+            {
+                int numberOfIntersectingWords = 0;
+                Border columnBorder = new()
+                {
+                    Height = tableBoundingRect.Height,
+                    Width = column.Right - column.Left,
+                    Background = new SolidColorBrush(Colors.Blue),
+                    Opacity = 0.2,
+                    Tag = column.ID
+                };
+                tableIntersectionCanvas.Children.Add(columnBorder);
+                Canvas.SetLeft(columnBorder, column.Left);
+                Canvas.SetTop(columnBorder, tableBoundingRect.Y);
+
+                Rect columnRect = new Rect(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
+                foreach (WordBorder wb in wordBorders)
+                {
+                    Rect wbRect = new Rect(wb.Left, wb.Top, wb.Width, wb.Height);
+                    if (columnRect.IntersectsWith(wbRect))
+                    {
+                        numberOfIntersectingWords++;
+                        wb.ResultColumnID = column.ID;
+                    }
+                }
+
+                if (numberOfIntersectingWords <= outlierThreshould)
+                    outlierColumnIDs.Add(column.ID);
+            }
+
+            if (outlierColumnIDs.Count > 0 && r != 4)
+                mergetheseColumnIDs(resultColumns, outlierColumnIDs);
+        }
+
+        return wordBorders;
+    }
+
+    private static List<ResultColumn> CalculateResultColumns(int hitGridSpacing, List<int> columnAreas)
+    {
         List<ResultColumn> resultColumns = new();
         int columnLeft = 0;
         int columnCount = 0;
@@ -284,128 +360,37 @@ public class ResultTable
             }
         }
 
-        Rect tableBoundingRect = new()
+        return resultColumns;
+    }
+
+    private static List<int> CalculateColumnAreas(Rectangle rectCanvasSize, int hitGridSpacing, int numberOfVerticalLines, Canvas tableIntersectionCanvas, List<Rect> wbRects)
+    {
+        List<int> columnAreas = new();
+        for (int i = 0; i < numberOfVerticalLines; i++)
         {
-            X = columnAreas.FirstOrDefault(),
-            Y = rowAreas.FirstOrDefault(),
-            Width = columnAreas.LastOrDefault() - columnAreas.FirstOrDefault(),
-            Height = rowAreas.LastOrDefault() - rowAreas.FirstOrDefault()
-        };
-
-        // try 4 times to refine the rows and columns for outliers
-        // on the fifth time set the word boundery properties
-        for (int r = 0; r < 5; r++)
-        {
-            int outlierThreshould = 2;
-
-            List<int> outlierRowIDs = new();
-
-            foreach (ResultRow row in resultRows)
+            Border vertLine = new()
             {
-                int numberOfIntersectingWords = 0;
-                Border rowBorder = new()
-                {
-                    Height = row.Bottom - row.Top,
-                    Width = tableBoundingRect.Width,
-                    Background = new SolidColorBrush(Colors.Red),
-                    Tag = row.ID
-                };
-                tableIntersectionCanvas.Children.Add(rowBorder);
-                Canvas.SetLeft(rowBorder, tableBoundingRect.X);
-                Canvas.SetTop(rowBorder, row.Top);
+                Height = rectCanvasSize.Height,
+                Width = 1,
+                Opacity = 0,
+                Background = new SolidColorBrush(Colors.Gray)
+            };
+            _ = tableIntersectionCanvas.Children.Add(vertLine);
+            Canvas.SetLeft(vertLine, i * hitGridSpacing);
 
-                Rect rowRect = new Rect(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
+            Rect vertLineRect = new(i * hitGridSpacing, 0, vertLine.Width, vertLine.Height);
 
-                foreach (WordBorder wb in wordBorders)
+            foreach (Rect wbRect in wbRects)
+            {
+                if (vertLineRect.IntersectsWith(wbRect))
                 {
-                    Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                    if (rowRect.IntersectsWith(wbRect))
-                    {
-                        numberOfIntersectingWords++;
-                        wb.ResultRowID = row.ID;
-                    }
+                    columnAreas.Add(i * hitGridSpacing);
+                    break;
                 }
-
-                if (numberOfIntersectingWords <= outlierThreshould && r != 4)
-                    outlierRowIDs.Add(row.ID);
             }
-
-            if (outlierRowIDs.Count > 0)
-                mergeTheseRowIDs(resultRows, outlierRowIDs);
-
-
-            List<int> outlierColumnIDs = new();
-
-            foreach (ResultColumn column in resultColumns)
-            {
-                int numberOfIntersectingWords = 0;
-                Border columnBorder = new()
-                {
-                    Height = tableBoundingRect.Height,
-                    Width = column.Right - column.Left,
-                    Background = new SolidColorBrush(Colors.Blue),
-                    Opacity = 0.2,
-                    Tag = column.ID
-                };
-                tableIntersectionCanvas.Children.Add(columnBorder);
-                Canvas.SetLeft(columnBorder, column.Left);
-                Canvas.SetTop(columnBorder, tableBoundingRect.Y);
-
-                Rect columnRect = new Rect(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
-                foreach (WordBorder wb in wordBorders)
-                {
-                    Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                    if (columnRect.IntersectsWith(wbRect))
-                    {
-                        numberOfIntersectingWords++;
-                        wb.ResultColumnID = column.ID;
-                    }                }
-
-                if (numberOfIntersectingWords <= outlierThreshould)
-                    outlierColumnIDs.Add(column.ID);
-            }
-
-            if (outlierColumnIDs.Count > 0 && r != 4)
-                mergetheseColumnIDs(resultColumns, outlierColumnIDs);
         }
 
-        Rows.Clear();
-        Rows.AddRange(resultRows);
-        Columns.Clear();
-        Columns.AddRange(resultColumns);
-
-        ParseRowAndColumnLines();
-        DrawTable();
-
-        // foreach (ResultRow row in resultRows)
-        // {
-        //     Border rowBorder = new()
-        //     {
-        //         Height = row.Bottom - row.Top,
-        //         Width = tableBoundingRect.Width,
-        //         Background = new SolidColorBrush(Colors.Red),
-        //         Opacity = 0.2,
-        //         Tag = row.ID
-        //     };
-        //     RectanglesCanvas.Children.Add(rowBorder);
-        //     Canvas.SetLeft(rowBorder, tableBoundingRect.X);
-        //     Canvas.SetTop(rowBorder, row.Top);
-        // }
-
-        // foreach (ResultColumn column in resultColumns)
-        // {
-        //     Border columnBorder = new()
-        //     {
-        //         Height = tableBoundingRect.Height,
-        //         Width = column.Right - column.Left,
-        //         Background = new SolidColorBrush(Colors.Blue),
-        //         Opacity = 0.2,
-        //         Tag = column.ID
-        //     };
-        //     RectanglesCanvas.Children.Add(columnBorder);
-        //     Canvas.SetLeft(columnBorder, column.Left);
-        //     Canvas.SetTop(columnBorder, tableBoundingRect.Y);
-        // }
+        return columnAreas;
     }
 
     private static void mergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
@@ -458,6 +443,65 @@ public class ResultTable
                 }
             }
         }
+    }
+
+    public static void GetTextFromTabledWordBorders(StringBuilder stringBuilder, List<WordBorder> wordBorders, bool isSpaceJoining)
+    {
+        List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected).ToList();
+
+        if (selectedBorders.Count == 0)
+            selectedBorders.AddRange(wordBorders);
+
+        List<string> lineList = new();
+        int? lastLineNum = 0;
+        int lastColumnNum = 0;
+
+        if (selectedBorders.FirstOrDefault() != null)
+            lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
+
+        selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
+        selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
+
+        int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
+
+        foreach (WordBorder border in selectedBorders)
+        {
+            if (lineList.Count == 0)
+                lastLineNum = border.ResultRowID;
+
+            if (border.ResultRowID != lastLineNum)
+            {
+                if (isSpaceJoining)
+                    stringBuilder.Append(string.Join(' ', lineList));
+                else
+                    stringBuilder.Append(string.Join("", lineList));
+                stringBuilder.Replace(" \t ", "\t");
+                stringBuilder.Append(Environment.NewLine);
+                lineList.Clear();
+                lastLineNum = border.ResultRowID;
+            }
+
+            if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
+            {
+                string borderWord = border.Word;
+                int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+                if (numberOfOffColumns < 0)
+                    lastColumnNum = 0;
+
+                numberOfOffColumns = border.ResultColumnID - lastColumnNum;
+
+                if (numberOfOffColumns > 0)
+                    lineList.Add(new string('\t', numberOfOffColumns));
+            }
+            lastColumnNum = border.ResultColumnID;
+
+            lineList.Add(border.Word);
+        }
+
+        if (isSpaceJoining)
+            stringBuilder.Append(string.Join(' ', lineList));
+        else
+            stringBuilder.Append(string.Join("", lineList));
     }
 
     private static void mergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
