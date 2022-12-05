@@ -42,23 +42,13 @@ public class ResultTable
         int leftBound = 0;
         int rightBound = leftBound;
 
-        if (Rows.Count == 1)
-        {
-            topBound = (int)Rows[0].Top;
-            bottomBound = (int)Rows[0].Bottom;
-        }
-        else if (Rows.Count > 1)
+        if (Rows.Count >= 1)
         {
             topBound = (int)Rows[0].Top;
             bottomBound = (int)Rows[Rows.Count - 1].Bottom;
         }
 
-        if (Columns.Count == 1)
-        {
-            leftBound = (int)Columns[0].Left;
-            rightBound = (int)Columns[0].Right;
-        }
-        else if (Columns.Count > 1)
+        if (Columns.Count >= 1)
         {
             leftBound = (int)Columns[0].Left;
             rightBound = (int)Columns[Columns.Count - 1].Right;
@@ -565,8 +555,7 @@ public class ResultTable
     private void DrawTable()
     {
         // Draw the lines and bounds of the table
-        SolidColorBrush tableColor = new SolidColorBrush(
-            System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
+        SolidColorBrush tableColor = new(System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
 
         TableLines = new Canvas();
 
