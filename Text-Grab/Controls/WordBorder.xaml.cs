@@ -126,6 +126,12 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
     }
 
+    public bool IntersectsWith(Rect rectToChek)
+    {
+        Rect wbRect = new(Left, Top, Width, Height);
+        return rectToChek.IntersectsWith(wbRect);
+    }
+
     private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;

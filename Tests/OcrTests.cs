@@ -1,16 +1,11 @@
 using System.Drawing;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Windows.Globalization;
 using Windows.Media.Ocr;
-using Xunit;
 
 namespace Tests;
 
@@ -83,8 +78,8 @@ December 	 12 	 Winter";
         // When
         OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
 
-        DpiScale dpi = new(1,1);
-        System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
+        DpiScale dpi = new(1, 1);
+        Rectangle rectCanvasSize = new()
         {
             Width = 1132,
             Height = 1158,
@@ -92,41 +87,7 @@ December 	 12 	 Winter";
             Y = 0
         };
 
-        List<WordBorder> wordBorders = new();
-        int lineNumber = 0;
-
-        foreach (OcrLine ocrLine in ocrResult.Lines)
-        {
-            double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
-            double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
-            double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
-            double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
-
-            Rect lineRect = new()
-            {
-                X = left,
-                Y = top,
-                Width = Math.Abs(right - left),
-                Height = Math.Abs(bottom - top)
-            };
-
-            StringBuilder lineText = new();
-            ocrLine.GetTextFromOcrLine(true, lineText);
-
-            WordBorder wordBorderBox = new()
-            {
-                Width = lineRect.Width / (dpi.DpiScaleX),
-                Height = lineRect.Height / (dpi.DpiScaleY),
-                Top = lineRect.Y,
-                Left = lineRect.X,
-                Word = lineText.ToString().Trim(),
-                ToolTip = ocrLine.Text,
-                LineNumber = lineNumber,
-            };
-            wordBorders.Add(wordBorderBox);
-
-            lineNumber++;
-        }
+        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpi);
 
         ResultTable resultTable = new();
         resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
