@@ -393,8 +393,69 @@ public static class StringMethods
                 sb.Append('{').Append(ct.numberOfRun).Append('}');
             }
         }
-        // sb.Append(")");
-        return sb.ToString();
+
+        return sb.ToString().ShortenRegexPattern();
+    }
+
+    private static string ShortenRegexPattern(this string pattern)
+    {
+        // Go through the pattern look for larger repeating sections
+        string originalPattern = pattern;
+
+        StringBuilder sb = new();
+
+        List<string> possibleShortenedPatterns = new();
+        possibleShortenedPatterns.Add(originalPattern);
+
+        // only look for patterns which are 4 - length / 3 long.
+        int maxRepSegCheckLen = originalPattern.Length / 3;
+
+        for (int i = 4; i < maxRepSegCheckLen; i++)
+        {
+            List<string> chunkLists = Split(originalPattern, i).ToList();
+            //int chunkID = 0;
+            //while (chunkID * (i+ 1) < originalPattern.Length)
+            //{
+            //    string chunk = originalPattern.Substring(chunkID * i, i);
+            //    chunkLists.Add(chunk);
+            //    chunkID++;
+            //}
+            //if (chunkID * i < originalPattern.Length)
+            //    chunkLists.Add(originalPattern.Substring(chunkID * i, originalPattern.Length - (chunkID * i)));
+            if (originalPattern.Length % i != 0)
+                chunkLists.Add(originalPattern[^(originalPattern.Length % i)..]);
+
+            for (int j = 0; j < chunkLists.Count; j++)
+            {
+                int matchingRun = 1;
+                while ((j + matchingRun) < chunkLists.Count
+                    && chunkLists[j] == chunkLists[j + matchingRun])
+                {
+                    matchingRun++;
+                }
+                if (matchingRun > 0)
+                {
+                    sb.Append('(').Append(chunkLists[j]).Append("){").Append(matchingRun).Append('}');
+                    j += matchingRun - 1;
+                }
+                else
+                    sb.Append(chunkLists[j]);
+
+            }
+
+            possibleShortenedPatterns.Add(sb.ToString());
+            sb.Clear();
+        }
+
+        possibleShortenedPatterns = possibleShortenedPatterns.OrderBy(p => p.Length).ToList();
+
+        return possibleShortenedPatterns.First();
+    }
+
+    static IEnumerable<string> Split(string str, int chunkSize)
+    {
+        return Enumerable.Range(0, str.Length / chunkSize)
+            .Select(i => str.Substring(i * chunkSize, chunkSize));
     }
 
     public static string UnstackStrings(this string stringToUnstack, int numberOfColumns)

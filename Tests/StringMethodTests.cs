@@ -128,6 +128,7 @@ Another Line";
     [InlineData("123-555-6789", @"\d{3}-\d{3}-\d{4}")]
     [InlineData("(123)-555-6789", @"(\()\d{3}(\))-\d{3}-\d{4}")]
     [InlineData("Abc123456-99", @"[A-z]{3}\d{6}-\d{2}")]
+    [InlineData("ab12ab12ab12ab12ab12", @"([A-z]{2}\d{2}){5}")]
     public void ExtractSimplePatternFromEachString(string inputString, string expectedString)
     {
         string actualString = inputString.ExtractSimplePattern();
