@@ -32,35 +32,27 @@ lines
         Assert.Equal(expectedWord, singleWordAtSix);
     }
 
-    [Fact]
-    public void ReturnWordAtCursorWithNewLines()
-    {
-        // Given
-        string multiLineInput = @"Hello this is lots 
+    private static string multiLineInput = @"Hello this is lots 
 of text which has several lines
 and some spaces at the ends of line 
 to throw off any easy check";
 
-        // When
-        string lotsString = multiLineInput.GetWordAtCursorPosition(15);
-        string ofString = multiLineInput.GetWordAtCursorPosition(20);
-        string linesString = multiLineInput.GetWordAtCursorPosition(51);
-        string checkString = multiLineInput.GetWordAtCursorPosition(114);
-        string HelloString = multiLineInput.GetWordAtCursorPosition(0);
-
-        // Try some bad inputs, make sure they correct
-        string checkStringBeyondLength = multiLineInput.GetWordAtCursorPosition(1000);
-        string HelloStringNegativeInput = multiLineInput.GetWordAtCursorPosition(-10);
+    [Theory]
+    [InlineData(15, "lots")]
+    [InlineData(20, "of")]
+    [InlineData(51, "lines")]
+    [InlineData(114, "check")]
+    [InlineData(0, "Hello")]
+    [InlineData(1000, "check")]
+    [InlineData(-10, "Hello")]
+    [InlineData(-1, "Hello")]
+    public void ReturnWordAtCursorWithNewLines(int cursorPosition, string expectedWord)
+    {
+        // Given
+        string actualWord = multiLineInput.GetWordAtCursorPosition(cursorPosition);
 
         // Then
-        Assert.Equal("lots", lotsString);
-        Assert.Equal("of", ofString);
-        Assert.Equal("lines", linesString);
-        Assert.Equal("check", checkString);
-        Assert.Equal("Hello", HelloString);
-
-        Assert.Equal("Hello", HelloStringNegativeInput);
-        Assert.Equal("check", checkStringBeyondLength);
+        Assert.Equal(expectedWord, actualWord);
     }
 
     [Theory]
