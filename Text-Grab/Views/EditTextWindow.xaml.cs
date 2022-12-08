@@ -1191,6 +1191,29 @@ public partial class EditTextWindow : Window
 
         AddPossibleURLToRightClickMenu(caretIndex);
 
+        AddPossibleMailtoToRightClickMenu(caretIndex);
+
+    }
+
+    private void AddPossibleMailtoToRightClickMenu(int caretIndex)
+    {
+        string possibleEmail = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleEmail))
+            possibleEmail = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
+
+        if (!possibleEmail.IsValidEmailAddress())
+            return;
+
+        MenuItem emailMi = new();
+        emailMi.Header = $"Email: {possibleEmail}";
+        emailMi.Click += (sender, e) =>
+        {
+            Process.Start(new ProcessStartInfo($"mailto:{possibleEmail}") { UseShellExecute = true });
+        };
+
+        PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
+        PassedTextControl.ContextMenu?.Items.Insert(0, emailMi);
     }
 
     private void AddPossibleSpellingErrorsToRightClickMenu(int caretIndex)

@@ -133,4 +133,15 @@ Another Line";
         string actualString = inputString.ExtractSimplePattern();
         Assert.Equal(expectedString, actualString);
     }
+
+    [Theory]
+    [InlineData("test@example.com", true)]
+    [InlineData("test@example.co", true)]
+    [InlineData("test@example.", false)]
+    [InlineData("joe@TextGrab.net", true)]
+    [InlineData("joe@Text Grab.net", false)]
+    public void TestIsValidEmailAddress(string inputString, bool expectedIsValid)
+    {
+        Assert.Equal(expectedIsValid, inputString.IsValidEmailAddress());
+    }
 }

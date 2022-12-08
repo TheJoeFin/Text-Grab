@@ -563,4 +563,12 @@ public static class StringMethods
 
         return sb.ToString().Trim();
     }
+
+    public static bool IsValidEmailAddress(this string input)
+    {
+        // Generated from ChatGPT
+        // Use a regular expression to match the input against a pattern for a valid email address.
+        Regex regex = new(@"^[\w!#$%&'*+\-/=?\^_`{|}~]+(\.[\w!#$%&'*+\-/=?\^_`{|}~]+)*" + "@" + @"((([\-\w]+\.)+[a-zA-Z]{2,4})|(([0-9]{1,3}\.){3}[0-9]{1,3}))$");
+        return regex.IsMatch(input);
+    }
 }
