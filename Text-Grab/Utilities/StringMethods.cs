@@ -37,6 +37,9 @@ public static class StringMethods
 
     public static (int, int) CursorWordBoundaries(this string input, int cursorPosition)
     {
+        if (string.IsNullOrEmpty(input))
+            return (0, 0);
+
         // Check if the cursor is at a space
         if (char.IsWhiteSpace(input[cursorPosition]))
             cursorPosition = findNearestLetterIndex(input, cursorPosition);

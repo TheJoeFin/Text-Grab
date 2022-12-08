@@ -21,6 +21,7 @@ lines
     }
 
     [Theory]
+    [InlineData("", "")]
     [InlineData("is", "This is test string data")]
     [InlineData("and", "Hello and How do you do?")]
     [InlineData("a", "What a wonderful world!")]
@@ -56,6 +57,7 @@ to throw off any easy check";
     }
 
     [Theory]
+    [InlineData("", "")]
     [InlineData("Hello, world! 0123456789", "Hello, world! ol23h5678g")]
     [InlineData("Foo 4r b4r", "Foo hr bhr")]
     [InlineData("B4zz 9zzl3", "Bhzz gzzl3")]
@@ -70,6 +72,7 @@ to throw off any easy check";
     }
 
     [Theory]
+    [InlineData("", "")]
     [InlineData("Hello, world! 0123456789", "He110, w0r1d! 0123456789")]
     [InlineData("Foo 4r b4r", "F00 4r b4r")]
     [InlineData("B4zz 9zzl3", "B4zz 9zz13")]
@@ -107,6 +110,7 @@ Another Line";
 
     // { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' }; 
     [Theory]
+    [InlineData("", "")]
     [InlineData("A<>B<>C", "A-B-C")]
     [InlineData("abc+123/def:*", "abc-123-def-")]
     [InlineData("@TheJoeFin", "-TheJoeFin")]
@@ -124,6 +128,7 @@ Another Line";
     }
 
     [Theory]
+    [InlineData("", @"")]
     [InlineData("Hello World!", @"[A-z]{5}\s[A-z]{5}!")]
     [InlineData("123-555-6789", @"\d{3}-\d{3}-\d{4}")]
     [InlineData("(123)-555-6789", @"(\()\d{3}(\))-\d{3}-\d{4}")]
@@ -136,6 +141,7 @@ Another Line";
     }
 
     [Theory]
+    [InlineData("", false)]
     [InlineData("test@example.com", true)]
     [InlineData("test@example.co", true)]
     [InlineData("test@example.", false)]
