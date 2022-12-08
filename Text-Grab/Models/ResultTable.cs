@@ -518,7 +518,10 @@ public class ResultTable
                     stringBuilder.Append(string.Join(' ', lineList));
                 else
                     stringBuilder.Append(string.Join("", lineList));
+
                 stringBuilder.Replace(" \t ", "\t");
+                stringBuilder.Replace("\t ", "\t");
+                stringBuilder.Replace(" \t", "\t");
                 stringBuilder.Append(Environment.NewLine);
                 lineList.Clear();
                 lastLineNum = border.ResultRowID;
@@ -541,10 +544,7 @@ public class ResultTable
             lineList.Add(border.Word);
         }
 
-        if (isSpaceJoining)
-            stringBuilder.Append(string.Join(' ', lineList));
-        else
-            stringBuilder.Append(string.Join("", lineList));
+        stringBuilder.Append(string.Join("", lineList));
     }
 
     private static void mergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
