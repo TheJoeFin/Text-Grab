@@ -1281,6 +1281,13 @@ public partial class EditTextWindow : Window
             int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
 
             int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
+
+            if (selStartLine < 0)
+            {
+                BottomBarText.Text = $"Ln -, Col -";
+                return;
+            }
+
             int selStartCol = selectionStartIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStartLine);
             int selStopLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStopIndex); ;
             int selStopCol = selectionStopIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStopLine); ;
