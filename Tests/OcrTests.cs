@@ -68,7 +68,7 @@ August	8	Summer
 September	9	Fall
 October	10	Fall
 November	11	Fall
-December 	 12 	 Winter";
+December	12	Winter";
 
 
         string testImagePath = @".\Images\Table-Test.png";
@@ -99,6 +99,48 @@ December 	 12 	 Winter";
         // Then
         Assert.Equal(expectedResult, stringBuilder.ToString());
 
+    }
+
+    [WpfFact]
+    public async Task AnalyzeTable2()
+    {
+        string expectedResult = @"Test	Text
+12	The Quick Brown Fox
+13	Jumped over the
+14	Lazy
+15
+20
+200
+300	Brown
+400	Dog";
+
+        string testImagePath = @".\Images\Table-Test-2.png";
+        Uri uri = new Uri(testImagePath, UriKind.Relative);
+        Language englishLanguage = new("en-US");
+        Bitmap testBitmap = new(getPathToImages(testImagePath));
+        // When
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
+
+        DpiScale dpi = new(1, 1);
+        Rectangle rectCanvasSize = new()
+        {
+            Width = 1152,
+            Height = 1132,
+            X = 0,
+            Y = 0
+        };
+
+        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpi);
+
+        ResultTable resultTable = new();
+        resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
+
+        StringBuilder stringBuilder = new();
+
+        ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders, true);
+
+        // Then
+        Assert.Equal(expectedResult, stringBuilder.ToString());
     }
 
     private string getPathToImages(string imageRelativePath)
