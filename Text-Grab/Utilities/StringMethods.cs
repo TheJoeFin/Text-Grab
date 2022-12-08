@@ -35,50 +35,64 @@ public static class StringMethods
         }
     }
 
-    public static (int, int) CursorWordBoundaries(this string sourceString, int caretIndex)
+    public static (int, int) CursorWordBoundaries(this string input, int cursorPosition)
     {
-        List<int> indicesOfBreaks = sourceString.FindAllIndicesOfString(" ").ToList();
-        List<int> indicesOfNewLines = sourceString.FindAllIndicesOfString(Environment.NewLine).ToList();
+        // Check if the cursor is at a space
+        if (char.IsWhiteSpace(input[cursorPosition]))
+            cursorPosition = findNearestLetterIndex(input, cursorPosition);
 
-        indicesOfBreaks.AddRange(indicesOfNewLines);
-        indicesOfBreaks.Sort();
-        indicesOfBreaks = indicesOfBreaks.Distinct().ToList();
+        // Find the start and end of the word by moving the cursor
+        // backwards and forwards until we find a non-letter character.
+        int start = cursorPosition;
+        int end = cursorPosition;
 
-        if (indicesOfBreaks.Count == 0)
-            return (0, sourceString.Length);
+        while (start > 0 && !char.IsWhiteSpace(input[start - 1]))
+            start--;
 
-        int breakLeft = 0;
-        int breakRight = sourceString.Length;
+        while (end < input.Length && !char.IsWhiteSpace(input[end]))
+            end++;
 
-        bool lookingForGap = true;
-        int i = 0;
+        return (start, end - start);
+    }
 
-        if (caretIndex > indicesOfBreaks.Last())
-            return (indicesOfBreaks.Last(), sourceString.Length - indicesOfBreaks.Last());
 
-        while (lookingForGap)
-        {
-            if (indicesOfBreaks[i] >= caretIndex)
-            {
-                breakRight = indicesOfBreaks[i];
+    public static string GetWordAtCursorPosition(this string input, int cursorPosition)
+    {
+        cursorPosition = Math.Clamp(cursorPosition, 0, input.Length - 1);
 
-                if (i > 0)
-                    breakLeft = indicesOfBreaks[i - 1] + 1;
+        (int start, int length) = input.CursorWordBoundaries(cursorPosition);
 
-                lookingForGap = false;
-            }
+        // Return the substring of the input that represents the word.
+        return input.Substring(start, length);
+    }
 
-            i++;
-            if (indicesOfBreaks.Count - 1 < i)
-                lookingForGap = false;
-        }
+    private static int findNearestLetterIndex(string input, int cursorPosition)
+    {
+        Math.Clamp(cursorPosition, 0, input.Length - 1);
 
-        char lastChar = sourceString.Substring(breakLeft, 1).Last();
+        int lastCharIndex = input.Length - 1;
 
-        if (lastChar == '\n')
-            breakLeft++;
+        int nearestToTheRight = cursorPosition;
+        int nearestToTheLeft = cursorPosition;
 
-        return (breakLeft, breakRight - breakLeft);
+        while (nearestToTheLeft >= 0 && char.IsWhiteSpace(input[nearestToTheLeft]))
+            nearestToTheLeft--;
+
+        while (nearestToTheRight <= lastCharIndex && char.IsWhiteSpace(input[nearestToTheRight]))
+            nearestToTheRight++;
+
+        // could not find
+        if (nearestToTheLeft < 0
+            && nearestToTheRight > lastCharIndex)
+            return cursorPosition;
+
+        int leftDistance = cursorPosition - nearestToTheLeft;
+        int rightDistance = nearestToTheRight - cursorPosition;
+
+        if (rightDistance < leftDistance)
+            return nearestToTheRight;
+
+        return nearestToTheLeft;
     }
 
     public static (int, int) GetStartAndLengthOfLineAtPosition(this string text, int position)

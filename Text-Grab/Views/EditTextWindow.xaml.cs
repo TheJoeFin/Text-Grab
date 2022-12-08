@@ -1240,8 +1240,7 @@ public partial class EditTextWindow : Window
 
         if (string.IsNullOrEmpty(possibleURL))
         {
-            (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(caretIndex);
-            possibleURL = PassedTextControl.Text.Substring(wordStart, wordLength);
+            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
         }
 
         if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
