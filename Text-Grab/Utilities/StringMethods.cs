@@ -233,7 +233,7 @@ public static class StringMethods
 
         workingString.Append(endingNewLines);
 
-        return workingString.ToString();
+        return workingString.ToString().Trim();
     }
 
     public static string ToCamel(this string stringToCamel)

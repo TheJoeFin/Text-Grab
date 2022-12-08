@@ -8,12 +8,15 @@ public class StringMethodTests
     public void MakeMultiLineStringSingleLine()
     {
         string bodyOfText = @"
+
 This has
 multiple
 lines
+
+
 ";
 
-        string lineOfText = "This has multiple lines\r\n";
+        string lineOfText = "This has multiple lines";
         Assert.Equal(lineOfText, bodyOfText.MakeStringSingleLine());
     }
 
