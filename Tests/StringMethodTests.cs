@@ -82,4 +82,55 @@ to throw off any easy check";
         // Assert
         Assert.Equal(expected, result);
     }
+
+    [Fact]
+    public void RemoveDuplicateLines_AsExpected()
+    {
+        // Given
+        string inputString = @"This is a line
+This is a line
+This is a line
+This is a line
+Another Line
+Another Line
+This is a line";
+
+        string expectedString = @"This is a line
+Another Line";
+
+        // When
+        string actualString = inputString.RemoveDuplicateLines();
+
+        // Then
+        Assert.Equal(expectedString, actualString);
+    }
+
+    // { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' }; 
+    [Theory]
+    [InlineData("A<>B<>C", "A-B-C")]
+    [InlineData("abc+123/def:*", "abc-123-def-")]
+    [InlineData("@TheJoeFin", "-TheJoeFin")]
+    [InlineData("Hello World!", "Hello-World-")]
+    [InlineData("Nothing", "Nothing")]
+    [InlineData("   ", "-")]
+    [InlineData("-----", "-")]
+    public void ReplaceReservedCharacters(string inputString, string expectedString)
+    {
+        // When
+        string actualString = inputString.ReplaceReservedCharacters();
+
+        // Then
+        Assert.Equal(expectedString, actualString);
+    }
+
+    [Theory]
+    [InlineData("Hello World!", @"[A-z]{5}\s[A-z]{5}!")]
+    [InlineData("123-555-6789", @"\d{3}-\d{3}-\d{4}")]
+    [InlineData("(123)-555-6789", @"(\()\d{3}(\))-\d{3}-\d{4}")]
+    [InlineData("Abc123456-99", @"[A-z]{3}\d{6}-\d{2}")]
+    public void ExtractSimplePatternFromEachString(string inputString, string expectedString)
+    {
+        string actualString = inputString.ExtractSimplePattern();
+        Assert.Equal(expectedString, actualString);
+    }
 }

@@ -304,11 +304,9 @@ public static class StringMethods
         sb.Append(stringToClean);
 
         foreach (Char reservedChar in ReservedChars)
-        {
             sb.Replace(reservedChar, '-');
-        }
 
-        return sb.ToString();
+        return Regex.Replace(sb.ToString(), @"-+", "-");
     }
 
     public static string EscapeSpecialRegexChars(this string stringToEscape)
