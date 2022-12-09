@@ -161,6 +161,7 @@ public static class WindowUtilities
             TryInsertString(stringFromOCR);
         }
 
+        GC.Collect();
         ShouldShutDown();
     }
 

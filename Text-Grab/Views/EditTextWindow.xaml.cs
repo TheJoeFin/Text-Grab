@@ -1069,6 +1069,7 @@ public partial class EditTextWindow : Window
                 findAndReplaceWindow.ShouldCloseWithThisETW(this);
         }
 
+        GC.Collect();
         WindowUtilities.ShouldShutDown();
     }
 
