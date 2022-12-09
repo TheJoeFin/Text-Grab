@@ -52,6 +52,7 @@ public partial class FullscreenGrab : Window
 
     public void SetImageToBackground()
     {
+        BackgroundImage.Source = null;
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
         BackgroundBrush.Opacity = 0.2;
     }
@@ -76,6 +77,13 @@ public partial class FullscreenGrab : Window
     private void Window_Unloaded(object sender, RoutedEventArgs e)
     {
         BackgroundImage.Source = null;
+        BackgroundImage.UpdateLayout();
+        // EditWindow = null;
+        currentScreen = null;
+        dpiScale = null;
+        Language = null;
+        textFromOCR = null;
+
         this.Loaded -= Window_Loaded;
         this.Unloaded -= Window_Unloaded;
 

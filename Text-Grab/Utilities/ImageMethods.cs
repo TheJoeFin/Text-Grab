@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -35,12 +37,13 @@ public static class ImageMethods
     public static Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
     {
         using MemoryStream outStream = new();
+        using WrappingStream wrapper = new(outStream);
 
         BitmapEncoder enc = new BmpBitmapEncoder();
         enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-        enc.Save(outStream);
-        using Bitmap bitmap = new(outStream);
-        outStream.Flush();
+        enc.Save(wrapper);
+        using Bitmap bitmap = new(wrapper);
+        wrapper.Flush();
 
         return new Bitmap(bitmap);
     }
@@ -48,17 +51,20 @@ public static class ImageMethods
     public static BitmapImage BitmapToImageSource(Bitmap bitmap)
     {
         using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
-        bitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
+        bitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
         BitmapImage bitmapimage = new();
         bitmapimage.BeginInit();
-        bitmapimage.StreamSource = memory;
+        bitmapimage.StreamSource = wrapper;
         bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
         bitmapimage.EndInit();
+        bitmapimage.StreamSource = null;
         bitmapimage.Freeze();
 
         memory.Flush();
+        wrapper.Flush();
 
         return bitmapimage;
     }
@@ -112,17 +118,18 @@ public static class ImageMethods
     public static Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)
     {
         using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
-        passedBitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
+        passedBitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
         BitmapImage bitmapimage = new();
         bitmapimage.BeginInit();
-        bitmapimage.StreamSource = memory;
+        bitmapimage.StreamSource = wrapper;
         bitmapimage.CacheOption = BitmapCacheOption.None;
         bitmapimage.EndInit();
         bitmapimage.Freeze();
 
-        memory.Flush();
+        wrapper.Flush();
 
         TransformedBitmap tbmpImg = new();
         tbmpImg.BeginInit();
