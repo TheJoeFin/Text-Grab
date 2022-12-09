@@ -31,6 +31,10 @@
             <MenuItem Command="ApplicationCommands.Cut" />
             <MenuItem Command="ApplicationCommands.Copy" />
             <MenuItem Command="ApplicationCommands.Paste" />
+            <MenuItem 
+                Header="OCR Paste" 
+                Command="{x:Static local:EditTextWindow.PasteCommand}" 
+                InputGestureText="Ctrl + Shift + V" />
             <Separator />
             <MenuItem
                 Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
@@ -96,6 +100,10 @@
             CanExecute="InsertSelectionOnEveryLineCmdCanExecute"
             Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
             Executed="InsertSelectionOnEveryLine" />
+        <CommandBinding 
+            CanExecute="CanPasteExecute"
+            Command="{x:Static local:EditTextWindow.PasteCommand}"
+            Executed="PasteExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -146,6 +154,10 @@
                 <MenuItem Command="ApplicationCommands.Cut" />
                 <MenuItem Command="ApplicationCommands.Copy" />
                 <MenuItem Command="ApplicationCommands.Paste" />
+                <MenuItem 
+                    Header="OCR Paste" 
+                    Command="{x:Static local:EditTextWindow.PasteCommand}" 
+                    InputGestureText="Ctrl + Shift + V" />
                 <Separator />
                 <MenuItem
                     x:Name="SingleLineMenuItem"

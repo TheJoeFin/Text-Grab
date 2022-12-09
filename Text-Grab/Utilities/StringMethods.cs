@@ -14,14 +14,14 @@ public static class StringMethods
     public static readonly List<Char> ReservedChars = new()
     { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
 
-    public static string TryFixToLetters(this string fixToLetters)
+    public static IEnumerable<int> AllIndexesOf(this string str, string searchstring)
     {
-        fixToLetters = fixToLetters.Replace('0', 'o');
-        fixToLetters = fixToLetters.Replace('4', 'h');
-        fixToLetters = fixToLetters.Replace('9', 'g');
-        fixToLetters = fixToLetters.Replace('1', 'l');
-
-        return fixToLetters;
+        int minIndex = str.IndexOf(searchstring);
+        while (minIndex != -1)
+        {
+            yield return minIndex;
+            minIndex = str.IndexOf(searchstring, minIndex + searchstring.Length);
+        }
     }
 
     public static IEnumerable<int> FindAllIndicesOfString(this string sourceString, string stringToFind)
@@ -35,50 +35,112 @@ public static class StringMethods
         }
     }
 
-    public static (int, int) CursorWordBoundaries(this string sourceString, int caretIndex)
+    public static (int, int) CursorWordBoundaries(this string input, int cursorPosition)
     {
-        List<int> indicesOfBreaks = sourceString.FindAllIndicesOfString(" ").ToList();
-        List<int> indicesOfNewLines = sourceString.FindAllIndicesOfString(Environment.NewLine).ToList();
+        if (string.IsNullOrEmpty(input))
+            return (0, 0);
 
-        indicesOfBreaks.AddRange(indicesOfNewLines);
-        indicesOfBreaks.Sort();
-        indicesOfBreaks = indicesOfBreaks.Distinct().ToList();
+        // Check if the cursor is at a space
+        if (char.IsWhiteSpace(input[cursorPosition]))
+            cursorPosition = findNearestLetterIndex(input, cursorPosition);
 
-        if (indicesOfBreaks.Count == 0)
-            return (0, sourceString.Length);
+        // Find the start and end of the word by moving the cursor
+        // backwards and forwards until we find a non-letter character.
+        int start = cursorPosition;
+        int end = cursorPosition;
 
-        int breakLeft = 0;
-        int breakRight = sourceString.Length;
+        while (start > 0 && !char.IsWhiteSpace(input[start - 1]))
+            start--;
 
-        bool lookingForGap = true;
-        int i = 0;
+        while (end < input.Length && !char.IsWhiteSpace(input[end]))
+            end++;
 
-        if (caretIndex > indicesOfBreaks.Last())
-            return (indicesOfBreaks.Last(), sourceString.Length - indicesOfBreaks.Last());
+        return (start, end - start);
+    }
 
-        while (lookingForGap)
+
+    public static string GetWordAtCursorPosition(this string input, int cursorPosition)
+    {
+        cursorPosition = Math.Clamp(cursorPosition, 0, input.Length - 1);
+
+        (int start, int length) = input.CursorWordBoundaries(cursorPosition);
+
+        // Return the substring of the input that represents the word.
+        return input.Substring(start, length);
+    }
+
+    private static int findNearestLetterIndex(string input, int cursorPosition)
+    {
+        Math.Clamp(cursorPosition, 0, input.Length - 1);
+
+        int lastCharIndex = input.Length - 1;
+
+        int nearestToTheRight = cursorPosition;
+        int nearestToTheLeft = cursorPosition;
+
+        while (nearestToTheLeft >= 0 && char.IsWhiteSpace(input[nearestToTheLeft]))
+            nearestToTheLeft--;
+
+        while (nearestToTheRight <= lastCharIndex && char.IsWhiteSpace(input[nearestToTheRight]))
+            nearestToTheRight++;
+
+        // could not find
+        if (nearestToTheLeft < 0
+            && nearestToTheRight > lastCharIndex)
+            return cursorPosition;
+
+        int leftDistance = cursorPosition - nearestToTheLeft;
+        int rightDistance = nearestToTheRight - cursorPosition;
+
+        if (rightDistance < leftDistance)
+            return nearestToTheRight;
+
+        return nearestToTheLeft;
+    }
+
+    public static (int, int) GetStartAndLengthOfLineAtPosition(this string text, int position)
+    {
+        if (!text.EndsWith(Environment.NewLine))
+            text += Environment.NewLine;
+
+        IEnumerable<int> allNewLines = text.AllIndexesOf(Environment.NewLine);
+        int lastLine = allNewLines.LastOrDefault();
+        bool foundEnd = false;
+
+        int startSelectionIndex = 0;
+        int stopSelectionIndex = 0;
+
+        foreach (int newLineIndex in allNewLines)
         {
-            if (indicesOfBreaks[i] >= caretIndex)
+            if (position > newLineIndex)
+                startSelectionIndex = newLineIndex + Environment.NewLine.Length;
+
+            if (!foundEnd
+                && newLineIndex >= position)
             {
-                breakRight = indicesOfBreaks[i];
-
-                if (i > 0)
-                    breakLeft = indicesOfBreaks[i - 1] + 1;
-
-                lookingForGap = false;
+                stopSelectionIndex = newLineIndex;
+                foundEnd = true;
             }
-
-            i++;
-            if (indicesOfBreaks.Count - 1 < i)
-                lookingForGap = false;
         }
 
-        char lastChar = sourceString.Substring(breakLeft, 1).Last();
+        if (position > lastLine)
+            stopSelectionIndex = text.Length;
 
-        if (lastChar == '\n')
-            breakLeft++;
+        int selectionLength = stopSelectionIndex - startSelectionIndex + Environment.NewLine.Length;
+        if (selectionLength < 0)
+            selectionLength = 0;
 
-        return (breakLeft, breakRight - breakLeft);
+        return (startSelectionIndex, selectionLength);
+    }
+
+    public static string TryFixToLetters(this string fixToLetters)
+    {
+        fixToLetters = fixToLetters.Replace('0', 'o');
+        fixToLetters = fixToLetters.Replace('4', 'h');
+        fixToLetters = fixToLetters.Replace('9', 'g');
+        fixToLetters = fixToLetters.Replace('1', 'l');
+
+        return fixToLetters;
     }
 
     public static string TryFixToNumbers(this string fixToNumbers)
@@ -174,7 +236,7 @@ public static class StringMethods
 
         workingString.Append(endingNewLines);
 
-        return workingString.ToString();
+        return workingString.ToString().Trim();
     }
 
     public static string ToCamel(this string stringToCamel)
@@ -184,7 +246,7 @@ public static class StringMethods
 
         foreach (char characterToCheck in stringToCamel)
         {
-            if (isSpaceOrNewLine == true
+            if (isSpaceOrNewLine
                 && char.IsLetter(characterToCheck))
             {
                 isSpaceOrNewLine = false;
@@ -206,6 +268,34 @@ public static class StringMethods
         return toReturn;
     }
 
+    public static CurrentCase DetermineToggleCase(string textToModify)
+    {
+        if (string.IsNullOrWhiteSpace(textToModify))
+            return CurrentCase.Unknown;
+
+        bool isAllLower = true;
+        bool isAllUpper = true;
+
+        foreach (char letter in textToModify)
+        {
+            if (!char.IsLetter(letter))
+                continue;
+
+            if (char.IsLower(letter))
+                isAllUpper = false;
+
+            if (char.IsUpper(letter))
+                isAllLower = false;
+        }
+
+        if (!isAllLower && isAllUpper)
+            return CurrentCase.Upper;
+        else if (!isAllUpper && isAllLower)
+            return CurrentCase.Lower;
+
+        return CurrentCase.Camel;
+    }
+
     public enum CharType { Letter, Number, Space, Special, Other };
 
     public class CharRun
@@ -221,11 +311,9 @@ public static class StringMethods
         sb.Append(stringToClean);
 
         foreach (Char reservedChar in ReservedChars)
-        {
             sb.Replace(reservedChar, '-');
-        }
 
-        return sb.ToString();
+        return Regex.Replace(sb.ToString(), @"-+", "-");
     }
 
     public static string EscapeSpecialRegexChars(this string stringToEscape)
@@ -312,8 +400,69 @@ public static class StringMethods
                 sb.Append('{').Append(ct.numberOfRun).Append('}');
             }
         }
-        // sb.Append(")");
-        return sb.ToString();
+
+        return sb.ToString().ShortenRegexPattern();
+    }
+
+    private static string ShortenRegexPattern(this string pattern)
+    {
+        // Go through the pattern look for larger repeating sections
+        string originalPattern = pattern;
+
+        StringBuilder sb = new();
+
+        List<string> possibleShortenedPatterns = new();
+        possibleShortenedPatterns.Add(originalPattern);
+
+        // only look for patterns which are 4 - length / 3 long.
+        int maxRepSegCheckLen = originalPattern.Length / 3;
+
+        for (int i = 4; i < maxRepSegCheckLen; i++)
+        {
+            List<string> chunkLists = Split(originalPattern, i).ToList();
+            //int chunkID = 0;
+            //while (chunkID * (i+ 1) < originalPattern.Length)
+            //{
+            //    string chunk = originalPattern.Substring(chunkID * i, i);
+            //    chunkLists.Add(chunk);
+            //    chunkID++;
+            //}
+            //if (chunkID * i < originalPattern.Length)
+            //    chunkLists.Add(originalPattern.Substring(chunkID * i, originalPattern.Length - (chunkID * i)));
+            if (originalPattern.Length % i != 0)
+                chunkLists.Add(originalPattern[^(originalPattern.Length % i)..]);
+
+            for (int j = 0; j < chunkLists.Count; j++)
+            {
+                int matchingRun = 1;
+                while ((j + matchingRun) < chunkLists.Count
+                    && chunkLists[j] == chunkLists[j + matchingRun])
+                {
+                    matchingRun++;
+                }
+                if (matchingRun > 0)
+                {
+                    sb.Append('(').Append(chunkLists[j]).Append("){").Append(matchingRun).Append('}');
+                    j += matchingRun - 1;
+                }
+                else
+                    sb.Append(chunkLists[j]);
+
+            }
+
+            possibleShortenedPatterns.Add(sb.ToString());
+            sb.Clear();
+        }
+
+        possibleShortenedPatterns = possibleShortenedPatterns.OrderBy(p => p.Length).ToList();
+
+        return possibleShortenedPatterns.First();
+    }
+
+    static IEnumerable<string> Split(string str, int chunkSize)
+    {
+        return Enumerable.Range(0, str.Length / chunkSize)
+            .Select(i => str.Substring(i * chunkSize, chunkSize));
     }
 
     public static string UnstackStrings(this string stringToUnstack, int numberOfColumns)
@@ -383,12 +532,8 @@ public static class StringMethods
         List<string> uniqueLines = new();
 
         foreach (string originalLine in splitString)
-        {
-            if (uniqueLines.Contains(originalLine) == false)
-            {
+            if (!uniqueLines.Contains(originalLine))
                 uniqueLines.Add(originalLine);
-            }
-        }
 
         return string.Join(Environment.NewLine, uniqueLines.ToArray());
     }
@@ -397,5 +542,101 @@ public static class StringMethods
     {
         Regex regex = new(stringToRemove);
         return regex.Replace(stringToBeEdited, "");
+    }
+
+    public static void ReverseWordsForRightToLeft(StringBuilder text)
+    {
+        string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
+        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
+
+        _ = text.Clear();
+        foreach (string textLine in textListLines)
+        {
+            bool firstWord = true;
+            bool isPrevWordSpaceJoining = false;
+            List<string> wordArray = textLine.Split().ToList();
+            wordArray.Reverse();
+
+            foreach (string wordText in wordArray)
+            {
+                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
+
+                if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
+                    _ = text.Append(wordText);
+                else
+                    _ = text.Append(' ').Append(wordText);
+
+                firstWord = false;
+                isPrevWordSpaceJoining = isThisWordSpaceJoining;
+            }
+
+            if (textLine.Length > 0)
+                _ = text.Append(Environment.NewLine);
+        }
+    }
+
+    public static string RemoveFromEachLine(this string stringToEdit, int numberOfChars, SpotInLine spotInLine)
+    {
+        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+
+        StringBuilder sb = new();
+        foreach (string line in splitString)
+        {
+            int lineLength = line.Length;
+            if (lineLength <= numberOfChars)
+            {
+                sb.AppendLine();
+                continue;
+            }
+
+            switch (spotInLine)
+            {
+                case SpotInLine.Beginning:
+                    sb.AppendLine(line.Substring(numberOfChars));
+                    break;
+                case SpotInLine.End:
+                    sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    public static string AddCharsToEachLine(this string stringToEdit, string stringToAdd, SpotInLine spotInLine)
+    {
+        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+
+        if (splitString.Length > 1)
+            if (splitString.LastOrDefault() == "")
+                Array.Resize(ref splitString, splitString.Length - 1);
+
+        StringBuilder sb = new();
+        foreach (string line in splitString)
+        {
+            switch (spotInLine)
+            {
+                case SpotInLine.Beginning:
+                    sb.AppendLine(stringToAdd + line);
+                    break;
+                case SpotInLine.End:
+                    sb.AppendLine(line + stringToAdd);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return sb.ToString().Trim();
+    }
+
+    public static bool IsValidEmailAddress(this string input)
+    {
+        // Generated from ChatGPT
+        // Use a regular expression to match the input against a pattern for a valid email address.
+        Regex regex = new(@"^[\w!#$%&'*+\-/=?\^_`{|}~]+(\.[\w!#$%&'*+\-/=?\^_`{|}~]+)*" + "@" + @"((([\-\w]+\.)+[a-zA-Z]{2,4})|(([0-9]{1,3}\.){3}[0-9]{1,3}))$");
+        return regex.IsMatch(input);
     }
 }

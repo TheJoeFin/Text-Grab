@@ -47,7 +47,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         }
     }
 
-
     public string Word
     {
         get { return (string)GetValue(WordProperty); }
@@ -68,6 +67,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public int ResultRowID { get; set; } = 0;
 
     public int ResultColumnID { get; set; } = 0;
+
+    public double Top { get; set; } = 0;
+
+    public double Left { get; set; } = 0;
 
     public bool IsFromEditWindow { get; set; } = false;
 
@@ -123,6 +126,12 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
     }
 
+    public bool IntersectsWith(Rect rectToChek)
+    {
+        Rect wbRect = new(Left, Top, Width, Height);
+        return rectToChek.IntersectsWith(wbRect);
+    }
+
     private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;
@@ -172,10 +181,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         try { Clipboard.SetDataObject(Word, true); } catch { }
 
         if (Settings.Default.ShowToast
-            && IsFromEditWindow == false)
+            && !IsFromEditWindow)
             NotificationUtilities.ShowToast(Word);
 
-        if (IsFromEditWindow == true)
+        if (IsFromEditWindow)
             WindowUtilities.AddTextToOpenWindow(Word);
 
         if (IsSelected)

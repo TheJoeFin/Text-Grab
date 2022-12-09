@@ -68,18 +68,19 @@ public partial class SettingsWindow : Window
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        switch (Settings.Default.DefaultLaunch)
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        switch (defaultLaunchSetting)
         {
-            case "Fullscreen":
+            case DefaultLaunchSetting.Fullscreen:
                 FullScreenRDBTN.IsChecked = true;
                 break;
-            case "GrabFrame":
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrameRDBTN.IsChecked = true;
                 break;
-            case "EditText":
+            case DefaultLaunchSetting.EditText:
                 EditTextRDBTN.IsChecked = true;
                 break;
-            case "QuickLookup":
+            case DefaultLaunchSetting.QuickLookup:
                 QuickLookupRDBTN.IsChecked = true;
                 break;
             default:
@@ -95,13 +96,13 @@ public partial class SettingsWindow : Window
 
     private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         if (sender is TextBox numberInputBox)
         {
             bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
-            if (wasAbleToConvert == true && parsedText > 0 && parsedText < 10)
+            if (wasAbleToConvert && parsedText > 0 && parsedText < 10)
             {
                 InsertDelaySeconds = parsedText;
                 DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
@@ -132,13 +133,13 @@ public partial class SettingsWindow : Window
         if (ShowToastCheckBox.IsChecked != null)
             Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
 
-        if (FullScreenRDBTN.IsChecked == true)
+        if (FullScreenRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "Fullscreen";
-        else if (GrabFrameRDBTN.IsChecked == true)
+        else if (GrabFrameRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "GrabFrame";
-        else if (EditTextRDBTN.IsChecked == true)
+        else if (EditTextRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "EditText";
-        else if (QuickLookupRDBTN.IsChecked == true)
+        else if (QuickLookupRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "QuickLookup";
 
         if (ErrorCorrectBox.IsChecked != null)
@@ -195,7 +196,7 @@ public partial class SettingsWindow : Window
             Settings.Default.LookupHotKey = "Q";
         }
 
-        if (string.IsNullOrEmpty(SecondsTextBox.Text) == false)
+        if (!string.IsNullOrEmpty(SecondsTextBox.Text))
             Settings.Default.InsertDelay = InsertDelaySeconds;
 
         Settings.Default.Save();

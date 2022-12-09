@@ -259,7 +259,7 @@ public class WindowResizer
 
         // Try and get the primary screen information
         var lPrimaryScreenInfo = new MONITORINFO();
-        if (GetMonitorInfo(lPrimaryScreen, lPrimaryScreenInfo) == false)
+        if (!GetMonitorInfo(lPrimaryScreen, lPrimaryScreenInfo))
             return;
 
         // Now get the current screen

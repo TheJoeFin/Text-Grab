@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Threading;
@@ -33,117 +34,164 @@ public partial class App : System.Windows.Application
 
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
-            string argsInvoked = toastArgs.Argument;
-            // Need to dispatch to UI thread if performing UI operations
-            Dispatcher.BeginInvoke((Action)(() =>
-            {
-                if (String.IsNullOrWhiteSpace(argsInvoked) == false)
-                {
-                    EditTextWindow mtw = new(argsInvoked);
-                    mtw.Show();
-                    handledArgument = true;
-                }
-            }));
+            LaunchFromToast(toastArgs);
         };
 
-        if (Settings.Default.RunInTheBackground == true
-            && NumberOfRunningInstances < 2)
+        handledArgument = HandleNotifyIcon();
+
+        if (!handledArgument && e.Args.Length > 0)
+            handledArgument = await HandleStartupArgs(e.Args);
+
+        if (handledArgument)
+            return;
+
+        if (Settings.Default.FirstRun)
+        {
+            ShowAndSetFirstRun();
+            return;
+        }
+
+        DefaultLaunch();
+    }
+
+    private static async Task<bool> HandleStartupArgs(string[] args)
+    {
+        string currentArgument = args[0];
+
+        if (currentArgument.Contains("ToastActivated"))
+        {
+            Debug.WriteLine("Launched from toast");
+            return true;
+        }
+        else if (currentArgument == "Settings")
+        {
+            SettingsWindow sw = new();
+            sw.Show();
+            return true;
+        }
+
+        bool isStandardMode = Enum.TryParse<DefaultLaunchSetting>(currentArgument, true, out DefaultLaunchSetting launchMode);
+
+        if (isStandardMode)
+        {
+            LaunchStandardMode(launchMode);
+            return true;
+        }
+
+        bool openedFile = TryToOpenFile(currentArgument);
+        if (openedFile)
+            return true;
+
+        return await CheckForOcringFolder(currentArgument);
+    }
+
+    private static bool TryToOpenFile(string possiblePath)
+    {
+        if (!File.Exists(possiblePath))
+            return false;
+
+        EditTextWindow manipulateTextWindow = new();
+        manipulateTextWindow.OpenThisPath(possiblePath);
+        manipulateTextWindow.Show();
+        return true;
+    }
+
+    private static async Task<bool> CheckForOcringFolder(string currentArgument)
+    {
+        if (!Directory.Exists(currentArgument))
+            return false;
+
+        EditTextWindow manipulateTextWindow = new();
+        manipulateTextWindow.Show();
+        await manipulateTextWindow.OcrAllImagesInFolder(currentArgument, false, false);
+        return true;
+    }
+
+    private static void LaunchStandardMode(DefaultLaunchSetting launchMode)
+    {
+        switch (launchMode)
+        {
+            case DefaultLaunchSetting.EditText:
+                EditTextWindow manipulateTextWindow = new();
+                manipulateTextWindow.Show();
+                break;
+            case DefaultLaunchSetting.GrabFrame:
+                GrabFrame gf = new();
+                gf.Show();
+                break;
+            case DefaultLaunchSetting.Fullscreen:
+                WindowUtilities.LaunchFullScreenGrab();
+                break;
+            case DefaultLaunchSetting.QuickLookup:
+                QuickSimpleLookup qsl = new();
+                qsl.Show();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private bool HandleNotifyIcon()
+    {
+        if (Settings.Default.RunInTheBackground && NumberOfRunningInstances < 2)
         {
             NotifyIconUtilities.SetupNotifyIcon();
 
-            if (Settings.Default.StartupOnLogin == true)
-                handledArgument = true;
+            if (Settings.Default.StartupOnLogin)
+                return true;
         }
 
+        return false;
+    }
 
-        for (int i = 0; i != e.Args.Length && !handledArgument; ++i)
+    private void LaunchFromToast(ToastNotificationActivatedEventArgsCompat toastArgs)
+    {
+        string argsInvoked = toastArgs.Argument;
+        if (String.IsNullOrWhiteSpace(argsInvoked))
+            return;
+
+        // Need to dispatch to UI thread if performing UI operations
+        Dispatcher.BeginInvoke((Action)(() =>
         {
-            Debug.WriteLine($"ARG {i}:{e.Args[i]}");
-            if (e.Args[i].Contains("ToastActivated"))
-            {
-                Debug.WriteLine("Launched from toast");
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "Settings")
-            {
-                SettingsWindow sw = new();
-                sw.Show();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "GrabFrame")
-            {
+            EditTextWindow mtw = new(argsInvoked);
+            mtw.Show();
+        }));
+    }
+
+    private static void ShowAndSetFirstRun()
+    {
+        FirstRunWindow frw = new();
+        frw.Show();
+
+        Settings.Default.FirstRun = false;
+        Settings.Default.Save();
+    }
+
+    public static void DefaultLaunch()
+    {
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+
+        switch (defaultLaunchSetting)
+        {
+            case DefaultLaunchSetting.Fullscreen:
+                WindowUtilities.LaunchFullScreenGrab();
+                break;
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrame gf = new();
                 gf.Show();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "Fullscreen")
-            {
-                WindowUtilities.LaunchFullScreenGrab();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "EditText")
-            {
+                break;
+            case DefaultLaunchSetting.EditText:
                 EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
-                handledArgument = true;
-            }
-            else if (e.Args[i] == "QuickLookup")
-            {
-                QuickSimpleLookup qsl = new();
-                qsl.Show();
-                handledArgument = true;
-            }
-            else if (File.Exists(e.Args[i]))
-            {
-                EditTextWindow manipulateTextWindow = new();
-                manipulateTextWindow.OpenThisPath(e.Args[i]);
-                manipulateTextWindow.Show();
-                handledArgument = true;
-            }
-            else if (Directory.Exists(e.Args[i]))
-            {
-                EditTextWindow manipulateTextWindow = new();
-                manipulateTextWindow.Show();
-                await manipulateTextWindow.OcrAllImagesInFolder(e.Args[i], false, false);
-                handledArgument = true;
-            }
-        }
-
-        if (!handledArgument)
-        {
-            if (Settings.Default.FirstRun)
-            {
-                FirstRunWindow frw = new();
-                frw.Show();
-
-                Settings.Default.FirstRun = false;
-                Settings.Default.Save();
-            }
-            else
-            {
-                switch (Settings.Default.DefaultLaunch)
-                {
-                    case "Fullscreen":
-                        WindowUtilities.LaunchFullScreenGrab();
-                        break;
-                    case "GrabFrame":
-                        GrabFrame gf = new();
-                        gf.Show();
-                        break;
-                    case "EditText":
-                        EditTextWindow manipulateTextWindow = new();
-                        manipulateTextWindow.Show();
-                        break;
-                    case "QuickLookup":
-                        QuickSimpleLookup quickSimpleLookup = new();
-                        quickSimpleLookup.Show();
-                        break;
-                    default:
-                        EditTextWindow editTextWindow = new();
-                        editTextWindow.Show();
-                        break;
-                }
-            }
+                break;
+            case DefaultLaunchSetting.QuickLookup:
+                QuickSimpleLookup quickSimpleLookup = new();
+                quickSimpleLookup.Show();
+                break;
+            default:
+                EditTextWindow editTextWindow = new();
+                editTextWindow.Show();
+                break;
         }
     }
 

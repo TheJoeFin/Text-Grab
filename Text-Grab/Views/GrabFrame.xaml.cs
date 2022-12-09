@@ -139,7 +139,7 @@ public partial class GrabFrame : Window
 
     private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
     {
-        if (wasAltHeld == true && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
+        if (wasAltHeld && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
         {
             RectanglesCanvas.Opacity = 1;
             wasAltHeld = false;
@@ -148,7 +148,7 @@ public partial class GrabFrame : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (wasAltHeld == false && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
+        if (!wasAltHeld && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
         {
             RectanglesCanvas.Opacity = 0.1;
             wasAltHeld = true;
@@ -214,7 +214,7 @@ public partial class GrabFrame : Window
 
     private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(SearchBox.Text) == false && SearchBox.Text != "Search For Text...")
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text) && SearchBox.Text != "Search For Text...")
             SearchBox.Text = "";
         else if (RectanglesCanvas.Children.Count > 0)
             ResetGrabFrame();
@@ -239,17 +239,17 @@ public partial class GrabFrame : Window
 
     private void GrabBTN_Click(object sender, RoutedEventArgs e)
     {
-        if (IsFromEditWindow == false
-            && string.IsNullOrWhiteSpace(FrameText) == false
-            && Settings.Default.NeverAutoUseClipboard == false)
+        if (!IsFromEditWindow
+            && !string.IsNullOrWhiteSpace(FrameText)
+            && !Settings.Default.NeverAutoUseClipboard)
             try { Clipboard.SetDataObject(FrameText, true); } catch { }
 
-        if (Settings.Default.ShowToast == true
-            && IsFromEditWindow == false)
+        if (Settings.Default.ShowToast
+            && !IsFromEditWindow)
             NotificationUtilities.ShowToast(FrameText);
 
-        if (IsFromEditWindow == true
-            && string.IsNullOrWhiteSpace(FrameText) == false
+        if (IsFromEditWindow
+            && !string.IsNullOrWhiteSpace(FrameText)
             && DestinationTextBox is not null)
         {
             DestinationTextBox.Select(DestinationTextBox.SelectionStart + DestinationTextBox.SelectionLength, 0);
@@ -362,20 +362,16 @@ public partial class GrabFrame : Window
 
         double scale = 1;
         Language? currentLang = LanguagesComboBox.SelectedItem as Language;
+        if (currentLang is null)
+            currentLang = LanguageUtilities.GetOCRLanguage();
 
-        if (ocrResultOfWindow == null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, scale) = await ImageMethods.GetOcrResultFromRegion(rectCanvasSize, currentLang);
+        if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
+            (ocrResultOfWindow, scale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, currentLang);
 
-        if (currentLang is not null)
-        {
-            if (currentLang.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase) == true)
-                isSpaceJoining = false;
-            else if (currentLang.LanguageTag.StartsWith("ja", StringComparison.InvariantCultureIgnoreCase) == true)
-                isSpaceJoining = false;
-        }
-
-        if (ocrResultOfWindow == null)
+        if (ocrResultOfWindow is null)
             return;
+
+        isSpaceJoining = LanguageUtilities.IsLanguageSpaceJoining(currentLang);
 
         System.Drawing.Bitmap? bmp = null;
 
@@ -450,6 +446,8 @@ public partial class GrabFrame : Window
             {
                 Width = lineRect.Width / (dpi.DpiScaleX * scale),
                 Height = lineRect.Height / (dpi.DpiScaleY * scale),
+                Top = lineRect.Y,
+                Left = lineRect.X,
                 Word = lineText.ToString().Trim(),
                 ToolTip = ocrLine.Text,
                 LineNumber = lineNumber,
@@ -476,8 +474,10 @@ public partial class GrabFrame : Window
             }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
-            Canvas.SetLeft(wordBorderBox, lineRect.Left / (dpi.DpiScaleX * scale));
-            Canvas.SetTop(wordBorderBox, lineRect.Top / (dpi.DpiScaleY * scale));
+            wordBorderBox.Left = lineRect.Left / (dpi.DpiScaleX * scale);
+            wordBorderBox.Top = lineRect.Top / (dpi.DpiScaleY * scale);
+            Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
+            Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
 
             lineNumber++;
         }
@@ -501,11 +501,12 @@ public partial class GrabFrame : Window
             RectanglesCanvas.RenderTransform = transform;
         }
 
-        if (TableToggleButton.IsChecked == true)
+        if (TableToggleButton.IsChecked is true && ocrResultOfWindow is not null)
         {
             try
             {
-                AnalyzeAsTable(rectCanvasSize);
+                AnalyedResultTable = new();
+                AnalyedResultTable.AnalyzeAsTable(wordBorders.ToList(), rectCanvasSize);
             }
             catch (Exception ex)
             {
@@ -536,12 +537,14 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Children.Add(wordBorder);
         }
 
-        if (TableToggleButton.IsChecked == true && AnalyedResultTable is not null)
+        if (TableToggleButton.IsChecked is true 
+            && AnalyedResultTable is not null
+            && AnalyedResultTable.TableLines is not null)
         {
-            DrawTable(AnalyedResultTable);
+            RectanglesCanvas.Children.Add(AnalyedResultTable.TableLines);
         }
 
-        if (IsWordEditMode == true)
+        if (IsWordEditMode)
             EnterEditMode();
 
         MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
@@ -592,369 +595,9 @@ public partial class GrabFrame : Window
         }
     }
 
-    private void DrawTable(ResultTable resultTable)
-    {
-        // Draw the lines and bounds of the table
-        SolidColorBrush tableColor = new SolidColorBrush(Color.FromArgb(255, 40, 118, 126));
-
-        Border tableOutline = new()
-        {
-            Width = resultTable.BoundingRect.Width,
-            Height = resultTable.BoundingRect.Height,
-            BorderThickness = new Thickness(3),
-            BorderBrush = tableColor
-        };
-        RectanglesCanvas.Children.Add(tableOutline);
-        Canvas.SetTop(tableOutline, resultTable.BoundingRect.Y);
-        Canvas.SetLeft(tableOutline, resultTable.BoundingRect.X);
-
-        foreach (int columnLine in resultTable.ColumnLines)
-        {
-            Border vertLine = new()
-            {
-                Width = 2,
-                Height = resultTable.BoundingRect.Height,
-                Background = tableColor
-            };
-            RectanglesCanvas.Children.Add(vertLine);
-            Canvas.SetTop(vertLine, resultTable.BoundingRect.Y);
-            Canvas.SetLeft(vertLine, columnLine);
-        }
-
-        foreach (int rowLine in resultTable.RowLines)
-        {
-            Border horzLine = new()
-            {
-                Height = 2,
-                Width = resultTable.BoundingRect.Width,
-                Background = tableColor
-            };
-            RectanglesCanvas.Children.Add(horzLine);
-            Canvas.SetTop(horzLine, rowLine);
-            Canvas.SetLeft(horzLine, resultTable.BoundingRect.X);
-        }
-    }
-
-    private void AnalyzeAsTable(System.Drawing.Rectangle rectCanvasSize)
-    {
-        int hitGridSpacing = 3;
-
-        int numberOfVerticalLines = rectCanvasSize.Width / hitGridSpacing;
-        int numberOfHorizontalLines = rectCanvasSize.Height / hitGridSpacing;
-
-        List<ResultRow> resultRows = new();
-
-        List<int> rowAreas = new();
-        for (int i = 0; i < numberOfHorizontalLines; i++)
-        {
-            Border horzLine = new()
-            {
-                Height = 1,
-                Width = rectCanvasSize.Width,
-                Opacity = 0,
-                Background = new SolidColorBrush(Colors.Gray)
-            };
-            Rect horzLineRect = new(0, i * hitGridSpacing, horzLine.Width, horzLine.Height);
-            _ = RectanglesCanvas.Children.Add(horzLine);
-            Canvas.SetTop(horzLine, i * 3);
-
-            foreach (var child in RectanglesCanvas.Children)
-            {
-                if (child is WordBorder wb)
-                {
-                    Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                    if (horzLineRect.IntersectsWith(wbRect) == true)
-                    {
-                        rowAreas.Add(i * hitGridSpacing);
-                        break;
-                    }
-                }
-            }
-        }
-
-        int rowTop = 0;
-        int rowCount = 0;
-        for (int i = 0; i < rowAreas.Count; i++)
-        {
-            int thisLine = rowAreas[i];
-
-            // check if should set this as top
-            if (i == 0)
-                rowTop = thisLine;
-            else if (i - 1 > 0)
-            {
-                int prevRow = rowAreas[i - 1];
-                if (thisLine - prevRow != hitGridSpacing)
-                {
-                    rowTop = thisLine;
-                }
-            }
-
-            // check to see if at bottom of row
-            if (i == rowAreas.Count - 1)
-            {
-                resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
-                rowCount++;
-            }
-            else if (i + 1 < rowAreas.Count)
-            {
-                int nextRow = rowAreas[i + 1];
-                if (nextRow - thisLine != hitGridSpacing)
-                {
-                    resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
-                    rowCount++;
-                }
-            }
-        }
-
-        List<int> columnAreas = new();
-        for (int i = 0; i < numberOfVerticalLines; i++)
-        {
-            Border vertLine = new()
-            {
-                Height = rectCanvasSize.Height,
-                Width = 1,
-                Opacity = 0,
-                Background = new SolidColorBrush(Colors.Gray)
-            };
-            _ = RectanglesCanvas.Children.Add(vertLine);
-            Canvas.SetLeft(vertLine, i * hitGridSpacing);
-
-            Rect vertLineRect = new(i * hitGridSpacing, 0, vertLine.Width, vertLine.Height);
-            foreach (var child in RectanglesCanvas.Children)
-            {
-                if (child is WordBorder wb)
-                {
-                    Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                    if (vertLineRect.IntersectsWith(wbRect) == true)
-                    {
-                        columnAreas.Add(i * hitGridSpacing);
-                        break;
-                    }
-                }
-            }
-        }
-
-        List<ResultColumn> resultColumns = new();
-        int columnLeft = 0;
-        int columnCount = 0;
-        for (int i = 0; i < columnAreas.Count; i++)
-        {
-            int thisLine = columnAreas[i];
-
-            // check if should set this as top
-            if (i == 0)
-                columnLeft = thisLine;
-            else if (i - 1 > 0)
-            {
-                int prevColumn = columnAreas[i - 1];
-                if (thisLine - prevColumn != hitGridSpacing)
-                {
-                    columnLeft = thisLine;
-                }
-            }
-
-            // check to see if at last Column
-            if (i == columnAreas.Count - 1)
-            {
-                resultColumns.Add(new ResultColumn { Left = columnLeft, Right = thisLine, ID = columnCount });
-                columnCount++;
-            }
-            else if (i + 1 < columnAreas.Count)
-            {
-                int nextColumn = columnAreas[i + 1];
-                if (nextColumn - thisLine != hitGridSpacing)
-                {
-                    resultColumns.Add(new ResultColumn { Left = columnLeft, Right = thisLine, ID = columnCount });
-                    columnCount++;
-                }
-            }
-        }
-
-        Rect tableBoundingRect = new()
-        {
-            X = columnAreas.FirstOrDefault(),
-            Y = rowAreas.FirstOrDefault(),
-            Width = columnAreas.LastOrDefault() - columnAreas.FirstOrDefault(),
-            Height = rowAreas.LastOrDefault() - rowAreas.FirstOrDefault()
-        };
-
-        // try 4 times to refine the rows and columns for outliers
-        // on the fifth time set the word boundery properties
-        for (int r = 0; r < 5; r++)
-        {
-            int outlierThreshould = 2;
-
-            List<int> outlierRowIDs = new();
-
-            foreach (ResultRow row in resultRows)
-            {
-                int numberOfIntersectingWords = 0;
-                Border rowBorder = new()
-                {
-                    Height = row.Bottom - row.Top,
-                    Width = tableBoundingRect.Width,
-                    Background = new SolidColorBrush(Colors.Red),
-                    Tag = row.ID
-                };
-                RectanglesCanvas.Children.Add(rowBorder);
-                Canvas.SetLeft(rowBorder, tableBoundingRect.X);
-                Canvas.SetTop(rowBorder, row.Top);
-
-                Rect rowRect = new Rect(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
-                foreach (var child in RectanglesCanvas.Children)
-                {
-                    if (child is WordBorder wb)
-                    {
-                        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                        if (rowRect.IntersectsWith(wbRect) == true)
-                        {
-                            numberOfIntersectingWords++;
-                            wb.ResultRowID = row.ID;
-                        }
-                    }
-                }
-
-                if (numberOfIntersectingWords <= outlierThreshould && r != 4)
-                    outlierRowIDs.Add(row.ID);
-            }
-
-            if (outlierRowIDs.Count > 0)
-                mergeTheseRowIDs(resultRows, outlierRowIDs);
-
-
-            List<int> outlierColumnIDs = new();
-
-            foreach (ResultColumn column in resultColumns)
-            {
-                int numberOfIntersectingWords = 0;
-                Border columnBorder = new()
-                {
-                    Height = tableBoundingRect.Height,
-                    Width = column.Right - column.Left,
-                    Background = new SolidColorBrush(Colors.Blue),
-                    Opacity = 0.2,
-                    Tag = column.ID
-                };
-                RectanglesCanvas.Children.Add(columnBorder);
-                Canvas.SetLeft(columnBorder, column.Left);
-                Canvas.SetTop(columnBorder, tableBoundingRect.Y);
-
-                Rect columnRect = new Rect(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
-                foreach (var child in RectanglesCanvas.Children)
-                {
-                    if (child is WordBorder wb)
-                    {
-                        Rect wbRect = new Rect(Canvas.GetLeft(wb), Canvas.GetTop(wb), wb.Width, wb.Height);
-                        if (columnRect.IntersectsWith(wbRect) == true)
-                        {
-                            numberOfIntersectingWords++;
-                            wb.ResultColumnID = column.ID;
-                        }
-                    }
-                }
-
-                if (numberOfIntersectingWords <= outlierThreshould)
-                    outlierColumnIDs.Add(column.ID);
-            }
-
-            if (outlierColumnIDs.Count > 0 && r != 4)
-                mergetheseColumnIDs(resultColumns, outlierColumnIDs);
-        }
-
-        AnalyedResultTable = new ResultTable(resultColumns, resultRows);
-
-        // foreach (ResultRow row in resultRows)
-        // {
-        //     Border rowBorder = new()
-        //     {
-        //         Height = row.Bottom - row.Top,
-        //         Width = tableBoundingRect.Width,
-        //         Background = new SolidColorBrush(Colors.Red),
-        //         Opacity = 0.2,
-        //         Tag = row.ID
-        //     };
-        //     RectanglesCanvas.Children.Add(rowBorder);
-        //     Canvas.SetLeft(rowBorder, tableBoundingRect.X);
-        //     Canvas.SetTop(rowBorder, row.Top);
-        // }
-
-        // foreach (ResultColumn column in resultColumns)
-        // {
-        //     Border columnBorder = new()
-        //     {
-        //         Height = tableBoundingRect.Height,
-        //         Width = column.Right - column.Left,
-        //         Background = new SolidColorBrush(Colors.Blue),
-        //         Opacity = 0.2,
-        //         Tag = column.ID
-        //     };
-        //     RectanglesCanvas.Children.Add(columnBorder);
-        //     Canvas.SetLeft(columnBorder, column.Left);
-        //     Canvas.SetTop(columnBorder, tableBoundingRect.Y);
-        // }
-    }
-
-    private static void mergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
-    {
-        for (int i = 0; i < outlierColumnIDs.Count; i++)
-        {
-            for (int j = 0; j < resultColumns.Count; j++)
-            {
-                ResultColumn jthColumn = resultColumns[j];
-                if (jthColumn.ID == outlierColumnIDs[i])
-                {
-                    if (j == 0)
-                    {
-                        // merge with next column if possible
-                        if (j + 1 < resultColumns.Count)
-                        {
-                            ResultColumn nextColumn = resultColumns[j + 1];
-                            nextColumn.Left = jthColumn.Left;
-                        }
-                    }
-                    else if (j == resultColumns.Count - 1)
-                    {
-                        // merge with previous column
-                        if (j - 1 >= 0)
-                        {
-                            ResultColumn prevColumn = resultColumns[j - 1];
-                            prevColumn.Right = jthColumn.Right;
-                        }
-                    }
-                    else
-                    {
-                        // merge with closet column
-                        ResultColumn prevColumn = resultColumns[j - 1];
-                        ResultColumn nextColumn = resultColumns[j + 1];
-                        int distToPrev = (int)(jthColumn.Left - prevColumn.Right);
-                        int distToNext = (int)(nextColumn.Left - jthColumn.Right);
-
-                        if (distToNext < distToPrev)
-                        {
-                            // merge with next column
-                            nextColumn.Left = jthColumn.Left;
-                        }
-                        else
-                        {
-                            // merge with prev column
-                            prevColumn.Right = jthColumn.Right;
-                        }
-                    }
-                    resultColumns.RemoveAt(j);
-                }
-            }
-        }
-    }
-
-    private static void mergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
-    {
-
-    }
-
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         if (sender is not TextBox searchBox) return;
@@ -997,63 +640,9 @@ public partial class GrabFrame : Window
 
         StringBuilder stringBuilder = new();
 
-        if (TableToggleButton.IsChecked == true)
+        if (TableToggleButton.IsChecked is true)
         {
-            List<WordBorder>? selectedBorders = wordBorders.Where(w => w.IsSelected == true).ToList();
-
-            if (selectedBorders.Count == 0)
-                selectedBorders.AddRange(wordBorders);
-
-            List<string> lineList = new();
-            int? lastLineNum = 0;
-            int lastColumnNum = 0;
-
-            if (selectedBorders.FirstOrDefault() != null)
-                lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
-
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultColumnID).ToList();
-            selectedBorders = selectedBorders.OrderBy(x => x.ResultRowID).ToList();
-
-            int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
-
-            foreach (WordBorder border in selectedBorders)
-            {
-                if (lineList.Count == 0)
-                    lastLineNum = border.ResultRowID;
-
-                if (border.ResultRowID != lastLineNum)
-                {
-                    if (isSpaceJoining)
-                        stringBuilder.Append(string.Join(' ', lineList));
-                    else
-                        stringBuilder.Append(string.Join("", lineList));
-                    stringBuilder.Replace(" \t ", "\t");
-                    stringBuilder.Append(Environment.NewLine);
-                    lineList.Clear();
-                    lastLineNum = border.ResultRowID;
-                }
-
-                if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
-                {
-                    string borderWord = border.Word;
-                    int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-                    if (numberOfOffColumns < 0)
-                        lastColumnNum = 0;
-
-                    numberOfOffColumns = border.ResultColumnID - lastColumnNum;
-
-                    if (numberOfOffColumns > 0)
-                        lineList.Add(new string('\t', numberOfOffColumns));
-                }
-                lastColumnNum = border.ResultColumnID;
-
-                lineList.Add(border.Word);
-            }
-
-            if (isSpaceJoining)
-                stringBuilder.Append(string.Join(' ', lineList));
-            else
-                stringBuilder.Append(string.Join("", lineList));
+            ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders.ToList(), isSpaceJoining);
         }
         else
         {
@@ -1220,7 +809,7 @@ public partial class GrabFrame : Window
             {
                 clickedEmptySpace = false;
 
-                if (smallSelction == false)
+                if (!smallSelction)
                 {
                     wordBorder.Select();
                     wordBorder.WasRegionSelected = true;
@@ -1237,18 +826,18 @@ public partial class GrabFrame : Window
             }
             else
             {
-                if (wordBorder.WasRegionSelected == true
-                    && smallSelction == false)
+                if (wordBorder.WasRegionSelected
+                    && !smallSelction)
                     wordBorder.Deselect();
             }
 
-            if (finalCheck == true)
+            if (finalCheck)
                 wordBorder.WasRegionSelected = false;
         }
 
-        if (clickedEmptySpace == true
-            && smallSelction == true
-            && finalCheck == true)
+        if (clickedEmptySpace
+            && smallSelction
+            && finalCheck)
         {
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
@@ -1462,7 +1051,7 @@ public partial class GrabFrame : Window
         if (sender is not MenuItem aspectMI)
             return;
 
-        if (aspectMI.IsChecked == false)
+        if (aspectMI.IsChecked is false)
             GrabFrameImage.Stretch = Stretch.Fill;
         else
             GrabFrameImage.Stretch = Stretch.Uniform;
@@ -1495,7 +1084,7 @@ public partial class GrabFrame : Window
             return;
 
         IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
-        Language? firstLang = ImageMethods.GetOCRLanguage();
+        Language firstLang = LanguageUtilities.GetOCRLanguage();
 
         int count = 0;
 
