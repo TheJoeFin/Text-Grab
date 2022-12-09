@@ -1,3 +1,5 @@
+using System.Text;
+using Text_Grab;
 using Text_Grab.Utilities;
 
 namespace Tests;
@@ -150,5 +152,157 @@ Another Line";
     public void TestIsValidEmailAddress(string inputString, bool expectedIsValid)
     {
         Assert.Equal(expectedIsValid, inputString.IsValidEmailAddress());
+    }
+
+    [Fact]
+    public void TestGetLineStartAndLength()
+    {
+        string inputString = @"Don't Forget to do
+the method just the way
+The quick brown fox
+jumped over the lazy
+brown dog";
+
+        (int start, int length) = inputString.GetStartAndLengthOfLineAtPosition(20);
+        string actualString = inputString.Substring(start, length);
+
+        string expectedString = "the method just the way\r\n";
+
+        Assert.Equal(expectedString, actualString);
+    }
+
+    [Fact]
+    public void TestUnstackGroups()
+    {
+        string inputString = @"1
+2
+3
+4
+5
+a
+b
+c
+d
+e
+jan
+feb
+mar
+apr
+may";
+
+        string acualString = inputString.UnstackGroups(5);
+
+        string expectedString = @"1	a	jan
+2	b	feb
+3	c	mar
+4	d	apr
+5	e	may";
+
+        Assert.Equal(expectedString, acualString);
+    }
+
+    [Fact]
+    public void TestUnstackString()
+    {
+        string inputString = @"1
+a
+jan
+2
+b
+feb
+3
+c
+mar
+4
+d
+apr
+5
+e
+may";
+
+        string acualString = inputString.UnstackStrings(3);
+
+        string expectedString = @"1	a	jan
+2	b	feb
+3	c	mar
+4	d	apr
+5	e	may";
+
+        Assert.Equal(expectedString, acualString);
+    }
+
+    [Theory]
+    [InlineData("The quick brown fox", "fox", "The quick brown ")]
+    [InlineData("jumped over over the lazy", "over", "jumped   the lazy")]
+    [InlineData("brown dogs and what not", "o", "brwn dgs and what nt")]
+    public void TestRemoveThisString(string inputString, string remove, string expected)
+    {
+        Assert.Equal(expected, inputString.RemoveAllInstancesOf(remove));
+    }
+
+    [Theory]
+    [InlineData("The quick brown fox", "fox brown quick The\r\n")]
+    [InlineData("jumped over the lazy", "lazy the over jumped\r\n")]
+    [InlineData("brown dogs and what not", "not what and dogs brown\r\n")]
+    [InlineData(@"brown dogs
+and what not", @"dogs brown
+not what and
+")]
+    public void TestReverseString(string inputString, string expected)
+    {
+        StringBuilder sb = new(inputString);
+        StringMethods.ReverseWordsForRightToLeft(sb);
+        Assert.Equal(expected, sb.ToString());
+    }
+
+    [Theory]
+    [InlineData(@"hello there
+general kenobi", @"lo there
+eral kenobi
+", 3, SpotInLine.Beginning)]
+    [InlineData(@"hello there
+general kenobi", @"hello th
+general ken
+", 3, SpotInLine.End)]
+    [InlineData(@"hello there
+general kenobi
+you are a bold one!", @"hello th
+general ken
+you are a bold o
+", 3, SpotInLine.End)]
+    public void TestRemoveFromEachLines(string inputString, string expected, int numberOfChars, SpotInLine spotInLine)
+    {
+        Assert.Equal(expected, inputString.RemoveFromEachLine(numberOfChars, spotInLine));
+    }
+
+    [Theory]
+    [InlineData(@"hello there
+general kenobi", @"Yep hello there
+Yep general kenobi", "Yep ", SpotInLine.Beginning)]
+    [InlineData(@"hello there
+general kenobi", @"hello there Great
+general kenobi Great", " Great", SpotInLine.End)]
+    [InlineData(@"hello there
+general kenobi
+you are a bold one!", @"hello there Awesome
+general kenobi Awesome
+you are a bold one! Awesome", " Awesome", SpotInLine.End)]
+    public void TestAddToEachLines(string inputString, string expected, string stringToAdd, SpotInLine spotInLine)
+    {
+        Assert.Equal(expected, inputString.AddCharsToEachLine(stringToAdd, spotInLine));
+    }
+
+    [Theory]
+    [InlineData("AWESOME", CurrentCase.Upper)]
+    [InlineData("awesome", CurrentCase.Lower)]
+    [InlineData("Awesome", CurrentCase.Camel)]
+    [InlineData("", CurrentCase.Unknown)]
+    [InlineData("   ", CurrentCase.Unknown)]
+    [InlineData("the case", CurrentCase.Lower)]
+    [InlineData("THE CASE", CurrentCase.Upper)]
+    [InlineData("The Case", CurrentCase.Camel)]
+    public void TestDetermineToggleCase(string inputString, CurrentCase expectedCase)
+    {
+        Assert.Equal(expectedCase, StringMethods.DetermineToggleCase(inputString));
     }
 }

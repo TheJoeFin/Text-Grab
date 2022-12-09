@@ -270,23 +270,27 @@ public static class StringMethods
 
     public static CurrentCase DetermineToggleCase(string textToModify)
     {
+        if (string.IsNullOrWhiteSpace(textToModify))
+            return CurrentCase.Unknown;
+
         bool isAllLower = true;
         bool isAllUpper = true;
 
         foreach (char letter in textToModify)
         {
+            if (!char.IsLetter(letter))
+                continue;
+
             if (char.IsLower(letter))
-            {
                 isAllUpper = false;
-            }
+
             if (char.IsUpper(letter))
-            {
                 isAllLower = false;
-            }
         }
 
-        if (!isAllLower
-            && isAllUpper)
+        if (!isAllLower && isAllUpper)
+            return CurrentCase.Upper;
+        else if (!isAllUpper && isAllLower)
             return CurrentCase.Lower;
 
         return CurrentCase.Camel;
