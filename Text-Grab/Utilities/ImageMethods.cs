@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Views;
+using Windows.Storage.Streams;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
 using BitmapFrame = System.Windows.Media.Imaging.BitmapFrame;
 using Point = System.Windows.Point;
@@ -157,6 +158,20 @@ public static class ImageMethods
           data.Height * data.Stride,
           data.Stride);
         bmp.UnlockBits(data);
+        return bmp;
+    }
+
+    public static BitmapImage GetBitmapImageFromIRandomAccessStream(IRandomAccessStream stream)
+    {
+        BitmapImage bmp = new();
+        Stream ioStream = stream.AsStream();
+        // Create a new BitmapImage and use the SetSourceAsync method to 
+        // initialize it from the given IRandomAccessStream.
+        bmp.BeginInit();
+        bmp.CacheOption = BitmapCacheOption.None;
+        bmp.StreamSource = ioStream;
+        bmp.EndInit();
+        bmp.Freeze();
         return bmp;
     }
 }

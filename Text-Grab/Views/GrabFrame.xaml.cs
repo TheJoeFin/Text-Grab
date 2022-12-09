@@ -58,6 +58,8 @@ public partial class GrabFrame : Window
 
     private bool isLanguageBoxLoaded = false;
 
+    public static RoutedCommand PasteCommand = new();
+
     public string FrameText { get; private set; } = string.Empty;
 
     public TextBox? DestinationTextBox { get; set; }
@@ -88,6 +90,10 @@ public partial class GrabFrame : Window
         this.PreviewMouseWheel += HandlePreviewMouseWheel;
         this.PreviewKeyDown += Window_PreviewKeyDown;
         this.PreviewKeyUp += Window_PreviewKeyUp;
+
+        RoutedCommand pasteCommand = new();
+        _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
 
         CheckBottomRowButtonsVis();
     }
@@ -144,6 +150,48 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Opacity = 1;
             wasAltHeld = false;
         }
+    }
+
+    private void CanPasteExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        Windows.ApplicationModel.DataTransfer.DataPackageView? dataPackageView = null;
+
+        try
+        {
+            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
+            e.CanExecute = false;
+        }
+
+        if (dataPackageView is null)
+        {
+            e.CanExecute = false;
+            return;
+        }
+
+        if (dataPackageView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Bitmap))
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
+    }
+
+    private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
+    {
+        (bool success, BitmapImage? clipboardImage) = await ClipboardUtilities.TryGetImageFromClipboard();
+
+        if (!success)
+            return;
+
+        reDrawTimer.Stop();
+
+        droppedImageSource = clipboardImage;
+        FreezeToggleButton.IsChecked = true;
+        FreezeGrabFrame();
+
+        reDrawTimer.Start();
     }
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -537,7 +585,7 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Children.Add(wordBorder);
         }
 
-        if (TableToggleButton.IsChecked is true 
+        if (TableToggleButton.IsChecked is true
             && AnalyedResultTable is not null
             && AnalyedResultTable.TableLines is not null)
         {
@@ -983,7 +1031,6 @@ public partial class GrabFrame : Window
 
         IsDragOver = false;
 
-        reDrawTimer.Start();
         reDrawTimer.Start();
     }
 

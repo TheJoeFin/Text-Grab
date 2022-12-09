@@ -45,6 +45,14 @@
         </Style>
     </Window.Resources>
 
+    <Window.CommandBindings>
+        <CommandBinding 
+            CanExecute="CanPasteExecute"
+            Command="{x:Static local:GrabFrame.PasteCommand}"
+            Executed="PasteExecuted" />
+    </Window.CommandBindings>
+
+
     <WindowChrome.WindowChrome>
         <WindowChrome
             CaptionHeight="24"
@@ -173,6 +181,11 @@
                                 x:Name="FreezeMI"
                                 Click="FreezeMI_Click"
                                 Header="Toggle Freeze" />
+                            <Separator />
+                                <MenuItem 
+                                    Header="Paste Image" 
+                                    Command="{x:Static local:GrabFrame.PasteCommand}" 
+                                    InputGestureText="Ctrl + Shift + V" />
                         </ContextMenu>
                     </Canvas.ContextMenu>
                 </Canvas>
