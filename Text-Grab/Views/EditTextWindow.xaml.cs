@@ -1062,7 +1062,10 @@ public partial class EditTextWindow : Window
         foreach (Window window in allWindows)
         {
             if (window is GrabFrame grabFrame)
+            {
+                grabFrame.DestinationTextBox = null;
                 grabFrame.IsFromEditWindow = false;
+            }
             else if (window is FullscreenGrab fullscreenGrab)
                 fullscreenGrab.DestinationTextBox = null;
             else if (window is FindAndReplaceWindow findAndReplaceWindow)
