@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Text_Grab;
 using Text_Grab.Utilities;
 
@@ -304,5 +304,44 @@ you are a bold one! Awesome", " Awesome", SpotInLine.End)]
     public void TestDetermineToggleCase(string inputString, CurrentCase expectedCase)
     {
         Assert.Equal(expectedCase, StringMethods.DetermineToggleCase(inputString));
+    }
+
+    [Theory]
+    [InlineData('A', true)]
+    [InlineData('a', true)]
+    [InlineData('b', true)]
+    [InlineData('c', true)]
+    [InlineData('C', true)]
+    [InlineData('d', true)]
+    [InlineData('z', true)]
+    [InlineData('Z', true)]
+    [InlineData('1', true)]
+    [InlineData('4', true)]
+    [InlineData('-', true)]
+    [InlineData('*', true)]
+    [InlineData('+', true)]
+    [InlineData('%', true)]
+    [InlineData('3', true)]
+    [InlineData('|', true)]
+    [InlineData('\r', true)]
+    [InlineData('\n', true)]
+    [InlineData('\t', true)]
+    [InlineData('À', false)]
+    [InlineData('Ü', false)]
+    [InlineData('Ö', false)]
+    [InlineData('Ç', false)]
+    public void TestIsBasicLatin(char inputChar, bool isLatin)
+    {
+        Assert.Equal(isLatin, inputChar.IsBasicLatin());
+    }
+
+    [Theory]
+    [InlineData("string to test", "string to test")]
+    [InlineData("ABCDEФGHIJKLMNOПQЯSTUVWXYZ", "ABCDEOGHIJKLMNOnQRSTUVWXYZ")]
+    [InlineData("HЭllΘ There! @$2890", "H3llO There! @$2890")]
+    [InlineData("", "")]
+    public void TestReplaceGreekAndCyrillic(string inputString, string expectedString)
+    {
+        Assert.Equal(expectedString, inputString.ReplaceGreekOrCyrillicWithLatin());
     }
 }

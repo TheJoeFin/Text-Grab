@@ -14,6 +14,47 @@ public static class StringMethods
     public static readonly List<Char> ReservedChars = new()
     { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
 
+    public static readonly Dictionary<char, char> greekCyrillicLatinMap = new()
+    {
+        // Similar Looking Greek characters
+        {'Γ', 'r'}, {'Δ', 'D'}, {'Θ', 'O'}, {'Λ', 'L'}, {'Ξ', 'X'},
+        {'Π', 'P'}, {'Σ', 'S'}, {'Φ', 'O'}, {'Χ', 'C'}, {'Ψ', 'Y'},
+        {'Ω', 'W'}, {'α', 'a'}, {'β', 'b'}, {'γ', 'g'}, {'δ', 'd'},
+        {'ε', 'e'}, {'ζ', 'z'}, {'η', 'n'}, {'θ', 'q'}, {'ι', 'i'},
+        {'κ', 'k'}, {'λ', 'l'}, {'μ', 'm'}, {'ν', 'n'}, {'ξ', 'x'},
+        {'π', 'p'}, {'ρ', 'r'}, {'ς', 's'}, {'σ', 's'}, {'τ', 't'},
+        {'υ', 'y'}, {'φ', 'f'}, {'χ', 'c'}, {'ψ', 'y'}, {'ω', 'w'},
+
+        // Similar looking Cyrillic characters
+        {'Б', 'B'}, {'Г', 'r'}, {'Д', 'A'}, {'Ё', 'E'}, {'Ж', 'Z'},
+        {'З', 'Z'}, {'И', 'N'}, {'Й', 'N'}, {'К', 'K'}, {'Л', 'n'},
+        {'П', 'n'}, {'Ф', 'O'}, {'Ц', 'U'}, {'Ч', 'u'}, {'Ш', 'W'},
+        {'Щ', 'W'}, {'Ъ', 'b'}, {'Ы', 'b'}, {'Ь', 'b'}, {'Э', '3'},
+        {'Ю', 'O'}, {'Я', 'R'}, {'б', '6'}, {'в', 'B'}, {'г', 'g'},
+        {'д', 'A'}, {'ё', 'e'}, {'ж', 'z'}, {'з', '3'}, {'и', 'N'},
+        {'й', 'N'}, {'к', 'k'}, {'л', 'n'}, {'м', 'M'}, {'н', 'H'},
+        {'п', 'n'}, {'т', 't'}, {'ф', 'o'}, {'ц', 'u'}, {'ч', 'u'},
+        {'ш', 'w'}, {'щ', 'w'}, {'ъ', 'b'}, {'ы', 'b'}, {'ь', 'b'},
+        {'э', '3'}, {'ю', 'o'}, {'я', 'R'}
+    };
+
+    public static string ReplaceWithDictionary(this string str, Dictionary<char, char> dict)
+    {
+        var sb = new StringBuilder();
+
+        foreach (char c in str)
+        {
+            sb.Append(dict.ContainsKey(c) ? dict[c] : c);
+        }
+
+        return sb.ToString();
+    }
+
+    public static string ReplaceGreekOrCyrillicWithLatin(this string str)
+    {
+        return str.ReplaceWithDictionary(greekCyrillicLatinMap);
+    }
+
     public static IEnumerable<int> AllIndexesOf(this string str, string searchstring)
     {
         int minIndex = str.IndexOf(searchstring);
@@ -639,4 +680,12 @@ public static class StringMethods
         Regex regex = new(@"^[\w!#$%&'*+\-/=?\^_`{|}~]+(\.[\w!#$%&'*+\-/=?\^_`{|}~]+)*" + "@" + @"((([\-\w]+\.)+[a-zA-Z]{2,4})|(([0-9]{1,3}\.){3}[0-9]{1,3}))$");
         return regex.IsMatch(input);
     }
+
+    public static bool IsBasicLatin(this char c)
+    {
+        // Basic Latin characters are those with Unicode code points
+        // in the range U+0000 to U+007F (inclusive)
+        return c >= '\u0000' && c <= '\u007F';
+    }
+
 }
