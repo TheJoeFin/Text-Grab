@@ -2,8 +2,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
 namespace Text_Grab.Utilities;
@@ -17,7 +20,7 @@ public class ClipboardUtilities
 
         try
         {
-            dataPackageView = Clipboard.GetContent();
+            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
         }
         catch (System.Exception ex)
         {
@@ -46,40 +49,21 @@ public class ClipboardUtilities
         return (false, clipboardText);
     }
 
-    public static async Task<(bool, BitmapImage?)> TryGetImageFromClipboard()
+    public static (bool, ImageSource?) TryGetImageFromClipboard()
     {
-        DataPackageView? dataPackageView = null;
-
-        try
-        {
-            dataPackageView = Clipboard.GetContent();
-        }
-        catch (System.Exception ex)
-        {
-            Debug.WriteLine($"error with Clipboard.GetContent(). Exception Message: {ex.Message}");
-        }
-
-        if (dataPackageView is null)
-        {
+        if (!System.Windows.Clipboard.ContainsImage())
             return (false, null);
-        }
 
-        if (dataPackageView.Contains(StandardDataFormats.Bitmap))
-        {
-            try
-            {
-                RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
-                using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                BitmapImage bmp = ImageMethods.GetBitmapImageFromIRandomAccessStream(stream);
-                return (true, bmp);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.WriteLine($"error with dataPackageView.GetBitmapAsync(). Exception Message: {ex.Message}");
-                return (false, null);
-            }
-        }
+        IDataObject clipboardData = System.Windows.Clipboard.GetDataObject();
+        if (clipboardData is null
+            || !clipboardData.GetDataPresent(System.Windows.Forms.DataFormats.Bitmap))
+            return(false, null);
 
-        return (false, null);
+        ImageSource imageSource = System.Windows.Clipboard.GetImage();
+
+        if (imageSource is null)
+            return (false, null);
+
+        return (true, imageSource);
     }
 }

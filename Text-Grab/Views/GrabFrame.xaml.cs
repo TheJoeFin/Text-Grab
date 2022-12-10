@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,6 +19,7 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Globalization;
+using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
 using ZXing;
 using ZXing.Windows.Compatibility;
@@ -62,7 +64,19 @@ public partial class GrabFrame : Window
 
     public string FrameText { get; private set; } = string.Empty;
 
-    public TextBox? DestinationTextBox { get; set; }
+    private TextBox? destinationTextBox;
+
+    public TextBox? DestinationTextBox
+    {
+        get { return destinationTextBox; }
+        set 
+        { 
+            destinationTextBox = value; 
+            if (destinationTextBox is not null)
+                EditTextToggleButton.IsChecked= true;
+        }
+    }
+
 
     public GrabFrame()
     {
@@ -139,7 +153,7 @@ public partial class GrabFrame : Window
         TableToggleButton.Click -= TableToggleButton_Click;
         EditToggleButton.Click -= EditToggleButton_Click;
         SettingsBTN.Click -= SettingsBTN_Click;
-        EditTextBTN.Click -= EditTextBTN_Click;
+        EditTextToggleButton.Click -= EditTextBTN_Click;
         GrabBTN.Click -= GrabBTN_Click;
     }
 
@@ -154,38 +168,27 @@ public partial class GrabFrame : Window
 
     private void CanPasteExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        Windows.ApplicationModel.DataTransfer.DataPackageView? dataPackageView = null;
-
-        try
+        if (System.Windows.Clipboard.ContainsImage())
         {
-            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
-        }
-        catch (System.Exception ex)
-        {
-            Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
-            e.CanExecute = false;
-        }
-
-        if (dataPackageView is null)
-        {
-            e.CanExecute = false;
+            e.CanExecute = true;
             return;
         }
 
-        if (dataPackageView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Bitmap))
-            e.CanExecute = true;
-        else
-            e.CanExecute = false;
+        e.CanExecute = false;
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
     {
-        (bool success, BitmapImage? clipboardImage) = await ClipboardUtilities.TryGetImageFromClipboard();
+        (bool success, ImageSource? clipboardImage) = ClipboardUtilities.TryGetImageFromClipboard();
 
-        if (!success)
+        if (!success || clipboardImage is null)
             return;
 
         reDrawTimer.Stop();
+        droppedImageSource = null;
+
+        ResetGrabFrame();
+        await Task.Delay(300);
 
         droppedImageSource = clipboardImage;
         FreezeToggleButton.IsChecked = true;
@@ -298,10 +301,10 @@ public partial class GrabFrame : Window
 
         if (IsFromEditWindow
             && !string.IsNullOrWhiteSpace(FrameText)
-            && DestinationTextBox is not null)
+            && destinationTextBox is not null)
         {
-            DestinationTextBox.Select(DestinationTextBox.SelectionStart + DestinationTextBox.SelectionLength, 0);
-            DestinationTextBox.AppendText(Environment.NewLine);
+            destinationTextBox.Select(destinationTextBox.SelectionStart + destinationTextBox.SelectionLength, 0);
+            destinationTextBox.AppendText(Environment.NewLine);
             UpdateFrameText();
         }
     }
@@ -702,9 +705,11 @@ public partial class GrabFrame : Window
 
         FrameText = stringBuilder.ToString();
 
-        if (IsFromEditWindow && DestinationTextBox is not null)
+        if (IsFromEditWindow 
+            && destinationTextBox is not null
+            && EditTextToggleButton.IsChecked is true)
         {
-            DestinationTextBox.SelectedText = FrameText;
+            destinationTextBox.SelectedText = FrameText;
         }
     }
 
@@ -996,9 +1001,19 @@ public partial class GrabFrame : Window
 
     private void EditTextBTN_Click(object sender, RoutedEventArgs e)
     {
-        EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-        DestinationTextBox = etw.GetMainTextBox();
-        IsFromEditWindow = true;
+        if (sender is ToggleButton toggleButton
+            && toggleButton.IsChecked is false
+            && destinationTextBox is not null)
+        {
+            destinationTextBox.SelectedText = "";
+        }
+
+        if (destinationTextBox is null)
+        {
+            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            destinationTextBox = etw.GetMainTextBox();
+            IsFromEditWindow = true;
+        }
 
         UpdateFrameText();
     }
