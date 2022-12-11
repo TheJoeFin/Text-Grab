@@ -46,7 +46,7 @@ public static class OcrExtensions
                 string wordString;
 
                 if (Settings.Default.CorrectErrors)
-                    wordString = ocrWord.Text.TryFixEveryWordLetterNumberErrors();
+                    wordString = ocrWord.Text.TryFixNumberLetterErrors();
                 else
                     wordString = ocrWord.Text;
 
