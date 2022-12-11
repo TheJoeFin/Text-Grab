@@ -36,6 +36,7 @@ public partial class SettingsWindow : Window
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
+        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -142,32 +143,35 @@ public partial class SettingsWindow : Window
         else if (QuickLookupRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "QuickLookup";
 
-        if (ErrorCorrectBox.IsChecked != null)
+        if (ErrorCorrectBox.IsChecked is not null)
             Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
 
-        if (NeverUseClipboardChkBx.IsChecked != null)
+        if (NeverUseClipboardChkBx.IsChecked is not null)
             Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
 
-        if (RunInBackgroundChkBx.IsChecked != null)
+        if (RunInBackgroundChkBx.IsChecked is not null)
         {
             Settings.Default.RunInTheBackground = (bool)RunInBackgroundChkBx.IsChecked;
             ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
         }
 
-        if (TryInsertCheckbox.IsChecked != null)
+        if (TryInsertCheckbox.IsChecked is not null)
             Settings.Default.TryInsert = (bool)TryInsertCheckbox.IsChecked;
 
-        if (StartupOnLoginCheckBox.IsChecked != null)
+        if (StartupOnLoginCheckBox.IsChecked is not null)
         {
             Settings.Default.StartupOnLogin = (bool)StartupOnLoginCheckBox.IsChecked;
             await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
         }
 
-        if (GlobalHotkeysCheckbox.IsChecked != null)
+        if (GlobalHotkeysCheckbox.IsChecked is not null)
             Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
 
-        if (ReadBarcodesBarcode.IsChecked != null)
+        if (ReadBarcodesBarcode.IsChecked is not null)
             Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;
+
+        if (CorrectToLatin.IsChecked is not null)
+            Settings.Default.CorrectToLatin = (bool)CorrectToLatin.IsChecked;
 
         if (HotKeysAllDifferent())
         {

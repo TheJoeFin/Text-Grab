@@ -66,4 +66,30 @@ public static class LanguageUtilities
 
         return selectedLanguage;
     }
+
+    public static bool IsCurrentLanguageLatinBased()
+    {
+        Language lang = GetCurrentInputLanguage();
+        return IsLatinBased(lang);
+    }
+
+    public static bool IsLatinBased(Language language)
+    {
+        // List of latin-based languages
+        List<string> latinLanguages = new List<string>()
+    {
+        "en",  // English
+        "es",  // Spanish
+        "fr",  // French
+        "it",  // Italian
+        "ro",  // Romanian
+        "pt"   // Portuguese
+    };
+
+        // Get the abbreviated name of the culture
+        string abbreviatedName = language.AbbreviatedName.ToLowerInvariant();
+
+        // Check if the abbreviated name of the culture is in the list of latin-based languages
+        return latinLanguages.Contains(abbreviatedName);
+    }
 }

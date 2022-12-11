@@ -116,7 +116,13 @@
                     <!--    -->
                     <CheckBox Name="ErrorCorrectBox" Style="{StaticResource labelText}">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
-                            Try to correct confusions between numbers and letters
+                            Correct common confusions between numbers and letters
+                        </TextBlock>
+                    </CheckBox>
+
+                    <CheckBox Name="CorrectToLatin" Style="{StaticResource labelText}">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Correct misidentifications between Greek and Cyrillic to Latin letters
                         </TextBlock>
                     </CheckBox>
 

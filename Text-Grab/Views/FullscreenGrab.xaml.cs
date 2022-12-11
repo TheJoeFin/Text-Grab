@@ -472,7 +472,10 @@ public partial class FullscreenGrab : Window
     private void HandleTextFromOcr(string grabbedText)
     {
         if (Settings.Default.CorrectErrors)
-            grabbedText.TryFixEveryWordLetterNumberErrors();
+            grabbedText = grabbedText.TryFixEveryWordLetterNumberErrors();
+
+        if (Settings.Default.CorrectToLatin)
+            grabbedText = grabbedText.ReplaceGreekOrCyrillicWithLatin();
 
         if (SingleLineMenuItem.IsChecked is true)
             grabbedText = grabbedText.MakeStringSingleLine();

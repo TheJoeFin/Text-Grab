@@ -50,6 +50,9 @@ public static class OcrExtensions
                 else
                     wordString = ocrWord.Text;
 
+                if (Settings.Default.CorrectToLatin)
+                    wordString = wordString.ReplaceGreekOrCyrillicWithLatin();
+
                 bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordString);
 
                 if (isFirstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))

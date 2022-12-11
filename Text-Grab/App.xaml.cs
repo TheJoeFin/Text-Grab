@@ -47,6 +47,7 @@ public partial class App : System.Windows.Application
 
         if (Settings.Default.FirstRun)
         {
+            Settings.Default.CorrectToLatin = LanguageUtilities.IsCurrentLanguageLatinBased();
             ShowAndSetFirstRun();
             return;
         }
