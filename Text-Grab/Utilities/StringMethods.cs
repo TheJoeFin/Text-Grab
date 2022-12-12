@@ -640,6 +640,25 @@ public static class StringMethods
         return sb.ToString().Trim();
     }
 
+    public static string LimitCharactersPerLine(this string stringToEdit, int characterLimit)
+    {
+        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+
+        StringBuilder returnStringBuilder = new();
+        foreach (string line in splitString)
+        {
+            if (line.Length < characterLimit)
+            {
+                returnStringBuilder.AppendLine(line);
+                continue;
+            }
+
+            returnStringBuilder.AppendLine(line.Substring(0, characterLimit));
+        }
+
+        return returnStringBuilder.ToString().Trim();
+    }
+
     public static bool IsValidEmailAddress(this string input)
     {
         // Generated from ChatGPT
@@ -654,5 +673,4 @@ public static class StringMethods
         // in the range U+0000 to U+007F (inclusive)
         return c >= '\u0000' && c <= '\u007F';
     }
-
 }

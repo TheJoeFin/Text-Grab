@@ -344,4 +344,24 @@ you are a bold one! Awesome", " Awesome", SpotInLine.End)]
     {
         Assert.Equal(expectedString, inputString.ReplaceGreekOrCyrillicWithLatin());
     }
+
+    [Theory]
+    [InlineData(@"hello there
+general kenobi", @"hello ther
+general ke", 10)]
+    [InlineData(@"hello there
+general kenobi", @"hello there
+general kenobi", 100)]
+    [InlineData(@"hello there
+general kenobi
+you are a bold one!", @"hello
+gener
+you a", 5)]
+    [InlineData(@"hello there
+general kenobi
+you are a bold one!", @"", 0)]
+    public void TestLimitEachLine(string inputString, string expected, int charLimit)
+    {
+        Assert.Equal(expected, inputString.LimitCharactersPerLine(charLimit));
+    }
 }
