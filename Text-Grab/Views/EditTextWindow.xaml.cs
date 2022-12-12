@@ -1546,6 +1546,9 @@ public partial class EditTextWindow : Window
                     outputFile.WriteLine(ocrdText);
                 }
             }
+            else
+                returnString.AppendLine($"----- No Text Extracted{Environment.NewLine}");
+
         }
         catch (System.Exception ex)
         {
