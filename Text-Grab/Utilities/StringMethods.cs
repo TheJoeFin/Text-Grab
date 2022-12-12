@@ -24,6 +24,8 @@ public static class StringMethods
         {'κ', 'k'}, {'λ', 'A'}, {'μ', 'u'}, {'ν', 'v'}, {'ξ', 'E'},
         {'π', 'n'}, {'ρ', 'p'}, {'ς', 's'}, {'σ', 'o'}, {'τ', 't'},
         {'υ', 'v'}, {'φ', 'O'}, {'χ', 'X'}, {'ψ', 'U'}, {'ω', 'w'},
+        {'ö', 'o'}, {'é', 'e'}, {'Å', 'A'}, {'Ö', 'O'}, {'ē', 'e'},
+        {'ō', 'o'}, {'Ἀ', 'A'}, {'ό', 'o'},
 
         // Similar looking Cyrillic characters
         {'Б', 'B'}, {'Г', 'r'}, {'Д', 'A'}, {'Ё', 'E'}, {'Ж', 'K'},
@@ -36,6 +38,17 @@ public static class StringMethods
         {'п', 'n'}, {'т', 'T'}, {'ф', 'o'}, {'ц', 'u'}, {'ч', 'u'},
         {'ш', 'w'}, {'щ', 'w'}, {'ъ', 'b'}, {'ы', 'b'}, {'ь', 'b'},
         {'э', '3'}, {'ю', 'o'}, {'я', 'R'}
+    };
+
+    public static Dictionary<char, char> NumbersToLetters = new()
+    {
+        {'0', 'o'}, {'4', 'h'}, {'9', 'g'}, {'1', 'l'}
+    };
+
+    public static Dictionary<char, char> LettersToNumbers = new()
+    {
+        {'o', '0'}, {'O', '0'}, {'Q', '0'}, {'c', '0'}, {'C', '0'},
+        {'i', '1'}, {'I', '1'}, {'l', '1'}, {'g', '9'}
     };
 
     public static string ReplaceWithDictionary(this string str, Dictionary<char, char> dict)
@@ -176,28 +189,13 @@ public static class StringMethods
 
     public static string TryFixToLetters(this string fixToLetters)
     {
-        fixToLetters = fixToLetters.Replace('0', 'o');
-        fixToLetters = fixToLetters.Replace('4', 'h');
-        fixToLetters = fixToLetters.Replace('9', 'g');
-        fixToLetters = fixToLetters.Replace('1', 'l');
-
-        return fixToLetters;
+        return fixToLetters.ReplaceWithDictionary(NumbersToLetters);
     }
 
     public static string TryFixToNumbers(this string fixToNumbers)
     {
 
-        fixToNumbers = fixToNumbers.Replace('o', '0');
-        fixToNumbers = fixToNumbers.Replace('O', '0');
-        fixToNumbers = fixToNumbers.Replace('Q', '0');
-        fixToNumbers = fixToNumbers.Replace('c', '0');
-        fixToNumbers = fixToNumbers.Replace('C', '0');
-        fixToNumbers = fixToNumbers.Replace('i', '1');
-        fixToNumbers = fixToNumbers.Replace('I', '1');
-        fixToNumbers = fixToNumbers.Replace('l', '1');
-        fixToNumbers = fixToNumbers.Replace('g', '9');
-
-        return fixToNumbers;
+        return fixToNumbers.ReplaceWithDictionary(LettersToNumbers);
     }
 
     public static string TryFixNumberLetterErrors(this string stringToFix)
@@ -583,37 +581,6 @@ public static class StringMethods
     {
         Regex regex = new(stringToRemove);
         return regex.Replace(stringToBeEdited, "");
-    }
-
-    public static void ReverseWordsForRightToLeft(StringBuilder text)
-    {
-        string[] textListLines = text.ToString().Split(new char[] { '\n', '\r' });
-        Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
-
-        _ = text.Clear();
-        foreach (string textLine in textListLines)
-        {
-            bool firstWord = true;
-            bool isPrevWordSpaceJoining = false;
-            List<string> wordArray = textLine.Split().ToList();
-            wordArray.Reverse();
-
-            foreach (string wordText in wordArray)
-            {
-                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
-
-                if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
-                    _ = text.Append(wordText);
-                else
-                    _ = text.Append(' ').Append(wordText);
-
-                firstWord = false;
-                isPrevWordSpaceJoining = isThisWordSpaceJoining;
-            }
-
-            if (textLine.Length > 0)
-                _ = text.Append(Environment.NewLine);
-        }
     }
 
     public static string RemoveFromEachLine(this string stringToEdit, int numberOfChars, SpotInLine spotInLine)

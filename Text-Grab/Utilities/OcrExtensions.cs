@@ -33,7 +33,12 @@ public static class OcrExtensions
         // when a word is one punctuation/symbol, join it without spaces
 
         if (isSpaceJoiningOCRLang)
+        {
             text.AppendLine(ocrLine.Text);
+
+            if (Settings.Default.CorrectErrors)
+                text.TryFixEveryWordLetterNumberErrors();
+        }
         else
         {
             bool isFirstWord = true;
@@ -43,17 +48,12 @@ public static class OcrExtensions
 
             foreach (OcrWord ocrWord in ocrLine.Words)
             {
-                string wordString;
-
-                if (Settings.Default.CorrectErrors)
-                    wordString = ocrWord.Text.TryFixNumberLetterErrors();
-                else
-                    wordString = ocrWord.Text;
-
-                if (Settings.Default.CorrectToLatin)
-                    wordString = wordString.ReplaceGreekOrCyrillicWithLatin();
+                string wordString = ocrWord.Text;
 
                 bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordString);
+
+                if (Settings.Default.CorrectErrors)
+                    wordString = wordString.TryFixNumberLetterErrors();
 
                 if (isFirstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
                     _ = text.Append(wordString);
@@ -64,6 +64,9 @@ public static class OcrExtensions
                 isPrevWordSpaceJoining = isThisWordSpaceJoining;
             }
         }
+
+        if (Settings.Default.CorrectToLatin)
+            text.ReplaceGreekOrCyrillicWithLatin();
     }
 
     public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language language)
@@ -136,7 +139,7 @@ public static class OcrExtensions
             ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
 
         if (LanguageUtilities.IsLanguageRightToLeft(language))
-            StringMethods.ReverseWordsForRightToLeft(text);
+            text.ReverseWordsForRightToLeft();
 
         if (Settings.Default.TryToReadBarcodes)
         {

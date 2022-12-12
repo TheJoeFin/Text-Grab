@@ -251,7 +251,7 @@ not what and
     public void TestReverseString(string inputString, string expected)
     {
         StringBuilder sb = new(inputString);
-        StringMethods.ReverseWordsForRightToLeft(sb);
+        sb.ReverseWordsForRightToLeft();
         Assert.Equal(expected, sb.ToString());
     }
 
