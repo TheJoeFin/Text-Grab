@@ -383,6 +383,11 @@ public partial class QuickSimpleLookup : Window
         tb.SelectAll();
     }
 
+    private void TextGrabSettingsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+    }
+
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Create OpenFileDialog 
