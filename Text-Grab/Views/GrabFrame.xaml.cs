@@ -69,11 +69,11 @@ public partial class GrabFrame : Window
     public TextBox? DestinationTextBox
     {
         get { return destinationTextBox; }
-        set 
-        { 
-            destinationTextBox = value; 
+        set
+        {
+            destinationTextBox = value;
             if (destinationTextBox is not null)
-                EditTextToggleButton.IsChecked= true;
+                EditTextToggleButton.IsChecked = true;
         }
     }
 
@@ -434,63 +434,16 @@ public partial class GrabFrame : Window
 
         foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
         {
-            double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
-            double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
-            double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
-            double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
-
             StringBuilder lineText = new();
-
             ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
 
-            Rect lineRect = new()
-            {
-                X = left,
-                Y = top,
-                Width = Math.Abs(right - left),
-                Height = Math.Abs(bottom - top)
-            };
+            Rect lineRect = ocrLine.GetBoundingRect();
 
             SolidColorBrush backgroundBrush = new(Colors.Black);
 
             if (bmp is not null)
             {
-                double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
-                double boxLeft = lineRect.Left / (dpi.DpiScaleX * scale);
-                double boxTop = lineRect.Top / (dpi.DpiScaleY * scale);
-                double boxRight = lineRect.Right / (dpi.DpiScaleX * scale);
-                double boxBottom = lineRect.Bottom / (dpi.DpiScaleY * scale);
-
-                double leftFraction = boxLeft / RectanglesCanvas.ActualWidth;
-                double topFraction = boxTop / RectanglesCanvas.ActualHeight;
-                double rightFraction = boxRight / RectanglesCanvas.ActualWidth;
-                double bottomFraction = boxBottom / RectanglesCanvas.ActualHeight;
-
-                int pxLeft = Math.Clamp((int)(leftFraction * bmp.Width) - 1, 0, bmp.Width - 1);
-                int pxTop = Math.Clamp((int)(topFraction * bmp.Height) - 2, 0, bmp.Height - 1);
-                int pxRight = Math.Clamp((int)(rightFraction * bmp.Width) + 1, 0, bmp.Width - 1);
-                int pxBottom = Math.Clamp((int)(bottomFraction * bmp.Height) + 1, 0, bmp.Height - 1);
-                System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
-                System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
-                System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
-                System.Drawing.Color pxColorLeftBottom = bmp.GetPixel(pxLeft, pxBottom);
-
-                List<System.Windows.Media.Color> MediaColorList = new()
-                {
-                    ColorHelper.MediaColorFromDrawingColor(pxColorLeftTop),
-                    ColorHelper.MediaColorFromDrawingColor(pxColorRightTop),
-                    ColorHelper.MediaColorFromDrawingColor(pxColorRightBottom),
-                    ColorHelper.MediaColorFromDrawingColor(pxColorLeftBottom),
-                };
-
-                System.Windows.Media.Color? MostCommonColor = MediaColorList.GroupBy(c => c)
-                            .OrderBy(g => g.Count())
-                            .LastOrDefault()?.Key;
-
-                backgroundBrush = ColorHelper.SolidColorBrushFromDrawingColor(pxColorLeftTop);
-
-                if (MostCommonColor is not null)
-                    backgroundBrush = new SolidColorBrush(MostCommonColor.Value);
+                backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, scale, bmp, ref lineRect);
             }
 
             WordBorder wordBorderBox = new()
@@ -605,6 +558,49 @@ public partial class GrabFrame : Window
         bmp?.Dispose();
     }
 
+    private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Rect lineRect)
+    {
+        SolidColorBrush backgroundBrush = new(Colors.Black);
+        double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
+        double boxLeft = lineRect.Left / (dpi.DpiScaleX * scale);
+        double boxTop = lineRect.Top / (dpi.DpiScaleY * scale);
+        double boxRight = lineRect.Right / (dpi.DpiScaleX * scale);
+        double boxBottom = lineRect.Bottom / (dpi.DpiScaleY * scale);
+
+        double leftFraction = boxLeft / RectanglesCanvas.ActualWidth;
+        double topFraction = boxTop / RectanglesCanvas.ActualHeight;
+        double rightFraction = boxRight / RectanglesCanvas.ActualWidth;
+        double bottomFraction = boxBottom / RectanglesCanvas.ActualHeight;
+
+        int pxLeft = Math.Clamp((int)(leftFraction * bmp.Width) - 1, 0, bmp.Width - 1);
+        int pxTop = Math.Clamp((int)(topFraction * bmp.Height) - 2, 0, bmp.Height - 1);
+        int pxRight = Math.Clamp((int)(rightFraction * bmp.Width) + 1, 0, bmp.Width - 1);
+        int pxBottom = Math.Clamp((int)(bottomFraction * bmp.Height) + 1, 0, bmp.Height - 1);
+        System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
+        System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
+        System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
+        System.Drawing.Color pxColorLeftBottom = bmp.GetPixel(pxLeft, pxBottom);
+
+        List<System.Windows.Media.Color> MediaColorList = new()
+        {
+            ColorHelper.MediaColorFromDrawingColor(pxColorLeftTop),
+            ColorHelper.MediaColorFromDrawingColor(pxColorRightTop),
+            ColorHelper.MediaColorFromDrawingColor(pxColorRightBottom),
+            ColorHelper.MediaColorFromDrawingColor(pxColorLeftBottom),
+        };
+
+        System.Windows.Media.Color? MostCommonColor = MediaColorList.GroupBy(c => c)
+                                                                    .OrderBy(g => g.Count())
+                                                                    .LastOrDefault()?.Key;
+
+        backgroundBrush = ColorHelper.SolidColorBrushFromDrawingColor(pxColorLeftTop);
+
+        if (MostCommonColor is not null)
+            backgroundBrush = new SolidColorBrush(MostCommonColor.Value);
+
+        return backgroundBrush;
+    }
+
     private void TryToReadBarcodes(DpiScale dpi)
     {
         System.Drawing.Bitmap bitmapOfGrabFrame = ImageMethods.GetWindowsBoundsBitmap(this);
@@ -705,7 +701,7 @@ public partial class GrabFrame : Window
 
         FrameText = stringBuilder.ToString();
 
-        if (IsFromEditWindow 
+        if (IsFromEditWindow
             && destinationTextBox is not null
             && EditTextToggleButton.IsChecked is true)
         {

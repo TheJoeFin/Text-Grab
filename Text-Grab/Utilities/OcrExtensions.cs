@@ -217,4 +217,21 @@ public static class OcrExtensions
 
         return scaleFactor;
     }
+
+    public static Rect GetBoundingRect(this OcrLine ocrLine)
+    {
+        double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
+        double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
+        double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
+        double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
+
+        return new()
+        {
+            X = left,
+            Y = top,
+            Width = Math.Abs(right - left),
+            Height = Math.Abs(bottom - top)
+        };
+    }
+
 }
