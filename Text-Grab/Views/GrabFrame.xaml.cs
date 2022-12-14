@@ -349,14 +349,10 @@ public partial class GrabFrame : Window
 
     private void CheckBottomRowButtonsVis()
     {
-        if (this.Width < 300)
-        {
+        if (this.Width < 340)
             ButtonsStackPanel.Visibility = Visibility.Collapsed;
-        }
         else
-        {
             ButtonsStackPanel.Visibility = Visibility.Visible;
-        }
 
         if (this.Width < 460)
         {
