@@ -892,20 +892,18 @@ public partial class EditTextWindow : Window
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
         foreach (Window window in allWindows)
-        {
             if (window is GrabFrame grabFrame)
             {
                 grabFrame.Activate();
-                grabFrame.IsFromEditWindow = true;
+                grabFrame.DestinationTextBox = PassedTextControl;
                 return;
             }
-        }
+
         Keyboard.Focus(PassedTextControl);
         PassedTextControl.IsInactiveSelectionHighlightEnabled = true;
         PassedTextControl.SelectedText = " ";
         CopyCloseBTN.Focus();
         GrabFrame gf = new();
-        gf.IsFromEditWindow = true;
         gf.DestinationTextBox = PassedTextControl;
         gf.Show();
     }
@@ -1064,7 +1062,6 @@ public partial class EditTextWindow : Window
             if (window is GrabFrame grabFrame)
             {
                 grabFrame.DestinationTextBox = null;
-                grabFrame.IsFromEditWindow = false;
             }
             else if (window is FullscreenGrab fullscreenGrab)
                 fullscreenGrab.DestinationTextBox = null;

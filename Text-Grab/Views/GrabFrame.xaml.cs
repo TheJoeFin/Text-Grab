@@ -19,7 +19,6 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Globalization;
-using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
 using ZXing;
 using ZXing.Windows.Compatibility;
@@ -48,7 +47,13 @@ public partial class GrabFrame : Window
 
     private ResultTable? AnalyedResultTable;
 
-    public bool IsFromEditWindow { get; set; } = false;
+    public bool IsFromEditWindow
+    {
+        get
+        {
+            return destinationTextBox is not null;
+        }
+    }
 
     public bool IsWordEditMode { get; set; } = true;
 
@@ -290,23 +295,22 @@ public partial class GrabFrame : Window
 
     private void GrabBTN_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsFromEditWindow
-            && !string.IsNullOrWhiteSpace(FrameText)
-            && !Settings.Default.NeverAutoUseClipboard)
-            try { Clipboard.SetDataObject(FrameText, true); } catch { }
+        if (string.IsNullOrWhiteSpace(FrameText))
+            return;
 
-        if (Settings.Default.ShowToast
-            && !IsFromEditWindow)
-            NotificationUtilities.ShowToast(FrameText);
-
-        if (IsFromEditWindow
-            && !string.IsNullOrWhiteSpace(FrameText)
-            && destinationTextBox is not null)
+        if (destinationTextBox is not null)
         {
             destinationTextBox.Select(destinationTextBox.SelectionStart + destinationTextBox.SelectionLength, 0);
             destinationTextBox.AppendText(Environment.NewLine);
             UpdateFrameText();
+            return;
         }
+
+        if (!Settings.Default.NeverAutoUseClipboard)
+            try { Clipboard.SetDataObject(FrameText, true); } catch { }
+
+        if (Settings.Default.ShowToast)
+            NotificationUtilities.ShowToast(FrameText);
     }
 
     private void ResetGrabFrame()
@@ -442,9 +446,7 @@ public partial class GrabFrame : Window
             SolidColorBrush backgroundBrush = new(Colors.Black);
 
             if (bmp is not null)
-            {
                 backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, scale, bmp, ref lineRect);
-            }
 
             WordBorder wordBorderBox = new()
             {
@@ -700,6 +702,11 @@ public partial class GrabFrame : Window
         }
 
         FrameText = stringBuilder.ToString();
+
+        if (string.IsNullOrEmpty(FrameText))
+            GrabBTN.IsEnabled = false;
+        else
+            GrabBTN.IsEnabled = true;
 
         if (IsFromEditWindow
             && destinationTextBox is not null
@@ -1002,13 +1009,14 @@ public partial class GrabFrame : Window
             && destinationTextBox is not null)
         {
             destinationTextBox.SelectedText = "";
+            destinationTextBox = null;
+            return;
         }
 
         if (destinationTextBox is null)
         {
             EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
             destinationTextBox = etw.GetMainTextBox();
-            IsFromEditWindow = true;
         }
 
         UpdateFrameText();
