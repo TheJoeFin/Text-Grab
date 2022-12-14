@@ -32,6 +32,10 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
+**Where did you get Text Grab?**
+- Microsoft Store
+- GitHub releases
+
 **Desktop (please complete the following information):**
  - OS: [e.g. Windows 11, Windows 10]
  - Version [e.g. 2004, 21H1]

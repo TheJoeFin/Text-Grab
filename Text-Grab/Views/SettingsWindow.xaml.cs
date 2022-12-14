@@ -36,6 +36,7 @@ public partial class SettingsWindow : Window
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
+        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -68,18 +69,19 @@ public partial class SettingsWindow : Window
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        switch (Settings.Default.DefaultLaunch)
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        switch (defaultLaunchSetting)
         {
-            case "Fullscreen":
+            case DefaultLaunchSetting.Fullscreen:
                 FullScreenRDBTN.IsChecked = true;
                 break;
-            case "GrabFrame":
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrameRDBTN.IsChecked = true;
                 break;
-            case "EditText":
+            case DefaultLaunchSetting.EditText:
                 EditTextRDBTN.IsChecked = true;
                 break;
-            case "QuickLookup":
+            case DefaultLaunchSetting.QuickLookup:
                 QuickLookupRDBTN.IsChecked = true;
                 break;
             default:
@@ -95,13 +97,13 @@ public partial class SettingsWindow : Window
 
     private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         if (sender is TextBox numberInputBox)
         {
             bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
-            if (wasAbleToConvert == true && parsedText > 0 && parsedText < 10)
+            if (wasAbleToConvert && parsedText > 0 && parsedText < 10)
             {
                 InsertDelaySeconds = parsedText;
                 DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
@@ -132,41 +134,44 @@ public partial class SettingsWindow : Window
         if (ShowToastCheckBox.IsChecked != null)
             Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
 
-        if (FullScreenRDBTN.IsChecked == true)
+        if (FullScreenRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "Fullscreen";
-        else if (GrabFrameRDBTN.IsChecked == true)
+        else if (GrabFrameRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "GrabFrame";
-        else if (EditTextRDBTN.IsChecked == true)
+        else if (EditTextRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "EditText";
-        else if (QuickLookupRDBTN.IsChecked == true)
+        else if (QuickLookupRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "QuickLookup";
 
-        if (ErrorCorrectBox.IsChecked != null)
+        if (ErrorCorrectBox.IsChecked is not null)
             Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
 
-        if (NeverUseClipboardChkBx.IsChecked != null)
+        if (NeverUseClipboardChkBx.IsChecked is not null)
             Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
 
-        if (RunInBackgroundChkBx.IsChecked != null)
+        if (RunInBackgroundChkBx.IsChecked is not null)
         {
             Settings.Default.RunInTheBackground = (bool)RunInBackgroundChkBx.IsChecked;
             ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
         }
 
-        if (TryInsertCheckbox.IsChecked != null)
+        if (TryInsertCheckbox.IsChecked is not null)
             Settings.Default.TryInsert = (bool)TryInsertCheckbox.IsChecked;
 
-        if (StartupOnLoginCheckBox.IsChecked != null)
+        if (StartupOnLoginCheckBox.IsChecked is not null)
         {
             Settings.Default.StartupOnLogin = (bool)StartupOnLoginCheckBox.IsChecked;
             await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
         }
 
-        if (GlobalHotkeysCheckbox.IsChecked != null)
+        if (GlobalHotkeysCheckbox.IsChecked is not null)
             Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
 
-        if (ReadBarcodesBarcode.IsChecked != null)
+        if (ReadBarcodesBarcode.IsChecked is not null)
             Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;
+
+        if (CorrectToLatin.IsChecked is not null)
+            Settings.Default.CorrectToLatin = (bool)CorrectToLatin.IsChecked;
 
         if (HotKeysAllDifferent())
         {
@@ -195,7 +200,7 @@ public partial class SettingsWindow : Window
             Settings.Default.LookupHotKey = "Q";
         }
 
-        if (string.IsNullOrEmpty(SecondsTextBox.Text) == false)
+        if (!string.IsNullOrEmpty(SecondsTextBox.Text))
             Settings.Default.InsertDelay = InsertDelaySeconds;
 
         Settings.Default.Save();

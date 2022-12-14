@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,19 +14,17 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Markup;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
-using Windows.Graphics.Imaging;
-using Windows.Media.Ocr;
+using Windows.Storage.Streams;
 using Windows.System;
-using BitmapDecoder = Windows.Graphics.Imaging.BitmapDecoder;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Text_Grab;
 
@@ -67,6 +64,8 @@ public partial class EditTextWindow : Window
 
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
 
+    public static RoutedCommand PasteCommand = new();
+
     private int numberOfContextMenuItems;
 
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
@@ -84,30 +83,177 @@ public partial class EditTextWindow : Window
     {
         InitializeComponent();
 
-        if (isEncoded == true)
-        {
-            string rawEncodedString = possiblyEndcodedString.Substring(5);
-            try
-            {
-                byte[] hexEncodedBytes = Convert.FromHexString(rawEncodedString);
-                string copiedText = Encoding.UTF8.GetString(hexEncodedBytes);
-                PassedTextControl.Text = copiedText;
-            }
-            catch (Exception ex)
-            {
-                PassedTextControl.Text = rawEncodedString;
-                PassedTextControl.Text += ex.Message;
-            }
-        }
+        if (isEncoded)
+            ReadEncodedString(possiblyEndcodedString);
         else
-        {
             PassedTextControl.Text = possiblyEndcodedString;
-        }
 
         LaunchedFromNotification = true;
     }
 
+    private void ReadEncodedString(string possiblyEndcodedString)
+    {
+        string rawEncodedString = possiblyEndcodedString.Substring(5);
+        try
+        {
+            // restore the padding '=' in base64 string
+            switch (rawEncodedString.Length % 4)
+            {
+                case 2: rawEncodedString += "=="; break;
+                case 3: rawEncodedString += "="; break;
+            }
+            byte[] encodedBytes = Convert.FromBase64String(rawEncodedString);
+            string copiedText = Encoding.UTF8.GetString(encodedBytes);
+            PassedTextControl.Text = copiedText;
+        }
+        catch (Exception ex)
+        {
+            PassedTextControl.Text = rawEncodedString;
+            PassedTextControl.Text += ex.Message;
+        }
+    }
+
     private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        SetupRoutedCommands();
+
+        PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
+        if (PassedTextControl.ContextMenu != null)
+            numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
+
+        CheckRightToLeftLanguage();
+
+        RestoreWindowSettings();
+
+        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
+        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+    }
+
+    private void CanPasteExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        _IsAccessingClipboard = true;
+        DataPackageView? dataPackageView = null;
+
+        try
+        {
+            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
+            e.CanExecute = false;
+        }
+        finally
+        {
+            _IsAccessingClipboard = false;
+        }
+
+        if (dataPackageView is null)
+        {
+            e.CanExecute = false;
+            return;
+        }
+
+        if (dataPackageView.Contains(StandardDataFormats.Text))
+            e.CanExecute = true;
+        else if (dataPackageView.Contains(StandardDataFormats.Bitmap))
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
+    }
+
+    private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
+    {
+        _IsAccessingClipboard = true;
+        DataPackageView? dataPackageView = null;
+
+        try
+        {
+            dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
+        }
+
+        if (dataPackageView is null)
+        {
+            _IsAccessingClipboard = false;
+            return;
+        }
+
+        if (dataPackageView.Contains(StandardDataFormats.Text))
+        {
+            try
+            {
+                string textFromClipboard = await dataPackageView.GetTextAsync();
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(textFromClipboard); }));
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"error with dataPackageView.GetTextAsync(). Exception Message: {ex.Message}");
+            }
+        }
+        else if (dataPackageView.Contains(StandardDataFormats.Bitmap))
+        {
+            try
+            {
+                RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
+                using IRandomAccessStream stream = await streamReference.OpenReadAsync();
+                string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"error with dataPackageView.GetBitmapAsync(). Exception Message: {ex.Message}");
+            }
+        }
+
+        _IsAccessingClipboard = false;
+
+        if (e is not null)
+            e.Handled = true;
+    }
+
+    private void RestoreWindowSettings()
+    {
+        if (Settings.Default.EditWindowStartFullscreen
+                    && string.IsNullOrWhiteSpace(OpenedFilePath)
+                    && !LaunchedFromNotification)
+        {
+            WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
+            LaunchFullscreenOnLoad.IsChecked = true;
+            prevWindowState = this.WindowState;
+            WindowState = WindowState.Minimized;
+        }
+
+        if (Settings.Default.EditWindowIsOnTop)
+        {
+            AlwaysOnTop.IsChecked = true;
+            Topmost = true;
+        }
+
+        if (!Settings.Default.EditWindowIsWordWrapOn)
+        {
+            WrapTextMenuItem.IsChecked = false;
+            PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+        }
+
+        if (Settings.Default.EditWindowBottomBarIsHidden)
+        {
+            HideBottomBarMenuItem.IsChecked = true;
+            BottomBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void CheckRightToLeftLanguage()
+    {
+        if (LanguageUtilities.IsLanguageRightToLeft(LanguageUtilities.GetCurrentInputLanguage()))
+            PassedTextControl.TextAlignment = TextAlignment.Right;
+    }
+
+    private void SetupRoutedCommands()
     {
         RoutedCommand newFullscreenGrab = new();
         _ = newFullscreenGrab.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control));
@@ -161,61 +307,28 @@ public partial class EditTextWindow : Window
         _ = NewLookupCommand.InputGestures.Add(new KeyGesture(Key.Q, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(NewLookupCommand, LaunchQuickSimpleLookup));
 
-        PassedTextControl.ContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
-        if (PassedTextControl.ContextMenu != null)
-            numberOfContextMenuItems = PassedTextControl.ContextMenu.Items.Count;
+        RoutedCommand selectWordCommand = new();
+        _ = selectWordCommand.InputGestures.Add(new KeyGesture(Key.W, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(selectWordCommand, SelectWord));
 
-        string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-        XmlLanguage lang = XmlLanguage.GetLanguage(inputLang);
-        selectedCultureInfo = lang.GetEquivalentCulture();
-        if (selectedCultureInfo.TextInfo.IsRightToLeft)
-        {
-            PassedTextControl.TextAlignment = TextAlignment.Right;
-        }
+        RoutedCommand pasteCommand = new();
+        _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
 
-        if (Settings.Default.EditWindowStartFullscreen
-            && string.IsNullOrWhiteSpace(OpenedFilePath) == true
-            && LaunchedFromNotification == false)
-        {
-            WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
-            LaunchFullscreenOnLoad.IsChecked = true;
-            prevWindowState = this.WindowState;
-            WindowState = WindowState.Minimized;
-        }
+        RoutedCommand EscapeKeyed = new();
+        _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));
+        _ = CommandBindings.Add(new CommandBinding(EscapeKeyed, KeyedEscape));
+    }
 
-        if (Settings.Default.EditWindowIsOnTop)
-        {
-            AlwaysOnTop.IsChecked = true;
-            Topmost = true;
-        }
-
-        if (!Settings.Default.EditWindowIsWordWrapOn)
-        {
-            WrapTextMenuItem.IsChecked = false;
-            PassedTextControl.TextWrapping = TextWrapping.NoWrap;
-        }
-
-        if (Settings.Default.EditWindowBottomBarIsHidden)
-        {
-            HideBottomBarMenuItem.IsChecked = true;
-            BottomBar.Visibility = Visibility.Collapsed;
-        }
-
-        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
-        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
-
-        CollapsibleButton colbtn = new()
-        {
-            ButtonText = "DOPE",
-            SymbolText = "",
-            Command = IsolateSelectionCmd
-        };
-        BottomBarSP.Children.Add(colbtn);
+    private void KeyedEscape(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (cancellationTokenForDirOCR is not null)
+            cancellationTokenForDirOCR.Cancel();
     }
 
     private async void Clipboard_ContentChanged(object? sender, object e)
     {
-        if (ClipboardWatcherMenuItem.IsChecked == false || _IsAccessingClipboard == true)
+        if (ClipboardWatcherMenuItem.IsChecked is false || _IsAccessingClipboard)
             return;
 
         _IsAccessingClipboard = true;
@@ -249,7 +362,11 @@ public partial class EditTextWindow : Window
 
     private void AddCopiedTextToTextBox(string textToAdd)
     {
-        PassedTextControl.AppendText(Environment.NewLine + textToAdd);
+        PassedTextControl.SelectedText = textToAdd;
+        int currentSelectionIndex = PassedTextControl.SelectionStart;
+        int currentSelectionLength = PassedTextControl.SelectionLength;
+
+        PassedTextControl.Select(currentSelectionIndex + currentSelectionLength, 0);
     }
 
     private void Window_Initialized(object sender, EventArgs e)
@@ -263,9 +380,9 @@ public partial class EditTextWindow : Window
     {
         PassedTextControl.FontFamily = new System.Windows.Media.FontFamily(Settings.Default.FontFamilySetting);
         PassedTextControl.FontSize = Settings.Default.FontSizeSetting;
-        if (Settings.Default.IsFontBold == true)
+        if (Settings.Default.IsFontBold)
             PassedTextControl.FontWeight = FontWeights.Bold;
-        if (Settings.Default.IsFontItalic == true)
+        if (Settings.Default.IsFontItalic)
             PassedTextControl.FontStyle = FontStyles.Italic;
 
         TextDecorationCollection tdc = new();
@@ -297,21 +414,14 @@ public partial class EditTextWindow : Window
 
     private void ToggleCaseCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        string text;
         bool containsLetters = false;
-
-        if (PassedTextControl.SelectionLength == 0)
-            text = PassedTextControl.Text;
-        else
-            text = PassedTextControl.SelectedText;
+        string text = GetSelectedTextOrAllText();
 
         foreach (char letter in text)
-        {
-            if (char.IsLetter(letter) == true)
+            if (char.IsLetter(letter))
                 containsLetters = true;
-        }
 
-        if (containsLetters == true)
+        if (containsLetters)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -320,15 +430,10 @@ public partial class EditTextWindow : Window
 
     private void ToggleCase(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string textToModify;
-
-        if (PassedTextControl.SelectionLength == 0)
-            textToModify = PassedTextControl.Text;
-        else
-            textToModify = PassedTextControl.SelectedText;
+        string textToModify = GetSelectedTextOrAllText();
 
         if (CaseStatusOfToggle == CurrentCase.Unknown)
-            CaseStatusOfToggle = DetermineToggleCase(textToModify);
+            CaseStatusOfToggle = StringMethods.DetermineToggleCase(textToModify);
 
         TextInfo currentTI = selectedCultureInfo.TextInfo;
 
@@ -356,28 +461,14 @@ public partial class EditTextWindow : Window
             PassedTextControl.SelectedText = textToModify;
     }
 
-    private static CurrentCase DetermineToggleCase(string textToModify)
+    private string GetSelectedTextOrAllText()
     {
-        bool isAllLower = true;
-        bool isAllUpper = true;
-
-        foreach (char letter in textToModify)
-        {
-            if (char.IsLower(letter) == true)
-            {
-                isAllUpper = false;
-            }
-            if (char.IsUpper(letter) == true)
-            {
-                isAllLower = false;
-            }
-        }
-
-        if (isAllLower == false
-            && isAllUpper == true)
-            return CurrentCase.Lower;
-
-        return CurrentCase.Camel;
+        string textToModify;
+        if (PassedTextControl.SelectionLength == 0)
+            textToModify = PassedTextControl.Text;
+        else
+            textToModify = PassedTextControl.SelectedText;
+        return textToModify;
     }
 
     private void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
@@ -391,8 +482,8 @@ public partial class EditTextWindow : Window
 
         bool? result = dlg.ShowDialog();
 
-        if (result == true
-            && dlg.CheckFileExists == true)
+        if (result is bool isTrueResult
+            && File.Exists(dlg.FileName))
         {
             OpenThisPath(dlg.FileName);
         }
@@ -411,39 +502,19 @@ public partial class EditTextWindow : Window
 
         if (imageExtensions.Contains(Path.GetExtension(OpenedFilePath).ToLower()))
         {
-            Uri fileURI = new(OpenedFilePath);
-
             try
             {
-                BitmapImage droppedImage = new(fileURI);
-                droppedImage.Freeze();
-                Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-                stringBuilder.Append(await ImageMethods.ExtractText(bmp));
+                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePath(OpenedFilePath));
             }
             catch (Exception)
             {
-                System.Windows.MessageBox.Show("Failed to read file");
+                System.Windows.MessageBox.Show($"Failed to read {OpenedFilePath}");
             }
         }
         else
         {
             // Continue with along trying to open a text file.
-
-            if (!isMultipleFiles && string.IsNullOrWhiteSpace(PassedTextControl.Text))
-                Title = $"Edit Text | {Path.GetFileName(OpenedFilePath)}";
-
-            try
-            {
-                using StreamReader sr = File.OpenText(pathOfFileToOpen);
-
-                string s = await sr.ReadToEndAsync();
-
-                stringBuilder.Append(s);
-            }
-            catch (System.Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
-            }
+            await TryToOpenTextFile(pathOfFileToOpen, isMultipleFiles, stringBuilder);
         }
 
         if (isMultipleFiles)
@@ -453,6 +524,25 @@ public partial class EditTextWindow : Window
         }
 
         PassedTextControl.AppendText(stringBuilder.ToString());
+    }
+
+    private async Task TryToOpenTextFile(string pathOfFileToOpen, bool isMultipleFiles, StringBuilder stringBuilder)
+    {
+        if (!isMultipleFiles && string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            Title = $"Edit Text | {Path.GetFileName(OpenedFilePath)}";
+
+        try
+        {
+            using StreamReader sr = File.OpenText(pathOfFileToOpen);
+
+            string s = await sr.ReadToEndAsync();
+
+            stringBuilder.Append(s);
+        }
+        catch (System.Exception ex)
+        {
+            System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+        }
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -465,7 +555,7 @@ public partial class EditTextWindow : Window
         int selectionIndex = PassedTextControl.SelectionStart;
         int indexOfNextNewline = textBoxText.Length;
 
-        if (PassedTextControl.Text.EndsWith(Environment.NewLine) == false)
+        if (!PassedTextControl.Text.EndsWith(Environment.NewLine))
         {
             PassedTextControl.Text += Environment.NewLine;
         }
@@ -538,7 +628,7 @@ public partial class EditTextWindow : Window
                 RestoreDirectory = true,
             };
 
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() is bool isOkayOrAccept)
             {
                 File.WriteAllText(dialog.FileName, fileText);
                 OpenedFilePath = dialog.FileName;
@@ -576,7 +666,7 @@ public partial class EditTextWindow : Window
             RestoreDirectory = true,
         };
 
-        if (dialog.ShowDialog() == true)
+        if (dialog.ShowDialog() is bool isOkayOrAccept)
         {
             File.WriteAllText(dialog.FileName, fileText);
             OpenedFilePath = dialog.FileName;
@@ -594,29 +684,22 @@ public partial class EditTextWindow : Window
 
     private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        string textToOperateOn;
+        string textToOperateOn = GetSelectedTextOrAllText();
 
-        if (PassedTextControl.SelectedText.Length > 0)
-            textToOperateOn = PassedTextControl.SelectedText;
-        else
-            textToOperateOn = PassedTextControl.Text;
-
-        int n = 0;
-        foreach (var c in textToOperateOn)
+        if (textToOperateOn.Contains(Environment.NewLine)
+            || textToOperateOn.Contains('\r')
+            || textToOperateOn.Contains('\n'))
         {
-            if (c == '\n' || c == '\r')
-                n++;
+            e.CanExecute = true;
+            return;
         }
 
-        if (n < 2)
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        e.CanExecute = false;
     }
 
     private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         if ((bool)WrapTextMenuItem.IsChecked)
@@ -634,10 +717,8 @@ public partial class EditTextWindow : Window
 
         string finalString = "";
         foreach (string line in stringSplit)
-        {
-            if (string.IsNullOrWhiteSpace(line) == false)
+            if (!string.IsNullOrWhiteSpace(line))
                 finalString += line.Trim() + Environment.NewLine;
-        }
 
         PassedTextControl.Text = finalString;
     }
@@ -645,11 +726,6 @@ public partial class EditTextWindow : Window
     public void AddThisText(string textToAdd)
     {
         PassedTextControl.AppendText(textToAdd);
-
-        // string lastTwoChars = PassedTextControl.Text.Substring(PassedTextControl.Text.Length - 2, 2);
-        // if (lastTwoChars != Environment.NewLine)
-        //     PassedTextControl.Text += Environment.NewLine;
-        // PassedTextControl.Select(PassedTextControl.Text.Length, 0);
     }
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -751,12 +827,7 @@ public partial class EditTextWindow : Window
 
     private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        string workingString = string.Empty;
-
-        if (PassedTextControl.SelectionLength == 0)
-            workingString = PassedTextControl.Text;
-        else
-            workingString = PassedTextControl.SelectedText;
+        string workingString = GetSelectedTextOrAllText();
 
         workingString = workingString.TryFixToNumbers();
 
@@ -767,12 +838,7 @@ public partial class EditTextWindow : Window
     }
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        string workingString = string.Empty;
-
-        if (PassedTextControl.SelectionLength == 0)
-            workingString = PassedTextControl.Text;
-        else
-            workingString = PassedTextControl.SelectedText;
+        string workingString = GetSelectedTextOrAllText();
 
         workingString = workingString.TryFixToLetters();
 
@@ -809,7 +875,7 @@ public partial class EditTextWindow : Window
 
     private void IsolateSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(PassedTextControl.SelectedText) == false)
+        if (!string.IsNullOrEmpty(PassedTextControl.SelectedText))
             PassedTextControl.Text = PassedTextControl.SelectedText;
     }
 
@@ -826,20 +892,18 @@ public partial class EditTextWindow : Window
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
         foreach (Window window in allWindows)
-        {
             if (window is GrabFrame grabFrame)
             {
                 grabFrame.Activate();
-                grabFrame.IsFromEditWindow = true;
+                grabFrame.DestinationTextBox = PassedTextControl;
                 return;
             }
-        }
+
         Keyboard.Focus(PassedTextControl);
         PassedTextControl.IsInactiveSelectionHighlightEnabled = true;
         PassedTextControl.SelectedText = " ";
         CopyCloseBTN.Focus();
         GrabFrame gf = new();
-        gf.IsFromEditWindow = true;
         gf.DestinationTextBox = PassedTextControl;
         gf.Show();
     }
@@ -861,19 +925,7 @@ public partial class EditTextWindow : Window
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
-
-        foreach (Window window in allWindows)
-        {
-            if (window is SettingsWindow sw)
-            {
-                sw.Activate();
-                return;
-            }
-        }
-
-        SettingsWindow nsw = new();
-        nsw.Show();
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
     }
 
     private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
@@ -883,10 +935,10 @@ public partial class EditTextWindow : Window
 
     private void AlwaysOnTop_Checked(object sender, RoutedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
-        if (sender is MenuItem aotMi && aotMi.IsChecked == true)
+        if (sender is MenuItem aotMi && aotMi.IsChecked)
             Topmost = true;
         else
             Topmost = false;
@@ -896,10 +948,10 @@ public partial class EditTextWindow : Window
 
     private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
-        if (sender is MenuItem bbMi && bbMi.IsChecked == true)
+        if (sender is MenuItem bbMi && bbMi.IsChecked)
         {
             BottomBar.Visibility = Visibility.Collapsed;
             Settings.Default.EditWindowBottomBarIsHidden = true;
@@ -943,66 +995,33 @@ public partial class EditTextWindow : Window
         }
     }
 
+    private void SelectWordMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SelectWord();
+    }
+
+    private void SelectWord(object? sender = null, ExecutedRoutedEventArgs? e = null)
+    {
+        (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(PassedTextControl.CaretIndex);
+
+        PassedTextControl.Select(wordStart, wordLength);
+    }
+
     private void SelectLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selectedText = PassedTextControl.SelectedText;
-        int selectionIndex = PassedTextControl.SelectionStart;
-        int selectionEndIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
-        if (selectedText.EndsWith(Environment.NewLine))
-            selectionEndIndex -= Environment.NewLine.Length;
-        int selectionLength = PassedTextControl.SelectionLength;
-        string textBoxText = PassedTextControl.Text;
+        (int lineStart, int lineLength) = PassedTextControl.Text.GetStartAndLengthOfLineAtPosition(PassedTextControl.SelectionStart);
 
-        if (textBoxText.EndsWith(Environment.NewLine) == false)
-            textBoxText += Environment.NewLine;
-
-        IEnumerable<int> allNewLines = textBoxText.AllIndexesOf(Environment.NewLine);
-        int lastLine = allNewLines.LastOrDefault();
-        bool foundEnd = false;
-
-        int startSelectionIndex = 0;
-        int stopSelectionIndex = 0;
-
-        foreach (int newLineIndex in allNewLines)
-        {
-            if (selectionIndex > newLineIndex)
-                startSelectionIndex = newLineIndex + Environment.NewLine.Length;
-
-            if (foundEnd == false
-                && newLineIndex >= selectionEndIndex)
-            {
-                stopSelectionIndex = newLineIndex;
-                foundEnd = true;
-            }
-        }
-
-        if (selectionEndIndex > lastLine)
-            stopSelectionIndex = textBoxText.Length;
-
-        selectionLength = stopSelectionIndex - startSelectionIndex + Environment.NewLine.Length;
-        if (selectionLength < 0)
-            selectionLength = 0;
-
-        PassedTextControl.Select(startSelectionIndex, selectionLength);
+        PassedTextControl.Select(lineStart, lineLength);
     }
 
     private void LaunchFindAndReplace()
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        FindAndReplaceWindow farw = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
 
-        foreach (Window window in allWindows)
-        {
-            if (window is FindAndReplaceWindow openFindReplaceWindow)
-            {
-                openFindReplaceWindow.Activate();
-                return;
-            }
-        }
-
-        FindAndReplaceWindow farw = new();
         farw.StringFromWindow = PassedTextControl.Text;
         farw.TextEditWindow = this;
         farw.Show();
+
 
         if (PassedTextControl.SelectedText.Length > 0)
         {
@@ -1042,31 +1061,24 @@ public partial class EditTextWindow : Window
         {
             if (window is GrabFrame grabFrame)
             {
-                grabFrame.IsFromEditWindow = false;
+                grabFrame.DestinationTextBox = null;
             }
-            if (window is FullscreenGrab fullscreenGrab)
-            {
+            else if (window is FullscreenGrab fullscreenGrab)
                 fullscreenGrab.DestinationTextBox = null;
-            }
-            if (window is FindAndReplaceWindow findAndReplaceWindow)
-            {
+            else if (window is FindAndReplaceWindow findAndReplaceWindow)
                 findAndReplaceWindow.ShouldCloseWithThisETW(this);
-            }
         }
 
+        GC.Collect();
         WindowUtilities.ShouldShutDown();
     }
 
     private void ReplaceReservedCharsCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
         if (PassedTextControl.SelectionLength > 0)
-        {
             PassedTextControl.SelectedText = PassedTextControl.SelectedText.ReplaceReservedCharacters();
-        }
         else
-        {
             PassedTextControl.Text = PassedTextControl.Text.ReplaceReservedCharacters();
-        }
     }
 
     private void ReplaceReservedCharsCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1090,7 +1102,7 @@ public partial class EditTextWindow : Window
             }
         }
 
-        if (containsAnyReservedChars == true)
+        if (containsAnyReservedChars)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -1147,19 +1159,7 @@ public partial class EditTextWindow : Window
 
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
-
-        foreach (Window window in allWindows)
-        {
-            if (window is FirstRunWindow firstRunWindowOpen)
-            {
-                firstRunWindowOpen.Activate();
-                return;
-            }
-        }
-
-        FirstRunWindow frw = new();
-        frw.Show();
+        WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
     }
 
 
@@ -1177,24 +1177,53 @@ public partial class EditTextWindow : Window
     {
         PassedTextControl.ContextMenu = null;
 
-        int caretIndex, cmdIndex;
-        SpellingError spellingError;
 
         ContextMenu? baseContextMenu = this.FindResource("ContextMenuResource") as ContextMenu;
 
-        while (baseContextMenu != null
+        while (baseContextMenu is not null
             && baseContextMenu.Items.Count > numberOfContextMenuItems)
-        {
             baseContextMenu.Items.RemoveAt(0);
-        }
 
         PassedTextControl.ContextMenu = baseContextMenu;
-        caretIndex = PassedTextControl.CaretIndex;
 
-        cmdIndex = 0;
+        int caretIndex = PassedTextControl.CaretIndex;
+
+        AddPossibleSpellingErrorsToRightClickMenu(caretIndex);
+
+        AddPossibleURLToRightClickMenu(caretIndex);
+
+        AddPossibleMailtoToRightClickMenu(caretIndex);
+
+    }
+
+    private void AddPossibleMailtoToRightClickMenu(int caretIndex)
+    {
+        string possibleEmail = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleEmail))
+            possibleEmail = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
+
+        if (!possibleEmail.IsValidEmailAddress())
+            return;
+
+        MenuItem emailMi = new();
+        emailMi.Header = $"Email: {possibleEmail}";
+        emailMi.Click += (sender, e) =>
+        {
+            Process.Start(new ProcessStartInfo($"mailto:{possibleEmail}") { UseShellExecute = true });
+        };
+
+        PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
+        PassedTextControl.ContextMenu?.Items.Insert(0, emailMi);
+    }
+
+    private void AddPossibleSpellingErrorsToRightClickMenu(int caretIndex)
+    {
+        int cmdIndex = 0;
+        SpellingError spellingError;
         spellingError = PassedTextControl.GetSpellingError(caretIndex);
-        if (spellingError != null
-            && PassedTextControl.ContextMenu != null)
+        if (spellingError is not null
+            && PassedTextControl.ContextMenu is not null)
         {
             foreach (string str in spellingError.Suggestions)
             {
@@ -1217,8 +1246,7 @@ public partial class EditTextWindow : Window
                 cmdIndex++;
             }
 
-            Separator separatorMenuItem1 = new();
-            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem1);
+            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, new Separator());
             cmdIndex++;
             MenuItem ignoreAllMI = new();
             ignoreAllMI.Header = "Ignore All";
@@ -1226,8 +1254,33 @@ public partial class EditTextWindow : Window
             ignoreAllMI.CommandTarget = PassedTextControl;
             PassedTextControl.ContextMenu.Items.Insert(cmdIndex, ignoreAllMI);
             cmdIndex++;
-            Separator separatorMenuItem2 = new();
-            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, separatorMenuItem2);
+            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, new Separator());
+        }
+    }
+
+    private void AddPossibleURLToRightClickMenu(int caretIndex)
+    {
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+        {
+            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
+        }
+
+        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
+        {
+            string headerText = $"Try to go to: {possibleURL}";
+            if (headerText.Length > 36)
+                headerText = string.Concat(headerText.AsSpan(0, 36), "...");
+
+            MenuItem urlMi = new();
+            urlMi.Header = headerText;
+            urlMi.Click += (sender, e) =>
+            {
+                Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
+            };
+            PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
+            PassedTextControl.ContextMenu?.Items.Insert(0, urlMi);
         }
     }
 
@@ -1251,6 +1304,13 @@ public partial class EditTextWindow : Window
             int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
 
             int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
+
+            if (selStartLine < 0)
+            {
+                BottomBarText.Text = $"Ln -, Col -";
+                return;
+            }
+
             int selStartCol = selectionStartIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStartLine);
             int selStopLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStopIndex); ;
             int selStopCol = selectionStopIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStopLine); ;
@@ -1258,13 +1318,9 @@ public partial class EditTextWindow : Window
             int numbOfSelectedLines = selStopLine - selStartLine;
 
             if (numbOfSelectedLines > 0)
-            {
                 BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
-            }
             else
-            {
                 BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
-            }
         }
     }
 
@@ -1288,26 +1344,27 @@ public partial class EditTextWindow : Window
             string chosenFolderPath = folderBrowserDialog1.SelectedPath;
             try
             {
-                IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
-                IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
-                StringBuilder listOfNames = new StringBuilder();
-                listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
-                foreach (string folder in folders)
-                {
-                    listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
-                }
-                foreach (string file in files)
-                {
-                    listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
-                }
-
-                PassedTextControl.AppendText(listOfNames.ToString());
+                PassedTextControl.AppendText(ListFilesFoldersInDirectory(chosenFolderPath));
             }
             catch (System.Exception ex)
             {
                 PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
             }
         }
+    }
+
+    private static string ListFilesFoldersInDirectory(string chosenFolderPath)
+    {
+        IEnumerable<String> files = Directory.EnumerateFiles(chosenFolderPath);
+        IEnumerable<String> folders = Directory.EnumerateDirectories(chosenFolderPath);
+        StringBuilder listOfNames = new StringBuilder();
+        listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+        foreach (string folder in folders)
+            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+
+        foreach (string file in files)
+            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+        return listOfNames.ToString();
     }
 
     private async void ReadFolderOfImages_Click(object sender, RoutedEventArgs e)
@@ -1320,18 +1377,55 @@ public partial class EditTextWindow : Window
 
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
 
+        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to OCR images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
+
+        if (resultRecursive == MessageBoxResult.Cancel)
+            return;
+
+        bool isRecursive = false;
+        if (resultRecursive == MessageBoxResult.Yes)
+            isRecursive = true;
+
         if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath);
+            await OcrAllImagesInFolder(chosenFolderPath, false, isRecursive);
     }
 
-    public async Task OcrAllImagesInFolder(string folderPath)
+    private async void ReadFolderOfImagesWriteTxtFiles_Click(object sender, RoutedEventArgs e)
+    {
+        FolderBrowserDialog folderBrowserDialog = new();
+        DialogResult result = folderBrowserDialog.ShowDialog();
+
+        if (result is not System.Windows.Forms.DialogResult.OK)
+            return;
+
+        string chosenFolderPath = folderBrowserDialog.SelectedPath;
+
+        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to make .txt files with the OCR result for all images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
+
+        if (resultRecursive == MessageBoxResult.Cancel)
+            return;
+
+        bool isRecursive = false;
+        if (resultRecursive == MessageBoxResult.Yes)
+            isRecursive = true;
+
+        if (Directory.Exists(chosenFolderPath))
+            await OcrAllImagesInFolder(chosenFolderPath, true, isRecursive);
+    }
+
+    CancellationTokenSource? cancellationTokenForDirOCR;
+
+    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles, bool recrusive)
     {
         IEnumerable<String>? files = null;
-        IEnumerable<String>? folders = null;
+
+        SearchOption searchOption = SearchOption.TopDirectoryOnly;
+        if (recrusive)
+            searchOption = SearchOption.AllDirectories;
+
         try
         {
-            files = Directory.EnumerateFiles(folderPath);
-            folders = Directory.EnumerateDirectories(folderPath);
+            files = Directory.GetFiles(folderPath, "*.*", searchOption);
         }
         catch (System.Exception ex)
         {
@@ -1341,46 +1435,123 @@ public partial class EditTextWindow : Window
         if (files is null)
             return;
 
-        PassedTextControl.AppendText(folderPath);
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText(DateTime.Now.ToString());
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"{files.Where(x => imageExtensions.Contains(Path.GetExtension(x))).Count()} image files found");
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText(Environment.NewLine);
+        List<string> imageFiles = files.Where(x => imageExtensions.Contains(Path.GetExtension(x).ToLower())).ToList();
 
-        StringBuilder ocrResults = new();
-
-        foreach (string file in files)
+        if (imageFiles.Count == 0)
         {
-            if (imageExtensions.Contains(Path.GetExtension(file)) == false)
-                continue;
-
-            PassedTextControl.AppendText(await OcrFile(file));
+            PassedTextControl.AppendText($"{folderPath} contains no images");
+            return;
         }
 
-        PassedTextControl.AppendText(ocrResults.ToString());
+        PassedTextControl.AppendText(folderPath);
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText($"{imageFiles.Count} images found");
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText("Press Escape to cancel");
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText(Environment.NewLine);
+
+        cancellationTokenForDirOCR = new();
+        Stopwatch stopwatch = new();
+        stopwatch.Start();
+        Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+
+        List<AsyncOcrFileResult> ocrFileResults = new();
+        foreach (string path in imageFiles)
+        {
+            AsyncOcrFileResult ocrFileResult = new(path);
+            ocrFileResults.Add(ocrFileResult);
+        }
+
+        try
+        {
+            await OcrAllImagesInParallel(writeToTextFiles, ocrFileResults);
+
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
+        }
+        catch (OperationCanceledException)
+        {
+            PassedTextControl.AppendText(Environment.NewLine);
+            int countCompleted = ocrFileResults.Where(r => r.OcrResult is not null).Count();
+            PassedTextControl.AppendText($"----- CANCELLED OCR OF {ocrFileResults.Count - countCompleted}, Completed {countCompleted} images");
+        }
+        finally
+        {
+            cancellationTokenForDirOCR.Dispose();
+        }
+
+        Mouse.OverrideCursor = null;
+        stopwatch.Stop();
+
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText($"----- from {folderPath}");
+        PassedTextControl.AppendText(Environment.NewLine);
+        PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
+        PassedTextControl.ScrollToEnd();
+
+        GC.Collect();
+        cancellationTokenForDirOCR = null;
     }
 
-    private async Task<string> OcrFile(string path)
+    private async Task OcrAllImagesInParallel(bool writeToTextFiles, List<AsyncOcrFileResult> ocrFileResults)
+    {
+        if (cancellationTokenForDirOCR is null)
+            return;
+
+        Language? selectedLanguage = LanguageUtilities.GetOCRLanguage();
+
+        ParallelOptions parallelOptions = new()
+        {
+            MaxDegreeOfParallelism = 6,
+            CancellationToken = cancellationTokenForDirOCR.Token
+        };
+
+        await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, ct) =>
+        {
+            ct.ThrowIfCancellationRequested();
+
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
+
+            // to get the TextBox to update whenever OCR Finishes:
+            if (!writeToTextFiles)
+            {
+                await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    PassedTextControl.AppendText(ocrFile.OcrResult);
+                    PassedTextControl.ScrollToEnd();
+                });
+            }
+        });
+    }
+
+    private static async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
     {
         StringBuilder returnString = new();
-        Uri fileURI = new(path);
         returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            BitmapImage droppedImage = new(fileURI);
-            droppedImage.Freeze();
-            Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-            returnString.AppendLine(await ImageMethods.ExtractText(bmp));
+            string ocrdText = await OcrExtensions.OcrAbsoluteFilePath(path);
+
+            if (!string.IsNullOrWhiteSpace(ocrdText))
+            {
+                returnString.AppendLine(ocrdText);
+
+                if (writeResultToTextFile && Path.GetDirectoryName(path) is string dir)
+                {
+                    using StreamWriter outputFile = new StreamWriter(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
+                    outputFile.WriteLine(ocrdText);
+                }
+            }
+            else
+                returnString.AppendLine($"----- No Text Extracted{Environment.NewLine}");
+
         }
         catch (System.Exception ex)
         {
             returnString.AppendLine($"Failed to read {path}: {ex.Message}{Environment.NewLine}");
         }
 
-        Mouse.OverrideCursor = null;
         return returnString.ToString();
     }
 
@@ -1390,15 +1561,11 @@ public partial class EditTextWindow : Window
         WindowUtilities.LaunchFullScreenGrab(true, true, PassedTextControl);
     }
 
-    private void FSGFreezeenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        WindowUtilities.LaunchFullScreenGrab(true, true, PassedTextControl);
-    }
-
     private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
     {
         AddOrRemoveWindow aorw = new();
         aorw.Owner = this;
+        aorw.SelectedTextFromEditTextWindow = PassedTextControl.SelectedText;
         aorw.ShowDialog();
     }
 
@@ -1411,55 +1578,14 @@ public partial class EditTextWindow : Window
         qsl.Show();
     }
 
-    public void RemoveCharsFromEachLine(int numberOfChars, SpotInLine spotInLine)
+    public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
-        StringBuilder sb = new();
-        foreach (string line in splitString)
-        {
-            int lineLength = line.Length;
-            if (lineLength <= numberOfChars)
-            {
-                sb.AppendLine();
-                continue;
-            }
-
-            if (spotInLine == SpotInLine.Beginning)
-            {
-                sb.AppendLine(line.Substring(numberOfChars));
-            }
-            else if (spotInLine == SpotInLine.End)
-            {
-                sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
-            }
-        }
-
-        PassedTextControl.Text = sb.ToString();
+        PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
     }
 
-    public void AddCharsToEachLine(string stringToAdd, SpotInLine spotInLine)
+    public void AddCharsToEditTextWindow(string stringToAdd, SpotInLine spotInLine)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
-        if (splitString.Length > 1)
-            if (splitString.LastOrDefault() == "")
-                Array.Resize(ref splitString, splitString.Length - 1);
-
-        StringBuilder sb = new();
-        foreach (string line in splitString)
-        {
-            if (spotInLine == SpotInLine.Beginning)
-            {
-                sb.AppendLine(stringToAdd + line);
-            }
-            else if (spotInLine == SpotInLine.End)
-            {
-                sb.AppendLine(line + stringToAdd);
-            }
-        }
-
-        PassedTextControl.Text = sb.ToString().Trim();
+        PassedTextControl.Text = PassedTextControl.Text.AddCharsToEachLine(stringToAdd, spotInLine);
     }
 
     private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
@@ -1474,7 +1600,7 @@ public partial class EditTextWindow : Window
 
         if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
         {
-            var fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
+            string[]? fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
             // Check for a single file or folder.
             if (fileNames?.Length is 1)
             {
@@ -1496,7 +1622,7 @@ public partial class EditTextWindow : Window
 
     private void ETWindow_DragOver(object sender, System.Windows.DragEventArgs e)
     {
-        // As an arbitrary design decision, we only want to deal with a single file.
+        // If dropping raw text onto the ETW let the default drag/drop events occur
         bool isText = e.Data.GetDataPresent("Text");
 
         if (isText)
@@ -1505,67 +1631,8 @@ public partial class EditTextWindow : Window
             return;
         }
 
+        // After here we will now allow the dropping of "non-text" content
         e.Effects = System.Windows.DragDropEffects.Copy;
-
-        // Mark the event as handled, so TextBox's native DragOver handler is not called.
         e.Handled = true;
-    }
-
-    // If the data object in args is a single file, this method will return the filename.
-    // Otherwise, it returns null.
-    private static string? IsSingleFile(System.Windows.DragEventArgs args)
-    {
-        // Check for files in the hovering data object.
-        if (args.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
-        {
-            var fileNames = args.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
-            // Check for a single file or folder.
-            if (fileNames?.Length is 1)
-            {
-                // Check for a file (a directory will return false).
-                if (File.Exists(fileNames[0]))
-                {
-                    // At this point we know there is a single file.
-                    return fileNames[0];
-                }
-            }
-        }
-        return null;
-    }
-
-    // from StackOverflow user bytedev read on July 12th 2022
-    // https://stackoverflow.com/a/64038750/7438031
-    public static bool IsBinary(string filePath, int requiredConsecutiveNul = 1)
-    {
-        const int charsToCheck = 8000;
-        const char nulChar = '\0';
-
-        int nulCount = 0;
-
-        try
-        {
-            using StreamReader streamReader = new(filePath);
-
-            for (var i = 0; i < charsToCheck; i++)
-            {
-                if (streamReader.EndOfStream)
-                    return false;
-
-                if ((char)streamReader.Read() == nulChar)
-                {
-                    nulCount++;
-
-                    if (nulCount >= requiredConsecutiveNul)
-                        return true;
-                }
-                else
-                {
-                    nulCount = 0;
-                }
-            }
-        }
-        catch (System.Exception) { }
-
-        return false;
     }
 }

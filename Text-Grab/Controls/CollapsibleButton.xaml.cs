@@ -58,7 +58,7 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
 
     private void CollapsibleButton_Loaded(object sender, RoutedEventArgs e)
     {
-        if (IsSymbol == true)
+        if (IsSymbol)
         {
             // change to a symbol button
             Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
@@ -70,7 +70,7 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
 
     private void ChangeButtonLayout_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        if (IsSymbol == true)
+        if (IsSymbol)
         {
             // change to a normal button
             Style? tealButtonStyle = this.FindResource("TealColor") as Style;

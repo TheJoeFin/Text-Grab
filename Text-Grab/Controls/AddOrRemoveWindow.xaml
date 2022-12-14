@@ -12,6 +12,7 @@
     KeyUp="Window_KeyUp"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.CommandBindings>
         <CommandBinding

@@ -108,6 +108,10 @@
                             x:Name="ParseCSVFileMenuItem"
                             Click="ParseCSVFileMenuItem_Click"
                             Header="Add Rows from CSV File..." />
+                        <MenuItem
+                            x:Name="TextGrabSettingsMenuItem"
+                            Click="TextGrabSettingsMenuItem_Click"
+                            Header="Text Grab Settings" />
                     </MenuItem>
                 </Menu>
             </StackPanel>

@@ -43,7 +43,7 @@ public partial class QuickSimpleLookup : Window
         string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
         string cachePath = $"{exePath}\\{cacheFilename}";
 
-        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation) == false
+        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation)
             && File.Exists(Settings.Default.LookupFileLocation))
             cachePath = Settings.Default.LookupFileLocation;
 
@@ -105,7 +105,7 @@ public partial class QuickSimpleLookup : Window
 
             foreach (var searchWord in searchArray)
             {
-                if (lItemAsString.Contains(searchWord) == false)
+                if (!lItemAsString.Contains(searchWord))
                     matchAllSearchWords = false;
             }
 
@@ -383,6 +383,11 @@ public partial class QuickSimpleLookup : Window
         tb.SelectAll();
     }
 
+    private void TextGrabSettingsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+    }
+
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Create OpenFileDialog 
@@ -391,10 +396,11 @@ public partial class QuickSimpleLookup : Window
         // Set filter for file extension and default file extension 
         dlg.DefaultExt = ".csv";
         dlg.Filter = "Comma Separated Values File (.csv)|*.csv";
+        dlg.CheckFileExists = true;
 
         bool? result = dlg.ShowDialog();
 
-        if (result == false || dlg.CheckFileExists == false)
+        if (result is false || !File.Exists(dlg.FileName))
             return;
 
         string csvToOpenPath = dlg.FileName;
@@ -434,7 +440,7 @@ public partial class QuickSimpleLookup : Window
         dlg.FileName = "QuickSimpleLookupDataFile.csv";
         dlg.OverwritePrompt = false;
 
-        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation) == false)
+        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
         {
             dlg.InitialDirectory = Settings.Default.LookupFileLocation;
             dlg.FileName = Path.GetFileName(Settings.Default.LookupFileLocation);
@@ -442,7 +448,7 @@ public partial class QuickSimpleLookup : Window
 
         var result = dlg.ShowDialog();
 
-        if (result == false)
+        if (result is false)
             return;
 
         Settings.Default.LookupFileLocation = dlg.FileName;

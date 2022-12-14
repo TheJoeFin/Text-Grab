@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,8 +28,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public SolidColorBrush MatchingBackground
     {
         get { return matchingBackground; }
-        set 
-        { 
+        set
+        {
             matchingBackground = value;
             MainGrid.Background = matchingBackground;
 
@@ -45,7 +46,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             }
         }
     }
-
 
     public string Word
     {
@@ -67,6 +67,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public int ResultRowID { get; set; } = 0;
 
     public int ResultColumnID { get; set; } = 0;
+
+    public double Top { get; set; } = 0;
+
+    public double Left { get; set; } = 0;
 
     public bool IsFromEditWindow { get; set; } = false;
 
@@ -97,6 +101,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void EnterEdit()
     {
         EditWordTextBox.Visibility = Visibility.Visible;
+        MainGrid.Background = matchingBackground;
     }
 
     public void ExitEdit()
@@ -119,6 +124,38 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
             EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
+    }
+
+    public bool IntersectsWith(Rect rectToChek)
+    {
+        Rect wbRect = new(Left, Top, Width, Height);
+        return rectToChek.IntersectsWith(wbRect);
+    }
+
+    private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;
+
+        int maxBaseSize = 2;
+        while (textBoxContextMenu.Items.Count > maxBaseSize)
+        {
+            EditWordTextBox.ContextMenu?.Items.RemoveAt(maxBaseSize);
+        }
+
+        if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
+        {
+            string headerText = $"Try to go to: {Word}";
+            if (headerText.Length > 36)
+                headerText = headerText.Substring(0, 36) + "...";
+
+            MenuItem urlMi = new();
+            urlMi.Header = headerText;
+            urlMi.Click += (sender, e) =>
+            {
+                Process.Start(new ProcessStartInfo(Word) { UseShellExecute = true });
+            };
+            EditWordTextBox.ContextMenu?.Items.Add(urlMi);
+        }
     }
 
     private void WordBorderControl_MouseDown(object sender, MouseButtonEventArgs e)
@@ -144,10 +181,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         try { Clipboard.SetDataObject(Word, true); } catch { }
 
         if (Settings.Default.ShowToast
-            && IsFromEditWindow == false)
+            && !IsFromEditWindow)
             NotificationUtilities.ShowToast(Word);
 
-        if (IsFromEditWindow == true)
+        if (IsFromEditWindow)
             WindowUtilities.AddTextToOpenWindow(Word);
 
         if (IsSelected)
