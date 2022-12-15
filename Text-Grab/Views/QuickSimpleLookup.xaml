@@ -55,9 +55,20 @@
                 VerticalAlignment="Center"
                 Background="{StaticResource DarkControlBackground}"
                 FontSize="16"
+                AcceptsTab="True"
                 Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock 
+                    x:Name="AddIcon"
+                    Text="press enter to add new item"
+                    Width="90"
+                    VerticalAlignment="Center"
+                    Padding="8,0,0,0"                
+                    FontSize="12"
+                    TextWrapping="Wrap"
+                    Foreground="LightGreen"
+                    Visibility="Collapsed" />
                 <controls:CollapsibleButton
                     x:Name="NewFullscreen"
                     HorizontalAlignment="Right"
@@ -177,21 +188,35 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBlock Padding="10,4" Style="{StaticResource CellTextBlock}">
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            
+            <TextBlock 
+                Grid.Column="0"
+                Padding="10,4"
+                Style="{StaticResource CellTextBlock}"
+                HorizontalAlignment="Left">
                 Shift + Enter to copy every row.
             </TextBlock>
-            <TextBlock Padding="10,4" Style="{StaticResource CellTextBlock}">
+            <TextBlock 
+                Grid.Column="1"
+                Padding="10,4"
+                Style="{StaticResource CellTextBlock}"
+                HorizontalAlignment="Center">
                 Shift + Ctrl + Enter to copy all results.
             </TextBlock>
-        </StackPanel>
+            <TextBlock
+                x:Name="RowCountTextBlock"
+                Grid.Column="2"
+                Padding="10,4"
+                HorizontalAlignment="Right"
+                Style="{StaticResource CellTextBlock}"
+                Text="0 Rows" />
+        </Grid>
 
-        <TextBlock
-            x:Name="RowCountTextBlock"
-            Grid.Row="2"
-            Padding="10,4"
-            HorizontalAlignment="Right"
-            Style="{StaticResource CellTextBlock}"
-            Text="0 Rows" />
     </Grid>
 </Window>
