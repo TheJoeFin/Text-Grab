@@ -197,6 +197,7 @@ public partial class QuickSimpleLookup : Window
                 {
                     AddToLookUpResults('\t', searchTextBox.Text);
                     searchTextBox.Clear();
+                    GoToEndOfMainDataGrid();
                 }
                 else
                     PutValueIntoClipboard();
