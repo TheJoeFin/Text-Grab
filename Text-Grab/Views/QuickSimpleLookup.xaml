@@ -59,16 +59,13 @@
                 Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <TextBlock 
-                    x:Name="AddIcon"
-                    Text="press enter to add new item"
-                    Width="90"
-                    VerticalAlignment="Center"
-                    Padding="8,0,0,0"                
-                    FontSize="12"
-                    TextWrapping="Wrap"
-                    Foreground="LightGreen"
-                    Visibility="Collapsed" />
+                <controls:CollapsibleButton
+                    x:Name="AddItemBtn"
+                    ButtonText="Add Item"
+                    Background="DarkGreen"
+                    Visibility="Collapsed"
+                    Click="AddItemBtn_Click"
+                    SymbolText=""/>
                 <controls:CollapsibleButton
                     x:Name="NewFullscreen"
                     HorizontalAlignment="Right"
@@ -135,6 +132,7 @@
             Background="Transparent"
             BeginningEdit="MainDataGrid_BeginningEdit"
             CanUserAddRows="True"
+            SelectionUnit="FullRow"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
             SelectionChanged="MainDataGrid_SelectionChanged"

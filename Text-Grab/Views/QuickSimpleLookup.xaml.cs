@@ -86,11 +86,11 @@ public partial class QuickSimpleLookup : Window
         if (searchingBox.Text.Contains('\t'))
         {
             // a tab has been entered and this will be a new entry
-            AddIcon.Visibility = Visibility.Visible;
+            AddItemBtn.Visibility = Visibility.Visible;
         }
         else
         {
-            AddIcon.Visibility = Visibility.Collapsed;
+            AddItemBtn.Visibility = Visibility.Collapsed;
         }
 
         MainDataGrid.ItemsSource = null;
@@ -211,6 +211,7 @@ public partial class QuickSimpleLookup : Window
             case Key.Down:
                 if (SearchBox.IsFocused)
                 {
+                    int selectedIndex = MainDataGrid.SelectedIndex;
                     MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
                     e.Handled = true;
                 }
@@ -248,8 +249,14 @@ public partial class QuickSimpleLookup : Window
 
         if (lookupItemsList.Count < 1)
             return;
+        
+        if (MainDataGrid.IsFocused)
+            SearchBox.Focus();
 
         MainDataGrid.ScrollIntoView(lookupItemsList.First());
+        MainDataGrid.SelectedIndex = 0;
+
+        MainDataGrid.Focus();
     }
 
     private void GoToEndOfMainDataGrid()
@@ -260,7 +267,13 @@ public partial class QuickSimpleLookup : Window
         if (lookupItemsList.Count < 1)
             return;
 
+        if (MainDataGrid.IsFocused)
+            SearchBox.Focus();
+
         MainDataGrid.ScrollIntoView(lookupItemsList.Last());
+        MainDataGrid.SelectedItem = lookupItemsList.Last();
+
+        MainDataGrid.Focus();
     }
 
     private void AddToLookUpResults(char splitChar, string text)
@@ -273,7 +286,7 @@ public partial class QuickSimpleLookup : Window
 
         UpdateRowCount();
         MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
-        AddIcon.Visibility = Visibility.Collapsed;
+        AddItemBtn.Visibility = Visibility.Collapsed;
         SaveBTN.Visibility = Visibility.Visible;
     }
 
@@ -531,5 +544,15 @@ public partial class QuickSimpleLookup : Window
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
+    }
+
+    private void AddItemBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (SearchBox is not TextBox searchTextBox)
+            return;
+
+        AddToLookUpResults('\t', searchTextBox.Text);
+        searchTextBox.Clear();
+        GoToEndOfMainDataGrid();
     }
 }
