@@ -31,9 +31,9 @@
             <MenuItem Command="ApplicationCommands.Cut" />
             <MenuItem Command="ApplicationCommands.Copy" />
             <MenuItem Command="ApplicationCommands.Paste" />
-            <MenuItem 
-                Header="OCR Paste" 
-                Command="{x:Static local:EditTextWindow.PasteCommand}" 
+            <MenuItem
+                Command="{x:Static local:EditTextWindow.PasteCommand}"
+                Header="OCR Paste"
                 InputGestureText="Ctrl + Shift + V" />
             <Separator />
             <MenuItem
@@ -100,7 +100,7 @@
             CanExecute="InsertSelectionOnEveryLineCmdCanExecute"
             Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
             Executed="InsertSelectionOnEveryLine" />
-        <CommandBinding 
+        <CommandBinding
             CanExecute="CanPasteExecute"
             Command="{x:Static local:EditTextWindow.PasteCommand}"
             Executed="PasteExecuted" />
@@ -154,9 +154,9 @@
                 <MenuItem Command="ApplicationCommands.Cut" />
                 <MenuItem Command="ApplicationCommands.Copy" />
                 <MenuItem Command="ApplicationCommands.Paste" />
-                <MenuItem 
-                    Header="OCR Paste" 
-                    Command="{x:Static local:EditTextWindow.PasteCommand}" 
+                <MenuItem
+                    Command="{x:Static local:EditTextWindow.PasteCommand}"
+                    Header="OCR Paste"
                     InputGestureText="Ctrl + Shift + V" />
                 <Separator />
                 <MenuItem
@@ -213,7 +213,7 @@
                     x:Name="SelectWordMenuItem"
                     Click="SelectWordMenuItem_Click"
                     Header="Select _Word"
-                    InputGestureText="Ctrl + W"/>
+                    InputGestureText="Ctrl + W" />
                 <MenuItem
                     x:Name="SelectLineMenuItem"
                     Click="SelectLineMenuItem_Click"
