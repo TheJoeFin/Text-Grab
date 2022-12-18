@@ -53,19 +53,19 @@
                 Margin="4,0,0,0"
                 Padding="8"
                 VerticalAlignment="Center"
+                AcceptsTab="True"
                 Background="{StaticResource DarkControlBackground}"
                 FontSize="16"
-                AcceptsTab="True"
                 Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
-                    ButtonText="Add Item"
                     Background="DarkGreen"
-                    Visibility="Collapsed"
+                    ButtonText="Add Item"
                     Click="AddItemBtn_Click"
-                    SymbolText=""/>
+                    SymbolText=""
+                    Visibility="Collapsed" />
                 <controls:CollapsibleButton
                     x:Name="NewFullscreen"
                     HorizontalAlignment="Right"
@@ -132,17 +132,17 @@
             Background="Transparent"
             BeginningEdit="MainDataGrid_BeginningEdit"
             CanUserAddRows="True"
-            SelectionUnit="FullRow"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
-            SelectionChanged="MainDataGrid_SelectionChanged"
             CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
             ItemsSource="{Binding ItemsDictionary}"
             MinRowHeight="14"
             RowBackground="Transparent"
-            RowStyle="{DynamicResource DataGridRowStyleDark}">
+            RowStyle="{DynamicResource DataGridRowStyleDark}"
+            SelectionChanged="MainDataGrid_SelectionChanged"
+            SelectionUnit="FullRow">
             <DataGrid.Columns>
                 <DataGridTemplateColumn Width="*">
                     <DataGridTemplateColumn.Header>
@@ -192,19 +192,19 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
-            
-            <TextBlock 
+
+            <TextBlock
                 Grid.Column="0"
                 Padding="10,4"
-                Style="{StaticResource CellTextBlock}"
-                HorizontalAlignment="Left">
-                Shift + Enter to copy every row.
+                HorizontalAlignment="Left"
+                Style="{StaticResource CellTextBlock}">
+                Shift + Enter to copy entire selected row(s).
             </TextBlock>
-            <TextBlock 
+            <TextBlock
                 Grid.Column="1"
                 Padding="10,4"
-                Style="{StaticResource CellTextBlock}"
-                HorizontalAlignment="Center">
+                HorizontalAlignment="Center"
+                Style="{StaticResource CellTextBlock}">
                 Shift + Ctrl + Enter to copy all results.
             </TextBlock>
             <TextBlock

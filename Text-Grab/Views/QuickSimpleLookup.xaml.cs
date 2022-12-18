@@ -249,14 +249,9 @@ public partial class QuickSimpleLookup : Window
 
         if (lookupItemsList.Count < 1)
             return;
-        
-        if (MainDataGrid.IsFocused)
-            SearchBox.Focus();
 
         MainDataGrid.ScrollIntoView(lookupItemsList.First());
         MainDataGrid.SelectedIndex = 0;
-
-        MainDataGrid.Focus();
     }
 
     private void GoToEndOfMainDataGrid()
@@ -266,14 +261,9 @@ public partial class QuickSimpleLookup : Window
 
         if (lookupItemsList.Count < 1)
             return;
-
-        if (MainDataGrid.IsFocused)
-            SearchBox.Focus();
-
+        
         MainDataGrid.ScrollIntoView(lookupItemsList.Last());
         MainDataGrid.SelectedItem = lookupItemsList.Last();
-
-        MainDataGrid.Focus();
     }
 
     private void AddToLookUpResults(char splitChar, string text)
