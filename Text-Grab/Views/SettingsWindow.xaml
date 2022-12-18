@@ -157,8 +157,8 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="FullScreenHotkeyTextBox"
-                                    Style="{StaticResource ShortCutTextBox}"
                                     CharacterCasing="Upper"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="F"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -170,8 +170,8 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="GrabFrameHotkeyTextBox"
-                                    Style="{StaticResource ShortCutTextBox}"
                                     CharacterCasing="Upper"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="G"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -183,8 +183,8 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="EditTextHotKeyTextBox"
-                                    Style="{StaticResource ShortCutTextBox}"
                                     CharacterCasing="Upper"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="E"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -196,8 +196,8 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
                                     x:Name="LookupHotKeyTextBox"
-                                    Style="{StaticResource ShortCutTextBox}"
                                     CharacterCasing="Upper"
+                                    Style="{StaticResource ShortCutTextBox}"
                                     Text="Q"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock

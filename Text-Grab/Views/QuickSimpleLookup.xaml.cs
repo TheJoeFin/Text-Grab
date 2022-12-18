@@ -83,6 +83,16 @@ public partial class QuickSimpleLookup : Window
         if (sender is not TextBox searchingBox || !IsLoaded)
             return;
 
+        if (searchingBox.Text.Contains('\t'))
+        {
+            // a tab has been entered and this will be a new entry
+            AddItemBtn.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            AddItemBtn.Visibility = Visibility.Collapsed;
+        }
+
         MainDataGrid.ItemsSource = null;
 
         if (string.IsNullOrEmpty(searchingBox.Text))
@@ -155,18 +165,24 @@ public partial class QuickSimpleLookup : Window
 
         foreach (string row in rows)
         {
-            List<string> cells = row.Split(splitChar).ToList();
-            LookupItem newRow = new LookupItem();
-            if (cells.FirstOrDefault() is String firstCell)
-                newRow.shortValue = firstCell;
-
-            newRow.longValue = "";
-            if (cells.Count > 1 && cells[1] is String)
-                newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+            LookupItem newRow = ParseStringToLookupItem(splitChar, row);
 
             if (!string.IsNullOrWhiteSpace(newRow.ToString()))
                 yield return newRow;
         }
+    }
+
+    private static LookupItem ParseStringToLookupItem(char splitChar, string row)
+    {
+        List<string> cells = row.Split(splitChar).ToList();
+        LookupItem newRow = new LookupItem();
+        if (cells.FirstOrDefault() is String firstCell)
+            newRow.shortValue = firstCell;
+
+        newRow.longValue = "";
+        if (cells.Count > 1 && cells[1] is String)
+            newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+        return newRow;
     }
 
     private async void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -177,8 +193,14 @@ public partial class QuickSimpleLookup : Window
                 if (IsEditingDataGrid)
                     return;
                 e.Handled = true;
-                PutValueIntoClipboard();
-                e.Handled = true;
+                if (SearchBox is TextBox searchTextBox && searchTextBox.Text.Contains('\t'))
+                {
+                    AddToLookUpResults('\t', searchTextBox.Text);
+                    searchTextBox.Clear();
+                    GoToEndOfMainDataGrid();
+                }
+                else
+                    PutValueIntoClipboard();
                 break;
             case Key.Escape:
                 if (IsEditingDataGrid)
@@ -189,6 +211,7 @@ public partial class QuickSimpleLookup : Window
             case Key.Down:
                 if (SearchBox.IsFocused)
                 {
+                    int selectedIndex = MainDataGrid.SelectedIndex;
                     MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
                     e.Handled = true;
                 }
@@ -208,9 +231,53 @@ public partial class QuickSimpleLookup : Window
                     e.Handled = true;
                 }
                 break;
+            case Key.End:
+                GoToEndOfMainDataGrid();
+                break;
+            case Key.Home:
+                GoToBeginningOfMainDataGrid();
+                break;
             default:
                 break;
         }
+    }
+
+    private void GoToBeginningOfMainDataGrid()
+    {
+        if (MainDataGrid.ItemsSource is not List<LookupItem> lookupItemsList)
+            return;
+
+        if (lookupItemsList.Count < 1)
+            return;
+
+        MainDataGrid.ScrollIntoView(lookupItemsList.First());
+        MainDataGrid.SelectedIndex = 0;
+    }
+
+    private void GoToEndOfMainDataGrid()
+    {
+        if (MainDataGrid.ItemsSource is not List<LookupItem> lookupItemsList)
+            return;
+
+        if (lookupItemsList.Count < 1)
+            return;
+        
+        MainDataGrid.ScrollIntoView(lookupItemsList.Last());
+        MainDataGrid.SelectedItem = lookupItemsList.Last();
+    }
+
+    private void AddToLookUpResults(char splitChar, string text)
+    {
+        LookupItem newItem = ParseStringToLookupItem(splitChar, text);
+
+        MainDataGrid.ItemsSource = null;
+        ItemsDictionary.Add(newItem);
+        MainDataGrid.ItemsSource = ItemsDictionary;
+
+        UpdateRowCount();
+        MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
+        AddItemBtn.Visibility = Visibility.Collapsed;
+        SaveBTN.Visibility = Visibility.Visible;
     }
 
     private void ClearOrExit()
@@ -467,5 +534,15 @@ public partial class QuickSimpleLookup : Window
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
+    }
+
+    private void AddItemBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (SearchBox is not TextBox searchTextBox)
+            return;
+
+        AddToLookUpResults('\t', searchTextBox.Text);
+        searchTextBox.Clear();
+        GoToEndOfMainDataGrid();
     }
 }

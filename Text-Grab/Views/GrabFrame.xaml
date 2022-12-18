@@ -46,7 +46,7 @@
     </Window.Resources>
 
     <Window.CommandBindings>
-        <CommandBinding 
+        <CommandBinding
             CanExecute="CanPasteExecute"
             Command="{x:Static local:GrabFrame.PasteCommand}"
             Executed="PasteExecuted" />
@@ -182,9 +182,9 @@
                                 Click="FreezeMI_Click"
                                 Header="Toggle Freeze" />
                             <Separator />
-                            <MenuItem 
-                                Header="Paste Image" 
-                                Command="{x:Static local:GrabFrame.PasteCommand}" 
+                            <MenuItem
+                                Command="{x:Static local:GrabFrame.PasteCommand}"
+                                Header="Paste Image"
                                 InputGestureText="Ctrl + Shift + V" />
                         </ContextMenu>
                     </Canvas.ContextMenu>
