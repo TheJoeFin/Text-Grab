@@ -15,6 +15,7 @@
     Background="{StaticResource DarkBackground}"
     Closed="Window_Closed"
     Initialized="Window_Initialized"
+    PreviewKeyDown="EditTextWindow_PreviewKeyDown"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -383,7 +384,7 @@
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal" Name="BottomBarButtons">
                 <controls:CollapsibleButton
                     x:Name="CopyCloseBTN"
                     Background="#CC7000"
