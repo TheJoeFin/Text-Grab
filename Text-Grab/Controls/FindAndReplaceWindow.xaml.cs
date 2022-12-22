@@ -17,7 +17,21 @@ public partial class FindAndReplaceWindow : Window
 {
     public string StringFromWindow { get; set; } = "";
 
-    public EditTextWindow? TextEditWindow = null;
+    private EditTextWindow? textEditWindow;
+    public EditTextWindow? TextEditWindow
+    {
+        get
+        {
+            return textEditWindow;
+        }
+        set
+        {
+            textEditWindow = value;
+
+            if (textEditWindow is not null)
+                textEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+        }
+    }
 
     public static RoutedCommand TextSearchCmd = new();
     public static RoutedCommand ReplaceOneCmd = new();
@@ -61,8 +75,6 @@ public partial class FindAndReplaceWindow : Window
     {
         if (TextEditWindow != null)
         {
-            TextEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
-
             double etwMidTop = TextEditWindow.Top + (TextEditWindow.Height / 2);
             double etwMidLeft = TextEditWindow.Left + (TextEditWindow.Width / 2);
 
@@ -76,6 +88,8 @@ public partial class FindAndReplaceWindow : Window
         if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
             SearchForText();
 
+
+        FindTextBox.Focus();
     }
 
     private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
@@ -166,7 +180,9 @@ public partial class FindAndReplaceWindow : Window
         {
             Match? fm = Matches[0];
 
-            if (TextEditWindow != null && fm != null)
+            if (TextEditWindow != null
+                && fm != null
+                && this.IsFocused)
             {
                 TextEditWindow.PassedTextControl.Select(fm.Index, fm.Value.Length);
                 TextEditWindow.PassedTextControl.Focus();
