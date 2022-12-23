@@ -214,7 +214,17 @@
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                 SelectionChanged="ResultsListView_SelectionChanged"
                 Style="{DynamicResource ListViewDarkStyle}">
-                No Matches
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Count}" />
+                            <TextBlock Text=", " />
+                            <TextBlock Text="{Binding PreviewLeft}" />
+                            <TextBlock Text="{Binding Text}" FontWeight="Bold" />
+                            <TextBlock Text="{Binding PreviewRight}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
             </ListView>
         </Border>
     </Grid>

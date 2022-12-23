@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -6,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Text_Grab.Models;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls;
@@ -40,6 +42,8 @@ public partial class FindAndReplaceWindow : Window
     public static RoutedCommand DeleteAllCmd = new();
     public static RoutedCommand CopyMatchesCmd = new();
     DispatcherTimer ChangeFindTextTimer = new();
+
+    public List<FindResult> FindResults { get; set; } = new();
 
     private string? Pattern { get; set; }
 
@@ -103,7 +107,9 @@ public partial class FindAndReplaceWindow : Window
 
     public void SearchForText()
     {
-        ResultsListView.Items.Clear();
+        //ResultsListView.Items.Clear();
+        FindResults.Clear();
+        ResultsListView.ItemsSource = null;
 
         Pattern = FindTextBox.Text;
 
@@ -126,89 +132,145 @@ public partial class FindAndReplaceWindow : Window
             return;
         }
 
-        if (Matches.Count == 0 || string.IsNullOrWhiteSpace(FindTextBox.Text))
+        if (Matches.Count < 1 || string.IsNullOrWhiteSpace(FindTextBox.Text))
         {
             MatchesText.Text = "0 Matches";
             ResultsListView.Items.Add("No Matches");
             ResultsListView.IsEnabled = false;
+            return;
         }
-        else
+
+        MatchesText.Text = $"{Matches.Count} Matches";
+        ResultsListView.IsEnabled = true;
+        int count = 1;
+        foreach (Match m in Matches)
         {
-            MatchesText.Text = $"{Matches.Count} Matches";
-            ResultsListView.IsEnabled = true;
-            int count = 1;
-            foreach (Match m in Matches)
+            string previewString = MatchInContextString(m);
+            FindResult fr = new()
             {
-                int previewLengths = 16;
-                int previewBeginning = 0;
-                int previewEnd = 0;
-                bool atBeginning = false;
-                bool atEnd = false;
+                SelectionStart = m.Index,
+                Text = m.Value,
+                PreviewLeft = GetCharactersToLeft(m.Index, 12),
+                PreviewRight = GetCharactersToRight(m.Index + m.Length, 12),
+                Count = count
+            };
+            FindResults.Add(fr);
 
-                if (m.Index - previewLengths < 0)
-                {
-                    atBeginning = true;
-                    previewBeginning = 0;
-                }
-                else
-                    previewBeginning = m.Index - previewLengths;
-
-                if (m.Index + previewLengths > StringFromWindow.Length)
-                {
-                    atEnd = true;
-                    previewEnd = StringFromWindow.Length;
-                }
-                else
-                    previewEnd = m.Index + previewLengths;
-
-                StringBuilder previewString = new();
-
-                if (!atBeginning)
-                    previewString.Append("...");
-
-                previewString.Append(StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine());
-
-                if (!atEnd)
-                    previewString.Append("...");
-
-                ResultsListView.Items.Add($"{count} \t At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
-                count++;
-            }
+            // ResultsListView.Items.Add($"{count} \t At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
+            count++;
         }
 
-        if (Matches.Count > 0)
+        ResultsListView.ItemsSource = FindResults;
+
+        Match? firstMatch = Matches[0];
+
+        if (TextEditWindow != null
+            && firstMatch != null
+            && this.IsFocused)
         {
-            Match? fm = Matches[0];
-
-            if (TextEditWindow != null
-                && fm != null
-                && this.IsFocused)
-            {
-                TextEditWindow.PassedTextControl.Select(fm.Index, fm.Value.Length);
-                TextEditWindow.PassedTextControl.Focus();
-                this.Focus();
-            }
+            TextEditWindow.PassedTextControl.Select(firstMatch.Index, firstMatch.Value.Length);
+            TextEditWindow.PassedTextControl.Focus();
+            this.Focus();
         }
+    }
+
+    private string MatchInContextString(Match m)
+    {
+        int previewLengths = 12;
+        int previewBeginning = 0;
+        int previewEnd = 0;
+        bool atBeginning = false;
+        bool atEnd = false;
+
+        previewBeginning = GetNewLineIndexToLeft(m.Index);
+        previewEnd = GetNewLineIndexToRight(m.Index + m.Length);
+
+        if (previewEnd - (m.Index + m.Length) > previewLengths)
+            previewEnd = m.Index + m.Length + previewLengths;
+
+        if (m.Index - previewBeginning > previewLengths)
+            previewBeginning = m.Index - previewLengths;
+
+        if (previewBeginning == 0)
+            atBeginning = true;
+
+        if (previewEnd == StringFromWindow.Length)
+            atEnd = true;
+
+        StringBuilder previewString = new();
+
+        if (!atBeginning)
+            previewString.Append("...");
+
+        previewString.Append(StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine());
+
+        if (!atEnd)
+            previewString.Append("...");
+        return previewString.ToString();
+    }
+
+    // a method which returns x number of characters to the left of the given index
+    private string GetCharactersToLeft(int index, int numberOfCharacters)
+    {
+        int startIndex = index - numberOfCharacters;
+        if (startIndex < 0)
+            startIndex = 0;
+
+        return StringFromWindow.Substring(startIndex, index - startIndex);
+    }
+
+    // a method which returns x number of characters to the right of the given index
+    private string GetCharactersToRight(int index, int numberOfCharacters)
+    {
+        int endIndex = index + numberOfCharacters;
+        if (endIndex > StringFromWindow.Length)
+            endIndex = StringFromWindow.Length;
+
+        return StringFromWindow.Substring(index, endIndex - index);
+    }
+
+    // a method which returns the nearst newLine character index to the left of the given index
+    private int GetNewLineIndexToLeft(int index)
+    {
+        char newLineChar = Environment.NewLine.ToArray().Last();
+
+        int newLineIndex = index;
+        while (newLineIndex > 0 && StringFromWindow[newLineIndex] != newLineChar)
+            newLineIndex--;
+
+        return newLineIndex;
+    }
+
+    // a method which returns the nearst newLine character index to the right of the given index
+    private int GetNewLineIndexToRight(int index)
+    {
+        char newLineChar = Environment.NewLine.ToArray().First();
+
+        int newLineIndex = index;
+        while (newLineIndex < StringFromWindow.Length && StringFromWindow[newLineIndex] != newLineChar)
+            newLineIndex++;
+
+        return newLineIndex;
     }
 
     private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        string? stringToParse = ResultsListView.SelectedItem as string;
+        // string? stringToParse = ResultsListView.SelectedItem as string;
 
-        if (string.IsNullOrWhiteSpace(stringToParse)
-            || Matches is null
-            || Matches.Count < 1)
-        {
-            ResultsListView.Items.Clear();
+        // if (string.IsNullOrWhiteSpace(stringToParse)
+        //     || Matches is null
+        //     || Matches.Count < 1)
+        // {
+        //     ResultsListView.Items.Clear();
+        //     return;
+        // }
+
+        if (ResultsListView.SelectedItem is not FindResult selectedResult)
             return;
-        }
-
-        int selectedResultIndex = ResultsListView.SelectedIndex;
-        Match sameMatch = Matches[selectedResultIndex];
 
         if (TextEditWindow != null)
         {
-            TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
+            TextEditWindow.PassedTextControl.Select(selectedResult.SelectionStart, selectedResult.SelectionLength);
             TextEditWindow.PassedTextControl.Focus();
             this.Focus();
         }
