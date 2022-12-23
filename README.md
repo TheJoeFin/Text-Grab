@@ -4,6 +4,8 @@ This is a minimal optical character recognition (OCR) utility for Windows 10/11 
 
 Too often text is trapped within images, videos, or within parts of applications and cannot be selected. Text Grab takes a screenshot, passes that image to the OCR engine, then puts the text into the clipboard for use anywhere. The OCR is done locally by [Windows API](https://docs.microsoft.com/en-us/uwp/api/Windows.Media.Ocr). This enables Text Grab to have essentially no UI and not require a constantly running background process. Working with text can be much more than just copying text from images, so Text Grab has a range of different modes to make working with text fast and easy. 
 
+I am the author of the [PowerToy Text Extractor](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor). The Full-Screen Grab mode of this app was the basis of that PowerToy
+
 ## How to Install
 
 ### Official
@@ -39,7 +41,7 @@ Get the code:
 
 ## Text Grab has Four Modes
 
-### 1. Full-Screen Mode
+### 1. Full-Screen Mode (basis of [Text Extractor](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor))
 ![Select text from a region](images/2-3-Full-Screen-Grab-med.gif)
 
 The first full screen use case is the most obvious, selecting a region of the screen and the text within the selected region will be added to the clipboard.

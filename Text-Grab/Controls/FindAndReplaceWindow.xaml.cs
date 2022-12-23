@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -6,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Text_Grab.Models;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls;
@@ -15,9 +17,29 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class FindAndReplaceWindow : Window
 {
-    public string StringFromWindow { get; set; } = "";
+    private string stringFromWindow = "";
+    public string StringFromWindow
+    {
+        get { return stringFromWindow; }
+        set { stringFromWindow = value; }
+    }
 
-    public EditTextWindow? TextEditWindow = null;
+
+    private EditTextWindow? textEditWindow;
+    public EditTextWindow? TextEditWindow
+    {
+        get
+        {
+            return textEditWindow;
+        }
+        set
+        {
+            textEditWindow = value;
+
+            if (textEditWindow is not null)
+                textEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+        }
+    }
 
     public static RoutedCommand TextSearchCmd = new();
     public static RoutedCommand ReplaceOneCmd = new();
@@ -26,6 +48,8 @@ public partial class FindAndReplaceWindow : Window
     public static RoutedCommand DeleteAllCmd = new();
     public static RoutedCommand CopyMatchesCmd = new();
     DispatcherTimer ChangeFindTextTimer = new();
+
+    public List<FindResult> FindResults { get; set; } = new();
 
     private string? Pattern { get; set; }
 
@@ -43,11 +67,13 @@ public partial class FindAndReplaceWindow : Window
     private void Window_Closed(object? sender, EventArgs e)
     {
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
+        if (textEditWindow is not null)
+            textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
     }
 
     public void ShouldCloseWithThisETW(EditTextWindow etw)
     {
-        if (TextEditWindow is not null && etw == TextEditWindow)
+        if (textEditWindow is not null && etw == textEditWindow)
             Close();
     }
 
@@ -59,44 +85,30 @@ public partial class FindAndReplaceWindow : Window
 
     private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
     {
-        if (TextEditWindow != null)
-        {
-            TextEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
-
-            double etwMidTop = TextEditWindow.Top + (TextEditWindow.Height / 2);
-            double etwMidLeft = TextEditWindow.Left + (TextEditWindow.Width / 2);
-
-            double thisMidTop = etwMidTop - (this.Height / 2);
-            double thisMidLeft = etwMidLeft - (this.Width / 2);
-
-            this.Top = thisMidTop;
-            this.Left = thisMidLeft;
-        }
-
         if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
             SearchForText();
 
+        FindTextBox.Focus();
     }
 
     private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
     {
         ChangeFindTextTimer.Stop();
-        if (TextEditWindow != null)
-            StringFromWindow = TextEditWindow.PassedTextControl.Text;
+        if (textEditWindow is not null)
+            StringFromWindow = textEditWindow.PassedTextControl.Text;
 
         ChangeFindTextTimer.Start();
     }
 
     public void SearchForText()
     {
-        ResultsListView.Items.Clear();
+        FindResults.Clear();
+        ResultsListView.ItemsSource = null;
 
         Pattern = FindTextBox.Text;
 
         if (UsePaternCheckBox.IsChecked is false)
-        {
             Pattern = Pattern.EscapeSpecialRegexChars();
-        }
 
         try
         {
@@ -104,7 +116,6 @@ public partial class FindAndReplaceWindow : Window
                 Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline);
             else
                 Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
-
         }
         catch (Exception ex)
         {
@@ -112,96 +123,121 @@ public partial class FindAndReplaceWindow : Window
             return;
         }
 
-        if (Matches.Count == 0 || string.IsNullOrWhiteSpace(FindTextBox.Text))
+        if (Matches.Count < 1 || string.IsNullOrWhiteSpace(FindTextBox.Text))
         {
             MatchesText.Text = "0 Matches";
-            ResultsListView.Items.Add("No Matches");
-            ResultsListView.IsEnabled = false;
+            return;
         }
-        else
+
+        MatchesText.Text = $"{Matches.Count} Matches";
+        ResultsListView.IsEnabled = true;
+        int count = 1;
+        foreach (Match m in Matches)
         {
-            MatchesText.Text = $"{Matches.Count} Matches";
-            ResultsListView.IsEnabled = true;
-            int count = 1;
-            foreach (Match m in Matches)
+            FindResult fr = new()
             {
-                int previewLengths = 16;
-                int previewBeginning = 0;
-                int previewEnd = 0;
-                bool atBeginning = false;
-                bool atEnd = false;
+                Index = m.Index,
+                Text = m.Value,
+                PreviewLeft = GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12),
+                PreviewRight = GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12),
+                Count = count
+            };
+            FindResults.Add(fr);
 
-                if (m.Index - previewLengths < 0)
-                {
-                    atBeginning = true;
-                    previewBeginning = 0;
-                }
-                else
-                    previewBeginning = m.Index - previewLengths;
-
-                if (m.Index + previewLengths > StringFromWindow.Length)
-                {
-                    atEnd = true;
-                    previewEnd = StringFromWindow.Length;
-                }
-                else
-                    previewEnd = m.Index + previewLengths;
-
-                StringBuilder previewString = new();
-
-                if (!atBeginning)
-                    previewString.Append("...");
-
-                previewString.Append(StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine());
-
-                if (!atEnd)
-                    previewString.Append("...");
-
-                ResultsListView.Items.Add($"{count} \t At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
-                count++;
-            }
+            count++;
         }
 
-        if (Matches.Count > 0)
+        ResultsListView.ItemsSource = FindResults;
+
+        Match? firstMatch = Matches[0];
+
+        if (textEditWindow is not null
+            && firstMatch is not null
+            && this.IsFocused)
         {
-            Match? fm = Matches[0];
-
-            if (TextEditWindow != null && fm != null)
-            {
-                TextEditWindow.PassedTextControl.Select(fm.Index, fm.Value.Length);
-                TextEditWindow.PassedTextControl.Focus();
-                this.Focus();
-            }
+            textEditWindow.PassedTextControl.Select(firstMatch.Index, firstMatch.Value.Length);
+            textEditWindow.PassedTextControl.Focus();
+            this.Focus();
         }
+    }
+
+    // a method which uses GetNewLineIndexToLeft and returns the string from the given index to the newLine character to the left of the given index
+    // if the string is longer the x number of characters, it will return the last x number of characters
+    // and if the string is at the beginning don't add "..." to the beginning
+    private static string GetCharactersToLeftOfNewLine(ref string mainString, int index, int numberOfCharacters)
+    {
+        int newLineIndex = GetNewLineIndexToLeft(ref mainString, index);
+
+        if (newLineIndex < 1)
+            return mainString.Substring(0, index);
+
+        newLineIndex++;
+
+        if (index - newLineIndex < numberOfCharacters)
+            return "..." + mainString.Substring(newLineIndex, index - newLineIndex);
+
+        return "..." + mainString.Substring(index - numberOfCharacters, numberOfCharacters);
+    }
+
+    // same as GetCharactersToLeftOfNewLine but to the right
+    private static string GetCharactersToRightOfNewLine(ref string mainString, int index, int numberOfCharacters)
+    {
+        int newLineIndex = GetNewLineIndexToRight(ref mainString, index);
+        if (newLineIndex < 1)
+            return mainString.Substring(index);
+
+        if (newLineIndex - index > numberOfCharacters)
+            return mainString.Substring(index, numberOfCharacters) + "...";
+
+        if (newLineIndex == mainString.Length)
+            return mainString.Substring(index);
+
+        return mainString.Substring(index, newLineIndex - index) + "...";
+    }
+
+
+
+    // a method which returns the nearst newLine character index to the left of the given index
+    private static int GetNewLineIndexToLeft(ref string mainString, int index)
+    {
+        char newLineChar = Environment.NewLine.ToArray().Last();
+
+        int newLineIndex = index;
+        while (newLineIndex > 0 && mainString[newLineIndex] != newLineChar)
+            newLineIndex--;
+
+        return newLineIndex;
+    }
+
+    // a method which returns the nearst newLine character index to the right of the given index
+    private static int GetNewLineIndexToRight(ref string mainString, int index)
+    {
+        char newLineChar = Environment.NewLine.ToArray().First();
+
+        int newLineIndex = index;
+        while (newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
+            newLineIndex++;
+
+        return newLineIndex;
     }
 
     private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        string? stringToParse = ResultsListView.SelectedItem as string;
-
-        if (string.IsNullOrWhiteSpace(stringToParse)
-            || Matches is null
-            || Matches.Count < 1)
-        {
-            ResultsListView.Items.Clear();
+        if (ResultsListView.SelectedItem is not FindResult selectedResult)
             return;
-        }
 
-        int selectedResultIndex = ResultsListView.SelectedIndex;
-        Match sameMatch = Matches[selectedResultIndex];
-
-        if (TextEditWindow != null)
+        if (textEditWindow is not null)
         {
-            TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
-            TextEditWindow.PassedTextControl.Focus();
+            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+            textEditWindow.PassedTextControl.Focus();
             this.Focus();
         }
     }
 
     private void ExtractPattern_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (TextEditWindow != null
-                && TextEditWindow.PassedTextControl.SelectedText.Length > 0)
+        if (textEditWindow is not null
+            && textEditWindow.PassedTextControl.SelectedText.Length > 0)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -209,10 +245,10 @@ public partial class FindAndReplaceWindow : Window
 
     private void ExtractPattern_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (TextEditWindow == null)
+        if (textEditWindow is null)
             return;
 
-        string? selection = TextEditWindow.PassedTextControl.SelectedText;
+        string? selection = textEditWindow.PassedTextControl.SelectedText;
 
         string simplePattern = selection.ExtractSimplePattern();
 
@@ -222,13 +258,17 @@ public partial class FindAndReplaceWindow : Window
         SearchForText();
     }
 
-
     private void MoreOptionsToggleButton_Click(object sender, RoutedEventArgs e)
     {
         Visibility optionsVisibility = Visibility.Collapsed;
         if (MoreOptionsToggleButton.IsChecked is true)
             optionsVisibility = Visibility.Visible;
 
+        SetExtraOptionsVisibility(optionsVisibility);
+    }
+
+    private void SetExtraOptionsVisibility(Visibility optionsVisibility)
+    {
         ReplaceTextBox.Visibility = optionsVisibility;
         ReplaceButton.Visibility = optionsVisibility;
         ReplaceAllButton.Visibility = optionsVisibility;
@@ -238,42 +278,22 @@ public partial class FindAndReplaceWindow : Window
 
     private void ReplaceAll_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        var selection = ResultsListView.SelectedItems;
-
-        if (Matches == null
-            || Matches.Count < 1)
+        if (Matches is null
+            || Matches.Count < 1
+            || textEditWindow is null)
             return;
 
+        var selection = ResultsListView.SelectedItems;
         if (selection.Count < 2)
+            selection = ResultsListView.Items;
+
+        for (int j = selection.Count - 1; j >= 0; j--)
         {
-            for (int i = Matches.Count - 1; i >= 0; i--)
-            {
-                Match matchItem = Matches[i];
-                if (TextEditWindow != null)
-                {
-                    TextEditWindow.PassedTextControl.Select(matchItem.Index, matchItem.Length);
-                    TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
-                }
-            }
-        }
-        else
-        {
-            for (int j = selection.Count - 1; j >= 0; j--)
-            {
-                string? selectionItem = selection[j] as string;
-                if (selectionItem != null && TextEditWindow != null)
-                {
-                    string? intString = selectionItem.Split('\t').FirstOrDefault();
-                    if (intString != null)
-                    {
-                        int currentIndex = int.Parse(intString);
-                        currentIndex--;
-                        Match match = Matches[currentIndex];
-                        TextEditWindow.PassedTextControl.Select(match.Index, match.Length);
-                        TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
-                    }
-                }
-            }
+            if (selection[j] is not FindResult selectedResult)
+                continue;
+
+            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+            textEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
         }
 
         SearchForText();
@@ -282,7 +302,7 @@ public partial class FindAndReplaceWindow : Window
     private void Replace_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(ReplaceTextBox.Text)
-            || Matches == null
+            || Matches is null
             || Matches.Count < 1)
             e.CanExecute = false;
         else
@@ -291,33 +311,26 @@ public partial class FindAndReplaceWindow : Window
 
     private void Replace_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        int selectedResultIndex = ResultsListView.SelectedIndex;
-
-        if (selectedResultIndex == -1)
-        {
-            if (ResultsListView.Items.Count < 1)
-                return;
-            else
-                selectedResultIndex = 0;
-        }
-
-        if (Matches == null)
+        if (Matches is null
+            || textEditWindow is null
+            || ResultsListView.Items.Count is 0)
             return;
 
-        Match sameMatch = Matches[selectedResultIndex];
+        if (ResultsListView.SelectedIndex == -1)
+            ResultsListView.SelectedIndex = 0;
 
-        if (TextEditWindow != null)
-        {
-            TextEditWindow.PassedTextControl.Select(sameMatch.Index, sameMatch.Length);
-            TextEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
-        }
+        if (ResultsListView.SelectedItem is not FindResult selectedResult)
+            return;
+
+        textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+        textEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
 
         SearchForText();
     }
 
     private void DeleteAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (Matches == null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
+        if (Matches is null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -325,50 +338,31 @@ public partial class FindAndReplaceWindow : Window
 
     private void DeleteAll_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        var selection = ResultsListView.SelectedItems;
-
-        if (Matches == null
-            || Matches.Count < 1)
+        if (Matches is null
+            || Matches.Count < 1
+            || textEditWindow is null)
             return;
 
+        var selection = ResultsListView.SelectedItems;
         if (selection.Count < 2)
+            selection = ResultsListView.Items;
+
+        for (int j = selection.Count - 1; j >= 0; j--)
         {
-            for (int i = Matches.Count - 1; i >= 0; i--)
-            {
-                Match matchItem = Matches[i];
-                if (TextEditWindow != null)
-                {
-                    TextEditWindow.PassedTextControl.Select(matchItem.Index, matchItem.Length);
-                    TextEditWindow.PassedTextControl.SelectedText = "";
-                }
-            }
-        }
-        else
-        {
-            for (int j = selection.Count - 1; j >= 0; j--)
-            {
-                string? selectionItem = selection[j] as string;
-                if (selectionItem != null && TextEditWindow != null)
-                {
-                    string? intString = selectionItem.Split('\t').FirstOrDefault();
-                    if (intString != null)
-                    {
-                        int currentIndex = int.Parse(intString);
-                        currentIndex--;
-                        Match match = Matches[currentIndex];
-                        TextEditWindow.PassedTextControl.Select(match.Index, match.Length);
-                        TextEditWindow.PassedTextControl.SelectedText = "";
-                    }
-                }
-            }
+            if (selection[j] is not FindResult selectedResult)
+                continue;
+
+            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+            textEditWindow.PassedTextControl.SelectedText = string.Empty;
         }
 
+        textEditWindow.PassedTextControl.Select(0, 0);
         SearchForText();
     }
 
     private void CopyMatchesCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (Matches == null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
+        if (Matches is null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -376,39 +370,20 @@ public partial class FindAndReplaceWindow : Window
 
     private void CopyMatchesCmd_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        var selection = ResultsListView.SelectedItems;
-
-        if (Matches == null
+        if (Matches is null
+            || textEditWindow is null
             || Matches.Count < 1)
             return;
 
         StringBuilder stringBuilder = new();
 
+        var selection = ResultsListView.SelectedItems;
         if (selection.Count < 2)
-        {
-            for (int i = Matches.Count - 1; i >= 0; i--)
-            {
-                stringBuilder.AppendLine(Matches[i].Value);
-            }
-        }
-        else
-        {
-            for (int j = selection.Count - 1; j >= 0; j--)
-            {
-                string? selectionItem = selection[j] as string;
-                if (selectionItem != null && TextEditWindow != null)
-                {
-                    string? intString = selectionItem.Split('\t').FirstOrDefault();
-                    if (intString != null)
-                    {
-                        int currentIndex = int.Parse(intString);
-                        currentIndex--;
-                        Match match = Matches[currentIndex];
-                        stringBuilder.AppendLine(Matches[currentIndex].Value);
-                    }
-                }
-            }
-        }
+            selection = ResultsListView.Items;
+
+        foreach (var item in selection)
+            if (item is FindResult findResult)
+                stringBuilder.AppendLine(findResult.Text);
 
         EditTextWindow etw = new();
         etw.AddThisText(stringBuilder.ToString());

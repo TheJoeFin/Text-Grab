@@ -320,6 +320,29 @@ public partial class EditTextWindow : Window
         _ = CommandBindings.Add(new CommandBinding(EscapeKeyed, KeyedEscape));
     }
 
+    private void EditTextWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (!Keyboard.IsKeyDown(Key.LeftCtrl) && !Keyboard.IsKeyDown(Key.RightCtrl))
+            return;
+
+        UIElementCollection bottomBarButtons = BottomBarButtons.Children;
+
+        int keyNumberPressed = (int)e.Key - 35;
+
+        if (keyNumberPressed < 0 || keyNumberPressed >= bottomBarButtons.Count)
+            return;
+
+        if (bottomBarButtons[keyNumberPressed] is not CollapsibleButton correspondingButton)
+            return;
+
+        e.Handled = true;
+
+        if (correspondingButton.Command is ICommand buttonCommand)
+            buttonCommand.Execute(null);
+        else
+            correspondingButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+    }
+
     private void KeyedEscape(object sender, ExecutedRoutedEventArgs e)
     {
         if (cancellationTokenForDirOCR is not null)
@@ -628,7 +651,7 @@ public partial class EditTextWindow : Window
                 RestoreDirectory = true,
             };
 
-            if (dialog.ShowDialog() is bool isOkayOrAccept)
+            if (dialog.ShowDialog() is true)
             {
                 File.WriteAllText(dialog.FileName, fileText);
                 OpenedFilePath = dialog.FileName;
@@ -666,7 +689,7 @@ public partial class EditTextWindow : Window
             RestoreDirectory = true,
         };
 
-        if (dialog.ShowDialog() is bool isOkayOrAccept)
+        if (dialog.ShowDialog() is true)
         {
             File.WriteAllText(dialog.FileName, fileText);
             OpenedFilePath = dialog.FileName;
@@ -674,7 +697,7 @@ public partial class EditTextWindow : Window
         }
     }
 
-    private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+    private void SingleLineCmdExecuted(object sender, ExecutedRoutedEventArgs? e = null)
     {
         if (PassedTextControl.SelectedText.Length > 0)
             PassedTextControl.SelectedText = PassedTextControl.SelectedText.MakeStringSingleLine();
