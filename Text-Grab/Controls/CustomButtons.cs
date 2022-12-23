@@ -1,58 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Text_Grab.Controls;
 
-public class CustomButtons
+public class CustomButton
 {
-    string ExpandedText { get; set; } = "";
-    string Icon { get; set; } = "";
-    string Background { get; set; } = "Transparent";
-    string Command { get; set; } = "";
-    bool IsSymbol { get; set; } = false;
+    public string ButtonText { get; set; } = "";
+    public string SymbolText { get; set; } = "";
+    public string Background { get; set; } = "Transparent";
+    public string Command { get; set; } = "";
+    public bool IsSymbol { get; set; } = false;
 
-    static List<CustomButtons> ButtonList { get; set; } = new()
+    public static List<CustomButton> DefaultButtonList { get; set; } = new()
     {
         new()
         {
-            ExpandedText = "Copy and Close",
-            Icon = "",
+            ButtonText = "Copy and Close",
+            SymbolText = "",
             Background = "#CC7000",
             Command = "CopyClose"
         },
         new()
         {
-            ExpandedText = "Save to File...",
-            Icon = "",
+            ButtonText = "Save to File...",
+            SymbolText = "",
             Command = "Save"
         },
         new()
         {
-            ExpandedText = "Make Single Line",
-            Icon = "",
+            ButtonText = "Make Single Line",
+            SymbolText = "",
             Command = "SingleLine"
         },
         new()
         {
-            ExpandedText = "New Fullscreen Grab",
-            Icon = "",
+            ButtonText = "New Fullscreen Grab",
+            SymbolText = "",
             Command = "NewFullscreen",
             IsSymbol = true
         },
         new()
         {
-            ExpandedText = "Open Grab Frame",
-            Icon = "",
+            ButtonText = "Open Grab Frame",
+            SymbolText = "",
             Command = "OpenGrabFrame",
             IsSymbol = true
         },
         new()
         {
-            ExpandedText = "Find and Replace",
-            Icon = "",
+            ButtonText = "Find and Replace",
+            SymbolText = "",
             Command = "SearchButton",
             IsSymbol = true
         },

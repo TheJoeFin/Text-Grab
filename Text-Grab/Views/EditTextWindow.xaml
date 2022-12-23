@@ -385,7 +385,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" Name="BottomBarButtons">
-                <controls:CollapsibleButton
+                <!-- <controls:CollapsibleButton
                     x:Name="CopyCloseBTN"
                     Background="#CC7000"
                     ButtonText="Copy and Close"
@@ -428,7 +428,7 @@
                     Click="SearchButton_Click"
                     IsSymbol="True"
                     SymbolText=""
-                    ToolTip="Find and Replace" />
+                    ToolTip="Find and Replace" /> -->
             </StackPanel>
 
             <TextBlock

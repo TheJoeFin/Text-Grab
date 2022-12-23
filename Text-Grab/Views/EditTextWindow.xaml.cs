@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -244,6 +245,26 @@ public partial class EditTextWindow : Window
         {
             HideBottomBarMenuItem.IsChecked = true;
             BottomBar.Visibility = Visibility.Collapsed;
+        }
+
+        BottomBarButtons.Children.Clear();
+
+        foreach (CustomButton buttonItem in CustomButton.DefaultButtonList)
+        {
+            CollapsibleButton button = new()
+            {
+                ButtonText = buttonItem.ButtonText,
+                SymbolText = buttonItem.SymbolText,
+                IsSymbol = buttonItem.IsSymbol,
+            };
+
+            if (buttonItem.Background != "Transparent"
+                && new BrushConverter().ConvertFromString(buttonItem.Background) is SolidColorBrush solidColorBrush)
+            {
+                button.Background = solidColorBrush;
+            }
+
+            BottomBarButtons.Children.Add(button);
         }
     }
 
@@ -925,7 +946,9 @@ public partial class EditTextWindow : Window
         Keyboard.Focus(PassedTextControl);
         PassedTextControl.IsInactiveSelectionHighlightEnabled = true;
         PassedTextControl.SelectedText = " ";
-        CopyCloseBTN.Focus();
+        if (BottomBarButtons.Children.Count > 0
+            && BottomBarButtons.Children[0] is CollapsibleButton collapsibleButton)
+            collapsibleButton.Focus();
         GrabFrame gf = new();
         gf.DestinationTextBox = PassedTextControl;
         gf.Show();
