@@ -216,13 +216,22 @@
                 Style="{DynamicResource ListViewDarkStyle}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Count}" />
-                            <TextBlock Text=", " />
-                            <TextBlock Text="{Binding PreviewLeft}" />
-                            <TextBlock Text="{Binding Text}" FontWeight="Bold" />
-                            <TextBlock Text="{Binding PreviewRight}" />
-                        </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="60" />
+                                <ColumnDefinition Width="auto" />
+                                <ColumnDefinition Width="80" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding Count}" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" HorizontalAlignment="right" Text="Index at:" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="2" HorizontalAlignment="Left" Text="{Binding SelectionStart}" />
+                            <TextBlock Grid.Column="3" Foreground="Gray" HorizontalAlignment="Right" Text="{Binding PreviewLeft}" />
+                            <TextBlock Grid.Column="4" Text="{Binding Text}" FontWeight="Bold" />
+                            <TextBlock Grid.Column="5" Foreground="Gray" HorizontalAlignment="Left" Text="{Binding PreviewRight}" />
+                        </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

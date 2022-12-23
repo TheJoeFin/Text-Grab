@@ -107,7 +107,6 @@ public partial class FindAndReplaceWindow : Window
 
     public void SearchForText()
     {
-        //ResultsListView.Items.Clear();
         FindResults.Clear();
         ResultsListView.ItemsSource = null;
 
@@ -135,8 +134,8 @@ public partial class FindAndReplaceWindow : Window
         if (Matches.Count < 1 || string.IsNullOrWhiteSpace(FindTextBox.Text))
         {
             MatchesText.Text = "0 Matches";
-            ResultsListView.Items.Add("No Matches");
-            ResultsListView.IsEnabled = false;
+            // ResultsListView.Items.Add("No Matches");
+            // ResultsListView.IsEnabled = false;
             return;
         }
 
@@ -145,18 +144,16 @@ public partial class FindAndReplaceWindow : Window
         int count = 1;
         foreach (Match m in Matches)
         {
-            string previewString = MatchInContextString(m);
             FindResult fr = new()
             {
                 SelectionStart = m.Index,
                 Text = m.Value,
-                PreviewLeft = GetCharactersToLeft(m.Index, 12),
-                PreviewRight = GetCharactersToRight(m.Index + m.Length, 12),
+                PreviewLeft = GetCharactersToLeftOfNewLine(m.Index, 12),
+                PreviewRight = GetCharactersToRightOfNewLine(m.Index + m.Length, 12),
                 Count = count
             };
             FindResults.Add(fr);
 
-            // ResultsListView.Items.Add($"{count} \t At index {m.Index} \t\t {previewString.ToString().MakeStringSingleLine()}");
             count++;
         }
 
@@ -174,59 +171,38 @@ public partial class FindAndReplaceWindow : Window
         }
     }
 
-    private string MatchInContextString(Match m)
+    // a method which uses GetNewLineIndexToLeft and returns the string from the given index to the newLine character to the left of the given index
+    // if the string is longer the x number of characters, it will return the last x number of characters
+    // and if the string is at the beginning don't add "..." to the beginning
+    private string GetCharactersToLeftOfNewLine(int index, int numberOfCharacters)
     {
-        int previewLengths = 12;
-        int previewBeginning = 0;
-        int previewEnd = 0;
-        bool atBeginning = false;
-        bool atEnd = false;
+        int newLineIndex = GetNewLineIndexToLeft(index);
 
-        previewBeginning = GetNewLineIndexToLeft(m.Index);
-        previewEnd = GetNewLineIndexToRight(m.Index + m.Length);
+        if (newLineIndex < 1)
+            return StringFromWindow.Substring(0, index);
 
-        if (previewEnd - (m.Index + m.Length) > previewLengths)
-            previewEnd = m.Index + m.Length + previewLengths;
+        newLineIndex++;
 
-        if (m.Index - previewBeginning > previewLengths)
-            previewBeginning = m.Index - previewLengths;
+        if (index - newLineIndex < numberOfCharacters)
+            return "..." + StringFromWindow.Substring(newLineIndex, index - newLineIndex);
 
-        if (previewBeginning == 0)
-            atBeginning = true;
-
-        if (previewEnd == StringFromWindow.Length)
-            atEnd = true;
-
-        StringBuilder previewString = new();
-
-        if (!atBeginning)
-            previewString.Append("...");
-
-        previewString.Append(StringFromWindow.Substring(previewBeginning, previewEnd - previewBeginning).MakeStringSingleLine());
-
-        if (!atEnd)
-            previewString.Append("...");
-        return previewString.ToString();
+        return "..." + StringFromWindow.Substring(index - numberOfCharacters, numberOfCharacters);
     }
 
-    // a method which returns x number of characters to the left of the given index
-    private string GetCharactersToLeft(int index, int numberOfCharacters)
+    // same as GetCharactersToLeftOfNewLine but to the right
+    private string GetCharactersToRightOfNewLine(int index, int numberOfCharacters)
     {
-        int startIndex = index - numberOfCharacters;
-        if (startIndex < 0)
-            startIndex = 0;
+        int newLineIndex = GetNewLineIndexToRight(index);
+        if (newLineIndex < 1)
+            return StringFromWindow.Substring(index);
 
-        return StringFromWindow.Substring(startIndex, index - startIndex);
-    }
+        if (newLineIndex - index > numberOfCharacters)
+            return StringFromWindow.Substring(index, numberOfCharacters) + "...";
 
-    // a method which returns x number of characters to the right of the given index
-    private string GetCharactersToRight(int index, int numberOfCharacters)
-    {
-        int endIndex = index + numberOfCharacters;
-        if (endIndex > StringFromWindow.Length)
-            endIndex = StringFromWindow.Length;
+        if (newLineIndex == StringFromWindow.Length)
+            return StringFromWindow.Substring(index);
 
-        return StringFromWindow.Substring(index, endIndex - index);
+        return StringFromWindow.Substring(index, newLineIndex - index) + "...";
     }
 
     // a method which returns the nearst newLine character index to the left of the given index
@@ -255,16 +231,6 @@ public partial class FindAndReplaceWindow : Window
 
     private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // string? stringToParse = ResultsListView.SelectedItem as string;
-
-        // if (string.IsNullOrWhiteSpace(stringToParse)
-        //     || Matches is null
-        //     || Matches.Count < 1)
-        // {
-        //     ResultsListView.Items.Clear();
-        //     return;
-        // }
-
         if (ResultsListView.SelectedItem is not FindResult selectedResult)
             return;
 
@@ -299,7 +265,6 @@ public partial class FindAndReplaceWindow : Window
 
         SearchForText();
     }
-
 
     private void MoreOptionsToggleButton_Click(object sender, RoutedEventArgs e)
     {
