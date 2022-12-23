@@ -17,7 +17,13 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class FindAndReplaceWindow : Window
 {
-    public string StringFromWindow { get; set; } = "";
+    private string stringFromWindow = "";
+    public string StringFromWindow
+    {
+        get { return stringFromWindow; }
+        set { stringFromWindow = value; }
+    }
+
 
     private EditTextWindow? textEditWindow;
     public EditTextWindow? TextEditWindow
@@ -61,11 +67,13 @@ public partial class FindAndReplaceWindow : Window
     private void Window_Closed(object? sender, EventArgs e)
     {
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
+        if (textEditWindow is not null)
+            textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
     }
 
     public void ShouldCloseWithThisETW(EditTextWindow etw)
     {
-        if (TextEditWindow is not null && etw == TextEditWindow)
+        if (textEditWindow is not null && etw == textEditWindow)
             Close();
     }
 
@@ -77,18 +85,6 @@ public partial class FindAndReplaceWindow : Window
 
     private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
     {
-        if (TextEditWindow is not null)
-        {
-            double etwMidTop = TextEditWindow.Top + (TextEditWindow.Height / 2);
-            double etwMidLeft = TextEditWindow.Left + (TextEditWindow.Width / 2);
-
-            double thisMidTop = etwMidTop - (this.Height / 2);
-            double thisMidLeft = etwMidLeft - (this.Width / 2);
-
-            this.Top = thisMidTop;
-            this.Left = thisMidLeft;
-        }
-
         if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
             SearchForText();
 
@@ -98,8 +94,8 @@ public partial class FindAndReplaceWindow : Window
     private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
     {
         ChangeFindTextTimer.Stop();
-        if (TextEditWindow is not null)
-            StringFromWindow = TextEditWindow.PassedTextControl.Text;
+        if (textEditWindow is not null)
+            StringFromWindow = textEditWindow.PassedTextControl.Text;
 
         ChangeFindTextTimer.Start();
     }
@@ -142,8 +138,8 @@ public partial class FindAndReplaceWindow : Window
             {
                 Index = m.Index,
                 Text = m.Value,
-                PreviewLeft = GetCharactersToLeftOfNewLine(m.Index, 12),
-                PreviewRight = GetCharactersToRightOfNewLine(m.Index + m.Length, 12),
+                PreviewLeft = GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12),
+                PreviewRight = GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12),
                 Count = count
             };
             FindResults.Add(fr);
@@ -155,12 +151,12 @@ public partial class FindAndReplaceWindow : Window
 
         Match? firstMatch = Matches[0];
 
-        if (TextEditWindow is not null
+        if (textEditWindow is not null
             && firstMatch is not null
             && this.IsFocused)
         {
-            TextEditWindow.PassedTextControl.Select(firstMatch.Index, firstMatch.Value.Length);
-            TextEditWindow.PassedTextControl.Focus();
+            textEditWindow.PassedTextControl.Select(firstMatch.Index, firstMatch.Value.Length);
+            textEditWindow.PassedTextControl.Focus();
             this.Focus();
         }
     }
@@ -168,56 +164,58 @@ public partial class FindAndReplaceWindow : Window
     // a method which uses GetNewLineIndexToLeft and returns the string from the given index to the newLine character to the left of the given index
     // if the string is longer the x number of characters, it will return the last x number of characters
     // and if the string is at the beginning don't add "..." to the beginning
-    private string GetCharactersToLeftOfNewLine(int index, int numberOfCharacters)
+    private static string GetCharactersToLeftOfNewLine(ref string mainString, int index, int numberOfCharacters)
     {
-        int newLineIndex = GetNewLineIndexToLeft(index);
+        int newLineIndex = GetNewLineIndexToLeft(ref mainString, index);
 
         if (newLineIndex < 1)
-            return StringFromWindow.Substring(0, index);
+            return mainString.Substring(0, index);
 
         newLineIndex++;
 
         if (index - newLineIndex < numberOfCharacters)
-            return "..." + StringFromWindow.Substring(newLineIndex, index - newLineIndex);
+            return "..." + mainString.Substring(newLineIndex, index - newLineIndex);
 
-        return "..." + StringFromWindow.Substring(index - numberOfCharacters, numberOfCharacters);
+        return "..." + mainString.Substring(index - numberOfCharacters, numberOfCharacters);
     }
 
     // same as GetCharactersToLeftOfNewLine but to the right
-    private string GetCharactersToRightOfNewLine(int index, int numberOfCharacters)
+    private static string GetCharactersToRightOfNewLine(ref string mainString, int index, int numberOfCharacters)
     {
-        int newLineIndex = GetNewLineIndexToRight(index);
+        int newLineIndex = GetNewLineIndexToRight(ref mainString, index);
         if (newLineIndex < 1)
-            return StringFromWindow.Substring(index);
+            return mainString.Substring(index);
 
         if (newLineIndex - index > numberOfCharacters)
-            return StringFromWindow.Substring(index, numberOfCharacters) + "...";
+            return mainString.Substring(index, numberOfCharacters) + "...";
 
-        if (newLineIndex == StringFromWindow.Length)
-            return StringFromWindow.Substring(index);
+        if (newLineIndex == mainString.Length)
+            return mainString.Substring(index);
 
-        return StringFromWindow.Substring(index, newLineIndex - index) + "...";
+        return mainString.Substring(index, newLineIndex - index) + "...";
     }
 
+
+
     // a method which returns the nearst newLine character index to the left of the given index
-    private int GetNewLineIndexToLeft(int index)
+    private static int GetNewLineIndexToLeft(ref string mainString, int index)
     {
         char newLineChar = Environment.NewLine.ToArray().Last();
 
         int newLineIndex = index;
-        while (newLineIndex > 0 && StringFromWindow[newLineIndex] != newLineChar)
+        while (newLineIndex > 0 && mainString[newLineIndex] != newLineChar)
             newLineIndex--;
 
         return newLineIndex;
     }
 
     // a method which returns the nearst newLine character index to the right of the given index
-    private int GetNewLineIndexToRight(int index)
+    private static int GetNewLineIndexToRight(ref string mainString, int index)
     {
         char newLineChar = Environment.NewLine.ToArray().First();
 
         int newLineIndex = index;
-        while (newLineIndex < StringFromWindow.Length && StringFromWindow[newLineIndex] != newLineChar)
+        while (newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
             newLineIndex++;
 
         return newLineIndex;
@@ -228,18 +226,18 @@ public partial class FindAndReplaceWindow : Window
         if (ResultsListView.SelectedItem is not FindResult selectedResult)
             return;
 
-        if (TextEditWindow is not null)
+        if (textEditWindow is not null)
         {
-            TextEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
-            TextEditWindow.PassedTextControl.Focus();
+            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+            textEditWindow.PassedTextControl.Focus();
             this.Focus();
         }
     }
 
     private void ExtractPattern_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (TextEditWindow is not null
-                && TextEditWindow.PassedTextControl.SelectedText.Length > 0)
+        if (textEditWindow is not null
+            && textEditWindow.PassedTextControl.SelectedText.Length > 0)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -266,6 +264,11 @@ public partial class FindAndReplaceWindow : Window
         if (MoreOptionsToggleButton.IsChecked is true)
             optionsVisibility = Visibility.Visible;
 
+        SetExtraOptionsVisibility(optionsVisibility);
+    }
+
+    private void SetExtraOptionsVisibility(Visibility optionsVisibility)
+    {
         ReplaceTextBox.Visibility = optionsVisibility;
         ReplaceButton.Visibility = optionsVisibility;
         ReplaceAllButton.Visibility = optionsVisibility;
