@@ -141,7 +141,7 @@ public partial class FindAndReplaceWindow : Window
         {
             FindResult fr = new()
             {
-                SelectionStart = m.Index,
+                Index = m.Index,
                 Text = m.Value,
                 PreviewLeft = GetCharactersToLeftOfNewLine(m.Index, 12),
                 PreviewRight = GetCharactersToRightOfNewLine(m.Index + m.Length, 12),
@@ -231,7 +231,7 @@ public partial class FindAndReplaceWindow : Window
 
         if (TextEditWindow != null)
         {
-            TextEditWindow.PassedTextControl.Select(selectedResult.SelectionStart, selectedResult.SelectionLength);
+            TextEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
             TextEditWindow.PassedTextControl.Focus();
             this.Focus();
         }
@@ -299,7 +299,7 @@ public partial class FindAndReplaceWindow : Window
                 if (selection[j] is not FindResult selectedResult)
                     continue;
 
-                textEditWindow.PassedTextControl.Select(selectedResult.SelectionStart, selectedResult.SelectionLength);
+                textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
                 textEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
             }
         }

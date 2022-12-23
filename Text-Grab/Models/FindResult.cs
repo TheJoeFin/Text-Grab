@@ -7,13 +7,13 @@ public class FindResult
 
     public int Count { get; set; } = 0;
 
-    public int SelectionStart { get; set; }
+    public int Index { get; set; }
 
     public string PreviewLeft { get; set; } = "";
 
     public string PreviewRight { get; set; } = "";
 
-    public int SelectionLength
+    public int Length
     {
         get
         {
