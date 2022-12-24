@@ -381,8 +381,9 @@
 
         <ScrollViewer
             Grid.Row="2"
+            CanContentScroll="True"
             ScrollViewer.HorizontalScrollBarVisibility="Auto"
-            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+            ScrollViewer.VerticalScrollBarVisibility="Disabled">
             <Grid x:Name="BottomBar" Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />

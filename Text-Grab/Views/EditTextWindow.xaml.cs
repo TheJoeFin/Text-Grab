@@ -357,7 +357,9 @@ public partial class EditTextWindow : Window
 
         int keyNumberPressed = (int)e.Key - 35;
 
-        if (keyNumberPressed < 0 || keyNumberPressed >= bottomBarButtons.Count)
+        if (keyNumberPressed < 0
+            || keyNumberPressed >= bottomBarButtons.Count
+            || keyNumberPressed > 9)
             return;
 
         if (bottomBarButtons[keyNumberPressed] is not CollapsibleButton correspondingButton)
