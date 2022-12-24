@@ -277,7 +277,7 @@
                 <MenuItem
                     x:Name="FSGDelayMenuItem"
                     Click="FSGDelayMenuItem_Click"
-                    Header="Fullscreen with 2 second _delay and freeze" />
+                    Header="Fullscreen with 2 second _delay" />
                 <MenuItem
                     x:Name="GrabFrameMenuItem"
                     Click="GrabFrameMenuItem_Click"
@@ -379,67 +379,27 @@
             TextWrapping="WrapWithOverflow"
             VerticalScrollBarVisibility="Auto" />
 
-        <Grid x:Name="BottomBar" Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Name="BottomBarButtons">
-                <!-- <controls:CollapsibleButton
-                    x:Name="CopyCloseBTN"
-                    Background="#CC7000"
-                    ButtonText="Copy and Close"
-                    Click="CopyCloseBTN_Click"
+        <ScrollViewer
+            Grid.Row="2"
+            ScrollViewer.HorizontalScrollBarVisibility="Auto"
+            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+            <Grid x:Name="BottomBar" Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Name="BottomBarButtons">
+                </StackPanel>
+                <TextBlock
+                    x:Name="BottomBarText"
+                    Grid.Column="1"
+                    Margin="20,0,20,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    FontFamily="Cascadia Mono"
                     Foreground="White"
-                    SymbolText="" />
-                <controls:CollapsibleButton
-                    x:Name="SaveBTN"
-                    ButtonText="Save to File..."
-                    Click="SaveBTN_Click"
-                    SymbolText="" />
-                <controls:CollapsibleButton
-                    x:Name="SingleLineBTN"
-                    ButtonText="Make Single Line"
-                    Command="{x:Static local:EditTextWindow.SingleLineCmd}"
-                    SymbolText="" />
-                <controls:CollapsibleButton
-                    x:Name="NewFullscreen"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    ButtonText="New Fullscreen Grab"
-                    Click="NewFullscreen_Click"
-                    IsSymbol="True"
-                    SymbolText=""
-                    ToolTip="New Fullscreen Grab (CTRL + F)" />
-                <controls:CollapsibleButton
-                    x:Name="OpenGrabFrame"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    ButtonText="Open Grab Frame"
-                    Click="OpenGrabFrame_Click"
-                    IsSymbol="True"
-                    SymbolText=""
-                    ToolTip="Open Grab Frame (CTRL + G)" />
-                <controls:CollapsibleButton
-                    x:Name="SearchButton"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    ButtonText="Find and Replace"
-                    Click="SearchButton_Click"
-                    IsSymbol="True"
-                    SymbolText=""
-                    ToolTip="Find and Replace" /> -->
-            </StackPanel>
-
-            <TextBlock
-                x:Name="BottomBarText"
-                Grid.Column="1"
-                Margin="20,0,20,0"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                FontFamily="Cascadia Mono"
-                Foreground="White"
-                Text="Ln 1, Col 0" />
-        </Grid>
+                    Text="Ln 1, Col 0" />
+            </Grid>
+        </ScrollViewer>
     </Grid>
 </Window>

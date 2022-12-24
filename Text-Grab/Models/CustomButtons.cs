@@ -54,6 +54,219 @@ public class CustomButton
             IsSymbol = true
         },
     };
+
+    public static List<CustomButton> AllButtons { get; set; } = new()
+    {
+        new()
+        {
+            ButtonText = "Copy and Close",
+            SymbolText = "",
+            Background = "#CC7000",
+            ClickEvent = "CopyCloseBTN_Click"
+        },
+        new()
+        {
+            ButtonText = "Save to File...",
+            SymbolText = "",
+            ClickEvent = "SaveBTN_Click"
+        },
+        new()
+        {
+            ButtonText = "Make Single Line",
+            SymbolText = "",
+            Command = "SingleLineCmd"
+        },
+        new()
+        {
+            ButtonText = "New Fullscreen Grab",
+            SymbolText = "",
+            ClickEvent = "NewFullscreen_Click",
+            IsSymbol = true
+        },
+        new()
+        {
+            ButtonText = "Fullscreen Grab With Delay",
+            SymbolText = "",
+            ClickEvent = "FSGDelayMenuItem_Click",
+            IsSymbol = true
+        },
+        new()
+        {
+            ButtonText = "Open Grab Frame",
+            SymbolText = "",
+            ClickEvent = "OpenGrabFrame_Click",
+            IsSymbol = true
+        },
+        new()
+        {
+            ButtonText = "Find and Replace",
+            SymbolText = "",
+            ClickEvent = "SearchButton_Click",
+            IsSymbol = true
+        },
+        new()
+        {
+            ButtonText = "Open Settings",
+            SymbolText = "",
+            ClickEvent = "SettingsMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Open File...",
+            SymbolText = "",
+            ClickEvent = "OpenFileMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "OCR Paste",
+            SymbolText = "",
+            Command = "PasteCommand"
+        },
+        new()
+        {
+            ButtonText = "Trim Each Line",
+            SymbolText = "",
+            ClickEvent = "TrimEachLineMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Try to make Numbers",
+            SymbolText = "#",
+            ClickEvent = "TryToNumberMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Try to make Letters",
+            SymbolText = "A",
+            ClickEvent = "TryToAlphaMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Toggle Case",
+            SymbolText = "",
+            Command = "ToggleCaseCmd"
+        },
+        new()
+        {
+            ButtonText = "Remove Duplicate Lines",
+            SymbolText = "",
+            ClickEvent = "RemoveDuplicateLines_Click"
+        },
+        new()
+        {
+            ButtonText = "Replace Reserved Characters",
+            SymbolText = "",
+            Command = "ReplaceReservedCmd"
+        },
+        new()
+        {
+            ButtonText = "Unstack Text (Select Top Row)",
+            SymbolText = "",
+            Command = "UnstackCmd"
+        },
+        new()
+        {
+            ButtonText = "Unstack Text (Select First Column)",
+            SymbolText = "",
+            Command = "UnstackGroupCmd"
+        },
+        new()
+        {
+            ButtonText = "Add or Remove at...",
+            SymbolText = "",
+            ClickEvent = "AddRemoveAtMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Select Word",
+            SymbolText = "",
+            ClickEvent = "SelectWordMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Select Line",
+            SymbolText = "",
+            ClickEvent = "SelectLineMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Move Line Up",
+            SymbolText = "",
+            ClickEvent = "MoveLineUpMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Move Line Down",
+            SymbolText = "",
+            ClickEvent = "MoveLineDownMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Split on Selection",
+            SymbolText = "",
+            Command = "SplitOnSelectionCmd"
+        },
+        new()
+        {
+            ButtonText = "Isolate Selection",
+            SymbolText = "",
+            Command = "IsolateSelectionCmd"
+        },
+        new()
+        {
+            ButtonText = "Delete All of Selection",
+            SymbolText = "",
+            Command = "DeleteAllSelectionCmd"
+        },
+        new()
+        {
+            ButtonText = "Delete All of Pattern",
+            SymbolText = "",
+            Command = "DeleteAllSelectionPatternCmd"
+        },
+        new()
+        {
+            ButtonText = "Insert on Every Line",
+            SymbolText = "",
+            Command = "InsertSelectionOnEveryLineCmd"
+        },
+        new()
+        {
+            ButtonText = "New Quick Simple Lookup",
+            SymbolText = "",
+            ClickEvent = "LaunchQuickSimpleLookup"
+        },
+        new()
+        {
+            ButtonText = "List Files and Folders...",
+            SymbolText = "",
+            ClickEvent = "ListFilesMenuItem_Click"
+        },
+        new()
+        {
+            ButtonText = "Extract Text from Images...",
+            SymbolText = "",
+            ClickEvent = "ReadFolderOfImages_Click"
+        },
+        new()
+        {
+            ButtonText = "Extract Text from Images to txt Files...",
+            SymbolText = "",
+            ClickEvent = "ReadFolderOfImagesWriteTxtFiles_Click"
+        },
+        new()
+        {
+            ButtonText = "New Window",
+            SymbolText = "",
+            ClickEvent = "NewWindow_Clicked"
+        },
+        new()
+        {
+            ButtonText = "New Window from Selection",
+            SymbolText = "",
+            ClickEvent = "NewWindowWithText_Clicked"
+        }
+    };
 }
 
 
