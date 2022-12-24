@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Text_Grab.Controls;
+namespace Text_Grab.Models;
 
 public class CustomButton
 {
