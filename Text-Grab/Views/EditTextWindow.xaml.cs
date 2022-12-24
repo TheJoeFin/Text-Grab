@@ -68,8 +68,6 @@ public partial class EditTextWindow : Window
 
     public static RoutedCommand PasteCommand = new();
 
-    private Dictionary<string, RoutedCommand> _localRoutedCommands = new();
-
     private int numberOfContextMenuItems;
 
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
@@ -115,6 +113,25 @@ public partial class EditTextWindow : Window
             PassedTextControl.Text = rawEncodedString;
             PassedTextControl.Text += ex.Message;
         }
+    }
+
+    // a method which populates localRoutedCommands with all of the public static commands on this page
+    public Dictionary<string, RoutedCommand> GetRoutedCommands()
+    {
+        return new Dictionary<string, RoutedCommand>()
+        {
+            {nameof(SplitOnSelectionCmd), SplitOnSelectionCmd},
+            {nameof(IsolateSelectionCmd), IsolateSelectionCmd},
+            {nameof(SingleLineCmd), SingleLineCmd},
+            {nameof(ToggleCaseCmd), ToggleCaseCmd},
+            {nameof(ReplaceReservedCmd), ReplaceReservedCmd},
+            {nameof(UnstackCmd), UnstackCmd},
+            {nameof(UnstackGroupCmd), UnstackGroupCmd},
+            {nameof(DeleteAllSelectionCmd), DeleteAllSelectionCmd},
+            {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
+            {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
+            {nameof(PasteCommand), PasteCommand}
+        };
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -252,95 +269,10 @@ public partial class EditTextWindow : Window
 
         BottomBarButtons.Children.Clear();
 
-        foreach (CustomButton buttonItem in CustomButton.DefaultButtonList)
-        {
-            CollapsibleButton button = new()
-            {
-                ButtonText = buttonItem.ButtonText,
-                SymbolText = buttonItem.SymbolText,
-                IsSymbol = buttonItem.IsSymbol,
-            };
+        List<CollapsibleButton> buttons = CustomBottomBarUtilities.GetBottomBarButtons(this);
 
-            if (buttonItem.Background != "Transparent"
-                && new BrushConverter()
-                .ConvertFromString(buttonItem.Background) is SolidColorBrush solidColorBrush)
-            {
-                button.Background = solidColorBrush;
-            }
-
-            if (GetMethodInfoForName(buttonItem.ClickEvent) is MethodInfo method
-                && method.CreateDelegate(typeof(RoutedEventHandler), this) is RoutedEventHandler routedEventHandler)
-                button.Click += routedEventHandler;
-            else
-                if (GetCommandBinding(buttonItem.Command) is RoutedCommand routedCommand)
-                button.Command = routedCommand;
-
-            BottomBarButtons.Children.Add(button);
-        }
-    }
-
-    // a method which returns a list of all methods in this class
-    private List<MethodInfo> GetMethods()
-    {
-        return this.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).ToList();
-    }
-
-    // cache the list of methods in this class
-    private List<MethodInfo> _Methods = new();
-
-    // using the above method match a method name to a string parameter
-    private MethodInfo? GetMethodInfoForName(string methodName)
-    {
-        if (_Methods.Count == 0)
-            _Methods = GetMethods();
-
-        foreach (MethodInfo method in _Methods)
-            if (method.Name == methodName)
-                return method;
-
-        return null;
-    }
-
-    // get a list of all the commands on this page and cache them
-    private List<CommandBinding> _CommandBindings = new();
-
-    // a method to populate the above list with the public commands on this page like SingleLineCmd
-    private void GetCommandBindings()
-    {
-        foreach (CommandBinding commandBinding in CommandBindings)
-            _CommandBindings.Add(commandBinding);
-    }
-
-    // a method to match a command name to a string parameter
-    private RoutedCommand? GetCommandBinding(string commandName)
-    {
-        if (_localRoutedCommands.Count == 0)
-            GetRoutedCommands();
-
-        foreach (string commandKey in _localRoutedCommands.Keys)
-            if (commandKey == commandName)
-                return _localRoutedCommands[commandKey];
-
-        return null;
-    }
-
-    // a method which populates localRoutedCommands with all of the public static commands on this page
-    private void GetRoutedCommands()
-    {
-        _localRoutedCommands = new Dictionary<string, RoutedCommand>()
-        {
-            {nameof(SplitOnSelectionCmd), SplitOnSelectionCmd},
-            {nameof(IsolateSelectionCmd), IsolateSelectionCmd},
-            {nameof(SingleLineCmd), SingleLineCmd},
-            {nameof(ToggleCaseCmd), ToggleCaseCmd},
-            {nameof(ReplaceReservedCmd), ReplaceReservedCmd},
-            {nameof(UnstackCmd), UnstackCmd},
-            {nameof(UnstackGroupCmd), UnstackGroupCmd},
-            {nameof(DeleteAllSelectionCmd), DeleteAllSelectionCmd},
-            {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
-            {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
-            {nameof(PasteCommand), PasteCommand}
-        };
+        foreach (CollapsibleButton collapsibleButton in buttons)
+            BottomBarButtons.Children.Add(collapsibleButton);
     }
 
     private void CheckRightToLeftLanguage()
