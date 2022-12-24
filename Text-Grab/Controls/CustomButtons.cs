@@ -8,6 +8,7 @@ public class CustomButton
     public string SymbolText { get; set; } = "";
     public string Background { get; set; } = "Transparent";
     public string Command { get; set; } = "";
+    public string ClickEvent { get; set; } = "";
     public bool IsSymbol { get; set; } = false;
 
     public static List<CustomButton> DefaultButtonList { get; set; } = new()
@@ -17,39 +18,39 @@ public class CustomButton
             ButtonText = "Copy and Close",
             SymbolText = "",
             Background = "#CC7000",
-            Command = "CopyClose"
+            ClickEvent = "CopyCloseBTN_Click"
         },
         new()
         {
             ButtonText = "Save to File...",
             SymbolText = "",
-            Command = "Save"
+            ClickEvent = "SaveBTN_Click"
         },
         new()
         {
             ButtonText = "Make Single Line",
             SymbolText = "",
-            Command = "SingleLine"
+            Command = "SingleLineCmd"
         },
         new()
         {
             ButtonText = "New Fullscreen Grab",
             SymbolText = "",
-            Command = "NewFullscreen",
+            ClickEvent = "NewFullscreen_Click",
             IsSymbol = true
         },
         new()
         {
             ButtonText = "Open Grab Frame",
             SymbolText = "",
-            Command = "OpenGrabFrame",
+            ClickEvent = "OpenGrabFrame_Click",
             IsSymbol = true
         },
         new()
         {
             ButtonText = "Find and Replace",
             SymbolText = "",
-            Command = "SearchButton",
+            ClickEvent = "SearchButton_Click",
             IsSymbol = true
         },
     };
