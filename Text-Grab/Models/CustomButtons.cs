@@ -81,28 +81,24 @@ public class CustomButton
             ButtonText = "New Fullscreen Grab",
             SymbolText = "",
             ClickEvent = "NewFullscreen_Click",
-            IsSymbol = true
         },
         new()
         {
             ButtonText = "Fullscreen Grab With Delay",
-            SymbolText = "",
+            SymbolText = "",
             ClickEvent = "FSGDelayMenuItem_Click",
-            IsSymbol = true
         },
         new()
         {
             ButtonText = "Open Grab Frame",
             SymbolText = "",
             ClickEvent = "OpenGrabFrame_Click",
-            IsSymbol = true
         },
         new()
         {
             ButtonText = "Find and Replace",
             SymbolText = "",
             ClickEvent = "SearchButton_Click",
-            IsSymbol = true
         },
         new()
         {
@@ -131,13 +127,13 @@ public class CustomButton
         new()
         {
             ButtonText = "Try to make Numbers",
-            SymbolText = "#",
+            SymbolText = "",
             ClickEvent = "TryToNumberMenuItem_Click"
         },
         new()
         {
             ButtonText = "Try to make Letters",
-            SymbolText = "A",
+            SymbolText = "",
             ClickEvent = "TryToAlphaMenuItem_Click"
         },
         new()
