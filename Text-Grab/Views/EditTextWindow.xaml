@@ -15,8 +15,8 @@
     Background="{StaticResource DarkBackground}"
     Closed="Window_Closed"
     Initialized="Window_Initialized"
-    PreviewKeyDown="EditTextWindow_PreviewKeyDown"
     Loaded="Window_Loaded"
+    PreviewKeyDown="EditTextWindow_PreviewKeyDown"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">
@@ -382,15 +382,15 @@
         <ScrollViewer
             Grid.Row="2"
             CanContentScroll="True"
-            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-            ScrollViewer.VerticalScrollBarVisibility="Disabled">
+            HorizontalScrollBarVisibility="Auto"
+            PanningMode="HorizontalOnly"
+            VerticalScrollBarVisibility="Disabled">
             <Grid x:Name="BottomBar" Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Name="BottomBarButtons">
-                </StackPanel>
+                <StackPanel Name="BottomBarButtons" Orientation="Horizontal" />
                 <TextBlock
                     x:Name="BottomBarText"
                     Grid.Column="1"

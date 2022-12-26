@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -15,7 +14,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -116,7 +114,7 @@ public partial class EditTextWindow : Window
     }
 
     // a method which populates localRoutedCommands with all of the public static commands on this page
-    public Dictionary<string, RoutedCommand> GetRoutedCommands()
+    public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {
         return new Dictionary<string, RoutedCommand>()
         {
