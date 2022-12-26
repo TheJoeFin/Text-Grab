@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Windows.Input;
+using Text_Grab.Controls;
 
 namespace Text_Grab.Models;
 
@@ -10,6 +12,37 @@ public class CustomButton
     public string Command { get; set; } = "";
     public string ClickEvent { get; set; } = "";
     public bool IsSymbol { get; set; } = false;
+
+    public CustomButton()
+    {
+
+    }
+    
+    // a constructor which takes a collapisble button
+    public CustomButton(CollapsibleButton button)
+    {
+        ButtonText = button.ButtonText;
+        SymbolText = button.SymbolText;
+        Background = button.Background.ToString();
+        IsSymbol = button.IsSymbol;
+
+        if (button.Command is RoutedCommand)
+            Command = nameof(button.Command);
+        else
+            ClickEvent = nameof(button.Click);
+
+    }
+
+    // a constructor with parameters
+    public CustomButton(string buttonText, string symbolText, string background, string command, string clickEvent, bool isSymbol)
+    {
+        ButtonText = buttonText;
+        SymbolText = symbolText;
+        Background = background;
+        Command = command;
+        ClickEvent = clickEvent;
+        IsSymbol = isSymbol;
+    }
 
     public static List<CustomButton> DefaultButtonList { get; set; } = new()
     {
