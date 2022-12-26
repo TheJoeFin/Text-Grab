@@ -7,14 +7,17 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
 using Text_Grab.Models;
+using Text_Grab.Properties;
 
 namespace Text_Grab.Utilities;
 
 public class CustomBottomBarUtilities
 {
     // this method takes a json string and returns a list of CustomButton using system.text.json
-    public static List<CustomButton> GetCustomBottomBarItems(string json)
+    public static List<CustomButton> GetCustomBottomBarItemsSetting()
     {
+        string json = Settings.Default.BottomButtonsJson;
+
         // create a list of custom bottom bar items
         List<CustomButton>? customBottomBarItems = new();
 
@@ -23,9 +26,27 @@ public class CustomBottomBarUtilities
 
         // return the list of custom bottom bar items
         if (customBottomBarItems is null)
-            return new List<CustomButton>();
+            return CustomButton.DefaultButtonList;
 
         return customBottomBarItems;
+    }
+
+    // a method to save a list of collapsible buttons to the settings as json
+    public static void SaveCustomBottomBarItemsSetting(List<CollapsibleButton> bottomBarButtons)
+    {
+        List<CustomButton> customButtons = new();
+
+        foreach (CollapsibleButton collapsible in bottomBarButtons)
+            customButtons.Add(new(collapsible));
+
+        // serialize the list of custom bottom bar items to json
+        string json = JsonSerializer.Serialize(customButtons);
+
+        // save the json string to the settings
+        Settings.Default.BottomButtonsJson = json;
+
+        // save the settings
+        Settings.Default.Save();
     }
 
     public static List<CollapsibleButton> GetBottomBarButtons(EditTextWindow editTextWindow)
@@ -33,7 +54,7 @@ public class CustomBottomBarUtilities
         List<CollapsibleButton> bottomBarButtons = new();
         Dictionary<string, RoutedCommand> _localRoutedCommands = new();
         List<MethodInfo> methods = GetMethods(editTextWindow);
-        Dictionary<string, RoutedCommand> routedCommands = editTextWindow.GetRoutedCommands();
+        Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
         foreach (CustomButton buttonItem in CustomButton.DefaultButtonList)
         {
