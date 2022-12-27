@@ -56,13 +56,14 @@ public class CustomBottomBarUtilities
         List<MethodInfo> methods = GetMethods(editTextWindow);
         Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
-        foreach (CustomButton buttonItem in CustomButton.DefaultButtonList)
+        foreach (CustomButton buttonItem in GetCustomBottomBarItemsSetting())
         {
             CollapsibleButton button = new()
             {
                 ButtonText = buttonItem.ButtonText,
                 SymbolText = buttonItem.SymbolText,
                 IsSymbol = buttonItem.IsSymbol,
+                CustomButton = buttonItem
             };
 
             if (buttonItem.Background != "Transparent"

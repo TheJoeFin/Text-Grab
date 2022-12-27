@@ -21,16 +21,22 @@ public class CustomButton
     // a constructor which takes a collapisble button
     public CustomButton(CollapsibleButton button)
     {
-        ButtonText = button.ButtonText;
-        SymbolText = button.SymbolText;
-        Background = button.Background.ToString();
-        IsSymbol = button.IsSymbol;
-
-        if (button.Command is RoutedCommand)
-            Command = nameof(button.Command);
+        if (button.CustomButton is not null)
+        {
+            ButtonText = button.CustomButton.ButtonText;
+            SymbolText = button.CustomButton.SymbolText;
+            Background = button.CustomButton.Background;
+            Command = button.CustomButton.Command;
+            ClickEvent = button.CustomButton.ClickEvent;
+            IsSymbol = button.CustomButton.IsSymbol;
+        }
         else
-            ClickEvent = nameof(button.Click);
-
+        {
+            ButtonText = button.ButtonText;
+            SymbolText = button.SymbolText;
+            Background = button.Background.ToString();
+            IsSymbol = button.IsSymbol;
+        }
     }
 
     // a constructor with parameters

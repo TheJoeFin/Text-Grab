@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using Text_Grab.Models;
 
 namespace Text_Grab.Controls;
 
@@ -15,6 +16,8 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
     public bool IsSymbol { get; set; } = false;
 
     public bool CanChangeStyle { get; set; } = true;
+
+    public CustomButton? CustomButton { get; set; }
 
     public string ButtonText
     {
