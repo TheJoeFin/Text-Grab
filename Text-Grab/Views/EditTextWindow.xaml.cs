@@ -1084,6 +1084,7 @@ public partial class EditTextWindow : Window
         if (PassedTextControl.SelectedText.Length > 0)
         {
             farw.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
+            farw.FindTextBox.Select(farw.FindTextBox.Text.Length, 0);
             farw.SearchForText();
         }
     }
