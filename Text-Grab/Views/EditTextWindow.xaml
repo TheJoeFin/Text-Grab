@@ -385,7 +385,7 @@
             HorizontalScrollBarVisibility="Auto"
             PanningMode="HorizontalOnly"
             VerticalScrollBarVisibility="Disabled">
-            <Grid x:Name="BottomBar" Grid.Row="2">
+            <Grid x:Name="BottomBar" Grid.Row="2" Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="*" />
@@ -400,6 +400,11 @@
                     FontFamily="Cascadia Mono"
                     Foreground="White"
                     Text="Ln 1, Col 0" />
+                <Grid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Edit Bottom Bar" Click="EditBottomBarMenuItem_Click" />
+                    </ContextMenu>
+                </Grid.ContextMenu>
             </Grid>
         </ScrollViewer>
     </Grid>

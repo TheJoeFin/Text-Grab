@@ -265,6 +265,11 @@ public partial class EditTextWindow : Window
             BottomBar.Visibility = Visibility.Collapsed;
         }
 
+        SetBottomBarButtons();
+    }
+
+    public void SetBottomBarButtons()
+    {
         BottomBarButtons.Children.Clear();
 
         List<CollapsibleButton> buttons = CustomBottomBarUtilities.GetBottomBarButtons(this);
@@ -1687,5 +1692,12 @@ public partial class EditTextWindow : Window
         // After here we will now allow the dropping of "non-text" content
         e.Effects = System.Windows.DragDropEffects.Copy;
         e.Handled = true;
+    }
+
+    private void EditBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        BottomBarSettings bbs = new();
+        bbs.Owner = this;
+        bbs.ShowDialog();
     }
 }
