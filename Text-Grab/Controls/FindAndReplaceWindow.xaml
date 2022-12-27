@@ -68,6 +68,7 @@
                 Click="MoreOptionsToggleButton_Click"
                 Content="▼"
                 Foreground="White"
+                IsChecked="True"
                 Style="{DynamicResource ToggleSymbolButton}" />
 
             <TextBox
@@ -97,7 +98,7 @@
                 Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
                 FontFamily="Segoe UI"
-                Visibility="Collapsed" />
+                Visibility="Visible" />
             <local:CollapsibleButton
                 x:Name="ReplaceButton"
                 Grid.Row="1"
@@ -105,11 +106,10 @@
                 Width="110"
                 Margin="0,6,6,0"
                 Padding="4"
-                d:Visibility="Visible"
                 ButtonText="Replace"
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
                 SymbolText=""
-                Visibility="Collapsed" />
+                Visibility="Visible" />
 
             <StackPanel
                 x:Name="MoreOptionsHozStack"
@@ -120,7 +120,7 @@
                 HorizontalAlignment="Right"
                 d:Visibility="Visible"
                 Orientation="Horizontal"
-                Visibility="Collapsed">
+                Visibility="Visible">
                 <CheckBox
                     x:Name="ExactMatchCheckBox"
                     Margin="6"
@@ -164,7 +164,7 @@
                 HorizontalAlignment="Right"
                 d:Visibility="Visible"
                 Orientation="Horizontal"
-                Visibility="Collapsed">
+                Visibility="Visible">
                 <CheckBox
                     x:Name="UsePaternCheckBox"
                     Margin="6"

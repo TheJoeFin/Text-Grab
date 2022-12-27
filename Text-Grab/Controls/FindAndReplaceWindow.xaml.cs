@@ -330,10 +330,10 @@ public partial class FindAndReplaceWindow : Window
 
     private void DeleteAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (Matches is null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
-            e.CanExecute = false;
-        else
+        if (Matches is not null && Matches.Count > 1 && !string.IsNullOrEmpty(FindTextBox.Text))
             e.CanExecute = true;
+        else
+            e.CanExecute = false;
     }
 
     private void DeleteAll_Executed(object sender, ExecutedRoutedEventArgs e)
