@@ -18,6 +18,9 @@ public class CustomBottomBarUtilities
     {
         string json = Settings.Default.BottomButtonsJson;
 
+        if (string.IsNullOrWhiteSpace(json))
+            return CustomButton.DefaultButtonList;
+
         // create a list of custom bottom bar items
         List<CustomButton>? customBottomBarItems = new();
 
