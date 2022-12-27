@@ -17,12 +17,17 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
+
         <ListView 
             x:Name="LeftListBox"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
-            ItemsSource="{Binding ButtonsInLeftList}"
-            Width="404">
+            ItemsSource="{Binding ButtonsInLeftList}">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Icon" Width="40">
@@ -39,7 +44,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Button Text" Width="290">
+                    <GridViewColumn Header="Button Text" Width="260">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Grid.Column="1" Text="{Binding ButtonText}" Margin="0,0,8,0"/>
@@ -72,8 +77,7 @@
             Grid.Column="2"
             HorizontalAlignment="Right"
             VerticalAlignment="Top"
-            ItemsSource="{Binding ButtonsInRightList}"
-            Width="404">
+            ItemsSource="{Binding ButtonsInRightList}">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Icon" Width="40">
@@ -90,7 +94,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Button Text" Width="290">
+                    <GridViewColumn Header="Button Text" Width="260">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Grid.Column="1" Text="{Binding ButtonText}" Margin="0,0,8,0"/>
@@ -100,5 +104,24 @@
                 </GridView>
             </ListView.View>
         </ListView>
+
+        <StackPanel
+            Grid.Row="1"
+            Grid.ColumnSpan="3"
+            Margin="0,12,0,6"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <local:CollapsibleButton
+                x:Name="CloseBTN"
+                ButtonText="Cancel"
+                Click="CloseBTN_Click"
+                SymbolText="" />
+            <local:CollapsibleButton
+                x:Name="SaveBTN"
+                Background="DarkGreen"
+                ButtonText="Save and Close"
+                Click="SaveBTN_Click"
+                SymbolText="" />
+        </StackPanel>
     </Grid>
 </Window>
