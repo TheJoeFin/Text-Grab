@@ -42,8 +42,13 @@ public class CustomBottomBarUtilities
         foreach (CollapsibleButton collapsible in bottomBarButtons)
             customButtons.Add(new(collapsible));
 
+        SaveCustomBottomBarItemsSetting(customButtons);
+    }
+
+    public static void SaveCustomBottomBarItemsSetting(List<CustomButton> bottomBarButtons)
+    {
         // serialize the list of custom bottom bar items to json
-        string json = JsonSerializer.Serialize(customButtons);
+        string json = JsonSerializer.Serialize(bottomBarButtons);
 
         // save the json string to the settings
         Settings.Default.BottomButtonsJson = json;
