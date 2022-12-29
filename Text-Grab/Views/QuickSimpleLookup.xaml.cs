@@ -43,7 +43,7 @@ public partial class QuickSimpleLookup : Window
         string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
         string cachePath = $"{exePath}\\{cacheFilename}";
 
-        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation) == false
+        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation)
             && File.Exists(Settings.Default.LookupFileLocation))
             cachePath = Settings.Default.LookupFileLocation;
 
@@ -83,6 +83,16 @@ public partial class QuickSimpleLookup : Window
         if (sender is not TextBox searchingBox || !IsLoaded)
             return;
 
+        if (searchingBox.Text.Contains('\t'))
+        {
+            // a tab has been entered and this will be a new entry
+            AddItemBtn.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            AddItemBtn.Visibility = Visibility.Collapsed;
+        }
+
         MainDataGrid.ItemsSource = null;
 
         if (string.IsNullOrEmpty(searchingBox.Text))
@@ -105,7 +115,7 @@ public partial class QuickSimpleLookup : Window
 
             foreach (var searchWord in searchArray)
             {
-                if (lItemAsString.Contains(searchWord) == false)
+                if (!lItemAsString.Contains(searchWord))
                     matchAllSearchWords = false;
             }
 
@@ -155,18 +165,24 @@ public partial class QuickSimpleLookup : Window
 
         foreach (string row in rows)
         {
-            List<string> cells = row.Split(splitChar).ToList();
-            LookupItem newRow = new LookupItem();
-            if (cells.FirstOrDefault() is String firstCell)
-                newRow.shortValue = firstCell;
-
-            newRow.longValue = "";
-            if (cells.Count > 1 && cells[1] is String)
-                newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+            LookupItem newRow = ParseStringToLookupItem(splitChar, row);
 
             if (!string.IsNullOrWhiteSpace(newRow.ToString()))
                 yield return newRow;
         }
+    }
+
+    private static LookupItem ParseStringToLookupItem(char splitChar, string row)
+    {
+        List<string> cells = row.Split(splitChar).ToList();
+        LookupItem newRow = new LookupItem();
+        if (cells.FirstOrDefault() is String firstCell)
+            newRow.shortValue = firstCell;
+
+        newRow.longValue = "";
+        if (cells.Count > 1 && cells[1] is String)
+            newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+        return newRow;
     }
 
     private async void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -177,8 +193,14 @@ public partial class QuickSimpleLookup : Window
                 if (IsEditingDataGrid)
                     return;
                 e.Handled = true;
-                PutValueIntoClipboard();
-                e.Handled = true;
+                if (SearchBox is TextBox searchTextBox && searchTextBox.Text.Contains('\t'))
+                {
+                    AddToLookUpResults('\t', searchTextBox.Text);
+                    searchTextBox.Clear();
+                    GoToEndOfMainDataGrid();
+                }
+                else
+                    PutValueIntoClipboard();
                 break;
             case Key.Escape:
                 if (IsEditingDataGrid)
@@ -189,6 +211,7 @@ public partial class QuickSimpleLookup : Window
             case Key.Down:
                 if (SearchBox.IsFocused)
                 {
+                    int selectedIndex = MainDataGrid.SelectedIndex;
                     MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
                     e.Handled = true;
                 }
@@ -208,9 +231,53 @@ public partial class QuickSimpleLookup : Window
                     e.Handled = true;
                 }
                 break;
+            case Key.End:
+                GoToEndOfMainDataGrid();
+                break;
+            case Key.Home:
+                GoToBeginningOfMainDataGrid();
+                break;
             default:
                 break;
         }
+    }
+
+    private void GoToBeginningOfMainDataGrid()
+    {
+        if (MainDataGrid.ItemsSource is not List<LookupItem> lookupItemsList)
+            return;
+
+        if (lookupItemsList.Count < 1)
+            return;
+
+        MainDataGrid.ScrollIntoView(lookupItemsList.First());
+        MainDataGrid.SelectedIndex = 0;
+    }
+
+    private void GoToEndOfMainDataGrid()
+    {
+        if (MainDataGrid.ItemsSource is not List<LookupItem> lookupItemsList)
+            return;
+
+        if (lookupItemsList.Count < 1)
+            return;
+        
+        MainDataGrid.ScrollIntoView(lookupItemsList.Last());
+        MainDataGrid.SelectedItem = lookupItemsList.Last();
+    }
+
+    private void AddToLookUpResults(char splitChar, string text)
+    {
+        LookupItem newItem = ParseStringToLookupItem(splitChar, text);
+
+        MainDataGrid.ItemsSource = null;
+        ItemsDictionary.Add(newItem);
+        MainDataGrid.ItemsSource = ItemsDictionary;
+
+        UpdateRowCount();
+        MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
+        AddItemBtn.Visibility = Visibility.Collapsed;
+        SaveBTN.Visibility = Visibility.Visible;
     }
 
     private void ClearOrExit()
@@ -383,6 +450,11 @@ public partial class QuickSimpleLookup : Window
         tb.SelectAll();
     }
 
+    private void TextGrabSettingsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+    }
+
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Create OpenFileDialog 
@@ -391,10 +463,11 @@ public partial class QuickSimpleLookup : Window
         // Set filter for file extension and default file extension 
         dlg.DefaultExt = ".csv";
         dlg.Filter = "Comma Separated Values File (.csv)|*.csv";
+        dlg.CheckFileExists = true;
 
         bool? result = dlg.ShowDialog();
 
-        if (result == false || dlg.CheckFileExists == false)
+        if (result is false || !File.Exists(dlg.FileName))
             return;
 
         string csvToOpenPath = dlg.FileName;
@@ -434,7 +507,7 @@ public partial class QuickSimpleLookup : Window
         dlg.FileName = "QuickSimpleLookupDataFile.csv";
         dlg.OverwritePrompt = false;
 
-        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation) == false)
+        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
         {
             dlg.InitialDirectory = Settings.Default.LookupFileLocation;
             dlg.FileName = Path.GetFileName(Settings.Default.LookupFileLocation);
@@ -442,7 +515,7 @@ public partial class QuickSimpleLookup : Window
 
         var result = dlg.ShowDialog();
 
-        if (result == false)
+        if (result is false)
             return;
 
         Settings.Default.LookupFileLocation = dlg.FileName;
@@ -461,5 +534,15 @@ public partial class QuickSimpleLookup : Window
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
+    }
+
+    private void AddItemBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (SearchBox is not TextBox searchTextBox)
+            return;
+
+        AddToLookUpResults('\t', searchTextBox.Text);
+        searchTextBox.Clear();
+        GoToEndOfMainDataGrid();
     }
 }

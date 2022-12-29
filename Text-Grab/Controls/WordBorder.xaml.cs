@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +21,31 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public bool WasRegionSelected { get; set; } = false;
 
     public bool IsEditing { get; set; } = false;
+
+    private SolidColorBrush matchingBackground = new SolidColorBrush(Colors.Black);
+    private SolidColorBrush contrastingForeground = new SolidColorBrush(Colors.White);
+
+    public SolidColorBrush MatchingBackground
+    {
+        get { return matchingBackground; }
+        set
+        {
+            matchingBackground = value;
+            MainGrid.Background = matchingBackground;
+
+            byte r = matchingBackground.Color.R;  // extract red
+            byte g = matchingBackground.Color.G;  // extract green
+            byte b = matchingBackground.Color.B;  // extract blue
+
+            double luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per ITU-R BT.709
+
+            if (luma > 180)
+            {
+                contrastingForeground = new SolidColorBrush(Colors.Black);
+                EditWordTextBox.Foreground = contrastingForeground;
+            }
+        }
+    }
 
     public string Word
     {
@@ -42,6 +68,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public int ResultColumnID { get; set; } = 0;
 
+    public double Top { get; set; } = 0;
+
+    public double Left { get; set; } = 0;
+
     public bool IsFromEditWindow { get; set; } = false;
 
     public WordBorder()
@@ -57,29 +87,30 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         IsSelected = true;
         WordBorderBorder.BorderBrush = new SolidColorBrush(Colors.Yellow);
         EditWordTextBox.Foreground = new SolidColorBrush(Colors.Yellow);
+        MainGrid.Background = new SolidColorBrush(Colors.Black);
     }
 
     public void Deselect()
     {
         IsSelected = false;
         WordBorderBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 48, 142, 152));
-        EditWordTextBox.Foreground = new SolidColorBrush(Colors.White);
+        EditWordTextBox.Foreground = contrastingForeground;
+        MainGrid.Background = matchingBackground;
     }
 
     public void EnterEdit()
     {
         EditWordTextBox.Visibility = Visibility.Visible;
-        MainGrid.Background = new SolidColorBrush(Colors.Black);
+        MainGrid.Background = matchingBackground;
     }
 
     public void ExitEdit()
     {
         EditWordTextBox.Visibility = Visibility.Collapsed;
-        MainGrid.Background = new SolidColorBrush(Colors.White)
+        MainGrid.Background = new SolidColorBrush(matchingBackground.Color)
         {
             Opacity = 0.1
         };
-
     }
 
     public void SetAsBarcode()
@@ -93,6 +124,38 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
             EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
+    }
+
+    public bool IntersectsWith(Rect rectToChek)
+    {
+        Rect wbRect = new(Left, Top, Width, Height);
+        return rectToChek.IntersectsWith(wbRect);
+    }
+
+    private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;
+
+        int maxBaseSize = 2;
+        while (textBoxContextMenu.Items.Count > maxBaseSize)
+        {
+            EditWordTextBox.ContextMenu?.Items.RemoveAt(maxBaseSize);
+        }
+
+        if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
+        {
+            string headerText = $"Try to go to: {Word}";
+            if (headerText.Length > 36)
+                headerText = headerText.Substring(0, 36) + "...";
+
+            MenuItem urlMi = new();
+            urlMi.Header = headerText;
+            urlMi.Click += (sender, e) =>
+            {
+                Process.Start(new ProcessStartInfo(Word) { UseShellExecute = true });
+            };
+            EditWordTextBox.ContextMenu?.Items.Add(urlMi);
+        }
     }
 
     private void WordBorderControl_MouseDown(object sender, MouseButtonEventArgs e)
@@ -118,10 +181,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         try { Clipboard.SetDataObject(Word, true); } catch { }
 
         if (Settings.Default.ShowToast
-            && IsFromEditWindow == false)
+            && !IsFromEditWindow)
             NotificationUtilities.ShowToast(Word);
 
-        if (IsFromEditWindow == true)
+        if (IsFromEditWindow)
             WindowUtilities.AddTextToOpenWindow(Word);
 
         if (IsSelected)

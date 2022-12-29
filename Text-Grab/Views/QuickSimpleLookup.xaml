@@ -53,11 +53,19 @@
                 Margin="4,0,0,0"
                 Padding="8"
                 VerticalAlignment="Center"
+                AcceptsTab="True"
                 Background="{StaticResource DarkControlBackground}"
                 FontSize="16"
                 Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <controls:CollapsibleButton
+                    x:Name="AddItemBtn"
+                    Background="DarkGreen"
+                    ButtonText="Add Item"
+                    Click="AddItemBtn_Click"
+                    SymbolText=""
+                    Visibility="Collapsed" />
                 <controls:CollapsibleButton
                     x:Name="NewFullscreen"
                     HorizontalAlignment="Right"
@@ -108,6 +116,10 @@
                             x:Name="ParseCSVFileMenuItem"
                             Click="ParseCSVFileMenuItem_Click"
                             Header="Add Rows from CSV File..." />
+                        <MenuItem
+                            x:Name="TextGrabSettingsMenuItem"
+                            Click="TextGrabSettingsMenuItem_Click"
+                            Header="Text Grab Settings" />
                     </MenuItem>
                 </Menu>
             </StackPanel>
@@ -122,14 +134,15 @@
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
-            SelectionChanged="MainDataGrid_SelectionChanged"
             CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
             ItemsSource="{Binding ItemsDictionary}"
             MinRowHeight="14"
             RowBackground="Transparent"
-            RowStyle="{DynamicResource DataGridRowStyleDark}">
+            RowStyle="{DynamicResource DataGridRowStyleDark}"
+            SelectionChanged="MainDataGrid_SelectionChanged"
+            SelectionUnit="FullRow">
             <DataGrid.Columns>
                 <DataGridTemplateColumn Width="*">
                     <DataGridTemplateColumn.Header>
@@ -173,21 +186,35 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBlock Padding="10,4" Style="{StaticResource CellTextBlock}">
-                Shift + Enter to copy every row.
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                Grid.Column="0"
+                Padding="10,4"
+                HorizontalAlignment="Left"
+                Style="{StaticResource CellTextBlock}">
+                Shift + Enter to copy entire selected row(s).
             </TextBlock>
-            <TextBlock Padding="10,4" Style="{StaticResource CellTextBlock}">
+            <TextBlock
+                Grid.Column="1"
+                Padding="10,4"
+                HorizontalAlignment="Center"
+                Style="{StaticResource CellTextBlock}">
                 Shift + Ctrl + Enter to copy all results.
             </TextBlock>
-        </StackPanel>
+            <TextBlock
+                x:Name="RowCountTextBlock"
+                Grid.Column="2"
+                Padding="10,4"
+                HorizontalAlignment="Right"
+                Style="{StaticResource CellTextBlock}"
+                Text="0 Rows" />
+        </Grid>
 
-        <TextBlock
-            x:Name="RowCountTextBlock"
-            Grid.Row="2"
-            Padding="10,4"
-            HorizontalAlignment="Right"
-            Style="{StaticResource CellTextBlock}"
-            Text="0 Rows" />
     </Grid>
 </Window>

@@ -17,6 +17,11 @@ public partial class SettingsWindow : Window
 {
     public double InsertDelaySeconds { get; set; } = 3;
 
+    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
+    private Brush BadBrush = new SolidColorBrush(Colors.Red);
+
+
+
     public SettingsWindow()
     {
         InitializeComponent();
@@ -32,11 +37,12 @@ public partial class SettingsWindow : Window
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
         UseTesseractCheckBox.IsChecked = Settings.Default.UserTesseract;
+        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
-        
-        
+
+
         if (ImplementAppOptions.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
@@ -64,18 +70,19 @@ public partial class SettingsWindow : Window
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        switch (Settings.Default.DefaultLaunch)
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        switch (defaultLaunchSetting)
         {
-            case "Fullscreen":
+            case DefaultLaunchSetting.Fullscreen:
                 FullScreenRDBTN.IsChecked = true;
                 break;
-            case "GrabFrame":
+            case DefaultLaunchSetting.GrabFrame:
                 GrabFrameRDBTN.IsChecked = true;
                 break;
-            case "EditText":
+            case DefaultLaunchSetting.EditText:
                 EditTextRDBTN.IsChecked = true;
                 break;
-            case "QuickLookup":
+            case DefaultLaunchSetting.QuickLookup:
                 QuickLookupRDBTN.IsChecked = true;
                 break;
             default:
@@ -91,13 +98,13 @@ public partial class SettingsWindow : Window
 
     private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
     {
-        if (IsLoaded == false)
+        if (!IsLoaded)
             return;
 
         if (sender is TextBox numberInputBox)
         {
             bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
-            if (wasAbleToConvert == true && parsedText > 0 && parsedText < 10)
+            if (wasAbleToConvert && parsedText > 0 && parsedText < 10)
             {
                 InsertDelaySeconds = parsedText;
                 DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
@@ -128,13 +135,13 @@ public partial class SettingsWindow : Window
         if (ShowToastCheckBox.IsChecked is bool showToast)
             Settings.Default.ShowToast = showToast;
 
-        if (FullScreenRDBTN.IsChecked == true)
+        if (FullScreenRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "Fullscreen";
-        else if (GrabFrameRDBTN.IsChecked == true)
+        else if (GrabFrameRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "GrabFrame";
-        else if (EditTextRDBTN.IsChecked == true)
+        else if (EditTextRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "EditText";
-        else if (QuickLookupRDBTN.IsChecked == true)
+        else if (QuickLookupRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "QuickLookup";
 
         if (ErrorCorrectBox.IsChecked is bool errorCorrect)
@@ -167,6 +174,12 @@ public partial class SettingsWindow : Window
         if (UseTesseractCheckBox.IsChecked is bool useTesseract)
             Settings.Default.UserTesseract = useTesseract;
 
+        if (ReadBarcodesBarcode.IsChecked is not null)
+            Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;
+
+        if (CorrectToLatin.IsChecked is not null)
+            Settings.Default.CorrectToLatin = (bool)CorrectToLatin.IsChecked;
+
         if (HotKeysAllDifferent())
         {
             KeyConverter keyConverter = new();
@@ -194,7 +207,7 @@ public partial class SettingsWindow : Window
             Settings.Default.LookupHotKey = "Q";
         }
 
-        if (string.IsNullOrEmpty(SecondsTextBox.Text) == false)
+        if (!string.IsNullOrEmpty(SecondsTextBox.Text))
             Settings.Default.InsertDelay = InsertDelaySeconds;
 
         Settings.Default.Save();
@@ -234,21 +247,28 @@ public partial class SettingsWindow : Window
 
     private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (sender is not TextBox hotkeytextbox)
+        if (sender is not TextBox hotkeytextbox
+            || hotkeytextbox.Text is null
+            || !IsLoaded)
             return;
 
-        if (hotkeytextbox.Text.Length == 1 && hotkeytextbox.Text is not null)
+        if (string.IsNullOrEmpty(hotkeytextbox.Text))
         {
-            KeyConverter keyConverter = new();
-            Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
-            if (convertedKey is not null && HotKeysAllDifferent())
-            {
-                hotkeytextbox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-                return;
-            }
+            hotkeytextbox.BorderBrush = GoodBrush;
+            return;
         }
 
-        hotkeytextbox.BorderBrush = new SolidColorBrush(Colors.Red);
+        hotkeytextbox.Text = hotkeytextbox.Text[0].ToString();
+
+        KeyConverter keyConverter = new();
+        Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
+        if (convertedKey is not null && HotKeysAllDifferent())
+        {
+            hotkeytextbox.BorderBrush = GoodBrush;
+            return;
+        }
+
+        hotkeytextbox.BorderBrush = BadBrush;
     }
 
     private bool HotKeysAllDifferent()
@@ -259,25 +279,69 @@ public partial class SettingsWindow : Window
             || LookupHotKeyTextBox is null)
             return false;
 
-        if (GrabFrameHotkeyTextBox.Text.ToUpper() != FullScreenHotkeyTextBox.Text.ToUpper()
-            && GrabFrameHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper()
-            && GrabFrameHotkeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper()
-            && FullScreenHotkeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper()
-            && FullScreenHotkeyTextBox.Text.ToUpper() != EditTextHotKeyTextBox.Text.ToUpper()
-            && EditTextHotKeyTextBox.Text.ToUpper() != LookupHotKeyTextBox.Text.ToUpper())
+        string gfKey = GrabFrameHotkeyTextBox.Text.Trim().ToUpper();
+        string fsgKey = FullScreenHotkeyTextBox.Text.Trim().ToUpper();
+        string etwKey = EditTextHotKeyTextBox.Text.Trim().ToUpper();
+        string qslKey = LookupHotKeyTextBox.Text.Trim().ToUpper();
+
+        bool anyMatchingKeys = false;
+
+        if (!string.IsNullOrEmpty(gfKey))
         {
-            FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            LookupHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
-            return true;
+            if (gfKey == fsgKey
+                || gfKey == etwKey
+                || gfKey == qslKey)
+            {
+                GrabFrameHotkeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                GrabFrameHotkeyTextBox.BorderBrush = GoodBrush;
         }
 
-        FullScreenHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        GrabFrameHotkeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        EditTextHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        LookupHotKeyTextBox.BorderBrush = new SolidColorBrush(Colors.Red);
-        return false;
+        if (!string.IsNullOrEmpty(fsgKey))
+        {
+            if (fsgKey == gfKey
+                || fsgKey == etwKey
+                || fsgKey == qslKey)
+            {
+                FullScreenHotkeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                FullScreenHotkeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (!string.IsNullOrEmpty(etwKey))
+        {
+            if (etwKey == gfKey
+                || etwKey == fsgKey
+                || etwKey == qslKey)
+            {
+                EditTextHotKeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                EditTextHotKeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (!string.IsNullOrEmpty(qslKey))
+        {
+            if (qslKey == gfKey
+                || qslKey == fsgKey
+                || qslKey == etwKey)
+            {
+                LookupHotKeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                LookupHotKeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (anyMatchingKeys)
+            return false;
+
+        return true;
     }
 }
 

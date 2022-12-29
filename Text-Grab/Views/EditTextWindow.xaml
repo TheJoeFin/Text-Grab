@@ -15,6 +15,7 @@
     Background="{StaticResource DarkBackground}"
     Closed="Window_Closed"
     Initialized="Window_Initialized"
+    PreviewKeyDown="EditTextWindow_PreviewKeyDown"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -31,6 +32,10 @@
             <MenuItem Command="ApplicationCommands.Cut" />
             <MenuItem Command="ApplicationCommands.Copy" />
             <MenuItem Command="ApplicationCommands.Paste" />
+            <MenuItem
+                Command="{x:Static local:EditTextWindow.PasteCommand}"
+                Header="OCR Paste"
+                InputGestureText="Ctrl + Shift + V" />
             <Separator />
             <MenuItem
                 Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
@@ -96,6 +101,10 @@
             CanExecute="InsertSelectionOnEveryLineCmdCanExecute"
             Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
             Executed="InsertSelectionOnEveryLine" />
+        <CommandBinding
+            CanExecute="CanPasteExecute"
+            Command="{x:Static local:EditTextWindow.PasteCommand}"
+            Executed="PasteExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -146,6 +155,10 @@
                 <MenuItem Command="ApplicationCommands.Cut" />
                 <MenuItem Command="ApplicationCommands.Copy" />
                 <MenuItem Command="ApplicationCommands.Paste" />
+                <MenuItem
+                    Command="{x:Static local:EditTextWindow.PasteCommand}"
+                    Header="OCR Paste"
+                    InputGestureText="Ctrl + Shift + V" />
                 <Separator />
                 <MenuItem
                     x:Name="SingleLineMenuItem"
@@ -197,12 +210,17 @@
                     Click="FindAndReplaceMenuItem_Click"
                     Header="Find and Replace" />
                 <Separator />
-                <MenuItem Command="ApplicationCommands.SelectAll" />
+                <MenuItem
+                    x:Name="SelectWordMenuItem"
+                    Click="SelectWordMenuItem_Click"
+                    Header="Select _Word"
+                    InputGestureText="Ctrl + W" />
                 <MenuItem
                     x:Name="SelectLineMenuItem"
                     Click="SelectLineMenuItem_Click"
                     Header="Select _Line"
                     InputGestureText="Ctrl + L" />
+                <MenuItem Command="ApplicationCommands.SelectAll" />
                 <Separator />
                 <MenuItem
                     x:Name="MoveLineUpMenuItem"
@@ -257,10 +275,6 @@
                     Header="New _Fullscreen Grab"
                     InputGestureText="Ctrl + F" />
                 <MenuItem
-                    x:Name="FSGFreezeenuItem"
-                    Click="FSGFreezeenuItem_Click"
-                    Header="Fullscreen Grab with freeze" />
-                <MenuItem
                     x:Name="FSGDelayMenuItem"
                     Click="FSGDelayMenuItem_Click"
                     Header="Fullscreen with 2 second _delay and freeze" />
@@ -275,20 +289,24 @@
                     Click="LaunchQuickSimpleLookup"
                     Header="Add From _Quick Simple Lookup"
                     InputGestureText="Ctrl + Q" />
+                <MenuItem
+                    x:Name="ClipboardWatcherMenuItem"
+                    Header="_Watch Clipboard For Changes"
+                    IsCheckable="True"
+                    IsChecked="False" />
                 <Separator />
                 <MenuItem
                     x:Name="ListFilesMenuItem"
                     Click="ListFilesMenuItem_Click"
                     Header="_List Files and Folders From Folder..." />
                 <MenuItem
-                    x:Name="ClipboardWatcherMenuItem"
-                    Header="_Watch Clipboard For Changes"
-                    IsCheckable="True"
-                    IsChecked="False" />
-                <MenuItem
                     x:Name="ReadFolderOfImages"
                     Click="ReadFolderOfImages_Click"
-                    Header="_Extract Text from Images in Folder" />
+                    Header="_Extract Text from Images in Folder..." />
+                <MenuItem
+                    x:Name="ReadFolderOfImagesWriteTxtFiles"
+                    Click="ReadFolderOfImagesWriteTxtFiles_Click"
+                    Header="Write ._Txt File For Each Image in Folder..." />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem
@@ -370,7 +388,7 @@
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal" Name="BottomBarButtons">
                 <controls:CollapsibleButton
                     x:Name="CopyCloseBTN"
                     Background="#CC7000"

@@ -45,6 +45,14 @@
         </Style>
     </Window.Resources>
 
+    <Window.CommandBindings>
+        <CommandBinding
+            CanExecute="CanPasteExecute"
+            Command="{x:Static local:GrabFrame.PasteCommand}"
+            Executed="PasteExecuted" />
+    </Window.CommandBindings>
+
+
     <WindowChrome.WindowChrome>
         <WindowChrome
             CaptionHeight="24"
@@ -173,6 +181,11 @@
                                 x:Name="FreezeMI"
                                 Click="FreezeMI_Click"
                                 Header="Toggle Freeze" />
+                            <Separator />
+                            <MenuItem
+                                Command="{x:Static local:GrabFrame.PasteCommand}"
+                                Header="Paste Image"
+                                InputGestureText="Ctrl + Shift + V" />
                         </ContextMenu>
                     </Canvas.ContextMenu>
                 </Canvas>
@@ -300,6 +313,19 @@
                             </TextBlock>
                         </ToggleButton>
 
+                        <ToggleButton
+                            x:Name="EditTextToggleButton"
+                            Margin="6,0,0,0"
+                            Padding="7,4"
+                            Click="EditTextBTN_Click"
+                            IsChecked="False"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Edit individual words in Grab Frame">
+                            <TextBlock FontFamily="Segoe MDL2 Assets">
+                                
+                            </TextBlock>
+                        </ToggleButton>
+
                         <controls:CollapsibleButton
                             x:Name="SettingsBTN"
                             Margin="6,0,0,0"
@@ -308,16 +334,6 @@
                             IsSymbol="True"
                             SymbolText=""
                             ToolTip="Open Text Grab Settings" />
-
-                        <controls:CollapsibleButton
-                            x:Name="EditTextBTN"
-                            Margin="6,0,0,0"
-                            ButtonText="Edit Text Window"
-                            Click="EditTextBTN_Click"
-                            IsSymbol="True"
-                            SymbolText=""
-                            ToolTip="Open Edit Text Window" />
-
                     </StackPanel>
 
                     <controls:CollapsibleButton

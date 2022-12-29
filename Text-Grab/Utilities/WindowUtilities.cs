@@ -5,10 +5,11 @@ using System.Drawing;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab.Properties;
 using Text_Grab.Views;
+using Screen = System.Windows.Forms.Screen;
 
 namespace Text_Grab.Utilities;
 
@@ -16,15 +17,11 @@ public static class WindowUtilities
 {
     public static void AddTextToOpenWindow(string textToAdd)
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        WindowCollection allWindows = Application.Current.Windows;
 
         foreach (Window window in allWindows)
-        {
             if (window is EditTextWindow mtw)
-            {
                 mtw.AddThisText(textToAdd);
-            }
-        }
     }
 
     public static void SetWindowPosition(Window passedWindow)
@@ -51,18 +48,16 @@ public static class WindowUtilities
             couldParseAll = double.TryParse(storedPostion[3], out double parsedHei);
             Rectangle storedSize = new Rectangle((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
             Screen[] allScreens = Screen.AllScreens;
-            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+            WindowCollection allWindows = Application.Current.Windows;
 
             if (parsedHei < 10 || parsedWid < 10)
                 return;
 
             foreach (Screen screen in allScreens)
-            {
                 if (screen.WorkingArea.IntersectsWith(storedSize))
                     isStoredRectWithinScreen = true;
-            }
 
-            if (isStoredRectWithinScreen == true && couldParseAll == true)
+            if (isStoredRectWithinScreen && couldParseAll)
             {
                 passedWindow.Left = storedSize.X;
                 passedWindow.Top = storedSize.Y;
@@ -76,10 +71,10 @@ public static class WindowUtilities
 
     public static void LaunchFullScreenGrab(bool openAnyway = false,
                                             bool setBackgroundImage = false,
-                                            System.Windows.Controls.TextBox? destinationTextBox = null)
+                                            TextBox? destinationTextBox = null)
     {
         Screen[] allScreens = Screen.AllScreens;
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        WindowCollection allWindows = Application.Current.Windows;
 
         List<FullscreenGrab> allFullscreenGrab = new();
 
@@ -99,7 +94,7 @@ public static class WindowUtilities
             if (allWindows.Count < 1)
                 screenHasWindow = false;
 
-            if (screenHasWindow == false || openAnyway == true)
+            if (!screenHasWindow || openAnyway)
             {
                 FullscreenGrab fullscreenGrab = new FullscreenGrab
                 {
@@ -127,18 +122,14 @@ public static class WindowUtilities
             }
         }
 
-        if (setBackgroundImage == true)
-        {
+        if (setBackgroundImage)
             foreach (FullscreenGrab fsg in allFullscreenGrab)
-            {
                 fsg.SetImageToBackground();
-            }
-        }
     }
 
     internal static async void CloseAllFullscreenGrabs()
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        WindowCollection allWindows = Application.Current.Windows;
 
         bool isFromEditWindow = false;
         string stringFromOCR = "";
@@ -147,7 +138,7 @@ public static class WindowUtilities
         {
             if (window is FullscreenGrab fsg)
             {
-                if (string.IsNullOrWhiteSpace(fsg.textFromOCR) == false)
+                if (!string.IsNullOrWhiteSpace(fsg.textFromOCR))
                     stringFromOCR = fsg.textFromOCR;
 
                 if (fsg.DestinationTextBox is not null)
@@ -162,20 +153,21 @@ public static class WindowUtilities
             }
         }
 
-        if (Settings.Default.TryInsert == true
-            && string.IsNullOrWhiteSpace(stringFromOCR) == false
-            && isFromEditWindow == false)
+        if (Settings.Default.TryInsert
+            && !string.IsNullOrWhiteSpace(stringFromOCR)
+            && !isFromEditWindow)
         {
             await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
             TryInsertString(stringFromOCR);
         }
 
+        GC.Collect();
         ShouldShutDown();
     }
 
     internal static void FullscreenKeyDown(Key key, bool? isActive = null)
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        WindowCollection allWindows = Application.Current.Windows;
 
         if (key == Key.Escape)
             CloseAllFullscreenGrabs();
@@ -191,7 +183,7 @@ public static class WindowUtilities
 
         try
         {
-            SendKeys.SendWait(stringToSend);
+            System.Windows.Forms.SendKeys.SendWait(stringToSend);
         }
         catch (ArgumentException argEx)
         {
@@ -201,7 +193,7 @@ public static class WindowUtilities
 
     internal static T OpenOrActivateWindow<T>() where T : Window, new()
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        WindowCollection allWindows = Application.Current.Windows;
 
         foreach (var window in allWindows)
         {
@@ -220,27 +212,24 @@ public static class WindowUtilities
 
     public static void ShouldShutDown()
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        bool zeroOpenWindows = Application.Current.Windows.Count < 1;
 
         bool shouldShutDown = false;
 
-        if (Settings.Default.RunInTheBackground == true)
+        if (Settings.Default.RunInTheBackground)
         {
             if (App.Current is App app)
             {
                 if (app.NumberOfRunningInstances > 1
                     && app.TextGrabIcon == null
-                    && allWindows.Count < 1)
+                    && zeroOpenWindows)
                     shouldShutDown = true;
             }
         }
-        else
-        {
-            if (allWindows.Count < 1)
-                shouldShutDown = true;
-        }
+        else if (zeroOpenWindows)
+            shouldShutDown = true;
 
-        if (shouldShutDown == true)
-            System.Windows.Application.Current.Shutdown();
+        if (shouldShutDown)
+            Application.Current.Shutdown();
     }
 }
