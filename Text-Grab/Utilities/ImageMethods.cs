@@ -77,23 +77,7 @@ public static class ImageMethods
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
         bmp = PadImage(bmp);
-
-        string? ocrText = "";
-
-        if (Settings.Default.UserTesseract)
-        {
-            bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
-            ocrText = await TesseractHelper.GetTextFromImage(TesseractHelper.TempImagePath());
-        }
-        else
-        {
-            ocrText = await ExtractText(bmp, null, language);
-        }
-
-        if (ocrText != null)
-            return ocrText.Trim();
-        else
-            return "";
+        return bmp;
     }
 
     public static Bitmap GetWindowsBoundsBitmap(Window passedWindow)

@@ -7,15 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Markup;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -1660,57 +1658,56 @@ public partial class EditTextWindow : Window
         e.Effects = System.Windows.DragDropEffects.Copy;
         e.Handled = true;
     }
-}
 
-// from StackOverflow user bytedev read on July 12th 2022
-// https://stackoverflow.com/a/64038750/7438031
-public static bool IsBinary(string filePath, int requiredConsecutiveNul = 1)
-{
-    const int charsToCheck = 8000;
-    const char nulChar = '\0';
-
-    int nulCount = 0;
-
-    try
+    // from StackOverflow user bytedev read on July 12th 2022
+    // https://stackoverflow.com/a/64038750/7438031
+    public static bool IsBinary(string filePath, int requiredConsecutiveNul = 1)
     {
-        using StreamReader streamReader = new(filePath);
+        const int charsToCheck = 8000;
+        const char nulChar = '\0';
 
-        for (var i = 0; i < charsToCheck; i++)
+        int nulCount = 0;
+
+        try
         {
-            if (streamReader.EndOfStream)
-                return false;
+            using StreamReader streamReader = new(filePath);
 
-            if ((char)streamReader.Read() == nulChar)
+            for (var i = 0; i < charsToCheck; i++)
             {
-                nulCount++;
+                if (streamReader.EndOfStream)
+                    return false;
 
-                if (nulCount >= requiredConsecutiveNul)
-                    return true;
-            }
-            else
-            {
-                nulCount = 0;
+                if ((char)streamReader.Read() == nulChar)
+                {
+                    nulCount++;
+
+                    if (nulCount >= requiredConsecutiveNul)
+                        return true;
+                }
+                else
+                {
+                    nulCount = 0;
+                }
             }
         }
+        catch (System.Exception) { }
+
+        return false;
     }
-    catch (System.Exception) { }
 
-    return false;
-}
+    private async void OpenFileInTesseractMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+        dlg.DefaultExt = ".txt";
+        dlg.Filter = "Images| *.png;*.jpg;*.jpeg;*.tiff;.bmp";
 
-private async void OpenFileInTesseractMenuItem_Click(object sender, RoutedEventArgs e)
-{
-    Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-    dlg.DefaultExt = ".txt";
-    dlg.Filter = "Images| *.png;*.jpg;*.jpeg;*.tiff;.bmp";
+        bool? result = dlg.ShowDialog();
 
-    bool? result = dlg.ShowDialog();
+        if (result != true
+            || !File.Exists(dlg.FileName))
+            return;
 
-    if (result != true
-        || !File.Exists(dlg.FileName))
-        return;
-
-    string decodedString = await TesseractHelper.GetTextFromImage(dlg.FileName);
-    PassedTextControl.AppendText(decodedString);
-}
+        string decodedString = await TesseractHelper.GetTextFromImage(dlg.FileName);
+        PassedTextControl.AppendText(decodedString);
+    }
 }

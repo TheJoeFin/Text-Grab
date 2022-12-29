@@ -132,6 +132,12 @@ public static class OcrExtensions
 
         StringBuilder text = new();
 
+        if (Settings.Default.UserTesseract)
+        {
+            scaledBitmap.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
+            return await TesseractHelper.GetTextFromImage(TesseractHelper.TempImagePath());
+        }
+
         OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(scaledBitmap, language);
         bool isSpaceJoiningOCRLang = LanguageUtilities.IsLanguageSpaceJoining(language);
 
