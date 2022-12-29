@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Text;
 using System.Windows;
+using Text_Grab;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -26,7 +27,7 @@ Bookman-Demi
         string testImagePath = @".\Images\font_sample.png";
 
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -47,7 +48,7 @@ Couier New
         string testImagePath = @".\Images\FontTest.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -74,7 +75,7 @@ December	12	Winter";
         string testImagePath = @".\Images\Table-Test.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         Language englishLanguage = new("en-US");
-        Bitmap testBitmap = new(getPathToImages(testImagePath));
+        Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
         OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
 
@@ -117,7 +118,7 @@ December	12	Winter";
         string testImagePath = @".\Images\Table-Test-2.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         Language englishLanguage = new("en-US");
-        Bitmap testBitmap = new(getPathToImages(testImagePath));
+        Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
         OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
 
@@ -143,7 +144,25 @@ December	12	Winter";
         Assert.Equal(expectedResult, stringBuilder.ToString());
     }
 
-    private string getPathToImages(string imageRelativePath)
+    [WpfFact]
+    public async Task TestName()
+    {
+        // Given
+        string hocrFilePath = getPathToLocalFile(@"TextFiles\font_sample.hocr");
+        string hocrFileContents = File.ReadAllText(hocrFilePath);
+
+        string testImagePath = @"Images\font_sample.png";
+        // need to scale to get the test to match the output
+        // Bitmap scaledBMP = ImageMethods
+
+        // When
+        string tessoutput = await TesseractHelper.GetTextFromImagePath(getPathToLocalFile(testImagePath), true);
+
+        // Then
+        Assert.Equal(hocrFileContents, tessoutput);
+    }
+
+    private string getPathToLocalFile(string imageRelativePath)
     {
         Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
         string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);

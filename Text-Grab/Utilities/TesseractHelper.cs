@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -18,7 +20,13 @@ namespace Text_Grab.Utilities;
 
 public static class TesseractHelper
 {
-    public static async Task<string> GetTextFromImage(string pathToFile, bool outputHocr = false)
+    public static Task<string> GetTextFromBitmap(Bitmap bmp, bool outputHocr = true)
+    {
+        bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
+        return TesseractHelper.GetTextFromImagePath(TempImagePath());
+    }
+
+    public static async Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr = true)
     {
         string rawPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
@@ -53,7 +61,7 @@ public static class TesseractHelper
         StreamReader sr = process.StandardOutput;
         StreamReader errorReader = process.StandardError;
 
-        process.WaitForExit();
+        process.WaitForExit(1000);
 
         if (process.HasExited)
         {

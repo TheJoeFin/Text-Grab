@@ -1707,7 +1707,7 @@ public partial class EditTextWindow : Window
             || !File.Exists(dlg.FileName))
             return;
 
-        string decodedString = await TesseractHelper.GetTextFromImage(dlg.FileName);
+        string decodedString = await TesseractHelper.GetTextFromImagePath(dlg.FileName);
         PassedTextControl.AppendText(decodedString);
     }
 }
