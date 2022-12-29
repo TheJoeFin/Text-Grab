@@ -49,6 +49,18 @@ public partial class BottomBarSettings : Window
         ButtonsInRightList.Remove(customButton);
     }
 
+    private void MoveUpButton_Click(object sender, RoutedEventArgs e)
+    {
+        int newIndex = MoveUp<CustomButton>(ButtonsInRightList, RightListBox.SelectedIndex);
+        RightListBox.SelectedIndex = newIndex;
+    }
+
+    private void MoveDownButton_Click(object sender, RoutedEventArgs e)
+    {
+        int newIndex = MoveDown<CustomButton>(ButtonsInRightList, RightListBox.SelectedIndex);
+        RightListBox.SelectedIndex = newIndex;
+    }
+
     private void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
         CustomBottomBarUtilities.SaveCustomBottomBarItemsSetting(ButtonsInRightList.ToList());
@@ -72,4 +84,30 @@ public partial class BottomBarSettings : Window
         }
         collection.Insert(index, item);
     }
+
+    public int MoveUp<T>(ObservableCollection<T> collection, int index)
+    {
+        if (index > 0 && index < collection.Count)
+        {
+            T item = collection[index];
+            collection.RemoveAt(index);
+            collection.Insert(index - 1, item);
+            return index - 1;
+        }
+        return 0;
+    }
+
+    public int MoveDown<T>(ObservableCollection<T> collection, int index)
+    {
+        if (index >= 0 && index < collection.Count - 1)
+        {
+            T item = collection[index];
+            collection.RemoveAt(index);
+            collection.Insert(index + 1, item);
+            return index + 1;
+        }
+        return collection.Count;
+    }
+
+
 }
