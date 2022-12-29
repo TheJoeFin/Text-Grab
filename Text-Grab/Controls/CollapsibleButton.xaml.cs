@@ -17,7 +17,7 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
 
     public bool CanChangeStyle { get; set; } = true;
 
-    public CustomButton? CustomButton { get; set; }
+    public ButtonInfo? CustomButton { get; set; }
 
     public string ButtonText
     {

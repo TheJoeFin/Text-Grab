@@ -14,22 +14,22 @@ namespace Text_Grab.Utilities;
 public class CustomBottomBarUtilities
 {
     // this method takes a json string and returns a list of CustomButton using system.text.json
-    public static List<CustomButton> GetCustomBottomBarItemsSetting()
+    public static List<ButtonInfo> GetCustomBottomBarItemsSetting()
     {
         string json = Settings.Default.BottomButtonsJson;
 
         if (string.IsNullOrWhiteSpace(json))
-            return CustomButton.DefaultButtonList;
+            return ButtonInfo.DefaultButtonList;
 
         // create a list of custom bottom bar items
-        List<CustomButton>? customBottomBarItems = new();
+        List<ButtonInfo>? customBottomBarItems = new();
 
         // deserialize the json string into a list of custom bottom bar items
-        customBottomBarItems = JsonSerializer.Deserialize<List<CustomButton>>(json);
+        customBottomBarItems = JsonSerializer.Deserialize<List<ButtonInfo>>(json);
 
         // return the list of custom bottom bar items
         if (customBottomBarItems is null)
-            return CustomButton.DefaultButtonList;
+            return ButtonInfo.DefaultButtonList;
 
         return customBottomBarItems;
     }
@@ -37,7 +37,7 @@ public class CustomBottomBarUtilities
     // a method to save a list of collapsible buttons to the settings as json
     public static void SaveCustomBottomBarItemsSetting(List<CollapsibleButton> bottomBarButtons)
     {
-        List<CustomButton> customButtons = new();
+        List<ButtonInfo> customButtons = new();
 
         foreach (CollapsibleButton collapsible in bottomBarButtons)
             customButtons.Add(new(collapsible));
@@ -45,7 +45,7 @@ public class CustomBottomBarUtilities
         SaveCustomBottomBarItemsSetting(customButtons);
     }
 
-    public static void SaveCustomBottomBarItemsSetting(List<CustomButton> bottomBarButtons)
+    public static void SaveCustomBottomBarItemsSetting(List<ButtonInfo> bottomBarButtons)
     {
         // serialize the list of custom bottom bar items to json
         string json = JsonSerializer.Serialize(bottomBarButtons);
@@ -64,7 +64,7 @@ public class CustomBottomBarUtilities
         List<MethodInfo> methods = GetMethods(editTextWindow);
         Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
-        foreach (CustomButton buttonItem in GetCustomBottomBarItemsSetting())
+        foreach (ButtonInfo buttonItem in GetCustomBottomBarItemsSetting())
         {
             CollapsibleButton button = new()
             {

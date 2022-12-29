@@ -3,7 +3,7 @@ using Text_Grab.Controls;
 
 namespace Text_Grab.Models;
 
-public class CustomButton
+public class ButtonInfo
 {
     public double OrderNumber { get; set; } = 0.1;
     public string ButtonText { get; set; } = "";
@@ -13,14 +13,14 @@ public class CustomButton
     public string ClickEvent { get; set; } = "";
     public bool IsSymbol { get; set; } = false;
 
-    public CustomButton()
+    public ButtonInfo()
     {
 
     }
 
     public override bool Equals(object? obj)
     {
-        if (obj is not CustomButton otherButton)
+        if (obj is not ButtonInfo otherButton)
             return false;
 
         return otherButton.GetHashCode() == GetHashCode();
@@ -38,7 +38,7 @@ public class CustomButton
     }
 
     // a constructor which takes a collapisble button
-    public CustomButton(CollapsibleButton button)
+    public ButtonInfo(CollapsibleButton button)
     {
         if (button.CustomButton is not null)
         {
@@ -59,7 +59,7 @@ public class CustomButton
     }
 
     // a constructor with parameters
-    public CustomButton(string buttonText, string symbolText, string background, string command, string clickEvent, bool isSymbol)
+    public ButtonInfo(string buttonText, string symbolText, string background, string command, string clickEvent, bool isSymbol)
     {
         ButtonText = buttonText;
         SymbolText = symbolText;
@@ -69,7 +69,7 @@ public class CustomButton
         IsSymbol = isSymbol;
     }
 
-    public static List<CustomButton> DefaultButtonList { get; set; } = new()
+    public static List<ButtonInfo> DefaultButtonList { get; set; } = new()
     {
         new()
         {
@@ -113,7 +113,7 @@ public class CustomButton
         },
     };
 
-    public static List<CustomButton> AllButtons { get; set; } = new()
+    public static List<ButtonInfo> AllButtons { get; set; } = new()
     {
         new()
         {
@@ -197,7 +197,7 @@ public class CustomButton
         {
             OrderNumber = 3.2,
             ButtonText = "Try to make Numbers",
-            SymbolText = "",
+            SymbolText = "",
             ClickEvent = "TryToNumberMenuItem_Click"
         },
         new()
