@@ -20,16 +20,21 @@ namespace Text_Grab.Utilities;
 
 public static class TesseractHelper
 {
-    public static Task<string> GetTextFromBitmap(Bitmap bmp, bool outputHocr = true)
+    public static Task<string> GetTextFromBitmap(Bitmap bmp, bool outputHocr)
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
-        return TesseractHelper.GetTextFromImagePath(TempImagePath());
+        return TesseractHelper.GetTextFromImagePath(TempImagePath(), outputHocr);
     }
 
-    public static async Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr = true)
+    public static async Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr)
     {
-        string rawPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
+        string rawPath = @"%LOCALAPPDATA%\Tesseract-OCR\tesseract.exe";
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
+        string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
+        string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
+
+        if (!File.Exists(tesExePath))
+            tesExePath = programsPath;
 
         if (!File.Exists(tesExePath))
             tesExePath = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe";
