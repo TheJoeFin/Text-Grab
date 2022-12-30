@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Text;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using Text_Grab;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -145,18 +146,42 @@ December	12	Winter";
     }
 
     [WpfFact]
-    public async Task TestName()
+    public async Task TesseractHocr()
     {
+        int intialLinesToSkip = 12;
+
         // Given
         string hocrFilePath = getPathToLocalFile(@"TextFiles\font_sample.hocr");
-        string hocrFileContents = File.ReadAllText(hocrFilePath);
+        string[] hocrFileContentsArray = await File.ReadAllLinesAsync(hocrFilePath);
+
+        // combine string array into one string
+        StringBuilder sb = new();
+        foreach (string line in hocrFileContentsArray.Skip(intialLinesToSkip).ToArray())
+            sb.AppendLine(line);
+
+        string hocrFileContents = sb.ToString();
+
 
         string testImagePath = @"Images\font_sample.png";
         // need to scale to get the test to match the output
         // Bitmap scaledBMP = ImageMethods
+        Uri fileURI = new(getPathToLocalFile(testImagePath), UriKind.Absolute);
+        BitmapImage bmpImg = new(fileURI);
+        bmpImg.Freeze();
+        Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
+        Language language = LanguageUtilities.GetOCRLanguage();
+        double idealScaleFactor = await OcrExtensions.GetIdealScaleFactorForOCR(bmp, language);
+        Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
-        string tessoutput = await TesseractHelper.GetTextFromImagePath(getPathToLocalFile(testImagePath), true);
+        string tessoutput = await TesseractHelper.GetTextFromBitmap(scaledBMP, true);
+
+        string[] tessoutputArray = tessoutput.Split(Environment.NewLine);
+        StringBuilder sb2 = new();
+        foreach (string line in tessoutputArray.Skip(intialLinesToSkip).ToArray())
+            sb2.AppendLine(line);
+
+        tessoutput = sb2.ToString();
 
         // Then
         Assert.Equal(hocrFileContents, tessoutput);
