@@ -37,7 +37,19 @@ public partial class FullscreenGrab : Window
     double xShiftDelta;
     double yShiftDelta;
 
-    public TextBox? DestinationTextBox { get; set; }
+    private TextBox? destinationTextBox;
+    public TextBox? DestinationTextBox 
+    { 
+        get { return destinationTextBox; }
+        set
+        {
+            destinationTextBox = value;
+            if (destinationTextBox != null)
+                SendToEditTextToggleButton.IsChecked = true;
+            else
+                SendToEditTextToggleButton.IsChecked = false;
+        }
+    }
 
     public string? textFromOCR { get; set; }
 
@@ -94,7 +106,7 @@ public partial class FullscreenGrab : Window
         SingleLineMenuItem.Click -= SingleLineMenuItem_Click;
         FreezeMenuItem.Click -= FreezeMenuItem_Click;
         NewGrabFrameMenuItem.Click -= NewGrabFrameMenuItem_Click;
-        NewEditTextMenuItem.Click -= NewEditTextMenuItem_Click;
+        SendToEtwMenuItem.Click -= NewEditTextMenuItem_Click;
         SettingsMenuItem.Click -= SettingsMenuItem_Click;
         CancelMenuItem.Click -= CancelMenuItem_Click;
 
@@ -103,7 +115,7 @@ public partial class FullscreenGrab : Window
         SingleLineToggleButton.Click -= SingleLineMenuItem_Click;
         FreezeToggleButton.Click -= FreezeMenuItem_Click;
         NewGrabFrameToggleButton.Click -= NewGrabFrameMenuItem_Click;
-        NewEditTextButton.Click -= NewEditTextMenuItem_Click;
+        SendToEditTextToggleButton.Click -= NewEditTextMenuItem_Click;
         SettingsButton.Click -= SettingsMenuItem_Click;
         CancelButton.Click -= CancelMenuItem_Click;
 
@@ -171,6 +183,13 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
 
         WindowUtilities.FullscreenKeyDown(Key.G, isActive);
+    }
+
+    private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        bool isActive = CheckIfCheckingOrUnchecking(sender);
+
+        WindowUtilities.FullscreenKeyDown(Key.E, isActive);
     }
 
     private static bool CheckIfCheckingOrUnchecking(object? sender)
@@ -394,13 +413,13 @@ public partial class FullscreenGrab : Window
             //     WindowUtilities.CloseAllFullscreenGrabs();
             //     break;
             case Key.G:
-                if (isActive == null)
+                if (isActive is null)
                     NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
                 else
                     NewGrabFrameMenuItem.IsChecked = isActive.Value;
                 break;
             case Key.S:
-                if (isActive == null)
+                if (isActive is null)
                     SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
                 else
                     SingleLineMenuItem.IsChecked = isActive.Value;
@@ -408,8 +427,14 @@ public partial class FullscreenGrab : Window
                 Settings.Default.FSGMakeSingleLineToggle = SingleLineMenuItem.IsChecked;
                 Settings.Default.Save();
                 break;
+            case Key.E:
+                if (isActive is null)
+                    SendToEtwMenuItem.IsChecked = !SendToEtwMenuItem.IsChecked;
+                else
+                    SendToEtwMenuItem.IsChecked = isActive.Value;
+                break;
             case Key.F:
-                if (isActive == null)
+                if (isActive is null)
                     FreezeMenuItem.IsChecked = !FreezeMenuItem.IsChecked;
                 else
                     FreezeMenuItem.IsChecked = isActive.Value;
@@ -483,21 +508,27 @@ public partial class FullscreenGrab : Window
         textFromOCR = grabbedText;
 
         if (!Settings.Default.NeverAutoUseClipboard
-            && DestinationTextBox is null)
+            && destinationTextBox is null)
             try { Clipboard.SetDataObject(grabbedText, true); } catch { }
 
         if (Settings.Default.ShowToast
-            && DestinationTextBox is null)
+            && destinationTextBox is null)
             NotificationUtilities.ShowToast(grabbedText);
 
-        if (DestinationTextBox is not null)
+        if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
+        {
+            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            destinationTextBox = etw.PassedTextControl;
+        }
+
+        if (destinationTextBox is not null)
         {
             // Do it this way instead of append text because it inserts the text at the cursor
             // Then puts the cursor at the end of the newly added text
             // AppendText() just adds the text to the end no matter what.
-            DestinationTextBox.SelectedText = grabbedText;
-            DestinationTextBox.Select(DestinationTextBox.SelectionStart + grabbedText.Length, 0);
-            DestinationTextBox.Focus();
+            destinationTextBox.SelectedText = grabbedText;
+            destinationTextBox.Select(destinationTextBox.SelectionStart + grabbedText.Length, 0);
+            destinationTextBox.Focus();
         }
     }
 
