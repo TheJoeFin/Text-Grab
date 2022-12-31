@@ -79,6 +79,8 @@ public partial class GrabFrame : Window
             destinationTextBox = value;
             if (destinationTextBox is not null)
                 EditTextToggleButton.IsChecked = true;
+            else
+                EditTextToggleButton.IsChecked = false;
         }
     }
 
