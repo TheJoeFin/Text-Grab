@@ -115,6 +115,9 @@ public static class StringMethods
 
     public static string GetWordAtCursorPosition(this string input, int cursorPosition)
     {
+        if (input.Length == 0)
+            return string.Empty;
+
         cursorPosition = Math.Clamp(cursorPosition, 0, input.Length - 1);
 
         (int start, int length) = input.CursorWordBoundaries(cursorPosition);

@@ -113,7 +113,7 @@ public partial class FindAndReplaceWindow : Window
         try
         {
             if (ExactMatchCheckBox.IsChecked is true)
-                Matches = Regex.Matches(StringFromWindow, Pattern);
+                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline);
             else
                 Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
         }
