@@ -107,8 +107,8 @@ public partial class FindAndReplaceWindow : Window
 
         Pattern = FindTextBox.Text;
 
-        if (UsePaternCheckBox.IsChecked is false)
-            Pattern = Pattern.EscapeSpecialRegexChars();
+        if (UsePaternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
+            Pattern = Pattern.EscapeSpecialRegexChars(matchExactly);
 
         try
         {
@@ -129,7 +129,11 @@ public partial class FindAndReplaceWindow : Window
             return;
         }
 
-        MatchesText.Text = $"{Matches.Count} Matches";
+        if (Matches.Count == 1)
+            MatchesText.Text = $"{Matches.Count} Match";
+        else
+            MatchesText.Text = $"{Matches.Count} Matches";
+
         ResultsListView.IsEnabled = true;
         int count = 1;
         foreach (Match m in Matches)
@@ -137,9 +141,9 @@ public partial class FindAndReplaceWindow : Window
             FindResult fr = new()
             {
                 Index = m.Index,
-                Text = m.Value,
-                PreviewLeft = GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12),
-                PreviewRight = GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12),
+                Text = m.Value.MakeStringSingleLine(),
+                PreviewLeft = GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12).MakeStringSingleLine(),
+                PreviewRight = GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12).MakeStringSingleLine(),
                 Count = count
             };
             FindResults.Add(fr);
@@ -173,6 +177,12 @@ public partial class FindAndReplaceWindow : Window
 
         newLineIndex++;
 
+        if (newLineIndex > mainString.Length)
+            return mainString.Substring(mainString.Length, 0);
+
+        if (index - newLineIndex < 0)
+            return mainString.Substring(newLineIndex, 0);
+
         if (index - newLineIndex < numberOfCharacters)
             return "..." + mainString.Substring(newLineIndex, index - newLineIndex);
 
@@ -203,7 +213,7 @@ public partial class FindAndReplaceWindow : Window
         char newLineChar = Environment.NewLine.ToArray().Last();
 
         int newLineIndex = index;
-        while (newLineIndex > 0 && mainString[newLineIndex] != newLineChar)
+        while (newLineIndex > 0 && newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
             newLineIndex--;
 
         return newLineIndex;

@@ -394,5 +394,17 @@ namespace Text_Grab.Properties {
                 this["CorrectToLatin"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string BottomButtonsJson {
+            get {
+                return ((string)(this["BottomButtonsJson"]));
+            }
+            set {
+                this["BottomButtonsJson"] = value;
+            }
+        }
     }
 }
