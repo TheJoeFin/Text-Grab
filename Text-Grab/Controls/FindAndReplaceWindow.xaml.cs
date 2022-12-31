@@ -113,9 +113,9 @@ public partial class FindAndReplaceWindow : Window
         try
         {
             if (ExactMatchCheckBox.IsChecked is true)
-                Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline);
+                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline);
             else
-                Matches = Regex.Matches(StringFromWindow.ToLower(), Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
         }
         catch (Exception ex)
         {
