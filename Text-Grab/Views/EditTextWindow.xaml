@@ -385,12 +385,18 @@
             HorizontalScrollBarVisibility="Auto"
             PanningMode="HorizontalOnly"
             VerticalScrollBarVisibility="Disabled">
-            <Grid x:Name="BottomBar" Grid.Row="2" Background="Transparent">
+            <Grid
+                x:Name="BottomBar"
+                Grid.Row="2"
+                Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Name="BottomBarButtons" Orientation="Horizontal" />
+                <StackPanel
+                    Name="BottomBarButtons"
+                    Margin="5,0"
+                    Orientation="Horizontal" />
                 <TextBlock
                     x:Name="BottomBarText"
                     Grid.Column="1"
@@ -402,7 +408,7 @@
                     Text="Ln 1, Col 0" />
                 <Grid.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="Edit Bottom Bar" Click="EditBottomBarMenuItem_Click" />
+                        <MenuItem Click="EditBottomBarMenuItem_Click" Header="Edit Bottom Bar" />
                     </ContextMenu>
                 </Grid.ContextMenu>
             </Grid>

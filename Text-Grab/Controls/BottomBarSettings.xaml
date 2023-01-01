@@ -13,9 +13,9 @@
     mc:Ignorable="d">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
@@ -23,104 +23,137 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <ListView 
+        <ListView
             x:Name="LeftListBox"
-            HorizontalAlignment="Left"
-            Background="{StaticResource DarkControlBackground}"
-            VerticalAlignment="Top"
             Margin="8"
-            ItemsSource="{Binding ButtonsInLeftList}">
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            d:ItemsSource="{d:SampleData ItemCount=5}"
+            Background="{StaticResource DarkControlBackground}"
+            ItemsSource="{Binding ButtonsInLeftList}"
+            ScrollViewer.VerticalScrollBarVisibility="Visible">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Icon" Width="40">
+                    <GridViewColumn Width="40" Header="Icon">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Grid.Column="0" FontFamily="Segoe MDL2 Assets" Text="{Binding SymbolText}" Margin="0,0,8,0"/>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    Margin="0,0,8,0"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="{Binding SymbolText}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Icon Mode" Width="72">
+                    <GridViewColumn Width="72" Header="Icon Mode">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox HorizontalAlignment="Center" Grid.Column="2" IsChecked="{Binding IsSymbol}" />
+                                <CheckBox
+                                    Grid.Column="2"
+                                    HorizontalAlignment="Center"
+                                    IsChecked="{Binding IsSymbol}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Button Text" Width="252">
+                    <GridViewColumn Width="252" Header="Button Text">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Grid.Column="1" Text="{Binding ButtonText}" Margin="0,0,8,0"/>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource TextBodyNormal}"
+                                    Text="{Binding ButtonText}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
-        <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
-            <local:CollapsibleButton 
+        <StackPanel
+            Grid.Column="1"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Orientation="Vertical">
+            <local:CollapsibleButton
                 x:Name="MoveRightButton"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
                 ButtonText="Add"
+                Click="MoveRightButton_Click"
                 IsSymbol="True"
-                SymbolText=""
-                Click="MoveRightButton_Click" />
-            <local:CollapsibleButton 
+                SymbolText="" />
+            <local:CollapsibleButton
                 x:Name="MoveLeftButton"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
                 ButtonText="Remove"
-                SymbolText=""
+                Click="MoveLeftButton_Click"
                 IsSymbol="True"
-                Click="MoveLeftButton_Click" />
+                SymbolText="" />
         </StackPanel>
-        <StackPanel Grid.Column="2">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <local:CollapsibleButton 
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                <local:CollapsibleButton
                     x:Name="MoveUpButton"
                     ButtonText="Move Up"
-                    SymbolText=""
-                    Click="MoveUpButton_Click" />
-                <local:CollapsibleButton 
+                    Click="MoveUpButton_Click"
+                    SymbolText="" />
+                <local:CollapsibleButton
                     x:Name="MoveDownButton"
                     ButtonText="Move Down"
-                    SymbolText=""
-                    Click="MoveDownButton_Click" />
+                    Click="MoveDownButton_Click"
+                    SymbolText="" />
             </StackPanel>
-            <ListView 
+            <ListView
                 x:Name="RightListBox"
-                Background="{StaticResource DarkControlBackground}"
+                Grid.Row="1"
                 Margin="8"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
-                ItemsSource="{Binding ButtonsInRightList}">
+                d:ItemsSource="{d:SampleData ItemCount=5}"
+                Background="{StaticResource DarkControlBackground}"
+                ItemsSource="{Binding ButtonsInRightList}"
+                ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Icon" Width="40">
+                        <GridViewColumn Width="40" Header="Icon">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Style="{StaticResource TextBodyNormal}" Grid.Column="0" FontFamily="Segoe MDL2 Assets" Text="{Binding SymbolText}" Margin="0,0,8,0"/>
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        Margin="0,0,8,0"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        Style="{StaticResource TextBodyNormal}"
+                                        Text="{Binding SymbolText}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Icon Mode" Width="72">
+                        <GridViewColumn Width="72" Header="Icon Mode">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox HorizontalAlignment="Center" Grid.Column="2" IsChecked="{Binding IsSymbol}" />
+                                    <CheckBox
+                                        Grid.Column="2"
+                                        HorizontalAlignment="Center"
+                                        IsChecked="{Binding IsSymbol}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Button Text" Width="252">
+                        <GridViewColumn Width="252" Header="Button Text">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Style="{StaticResource TextBodyNormal}" Grid.Column="1" Text="{Binding ButtonText}" Margin="0,0,8,0"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="0,0,8,0"
+                                        Style="{StaticResource TextBodyNormal}"
+                                        Text="{Binding ButtonText}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                     </GridView>
                 </ListView.View>
             </ListView>
-        </StackPanel>
+        </Grid>
 
         <StackPanel
             Grid.Row="1"

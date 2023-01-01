@@ -45,19 +45,19 @@ public partial class BottomBarSettings : Window
             return;
 
         // ButtonsInLeftList.Add(customButton);
-        InsertSorted<ButtonInfo>(ButtonsInLeftList, customButton, p => p.OrderNumber);
+        InsertSorted(ButtonsInLeftList, customButton, p => p.OrderNumber);
         ButtonsInRightList.Remove(customButton);
     }
 
     private void MoveUpButton_Click(object sender, RoutedEventArgs e)
     {
-        int newIndex = MoveUp<ButtonInfo>(ButtonsInRightList, RightListBox.SelectedIndex);
+        int newIndex = MoveUp(ButtonsInRightList, RightListBox.SelectedIndex);
         RightListBox.SelectedIndex = newIndex;
     }
 
     private void MoveDownButton_Click(object sender, RoutedEventArgs e)
     {
-        int newIndex = MoveDown<ButtonInfo>(ButtonsInRightList, RightListBox.SelectedIndex);
+        int newIndex = MoveDown(ButtonsInRightList, RightListBox.SelectedIndex);
         RightListBox.SelectedIndex = newIndex;
     }
 
@@ -75,7 +75,7 @@ public partial class BottomBarSettings : Window
         this.Close();
     }
 
-    public void InsertSorted<T>(ObservableCollection<T> collection, T item, Func<T, double> propertySelector)
+    public static void InsertSorted<T>(ObservableCollection<T> collection, T item, Func<T, double> propertySelector)
     {
         int index = 0;
         while (index < collection.Count && propertySelector(collection[index]) < propertySelector(item))
@@ -85,7 +85,7 @@ public partial class BottomBarSettings : Window
         collection.Insert(index, item);
     }
 
-    public int MoveUp<T>(ObservableCollection<T> collection, int index)
+    public static int MoveUp<T>(ObservableCollection<T> collection, int index)
     {
         if (index > 0 && index < collection.Count)
         {
@@ -97,7 +97,7 @@ public partial class BottomBarSettings : Window
         return 0;
     }
 
-    public int MoveDown<T>(ObservableCollection<T> collection, int index)
+    public static int MoveDown<T>(ObservableCollection<T> collection, int index)
     {
         if (index >= 0 && index < collection.Count - 1)
         {
