@@ -30,6 +30,7 @@
             VerticalAlignment="Top"
             d:ItemsSource="{d:SampleData ItemCount=5}"
             Background="{StaticResource DarkControlBackground}"
+            ItemContainerStyle="{StaticResource GridViewListItem}"
             ItemsSource="{Binding ButtonsInLeftList}"
             ScrollViewer.VerticalScrollBarVisibility="Visible">
             <ListView.View>
@@ -114,6 +115,7 @@
                 VerticalAlignment="Top"
                 d:ItemsSource="{d:SampleData ItemCount=1}"
                 Background="{StaticResource DarkControlBackground}"
+                ItemContainerStyle="{StaticResource GridViewListItem}"
                 ItemsSource="{Binding ButtonsInRightList}"
                 ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <ListView.View>

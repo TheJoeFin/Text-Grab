@@ -29,7 +29,7 @@
         <Setter Property="FontSize" Value="14" />
     </Style>
 
-    <Style TargetType="ListViewItem">
+    <Style x:Key="GridViewListItem" TargetType="ListViewItem">
         <Setter Property="SnapsToDevicePixels" Value="true" />
         <Setter Property="OverridesDefaultStyle" Value="true" />
         <Setter Property="Template">
