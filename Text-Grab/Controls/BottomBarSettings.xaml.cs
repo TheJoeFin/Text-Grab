@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using Text_Grab.Models;
+using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls;
@@ -28,6 +29,9 @@ public partial class BottomBarSettings : Window
 
         ButtonsInLeftList = new(allBtns);
         LeftListBox.ItemsSource = ButtonsInLeftList;
+
+        ShowCursorTextCheckBox.IsChecked = Settings.Default.ShowCursorText;
+        ShowScrollbarCheckBox.IsChecked = Settings.Default.ScrollBottomBar;
     }
 
     private void MoveRightButton_Click(object sender, RoutedEventArgs e)
@@ -63,9 +67,14 @@ public partial class BottomBarSettings : Window
 
     private void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
+        Settings.Default.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
+        Settings.Default.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
+        Settings.Default.Save();
+
         CustomBottomBarUtilities.SaveCustomBottomBarItemsSetting(ButtonsInRightList.ToList());
         if (Owner is EditTextWindow etw)
             etw.SetBottomBarButtons();
+
         this.Close();
     }
 

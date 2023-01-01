@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Bottom Bar Settings"
     Width="900"
-    Height="400"
+    Height="500"
     Background="{StaticResource DarkBackground}"
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
@@ -91,6 +91,7 @@
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
@@ -111,7 +112,7 @@
                 Margin="8"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
-                d:ItemsSource="{d:SampleData ItemCount=5}"
+                d:ItemsSource="{d:SampleData ItemCount=1}"
                 Background="{StaticResource DarkControlBackground}"
                 ItemsSource="{Binding ButtonsInRightList}"
                 ScrollViewer.VerticalScrollBarVisibility="Visible">
@@ -153,6 +154,27 @@
                     </GridView>
                 </ListView.View>
             </ListView>
+
+            <StackPanel
+                Grid.Row="2"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Orientation="Horizontal">
+                <CheckBox
+                    x:Name="ShowCursorTextCheckBox"
+                    Margin="0,0,20,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Cursor/Selection Text
+                    </TextBlock>
+                </CheckBox>
+                <CheckBox x:Name="ShowScrollbarCheckBox" VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Scrollbar
+                    </TextBlock>
+                </CheckBox>
+
+            </StackPanel>
         </Grid>
 
         <StackPanel

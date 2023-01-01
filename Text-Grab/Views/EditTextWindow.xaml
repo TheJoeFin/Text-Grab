@@ -380,6 +380,7 @@
             VerticalScrollBarVisibility="Auto" />
 
         <ScrollViewer
+            x:Name="BottomBarScrollViewer"
             Grid.Row="2"
             CanContentScroll="True"
             HorizontalScrollBarVisibility="Auto"
