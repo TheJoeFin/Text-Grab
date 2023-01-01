@@ -1756,8 +1756,6 @@ public partial class EditTextWindow : Window
         string decodedString = await TesseractHelper.GetTextFromImagePath(dlg.FileName, false);
         PassedTextControl.AppendText(decodedString);
     }
-}
-
     private void EditBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
     {
         BottomBarSettings bbs = new();
