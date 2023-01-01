@@ -74,9 +74,10 @@
                         Header="Place Grab Frame"
                         IsCheckable="True" />
                     <MenuItem
-                        Name="NewEditTextMenuItem"
-                        Click="NewEditTextMenuItem_Click"
-                        Header="Edit Text Window" />
+                        Name="SendToEtwMenuItem"
+                        Click="SendToEditTextToggleButton_Click"
+                        Header="Send to Edit Text Window"
+                        IsCheckable="True" />
                     <MenuItem
                         Name="SettingsMenuItem"
                         Click="SettingsMenuItem_Click"
@@ -146,16 +147,17 @@
                     Text=""
                     ToolTip="(G) Place a Grab Frame" />
             </ToggleButton>
-            <Button
-                x:Name="NewEditTextButton"
-                Margin="0,0,0,4"
-                Click="NewEditTextMenuItem_Click"
-                Style="{StaticResource SymbolButton}">
+            <ToggleButton
+                x:Name="SendToEditTextToggleButton"
+                Margin="4,0,0,4"
+                Click="SendToEditTextToggleButton_Click"
+                IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
+                Style="{StaticResource ToggleSymbolButton}">
                 <TextBlock
                     Style="{StaticResource SymbolTextStyle}"
                     Text=""
-                    ToolTip="Open an Edit Text Window" />
-            </Button>
+                    ToolTip="(E) Send to an Edit Text Window" />
+            </ToggleButton>
             <Button
                 x:Name="SettingsButton"
                 Margin="0,0,0,4"

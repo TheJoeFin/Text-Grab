@@ -113,6 +113,25 @@ public partial class EditTextWindow : Window
         }
     }
 
+    // a method which populates localRoutedCommands with all of the public static commands on this page
+    public static Dictionary<string, RoutedCommand> GetRoutedCommands()
+    {
+        return new Dictionary<string, RoutedCommand>()
+        {
+            {nameof(SplitOnSelectionCmd), SplitOnSelectionCmd},
+            {nameof(IsolateSelectionCmd), IsolateSelectionCmd},
+            {nameof(SingleLineCmd), SingleLineCmd},
+            {nameof(ToggleCaseCmd), ToggleCaseCmd},
+            {nameof(ReplaceReservedCmd), ReplaceReservedCmd},
+            {nameof(UnstackCmd), UnstackCmd},
+            {nameof(UnstackGroupCmd), UnstackGroupCmd},
+            {nameof(DeleteAllSelectionCmd), DeleteAllSelectionCmd},
+            {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
+            {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
+            {nameof(PasteCommand), PasteCommand}
+        };
+    }
+
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         SetupRoutedCommands();
@@ -245,6 +264,28 @@ public partial class EditTextWindow : Window
             HideBottomBarMenuItem.IsChecked = true;
             BottomBar.Visibility = Visibility.Collapsed;
         }
+
+        SetBottomBarButtons();
+    }
+
+    public void SetBottomBarButtons()
+    {
+        BottomBarButtons.Children.Clear();
+
+        List<CollapsibleButton> buttons = CustomBottomBarUtilities.GetBottomBarButtons(this);
+
+        if (Settings.Default.ScrollBottomBar)
+            BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+        else
+            BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+        
+        if (Settings.Default.ShowCursorText)
+            BottomBarText.Visibility = Visibility.Visible;
+        else
+            BottomBarText.Visibility = Visibility.Collapsed;
+
+        foreach (CollapsibleButton collapsibleButton in buttons)
+            BottomBarButtons.Children.Add(collapsibleButton);
     }
 
     private void CheckRightToLeftLanguage()
@@ -329,7 +370,9 @@ public partial class EditTextWindow : Window
 
         int keyNumberPressed = (int)e.Key - 35;
 
-        if (keyNumberPressed < 0 || keyNumberPressed >= bottomBarButtons.Count)
+        if (keyNumberPressed < 0
+            || keyNumberPressed >= bottomBarButtons.Count
+            || keyNumberPressed > 9)
             return;
 
         if (bottomBarButtons[keyNumberPressed] is not CollapsibleButton correspondingButton)
@@ -925,7 +968,9 @@ public partial class EditTextWindow : Window
         Keyboard.Focus(PassedTextControl);
         PassedTextControl.IsInactiveSelectionHighlightEnabled = true;
         PassedTextControl.SelectedText = " ";
-        CopyCloseBTN.Focus();
+        if (BottomBarButtons.Children.Count > 0
+            && BottomBarButtons.Children[0] is CollapsibleButton collapsibleButton)
+            collapsibleButton.Focus();
         GrabFrame gf = new();
         gf.DestinationTextBox = PassedTextControl;
         gf.Show();
@@ -1049,6 +1094,7 @@ public partial class EditTextWindow : Window
         if (PassedTextControl.SelectedText.Length > 0)
         {
             farw.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
+            farw.FindTextBox.Select(farw.FindTextBox.Text.Length, 0);
             farw.SearchForText();
         }
     }
@@ -1709,5 +1755,13 @@ public partial class EditTextWindow : Window
 
         string decodedString = await TesseractHelper.GetTextFromImagePath(dlg.FileName, false);
         PassedTextControl.AppendText(decodedString);
+    }
+}
+
+    private void EditBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        BottomBarSettings bbs = new();
+        bbs.Owner = this;
+        bbs.ShowDialog();
     }
 }

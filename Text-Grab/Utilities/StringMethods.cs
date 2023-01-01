@@ -115,6 +115,9 @@ public static class StringMethods
 
     public static string GetWordAtCursorPosition(this string input, int cursorPosition)
     {
+        if (input.Length == 0)
+            return string.Empty;
+
         cursorPosition = Math.Clamp(cursorPosition, 0, input.Length - 1);
 
         (int start, int length) = input.CursorWordBoundaries(cursorPosition);
@@ -355,14 +358,17 @@ public static class StringMethods
         return Regex.Replace(sb.ToString(), @"-+", "-");
     }
 
-    public static string EscapeSpecialRegexChars(this string stringToEscape)
+    public static string EscapeSpecialRegexChars(this string stringToEscape, bool matchExactly)
     {
         StringBuilder sb = new();
         sb.Append(stringToEscape);
 
         foreach (char specialChar in specialCharList)
         {
-            sb.Replace(specialChar.ToString(), $"\\{specialChar}");
+            if (specialChar is '*' && !matchExactly)
+                sb.Replace(specialChar.ToString(), $".{specialChar}");
+            else
+                sb.Replace(specialChar.ToString(), $"\\{specialChar}");
         }
 
         return sb.ToString();

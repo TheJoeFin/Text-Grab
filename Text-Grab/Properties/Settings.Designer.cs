@@ -506,5 +506,41 @@ namespace Text_Grab.Properties
                 this["CorrectToLatin"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string BottomButtonsJson {
+            get {
+                return ((string)(this["BottomButtonsJson"]));
+            }
+            set {
+                this["BottomButtonsJson"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShowCursorText {
+            get {
+                return ((bool)(this["ShowCursorText"]));
+            }
+            set {
+                this["ShowCursorText"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ScrollBottomBar {
+            get {
+                return ((bool)(this["ScrollBottomBar"]));
+            }
+            set {
+                this["ScrollBottomBar"] = value;
+            }
+        }
     }
 }
