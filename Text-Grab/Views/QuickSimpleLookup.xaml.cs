@@ -227,7 +227,7 @@ public partial class QuickSimpleLookup : Window
             case Key.F:
                 if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
                 {
-                    WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
+                    WindowUtilities.LaunchFullScreenGrab(SearchBox);
                     e.Handled = true;
                 }
                 break;
@@ -547,7 +547,7 @@ public partial class QuickSimpleLookup : Window
 
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
+        WindowUtilities.LaunchFullScreenGrab(SearchBox);
     }
 
     private void AddItemBtn_Click(object sender, RoutedEventArgs e)

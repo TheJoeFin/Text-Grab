@@ -69,62 +69,52 @@ public static class WindowUtilities
         }
     }
 
-    public static void LaunchFullScreenGrab(bool openAnyway = false,
-                                            bool setBackgroundImage = false,
-                                            TextBox? destinationTextBox = null)
+    public static void LaunchFullScreenGrab(TextBox? destinationTextBox = null)
     {
         Screen[] allScreens = Screen.AllScreens;
         WindowCollection allWindows = Application.Current.Windows;
 
         List<FullscreenGrab> allFullscreenGrab = new();
 
-        foreach (Screen screen in allScreens)
+        int numberOfScreens = allScreens.Length;
+
+        foreach (Window window in allWindows)
+            if (window is FullscreenGrab)
+                allFullscreenGrab.Add((FullscreenGrab)window);
+
+        int numberOfFullscreenGrabWindowsToCreate = numberOfScreens - allFullscreenGrab.Count;
+
+        for (int i = 0; i < numberOfFullscreenGrabWindowsToCreate; i++)
         {
-            bool screenHasWindow = true;
-
-            foreach (Window window in allWindows)
-            {
-                System.Drawing.Point windowCenter =
-                    new System.Drawing.Point(
-                        (int)(window.Left + (window.Width / 2)),
-                        (int)(window.Top + (window.Height / 2)));
-                screenHasWindow = screen.Bounds.Contains(windowCenter);
-            }
-
-            if (allWindows.Count < 1)
-                screenHasWindow = false;
-
-            if (!screenHasWindow || openAnyway)
-            {
-                FullscreenGrab fullscreenGrab = new FullscreenGrab
-                {
-                    WindowStartupLocation = WindowStartupLocation.Manual,
-                    Width = 200,
-                    Height = 200,
-                    DestinationTextBox = destinationTextBox,
-                    IsFreeze = setBackgroundImage,
-                    WindowState = WindowState.Normal
-                };
-
-                if (screen.WorkingArea.Left >= 0)
-                    fullscreenGrab.Left = screen.WorkingArea.Left;
-                else
-                    fullscreenGrab.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
-
-                if (screen.WorkingArea.Top >= 0)
-                    fullscreenGrab.Top = screen.WorkingArea.Top;
-                else
-                    fullscreenGrab.Top = screen.WorkingArea.Top + (screen.WorkingArea.Height / 2);
-
-                fullscreenGrab.Show();
-                fullscreenGrab.Activate();
-                allFullscreenGrab.Add(fullscreenGrab);
-            }
+            allFullscreenGrab.Add(new FullscreenGrab());
         }
 
-        if (setBackgroundImage)
-            foreach (FullscreenGrab fsg in allFullscreenGrab)
-                fsg.SetImageToBackground();
+        int count = 0;
+
+        foreach (Screen screen in allScreens)
+        {
+            FullscreenGrab fullscreenGrab = allFullscreenGrab[count];
+            fullscreenGrab.WindowStartupLocation = WindowStartupLocation.Manual;
+            fullscreenGrab.Width = 200;
+            fullscreenGrab.Height = 200;
+            fullscreenGrab.DestinationTextBox = destinationTextBox;
+            fullscreenGrab.WindowState = WindowState.Normal;
+
+            if (screen.WorkingArea.Left >= 0)
+                fullscreenGrab.Left = screen.WorkingArea.Left;
+            else
+                fullscreenGrab.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
+
+            if (screen.WorkingArea.Top >= 0)
+                fullscreenGrab.Top = screen.WorkingArea.Top;
+            else
+                fullscreenGrab.Top = screen.WorkingArea.Top + (screen.WorkingArea.Height / 2);
+
+            fullscreenGrab.Show();
+            fullscreenGrab.Activate();
+
+            count++;
+        }
     }
 
     internal static async void CloseAllFullscreenGrabs()
