@@ -20,7 +20,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public bool WasRegionSelected { get; set; } = false;
 
-    public bool IsEditing { get; set; } = false;
+    public bool IsEditing => EditWordTextBox.IsFocused;
 
     private SolidColorBrush matchingBackground = new SolidColorBrush(Colors.Black);
     private SolidColorBrush contrastingForeground = new SolidColorBrush(Colors.White);

@@ -211,6 +211,25 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Opacity = 0.1;
             wasAltHeld = true;
         }
+
+        if (e.Key == Key.Delete)
+            HandleDelete(sender, e);
+    }
+
+    private void HandleDelete(object sender, KeyEventArgs e)
+    {
+        bool editingAnyWordBorders = wordBorders.Any(x => x.IsEditing);
+        if (editingAnyWordBorders)
+            return;
+
+        List<WordBorder> selectedWordBorders = wordBorders.Where(x => x.IsSelected).ToList();
+        foreach (var wordBorder in selectedWordBorders)
+        {
+            RectanglesCanvas.Children.Remove(wordBorder);
+            wordBorders.Remove(wordBorder);
+        }
+
+        UpdateFrameText();
     }
 
     private void HandlePreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -272,6 +291,12 @@ public partial class GrabFrame : Window
 
     private void Escape_Keyed(object sender, ExecutedRoutedEventArgs e)
     {
+        if (wordBorders.Any(x => x.IsEditing))
+        {
+            GrabBTN.Focus();
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(SearchBox.Text) && SearchBox.Text != "Search For Text...")
             SearchBox.Text = "";
         else if (RectanglesCanvas.Children.Count > 0)
@@ -758,6 +783,8 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        GrabBTN.Focus();
+
         if (e.RightButton == MouseButtonState.Pressed)
         {
             e.Handled = false;
