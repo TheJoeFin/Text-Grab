@@ -33,7 +33,7 @@
             <MenuItem Command="ApplicationCommands.Copy" />
             <MenuItem Command="ApplicationCommands.Paste" />
             <MenuItem
-                Command="{x:Static local:EditTextWindow.PasteCommand}"
+                Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
                 Header="OCR Paste"
                 InputGestureText="Ctrl + Shift + V" />
             <Separator />
@@ -102,8 +102,8 @@
             Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
             Executed="InsertSelectionOnEveryLine" />
         <CommandBinding
-            CanExecute="CanPasteExecute"
-            Command="{x:Static local:EditTextWindow.PasteCommand}"
+            CanExecute="CanOcrPasteExecute"
+            Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
             Executed="PasteExecuted" />
     </Window.CommandBindings>
     <Grid>
@@ -156,7 +156,7 @@
                 <MenuItem Command="ApplicationCommands.Copy" />
                 <MenuItem Command="ApplicationCommands.Paste" />
                 <MenuItem
-                    Command="{x:Static local:EditTextWindow.PasteCommand}"
+                    Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
                     Header="OCR Paste"
                     InputGestureText="Ctrl + Shift + V" />
                 <Separator />

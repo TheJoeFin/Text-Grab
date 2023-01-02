@@ -22,6 +22,7 @@ using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
+using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.System;
 using MessageBox = System.Windows.MessageBox;
@@ -64,7 +65,7 @@ public partial class EditTextWindow : Window
 
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
 
-    public static RoutedCommand PasteCommand = new();
+    public static RoutedCommand OcrPasteCommand = new();
 
     private int numberOfContextMenuItems;
 
@@ -128,7 +129,7 @@ public partial class EditTextWindow : Window
             {nameof(DeleteAllSelectionCmd), DeleteAllSelectionCmd},
             {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
-            {nameof(PasteCommand), PasteCommand}
+            {nameof(OcrPasteCommand), OcrPasteCommand}
         };
     }
 
@@ -148,7 +149,7 @@ public partial class EditTextWindow : Window
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
     }
 
-    private void CanPasteExecute(object sender, CanExecuteRoutedEventArgs e)
+    private void CanOcrPasteExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         _IsAccessingClipboard = true;
         DataPackageView? dataPackageView = null;
@@ -173,9 +174,9 @@ public partial class EditTextWindow : Window
             return;
         }
 
-        if (dataPackageView.Contains(StandardDataFormats.Text))
-            e.CanExecute = true;
-        else if (dataPackageView.Contains(StandardDataFormats.Bitmap))
+        if (dataPackageView.Contains(StandardDataFormats.Text)
+            || dataPackageView.Contains(StandardDataFormats.Bitmap)
+            || dataPackageView.Contains(StandardDataFormats.StorageItems))
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -228,6 +229,30 @@ public partial class EditTextWindow : Window
                 Debug.WriteLine($"error with dataPackageView.GetBitmapAsync(). Exception Message: {ex.Message}");
             }
         }
+        else if (dataPackageView.Contains(StandardDataFormats.StorageItems))
+        {
+            try
+            {
+                IReadOnlyList<IStorageItem> storageItems = await dataPackageView.GetStorageItemsAsync();
+                foreach (IStorageItem storageItem in storageItems)
+                {
+                    if (!storageItem.IsOfType(StorageItemTypes.File))
+                        continue;
+                    IStorageFile storageFile = (IStorageFile)storageItem;
+                    if (!imageExtensions.Contains(storageFile.FileType))
+                        continue;
+
+                    using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
+                    string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+
+                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"error with dataPackageView.GetStorageItemsAsync(). Exception Message: {ex.Message}");
+            }
+        }
 
         _IsAccessingClipboard = false;
 
@@ -278,7 +303,7 @@ public partial class EditTextWindow : Window
             BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
         else
             BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-        
+
         if (Settings.Default.ShowCursorText)
             BottomBarText.Visibility = Visibility.Visible;
         else
