@@ -555,9 +555,6 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Children.Add(wordBorder);
         }
 
-        if (TableToggleButton.IsChecked is true && ocrResultOfWindow is not null)
-            TryToPlaceTable();
-
         if (IsWordEditMode)
             EnterEditMode();
 
@@ -570,6 +567,14 @@ public partial class GrabFrame : Window
 
     private void TryToPlaceTable()
     {
+        Canvas? tableLines = null;
+
+        foreach (var child in RectanglesCanvas.Children)
+            if (child is Canvas element && element.Tag is "TableLines")
+                tableLines = element;
+
+        RectanglesCanvas.Children.Remove(tableLines);
+
         Point windowPosition = this.GetAbsolutePosition();
         DpiScale dpi = VisualTreeHelper.GetDpi(this); 
         System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
@@ -717,6 +722,9 @@ public partial class GrabFrame : Window
 
     private void UpdateFrameText()
     {
+        if (TableToggleButton.IsChecked is true)
+            TryToPlaceTable();
+
         string[] selectedWbs = wordBorders
             .OrderBy(b => b.Top)
             .Where(w => w.IsSelected)
@@ -865,7 +873,7 @@ public partial class GrabFrame : Window
         isCtrlDown = false;
     }
 
-    private void AddNewWordBorder(Border selectBorder)
+    private async void AddNewWordBorder(Border selectBorder)
     {
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         SolidColorBrush backgroundBrush = new(Colors.Black);
@@ -889,8 +897,8 @@ public partial class GrabFrame : Window
         {
             Width = selectBorder.Width,
             Height = selectBorder.Height,
-            Word = "new",
-            ToolTip = "new",
+            Word = " ",
+            ToolTip = " ",
             Top = Canvas.GetTop(selectBorder),
             Left = Canvas.GetLeft(selectBorder),
             MatchingBackground = backgroundBrush,
@@ -902,6 +910,7 @@ public partial class GrabFrame : Window
         Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
         wordBorderBox.EnterEdit();
         wordBorderBox.Select();
+        await Task.Delay(50);
         wordBorderBox.FocusTextbox();
 
         UpdateFrameText();

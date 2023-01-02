@@ -135,6 +135,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void FocusTextbox()
     {
         EditWordTextBox.Focus();
+        Keyboard.Focus(EditWordTextBox);
+        EditWordTextBox.SelectAll();
     }
 
     private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)

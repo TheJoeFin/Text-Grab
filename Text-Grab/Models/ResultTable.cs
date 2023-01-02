@@ -557,7 +557,10 @@ public class ResultTable
         // Draw the lines and bounds of the table
         SolidColorBrush tableColor = new(System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
 
-        TableLines = new Canvas();
+        TableLines = new Canvas()
+        { 
+            Tag = "TableLines"
+        };
 
         Border tableOutline = new()
         {
