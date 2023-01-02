@@ -132,6 +132,11 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         return rectToChek.IntersectsWith(wbRect);
     }
 
+    public void FocusTextbox()
+    {
+        EditWordTextBox.Focus();
+    }
+
     private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;

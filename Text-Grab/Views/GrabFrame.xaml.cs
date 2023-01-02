@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -415,6 +416,8 @@ public partial class GrabFrame : Window
 
     }
 
+    private double windowFrameImageScale = 1;
+
     private async Task DrawRectanglesAroundWords(string searchWord = "")
     {
         if (isDrawing || IsDragOver)
@@ -438,13 +441,12 @@ public partial class GrabFrame : Window
             Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
         };
 
-        double scale = 1;
         Language? currentLang = LanguagesComboBox.SelectedItem as Language;
         if (currentLang is null)
             currentLang = LanguageUtilities.GetOCRLanguage();
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, scale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, currentLang);
+            (ocrResultOfWindow, windowFrameImageScale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, currentLang);
 
         if (ocrResultOfWindow is null)
             return;
@@ -469,16 +471,16 @@ public partial class GrabFrame : Window
             SolidColorBrush backgroundBrush = new(Colors.Black);
 
             if (bmp is not null)
-                backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, scale, bmp, ref lineRect);
+                backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
 
             WordBorder wordBorderBox = new()
             {
-                Width = lineRect.Width / (dpi.DpiScaleX * scale),
-                Height = lineRect.Height / (dpi.DpiScaleY * scale),
+                Width = lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale),
+                Height = lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale),
                 Top = lineRect.Y,
                 Left = lineRect.X,
                 Word = lineText.ToString().Trim(),
-                ToolTip = ocrLine.Text,
+                ToolTip = lineText,
                 LineNumber = lineNumber,
                 IsFromEditWindow = IsFromEditWindow,
                 MatchingBackground = backgroundBrush,
@@ -503,8 +505,8 @@ public partial class GrabFrame : Window
             }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
-            wordBorderBox.Left = lineRect.Left / (dpi.DpiScaleX * scale);
-            wordBorderBox.Top = lineRect.Top / (dpi.DpiScaleY * scale);
+            wordBorderBox.Left = lineRect.Left / (dpi.DpiScaleX * windowFrameImageScale);
+            wordBorderBox.Top = lineRect.Top / (dpi.DpiScaleY * windowFrameImageScale);
             Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
             Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
 
@@ -530,19 +532,6 @@ public partial class GrabFrame : Window
             RectanglesCanvas.RenderTransform = transform;
         }
 
-        if (TableToggleButton.IsChecked is true && ocrResultOfWindow is not null)
-        {
-            try
-            {
-                AnalyedResultTable = new();
-                AnalyedResultTable.AnalyzeAsTable(wordBorders.ToList(), rectCanvasSize);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
-        }
-
         if (Settings.Default.TryToReadBarcodes)
             TryToReadBarcodes(dpi);
 
@@ -566,12 +555,8 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Children.Add(wordBorder);
         }
 
-        if (TableToggleButton.IsChecked is true
-            && AnalyedResultTable is not null
-            && AnalyedResultTable.TableLines is not null)
-        {
-            RectanglesCanvas.Children.Add(AnalyedResultTable.TableLines);
-        }
+        if (TableToggleButton.IsChecked is true && ocrResultOfWindow is not null)
+            TryToPlaceTable();
 
         if (IsWordEditMode)
             EnterEditMode();
@@ -581,6 +566,30 @@ public partial class GrabFrame : Window
 
         UpdateFrameText();
         bmp?.Dispose();
+    }
+
+    private void TryToPlaceTable()
+    {
+        Point windowPosition = this.GetAbsolutePosition();
+        DpiScale dpi = VisualTreeHelper.GetDpi(this); 
+        System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
+        {
+            Width = (int)((ActualWidth + 2) * dpi.DpiScaleX),
+            Height = (int)((ActualHeight - 64) * dpi.DpiScaleY),
+            X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
+            Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
+        };
+
+        try
+        {
+            AnalyedResultTable = new();
+            AnalyedResultTable.AnalyzeAsTable(wordBorders.ToList(), rectCanvasSize);
+            RectanglesCanvas.Children.Add(AnalyedResultTable.TableLines);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
     }
 
     private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Rect lineRect)
@@ -708,7 +717,10 @@ public partial class GrabFrame : Window
 
     private void UpdateFrameText()
     {
-        string[] selectedWbs = wordBorders.Where(w => w.IsSelected).Select(t => t.Word).ToArray();
+        string[] selectedWbs = wordBorders
+            .OrderBy(b => b.Top)
+            .Where(w => w.IsSelected)
+            .Select(t => t.Word).ToArray();
 
         StringBuilder stringBuilder = new();
 
@@ -780,6 +792,7 @@ public partial class GrabFrame : Window
     }
 
     private bool isMiddleDown = false;
+    private bool isCtrlDown = false;
 
     private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
@@ -805,6 +818,11 @@ public partial class GrabFrame : Window
             ResetGrabFrame();
             UnfreezeGrabFrame();
             return;
+        }
+
+        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+        {
+            isCtrlDown = true;
         }
 
         CursorClipper.ClipCursor(RectanglesCanvas);
@@ -836,11 +854,57 @@ public partial class GrabFrame : Window
             reDrawTimer.Start();
             return;
         }
+        
+        if (isCtrlDown)
+            AddNewWordBorder(selectBorder);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
         await Task.Delay(50);
         CheckSelectBorderIntersections(true);
+        isCtrlDown = false;
+    }
+
+    private void AddNewWordBorder(Border selectBorder)
+    {
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        SolidColorBrush backgroundBrush = new(Colors.Black);
+        System.Drawing.Bitmap? bmp = null;
+
+        if (frameContentImageSource is BitmapImage bmpImg)
+            bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+
+        Rect lineRect = new()
+        {
+            X = Canvas.GetLeft(selectBorder) * windowFrameImageScale,
+            Y = Canvas.GetTop(selectBorder) * windowFrameImageScale,
+            Width = selectBorder.Width * windowFrameImageScale,
+            Height = selectBorder.Height * windowFrameImageScale,
+        };
+
+        if (bmp is not null)
+            backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
+
+        WordBorder wordBorderBox = new()
+        {
+            Width = selectBorder.Width,
+            Height = selectBorder.Height,
+            Word = "new",
+            ToolTip = "new",
+            Top = Canvas.GetTop(selectBorder),
+            Left = Canvas.GetLeft(selectBorder),
+            MatchingBackground = backgroundBrush,
+        };
+
+        wordBorders.Add(wordBorderBox);
+        _ = RectanglesCanvas.Children.Add(wordBorderBox);
+        Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
+        Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
+        wordBorderBox.EnterEdit();
+        wordBorderBox.Select();
+        wordBorderBox.FocusTextbox();
+
+        UpdateFrameText();
     }
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -870,7 +934,9 @@ public partial class GrabFrame : Window
         Canvas.SetLeft(selectBorder, left);
         Canvas.SetTop(selectBorder, top);
 
-        CheckSelectBorderIntersections();
+        
+        if (!isCtrlDown)
+            CheckSelectBorderIntersections();
     }
 
     private void CheckSelectBorderIntersections(bool finalCheck = false)
