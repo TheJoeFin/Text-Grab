@@ -326,6 +326,20 @@ public partial class QuickSimpleLookup : Window
         }
         else
         {
+            if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt)
+                && Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            {
+                if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
+                    return;
+
+                if (Uri.TryCreate(lookupItem.longValue, UriKind.Absolute, out var uri))
+                {
+                    Process.Start(new ProcessStartInfo(lookupItem.longValue) { UseShellExecute = true });
+                    this.Close();
+                    return;
+                }
+            }
+
             foreach (LookupItem lItem in selectedLookupItems)
             {
                 if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
