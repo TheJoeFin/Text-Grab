@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.Intrinsics.Arm;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -439,6 +439,12 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         ResetGrabFrame();
 
+        if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
+        {
+            reDrawTimer.Start();
+            return;
+        }
+
         frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
         if (SearchBox.Text is string searchText)
             await DrawRectanglesAroundWords(searchText);
@@ -484,8 +490,6 @@ public partial class GrabFrame : Window
         if (!IsLoaded || IsFreezeMode || isMiddleDown)
             return;
 
-        ResetGrabFrame();
-
         reDrawTimer.Stop();
         reDrawTimer.Start();
     }
@@ -502,6 +506,18 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         reDrawTimer.Start();
     }
+
+    public enum VirtualKeyCodes : short
+    {
+        LeftButton = 0x01,
+        RightButton = 0x02,
+        MiddleButton = 0x04
+    }
+
+    [DllImport("user32.dll")]
+    private static extern short GetKeyState(VirtualKeyCodes code);
+
+    public static bool CheckKey(VirtualKeyCodes code) => (GetKeyState(code) & 0xFF00) == 0xFF00;
 
     private void CheckBottomRowButtonsVis()
     {
@@ -1177,18 +1193,14 @@ public partial class GrabFrame : Window
         reDrawTimer.Start();
     }
 
-    private async void EditToggleButton_Click(object sender, RoutedEventArgs e)
+    private void EditToggleButton_Click(object sender, RoutedEventArgs e)
     {
         if (EditToggleButton.IsChecked is bool isEditMode && isEditMode)
         {
             if (!IsFreezeMode)
             {
                 FreezeToggleButton.IsChecked = true;
-                ResetGrabFrame();
-                await Task.Delay(200);
                 FreezeGrabFrame();
-                reDrawTimer.Stop();
-                reDrawTimer.Start();
             }
 
             EnterEditMode();
@@ -1219,21 +1231,12 @@ public partial class GrabFrame : Window
         }
     }
 
-    private async void FreezeToggleButton_Click(object sender, RoutedEventArgs e)
+    private void FreezeToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        TextBox searchBox = SearchBox;
-        ResetGrabFrame();
-
-        await Task.Delay(200);
         if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode)
             FreezeGrabFrame();
         else
             UnfreezeGrabFrame();
-
-        await Task.Delay(200);
-
-        reDrawTimer.Stop();
-        reDrawTimer.Start();
     }
 
     private void FreezeGrabFrame()
@@ -1257,6 +1260,8 @@ public partial class GrabFrame : Window
 
     private void UnfreezeGrabFrame()
     {
+        reDrawTimer.Stop();
+        ResetGrabFrame();
         Topmost = true;
         GrabFrameImage.Source = null;
         frameContentImageSource = null;
@@ -1265,6 +1270,7 @@ public partial class GrabFrame : Window
         FreezeToggleButton.IsChecked = false;
         this.Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
+        reDrawTimer.Start();
     }
 
     private void EditTextBTN_Click(object sender, RoutedEventArgs e)
