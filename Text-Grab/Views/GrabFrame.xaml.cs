@@ -192,6 +192,9 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Opacity = 1;
             wasAltHeld = false;
         }
+
+        if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+            RectanglesCanvas.Cursor = null;
     }
 
     private void CanPasteExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -232,6 +235,9 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Opacity = 0.1;
             wasAltHeld = true;
         }
+
+        if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+            RectanglesCanvas.Cursor = Cursors.Cross;
 
         if (e.Key == Key.Delete)
             HandleDelete(sender, e);
@@ -951,8 +957,8 @@ public partial class GrabFrame : Window
         Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
         Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
         wordBorderBox.EnterEdit();
-        wordBorderBox.Select();
         await Task.Delay(50);
+        wordBorderBox.Deselect();
         wordBorderBox.FocusTextbox();
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
