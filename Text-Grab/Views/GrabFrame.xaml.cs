@@ -233,8 +233,8 @@ public partial class GrabFrame : Window
             Height = bounds.Height,
             Word = sb.ToString(),
             OwnerGrabFrame = this,
-            Top = bounds.Top,
-            Left = bounds.Left,
+            Top = bounds.Top - 2,
+            Left = bounds.Left - 10,
             MatchingBackground = backgroundBrush,
         };
 
@@ -490,6 +490,7 @@ public partial class GrabFrame : Window
         if (!IsLoaded || IsFreezeMode || isMiddleDown)
             return;
 
+        ResetGrabFrame();
         reDrawTimer.Stop();
         reDrawTimer.Start();
     }
@@ -709,7 +710,7 @@ public partial class GrabFrame : Window
         bmp?.Dispose();
     }
 
-    private void TryToPlaceTable()
+    private void RemoveTableLines()
     {
         Canvas? tableLines = null;
 
@@ -718,6 +719,11 @@ public partial class GrabFrame : Window
                 tableLines = element;
 
         RectanglesCanvas.Children.Remove(tableLines);
+    }
+
+    private void TryToPlaceTable()
+    {
+        RemoveTableLines();
 
         Point windowPosition = this.GetAbsolutePosition();
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
@@ -866,9 +872,6 @@ public partial class GrabFrame : Window
 
     private void UpdateFrameText()
     {
-        if (TableToggleButton.IsChecked is true)
-            TryToPlaceTable();
-
         string[] selectedWbs = wordBorders
             .OrderBy(b => b.Top)
             .Where(w => w.IsSelected)
@@ -879,6 +882,7 @@ public partial class GrabFrame : Window
         if (TableToggleButton.IsChecked is true)
         {
             ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders.ToList(), isSpaceJoining);
+            TryToPlaceTable();
         }
         else
         {
@@ -1186,11 +1190,8 @@ public partial class GrabFrame : Window
 
     private void TableToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        TextBox searchBox = SearchBox;
-        ResetGrabFrame();
-
-        reDrawTimer.Stop();
-        reDrawTimer.Start();
+        RemoveTableLines();
+        UpdateFrameText();
     }
 
     private void EditToggleButton_Click(object sender, RoutedEventArgs e)
