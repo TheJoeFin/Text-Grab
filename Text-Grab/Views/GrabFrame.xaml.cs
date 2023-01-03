@@ -937,15 +937,30 @@ public partial class GrabFrame : Window
             return;
         }
 
-        selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
-
         Canvas.SetLeft(selectBorder, left);
+
+        if (isCtrlDown)
+        {
+            double smallestHeight = 6;
+            double largestHeight = 50;
+
+            if (wordBorders.Count > 4)
+            {
+                smallestHeight = wordBorders.Select(x => x.Height).Min();
+                largestHeight = wordBorders.Select(x => x.Height).Max();
+            }
+
+            selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight + 10);
+            selectBorder.Height = Math.Round(selectBorder.Height / 5.0) * 5;
+
+            return;
+        }
+
+        selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         Canvas.SetTop(selectBorder, top);
 
-        
-        if (!isCtrlDown)
-            CheckSelectBorderIntersections();
+        CheckSelectBorderIntersections();
     }
 
     private void CheckSelectBorderIntersections(bool finalCheck = false)
