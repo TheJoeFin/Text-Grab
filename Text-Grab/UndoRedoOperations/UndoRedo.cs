@@ -105,7 +105,7 @@ class UndoRedo
 
     public void Undo()
     {
-        if (UndoStack.Count == 0)
+        if (UndoStack.Count == 0 || UndoStack.Last is null)
             return;
 
         var operationNode = UndoStack.Last;
@@ -130,7 +130,7 @@ class UndoRedo
 
     public void Redo()
     {
-        if (RedoStack.Count == 0)
+        if (RedoStack.Count == 0 || RedoStack.Last is null)
             return;
 
         var operationNode = RedoStack.Last;
