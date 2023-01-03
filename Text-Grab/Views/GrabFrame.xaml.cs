@@ -18,6 +18,7 @@ using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.UndoRedoOperations;
 using Text_Grab.Utilities;
 using Windows.Globalization;
 using Windows.Media.Ocr;
@@ -47,6 +48,12 @@ public partial class GrabFrame : Window
     private bool isSpaceJoining = true;
 
     private ResultTable? AnalyedResultTable;
+
+    private UndoRedo UndoRedo = new();
+
+    private bool CanUndo => UndoRedo.HasUndoOperations();
+
+    private bool CanRedo => UndoRedo.HasRedoOperations();
 
     public bool IsFromEditWindow
     {
@@ -105,6 +112,19 @@ public partial class GrabFrame : Window
         RoutedCommand newCmd = new();
         _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
         _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
+
+        _ = UndoRedo.HasUndoOperations();
+        _ = UndoRedo.HasRedoOperations();
+    }
+
+    public void OnUndo()
+    {
+        UndoRedo.Undo();
+    }
+
+    public void OnRedo()
+    {
+        UndoRedo.Redo();
     }
 
     public void GrabFrame_Loaded(object sender, RoutedEventArgs e)
@@ -215,6 +235,12 @@ public partial class GrabFrame : Window
 
         if (e.Key == Key.Delete)
             HandleDelete(sender, e);
+
+        if (e.Key == Key.Z && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
+            OnUndo();
+        
+        if (e.Key == Key.Y && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
+            OnRedo();
     }
 
     private void HandleDelete(object sender, KeyEventArgs e)
@@ -224,11 +250,25 @@ public partial class GrabFrame : Window
             return;
 
         List<WordBorder> selectedWordBorders = wordBorders.Where(x => x.IsSelected).ToList();
+
+        if (selectedWordBorders.Count == 0)
+            return;
+
+        UndoRedo.StartTransaction();
+        
         foreach (var wordBorder in selectedWordBorders)
         {
             RectanglesCanvas.Children.Remove(wordBorder);
             wordBorders.Remove(wordBorder);
         }
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs() 
+            { RemovingWordBorders = selectedWordBorders,
+              WordBorders = wordBorders,
+              GrabFrameCanvas = RectanglesCanvas
+            });
+
+        UndoRedo.EndTransaction();
 
         UpdateFrameText();
     }
@@ -893,6 +933,8 @@ public partial class GrabFrame : Window
         if (bmp is not null)
             backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
 
+        UndoRedo.StartTransaction();
+
         WordBorder wordBorderBox = new()
         {
             Width = selectBorder.Width,
@@ -913,6 +955,14 @@ public partial class GrabFrame : Window
         await Task.Delay(50);
         wordBorderBox.FocusTextbox();
 
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                WordBorder = wordBorderBox,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+        UndoRedo.EndTransaction();
         UpdateFrameText();
     }
 

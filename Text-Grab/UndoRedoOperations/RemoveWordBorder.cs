@@ -7,31 +7,37 @@ namespace Text_Grab.UndoRedoOperations;
 
 internal class RemoveWordBorder : Operation, IUndoRedoOperation
 {
-    public RemoveWordBorder(uint transactionId, WordBorder wordBorder,
-        Canvas canvas, List<WordBorder> wordBorders) : base(transactionId)
+    public RemoveWordBorder(uint transactionId, List<WordBorder> removingWordBorders,
+        Canvas canvas, ICollection<WordBorder> wordBorders) : base(transactionId)
     {
-        WordBorder = wordBorder;
+        RemovingWordBorders = removingWordBorders;
         Canvas = canvas;
         WordBorders = wordBorders;
     }
 
-    private WordBorder WordBorder;
-
+    private List<WordBorder> RemovingWordBorders;
+    
     private Canvas Canvas;
 
-    private List<WordBorder> WordBorders;
+    private ICollection<WordBorder> WordBorders;
 
     public UndoRedoOperation GetUndoRedoOperation() => UndoRedoOperation.AddWordBorder;
 
     public void Undo()
     {
-        Canvas.Children.Add(WordBorder);
-        WordBorders.Add(WordBorder);
+        foreach (WordBorder wordBorder in RemovingWordBorders)
+        {
+            Canvas.Children.Add(wordBorder);
+            WordBorders.Add(wordBorder);
+        }
     }
 
     public void Redo()
     {
-        Canvas.Children.Remove(WordBorder);
-        WordBorders.Remove(WordBorder);
+        foreach (WordBorder wordBorder in RemovingWordBorders)
+        {
+            Canvas.Children.Remove(wordBorder);
+            WordBorders.Remove(wordBorder);
+        }
     }
 }

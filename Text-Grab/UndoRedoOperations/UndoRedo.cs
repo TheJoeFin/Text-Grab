@@ -19,8 +19,6 @@ class UndoRedo
 
     private LinkedList<IUndoRedoOperation> UndoStack { get; } = new();
 
-    // private UndoRedoStrokeManager StrokeManager { get; } = new();
-
     // used for readability.
     public void StartTransaction()
     {
@@ -100,7 +98,7 @@ class UndoRedo
         new AddWordBorder(TransactionId, args.WordBorder, args.GrabFrameCanvas, args.WordBorders));
 
     private void InsertRemoveWordBorderOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
-        new RemoveWordBorder(TransactionId, args.WordBorder, args.GrabFrameCanvas, args.WordBorders));
+        new RemoveWordBorder(TransactionId, args.RemovingWordBorders, args.GrabFrameCanvas, args.WordBorders));
 
     private void InsertResizeWordBorderOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
         new ResizeWordBorder(TransactionId, args.WordBorder, args.OldSize, args.NewSize));

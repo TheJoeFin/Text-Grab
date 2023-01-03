@@ -36,9 +36,11 @@ public struct GrabFrameOperationArgs
 {
     public Canvas GrabFrameCanvas { get; set; }
 
-    public List<WordBorder> WordBorders { get; set; }
+    public ICollection<WordBorder> WordBorders { get; set; }
 
     public WordBorder WordBorder { get; set; }
+
+    public List<WordBorder> RemovingWordBorders { get; set; }
 
     public Size OldSize { get; set; }
 
