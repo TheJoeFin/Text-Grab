@@ -67,12 +67,6 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
-            <Image
-                x:Name="GrabFrameImage"
-                Grid.Row="1"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Stretch="Uniform" />
             <Grid
                 Grid.Row="0"
                 VerticalAlignment="Top"
@@ -160,36 +154,47 @@
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
-                <Canvas
-                    x:Name="RectanglesCanvas"
-                    Margin="-4,-2,0,0"
-                    Background="Transparent"
-                    Focusable="True"
-                    IsHitTestVisible="True"
-                    MouseDown="RectanglesCanvas_MouseDown"
-                    MouseMove="RectanglesCanvas_MouseMove"
-                    MouseUp="RectanglesCanvas_MouseUp">
-                    <Canvas.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem
-                                x:Name="AspectRationMI"
-                                Checked="AspectRationMI_Checked"
-                                Header="Maintain Aspect Ratio"
-                                IsCheckable="True"
-                                IsChecked="True"
-                                Unchecked="AspectRationMI_Checked" />
-                            <MenuItem
-                                x:Name="FreezeMI"
-                                Click="FreezeMI_Click"
-                                Header="Toggle Freeze" />
-                            <Separator />
-                            <MenuItem
-                                Command="{x:Static local:GrabFrame.PasteCommand}"
-                                Header="Paste Image"
-                                InputGestureText="Ctrl + Shift + V" />
-                        </ContextMenu>
-                    </Canvas.ContextMenu>
-                </Canvas>
+                <Viewbox>
+                    <Grid>
+                        <Image
+                            x:Name="GrabFrameImage"
+                            Grid.Row="1"
+                            Opacity="0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Stretch="Uniform" />
+                        <Canvas
+                            x:Name="RectanglesCanvas"
+                            Margin="-4,-2,0,0"
+                            Background="Transparent"
+                            Focusable="True"
+                            IsHitTestVisible="True"
+                            MouseDown="RectanglesCanvas_MouseDown"
+                            MouseMove="RectanglesCanvas_MouseMove"
+                            MouseUp="RectanglesCanvas_MouseUp">
+                            <Canvas.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem
+                                        x:Name="AspectRationMI"
+                                        Checked="AspectRationMI_Checked"
+                                        Header="Maintain Aspect Ratio"
+                                        IsCheckable="True"
+                                        IsChecked="True"
+                                        Unchecked="AspectRationMI_Checked" />
+                                    <MenuItem
+                                        x:Name="FreezeMI"
+                                        Click="FreezeMI_Click"
+                                        Header="Toggle Freeze" />
+                                    <Separator />
+                                    <MenuItem
+                                        Command="{x:Static local:GrabFrame.PasteCommand}"
+                                        Header="Paste Image"
+                                        InputGestureText="Ctrl + Shift + V" />
+                                </ContextMenu>
+                            </Canvas.ContextMenu>
+                        </Canvas>
+                    </Grid>
+                </Viewbox>
             </Border>
             <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
                 <Grid

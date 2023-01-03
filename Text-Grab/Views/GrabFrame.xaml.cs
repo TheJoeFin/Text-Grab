@@ -187,6 +187,8 @@ public partial class GrabFrame : Window
 
     public void MergeSelectedWordBorders()
     {
+        FreezeGrabFrame();
+
         List<WordBorder> selectedWordBorders = wordBorders.Where(w => w.IsSelected).OrderBy(o => o.Left).ToList();
 
         Rect bounds = new()
@@ -336,6 +338,8 @@ public partial class GrabFrame : Window
 
     private void DeleteSelectedWordBorders()
     {
+        FreezeGrabFrame();
+
         List<WordBorder> selectedWordBorders = wordBorders.Where(x => x.IsSelected).ToList();
 
         if (selectedWordBorders.Count == 0)
@@ -446,6 +450,7 @@ public partial class GrabFrame : Window
         }
 
         frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+        GrabFrameImage.Source = frameContentImageSource;
         if (SearchBox.Text is string searchText)
             await DrawRectanglesAroundWords(searchText);
     }
@@ -497,7 +502,7 @@ public partial class GrabFrame : Window
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (!IsLoaded)
+        if (!IsLoaded || IsFreezeMode)
             return;
 
         ResetGrabFrame();
@@ -1023,6 +1028,8 @@ public partial class GrabFrame : Window
 
     private async void AddNewWordBorder(Border selectBorder)
     {
+        FreezeGrabFrame();
+
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
@@ -1242,6 +1249,7 @@ public partial class GrabFrame : Window
 
     private void FreezeGrabFrame()
     {
+        GrabFrameImage.Opacity = 1;
         if (droppedImageSource is not null)
             GrabFrameImage.Source = droppedImageSource;
         else if (frameContentImageSource is not null)
@@ -1264,7 +1272,7 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         ResetGrabFrame();
         Topmost = true;
-        GrabFrameImage.Source = null;
+        GrabFrameImage.Opacity = 0;
         frameContentImageSource = null;
         droppedImageSource = null;
         RectanglesBorder.Background.Opacity = 0.05;
@@ -1303,14 +1311,14 @@ public partial class GrabFrame : Window
 
         Activate();
         Uri fileURI = new(fileName);
-        droppedImageSource = null;
+        frameContentImageSource = null;
 
         try
         {
             ResetGrabFrame();
             await Task.Delay(300);
             BitmapImage droppedImage = new(fileURI);
-            droppedImageSource = droppedImage;
+            frameContentImageSource = droppedImage;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
         }
