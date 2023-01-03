@@ -232,7 +232,6 @@ public partial class GrabFrame : Window
             Width = bounds.Width,
             Height = bounds.Height,
             Word = sb.ToString(),
-            ToolTip = sb.ToString(),
             OwnerGrabFrame = this,
             Top = bounds.Top,
             Left = bounds.Left,
@@ -610,7 +609,6 @@ public partial class GrabFrame : Window
                 Left = lineRect.X,
                 Word = lineText.ToString().Trim(),
                 OwnerGrabFrame = this,
-                ToolTip = lineText,
                 LineNumber = lineNumber,
                 IsFromEditWindow = IsFromEditWindow,
                 MatchingBackground = backgroundBrush,
@@ -1009,12 +1007,24 @@ public partial class GrabFrame : Window
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
 
+        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
+        if (currentLang is null)
+            currentLang = LanguageUtilities.GetOCRLanguage();
+        System.Drawing.Rectangle rectangle = new()
+        {
+            X = (int)Canvas.GetLeft(selectBorder) - 2,
+            Y = (int)Canvas.GetTop(selectBorder) + 24,
+            Width = (int)selectBorder.Width,
+            Height = (int)selectBorder.Height
+        };
+        string ocrText = await OcrExtensions.GetRegionsText(this, rectangle, currentLang);
+
         if (frameContentImageSource is BitmapImage bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
 
         Rect lineRect = new()
         {
-            X = Canvas.GetLeft(selectBorder) * windowFrameImageScale,
+            X = (Canvas.GetLeft(selectBorder) * windowFrameImageScale) - 10,
             Y = Canvas.GetTop(selectBorder) * windowFrameImageScale,
             Width = selectBorder.Width * windowFrameImageScale,
             Height = selectBorder.Height * windowFrameImageScale,
@@ -1027,10 +1037,9 @@ public partial class GrabFrame : Window
 
         WordBorder wordBorderBox = new()
         {
-            Width = selectBorder.Width,
+            Width = selectBorder.Width + 14,
             Height = selectBorder.Height,
-            Word = " ",
-            ToolTip = " ",
+            Word = ocrText.MakeStringSingleLine(),
             OwnerGrabFrame = this,
             Top = Canvas.GetTop(selectBorder),
             Left = Canvas.GetLeft(selectBorder),
