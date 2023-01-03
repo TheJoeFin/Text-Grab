@@ -185,6 +185,83 @@ public partial class GrabFrame : Window
         GrabBTN.Click -= GrabBTN_Click;
     }
 
+    public void MergeSelectedWordBorders()
+    {
+        List<WordBorder> selectedWordBorders = wordBorders.Where(w => w.IsSelected).ToList();
+
+        Rect bounds = new()
+        {
+            X = selectedWordBorders.Select(w => w.Left).Min(),
+            Y = selectedWordBorders.Select(w => w.Top).Min(),
+            Width = selectedWordBorders.Select(w => w.Right).Max() - selectedWordBorders.Select(w => w.Left).Min(),
+            Height = selectedWordBorders.Select(w => w.Bottom).Max() - selectedWordBorders.Select(w => w.Top).Min()
+        };
+
+        DeleteSelectedWordBorders();
+
+        StringBuilder sb = new();
+        List<string> words = new();
+
+        foreach (WordBorder wb in selectedWordBorders)
+            words.Add(wb.Word);
+
+        sb.AppendJoin(' ', words.ToArray());
+
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        SolidColorBrush backgroundBrush = new(Colors.Black);
+        System.Drawing.Bitmap? bmp = null;
+
+        if (frameContentImageSource is BitmapImage bmpImg)
+            bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+
+        Rect lineRect = new()
+        {
+            X = bounds.X * windowFrameImageScale,
+            Y = bounds.Y * windowFrameImageScale,
+            Width = bounds.Width * windowFrameImageScale,
+            Height = bounds.Height * windowFrameImageScale,
+        };
+
+        if (bmp is not null)
+            backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
+
+        UndoRedo.StartTransaction();
+
+        WordBorder wordBorderBox = new()
+        {
+            Width = bounds.Width,
+            Height = bounds.Height,
+            Word = sb.ToString(),
+            ToolTip = sb.ToString(),
+            OwnerGrabFrame = this,
+            Top = bounds.Top,
+            Left = bounds.Left,
+            MatchingBackground = backgroundBrush,
+        };
+
+        wordBorders.Add(wordBorderBox);
+        _ = RectanglesCanvas.Children.Add(wordBorderBox);
+        Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
+        Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                WordBorder = wordBorderBox,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+        UndoRedo.EndTransaction();
+        // Get a Result Table of the selected borders
+
+        // Go from 0,0 from the top down, left to right adding to word Border
+    }
+
+    public void BreakWordBorderIntoWords(WordBorder wordBorder)
+    {
+
+    }
+
     private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
     {
         if (wasAltHeld && (e.SystemKey == Key.LeftAlt || e.SystemKey == Key.RightAlt))
@@ -240,38 +317,44 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Cursor = Cursors.Cross;
 
         if (e.Key == Key.Delete)
-            HandleDelete(sender, e);
+            HandleDelete();
 
         if (e.Key == Key.Z && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
             OnUndo();
-        
+
         if (e.Key == Key.Y && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
             OnRedo();
     }
 
-    private void HandleDelete(object sender, KeyEventArgs e)
+    private void HandleDelete()
     {
         bool editingAnyWordBorders = wordBorders.Any(x => x.IsEditing);
         if (editingAnyWordBorders)
             return;
 
+        DeleteSelectedWordBorders();
+    }
+
+    private void DeleteSelectedWordBorders()
+    {
         List<WordBorder> selectedWordBorders = wordBorders.Where(x => x.IsSelected).ToList();
 
         if (selectedWordBorders.Count == 0)
             return;
 
         UndoRedo.StartTransaction();
-        
+
         foreach (var wordBorder in selectedWordBorders)
         {
             RectanglesCanvas.Children.Remove(wordBorder);
             wordBorders.Remove(wordBorder);
         }
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
-            new GrabFrameOperationArgs() 
-            { RemovingWordBorders = selectedWordBorders,
-              WordBorders = wordBorders,
-              GrabFrameCanvas = RectanglesCanvas
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = selectedWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
             });
 
         UndoRedo.EndTransaction();
@@ -526,6 +609,7 @@ public partial class GrabFrame : Window
                 Top = lineRect.Y,
                 Left = lineRect.X,
                 Word = lineText.ToString().Trim(),
+                OwnerGrabFrame = this,
                 ToolTip = lineText,
                 LineNumber = lineNumber,
                 IsFromEditWindow = IsFromEditWindow,
@@ -622,7 +706,7 @@ public partial class GrabFrame : Window
         RectanglesCanvas.Children.Remove(tableLines);
 
         Point windowPosition = this.GetAbsolutePosition();
-        DpiScale dpi = VisualTreeHelper.GetDpi(this); 
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
         System.Drawing.Rectangle rectCanvasSize = new System.Drawing.Rectangle
         {
             Width = (int)((ActualWidth + 2) * dpi.DpiScaleX),
@@ -908,7 +992,7 @@ public partial class GrabFrame : Window
             reDrawTimer.Start();
             return;
         }
-        
+
         if (isCtrlDown)
             AddNewWordBorder(selectBorder);
 
@@ -947,6 +1031,7 @@ public partial class GrabFrame : Window
             Height = selectBorder.Height,
             Word = " ",
             ToolTip = " ",
+            OwnerGrabFrame = this,
             Top = Canvas.GetTop(selectBorder),
             Left = Canvas.GetLeft(selectBorder),
             MatchingBackground = backgroundBrush,

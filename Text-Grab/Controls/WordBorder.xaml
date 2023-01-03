@@ -84,7 +84,7 @@
                     Foreground="White"
                     Style="{StaticResource TransparentTextBox}"
                     Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    Visibility="Collapsed">
+                    Visibility="Visible">
                     <TextBox.ContextMenu>
                         <ContextMenu>
                             <MenuItem
@@ -95,6 +95,15 @@
                                 x:Name="TryToAlphaMenuItem"
                                 Click="TryToAlphaMenuItem_Click"
                                 Header="Try To Make _Letters" />
+                            <Separator />
+                            <MenuItem
+                                x:Name="MergeWordBordersMenuItem"
+                                Click="MergeWordBordersMenuItem_Click"
+                                Header="Merge Selected Word Borders" />
+                            <MenuItem
+                                x:Name="BreakIntoWordsMenuItem"
+                                Click="BreakIntoWordsMenuItem_Click"
+                                Header="Break into words" />
                         </ContextMenu>
                     </TextBox.ContextMenu>
                 </TextBox>

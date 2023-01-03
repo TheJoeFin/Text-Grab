@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Text_Grab.Views;
 
 namespace Text_Grab.Controls;
 
@@ -72,7 +73,13 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public double Left { get; set; } = 0;
 
+    public double Right => Left + Width;
+
+    public double Bottom => Top + Height;
+
     public bool IsFromEditWindow { get; set; } = false;
+
+    public GrabFrame? OwnerGrabFrame { get; set; }
 
     public WordBorder()
     {
@@ -85,9 +92,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void Select()
     {
         IsSelected = true;
-        WordBorderBorder.BorderBrush = new SolidColorBrush(Colors.Yellow);
-        EditWordTextBox.Foreground = new SolidColorBrush(Colors.Yellow);
-        MainGrid.Background = new SolidColorBrush(Colors.Black);
+        WordBorderBorder.BorderBrush = new SolidColorBrush(Colors.Orange);
     }
 
     public void Deselect()
@@ -143,7 +148,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;
 
-        int maxBaseSize = 2;
+        int maxBaseSize = 5;
         while (textBoxContextMenu.Items.Count > maxBaseSize)
         {
             EditWordTextBox.ContextMenu?.Items.RemoveAt(maxBaseSize);
@@ -214,6 +219,22 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
     {
         Word = Word.TryFixToLetters();
+    }
+
+    private void BreakIntoWordsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (OwnerGrabFrame is null)
+            return;
+
+        OwnerGrabFrame.BreakWordBorderIntoWords(this);
+    }
+
+    private void MergeWordBordersMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (OwnerGrabFrame is null)
+            return;
+
+        OwnerGrabFrame.MergeSelectedWordBorders();
     }
 
     private void WordBorderControl_Unloaded(object sender, RoutedEventArgs e)
