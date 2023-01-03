@@ -266,7 +266,7 @@ public partial class EditTextWindow : Window
                     && string.IsNullOrWhiteSpace(OpenedFilePath)
                     && !LaunchedFromNotification)
         {
-            WindowUtilities.LaunchFullScreenGrab(true, false, PassedTextControl);
+            WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
             LaunchFullscreenOnLoad.IsChecked = true;
             prevWindowState = this.WindowState;
             WindowState = WindowState.Minimized;
@@ -691,7 +691,7 @@ public partial class EditTextWindow : Window
 
     private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(openAnyway: true, destinationTextBox: PassedTextControl);
+        WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
     private void keyedCtrlG(object sender, ExecutedRoutedEventArgs e)
@@ -1013,7 +1013,7 @@ public partial class EditTextWindow : Window
 
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: PassedTextControl);
+        WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1259,7 +1259,7 @@ public partial class EditTextWindow : Window
 
     private void FullScreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: PassedTextControl);
+        WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1652,7 +1652,7 @@ public partial class EditTextWindow : Window
     private async void FSGDelayMenuItem_Click(object sender, RoutedEventArgs e)
     {
         await Task.Delay(2000);
-        WindowUtilities.LaunchFullScreenGrab(true, true, PassedTextControl);
+        WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
     private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)

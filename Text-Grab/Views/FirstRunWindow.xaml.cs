@@ -28,7 +28,7 @@ public partial class FirstRunWindow : Window
             switch (defaultLaunchSetting)
             {
                 case DefaultLaunchSetting.Fullscreen:
-                    WindowUtilities.LaunchFullScreenGrab(true);
+                    WindowUtilities.LaunchFullScreenGrab();
                     break;
                 case DefaultLaunchSetting.GrabFrame:
                     WindowUtilities.OpenOrActivateWindow<GrabFrame>();
@@ -134,7 +134,7 @@ public partial class FirstRunWindow : Window
 
     private void TryFullscreen_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab(true);
+        WindowUtilities.LaunchFullScreenGrab();
     }
 
     private void TryGrabFrame_Click(object sender, RoutedEventArgs e)

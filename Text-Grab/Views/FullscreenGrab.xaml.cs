@@ -474,7 +474,10 @@ public partial class FullscreenGrab : Window
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
         GrabFrame grabFrame = new();
+        if (destinationTextBox is not null)
+            grabFrame.DestinationTextBox = destinationTextBox;
         grabFrame.Show();
+
         double posLeft = Canvas.GetLeft(selectBorder); // * dpi.DpiScaleX;
         double posTop = Canvas.GetTop(selectBorder); // * dpi.DpiScaleY;
         grabFrame.Left = posLeft + (absPosPoint.X / dpi.PixelsPerDip);
