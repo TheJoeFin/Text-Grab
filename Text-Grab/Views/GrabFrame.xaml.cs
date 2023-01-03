@@ -187,7 +187,7 @@ public partial class GrabFrame : Window
 
     public void MergeSelectedWordBorders()
     {
-        List<WordBorder> selectedWordBorders = wordBorders.Where(w => w.IsSelected).ToList();
+        List<WordBorder> selectedWordBorders = wordBorders.Where(w => w.IsSelected).OrderBy(o => o.Left).ToList();
 
         Rect bounds = new()
         {

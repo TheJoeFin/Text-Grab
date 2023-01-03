@@ -144,6 +144,19 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         EditWordTextBox.SelectAll();
     }
 
+    private void WordBorder_MouseEnter(object sender, RoutedEventArgs e)
+    {
+        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            MoveResizeBorder.Visibility = Visibility.Visible;
+        else
+            MoveResizeBorder.Visibility = Visibility.Collapsed;
+    }
+
+    private void WordBorder_MouseLeave(object sender, RoutedEventArgs e)
+    {
+        MoveResizeBorder.Visibility = Visibility.Collapsed;
+    }
+
     private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;

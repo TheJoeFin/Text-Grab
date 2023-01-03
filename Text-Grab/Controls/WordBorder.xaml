@@ -11,6 +11,9 @@
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
     ToolTip="{Binding Path=Word, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
     Unloaded="WordBorderControl_Unloaded"
+    MouseEnter="WordBorder_MouseEnter"
+    MouseMove="WordBorder_MouseEnter"
+    MouseLeave="WordBorder_MouseLeave"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -64,50 +67,61 @@
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <Border
-        x:Name="WordBorderBorder"
-        Margin="0,0,0,0"
-        BorderBrush="#308E98"
-        BorderThickness="8,0,0,1"
-        CornerRadius="2">
-        <Grid x:Name="MainGrid" ClipToBounds="True">
-            <Viewbox x:Name="EditTextViewBox">
-                <TextBox
-                    x:Name="EditWordTextBox"
-                    MinWidth="10"
-                    MinHeight="14"
-                    Margin="-1,-3,-1,-1"
-                    d:Text="Test g"
-                    ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
-                    FontFamily="Segoe UI"
-                    FontWeight="Medium"
-                    Foreground="White"
-                    Style="{StaticResource TransparentTextBox}"
-                    Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    Visibility="Visible">
-                    <TextBox.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem
-                                x:Name="TryToNumberMenuItem"
-                                Click="TryToNumberMenuItem_Click"
-                                Header="Try To Make _Numbers" />
-                            <MenuItem
-                                x:Name="TryToAlphaMenuItem"
-                                Click="TryToAlphaMenuItem_Click"
-                                Header="Try To Make _Letters" />
-                            <Separator />
-                            <MenuItem
-                                x:Name="MergeWordBordersMenuItem"
-                                Click="MergeWordBordersMenuItem_Click"
-                                Header="Merge Selected Word Borders" />
-                            <MenuItem
-                                x:Name="BreakIntoWordsMenuItem"
-                                Click="BreakIntoWordsMenuItem_Click"
-                                Header="Break into words" />
-                        </ContextMenu>
-                    </TextBox.ContextMenu>
-                </TextBox>
-            </Viewbox>
-        </Grid>
-    </Border>
+    <Grid>
+        <Border
+            x:Name="WordBorderBorder"
+            Margin="0,0,0,0"
+            BorderBrush="#308E98"
+            BorderThickness="8,0,0,1"
+            CornerRadius="2">
+            <Grid x:Name="MainGrid" ClipToBounds="True">
+                <Viewbox x:Name="EditTextViewBox">
+                    <TextBox
+                        x:Name="EditWordTextBox"
+                        MinWidth="10"
+                        MinHeight="14"
+                        Margin="-1,-3,-1,-1"
+                        d:Text="Test g"
+                        ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
+                        FontFamily="Segoe UI"
+                        FontWeight="Medium"
+                        Foreground="White"
+                        Style="{StaticResource TransparentTextBox}"
+                        Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Visibility="Visible">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem
+                                    x:Name="TryToNumberMenuItem"
+                                    Click="TryToNumberMenuItem_Click"
+                                    Header="Try To Make _Numbers" />
+                                <MenuItem
+                                    x:Name="TryToAlphaMenuItem"
+                                    Click="TryToAlphaMenuItem_Click"
+                                    Header="Try To Make _Letters" />
+                                <Separator />
+                                <MenuItem
+                                    x:Name="MergeWordBordersMenuItem"
+                                    Click="MergeWordBordersMenuItem_Click"
+                                    Header="Merge Selected Word Borders" />
+                                <MenuItem
+                                    x:Name="BreakIntoWordsMenuItem"
+                                    Click="BreakIntoWordsMenuItem_Click"
+                                    Header="Break into words" />
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
+                </Viewbox>
+            </Grid>
+        </Border>
+        <Border 
+            Name="MoveResizeBorder"
+            BorderBrush="Gray"
+            Cursor="SizeAll"
+            BorderThickness="2"
+            Visibility="Collapsed"
+            Background="Transparent"
+            CornerRadius="2">
+        </Border>
+    </Grid>
 </UserControl>
