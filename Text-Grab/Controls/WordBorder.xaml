@@ -116,6 +116,7 @@
         </Border>
         <Border 
             Name="MoveResizeBorder"
+            MouseDown="MoveResizeBorder_MouseDown"
             BorderBrush="Gray"
             Cursor="SizeAll"
             BorderThickness="2"

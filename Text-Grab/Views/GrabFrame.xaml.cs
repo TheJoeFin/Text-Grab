@@ -39,6 +39,8 @@ public partial class GrabFrame : Window
     private DispatcherTimer reDrawTimer = new();
     private bool isSelecting;
     private Point clickedPoint;
+    private WordBorder? movingWordBorder;
+    private Point startingMovingPoint;
     private Border selectBorder = new();
 
     private ImageSource? frameContentImageSource;
@@ -235,15 +237,13 @@ public partial class GrabFrame : Window
             Height = bounds.Height,
             Word = sb.ToString(),
             OwnerGrabFrame = this,
-            Top = bounds.Top - 2,
-            Left = bounds.Left - 10,
+            Top = bounds.Top,
+            Left = bounds.Left,
             MatchingBackground = backgroundBrush,
         };
 
         wordBorders.Add(wordBorderBox);
         _ = RectanglesCanvas.Children.Add(wordBorderBox);
-        Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
-        Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
             new GrabFrameOperationArgs()
@@ -256,6 +256,12 @@ public partial class GrabFrame : Window
         // Get a Result Table of the selected borders
 
         // Go from 0,0 from the top down, left to right adding to word Border
+    }
+
+    public void StartWordBorderMove(WordBorder wordBorder, MouseButtonEventArgs e)
+    {
+        movingWordBorder = wordBorder;
+        startingMovingPoint = new(wordBorder.Left, wordBorder.Top);
     }
 
     public void BreakWordBorderIntoWords(WordBorder wordBorder)
@@ -656,8 +662,6 @@ public partial class GrabFrame : Window
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
             wordBorderBox.Left = lineRect.Left / (dpi.DpiScaleX * windowFrameImageScale);
             wordBorderBox.Top = lineRect.Top / (dpi.DpiScaleY * windowFrameImageScale);
-            Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
-            Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
 
             lineNumber++;
         }
@@ -699,8 +703,8 @@ public partial class GrabFrame : Window
             wordBorder.Height += 4;
             double leftWB = Canvas.GetLeft(wordBorder);
             double topWB = Canvas.GetTop(wordBorder);
-            Canvas.SetLeft(wordBorder, leftWB - 10);
-            Canvas.SetTop(wordBorder, topWB - 2);
+            wordBorder.Left = leftWB - 10;
+            wordBorder.Top = topWB - 2;
             RectanglesCanvas.Children.Add(wordBorder);
         }
 
@@ -1004,6 +1008,7 @@ public partial class GrabFrame : Window
         isSelecting = false;
         CursorClipper.UnClipCursor();
         RectanglesCanvas.ReleaseMouseCapture();
+        movingWordBorder = null;
 
         if (e.ChangedButton == MouseButton.Middle)
         {
@@ -1074,8 +1079,6 @@ public partial class GrabFrame : Window
 
         wordBorders.Add(wordBorderBox);
         _ = RectanglesCanvas.Children.Add(wordBorderBox);
-        Canvas.SetLeft(wordBorderBox, wordBorderBox.Left);
-        Canvas.SetTop(wordBorderBox, wordBorderBox.Top);
         wordBorderBox.EnterEdit();
         await Task.Delay(50);
         wordBorderBox.Deselect();
@@ -1094,9 +1097,9 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
-        if (!isSelecting && !isMiddleDown)
+        if (!isSelecting && !isMiddleDown && movingWordBorder is null)
             return;
-
+        
         Point movingPoint = e.GetPosition(RectanglesCanvas);
 
         var left = Math.Min(clickedPoint.X, movingPoint.X);
@@ -1110,6 +1113,22 @@ public partial class GrabFrame : Window
             Top += yShiftDelta;
             Left += xShiftDelta;
 
+            return;
+        }
+
+        if (movingWordBorder is not null)
+        {
+            UndoRedo.StartTransaction();
+            movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
+            movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
+            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.MoveWordBorder,
+                new GrabFrameOperationArgs()
+                {
+                    WordBorder = movingWordBorder,
+                    OldPoint = new(startingMovingPoint.X, startingMovingPoint.Y),
+                    NewPoint = new(movingWordBorder.Left, movingWordBorder.Top)
+                });
+            UndoRedo.EndTransaction();
             return;
         }
 

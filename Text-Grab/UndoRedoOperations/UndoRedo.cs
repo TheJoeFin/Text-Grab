@@ -82,6 +82,9 @@ class UndoRedo
             case UndoRedoOperation.ResizeWordBorder:
                 InsertResizeWordBorderOperation((GrabFrameOperationArgs)operationArgs);
                 break;
+            case UndoRedoOperation.MoveWordBorder:
+                InsertMoveWordBorderOperation((GrabFrameOperationArgs)operationArgs);
+                break;
             case UndoRedoOperation.None:
             default:
                 break;
@@ -102,6 +105,9 @@ class UndoRedo
 
     private void InsertResizeWordBorderOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
         new ResizeWordBorder(TransactionId, args.WordBorder, args.OldSize, args.NewSize));
+
+    private void InsertMoveWordBorderOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
+        new MoveWordBorder(TransactionId, args.WordBorder, args.OldPoint, args.NewPoint));
 
     public void Undo()
     {

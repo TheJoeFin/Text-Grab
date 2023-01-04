@@ -45,4 +45,8 @@ public struct GrabFrameOperationArgs
     public Size OldSize { get; set; }
 
     public Size NewSize { get; set; }
+
+    public Point OldPoint { get; set; }
+
+    public Point NewPoint { get; set; }
 }

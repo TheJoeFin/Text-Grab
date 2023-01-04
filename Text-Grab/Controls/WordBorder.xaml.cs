@@ -69,9 +69,27 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public int ResultColumnID { get; set; } = 0;
 
-    public double Top { get; set; } = 0;
+    private double top = 0;
+    public double Top 
+    {
+        get { return top; }
+        set 
+        {
+            top = value;
+            Canvas.SetTop(this, top);
+        }
+    }
 
-    public double Left { get; set; } = 0;
+    private double left = 0;
+    public double Left
+    {
+        get { return left; }
+        set
+        {
+            left = value;
+            Canvas.SetLeft(this, left);
+        }
+    }
 
     public double Right => Left + Width;
 
@@ -258,5 +276,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         TryToAlphaMenuItem.Click -= TryToAlphaMenuItem_Click;
         TryToNumberMenuItem.Click -= TryToNumberMenuItem_Click;
+    }
+
+    private void MoveResizeBorder_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        OwnerGrabFrame?.StartWordBorderMove(this, e);
     }
 }
