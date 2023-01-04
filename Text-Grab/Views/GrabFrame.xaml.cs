@@ -510,10 +510,13 @@ public partial class GrabFrame : Window
         if (!IsLoaded || IsFreezeMode)
             return;
 
-        ResetGrabFrame();
         CheckBottomRowButtonsVis();
         SetRestoreState();
 
+        if (IsFreezeMode)
+            return;
+
+        ResetGrabFrame();
         reDrawTimer.Stop();
         reDrawTimer.Start();
     }
@@ -1003,7 +1006,7 @@ public partial class GrabFrame : Window
         Canvas.SetTop(selectBorder, clickedPoint.Y);
     }
 
-    private async void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+    private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
         isSelecting = false;
         CursorClipper.UnClipCursor();
@@ -1019,13 +1022,26 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (isCtrlDown && movingWordBorder is null)
+        if (movingWordBorder is not null)
+        {
+            UndoRedo.StartTransaction();
+            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.MoveWordBorder,
+                new GrabFrameOperationArgs()
+                {
+                    WordBorder = movingWordBorder,
+                    OldPoint = new(startingMovingPoint.X, startingMovingPoint.Y),
+                    NewPoint = new(movingWordBorder.Left, movingWordBorder.Top)
+                });
+            UndoRedo.EndTransaction();
+        }
+
+        if (isCtrlDown && movingWordBorder is null
+            && selectBorder.Height > 6 && selectBorder.Width > 6)
             AddNewWordBorder(selectBorder);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
         movingWordBorder = null;
-        await Task.Delay(50);
         CheckSelectBorderIntersections(true);
         isCtrlDown = false;
     }
@@ -1115,17 +1131,8 @@ public partial class GrabFrame : Window
 
         if (movingWordBorder is not null)
         {
-            UndoRedo.StartTransaction();
             movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
             movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
-            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.MoveWordBorder,
-                new GrabFrameOperationArgs()
-                {
-                    WordBorder = movingWordBorder,
-                    OldPoint = new(startingMovingPoint.X, startingMovingPoint.Y),
-                    NewPoint = new(movingWordBorder.Left, movingWordBorder.Top)
-                });
-            UndoRedo.EndTransaction();
             return;
         }
 
