@@ -374,7 +374,6 @@ public partial class GrabFrame : Window
             return;
 
         e.Handled = true;
-        ResetGrabFrame();
         double aspectRatio = (this.Height - 66) / (this.Width - 4);
 
         bool isShiftDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
@@ -986,7 +985,7 @@ public partial class GrabFrame : Window
             isCtrlDown = true;
         }
 
-        CursorClipper.ClipCursor(RectanglesCanvas);
+        CursorClipper.ClipCursor(RectanglesBorder);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch (Exception) { }
 
