@@ -38,6 +38,8 @@ public partial class GrabFrame : Window
     private DispatcherTimer reSearchTimer = new();
     private DispatcherTimer reDrawTimer = new();
     private bool isSelecting;
+    private bool isMiddleDown = false;
+    private bool isCtrlDown = false;
     private Point clickedPoint;
     private WordBorder? movingWordBorder;
     private Point startingMovingPoint;
@@ -958,9 +960,6 @@ public partial class GrabFrame : Window
             UpdateFrameText();
     }
 
-    private bool isMiddleDown = false;
-    private bool isCtrlDown = false;
-
     private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         GrabBTN.Focus();
@@ -1004,6 +1003,60 @@ public partial class GrabFrame : Window
         _ = RectanglesCanvas.Children.Add(selectBorder);
         Canvas.SetLeft(selectBorder, clickedPoint.X);
         Canvas.SetTop(selectBorder, clickedPoint.Y);
+    }
+
+    private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!isSelecting && !isMiddleDown && movingWordBorder is null)
+            return;
+
+        Point movingPoint = e.GetPosition(RectanglesCanvas);
+
+        var left = Math.Min(clickedPoint.X, movingPoint.X);
+        var top = Math.Min(clickedPoint.Y, movingPoint.Y);
+
+        if (isMiddleDown)
+        {
+            double xShiftDelta = (movingPoint.X - clickedPoint.X);
+            double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+
+            Top += yShiftDelta;
+            Left += xShiftDelta;
+
+            return;
+        }
+
+        if (movingWordBorder is not null)
+        {
+            movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
+            movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
+            return;
+        }
+
+        selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
+        Canvas.SetLeft(selectBorder, left);
+
+        if (isCtrlDown)
+        {
+            double smallestHeight = 6;
+            double largestHeight = 50;
+
+            if (wordBorders.Count > 4)
+            {
+                smallestHeight = wordBorders.Select(x => x.Height).Min();
+                largestHeight = wordBorders.Select(x => x.Height).Max();
+            }
+
+            selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight + 10);
+            selectBorder.Height = Math.Round(selectBorder.Height / 5.0) * 5;
+
+            return;
+        }
+
+        selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
+        Canvas.SetTop(selectBorder, top);
+
+        CheckSelectBorderIntersections();
     }
 
     private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
@@ -1106,60 +1159,6 @@ public partial class GrabFrame : Window
             });
         UndoRedo.EndTransaction();
         UpdateFrameText();
-    }
-
-    private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
-    {
-        if (!isSelecting && !isMiddleDown && movingWordBorder is null)
-            return;
-
-        Point movingPoint = e.GetPosition(RectanglesCanvas);
-
-        var left = Math.Min(clickedPoint.X, movingPoint.X);
-        var top = Math.Min(clickedPoint.Y, movingPoint.Y);
-
-        if (isMiddleDown)
-        {
-            double xShiftDelta = (movingPoint.X - clickedPoint.X);
-            double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
-
-            Top += yShiftDelta;
-            Left += xShiftDelta;
-
-            return;
-        }
-
-        if (movingWordBorder is not null)
-        {
-            movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
-            movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
-            return;
-        }
-
-        selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
-        Canvas.SetLeft(selectBorder, left);
-
-        if (isCtrlDown)
-        {
-            double smallestHeight = 6;
-            double largestHeight = 50;
-
-            if (wordBorders.Count > 4)
-            {
-                smallestHeight = wordBorders.Select(x => x.Height).Min();
-                largestHeight = wordBorders.Select(x => x.Height).Max();
-            }
-
-            selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight + 10);
-            selectBorder.Height = Math.Round(selectBorder.Height / 5.0) * 5;
-
-            return;
-        }
-
-        selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
-        Canvas.SetTop(selectBorder, top);
-
-        CheckSelectBorderIntersections();
     }
 
     private void CheckSelectBorderIntersections(bool finalCheck = false)
