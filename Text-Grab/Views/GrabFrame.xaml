@@ -154,7 +154,7 @@
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
-                <Viewbox>
+                <Viewbox Name="CanvasViewBox">
                     <Grid>
                         <Image
                             x:Name="GrabFrameImage"

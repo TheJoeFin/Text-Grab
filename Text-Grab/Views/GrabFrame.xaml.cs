@@ -1008,7 +1008,6 @@ public partial class GrabFrame : Window
         isSelecting = false;
         CursorClipper.UnClipCursor();
         RectanglesCanvas.ReleaseMouseCapture();
-        movingWordBorder = null;
 
         if (e.ChangedButton == MouseButton.Middle)
         {
@@ -1020,11 +1019,12 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (isCtrlDown)
+        if (isCtrlDown && movingWordBorder is null)
             AddNewWordBorder(selectBorder);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
+        movingWordBorder = null;
         await Task.Delay(50);
         CheckSelectBorderIntersections(true);
         isCtrlDown = false;
@@ -1042,15 +1042,10 @@ public partial class GrabFrame : Window
         if (currentLang is null)
             currentLang = LanguageUtilities.GetOCRLanguage();
 
-        Point renderedLocation = selectBorder.TranslatePoint(new Point(0, 0), this);
-        System.Drawing.Rectangle rectangle = new()
-        {
-            X = (int)(renderedLocation.X * dpi.DpiScaleX - 2) + (int)Left,
-            Y = (int)(renderedLocation.Y * dpi.DpiScaleY + 24) + (int)Top,
-            Width = (int)(selectBorder.Width * dpi.DpiScaleX),
-            Height = (int)(selectBorder.Height * dpi.DpiScaleY)
-        };
-        string ocrText = await OcrExtensions.GetRegionsText(this, rectangle, currentLang);
+        double zoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
+        Rect rect = selectBorder.GetAbsolutePlacement(true);
+        rect = new(rect.X + 4, rect.Y, rect.Width + 10, rect.Height);
+        string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(zoomFactor), currentLang);
 
         if (frameContentImageSource is BitmapImage bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
@@ -1070,12 +1065,12 @@ public partial class GrabFrame : Window
 
         WordBorder wordBorderBox = new()
         {
-            Width = selectBorder.Width + 14,
-            Height = selectBorder.Height,
+            Width = selectBorder.Width + 8,
+            Height = selectBorder.Height - 6,
             Word = ocrText.MakeStringSingleLine(),
             OwnerGrabFrame = this,
-            Top = Canvas.GetTop(selectBorder),
-            Left = Canvas.GetLeft(selectBorder),
+            Top = Canvas.GetTop(selectBorder) + 3,
+            Left = Canvas.GetLeft(selectBorder) - 4,
             MatchingBackground = backgroundBrush,
         };
 
@@ -1101,7 +1096,7 @@ public partial class GrabFrame : Window
     {
         if (!isSelecting && !isMiddleDown && movingWordBorder is null)
             return;
-        
+
         Point movingPoint = e.GetPosition(RectanglesCanvas);
 
         var left = Math.Min(clickedPoint.X, movingPoint.X);

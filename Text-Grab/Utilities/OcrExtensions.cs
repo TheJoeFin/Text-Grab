@@ -69,6 +69,14 @@ public static class OcrExtensions
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
+    public static async Task<string> GetTextFromAbsoluteRect(Rect rect, Language language)
+    {
+        Rectangle selectedRegion = ShapeExtensions.RectangleFromRect(rect);
+        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
+
+        return await GetTextFromEntireBitmap(bmp, language);
+    }
+
     public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language language)
     {
         Point absPosPoint = passedWindow.GetAbsolutePosition();
