@@ -1041,12 +1041,14 @@ public partial class GrabFrame : Window
         Language? currentLang = LanguagesComboBox.SelectedItem as Language;
         if (currentLang is null)
             currentLang = LanguageUtilities.GetOCRLanguage();
+
+        Point renderedLocation = selectBorder.TranslatePoint(new Point(0, 0), this);
         System.Drawing.Rectangle rectangle = new()
         {
-            X = (int)Canvas.GetLeft(selectBorder) - 2,
-            Y = (int)Canvas.GetTop(selectBorder) + 24,
-            Width = (int)selectBorder.Width,
-            Height = (int)selectBorder.Height
+            X = (int)(renderedLocation.X * dpi.DpiScaleX - 2) + (int)Left,
+            Y = (int)(renderedLocation.Y * dpi.DpiScaleY + 24) + (int)Top,
+            Width = (int)(selectBorder.Width * dpi.DpiScaleX),
+            Height = (int)(selectBorder.Height * dpi.DpiScaleY)
         };
         string ocrText = await OcrExtensions.GetRegionsText(this, rectangle, currentLang);
 
@@ -1055,10 +1057,10 @@ public partial class GrabFrame : Window
 
         Rect lineRect = new()
         {
-            X = (Canvas.GetLeft(selectBorder) * windowFrameImageScale) - 10,
-            Y = Canvas.GetTop(selectBorder) * windowFrameImageScale,
-            Width = selectBorder.Width * windowFrameImageScale,
-            Height = selectBorder.Height * windowFrameImageScale,
+            X = ((Canvas.GetLeft(selectBorder) * windowFrameImageScale) - 10) * dpi.DpiScaleX,
+            Y = (Canvas.GetTop(selectBorder) * windowFrameImageScale) * dpi.DpiScaleY,
+            Width = (selectBorder.Width * windowFrameImageScale) * dpi.DpiScaleX,
+            Height = (selectBorder.Height * windowFrameImageScale) * dpi.DpiScaleY,
         };
 
         if (bmp is not null)
