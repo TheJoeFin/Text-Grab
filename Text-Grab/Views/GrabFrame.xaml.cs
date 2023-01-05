@@ -205,7 +205,16 @@ public partial class GrabFrame : Window
             Height = selectedWordBorders.Select(w => w.Bottom).Max() - selectedWordBorders.Select(w => w.Top).Min()
         };
 
-        DeleteSelectedWordBorders();
+        UndoRedo.StartTransaction();
+
+        var deletedWordBorders = DeleteSelectedWordBorders();
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = deletedWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
 
         StringBuilder sb = new();
         List<string> words = new();
@@ -232,8 +241,6 @@ public partial class GrabFrame : Window
 
         if (bmp is not null)
             backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
-
-        UndoRedo.StartTransaction();
 
         WordBorder wordBorderBox = new()
         {
@@ -345,36 +352,37 @@ public partial class GrabFrame : Window
         if (editingAnyWordBorders)
             return;
 
-        DeleteSelectedWordBorders();
+        UndoRedo.StartTransaction();
+        var deletedWordBorders = DeleteSelectedWordBorders();
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = deletedWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+
+        UndoRedo.EndTransaction();
+        UpdateFrameText();
     }
 
-    private void DeleteSelectedWordBorders()
+    private List<WordBorder> DeleteSelectedWordBorders()
     {
         FreezeGrabFrame();
 
         List<WordBorder> selectedWordBorders = wordBorders.Where(x => x.IsSelected).ToList();
 
         if (selectedWordBorders.Count == 0)
-            return;
+            return selectedWordBorders;
 
-        UndoRedo.StartTransaction();
 
         foreach (var wordBorder in selectedWordBorders)
         {
             RectanglesCanvas.Children.Remove(wordBorder);
             wordBorders.Remove(wordBorder);
         }
-        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
-            new GrabFrameOperationArgs()
-            {
-                RemovingWordBorders = selectedWordBorders,
-                WordBorders = wordBorders,
-                GrabFrameCanvas = RectanglesCanvas
-            });
 
-        UndoRedo.EndTransaction();
-
-        UpdateFrameText();
+        return selectedWordBorders;
     }
 
     private void HandlePreviewMouseWheel(object sender, MouseWheelEventArgs e)
