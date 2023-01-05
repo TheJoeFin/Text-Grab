@@ -29,8 +29,6 @@ public partial class FullscreenGrab : Window
 
     private DpiScale? dpiScale;
 
-    private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
-
     double selectLeft;
     double selectTop;
 
@@ -38,8 +36,8 @@ public partial class FullscreenGrab : Window
     double yShiftDelta;
 
     private TextBox? destinationTextBox;
-    public TextBox? DestinationTextBox 
-    { 
+    public TextBox? DestinationTextBox
+    {
         get { return destinationTextBox; }
         set
         {
@@ -174,21 +172,18 @@ public partial class FullscreenGrab : Window
     private void SingleLineMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
-
         WindowUtilities.FullscreenKeyDown(Key.S, isActive);
     }
 
     private void NewGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
-
         WindowUtilities.FullscreenKeyDown(Key.G, isActive);
     }
 
     private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
-
         WindowUtilities.FullscreenKeyDown(Key.E, isActive);
     }
 
@@ -339,6 +334,12 @@ public partial class FullscreenGrab : Window
             (int)(selectBorder.Height * m.M22));
 
         string grabbedText = string.Empty;
+
+        if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
+        {
+            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            destinationTextBox = etw.PassedTextControl;
+        }
 
         if (NewGrabFrameMenuItem.IsChecked is true)
         {
@@ -517,12 +518,6 @@ public partial class FullscreenGrab : Window
         if (Settings.Default.ShowToast
             && destinationTextBox is null)
             NotificationUtilities.ShowToast(grabbedText);
-
-        if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
-        {
-            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-            destinationTextBox = etw.PassedTextControl;
-        }
 
         if (destinationTextBox is not null)
         {
