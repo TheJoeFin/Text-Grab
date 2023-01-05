@@ -41,7 +41,7 @@ public partial class GrabFrame : Window
     private bool isMiddleDown = false;
     private bool isCtrlDown = false;
     private Point clickedPoint;
-    private Side? resizingSide;
+    private Side resizingSide = Side.None;
     private Rect? oldSize;
     private WordBorder? movingWordBorder;
     private Point startingMovingPoint;
@@ -1027,63 +1027,15 @@ public partial class GrabFrame : Window
 
         if (isMiddleDown)
         {
-            double xShiftDelta = (movingPoint.X - clickedPoint.X);
-            double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
-
-            Top += yShiftDelta;
-            Left += xShiftDelta;
-
+            MoveWindowWithMiddleMouse(movingPoint);
             return;
         }
 
         if (movingWordBorder is not null)
         {
             FreezeGrabFrame();
-            if (resizingSide is not null && oldSize is not null)
-            {
-                double xShiftDelta = (movingPoint.X - clickedPoint.X);
-                double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
 
-                switch (resizingSide)
-                {
-                    case Side.Left:
-                        double newWidth = oldSize.Value.Width - xShiftDelta;
-                        if (newWidth > 20)
-                        {
-                            movingWordBorder.Width = newWidth;
-                            Canvas.SetLeft(movingWordBorder, Canvas.GetLeft(movingWordBorder) + xShiftDelta);
-                        }
-                        movingWordBorder.Width = newWidth;
-                        movingWordBorder.Left = movingPoint.X;
-                        break;
-                    case Side.Right:
-                        double newRight = movingPoint.X - movingWordBorder.Left;
-                        if (newRight > 20)
-                            movingWordBorder.Width = newRight;
-                        break;
-                    case Side.Bottom:
-                        double newBottom = movingPoint.Y - movingWordBorder.Top;
-                        if (newBottom > 12)
-                            movingWordBorder.Height = newBottom;
-                        break;
-                    case Side.Top:
-                        double newHeight = oldSize.Value.Height - yShiftDelta;
-                        if (newHeight > 12)
-                        {
-                            movingWordBorder.Height = newHeight;
-                            movingWordBorder.Top = movingPoint.Y;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else
-            {
-                movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
-                movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
-            }
-
+            MoveResizeWordBorder(movingPoint, oldSize ?? new Rect());
             return;
         }
 
@@ -1092,18 +1044,7 @@ public partial class GrabFrame : Window
 
         if (isCtrlDown)
         {
-            double smallestHeight = 6;
-            double largestHeight = 50;
-
-            if (wordBorders.Count > 4)
-            {
-                smallestHeight = wordBorders.Select(x => x.Height).Min();
-                largestHeight = wordBorders.Select(x => x.Height).Max();
-            }
-
-            selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight + 10);
-            selectBorder.Height = Math.Round(selectBorder.Height / 5.0) * 5;
-
+            UpdateSelectBorderForNewWordBorder(movingPoint);
             return;
         }
 
@@ -1132,7 +1073,7 @@ public partial class GrabFrame : Window
         if (movingWordBorder is not null)
         {
             UndoRedo.StartTransaction();
-            if (oldSize is not null && resizingSide is not null)
+            if (oldSize is not null && resizingSide != Side.None)
             {
                 UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ResizeWordBorder,
                     new GrabFrameOperationArgs()
@@ -1163,9 +1104,78 @@ public partial class GrabFrame : Window
 
         movingWordBorder = null;
         oldSize = null;
-        resizingSide = null;
+        resizingSide = Side.None;
         CheckSelectBorderIntersections(true);
         isCtrlDown = false;
+    }
+
+    private void UpdateSelectBorderForNewWordBorder(Point movingPoint)
+    {
+        double smallestHeight = 6;
+        double largestHeight = 50;
+
+        if (wordBorders.Count > 4)
+        {
+            smallestHeight = wordBorders.Select(x => x.Height).Min();
+            largestHeight = wordBorders.Select(x => x.Height).Max();
+        }
+
+        selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight + 10);
+        selectBorder.Height = Math.Round(selectBorder.Height / 3.0) * 3;
+    }
+
+    private void MoveResizeWordBorder(Point movingPoint, Rect prevSize)
+    {
+        if (movingWordBorder is null)
+            return;
+
+        double xShiftDelta = (movingPoint.X - clickedPoint.X);
+        double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+
+        switch (resizingSide)
+        {
+            case Side.Left:
+                double newWidth = prevSize.Width - xShiftDelta;
+                if (newWidth > 20)
+                {
+                    movingWordBorder.Width = newWidth;
+                    Canvas.SetLeft(movingWordBorder, Canvas.GetLeft(movingWordBorder) + xShiftDelta);
+                }
+                movingWordBorder.Width = newWidth;
+                movingWordBorder.Left = movingPoint.X;
+                break;
+            case Side.Right:
+                double newRight = movingPoint.X - movingWordBorder.Left;
+                if (newRight > 20)
+                    movingWordBorder.Width = newRight;
+                break;
+            case Side.Bottom:
+                double newBottom = movingPoint.Y - movingWordBorder.Top;
+                if (newBottom > 12)
+                    movingWordBorder.Height = newBottom;
+                break;
+            case Side.Top:
+                double newHeight = prevSize.Height - yShiftDelta;
+                if (newHeight > 12)
+                {
+                    movingWordBorder.Height = newHeight;
+                    movingWordBorder.Top = movingPoint.Y;
+                }
+                break;
+            default:
+                movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
+                movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
+                break;
+        }
+    }
+
+    private void MoveWindowWithMiddleMouse(Point movingPoint)
+    {
+        double xShiftDelta = (movingPoint.X - clickedPoint.X);
+        double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+
+        Top += yShiftDelta;
+        Left += xShiftDelta;
     }
 
     private async void AddNewWordBorder(Border selectBorder)

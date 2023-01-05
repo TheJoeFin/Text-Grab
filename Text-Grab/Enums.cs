@@ -30,8 +30,9 @@ public enum CurrentCase
 
 public enum Side
 {
-    Left = 0,
-    Right = 1,
-    Top = 2,
-    Bottom = 3
+    None = 0,
+    Left = 1,
+    Right = 2,
+    Top = 3,
+    Bottom = 4
 }
