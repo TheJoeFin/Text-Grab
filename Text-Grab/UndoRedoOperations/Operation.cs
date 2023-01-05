@@ -17,7 +17,6 @@ public enum UndoRedoOperation
     None,
     AddWordBorder,
     RemoveWordBorder,
-    MoveWordBorder,
     ResizeWordBorder,
 }
 
@@ -45,8 +44,4 @@ public struct GrabFrameOperationArgs
     public Rect OldSize { get; set; }
 
     public Rect NewSize { get; set; }
-
-    public Point OldPoint { get; set; }
-
-    public Point NewPoint { get; set; }
 }

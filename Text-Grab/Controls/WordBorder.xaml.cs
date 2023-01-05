@@ -70,10 +70,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public int ResultColumnID { get; set; } = 0;
 
     private double top = 0;
-    public double Top 
+    public double Top
     {
         get { return top; }
-        set 
+        set
         {
             top = value;
             Canvas.SetTop(this, top);
@@ -280,7 +280,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private void MoveResizeBorder_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        OwnerGrabFrame?.StartWordBorderMove(this, e);
+        OwnerGrabFrame?.StartWordBorderMoveResize(this, Side.None);
     }
 
     private void SizeHandle_MouseDown(object sender, MouseButtonEventArgs e)
@@ -291,6 +291,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         if (side is not Side sideEnum)
             return;
-        OwnerGrabFrame?.StartWordBorderResize(this, sideEnum);
+        OwnerGrabFrame?.StartWordBorderMoveResize(this, sideEnum);
     }
 }

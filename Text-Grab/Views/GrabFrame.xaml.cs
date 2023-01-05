@@ -262,13 +262,7 @@ public partial class GrabFrame : Window
         // Go from 0,0 from the top down, left to right adding to word Border
     }
 
-    public void StartWordBorderMove(WordBorder wordBorder, MouseButtonEventArgs e)
-    {
-        movingWordBorder = wordBorder;
-        startingMovingPoint = new(wordBorder.Left, wordBorder.Top);
-    }
-
-    public void StartWordBorderResize(WordBorder wordBorder, Side sideEnum)
+    public void StartWordBorderMoveResize(WordBorder wordBorder, Side sideEnum)
     {
         movingWordBorder = wordBorder;
         startingMovingPoint = new(wordBorder.Left, wordBorder.Top);
@@ -1070,29 +1064,16 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (movingWordBorder is not null)
+        if (movingWordBorder is not null && oldSize is not null)
         {
             UndoRedo.StartTransaction();
-            if (oldSize is not null && resizingSide != Side.None)
-            {
-                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ResizeWordBorder,
-                    new GrabFrameOperationArgs()
-                    {
-                        WordBorder = movingWordBorder,
-                        OldSize = oldSize.Value,
-                        NewSize = new(movingWordBorder.Left, movingWordBorder.Top, movingWordBorder.Width, movingWordBorder.Height)
-                    });
-            }
-            else
-            {
-                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.MoveWordBorder,
-                    new GrabFrameOperationArgs()
-                    {
-                        WordBorder = movingWordBorder,
-                        OldPoint = new(startingMovingPoint.X, startingMovingPoint.Y),
-                        NewPoint = new(movingWordBorder.Left, movingWordBorder.Top)
-                    });
-            }
+            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ResizeWordBorder,
+                new GrabFrameOperationArgs()
+                {
+                    WordBorder = movingWordBorder,
+                    OldSize = oldSize.Value,
+                    NewSize = new(movingWordBorder.Left, movingWordBorder.Top, movingWordBorder.Width, movingWordBorder.Height)
+                });
             UndoRedo.EndTransaction();
         }
 
