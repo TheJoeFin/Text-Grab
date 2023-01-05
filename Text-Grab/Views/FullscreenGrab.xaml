@@ -95,6 +95,7 @@
             Margin="0"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
+            d:Visibility="Visible"
             Background="{StaticResource DarkControlBackground}"
             Orientation="Horizontal"
             Visibility="Collapsed">
@@ -115,7 +116,8 @@
             </ComboBox>
             <ToggleButton
                 x:Name="SingleLineToggleButton"
-                Margin="4,0,0,4"
+                Margin="4,4,0,4"
+                d:IsChecked="True"
                 Click="SingleLineMenuItem_Click"
                 IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
                 Style="{StaticResource ToggleSymbolButton}">
@@ -126,7 +128,7 @@
             </ToggleButton>
             <ToggleButton
                 x:Name="FreezeToggleButton"
-                Margin="0,0,0,4"
+                Margin="0,4,0,4"
                 Click="FreezeMenuItem_Click"
                 IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
                 Style="{StaticResource ToggleSymbolButton}">
@@ -138,7 +140,8 @@
 
             <ToggleButton
                 x:Name="NewGrabFrameToggleButton"
-                Margin="4,0,0,4"
+                Margin="0,4,0,4"
+                d:IsChecked="True"
                 Click="NewGrabFrameMenuItem_Click"
                 IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
                 Style="{StaticResource ToggleSymbolButton}">
@@ -149,7 +152,8 @@
             </ToggleButton>
             <ToggleButton
                 x:Name="SendToEditTextToggleButton"
-                Margin="4,0,0,4"
+                Margin="0,4,0,4"
+                d:IsChecked="True"
                 Click="SendToEditTextToggleButton_Click"
                 IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
                 Style="{StaticResource ToggleSymbolButton}">
@@ -160,7 +164,7 @@
             </ToggleButton>
             <Button
                 x:Name="SettingsButton"
-                Margin="0,0,0,4"
+                Margin="0,4,0,4"
                 Click="SettingsMenuItem_Click"
                 Style="{StaticResource SymbolButton}">
                 <TextBlock
@@ -170,7 +174,7 @@
             </Button>
             <Button
                 x:Name="CancelButton"
-                Margin="4,0,4,4"
+                Margin="0,4,4,4"
                 Click="CancelMenuItem_Click"
                 Style="{StaticResource SymbolButton}">
                 <TextBlock
