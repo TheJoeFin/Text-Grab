@@ -1038,6 +1038,7 @@ public partial class GrabFrame : Window
 
         if (movingWordBorder is not null)
         {
+            FreezeGrabFrame();
             if (resizingSide is not null && oldSize is not null)
             {
                 double xShiftDelta = (movingPoint.X - clickedPoint.X);
@@ -1046,18 +1047,32 @@ public partial class GrabFrame : Window
                 switch (resizingSide)
                 {
                     case Side.Left:
-                        movingWordBorder.Width = oldSize.Value.Width - xShiftDelta;
+                        double newWidth = oldSize.Value.Width - xShiftDelta;
+                        if (newWidth > 20)
+                        {
+                            movingWordBorder.Width = newWidth;
+                            Canvas.SetLeft(movingWordBorder, Canvas.GetLeft(movingWordBorder) + xShiftDelta);
+                        }
+                        movingWordBorder.Width = newWidth;
                         movingWordBorder.Left = movingPoint.X;
                         break;
                     case Side.Right:
-                        movingWordBorder.Width = movingPoint.X - movingWordBorder.Left;
+                        double newRight = movingPoint.X - movingWordBorder.Left;
+                        if (newRight > 20)
+                            movingWordBorder.Width = newRight;
                         break;
                     case Side.Bottom:
-                        movingWordBorder.Height = movingPoint.Y - movingWordBorder.Top;
+                        double newBottom = movingPoint.Y - movingWordBorder.Top;
+                        if (newBottom > 12)
+                            movingWordBorder.Height = newBottom;
                         break;
                     case Side.Top:
-                        movingWordBorder.Height = oldSize.Value.Height - yShiftDelta;
-                        movingWordBorder.Top = movingPoint.Y;
+                        double newHeight = oldSize.Value.Height - yShiftDelta;
+                        if (newHeight > 12)
+                        {
+                            movingWordBorder.Height = newHeight;
+                            movingWordBorder.Top = movingPoint.Y;
+                        }
                         break;
                     default:
                         break;
@@ -1147,6 +1162,8 @@ public partial class GrabFrame : Window
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
         movingWordBorder = null;
+        oldSize = null;
+        resizingSide = null;
         CheckSelectBorderIntersections(true);
         isCtrlDown = false;
     }
@@ -1165,7 +1182,7 @@ public partial class GrabFrame : Window
 
         double zoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
         Rect rect = selectBorder.GetAbsolutePlacement(true);
-        rect = new(rect.X + 4, rect.Y, rect.Width + 10, rect.Height);
+        rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
         string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(zoomFactor), currentLang);
 
         if (frameContentImageSource is BitmapImage bmpImg)
