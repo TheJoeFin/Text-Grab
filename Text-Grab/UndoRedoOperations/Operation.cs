@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Controls;
-using Windows.Foundation;
 
 namespace Text_Grab.UndoRedoOperations;
 
@@ -42,9 +42,9 @@ public struct GrabFrameOperationArgs
 
     public List<WordBorder> RemovingWordBorders { get; set; }
 
-    public Size OldSize { get; set; }
+    public Rect OldSize { get; set; }
 
-    public Size NewSize { get; set; }
+    public Rect NewSize { get; set; }
 
     public Point OldPoint { get; set; }
 

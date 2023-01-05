@@ -1,5 +1,4 @@
-﻿
-namespace Text_Grab;
+﻿namespace Text_Grab;
 
 public enum DefaultLaunchSetting
 {
@@ -27,4 +26,12 @@ public enum CurrentCase
     Camel = 1,
     Upper = 2,
     Unknown = 3
+}
+
+public enum Side
+{
+    Left = 0,
+    Right = 1,
+    Top = 2,
+    Bottom = 3
 }

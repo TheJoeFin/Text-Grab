@@ -1,15 +1,12 @@
-﻿using System.Collections.Generic;
-using Windows.Foundation;
-using System.Windows.Controls;
+﻿using System.Windows;
 using Text_Grab.Controls;
-using Text_Grab.UndoRedoOperations;
 
 namespace Text_Grab.UndoRedoOperations;
 
 internal class ResizeWordBorder : Operation, IUndoRedoOperation
 {
     public ResizeWordBorder(uint transactionId, WordBorder wordBorder,
-        Size oldSize, Size newSize) : base(transactionId)
+        Rect oldSize, Rect newSize) : base(transactionId)
     {
         WordBorder = wordBorder;
         OldSize = oldSize;
@@ -18,8 +15,8 @@ internal class ResizeWordBorder : Operation, IUndoRedoOperation
 
     private WordBorder WordBorder;
 
-    private  Size OldSize;
-    private  Size NewSize;
+    private Rect OldSize;
+    private Rect NewSize;
 
     public UndoRedoOperation GetUndoRedoOperation() => UndoRedoOperation.AddWordBorder;
 
@@ -27,11 +24,15 @@ internal class ResizeWordBorder : Operation, IUndoRedoOperation
     {
         WordBorder.Width = OldSize.Width;
         WordBorder.Height = OldSize.Height;
+        WordBorder.Left = OldSize.Left;
+        WordBorder.Top = OldSize.Top;
     }
 
     public void Redo()
     {
         WordBorder.Width = NewSize.Width;
         WordBorder.Height = NewSize.Height;
+        WordBorder.Left = NewSize.Left;
+        WordBorder.Top = NewSize.Top;
     }
 }

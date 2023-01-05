@@ -41,6 +41,8 @@ public partial class GrabFrame : Window
     private bool isMiddleDown = false;
     private bool isCtrlDown = false;
     private Point clickedPoint;
+    private Side? resizingSide;
+    private Rect? oldSize;
     private WordBorder? movingWordBorder;
     private Point startingMovingPoint;
     private Border selectBorder = new();
@@ -264,6 +266,14 @@ public partial class GrabFrame : Window
     {
         movingWordBorder = wordBorder;
         startingMovingPoint = new(wordBorder.Left, wordBorder.Top);
+    }
+
+    public void StartWordBorderResize(WordBorder wordBorder, Side sideEnum)
+    {
+        movingWordBorder = wordBorder;
+        startingMovingPoint = new(wordBorder.Left, wordBorder.Top);
+        resizingSide = sideEnum;
+        oldSize = new(wordBorder.Left, wordBorder.Top, wordBorder.Width, wordBorder.Height);
     }
 
     public void BreakWordBorderIntoWords(WordBorder wordBorder)
@@ -1028,8 +1038,37 @@ public partial class GrabFrame : Window
 
         if (movingWordBorder is not null)
         {
-            movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
-            movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
+            if (resizingSide is not null && oldSize is not null)
+            {
+                double xShiftDelta = (movingPoint.X - clickedPoint.X);
+                double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+
+                switch (resizingSide)
+                {
+                    case Side.Left:
+                        movingWordBorder.Width = oldSize.Value.Width - xShiftDelta;
+                        movingWordBorder.Left = movingPoint.X;
+                        break;
+                    case Side.Right:
+                        movingWordBorder.Width = movingPoint.X - movingWordBorder.Left;
+                        break;
+                    case Side.Bottom:
+                        movingWordBorder.Height = movingPoint.Y - movingWordBorder.Top;
+                        break;
+                    case Side.Top:
+                        movingWordBorder.Height = oldSize.Value.Height - yShiftDelta;
+                        movingWordBorder.Top = movingPoint.Y;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
+                movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
+            }
+
             return;
         }
 
@@ -1078,13 +1117,26 @@ public partial class GrabFrame : Window
         if (movingWordBorder is not null)
         {
             UndoRedo.StartTransaction();
-            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.MoveWordBorder,
-                new GrabFrameOperationArgs()
-                {
-                    WordBorder = movingWordBorder,
-                    OldPoint = new(startingMovingPoint.X, startingMovingPoint.Y),
-                    NewPoint = new(movingWordBorder.Left, movingWordBorder.Top)
-                });
+            if (oldSize is not null && resizingSide is not null)
+            {
+                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ResizeWordBorder,
+                    new GrabFrameOperationArgs()
+                    {
+                        WordBorder = movingWordBorder,
+                        OldSize = oldSize.Value,
+                        NewSize = new(movingWordBorder.Left, movingWordBorder.Top, movingWordBorder.Width, movingWordBorder.Height)
+                    });
+            }
+            else
+            {
+                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.MoveWordBorder,
+                    new GrabFrameOperationArgs()
+                    {
+                        WordBorder = movingWordBorder,
+                        OldPoint = new(startingMovingPoint.X, startingMovingPoint.Y),
+                        NewPoint = new(movingWordBorder.Left, movingWordBorder.Top)
+                    });
+            }
             UndoRedo.EndTransaction();
         }
 
