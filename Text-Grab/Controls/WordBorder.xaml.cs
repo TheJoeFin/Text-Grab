@@ -282,4 +282,15 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         OwnerGrabFrame?.StartWordBorderMove(this, e);
     }
+
+    private void SizeHandle_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement fe)
+            return;
+        Enum.TryParse(typeof(Side), fe.Tag.ToString(), out var side);
+
+        if (side is not Side sideEnum)
+            return;
+        OwnerGrabFrame?.StartWordBorderResize(this, sideEnum);
+    }
 }

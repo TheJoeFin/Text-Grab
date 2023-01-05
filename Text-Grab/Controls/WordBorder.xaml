@@ -9,11 +9,11 @@
     d:DesignHeight="30"
     d:DesignWidth="80"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
+    MouseEnter="WordBorder_MouseEnter"
+    MouseLeave="WordBorder_MouseLeave"
+    MouseMove="WordBorder_MouseEnter"
     ToolTip="{Binding Path=Word, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
     Unloaded="WordBorderControl_Unloaded"
-    MouseEnter="WordBorder_MouseEnter"
-    MouseMove="WordBorder_MouseEnter"
-    MouseLeave="WordBorder_MouseLeave"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -114,15 +114,62 @@
                 </Viewbox>
             </Grid>
         </Border>
-        <Border 
+        <Border
             Name="MoveResizeBorder"
-            MouseDown="MoveResizeBorder_MouseDown"
-            BorderBrush="Gray"
-            Cursor="SizeAll"
-            BorderThickness="2"
-            Visibility="Collapsed"
+            d:Visibility="Visible"
             Background="Transparent"
-            CornerRadius="2">
+            BorderBrush="Gray"
+            BorderThickness="2"
+            CornerRadius="2"
+            Cursor="SizeAll"
+            Visibility="Collapsed">
+            <Grid>
+                <Grid Background="Transparent" MouseDown="MoveResizeBorder_MouseDown" />
+                <Border
+                    Width="6"
+                    Height="12"
+                    Margin="-4"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Background="DimGray"
+                    CornerRadius="1"
+                    Cursor="SizeWE"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Left" />
+                <Border
+                    Width="20"
+                    Height="6"
+                    Margin="-4"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Background="DimGray"
+                    CornerRadius="1"
+                    Cursor="SizeNS"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Top" />
+                <Border
+                    Width="6"
+                    Height="12"
+                    Margin="-4"
+                    HorizontalAlignment="right"
+                    VerticalAlignment="Center"
+                    Background="DimGray"
+                    CornerRadius="1"
+                    Cursor="SizeWE"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Right" />
+                <Border
+                    Width="20"
+                    Height="6"
+                    Margin="-4"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Background="DimGray"
+                    CornerRadius="1"
+                    Cursor="SizeNS"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Bottom" />
+            </Grid>
         </Border>
     </Grid>
 </UserControl>
