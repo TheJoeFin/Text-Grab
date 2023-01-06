@@ -61,7 +61,7 @@
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
     <Border BorderBrush="#444444" BorderThickness="2,2,2,2">
-        <Grid ClipToBounds="True">
+        <Grid ClipToBounds="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="24" />
                 <RowDefinition Height="*" />
@@ -69,6 +69,7 @@
             </Grid.RowDefinitions>
             <Grid
                 Grid.Row="0"
+                Grid.RowSpan="3"
                 VerticalAlignment="Top"
                 Background="#444444">
                 <Grid.ColumnDefinitions>
@@ -78,16 +79,42 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <Menu
+                    VerticalAlignment="Center"
+                    Background="{StaticResource DarkBackground}"
+                    Foreground="White"
+                    IsMainMenu="True"
+                    WindowChrome.IsHitTestVisibleInChrome="True">
+                    <MenuItem Height="24" Header="File">
+                        <MenuItem
+                            x:Name="AutoOcrCheckBox"
+                            Header="Auto Start OCR"
+                            IsCheckable="True" />
+                        <MenuItem Header="Open Image..." />
+                        <Separator />
+                        <MenuItem Header="Text Grab Settings" />
+                        <MenuItem Header="Close" />
+                    </MenuItem>
+                    <MenuItem Header="Search">
+                        <MenuItem
+                            x:Name="SearchWithRegexCheckBox"
+                            Header="Search with Regex"
+                            IsCheckable="True" />
+                        <MenuItem
+                            x:Name="ExactMatchChkBx"
+                            Header="Match searches exactly"
+                            IsCheckable="True" />
+                    </MenuItem>
+                </Menu>
                 <StackPanel
                     Grid.Column="1"
-                    Grid.ColumnSpan="2"
                     HorizontalAlignment="Center"
                     Orientation="Horizontal">
                     <Image
                         x:Name="WindowIcon"
                         Width="18"
                         Height="18"
-                        Margin="4,2,4,6"
+                        Margin="4,2,4,4"
                         Source="{StaticResource TextGrabIcon}"
                         Stretch="UniformToFill" />
                     <TextBlock
@@ -159,9 +186,9 @@
                         <Image
                             x:Name="GrabFrameImage"
                             Grid.Row="1"
-                            Opacity="0"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
+                            Opacity="0"
                             Stretch="Uniform" />
                         <Canvas
                             x:Name="RectanglesCanvas"
@@ -203,15 +230,17 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
+
                     <TextBox
                         x:Name="SearchBox"
-                        Grid.Column="0"
+                        Grid.Column="1"
                         Margin="0,0,6,0"
                         Padding="4"
                         VerticalContentAlignment="Center"
@@ -220,6 +249,7 @@
                         TextChanged="SearchBox_TextChanged" />
                     <controls:CollapsibleButton
                         x:Name="ClearBTN"
+                        Grid.Column="1"
                         Margin="0,0,6,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
@@ -229,19 +259,9 @@
                         IsSymbol="True"
                         SymbolText="" />
 
-                    <CheckBox
-                        x:Name="ExactMatchChkBx"
-                        Grid.Column="1"
-                        Margin="6"
-                        VerticalAlignment="Center"
-                        Click="ExactMatchChkBx_Click"
-                        Content="Exact Match"
-                        Foreground="White"
-                        Visibility="Collapsed" />
-
                     <TextBlock
                         x:Name="MatchesTXTBLK"
-                        Grid.Column="1"
+                        Grid.Column="2"
                         MinWidth="76"
                         Margin="6"
                         HorizontalAlignment="Left"
@@ -252,7 +272,7 @@
 
                     <ComboBox
                         x:Name="LanguagesComboBox"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         MinWidth="60"
                         PreviewMouseDown="LanguagesComboBox_MouseDown"
                         SelectionChanged="LanguagesComboBox_SelectionChanged">
@@ -270,7 +290,7 @@
 
                     <StackPanel
                         x:Name="ButtonsStackPanel"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="6,0"
                         Orientation="Horizontal">
                         <controls:CollapsibleButton
@@ -344,7 +364,7 @@
 
                     <controls:CollapsibleButton
                         x:Name="GrabBTN"
-                        Grid.Column="4"
+                        Grid.Column="5"
                         Width="110"
                         Margin="0"
                         ButtonText="Grab"
