@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -35,7 +34,7 @@ namespace Text_Grab.Views;
 /// <summary>
 /// Interaction logic for PersistentWindow.xaml
 /// </summary>
-public partial class GrabFrame : Window, INotifyPropertyChanged
+public partial class GrabFrame : Window
 {
     private bool isDrawing = false;
     private OcrResult? ocrResultOfWindow;
@@ -62,7 +61,23 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
 
     private UndoRedo UndoRedo = new();
 
-    Language? currentLang = null;
+    private Language? currentLanguage;
+
+    public Language CurrentLanguage
+    {
+        get
+        {
+            if (currentLanguage is not null)
+                return currentLanguage;
+
+            currentLanguage = LanguagesComboBox.SelectedItem as Language;
+            if (currentLanguage is null)
+                currentLanguage = LanguageUtilities.GetOCRLanguage();
+
+            return currentLanguage;
+        }
+    }
+
 
     public bool IsFromEditWindow
     {
@@ -222,15 +237,14 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
                 GrabFrameCanvas = RectanglesCanvas
             });
 
-        StringBuilder sb = new();
-        List<string> words = new();
-
-        foreach (WordBorder wb in selectedWordBorders)
-            words.Add(wb.Word);
-
-        sb.AppendJoin(' ', words.ToArray());
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        string mergedContent = ResultTable.GetWordsAsTable(
+            selectedWordBorders,
+            dpi,
+            LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage));
+        mergedContent.Replace('\t', ' ');
+
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
 
@@ -252,7 +266,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         {
             Width = bounds.Width,
             Height = bounds.Height,
-            Word = sb.ToString(),
+            Word = mergedContent,
             OwnerGrabFrame = this,
             Top = bounds.Top,
             Left = bounds.Left,
@@ -616,8 +630,6 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
 
     private double windowFrameImageScale = 1;
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     private async Task DrawRectanglesAroundWords(string searchWord = "")
     {
         if (isDrawing || IsDragOver)
@@ -641,17 +653,15 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
             Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
         };
 
-        currentLang = LanguagesComboBox.SelectedItem as Language;
-        if (currentLang is null)
-            currentLang = LanguageUtilities.GetOCRLanguage();
+
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, windowFrameImageScale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, currentLang);
+            (ocrResultOfWindow, windowFrameImageScale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, CurrentLanguage);
 
         if (ocrResultOfWindow is null)
             return;
 
-        isSpaceJoining = LanguageUtilities.IsLanguageSpaceJoining(currentLang);
+        isSpaceJoining = LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage);
 
         System.Drawing.Bitmap? bmp = null;
 
@@ -890,7 +900,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
             return;
 
         if (sender is not TextBox searchBox) return;
-        
+
         if (string.IsNullOrEmpty(SearchBox.Text))
             SearchLabel.Visibility = Visibility.Visible;
         else
@@ -951,6 +961,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
 
     private void UpdateFrameText()
     {
+
         string[] selectedWbs = wordBorders
             .OrderBy(b => b.Top)
             .Where(w => w.IsSelected)
@@ -1143,8 +1154,9 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         movingWordBorder = null;
         oldSize = null;
         resizingSide = Side.None;
-        CheckSelectBorderIntersections(true);
         isCtrlDown = false;
+        CheckSelectBorderIntersections(true);
+        UpdateFrameText();
     }
 
     private void UpdateSelectBorderForNewWordBorder(Point movingPoint)
@@ -1205,7 +1217,6 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
                 movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
                 break;
         }
-        UpdateFrameText();
     }
 
     private void MoveWindowWithMiddleMouse(Point movingPoint)
@@ -1228,7 +1239,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         double zoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
         Rect rect = selectBorder.GetAbsolutePlacement(true);
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
-        string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(zoomFactor), currentLang);
+        string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(zoomFactor), CurrentLanguage);
 
         if (frameContentImageSource is BitmapImage bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
@@ -1730,11 +1741,11 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
     private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
     {
         var selectedWords = wordBorders.Where(m => m.IsSelected).ToList();
-        if (selectedWords.Count == 0 || currentLang is null)
+        if (selectedWords.Count == 0)
             return;
 
         EditTextWindow editWindow = new();
-        bool isSpaceJoiningLang = LanguageUtilities.IsLanguageSpaceJoining(currentLang);
+        bool isSpaceJoiningLang = LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage);
         string separator = isSpaceJoiningLang ? " " : "";
         string stringForETW = string.Join(separator, selectedWords.Select(m => m.Word));
         DpiScale dpiScale = VisualTreeHelper.GetDpi(this);

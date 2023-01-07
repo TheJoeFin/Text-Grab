@@ -617,11 +617,25 @@ public class ResultTable
 
     public static string GetWordsAsTable(List<WordBorder> wordBorders, DpiScale dpiScale, bool isSpaceJoining)
     {
-        ResultTable resultTable = new(wordBorders, dpiScale);
+        List<WordBorder> smallerBorders = new();
+        foreach (WordBorder originalWB in wordBorders)
+        {
+            WordBorder newWB = new()
+            {
+                Word = originalWB.Word,
+                Left = originalWB.Left,
+                Top = originalWB.Top ,
+                Width = originalWB.Width - 12,
+                Height = originalWB.Height - 6
+            };
+            smallerBorders.Add(newWB);
+        };
+        
+        ResultTable resultTable = new(smallerBorders, dpiScale);
         StringBuilder stringBuilder = new();
         GetTextFromTabledWordBorders(
             stringBuilder,
-            wordBorders,
+            smallerBorders,
             isSpaceJoining);
         return stringBuilder.ToString();
     }
