@@ -60,7 +60,7 @@
             GlassFrameThickness="0"
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
-    <Border BorderBrush="#444444" BorderThickness="2,2,2,2">
+    <Border BorderBrush="{StaticResource DarkBackground}" BorderThickness="2,2,2,2">
         <Grid ClipToBounds="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="24" />
@@ -71,7 +71,7 @@
                 Grid.Row="0"
                 Grid.RowSpan="3"
                 VerticalAlignment="Top"
-                Background="#444444">
+                Background="{StaticResource DarkBackground}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -90,10 +90,42 @@
                             x:Name="AutoOcrCheckBox"
                             Header="Auto Start OCR"
                             IsCheckable="True" />
-                        <MenuItem Header="Open Image..." />
+                        <MenuItem
+                            Name="OpenImageMenuItem"
+                            Click="OpenImageMenuItem_Click"
+                            Header="Open Image..." />
                         <Separator />
-                        <MenuItem Header="Text Grab Settings" />
-                        <MenuItem Header="Close" />
+                        <MenuItem
+                            Name="SettingsMenuItem"
+                            Click="SettingsBTN_Click"
+                            Header="Text Grab Settings" />
+                        <MenuItem
+                            Name="CloseMenuItem"
+                            Click="OnCloseButtonClick"
+                            Header="Close" />
+                    </MenuItem>
+                    <MenuItem Header="Frame">
+                        <MenuItem Click="RefreshBTN_Click" Header="Re-OCR Content in Frame" />
+                        <MenuItem
+                            Click="FreezeToggleButton_Click"
+                            Header="Freeze Image In Frame"
+                            IsCheckable="True"
+                            IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}" />
+                        <MenuItem
+                            Click="TableToggleButton_Click"
+                            Header="Analyze as a Table"
+                            IsCheckable="True"
+                            IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}" />
+                        <MenuItem
+                            Click="EditToggleButton_Click"
+                            Header="Allow recognized words to be edited"
+                            IsCheckable="True"
+                            IsChecked="{Binding IsChecked, ElementName=EditToggleButton, Mode=TwoWay}" />
+                        <MenuItem
+                            Click="EditTextBTN_Click"
+                            Header="Send results to an Edit Text Window"
+                            IsCheckable="True"
+                            IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
                     </MenuItem>
                     <MenuItem Header="Search">
                         <MenuItem
@@ -359,7 +391,8 @@
                             Click="SettingsBTN_Click"
                             IsSymbol="True"
                             SymbolText=""
-                            ToolTip="Open Text Grab Settings" />
+                            ToolTip="Open Text Grab Settings"
+                            Visibility="Collapsed" />
                     </StackPanel>
 
                     <controls:CollapsibleButton
