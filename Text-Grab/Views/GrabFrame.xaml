@@ -329,16 +329,32 @@
                         IsSymbol="True"
                         SymbolText="" />
 
-                    <TextBlock
-                        x:Name="MatchesTXTBLK"
+                    <Menu
+                        x:Name="MatchesMenu"
                         Grid.Column="2"
-                        MinWidth="76"
-                        Margin="6"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
+                        d:Visibility="Visible"
+                        Background="{StaticResource DarkBackground}"
                         Foreground="White"
-                        Text="Matches: 0"
-                        Visibility="Collapsed" />
+                        Visibility="Collapsed">
+                        <MenuItem Height="28">
+                            <MenuItem.Header>
+                                <TextBlock
+                                    x:Name="MatchesTXTBLK"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Foreground="White"
+                                    Text="Matches: 0" />
+                            </MenuItem.Header>
+                            <MenuItem Click="HandleDelete" Header="Delete Matches" />
+                            <Separator />
+                            <MenuItem
+                                Name="EditMatchesMenuItem"
+                                Click="EditMatchesMenuItem_Click"
+                                Header="Edit Matches in new Window" />
+                        </MenuItem>
+                    </Menu>
 
                     <ComboBox
                         x:Name="LanguagesComboBox"

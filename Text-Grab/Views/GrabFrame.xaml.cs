@@ -62,6 +62,8 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
 
     private UndoRedo UndoRedo = new();
 
+    Language? currentLang = null;
+
     public bool IsFromEditWindow
     {
         get
@@ -582,7 +584,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         if (this.Width < 460)
         {
             SearchBox.Visibility = Visibility.Collapsed;
-            MatchesTXTBLK.Visibility = Visibility.Collapsed;
+            MatchesMenu.Visibility = Visibility.Collapsed;
             ClearBTN.Visibility = Visibility.Collapsed;
         }
         else
@@ -640,7 +642,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
             Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
         };
 
-        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
+        currentLang = LanguagesComboBox.SelectedItem as Language;
         if (currentLang is null)
             currentLang = LanguageUtilities.GetOCRLanguage();
 
@@ -939,7 +941,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
 
         int numberOfMatches = wordBorders.Where(w => w.IsSelected).Count();
         MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
-        MatchesTXTBLK.Visibility = Visibility.Visible;
+        MatchesMenu.Visibility = Visibility.Visible;
         UpdateFrameText();
     }
 
@@ -1223,10 +1225,6 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
-
-        Language? currentLang = LanguagesComboBox.SelectedItem as Language;
-        if (currentLang is null)
-            currentLang = LanguageUtilities.GetOCRLanguage();
 
         double zoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
         Rect rect = selectBorder.GetAbsolutePlacement(true);
@@ -1728,5 +1726,23 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
     private void UndoExecuted(object sender, ExecutedRoutedEventArgs e)
     {
         UndoRedo.Undo();
+    }
+
+    private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var selectedWords = wordBorders.Where(m => m.IsSelected).ToList();
+        if (selectedWords.Count == 0 || currentLang is null)
+            return;
+
+        EditTextWindow editWindow = new();
+        bool isSpaceJoiningLang = LanguageUtilities.IsLanguageSpaceJoining(currentLang);
+        string separator = isSpaceJoiningLang ? " " : "";
+        string stringForETW = string.Join(separator, selectedWords.Select(m => m.Word));
+
+        if (selectedWords.Count > 6)
+            stringForETW = ResultTable.GetWordsAsTable(selectedWords, isSpaceJoiningLang);
+
+        editWindow.AddThisText(stringForETW);
+        editWindow.Show();
     }
 }
