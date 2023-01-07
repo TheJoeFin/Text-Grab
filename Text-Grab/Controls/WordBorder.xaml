@@ -87,6 +87,7 @@
                         FontFamily="Segoe UI"
                         FontWeight="Medium"
                         Foreground="White"
+                        MouseDown="EditWordTextBox_MouseDown"
                         Style="{StaticResource TransparentTextBox}"
                         Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         Visibility="Visible">

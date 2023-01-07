@@ -305,4 +305,9 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         OwnerGrabFrame?.SearchForSimilar(this);
     }
+
+    private void EditWordTextBox_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+    }
 }

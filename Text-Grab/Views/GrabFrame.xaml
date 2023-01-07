@@ -314,6 +314,7 @@
                         Margin="0,0,6,0"
                         Padding="4"
                         VerticalContentAlignment="Center"
+                        GotFocus="SearchBox_GotFocus"
                         TextChanged="SearchBox_TextChanged" />
                     <Label
                         x:Name="SearchLabel"
@@ -322,7 +323,7 @@
                         Padding="4"
                         VerticalContentAlignment="Center"
                         Content="Search For Text..."
-                        Foreground="Gray"
+                        Foreground="Black"
                         IsHitTestVisible="False"
                         Opacity="0.5" />
                     <controls:CollapsibleButton

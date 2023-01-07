@@ -148,11 +148,13 @@ public partial class GrabFrame : Window
     public void OnUndo()
     {
         UndoRedo.Undo();
+        reSearchTimer.Start();
     }
 
     public void OnRedo()
     {
         UndoRedo.Redo();
+        reSearchTimer.Start();
     }
 
     public void GrabFrame_Loaded(object sender, RoutedEventArgs e)
@@ -217,6 +219,9 @@ public partial class GrabFrame : Window
         FreezeGrabFrame();
 
         List<WordBorder> selectedWordBorders = wordBorders.Where(w => w.IsSelected).OrderBy(o => o.Left).ToList();
+
+        if (selectedWordBorders.Count < 2)
+            return;
 
         Rect bounds = new()
         {
@@ -288,7 +293,7 @@ public partial class GrabFrame : Window
 
         // Go from 0,0 from the top down, left to right adding to word Border
 
-        UpdateFrameText();
+        reSearchTimer.Start();
     }
 
     public void StartWordBorderMoveResize(WordBorder wordBorder, Side sideEnum)
@@ -385,7 +390,7 @@ public partial class GrabFrame : Window
             });
 
         UndoRedo.EndTransaction();
-        UpdateFrameText();
+        reSearchTimer.Start();
     }
 
     public void DeleteThisWordBorder(WordBorder wordBorder)
@@ -403,7 +408,7 @@ public partial class GrabFrame : Window
             });
 
         UndoRedo.EndTransaction();
-        UpdateFrameText();
+        reSearchTimer.Start();
     }
 
     private List<WordBorder> DeleteSelectedWordBorders()
@@ -769,8 +774,8 @@ public partial class GrabFrame : Window
         MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
         isDrawing = false;
 
-        UpdateFrameText();
         bmp?.Dispose();
+        reSearchTimer.Start();
     }
 
     private void RemoveTableLines()
@@ -1029,7 +1034,7 @@ public partial class GrabFrame : Window
         if (!IsWordEditMode && !IsFreezeMode)
             reDrawTimer.Start();
         else
-            UpdateFrameText();
+            reSearchTimer.Start();
     }
 
     private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -1283,7 +1288,7 @@ public partial class GrabFrame : Window
                 GrabFrameCanvas = RectanglesCanvas
             });
         UndoRedo.EndTransaction();
-        UpdateFrameText();
+        reSearchTimer.Start();
     }
 
     private void CheckSelectBorderIntersections(bool finalCheck = false)
@@ -1766,5 +1771,10 @@ public partial class GrabFrame : Window
         SearchWithRegexCheckBox.IsChecked = true;
         Keyboard.Focus(SearchBox);
         SearchBox.Text = wordPattern;
+    }
+
+    private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        reSearchTimer.Start();
     }
 }
