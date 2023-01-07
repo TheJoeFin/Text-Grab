@@ -103,11 +103,16 @@
                                 <MenuItem
                                     x:Name="MergeWordBordersMenuItem"
                                     Click="MergeWordBordersMenuItem_Click"
-                                    Header="Merge Selected Word Borders" />
+                                    Header="_Merge Selected Word Borders" />
                                 <MenuItem
                                     x:Name="BreakIntoWordsMenuItem"
                                     Click="BreakIntoWordsMenuItem_Click"
-                                    Header="Break into words" />
+                                    Header="_Break into words" />
+                                <Separator />
+                                <MenuItem
+                                    x:Name="DeleteWordMenuItem"
+                                    Click="DeleteWordMenuItem_Click"
+                                    Header="_Delete" />
                             </ContextMenu>
                         </TextBox.ContextMenu>
                     </TextBox>

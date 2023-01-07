@@ -50,6 +50,14 @@
             CanExecute="CanPasteExecute"
             Command="{x:Static local:GrabFrame.PasteCommand}"
             Executed="PasteExecuted" />
+        <CommandBinding
+            CanExecute="CanUndoCommand"
+            Command="{x:Static local:GrabFrame.UndoCommand}"
+            Executed="UndoExecuted" />
+        <CommandBinding
+            CanExecute="CanRedoExecuted"
+            Command="{x:Static local:GrabFrame.RedoCommand}"
+            Executed="RedoExecuted" />
     </Window.CommandBindings>
 
 
@@ -83,7 +91,6 @@
                     VerticalAlignment="Center"
                     Background="{StaticResource DarkBackground}"
                     Foreground="White"
-                    IsMainMenu="True"
                     WindowChrome.IsHitTestVisibleInChrome="True">
                     <MenuItem Height="24" Header="File">
                         <MenuItem
@@ -104,7 +111,16 @@
                             Click="OnCloseButtonClick"
                             Header="Close" />
                     </MenuItem>
-                    <MenuItem Header="Frame">
+                    <MenuItem Header="Edit">
+                        <MenuItem
+                            Name="RedoMenuItem"
+                            Command="{x:Static local:GrabFrame.RedoCommand}"
+                            Header="Redo" />
+                        <MenuItem
+                            Name="UndoMenuItem"
+                            Command="{x:Static local:GrabFrame.UndoCommand}"
+                            Header="Undo" />
+                        <Separator />
                         <MenuItem Click="RefreshBTN_Click" Header="Re-OCR Content in Frame" />
                         <MenuItem
                             Click="FreezeToggleButton_Click"
@@ -126,8 +142,12 @@
                             Header="Send results to an Edit Text Window"
                             IsCheckable="True"
                             IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
-                    </MenuItem>
-                    <MenuItem Header="Search">
+                        <MenuItem
+                            x:Name="DeleteSelectedMenuItem"
+                            Click="HandleDelete"
+                            Header="Delete Selected"
+                            IsCheckable="True" />
+                        <Separator />
                         <MenuItem
                             x:Name="SearchWithRegexCheckBox"
                             Header="Search with Regex"
@@ -136,6 +156,24 @@
                             x:Name="ExactMatchChkBx"
                             Header="Match searches exactly"
                             IsCheckable="True" />
+                    </MenuItem>
+                    <MenuItem Header="_Help">
+                        <MenuItem
+                            x:Name="ContactMenuItem"
+                            Click="ContactMenuItem_Click"
+                            Header="_Contact The Developer..." />
+                        <MenuItem
+                            x:Name="RateAndReview"
+                            Click="RateAndReview_Click"
+                            Header="_Rate and Review..." />
+                        <MenuItem
+                            x:Name="FeedbackMenuItem"
+                            Click="FeedbackMenuItem_Click"
+                            Header="_Feedback..." />
+                        <MenuItem
+                            x:Name="AboutMenuItem"
+                            Click="AboutMenuItem_Click"
+                            Header="_About" />
                     </MenuItem>
                 </Menu>
                 <StackPanel

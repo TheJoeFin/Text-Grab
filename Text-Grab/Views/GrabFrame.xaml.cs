@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -15,6 +16,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -23,6 +25,7 @@ using Text_Grab.UndoRedoOperations;
 using Text_Grab.Utilities;
 using Windows.Globalization;
 using Windows.Media.Ocr;
+using Windows.System;
 using ZXing;
 using ZXing.Windows.Compatibility;
 
@@ -31,7 +34,7 @@ namespace Text_Grab.Views;
 /// <summary>
 /// Interaction logic for PersistentWindow.xaml
 /// </summary>
-public partial class GrabFrame : Window
+public partial class GrabFrame : Window, INotifyPropertyChanged
 {
     private bool isDrawing = false;
     private OcrResult? ocrResultOfWindow;
@@ -58,10 +61,6 @@ public partial class GrabFrame : Window
 
     private UndoRedo UndoRedo = new();
 
-    private bool CanUndo => UndoRedo.HasUndoOperations();
-
-    private bool CanRedo => UndoRedo.HasRedoOperations();
-
     public bool IsFromEditWindow
     {
         get
@@ -81,6 +80,8 @@ public partial class GrabFrame : Window
     private bool isLanguageBoxLoaded = false;
 
     public static RoutedCommand PasteCommand = new();
+    public static RoutedCommand UndoCommand = new();
+    public static RoutedCommand RedoCommand = new();
 
     public string FrameText { get; private set; } = string.Empty;
 
@@ -122,6 +123,8 @@ public partial class GrabFrame : Window
 
         _ = UndoRedo.HasUndoOperations();
         _ = UndoRedo.HasRedoOperations();
+
+        this.DataContext = this;
     }
 
     public void OnUndo()
@@ -268,6 +271,8 @@ public partial class GrabFrame : Window
         // Get a Result Table of the selected borders
 
         // Go from 0,0 from the top down, left to right adding to word Border
+
+        UpdateFrameText();
     }
 
     public void StartWordBorderMoveResize(WordBorder wordBorder, Side sideEnum)
@@ -347,7 +352,7 @@ public partial class GrabFrame : Window
             OnRedo();
     }
 
-    private void HandleDelete()
+    private void HandleDelete(object? sender = null, RoutedEventArgs? e = null)
     {
         bool editingAnyWordBorders = wordBorders.Any(x => x.IsEditing);
         if (editingAnyWordBorders)
@@ -359,6 +364,24 @@ public partial class GrabFrame : Window
             new GrabFrameOperationArgs()
             {
                 RemovingWordBorders = deletedWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+
+        UndoRedo.EndTransaction();
+        UpdateFrameText();
+    }
+
+    public void DeleteThisWordBorder(WordBorder wordBorder)
+    {
+        wordBorders.Remove(wordBorder);
+        RectanglesCanvas.Children.Remove(wordBorder);
+        UndoRedo.StartTransaction();
+        List<WordBorder> deletedWordBorder = new() { wordBorder };
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = deletedWordBorder,
                 WordBorders = wordBorders,
                 GrabFrameCanvas = RectanglesCanvas
             });
@@ -590,6 +613,8 @@ public partial class GrabFrame : Window
     }
 
     private double windowFrameImageScale = 1;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     private async Task DrawRectanglesAroundWords(string searchWord = "")
     {
@@ -1157,6 +1182,7 @@ public partial class GrabFrame : Window
                 movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
                 break;
         }
+        UpdateFrameText();
     }
 
     private void MoveWindowWithMiddleMouse(Point movingPoint)
@@ -1631,5 +1657,54 @@ public partial class GrabFrame : Window
             result += $"{separator}Image files|{imageExtensions}";
         }
         return result;
+    }
+
+    private async void RateAndReview_Click(object sender, RoutedEventArgs e)
+    {
+        _ = await Launcher.LaunchUriAsync(new Uri(string.Format("ms-windows-store:REVIEW?PFN={0}", "40087JoeFinApps.TextGrab_kdbpvth5scec4")));
+    }
+
+    private async void ContactMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        _ = await Launcher.LaunchUriAsync(new Uri(string.Format("mailto:support@textgrab.net")));
+    }
+
+    private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
+    }
+
+    private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
+    {
+        Uri source = new("https://github.com/TheJoeFin/Text-Grab/issues", UriKind.Absolute);
+        RequestNavigateEventArgs e = new(source, "https://github.com/TheJoeFin/Text-Grab/issues");
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
+
+    private void CanRedoExecuted(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (UndoRedo.HasRedoOperations())
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
+    }
+
+    private void RedoExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        UndoRedo.Redo();
+    }
+
+    private void CanUndoCommand(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (UndoRedo.HasUndoOperations())
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
+    }
+
+    private void UndoExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        UndoRedo.Undo();
     }
 }

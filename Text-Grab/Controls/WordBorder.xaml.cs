@@ -179,7 +179,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;
 
-        int maxBaseSize = 5;
+        int maxBaseSize = 7;
         while (textBoxContextMenu.Items.Count > maxBaseSize)
         {
             EditWordTextBox.ContextMenu?.Items.RemoveAt(maxBaseSize);
@@ -292,5 +292,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         if (side is not Side sideEnum)
             return;
         OwnerGrabFrame?.StartWordBorderMoveResize(this, sideEnum);
+    }
+
+    private void DeleteWordMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        OwnerGrabFrame?.DeleteThisWordBorder(this);
     }
 }
