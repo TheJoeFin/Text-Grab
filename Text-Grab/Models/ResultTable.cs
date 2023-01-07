@@ -34,6 +34,16 @@ public class ResultTable
 
     }
 
+    public ResultTable(List<WordBorder> wordBorders)
+    {
+        Rectangle bordersBorder = new(
+            (int)wordBorders.Select(w => w.Left).Min(),
+            (int)wordBorders.Select(o => o.Top).Min(),
+            (int)(wordBorders.Select(r => r.Right).Max() - wordBorders.Select(d => d.Left).Min()),
+            (int)(wordBorders.Select(b => b.Bottom).Max() - wordBorders.Select(o => o.Top).Min()));
+        AnalyzeAsTable(wordBorders, bordersBorder);
+    }
+
     private void ParseRowAndColumnLines()
     {
         // Draw Bounding Rect
@@ -558,7 +568,7 @@ public class ResultTable
         SolidColorBrush tableColor = new(System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
 
         TableLines = new Canvas()
-        { 
+        {
             Tag = "TableLines"
         };
 
@@ -598,6 +608,17 @@ public class ResultTable
             Canvas.SetTop(horzLine, rowLine);
             Canvas.SetLeft(horzLine, this.BoundingRect.X);
         }
+    }
+
+    public static string GetWordsAsTable(List<WordBorder> wordBorders, bool isSpaceJoining)
+    {
+        ResultTable resultTable = new(wordBorders);
+        StringBuilder stringBuilder = new();
+        GetTextFromTabledWordBorders(
+            stringBuilder,
+            wordBorders,
+            isSpaceJoining);
+        return stringBuilder.ToString();
     }
 }
 
