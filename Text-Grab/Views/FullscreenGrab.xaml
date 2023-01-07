@@ -137,6 +137,16 @@
                     Text=""
                     ToolTip="(F) Freeze what is on screens" />
             </ToggleButton>
+            <ToggleButton
+                x:Name="TableToggleButton"
+                Margin="0,4,0,4"
+                Padding="7,4"
+                Style="{StaticResource ToggleSymbolButton}"
+                ToolTip="(T) OCR text as a table">
+                <TextBlock FontFamily="Segoe MDL2 Assets">
+                    
+                </TextBlock>
+            </ToggleButton>
 
             <ToggleButton
                 x:Name="NewGrabFrameToggleButton"

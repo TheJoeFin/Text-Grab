@@ -1738,9 +1738,10 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         bool isSpaceJoiningLang = LanguageUtilities.IsLanguageSpaceJoining(currentLang);
         string separator = isSpaceJoiningLang ? " " : "";
         string stringForETW = string.Join(separator, selectedWords.Select(m => m.Word));
+        DpiScale dpiScale = VisualTreeHelper.GetDpi(this);
 
         if (selectedWords.Count > 6)
-            stringForETW = ResultTable.GetWordsAsTable(selectedWords, isSpaceJoiningLang);
+            stringForETW = ResultTable.GetWordsAsTable(selectedWords, dpiScale, isSpaceJoiningLang);
 
         editWindow.AddThisText(stringForETW);
         editWindow.Show();

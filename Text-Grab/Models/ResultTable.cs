@@ -34,13 +34,18 @@ public class ResultTable
 
     }
 
-    public ResultTable(List<WordBorder> wordBorders)
+    public ResultTable(List<WordBorder> wordBorders, DpiScale dpiScale)
     {
+        int borderBuffer = 14;
         Rectangle bordersBorder = new(
-            (int)wordBorders.Select(w => w.Left).Min(),
-            (int)wordBorders.Select(o => o.Top).Min(),
-            (int)(wordBorders.Select(r => r.Right).Max() - wordBorders.Select(d => d.Left).Min()),
-            (int)(wordBorders.Select(b => b.Bottom).Max() - wordBorders.Select(o => o.Top).Min()));
+            (int)wordBorders.Select(w => w.Left).Min() - borderBuffer,
+            (int)wordBorders.Select(o => o.Top).Min() - borderBuffer,
+            (int)(wordBorders.Select(r => r.Right).Max() - wordBorders.Select(d => d.Left).Min()) + borderBuffer,
+            (int)(wordBorders.Select(b => b.Bottom).Max() - wordBorders.Select(o => o.Top).Min()) + borderBuffer);
+
+        bordersBorder.Width = (int)(bordersBorder.Width * dpiScale.DpiScaleX);
+        bordersBorder.Height = (int)(bordersBorder.Height * dpiScale.DpiScaleY);
+
         AnalyzeAsTable(wordBorders, bordersBorder);
     }
 
@@ -610,9 +615,9 @@ public class ResultTable
         }
     }
 
-    public static string GetWordsAsTable(List<WordBorder> wordBorders, bool isSpaceJoining)
+    public static string GetWordsAsTable(List<WordBorder> wordBorders, DpiScale dpiScale, bool isSpaceJoining)
     {
-        ResultTable resultTable = new(wordBorders);
+        ResultTable resultTable = new(wordBorders, dpiScale);
         StringBuilder stringBuilder = new();
         GetTextFromTabledWordBorders(
             stringBuilder,

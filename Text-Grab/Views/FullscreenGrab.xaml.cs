@@ -359,6 +359,8 @@ public partial class FullscreenGrab : Window
             BackgroundBrush.Opacity = 0;
             grabbedText = await OcrExtensions.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
+        else if (TableToggleButton.IsChecked is true)
+            grabbedText = await OcrExtensions.GetRegionsTextAsTable(this, regionScaled, selectedOcrLang);
         else
             grabbedText = await OcrExtensions.GetRegionsText(this, regionScaled, selectedOcrLang);
 
@@ -441,6 +443,12 @@ public partial class FullscreenGrab : Window
                     FreezeMenuItem.IsChecked = isActive.Value;
 
                 FreezeUnfreeze(FreezeMenuItem.IsChecked);
+                break;
+            case Key.T:
+                if (isActive is null)
+                    TableToggleButton.IsChecked = !TableToggleButton.IsChecked;
+                else
+                    TableToggleButton.IsChecked = isActive.Value;
                 break;
             case Key.D1:
             case Key.D2:
