@@ -25,6 +25,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private SolidColorBrush matchingBackground = new SolidColorBrush(Colors.Black);
     private SolidColorBrush contrastingForeground = new SolidColorBrush(Colors.White);
+    private int contextMenuBaseSize;
+
 
     public SolidColorBrush MatchingBackground
     {
@@ -103,6 +105,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         InitializeComponent();
         DataContext = this;
+        contextMenuBaseSize = EditWordTextBox.ContextMenu.Items.Count;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -179,10 +182,9 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;
 
-        int maxBaseSize = 7;
-        while (textBoxContextMenu.Items.Count > maxBaseSize)
+        while (textBoxContextMenu.Items.Count > contextMenuBaseSize)
         {
-            EditWordTextBox.ContextMenu?.Items.RemoveAt(maxBaseSize);
+            EditWordTextBox.ContextMenu?.Items.RemoveAt(contextMenuBaseSize);
         }
 
         if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
@@ -297,5 +299,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private void DeleteWordMenuItem_Click(object sender, RoutedEventArgs e)
     {
         OwnerGrabFrame?.DeleteThisWordBorder(this);
+    }
+
+    private void SearchForSimilarMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        OwnerGrabFrame?.SearchForSimilar(this);
     }
 }

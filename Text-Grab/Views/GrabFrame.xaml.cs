@@ -183,7 +183,6 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         AspectRationMI.Unchecked -= AspectRationMI_Checked;
         FreezeMI.Click -= FreezeMI_Click;
 
-        SearchBox.GotFocus -= SearchBox_GotFocus;
         SearchBox.TextChanged -= SearchBox_TextChanged;
 
         ClearBTN.Click -= ClearBTN_Click;
@@ -891,6 +890,11 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
             return;
 
         if (sender is not TextBox searchBox) return;
+        
+        if (string.IsNullOrEmpty(SearchBox.Text))
+            SearchLabel.Visibility = Visibility.Visible;
+        else
+            SearchLabel.Visibility = Visibility.Collapsed;
 
         reSearchTimer.Stop();
         reSearchTimer.Start();
@@ -982,12 +986,6 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         }
     }
 
-    private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
-    {
-        if (SearchBox is TextBox searchBox)
-            searchBox.Text = "";
-    }
-
     private void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)
     {
         reSearchTimer.Stop();
@@ -997,6 +995,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
     private void ClearBTN_Click(object sender, RoutedEventArgs e)
     {
         SearchBox.Text = "";
+        MatchesMenu.Visibility = Visibility.Collapsed;
     }
 
     private void RefreshBTN_Click(object sender, RoutedEventArgs e)
@@ -1745,5 +1744,16 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
 
         editWindow.AddThisText(stringForETW);
         editWindow.Show();
+    }
+
+    internal void SearchForSimilar(WordBorder wordBorder)
+    {
+        TextBox wordTextBox = wordBorder.EditWordTextBox;
+        string wordPattern = wordBorder.Word.ExtractSimplePattern();
+        if (wordTextBox.SelectionLength != 0)
+            wordPattern = wordTextBox.SelectedText;
+        SearchWithRegexCheckBox.IsChecked = true;
+        Keyboard.Focus(SearchBox);
+        SearchBox.Text = wordPattern;
     }
 }

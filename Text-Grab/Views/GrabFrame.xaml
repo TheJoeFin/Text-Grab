@@ -314,9 +314,17 @@
                         Margin="0,0,6,0"
                         Padding="4"
                         VerticalContentAlignment="Center"
-                        GotFocus="SearchBox_GotFocus"
-                        Text="Search For Text..."
                         TextChanged="SearchBox_TextChanged" />
+                    <Label
+                        x:Name="SearchLabel"
+                        Grid.Column="1"
+                        Margin="3,0,6,0"
+                        Padding="4"
+                        VerticalContentAlignment="Center"
+                        Content="Search For Text..."
+                        Foreground="Gray"
+                        IsHitTestVisible="False"
+                        Opacity="0.5" />
                     <controls:CollapsibleButton
                         x:Name="ClearBTN"
                         Grid.Column="1"

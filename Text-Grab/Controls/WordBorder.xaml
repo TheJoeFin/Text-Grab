@@ -108,6 +108,10 @@
                                     x:Name="BreakIntoWordsMenuItem"
                                     Click="BreakIntoWordsMenuItem_Click"
                                     Header="_Break into words" />
+                                <MenuItem
+                                    x:Name="SearchForSimilarMenuItem"
+                                    Click="SearchForSimilarMenuItem_Click"
+                                    Header="_Search for similar text" />
                                 <Separator />
                                 <MenuItem
                                     x:Name="DeleteWordMenuItem"
