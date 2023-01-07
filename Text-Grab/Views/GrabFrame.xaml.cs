@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -355,7 +356,7 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
     private void HandleDelete(object? sender = null, RoutedEventArgs? e = null)
     {
         bool editingAnyWordBorders = wordBorders.Any(x => x.IsEditing);
-        if (editingAnyWordBorders)
+        if (editingAnyWordBorders || SearchBox.IsFocused)
             return;
 
         UndoRedo.StartTransaction();
@@ -903,22 +904,43 @@ public partial class GrabFrame : Window, INotifyPropertyChanged
         {
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
+            MatchesTXTBLK.Text = $"Matches: 0";
+            return;
         }
-        else
+
+        if (SearchWithRegexCheckBox.IsChecked is false && ExactMatchChkBx.IsChecked is bool matchExactly)
+            searchText = searchText.EscapeSpecialRegexChars(matchExactly);
+
+        Regex regex;
+
+        try
+        {
+            regex = new(searchText, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+
+            if (ExactMatchChkBx.IsChecked is true)
+                regex = new(searchText, RegexOptions.Multiline);
+        }
+        catch (Exception)
         {
             foreach (WordBorder wb in wordBorders)
-            {
-                if (!string.IsNullOrWhiteSpace(searchText)
-                    && wb.Word.ToLower().Contains(searchText.ToLower()))
-                    wb.Select();
-                else
-                    wb.Deselect();
-            }
+                wb.Deselect();
+            UpdateFrameText();
+            MatchesTXTBLK.Text = $"Matches: 0";
+            return;
         }
 
-        UpdateFrameText();
+        foreach (WordBorder wb in wordBorders)
+        {
+            if (regex.IsMatch(wb.Word))
+                wb.Select();
+            else
+                wb.Deselect();
+        }
 
+        int numberOfMatches = wordBorders.Where(w => w.IsSelected).Count();
+        MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
         MatchesTXTBLK.Visibility = Visibility.Visible;
+        UpdateFrameText();
     }
 
     private void UpdateFrameText()
