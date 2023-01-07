@@ -522,7 +522,7 @@ public partial class GrabFrame : Window
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (!IsLoaded || IsFreezeMode)
+        if (!IsLoaded)
             return;
 
         CheckBottomRowButtonsVis();
