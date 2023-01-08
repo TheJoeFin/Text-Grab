@@ -98,6 +98,11 @@
                             Header="Auto Start OCR"
                             IsCheckable="True" />
                         <MenuItem
+                            x:Name="AlwaysUpdateEtwCheckBox"
+                            Header="Always Update Edit Text Window content"
+                            IsCheckable="True"
+                            IsChecked="True" />
+                        <MenuItem
                             Name="OpenImageMenuItem"
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image..." />
@@ -247,7 +252,10 @@
 
                 </StackPanel>
             </Grid>
-            <Border x:Name="RectanglesBorder" Grid.Row="1">
+            <Border
+                x:Name="RectanglesBorder"
+                Grid.Row="1"
+                ClipToBounds="True">
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
@@ -325,7 +333,8 @@
                         Content="Search For Text..."
                         Foreground="Black"
                         IsHitTestVisible="False"
-                        Opacity="0.5" />
+                        Opacity="0.5"
+                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
                     <controls:CollapsibleButton
                         x:Name="ClearBTN"
                         Grid.Column="1"
@@ -336,7 +345,8 @@
                         Click="ClearBTN_Click"
                         Foreground="Black"
                         IsSymbol="True"
-                        SymbolText="" />
+                        SymbolText=""
+                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
 
                     <Menu
                         x:Name="MatchesMenu"

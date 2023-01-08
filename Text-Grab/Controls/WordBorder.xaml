@@ -90,6 +90,7 @@
                         MouseDown="EditWordTextBox_MouseDown"
                         Style="{StaticResource TransparentTextBox}"
                         Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        TextChanged="EditWordTextBox_TextChanged"
                         Visibility="Visible">
                         <TextBox.ContextMenu>
                             <ContextMenu>

@@ -214,6 +214,12 @@ public partial class GrabFrame : Window
         GrabBTN.Click -= GrabBTN_Click;
     }
 
+    public void WordChanged()
+    {
+        reSearchTimer.Stop();
+        reSearchTimer.Start();
+    }
+
     public void MergeSelectedWordBorders()
     {
         FreezeGrabFrame();
@@ -531,9 +537,13 @@ public partial class GrabFrame : Window
 
         if (destinationTextBox is not null)
         {
+            if (AlwaysUpdateEtwCheckBox.IsChecked is false)
+                destinationTextBox.SelectedText = FrameText;
+            
             destinationTextBox.Select(destinationTextBox.SelectionStart + destinationTextBox.SelectionLength, 0);
             destinationTextBox.AppendText(Environment.NewLine);
             UpdateFrameText();
+
             return;
         }
 
@@ -603,12 +613,10 @@ public partial class GrabFrame : Window
         {
             SearchBox.Visibility = Visibility.Collapsed;
             MatchesMenu.Visibility = Visibility.Collapsed;
-            ClearBTN.Visibility = Visibility.Collapsed;
         }
         else
         {
             SearchBox.Visibility = Visibility.Visible;
-            ClearBTN.Visibility = Visibility.Visible;
         }
 
         if (this.Width < 580)
@@ -926,6 +934,7 @@ public partial class GrabFrame : Window
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
             MatchesTXTBLK.Text = $"Matches: 0";
+            UpdateFrameText();
             return;
         }
 
@@ -996,6 +1005,7 @@ public partial class GrabFrame : Window
 
         if (IsFromEditWindow
             && destinationTextBox is not null
+            && AlwaysUpdateEtwCheckBox.IsChecked is true
             && EditTextToggleButton.IsChecked is true)
         {
             destinationTextBox.SelectedText = FrameText;
@@ -1266,7 +1276,7 @@ public partial class GrabFrame : Window
         {
             Width = selectBorder.Width + 8,
             Height = selectBorder.Height - 6,
-            Word = ocrText.MakeStringSingleLine(),
+            Word = ocrText.Trim(),
             OwnerGrabFrame = this,
             Top = Canvas.GetTop(selectBorder) + 3,
             Left = Canvas.GetLeft(selectBorder) - 4,
@@ -1775,6 +1785,7 @@ public partial class GrabFrame : Window
 
     private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
     {
+        reSearchTimer.Stop();
         reSearchTimer.Start();
     }
 }

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
@@ -26,7 +27,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private SolidColorBrush matchingBackground = new SolidColorBrush(Colors.Black);
     private SolidColorBrush contrastingForeground = new SolidColorBrush(Colors.White);
     private int contextMenuBaseSize;
-
+    private DispatcherTimer debounceTimer = new();
 
     public SolidColorBrush MatchingBackground
     {
@@ -106,6 +107,15 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         InitializeComponent();
         DataContext = this;
         contextMenuBaseSize = EditWordTextBox.ContextMenu.Items.Count;
+
+        debounceTimer.Interval = new(0, 0, 0, 0, 300);
+        debounceTimer.Tick += DebounceTimer_Tick;
+    }
+
+    private void DebounceTimer_Tick(object? sender, EventArgs e)
+    {
+        debounceTimer.Stop();
+        OwnerGrabFrame?.WordChanged();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -309,5 +319,11 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private void EditWordTextBox_MouseDown(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
+    }
+
+    private void EditWordTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        debounceTimer.Stop();
+        debounceTimer.Start();
     }
 }
