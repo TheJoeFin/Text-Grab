@@ -820,11 +820,11 @@ public partial class GrabFrame : Window
             X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
             Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
         };
-        var wbList = wordBorders.ToList();
+
         try
         {
             AnalyedResultTable = new();
-            AnalyedResultTable.AnalyzeAsTable(wbList, rectCanvasSize);
+            AnalyedResultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
             RectanglesCanvas.Children.Add(AnalyedResultTable.TableLines);
         }
         catch (Exception ex)

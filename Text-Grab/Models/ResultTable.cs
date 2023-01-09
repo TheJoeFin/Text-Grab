@@ -172,7 +172,7 @@ public class ResultTable
         return wordBorders;
     }
 
-    public void AnalyzeAsTable(List<WordBorder> wordBorders, Rectangle rectCanvasSize)
+    public void AnalyzeAsTable(ICollection<WordBorder> wordBorders, Rectangle rectCanvasSize)
     {
         int hitGridSpacing = 3;
 
@@ -247,7 +247,7 @@ public class ResultTable
         return resultRows;
     }
 
-    private static List<int> CalculateRowAreas(Rectangle rectCanvasSize, int hitGridSpacing, int numberOfHorizontalLines, Canvas tableIntersectionCanvas, List<WordBorder> wordBorders)
+    private static List<int> CalculateRowAreas(Rectangle rectCanvasSize, int hitGridSpacing, int numberOfHorizontalLines, Canvas tableIntersectionCanvas, ICollection<WordBorder> wordBorders)
     {
         List<int> rowAreas = new();
 
@@ -270,7 +270,7 @@ public class ResultTable
         return rowAreas;
     }
 
-    private static void CheckInersectionsWithWordBorders(int hitGridSpacing, List<WordBorder> wordBorders, List<int> rowAreas, int i, Rect horzLineRect)
+    private static void CheckInersectionsWithWordBorders(int hitGridSpacing, ICollection<WordBorder> wordBorders, ICollection<int> rowAreas, int i, Rect horzLineRect)
     {
         foreach (WordBorder wb in wordBorders)
         {
@@ -282,7 +282,7 @@ public class ResultTable
         }
     }
 
-    private static List<WordBorder> CombineOutliers(List<WordBorder> wordBorders, List<ResultRow> resultRows, Canvas tableIntersectionCanvas, List<ResultColumn> resultColumns, Rect tableBoundingRect)
+    private static ICollection<WordBorder> CombineOutliers(ICollection<WordBorder> wordBorders, List<ResultRow> resultRows, Canvas tableIntersectionCanvas, List<ResultColumn> resultColumns, Rect tableBoundingRect)
     {
         // try 4 times to refine the rows and columns for outliers
         // on the fifth time set the word boundery properties
@@ -305,8 +305,8 @@ public class ResultTable
     }
 
     private static List<int> FindOutlierRowIds(
-        List<WordBorder> wordBorders,
-        List<ResultRow> resultRows,
+        ICollection<WordBorder> wordBorders,
+        ICollection<ResultRow> resultRows,
         Canvas tableIntersectionCanvas,
         Rect tableBoundingRect,
         int r,
@@ -347,7 +347,7 @@ public class ResultTable
     }
 
     private static List<int> FindOutlierColumnIds(
-        List<WordBorder> wordBorders,
+        ICollection<WordBorder> wordBorders,
         Canvas tableIntersectionCanvas,
         List<ResultColumn> resultColumns,
         Rect tableBoundingRect,
@@ -428,7 +428,7 @@ public class ResultTable
         return resultColumns;
     }
 
-    private static List<int> CalculateColumnAreas(Rectangle rectCanvasSize, int hitGridSpacing, int numberOfVerticalLines, Canvas tableIntersectionCanvas, List<WordBorder> wordBorders)
+    private static List<int> CalculateColumnAreas(Rectangle rectCanvasSize, int hitGridSpacing, int numberOfVerticalLines, Canvas tableIntersectionCanvas, ICollection<WordBorder> wordBorders)
     {
         List<int> columnAreas = new();
         for (int i = 0; i < numberOfVerticalLines; i++)
