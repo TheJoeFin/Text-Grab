@@ -485,6 +485,8 @@ public partial class FullscreenGrab : Window
         GrabFrame grabFrame = new();
         if (destinationTextBox is not null)
             grabFrame.DestinationTextBox = destinationTextBox;
+
+        grabFrame.TableToggleButton.IsChecked = TableToggleButton.IsChecked;
         grabFrame.Show();
 
         double posLeft = Canvas.GetLeft(selectBorder); // * dpi.DpiScaleX;
@@ -514,7 +516,7 @@ public partial class FullscreenGrab : Window
         if (Settings.Default.CorrectToLatin)
             grabbedText = grabbedText.ReplaceGreekOrCyrillicWithLatin();
 
-        if (SingleLineMenuItem.IsChecked is true)
+        if (SingleLineMenuItem.IsChecked is true && TableToggleButton.IsChecked is false)
             grabbedText = grabbedText.MakeStringSingleLine();
 
         textFromOCR = grabbedText;
