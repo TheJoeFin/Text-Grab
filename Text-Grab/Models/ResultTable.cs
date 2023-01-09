@@ -34,14 +34,21 @@ public class ResultTable
 
     }
 
-    public ResultTable(List<WordBorder> wordBorders, DpiScale dpiScale)
+    public ResultTable(ref List<WordBorder> wordBorders, DpiScale dpiScale)
     {
-        int borderBuffer = 14;
-        Rectangle bordersBorder = new(
-            (int)wordBorders.Select(w => w.Left).Min() - borderBuffer,
-            (int)wordBorders.Select(o => o.Top).Min() - borderBuffer,
-            (int)(wordBorders.Select(r => r.Right).Max() - wordBorders.Select(d => d.Left).Min()) + borderBuffer,
-            (int)(wordBorders.Select(b => b.Bottom).Max() - wordBorders.Select(o => o.Top).Min()) + borderBuffer);
+        int borderBuffer = 6;
+        var leftsMin = wordBorders.Select(x => x.Left).Min();
+        var topsMin = wordBorders.Select(x => x.Top).Min();
+        var rightsMax = wordBorders.Select(x => x.Right).Max();
+        var bottomsMax = wordBorders.Select(x => x.Bottom).Max();
+
+        Rectangle bordersBorder = new()
+        {
+            X = (int)leftsMin - borderBuffer,
+            Y = (int)topsMin - borderBuffer,
+            Width = (int)(rightsMax - leftsMin) + (borderBuffer * 5),
+            Height = (int)(bottomsMax - topsMin) + (borderBuffer * 5)
+        };
 
         bordersBorder.Width = (int)(bordersBorder.Width * dpiScale.DpiScaleX);
         bordersBorder.Height = (int)(bordersBorder.Height * dpiScale.DpiScaleY);
@@ -624,14 +631,16 @@ public class ResultTable
             {
                 Word = originalWB.Word,
                 Left = originalWB.Left,
-                Top = originalWB.Top ,
+                Top = originalWB.Top,
                 Width = originalWB.Width - 12,
-                Height = originalWB.Height - 6
+                Height = originalWB.Height - 6,
+                ResultRowID = originalWB.ResultRowID,
+                ResultColumnID = originalWB.ResultColumnID,
             };
             smallerBorders.Add(newWB);
         };
-        
-        ResultTable resultTable = new(smallerBorders, dpiScale);
+
+        ResultTable resultTable = new(ref smallerBorders, dpiScale);
         StringBuilder stringBuilder = new();
         GetTextFromTabledWordBorders(
             stringBuilder,
