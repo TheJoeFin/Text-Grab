@@ -588,7 +588,7 @@ public static class StringMethods
 
     public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)
     {
-        Regex regex = new(stringToRemove);
+        Regex regex = new(stringToRemove.EscapeSpecialRegexChars(false));
         return regex.Replace(stringToBeEdited, "");
     }
 
