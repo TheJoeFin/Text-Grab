@@ -96,6 +96,7 @@
                         <MenuItem
                             x:Name="AutoOcrCheckBox"
                             Header="Auto Start OCR"
+                            IsChecked="True"
                             IsCheckable="True" />
                         <MenuItem
                             x:Name="AlwaysUpdateEtwCheckBox"

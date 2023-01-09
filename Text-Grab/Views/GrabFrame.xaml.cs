@@ -354,6 +354,7 @@ public partial class GrabFrame : Window
         droppedImageSource = clipboardImage;
         FreezeToggleButton.IsChecked = true;
         FreezeGrabFrame();
+        FreezeToggleButton.Visibility = Visibility.Collapsed;
 
         reDrawTimer.Start();
     }
@@ -513,6 +514,9 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         ResetGrabFrame();
 
+        if (AutoOcrCheckBox.IsChecked is false)
+            return;
+
         if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
         {
             reDrawTimer.Start();
@@ -539,7 +543,7 @@ public partial class GrabFrame : Window
         {
             if (AlwaysUpdateEtwCheckBox.IsChecked is false)
                 destinationTextBox.SelectedText = FrameText;
-            
+
             destinationTextBox.Select(destinationTextBox.SelectionStart + destinationTextBox.SelectionLength, 0);
             destinationTextBox.AppendText(Environment.NewLine);
             UpdateFrameText();
@@ -666,8 +670,6 @@ public partial class GrabFrame : Window
             Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
         };
 
-
-
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
             (ocrResultOfWindow, windowFrameImageScale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, CurrentLanguage);
 
@@ -696,13 +698,21 @@ public partial class GrabFrame : Window
             if (bmp is not null)
                 backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
 
+            string ocrText = lineText.ToString();
+
+            if (Settings.Default.CorrectErrors)
+                ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
+
+            if (Settings.Default.CorrectToLatin)
+                ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
+
             WordBorder wordBorderBox = new()
             {
                 Width = lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale),
                 Height = lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale),
                 Top = lineRect.Y,
                 Left = lineRect.X,
-                Word = lineText.ToString().Trim(),
+                Word = ocrText,
                 OwnerGrabFrame = this,
                 LineNumber = lineNumber,
                 IsFromEditWindow = IsFromEditWindow,
@@ -810,11 +820,11 @@ public partial class GrabFrame : Window
             X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
             Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
         };
-
+        var wbList = wordBorders.ToList();
         try
         {
             AnalyedResultTable = new();
-            AnalyedResultTable.AnalyzeAsTable(wordBorders.ToList(), rectCanvasSize);
+            AnalyedResultTable.AnalyzeAsTable(wbList, rectCanvasSize);
             RectanglesCanvas.Children.Add(AnalyedResultTable.TableLines);
         }
         catch (Exception ex)
@@ -975,7 +985,6 @@ public partial class GrabFrame : Window
 
     private void UpdateFrameText()
     {
-
         string[] selectedWbs = wordBorders
             .OrderBy(b => b.Top)
             .Where(w => w.IsSelected)
@@ -985,8 +994,8 @@ public partial class GrabFrame : Window
 
         if (TableToggleButton.IsChecked is true)
         {
-            ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders.ToList(), isSpaceJoining);
             TryToPlaceTable();
+            ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders.ToList(), isSpaceJoining);
         }
         else
         {
@@ -1024,13 +1033,18 @@ public partial class GrabFrame : Window
         MatchesMenu.Visibility = Visibility.Collapsed;
     }
 
-    private void RefreshBTN_Click(object sender, RoutedEventArgs e)
+    private async void RefreshBTN_Click(object sender, RoutedEventArgs e)
     {
-        TextBox searchBox = SearchBox;
+        reDrawTimer.Stop();
         ResetGrabFrame();
 
-        reDrawTimer.Stop();
-        reDrawTimer.Start();
+        await Task.Delay(400);
+
+        frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+        GrabFrameImage.Source = frameContentImageSource;
+
+        if (SearchBox.Text is string searchText)
+            await DrawRectanglesAroundWords(searchText);
     }
 
     private void SettingsBTN_Click(object sender, RoutedEventArgs e)
@@ -1256,6 +1270,12 @@ public partial class GrabFrame : Window
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
         string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(zoomFactor), CurrentLanguage);
 
+        if (Settings.Default.CorrectErrors)
+            ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
+
+        if (Settings.Default.CorrectToLatin)
+            ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
+
         if (frameContentImageSource is BitmapImage bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
 
@@ -1275,11 +1295,11 @@ public partial class GrabFrame : Window
         WordBorder wordBorderBox = new()
         {
             Width = selectBorder.Width + 8,
-            Height = selectBorder.Height - 6,
+            Height = selectBorder.Height - 3,
             Word = ocrText.Trim(),
             OwnerGrabFrame = this,
             Top = Canvas.GetTop(selectBorder) + 3,
-            Left = Canvas.GetLeft(selectBorder) - 4,
+            Left = Canvas.GetLeft(selectBorder) - 8,
             MatchingBackground = backgroundBrush,
         };
 
@@ -1438,6 +1458,7 @@ public partial class GrabFrame : Window
         droppedImageSource = null;
         RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
+        FreezeToggleButton.Visibility = Visibility.Visible;
         this.Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
         reDrawTimer.Start();
@@ -1658,6 +1679,7 @@ public partial class GrabFrame : Window
             frameContentImageSource = droppedImage;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
+            FreezeToggleButton.Visibility = Visibility.Collapsed;
         }
         catch (Exception)
         {
