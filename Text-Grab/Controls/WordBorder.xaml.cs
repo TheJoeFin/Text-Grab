@@ -16,6 +16,7 @@ namespace Text_Grab.Controls;
 /// <summary>
 /// Interaction logic for WordBorder.xaml
 /// </summary>
+[DebuggerDisplay("{Word} : Size {Width}:{Height} Pos. {Left}:{Top} Table {ResultRowID}:{ResultColumnID}")]
 public partial class WordBorder : UserControl, INotifyPropertyChanged
 {
     public bool IsSelected { get; set; } = false;
