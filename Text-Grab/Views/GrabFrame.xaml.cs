@@ -351,7 +351,16 @@ public partial class GrabFrame : Window
         ResetGrabFrame();
         await Task.Delay(300);
 
-        droppedImageSource = clipboardImage;
+        if (clipboardImage is System.Windows.Interop.InteropBitmap interopBitmap)
+        {
+            System.Drawing.Bitmap bmp = ImageMethods.InteropBitmapToBitmap(interopBitmap);
+            droppedImageSource = ImageMethods.BitmapToImageSource(bmp);
+        }
+        else
+        {
+            droppedImageSource = clipboardImage;
+        }
+
         FreezeToggleButton.IsChecked = true;
         FreezeGrabFrame();
         FreezeToggleButton.Visibility = Visibility.Collapsed;
@@ -1265,10 +1274,10 @@ public partial class GrabFrame : Window
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
 
-        double zoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
+        double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
         Rect rect = selectBorder.GetAbsolutePlacement(true);
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
-        string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(zoomFactor), CurrentLanguage);
+        string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(viewBoxZoomFactor), CurrentLanguage);
 
         if (Settings.Default.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
@@ -1432,7 +1441,12 @@ public partial class GrabFrame : Window
     {
         GrabFrameImage.Opacity = 1;
         if (droppedImageSource is not null)
+        {
             GrabFrameImage.Source = droppedImageSource;
+            GrabFrameImage.UpdateLayout();
+            CanvasViewBox.Width = GrabFrameImage.Width;
+            CanvasViewBox.Height = GrabFrameImage.Height;
+        }
         else if (frameContentImageSource is not null)
             GrabFrameImage.Source = frameContentImageSource;
         else
@@ -1440,6 +1454,8 @@ public partial class GrabFrame : Window
             frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
             GrabFrameImage.Source = frameContentImageSource;
         }
+
+        CanvasViewBox.UpdateLayout();
 
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
