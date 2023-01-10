@@ -383,35 +383,28 @@ public partial class QuickSimpleLookup : Window
         List<LookupItem> selectedLookupItems = new();
 
         foreach (object item in MainDataGrid.SelectedItems)
-        {
             if (item is LookupItem selectedLookupItem)
                 selectedLookupItems.Add(selectedLookupItem);
-        }
 
         if (selectedLookupItems.Count == 0)
             selectedLookupItems.Add(firstLookupItem);
 
         StringBuilder stringBuilder = new();
 
-        // string textVal = lookupItem.longValue as string;
-
-        if ((Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+        switch (KeyboardExtensions.GetKeyboardModifiersDown())
         {
-            // Copy all of the filtered results into the clipboard
-            foreach (object item in MainDataGrid.ItemsSource)
-            {
-                if (item is not LookupItem luItem)
-                    continue;
+            case KeyboardModifiersDown.ShiftCtrlAlt:
+            case KeyboardModifiersDown.ShiftCtrl:
+                // Copy all of the filtered results into the clipboard
+                foreach (object item in MainDataGrid.ItemsSource)
+                {
+                    if (item is not LookupItem luItem)
+                        continue;
 
-                stringBuilder.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
-            }
-        }
-        else
-        {
-            if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt)
-                && Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            {
+                    stringBuilder.AppendLine(luItem.ToString());
+                }
+                break;
+            case KeyboardModifiersDown.CtrlAlt:
                 if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
                     return;
 
@@ -421,17 +414,19 @@ public partial class QuickSimpleLookup : Window
                     this.Close();
                     return;
                 }
-            }
-
-            foreach (LookupItem lItem in selectedLookupItems)
-            {
-                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                break;
+            case KeyboardModifiersDown.Ctrl:
+                foreach (LookupItem lItem in selectedLookupItems)
                     stringBuilder.AppendLine(lItem.shortValue);
-                else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
-                    stringBuilder.AppendLine(String.Join(" ", new string[] { lItem.shortValue, lItem.longValue }));
-                else
+                break;
+            case KeyboardModifiersDown.Shift:
+                foreach (LookupItem lItem in selectedLookupItems)
+                    stringBuilder.AppendLine(lItem.ToString());
+                break;
+            default:
+                foreach (LookupItem lItem in selectedLookupItems)
                     stringBuilder.AppendLine(lItem.longValue);
-            }
+                break;
         }
 
         if (string.IsNullOrEmpty(stringBuilder.ToString()))
@@ -445,20 +440,19 @@ public partial class QuickSimpleLookup : Window
             DestinationTextBox.SelectedText = stringBuilder.ToString();
             DestinationTextBox.Select(DestinationTextBox.SelectionStart + stringBuilder.ToString().Length, 0);
             DestinationTextBox.Focus();
-        }
-        else
-        {
-            try
-            {
-                Clipboard.SetText(stringBuilder.ToString());
-            }
-            catch (Exception)
-            {
-                Debug.WriteLine("Failed to set clipboard text");
-            }
+            this.Close();
+            return;
         }
 
-        this.Close();
+        try
+        {
+            Clipboard.SetText(stringBuilder.ToString());
+            this.Close();
+        }
+        catch (Exception)
+        {
+            Debug.WriteLine("Failed to set clipboard text");
+        }
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
