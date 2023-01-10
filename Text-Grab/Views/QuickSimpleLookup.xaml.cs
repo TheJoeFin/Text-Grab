@@ -33,6 +33,8 @@ public partial class QuickSimpleLookup : Window
 
     private string valueUnderEdit = string.Empty;
 
+    private LookupItem? lastSelection;
+
     public QuickSimpleLookup()
     {
         InitializeComponent();
@@ -78,7 +80,7 @@ public partial class QuickSimpleLookup : Window
         MainDataGrid.ItemsSource = ItemsDictionary;
     }
 
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (sender is not TextBox searchingBox || !IsLoaded)
             return;
@@ -99,6 +101,31 @@ public partial class QuickSimpleLookup : Window
         {
             MainDataGrid.ItemsSource = ItemsDictionary;
             MainDataGrid.CanUserAddRows = true;
+            int maxMsDelay = 300;
+            if (lastSelection is not null)
+            {
+                int lastSelectionInt = ItemsDictionary.IndexOf(lastSelection);
+                DataGridRow row = (DataGridRow)MainDataGrid.ItemContainerGenerator.ContainerFromIndex(lastSelectionInt);
+                if (row is null)
+                {
+                    MainDataGrid.UpdateLayout();
+                    MainDataGrid.ScrollIntoView(MainDataGrid.Items[lastSelectionInt]);
+                    await Task.Delay(lastSelectionInt > maxMsDelay ? maxMsDelay : lastSelectionInt);
+                    row = (DataGridRow)MainDataGrid.ItemContainerGenerator.ContainerFromIndex(lastSelectionInt);
+                }
+
+                if (row is not null)
+                {
+                    row.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                    await Task.Delay(lastSelectionInt > maxMsDelay ? maxMsDelay : lastSelectionInt);
+                }
+
+                MainDataGrid.SelectedIndex = lastSelectionInt;
+                lastSelection = null;
+                UpdateRowCount();
+                SearchBox.Focus();
+                return;
+            }
         }
         else
             MainDataGrid.CanUserAddRows = false;
@@ -185,7 +212,7 @@ public partial class QuickSimpleLookup : Window
         return newRow;
     }
 
-    private async void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    private async void QuickSimpleLookup_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         switch (e.Key)
         {
@@ -208,11 +235,24 @@ public partial class QuickSimpleLookup : Window
                 ClearOrExit();
                 e.Handled = true;
                 break;
+            case Key.Delete:
+                if (IsEditingDataGrid)
+                    return;
+                RowDeleted();
+                e.Handled = true;
+                break;
             case Key.Down:
                 if (SearchBox.IsFocused)
                 {
                     int selectedIndex = MainDataGrid.SelectedIndex;
                     MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+                    e.Handled = true;
+                }
+                break;
+            case Key.E:
+                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
+                {
+                    SearchBox.Focus();
                     e.Handled = true;
                 }
                 break;
@@ -242,6 +282,45 @@ public partial class QuickSimpleLookup : Window
         }
     }
 
+    private List<LookupItem> GetMainDataGridSelection()
+    {
+        var selectedItems = MainDataGrid.SelectedItems as List<LookupItem>;
+
+        if (selectedItems is null || selectedItems.Count == 0)
+        {
+            selectedItems = new List<LookupItem>();
+            if (MainDataGrid.SelectedItem is not LookupItem selectedLookupItem)
+                return selectedItems;
+
+            selectedItems.Add(selectedLookupItem);
+        }
+
+        return selectedItems;
+    }
+
+    private void RowDeleted()
+    {
+        var currentItemSource = MainDataGrid.ItemsSource;
+        if (currentItemSource is not List<LookupItem> filteredLookupList)
+            return;
+
+        List<LookupItem> selectedItems = GetMainDataGridSelection();
+
+        MainDataGrid.ItemsSource = null;
+
+        foreach (object item in selectedItems)
+        {
+            if (item is LookupItem selectedLookupItem)
+            {
+                filteredLookupList.Remove(selectedLookupItem);
+                ItemsDictionary.Remove(selectedLookupItem);
+                SaveBTN.Visibility = Visibility.Visible;
+            }
+        }
+
+        MainDataGrid.ItemsSource = filteredLookupList;
+    }
+
     private void GoToBeginningOfMainDataGrid()
     {
         if (MainDataGrid.ItemsSource is not List<LookupItem> lookupItemsList)
@@ -261,7 +340,7 @@ public partial class QuickSimpleLookup : Window
 
         if (lookupItemsList.Count < 1)
             return;
-        
+
         MainDataGrid.ScrollIntoView(lookupItemsList.Last());
         MainDataGrid.SelectedItem = lookupItemsList.Last();
     }
@@ -283,12 +362,16 @@ public partial class QuickSimpleLookup : Window
     private void ClearOrExit()
     {
         if (string.IsNullOrEmpty(SearchBox.Text))
-            this.Close();
-        else
         {
-            SearchBox.Clear();
-            SearchBox.Focus();
+            this.Close();
+            return;
         }
+
+        lastSelection = GetMainDataGridSelection().FirstOrDefault();
+
+        SearchBox.Clear();
+        SearchBox.Focus();
+
     }
 
     private void PutValueIntoClipboard()
@@ -300,35 +383,28 @@ public partial class QuickSimpleLookup : Window
         List<LookupItem> selectedLookupItems = new();
 
         foreach (object item in MainDataGrid.SelectedItems)
-        {
             if (item is LookupItem selectedLookupItem)
                 selectedLookupItems.Add(selectedLookupItem);
-        }
 
         if (selectedLookupItems.Count == 0)
             selectedLookupItems.Add(firstLookupItem);
 
         StringBuilder stringBuilder = new();
 
-        // string textVal = lookupItem.longValue as string;
-
-        if ((Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+        switch (KeyboardExtensions.GetKeyboardModifiersDown())
         {
-            // Copy all of the filtered results into the clipboard
-            foreach (object item in MainDataGrid.ItemsSource)
-            {
-                if (item is not LookupItem luItem)
-                    continue;
+            case KeyboardModifiersDown.ShiftCtrlAlt:
+            case KeyboardModifiersDown.ShiftCtrl:
+                // Copy all of the filtered results into the clipboard
+                foreach (object item in MainDataGrid.ItemsSource)
+                {
+                    if (item is not LookupItem luItem)
+                        continue;
 
-                stringBuilder.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
-            }
-        }
-        else
-        {
-            if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt)
-                && Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            {
+                    stringBuilder.AppendLine(luItem.ToString());
+                }
+                break;
+            case KeyboardModifiersDown.CtrlAlt:
                 if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
                     return;
 
@@ -338,17 +414,19 @@ public partial class QuickSimpleLookup : Window
                     this.Close();
                     return;
                 }
-            }
-
-            foreach (LookupItem lItem in selectedLookupItems)
-            {
-                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                break;
+            case KeyboardModifiersDown.Ctrl:
+                foreach (LookupItem lItem in selectedLookupItems)
                     stringBuilder.AppendLine(lItem.shortValue);
-                else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
-                    stringBuilder.AppendLine(String.Join(" ", new string[] { lItem.shortValue, lItem.longValue }));
-                else
+                break;
+            case KeyboardModifiersDown.Shift:
+                foreach (LookupItem lItem in selectedLookupItems)
+                    stringBuilder.AppendLine(lItem.ToString());
+                break;
+            default:
+                foreach (LookupItem lItem in selectedLookupItems)
                     stringBuilder.AppendLine(lItem.longValue);
-            }
+                break;
         }
 
         if (string.IsNullOrEmpty(stringBuilder.ToString()))
@@ -362,20 +440,19 @@ public partial class QuickSimpleLookup : Window
             DestinationTextBox.SelectedText = stringBuilder.ToString();
             DestinationTextBox.Select(DestinationTextBox.SelectionStart + stringBuilder.ToString().Length, 0);
             DestinationTextBox.Focus();
-        }
-        else
-        {
-            try
-            {
-                Clipboard.SetText(stringBuilder.ToString());
-            }
-            catch (Exception)
-            {
-                Debug.WriteLine("Failed to set clipboard text");
-            }
+            this.Close();
+            return;
         }
 
-        this.Close();
+        try
+        {
+            Clipboard.SetText(stringBuilder.ToString());
+            this.Close();
+        }
+        catch (Exception)
+        {
+            Debug.WriteLine("Failed to set clipboard text");
+        }
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
