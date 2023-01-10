@@ -53,8 +53,6 @@ public partial class GrabFrame : Window
 
     private ImageSource? frameContentImageSource;
 
-    private ImageSource? droppedImageSource;
-
     private bool isSpaceJoining = true;
 
     private ResultTable? AnalyedResultTable;
@@ -346,7 +344,6 @@ public partial class GrabFrame : Window
             return;
 
         reDrawTimer.Stop();
-        droppedImageSource = null;
 
         ResetGrabFrame();
         await Task.Delay(300);
@@ -354,11 +351,11 @@ public partial class GrabFrame : Window
         if (clipboardImage is System.Windows.Interop.InteropBitmap interopBitmap)
         {
             System.Drawing.Bitmap bmp = ImageMethods.InteropBitmapToBitmap(interopBitmap);
-            droppedImageSource = ImageMethods.BitmapToImageSource(bmp);
+            frameContentImageSource = ImageMethods.BitmapToImageSource(bmp);
         }
         else
         {
-            droppedImageSource = clipboardImage;
+            frameContentImageSource = clipboardImage;
         }
 
         FreezeToggleButton.IsChecked = true;
@@ -1440,22 +1437,13 @@ public partial class GrabFrame : Window
     private void FreezeGrabFrame()
     {
         GrabFrameImage.Opacity = 1;
-        if (droppedImageSource is not null)
-        {
-            GrabFrameImage.Source = droppedImageSource;
-            GrabFrameImage.UpdateLayout();
-            CanvasViewBox.Width = GrabFrameImage.Width;
-            CanvasViewBox.Height = GrabFrameImage.Height;
-        }
-        else if (frameContentImageSource is not null)
+        if (frameContentImageSource is not null)
             GrabFrameImage.Source = frameContentImageSource;
         else
         {
             frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
             GrabFrameImage.Source = frameContentImageSource;
         }
-
-        CanvasViewBox.UpdateLayout();
 
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
@@ -1471,7 +1459,6 @@ public partial class GrabFrame : Window
         Topmost = true;
         GrabFrameImage.Opacity = 0;
         frameContentImageSource = null;
-        droppedImageSource = null;
         RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         FreezeToggleButton.Visibility = Visibility.Visible;
