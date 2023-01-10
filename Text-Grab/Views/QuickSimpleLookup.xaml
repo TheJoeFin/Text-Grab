@@ -12,7 +12,7 @@
     Background="{StaticResource DarkBackground}"
     Closing="Window_Closing"
     Loaded="Window_Loaded"
-    PreviewKeyDown="SearchBox_PreviewKeyDown"
+    PreviewKeyDown="QuickSimpleLookup_PreviewKeyDown"
     Topmost="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -134,6 +134,7 @@
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
+            HorizontalScrollBarVisibility="Disabled"
             CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
