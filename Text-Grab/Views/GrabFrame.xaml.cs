@@ -98,6 +98,8 @@ public partial class GrabFrame : Window
     public static RoutedCommand PasteCommand = new();
     public static RoutedCommand UndoCommand = new();
     public static RoutedCommand RedoCommand = new();
+    public static RoutedCommand MergeWordsCommand = new();
+    public static RoutedCommand DeleteWordsCommand = new();
 
     public string FrameText { get; private set; } = string.Empty;
 
@@ -310,7 +312,64 @@ public partial class GrabFrame : Window
 
     public void BreakWordBorderIntoWords(WordBorder wordBorder)
     {
+        List<string> listOfWords = wordBorder.Word.Split().ToList();
 
+        double top = wordBorder.Top;
+        double left = wordBorder.Left;
+        int numberOfLines = 1 + wordBorder.Word.Count(c => c == '\n');
+        double wordHeight = wordBorder.Height / numberOfLines;
+        double wordFractionWidth = wordBorder.Width / listOfWords.Count;
+        double lineWidth = (double)GetWidthOfString(wordBorder.Word, (int)wordFractionWidth, (int)wordHeight);
+        double diffBetweenWordAndBorder = (wordBorder.Width - (lineWidth / 1.5)) / listOfWords.Count;
+
+        DeleteThisWordBorder(wordBorder);
+        UndoRedo.StartTransaction();
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = new() { wordBorder },
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+
+        foreach (string word in listOfWords)
+        {
+            double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / 1.5;
+            
+            WordBorder wordBorderBox = new()
+            {
+                Width = wordWidth,
+                Height = wordHeight,
+                Word = word,
+                OwnerGrabFrame = this,
+                Top = top,
+                Left = left,
+                MatchingBackground = wordBorder.MatchingBackground,
+            };
+
+            wordBorders.Add(wordBorderBox);
+            _ = RectanglesCanvas.Children.Add(wordBorderBox);
+
+            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+                new GrabFrameOperationArgs()
+                {
+                    WordBorder = wordBorderBox,
+                    WordBorders = wordBorders,
+                    GrabFrameCanvas = RectanglesCanvas
+                });
+
+            left += wordWidth + diffBetweenWordAndBorder;
+        }
+        UndoRedo.EndTransaction();
+    }
+
+    private float GetWidthOfString(string str, int width, int height)
+    {
+        using System.Drawing.Bitmap objBitmap = new System.Drawing.Bitmap(width, height);
+        using System.Drawing.Graphics objGraphics = System.Drawing.Graphics.FromImage(objBitmap);
+
+        System.Drawing.SizeF stringSize = objGraphics.MeasureString(str, new System.Drawing.Font("Segoe UI", 12));
+        return stringSize.Width;
     }
 
     private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
@@ -364,6 +423,36 @@ public partial class GrabFrame : Window
 
         reDrawTimer.Start();
     }
+
+    private void CanChangeWordBorderExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (wordBorders.Any(x => x.IsSelected))
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
+    }
+
+    private void DeleteWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
+    {
+        UndoRedo.StartTransaction();
+        var deletedWordBorders = DeleteSelectedWordBorders();
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = deletedWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+
+        UndoRedo.EndTransaction();
+        reSearchTimer.Start();
+    }
+
+    private void MergeWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
+    {
+        MergeSelectedWordBorders();
+    }
+
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {

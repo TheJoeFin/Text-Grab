@@ -58,6 +58,16 @@
             CanExecute="CanRedoExecuted"
             Command="{x:Static local:GrabFrame.RedoCommand}"
             Executed="RedoExecuted" />
+        <CommandBinding
+            CanExecute="CanChangeWordBorderExecute"
+            Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
+            Executed="DeleteWordBordersExecuted" />
+        <CommandBinding
+            CanExecute="CanChangeWordBorderExecute"
+            Command="{x:Static local:GrabFrame.MergeWordsCommand}"
+            Executed="MergeWordBordersExecuted" />
+
+
     </Window.CommandBindings>
 
 
@@ -96,8 +106,8 @@
                         <MenuItem
                             x:Name="AutoOcrCheckBox"
                             Header="Auto Start OCR"
-                            IsChecked="True"
-                            IsCheckable="True" />
+                            IsCheckable="True"
+                            IsChecked="True" />
                         <MenuItem
                             x:Name="AlwaysUpdateEtwCheckBox"
                             Header="Always Update Edit Text Window content"
@@ -281,6 +291,10 @@
                             <Canvas.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem
+                                        Command="{x:Static local:GrabFrame.PasteCommand}"
+                                        Header="Paste Image"
+                                        InputGestureText="Ctrl + Shift + V" />
+                                    <MenuItem
                                         x:Name="AspectRationMI"
                                         Checked="AspectRationMI_Checked"
                                         Header="Maintain Aspect Ratio"
@@ -293,9 +307,13 @@
                                         Header="Toggle Freeze" />
                                     <Separator />
                                     <MenuItem
-                                        Command="{x:Static local:GrabFrame.PasteCommand}"
-                                        Header="Paste Image"
-                                        InputGestureText="Ctrl + Shift + V" />
+                                        x:Name="MergeWordBordersMenuItem"
+                                        Command="{x:Static local:GrabFrame.MergeWordsCommand}"
+                                        Header="Merge Word Borders" />
+                                    <MenuItem
+                                        x:Name="DeleteWordMenuItem"
+                                        Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
+                                        Header="_Delete selected words" />
                                 </ContextMenu>
                             </Canvas.ContextMenu>
                         </Canvas>
