@@ -314,13 +314,15 @@ public partial class GrabFrame : Window
     {
         List<string> listOfWords = wordBorder.Word.Split().ToList();
 
+        const double widthScaleAdjstFactor = 1.5;
+
         double top = wordBorder.Top;
         double left = wordBorder.Left;
         int numberOfLines = 1 + wordBorder.Word.Count(c => c == '\n');
         double wordHeight = wordBorder.Height / numberOfLines;
         double wordFractionWidth = wordBorder.Width / listOfWords.Count;
         double lineWidth = (double)GetWidthOfString(wordBorder.Word, (int)wordFractionWidth, (int)wordHeight);
-        double diffBetweenWordAndBorder = (wordBorder.Width - (lineWidth / 1.5)) / listOfWords.Count;
+        double diffBetweenWordAndBorder = (wordBorder.Width - (lineWidth / widthScaleAdjstFactor)) / listOfWords.Count;
 
         DeleteThisWordBorder(wordBorder);
         UndoRedo.StartTransaction();
@@ -334,8 +336,8 @@ public partial class GrabFrame : Window
 
         foreach (string word in listOfWords)
         {
-            double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / 1.5;
-            
+            double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / widthScaleAdjstFactor;
+            wordWidth += 8; // this is to account for the 8px left border thickness
             WordBorder wordBorderBox = new()
             {
                 Width = wordWidth,
@@ -363,12 +365,17 @@ public partial class GrabFrame : Window
         UndoRedo.EndTransaction();
     }
 
+    public List<WordBorder> SelectedWordBorders()
+    {
+        return wordBorders.Where(w => w.IsSelected).ToList();
+    }
+
     private float GetWidthOfString(string str, int width, int height)
     {
         using System.Drawing.Bitmap objBitmap = new System.Drawing.Bitmap(width, height);
         using System.Drawing.Graphics objGraphics = System.Drawing.Graphics.FromImage(objBitmap);
 
-        System.Drawing.SizeF stringSize = objGraphics.MeasureString(str, new System.Drawing.Font("Segoe UI", 12));
+        System.Drawing.SizeF stringSize = objGraphics.MeasureString(str, new System.Drawing.Font("Segoe UI", height));
         return stringSize.Width;
     }
 
@@ -778,8 +785,8 @@ public partial class GrabFrame : Window
         if (frameContentImageSource is BitmapImage bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
 
-        int numberOfMatches = 0;
         int lineNumber = 0;
+        double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
 
         foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
         {
@@ -803,10 +810,10 @@ public partial class GrabFrame : Window
 
             WordBorder wordBorderBox = new()
             {
-                Width = lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale),
-                Height = lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale),
-                Top = lineRect.Y,
-                Left = lineRect.X,
+                Width = ((lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale)) + 12) / viewBoxZoomFactor,
+                Height = ((lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale)) + 4) / viewBoxZoomFactor,
+                Top = (lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 2) / viewBoxZoomFactor,
+                Left = (lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 10) / viewBoxZoomFactor,
                 Word = ocrText,
                 OwnerGrabFrame = this,
                 LineNumber = lineNumber,
@@ -814,31 +821,28 @@ public partial class GrabFrame : Window
                 MatchingBackground = backgroundBrush,
             };
 
-            if ((bool)ExactMatchChkBx.IsChecked!)
-            {
-                if (lineText.ToString().Equals(searchWord, StringComparison.CurrentCulture))
-                {
-                    wordBorderBox.Select();
-                    numberOfMatches++;
-                }
-            }
-            else
-            {
-                if (!string.IsNullOrWhiteSpace(searchWord)
-                    && lineText.ToString().Contains(searchWord, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    wordBorderBox.Select();
-                    numberOfMatches++;
-                }
-            }
             wordBorders.Add(wordBorderBox);
             _ = RectanglesCanvas.Children.Add(wordBorderBox);
-            wordBorderBox.Left = lineRect.Left / (dpi.DpiScaleX * windowFrameImageScale);
-            wordBorderBox.Top = lineRect.Top / (dpi.DpiScaleY * windowFrameImageScale);
 
             lineNumber++;
         }
 
+        SetRotationBasedOnOcrResult();
+
+        if (Settings.Default.TryToReadBarcodes)
+            TryToReadBarcodes(dpi);
+
+        if (IsWordEditMode)
+            EnterEditMode();
+
+        isDrawing = false;
+
+        bmp?.Dispose();
+        reSearchTimer.Start();
+    }
+
+    private void SetRotationBasedOnOcrResult()
+    {
         if (ocrResultOfWindow != null && ocrResultOfWindow.TextAngle != null)
         {
             RotateTransform transform = new((double)ocrResultOfWindow.TextAngle)
@@ -857,38 +861,6 @@ public partial class GrabFrame : Window
             };
             RectanglesCanvas.RenderTransform = transform;
         }
-
-        if (Settings.Default.TryToReadBarcodes)
-            TryToReadBarcodes(dpi);
-
-        List<WordBorder> wordBordersRePlace = new();
-        foreach (UIElement child in RectanglesCanvas.Children)
-        {
-            if (child is WordBorder wordBorder)
-                wordBordersRePlace.Add(wordBorder);
-        }
-        RectanglesCanvas.Children.Clear();
-        foreach (WordBorder wordBorder in wordBordersRePlace)
-        {
-            // First the Word borders are placed smaller, then table analysis occurs.
-            // After table can be analyzed with the position of the word borders they are adjusted 
-            wordBorder.Width += 16;
-            wordBorder.Height += 4;
-            double leftWB = Canvas.GetLeft(wordBorder);
-            double topWB = Canvas.GetTop(wordBorder);
-            wordBorder.Left = leftWB - 10;
-            wordBorder.Top = topWB - 2;
-            RectanglesCanvas.Children.Add(wordBorder);
-        }
-
-        if (IsWordEditMode)
-            EnterEditMode();
-
-        MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
-        isDrawing = false;
-
-        bmp?.Dispose();
-        reSearchTimer.Start();
     }
 
     private void RemoveTableLines()
