@@ -99,6 +99,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public double Bottom => Top + Height;
 
+    public static RoutedCommand MergeWordsCommand = new();
+
     public bool IsFromEditWindow { get; set; } = false;
 
     public GrabFrame? OwnerGrabFrame { get; set; }
@@ -174,6 +176,19 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         EditWordTextBox.Focus();
         Keyboard.Focus(EditWordTextBox);
         EditWordTextBox.SelectAll();
+    }
+
+    private void CanMergeWordBorderExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (OwnerGrabFrame?.SelectedWordBorders().Count > 1)
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
+    }
+
+    private void MergeWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
+    {
+        OwnerGrabFrame?.MergeSelectedWordBorders();
     }
 
     private void WordBorder_MouseEnter(object sender, RoutedEventArgs e)

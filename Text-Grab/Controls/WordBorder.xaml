@@ -79,7 +79,7 @@
             <Separator />
             <MenuItem
                 x:Name="MergeWordBordersMenuItem"
-                Click="MergeWordBordersMenuItem_Click"
+                Command="{x:Static local:WordBorder.MergeWordsCommand}"
                 Header="_Merge Selected Word Borders" />
             <MenuItem
                 x:Name="BreakIntoWordsMenuItem"
@@ -96,6 +96,13 @@
                 Header="_Delete" />
         </ContextMenu>
     </UserControl.Resources>
+
+    <UserControl.CommandBindings>
+        <CommandBinding
+            CanExecute="CanMergeWordBorderExecute"
+            Command="{x:Static local:WordBorder.MergeWordsCommand}"
+            Executed="MergeWordBordersExecuted" />
+    </UserControl.CommandBindings>
     <Grid>
         <Border
             x:Name="WordBorderBorder"
