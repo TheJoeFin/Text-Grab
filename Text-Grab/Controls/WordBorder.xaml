@@ -66,6 +66,35 @@
                 </MultiTrigger>
             </Style.Triggers>
         </Style>
+
+        <ContextMenu x:Key="ContextOptions">
+            <MenuItem
+                x:Name="TryToNumberMenuItem"
+                Click="TryToNumberMenuItem_Click"
+                Header="Try To Make _Numbers" />
+            <MenuItem
+                x:Name="TryToAlphaMenuItem"
+                Click="TryToAlphaMenuItem_Click"
+                Header="Try To Make _Letters" />
+            <Separator />
+            <MenuItem
+                x:Name="MergeWordBordersMenuItem"
+                Click="MergeWordBordersMenuItem_Click"
+                Header="_Merge Selected Word Borders" />
+            <MenuItem
+                x:Name="BreakIntoWordsMenuItem"
+                Click="BreakIntoWordsMenuItem_Click"
+                Header="_Break into words" />
+            <MenuItem
+                x:Name="SearchForSimilarMenuItem"
+                Click="SearchForSimilarMenuItem_Click"
+                Header="_Search for similar text" />
+            <Separator />
+            <MenuItem
+                x:Name="DeleteWordMenuItem"
+                Click="DeleteWordMenuItem_Click"
+                Header="_Delete" />
+        </ContextMenu>
     </UserControl.Resources>
     <Grid>
         <Border
@@ -73,6 +102,8 @@
             Margin="0,0,0,0"
             BorderBrush="{StaticResource Teal}"
             BorderThickness="8,0,0,1"
+            ContextMenu="{StaticResource ContextOptions}"
+            ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
             CornerRadius="2">
             <Grid x:Name="MainGrid" ClipToBounds="True">
                 <Viewbox x:Name="EditTextViewBox">
@@ -83,46 +114,17 @@
                         Margin="-1,-3,-1,-1"
                         d:Text="Test g"
                         AcceptsReturn="True"
+                        ContextMenu="{StaticResource ContextOptions}"
                         ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
                         FontFamily="Segoe UI"
+                        FontSize="12"
                         FontWeight="Medium"
                         Foreground="White"
                         MouseDown="EditWordTextBox_MouseDown"
                         Style="{StaticResource TransparentTextBox}"
                         Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         TextChanged="EditWordTextBox_TextChanged"
-                        Visibility="Visible">
-                        <TextBox.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem
-                                    x:Name="TryToNumberMenuItem"
-                                    Click="TryToNumberMenuItem_Click"
-                                    Header="Try To Make _Numbers" />
-                                <MenuItem
-                                    x:Name="TryToAlphaMenuItem"
-                                    Click="TryToAlphaMenuItem_Click"
-                                    Header="Try To Make _Letters" />
-                                <Separator />
-                                <MenuItem
-                                    x:Name="MergeWordBordersMenuItem"
-                                    Click="MergeWordBordersMenuItem_Click"
-                                    Header="_Merge Selected Word Borders" />
-                                <MenuItem
-                                    x:Name="BreakIntoWordsMenuItem"
-                                    Click="BreakIntoWordsMenuItem_Click"
-                                    Header="_Break into words" />
-                                <MenuItem
-                                    x:Name="SearchForSimilarMenuItem"
-                                    Click="SearchForSimilarMenuItem_Click"
-                                    Header="_Search for similar text" />
-                                <Separator />
-                                <MenuItem
-                                    x:Name="DeleteWordMenuItem"
-                                    Click="DeleteWordMenuItem_Click"
-                                    Header="_Delete" />
-                            </ContextMenu>
-                        </TextBox.ContextMenu>
-                    </TextBox>
+                        Visibility="Visible" />
                 </Viewbox>
             </Grid>
         </Border>

@@ -107,7 +107,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         InitializeComponent();
         DataContext = this;
-        contextMenuBaseSize = EditWordTextBox.ContextMenu.Items.Count;
+        contextMenuBaseSize = WordBorderBorder.ContextMenu.Items.Count;
 
         debounceTimer.Interval = new(0, 0, 0, 0, 300);
         debounceTimer.Tick += DebounceTimer_Tick;
@@ -191,11 +191,14 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        ContextMenu textBoxContextMenu = EditWordTextBox.ContextMenu;
+        if (sender is not FrameworkElement senderElement)
+            return;
+
+        ContextMenu textBoxContextMenu = senderElement.ContextMenu;
 
         while (textBoxContextMenu.Items.Count > contextMenuBaseSize)
         {
-            EditWordTextBox.ContextMenu?.Items.RemoveAt(contextMenuBaseSize);
+            senderElement.ContextMenu?.Items.RemoveAt(contextMenuBaseSize);
         }
 
         if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
@@ -210,7 +213,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             {
                 Process.Start(new ProcessStartInfo(Word) { UseShellExecute = true });
             };
-            EditWordTextBox.ContextMenu?.Items.Add(urlMi);
+            senderElement.ContextMenu?.Items.Add(urlMi);
         }
     }
 
@@ -286,9 +289,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         this.MouseDoubleClick -= WordBorderControl_MouseDoubleClick;
         this.MouseDown -= WordBorderControl_MouseDown;
         this.Unloaded -= WordBorderControl_Unloaded;
-
-        TryToAlphaMenuItem.Click -= TryToAlphaMenuItem_Click;
-        TryToNumberMenuItem.Click -= TryToNumberMenuItem_Click;
     }
 
     private void MoveResizeBorder_MouseDown(object sender, MouseButtonEventArgs e)
