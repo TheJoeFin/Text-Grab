@@ -13,7 +13,17 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
 {
     private string _buttonText = "Button Text";
 
-    public bool IsSymbol { get; set; } = false;
+    private bool isSymbol = false;
+    public bool IsSymbol
+    {
+        get { return isSymbol; }
+        set
+        {
+            isSymbol = value;
+            ChangeButtonLayout_Click();
+        }
+    }
+
 
     public bool CanChangeStyle { get; set; } = true;
 
@@ -61,7 +71,7 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
 
     private void CollapsibleButton_Loaded(object sender, RoutedEventArgs e)
     {
-        if (IsSymbol)
+        if (isSymbol)
         {
             // change to a symbol button
             Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
@@ -71,17 +81,18 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
         }
     }
 
-    private void ChangeButtonLayout_Click(object sender, System.Windows.RoutedEventArgs e)
+    private void ChangeButtonLayout_Click(object? sender = null, System.Windows.RoutedEventArgs? e = null)
     {
-        if (IsSymbol)
+        if (sender is not null)
+            isSymbol = !isSymbol;
+
+        if (!isSymbol)
         {
             // change to a normal button
             Style? tealButtonStyle = this.FindResource("TealColor") as Style;
             if (tealButtonStyle != null)
                 this.Style = tealButtonStyle;
             ButtonTextBlock.Visibility = Visibility.Visible; ;
-
-            IsSymbol = false;
         }
         else
         {
@@ -90,8 +101,6 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
             if (SymbolButtonStyle != null)
                 this.Style = SymbolButtonStyle;
             ButtonTextBlock.Visibility = Visibility.Collapsed;
-
-            IsSymbol = true;
         }
     }
 }
