@@ -139,6 +139,11 @@
                             Command="{x:Static local:GrabFrame.UndoCommand}"
                             Header="Undo"
                             InputGestureText="Ctrl + Z" />
+                        <MenuItem
+                            Name="AddEditOcrMenuItem"
+                            Header="Add, move, or Resize lines"
+                            IsCheckable="True"
+                            InputGestureText="Hold Ctrl" />
                         <Separator />
                         <MenuItem
                             Click="RefreshBTN_Click"
@@ -449,11 +454,11 @@
                         <controls:CollapsibleButton
                             x:Name="RefreshBTN"
                             Margin="0"
-                            ButtonText="Refresh"
+                            ButtonText="Re-OCR Frame"
                             Click="RefreshBTN_Click"
                             IsSymbol="True"
-                            SymbolText=""
-                            ToolTip="Refresh Grab Frame OCR Results (Ctrl + R)" />
+                            SymbolText=""
+                            ToolTip="Re-OCR Frame (Ctrl + R)" />
 
                         <ToggleButton
                             x:Name="FreezeToggleButton"

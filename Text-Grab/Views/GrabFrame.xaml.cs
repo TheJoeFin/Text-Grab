@@ -43,7 +43,7 @@ public partial class GrabFrame : Window
     private DispatcherTimer reDrawTimer = new();
     private bool isSelecting;
     private bool isMiddleDown = false;
-    private bool isCtrlDown = false;
+    public bool isCtrlDown => KeyboardExtensions.IsCtrlDown() || AddEditOcrMenuItem.IsChecked is true;
     private Point clickedPoint;
     private Side resizingSide = Side.None;
     private Rect? oldSize;
@@ -147,7 +147,7 @@ public partial class GrabFrame : Window
         AutoOcrCheckBox.IsChecked = Settings.Default.GrabFrameAutoOcr;
         AlwaysUpdateEtwCheckBox.IsChecked = Settings.Default.GrabFrameUpdateEtw;
     }
-    
+
     private void SetGrabFrameUserSettings()
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
@@ -399,7 +399,7 @@ public partial class GrabFrame : Window
             wasAltHeld = false;
         }
 
-        if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+        if (isCtrlDown)
             RectanglesCanvas.Cursor = null;
     }
 
@@ -481,7 +481,7 @@ public partial class GrabFrame : Window
             wasAltHeld = true;
         }
 
-        if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+        if (isCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
 
         if (IsEditingAnyWordBorders)
@@ -498,7 +498,7 @@ public partial class GrabFrame : Window
 
     private bool HandleCtrlCombo(Key key)
     {
-        switch(key)
+        switch (key)
         {
             case Key.I:
                 InvertSelection();
@@ -512,8 +512,8 @@ public partial class GrabFrame : Window
             case Key.R:
                 RefreshBTN_Click();
                 break;
-            case Key.Y: 
-                OnRedo(); 
+            case Key.Y:
+                OnRedo();
                 break;
             case Key.Z:
                 OnUndo();
@@ -735,6 +735,20 @@ public partial class GrabFrame : Window
 
     private void ResetGrabFrame()
     {
+        if (AutoOcrCheckBox.IsChecked is false)
+        {
+            RefreshBTN.IsSymbol = false;
+            RefreshBTN.ButtonText = "OCR Frame";
+            // possible other symbol options: 
+            RefreshBTN.SymbolText = "";
+        }
+        else
+        {
+            RefreshBTN.IsSymbol = true;
+            RefreshBTN.ButtonText = "Re-OCR Frame";
+            RefreshBTN.SymbolText = "";
+        }
+
         ocrResultOfWindow = null;
         frameContentImageSource = null;
         RectanglesCanvas.Children.Clear();
@@ -883,10 +897,10 @@ public partial class GrabFrame : Window
 
             WordBorder wordBorderBox = new()
             {
-                Width = ((lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale)) + 12) / viewBoxZoomFactor,
-                Height = ((lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale)) + 4) / viewBoxZoomFactor,
-                Top = (lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 2) / viewBoxZoomFactor,
-                Left = (lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 10) / viewBoxZoomFactor,
+                Width = ((lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
+                Height = ((lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
+                Top = (lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 1) / viewBoxZoomFactor,
+                Left = (lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 1) / viewBoxZoomFactor,
                 Word = ocrText,
                 OwnerGrabFrame = this,
                 LineNumber = lineNumber,
@@ -1227,10 +1241,10 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-        {
-            isCtrlDown = true;
-        }
+        // if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+        // {
+        //     isCtrlDown = true;
+        // }
 
         CursorClipper.ClipCursor(RectanglesBorder);
 
@@ -1248,6 +1262,11 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
+        if (isCtrlDown)
+            RectanglesCanvas.Cursor = Cursors.Cross;
+        else
+            RectanglesCanvas.Cursor = null;
+
         if (!isSelecting && !isMiddleDown && movingWordBorder is null)
             return;
 
@@ -1323,7 +1342,7 @@ public partial class GrabFrame : Window
         movingWordBorder = null;
         oldSize = null;
         resizingSide = Side.None;
-        isCtrlDown = false;
+        // isCtrlDown = false;
         CheckSelectBorderIntersections(true);
         UpdateFrameText();
     }
@@ -1430,12 +1449,12 @@ public partial class GrabFrame : Window
 
         WordBorder wordBorderBox = new()
         {
-            Width = selectBorder.Width + 8,
+            Width = selectBorder.Width,
             Height = selectBorder.Height - 3,
             Word = ocrText.Trim(),
             OwnerGrabFrame = this,
             Top = Canvas.GetTop(selectBorder) + 3,
-            Left = Canvas.GetLeft(selectBorder) - 8,
+            Left = Canvas.GetLeft(selectBorder),
             MatchingBackground = backgroundBrush,
         };
 
