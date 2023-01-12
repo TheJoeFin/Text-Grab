@@ -59,7 +59,7 @@
             Command="{x:Static local:GrabFrame.RedoCommand}"
             Executed="RedoExecuted" />
         <CommandBinding
-            CanExecute="CanChangeWordBorderExecute"
+            CanExecute="CanExecuteMergeWordBorders"
             Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
             Executed="DeleteWordBordersExecuted" />
         <CommandBinding
@@ -114,9 +114,9 @@
                             IsCheckable="True"
                             IsChecked="True" />
                         <MenuItem
-                            Name="OpenImageMenuItem"
                             Click="OpenImageMenuItem_Click"
-                            Header="Open Image..." />
+                            Header="Open Image..."
+                            InputGestureText="Ctrl + O" />
                         <Separator />
                         <MenuItem
                             Name="SettingsMenuItem"
@@ -125,27 +125,41 @@
                         <MenuItem
                             Name="CloseMenuItem"
                             Click="OnCloseButtonClick"
-                            Header="Close" />
+                            Header="Close"
+                            InputGestureText="Alt + F4" />
                     </MenuItem>
                     <MenuItem Header="Edit">
                         <MenuItem
                             Name="RedoMenuItem"
                             Command="{x:Static local:GrabFrame.RedoCommand}"
-                            Header="Redo" />
+                            Header="Redo"
+                            InputGestureText="Ctrl + Y" />
                         <MenuItem
                             Name="UndoMenuItem"
                             Command="{x:Static local:GrabFrame.UndoCommand}"
-                            Header="Undo" />
+                            Header="Undo"
+                            InputGestureText="Ctrl + Z" />
                         <Separator />
-                        <MenuItem Click="RefreshBTN_Click" Header="Re-OCR Content in Frame" />
+                        <MenuItem
+                            Click="RefreshBTN_Click"
+                            Header="Refresh Grab Frame OCR Results"
+                            InputGestureText="(Ctrl + R)" />
+                        <MenuItem
+                            Checked="AspectRationMI_Checked"
+                            Header="Maintain Aspect Ratio"
+                            IsCheckable="True"
+                            IsChecked="{Binding IsChecked, ElementName=AspectRationMI, Mode=TwoWay}"
+                            Unchecked="AspectRationMI_Checked" />
                         <MenuItem
                             Click="FreezeToggleButton_Click"
                             Header="Freeze Image In Frame"
+                            InputGestureText="F"
                             IsCheckable="True"
                             IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="TableToggleButton_Click"
                             Header="Analyze as a Table"
+                            InputGestureText="T"
                             IsCheckable="True"
                             IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}" />
                         <MenuItem
@@ -156,13 +170,23 @@
                         <MenuItem
                             Click="EditTextBTN_Click"
                             Header="Send results to an Edit Text Window"
+                            InputGestureText="E"
                             IsCheckable="True"
                             IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
+                        <Separator />
                         <MenuItem
-                            x:Name="DeleteSelectedMenuItem"
-                            Click="HandleDelete"
-                            Header="Delete Selected"
-                            IsCheckable="True" />
+                            x:Name="InvertSelectionMenuItem"
+                            Click="InvertSelection"
+                            Header="Invert Selection"
+                            InputGestureText="Ctrl + I" />
+                        <MenuItem
+                            Command="{x:Static local:GrabFrame.MergeWordsCommand}"
+                            Header="Merge Word Borders"
+                            InputGestureText="Ctrl + M" />
+                        <MenuItem
+                            Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
+                            Header="_Delete selected words"
+                            InputGestureText="Del" />
                         <Separator />
                         <MenuItem
                             x:Name="SearchWithRegexCheckBox"
@@ -295,6 +319,10 @@
                                         Header="Paste Image"
                                         InputGestureText="Ctrl + Shift + V" />
                                     <MenuItem
+                                        Click="OpenImageMenuItem_Click"
+                                        Header="Open Image..."
+                                        InputGestureText="Ctrl + O" />
+                                    <MenuItem
                                         x:Name="AspectRationMI"
                                         Checked="AspectRationMI_Checked"
                                         Header="Maintain Aspect Ratio"
@@ -304,16 +332,17 @@
                                     <MenuItem
                                         x:Name="FreezeMI"
                                         Click="FreezeMI_Click"
-                                        Header="Toggle Freeze" />
+                                        Header="Toggle Freeze"
+                                        InputGestureText="F" />
                                     <Separator />
                                     <MenuItem
-                                        x:Name="MergeWordBordersMenuItem"
                                         Command="{x:Static local:GrabFrame.MergeWordsCommand}"
-                                        Header="Merge Word Borders" />
+                                        Header="Merge Word Borders"
+                                        InputGestureText="Ctrl + M" />
                                     <MenuItem
-                                        x:Name="DeleteWordMenuItem"
                                         Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
-                                        Header="_Delete selected words" />
+                                        Header="_Delete selected words"
+                                        InputGestureText="Del" />
                                 </ContextMenu>
                             </Canvas.ContextMenu>
                         </Canvas>
@@ -424,7 +453,7 @@
                             Click="RefreshBTN_Click"
                             IsSymbol="True"
                             SymbolText=""
-                            ToolTip="Refresh Grab Frame OCR" />
+                            ToolTip="Refresh Grab Frame OCR Results (Ctrl + R)" />
 
                         <ToggleButton
                             x:Name="FreezeToggleButton"
@@ -432,7 +461,7 @@
                             Padding="7,4"
                             Click="FreezeToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
-                            ToolTip="Freeze the content within Grab Frame">
+                            ToolTip="(F) Freeze the content within Grab Frame">
                             <TextBlock FontFamily="Segoe MDL2 Assets">
                                 
                             </TextBlock>
@@ -444,7 +473,7 @@
                             Padding="7,4"
                             Click="TableToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
-                            ToolTip="Analyze content as tables">
+                            ToolTip="(T) Analyze content as tables">
                             <TextBlock FontFamily="Segoe MDL2 Assets">
                                 
                             </TextBlock>
@@ -457,7 +486,8 @@
                             Click="EditToggleButton_Click"
                             IsChecked="True"
                             Style="{StaticResource ToggleSymbolButton}"
-                            ToolTip="Edit individual words in Grab Frame">
+                            ToolTip="Edit individual words in Grab Frame"
+                            Visibility="Collapsed">
                             <TextBlock FontFamily="Segoe MDL2 Assets">
                                 
                             </TextBlock>
@@ -470,7 +500,7 @@
                             Click="EditTextBTN_Click"
                             IsChecked="False"
                             Style="{StaticResource ToggleSymbolButton}"
-                            ToolTip="Edit individual words in Grab Frame">
+                            ToolTip="(E) Edit individual words in Grab Frame">
                             <TextBlock FontFamily="Segoe MDL2 Assets">
                                 
                             </TextBlock>

@@ -76,14 +76,9 @@ public partial class GrabFrame : Window
         }
     }
 
+    public bool IsFromEditWindow => destinationTextBox is not null;
 
-    public bool IsFromEditWindow
-    {
-        get
-        {
-            return destinationTextBox is not null;
-        }
-    }
+    public bool IsEditingAnyWordBorders => wordBorders.Any(x => x.IsEditing);
 
     public bool IsWordEditMode { get; set; } = true;
 
@@ -142,7 +137,24 @@ public partial class GrabFrame : Window
         _ = UndoRedo.HasUndoOperations();
         _ = UndoRedo.HasRedoOperations();
 
+        GetGrabFrameUserSettings();
+
         this.DataContext = this;
+    }
+
+    private void GetGrabFrameUserSettings()
+    {
+        AutoOcrCheckBox.IsChecked = Settings.Default.GrabFrameAutoOcr;
+        AlwaysUpdateEtwCheckBox.IsChecked = Settings.Default.GrabFrameUpdateEtw;
+    }
+    
+    private void SetGrabFrameUserSettings()
+    {
+        string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
+        Settings.Default.GrabFrameWindowSizeAndPosition = windowSizeAndPosition;
+        Settings.Default.GrabFrameAutoOcr = AutoOcrCheckBox.IsChecked;
+        Settings.Default.GrabFrameUpdateEtw = AlwaysUpdateEtwCheckBox.IsChecked;
+        Settings.Default.Save();
     }
 
     public void OnUndo()
@@ -254,7 +266,7 @@ public partial class GrabFrame : Window
             selectedWordBorders,
             dpi,
             LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage));
-        mergedContent.Replace('\t', ' ');
+        mergedContent = mergedContent.Replace('\t', ' ');
 
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
@@ -337,7 +349,7 @@ public partial class GrabFrame : Window
         foreach (string word in listOfWords)
         {
             double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / widthScaleAdjstFactor;
-            wordWidth += 8; // this is to account for the 8px left border thickness
+            // wordWidth += 8; // this is to account for the 8px left border thickness
             WordBorder wordBorderBox = new()
             {
                 Width = wordWidth,
@@ -375,7 +387,7 @@ public partial class GrabFrame : Window
         using System.Drawing.Bitmap objBitmap = new System.Drawing.Bitmap(width, height);
         using System.Drawing.Graphics objGraphics = System.Drawing.Graphics.FromImage(objBitmap);
 
-        System.Drawing.SizeF stringSize = objGraphics.MeasureString(str, new System.Drawing.Font("Segoe UI", height));
+        System.Drawing.SizeF stringSize = objGraphics.MeasureString(str, new System.Drawing.Font("Segoe UI", (int)(height * 0.8)));
         return stringSize.Width;
     }
 
@@ -472,20 +484,84 @@ public partial class GrabFrame : Window
         if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
             RectanglesCanvas.Cursor = Cursors.Cross;
 
+        if (IsEditingAnyWordBorders)
+            return;
+
         if (e.Key == Key.Delete)
             HandleDelete();
 
-        if (e.Key == Key.Z && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
-            OnUndo();
+        if (KeyboardExtensions.IsCtrlDown())
+            e.Handled = HandleCtrlCombo(e.Key);
+        else
+            e.Handled = HandleHotKey(e.Key);
+    }
 
-        if (e.Key == Key.Y && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
-            OnRedo();
+    private bool HandleCtrlCombo(Key key)
+    {
+        switch(key)
+        {
+            case Key.I:
+                InvertSelection();
+                break;
+            case Key.M:
+                MergeSelectedWordBorders();
+                break;
+            case Key.O:
+                OpenImageMenuItem_Click();
+                break;
+            case Key.R:
+                RefreshBTN_Click();
+                break;
+            case Key.Y: 
+                OnRedo(); 
+                break;
+            case Key.Z:
+                OnUndo();
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+
+    private bool HandleHotKey(Key key)
+    {
+        switch (key)
+        {
+            case Key.E:
+                EditTextToggleButton.IsChecked = !EditTextToggleButton.IsChecked;
+                EditTextBTN_Click();
+                break;
+            case Key.F:
+                if (FreezeToggleButton.Visibility == Visibility.Collapsed)
+                    return false;
+                FreezeToggleButton.IsChecked = !FreezeToggleButton.IsChecked;
+                FreezeToggleButton_Click();
+                break;
+            case Key.T:
+                TableToggleButton.IsChecked = !TableToggleButton.IsChecked;
+                TableToggleButton_Click();
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+
+    private void InvertSelection(object? sender = null, RoutedEventArgs? e = null)
+    {
+        foreach (WordBorder wordBorder in wordBorders)
+        {
+            if (wordBorder.IsSelected)
+                wordBorder.Deselect();
+            else
+                wordBorder.Select();
+        }
     }
 
     private void HandleDelete(object? sender = null, RoutedEventArgs? e = null)
     {
-        bool editingAnyWordBorders = wordBorders.Any(x => x.IsEditing);
-        if (editingAnyWordBorders || SearchBox.IsFocused)
+        if (SearchBox.IsFocused)
             return;
 
         UndoRedo.StartTransaction();
@@ -588,10 +664,7 @@ public partial class GrabFrame : Window
 
     private void Window_Closed(object? sender, EventArgs e)
     {
-        string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
-        Properties.Settings.Default.GrabFrameWindowSizeAndPosition = windowSizeAndPosition;
-        Properties.Settings.Default.Save();
-
+        SetGrabFrameUserSettings();
         WindowUtilities.ShouldShutDown();
     }
 
@@ -710,12 +783,12 @@ public partial class GrabFrame : Window
 
     private void CheckBottomRowButtonsVis()
     {
-        if (this.Width < 340)
+        if (this.Width < 270)
             ButtonsStackPanel.Visibility = Visibility.Collapsed;
         else
             ButtonsStackPanel.Visibility = Visibility.Visible;
 
-        if (this.Width < 460)
+        if (this.Width < 390)
         {
             SearchBox.Visibility = Visibility.Collapsed;
             MatchesMenu.Visibility = Visibility.Collapsed;
@@ -725,7 +798,7 @@ public partial class GrabFrame : Window
             SearchBox.Visibility = Visibility.Visible;
         }
 
-        if (this.Width < 580)
+        if (this.Width < 480)
             LanguagesComboBox.Visibility = Visibility.Collapsed;
         else
             LanguagesComboBox.Visibility = Visibility.Visible;
@@ -1100,7 +1173,7 @@ public partial class GrabFrame : Window
         MatchesMenu.Visibility = Visibility.Collapsed;
     }
 
-    private async void RefreshBTN_Click(object sender, RoutedEventArgs e)
+    private async void RefreshBTN_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         reDrawTimer.Stop();
         ResetGrabFrame();
@@ -1258,16 +1331,11 @@ public partial class GrabFrame : Window
     private void UpdateSelectBorderForNewWordBorder(Point movingPoint)
     {
         double smallestHeight = 6;
-        double largestHeight = 50;
+        double largestHeight = this.Height;
+        double gridSnapSize = 3.0;
 
-        if (wordBorders.Count > 4)
-        {
-            smallestHeight = wordBorders.Select(x => x.Height).Min();
-            largestHeight = wordBorders.Select(x => x.Height).Max();
-        }
-
-        selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight + 10);
-        selectBorder.Height = Math.Round(selectBorder.Height / 3.0) * 3;
+        selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight);
+        selectBorder.Height = Math.Round(selectBorder.Height / gridSnapSize) * gridSnapSize;
     }
 
     private void MoveResizeWordBorder(Point movingPoint, Rect prevSize)
@@ -1277,6 +1345,7 @@ public partial class GrabFrame : Window
 
         double xShiftDelta = (movingPoint.X - clickedPoint.X);
         double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+        Canvas.SetZIndex(movingWordBorder, wordBorders.Count + 1);
 
         switch (resizingSide)
         {
@@ -1443,13 +1512,13 @@ public partial class GrabFrame : Window
             UpdateFrameText();
     }
 
-    private void TableToggleButton_Click(object sender, RoutedEventArgs e)
+    private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         RemoveTableLines();
         UpdateFrameText();
     }
 
-    private void EditToggleButton_Click(object sender, RoutedEventArgs e)
+    private void EditToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         if (EditToggleButton.IsChecked is bool isEditMode && isEditMode)
         {
@@ -1487,7 +1556,7 @@ public partial class GrabFrame : Window
         }
     }
 
-    private void FreezeToggleButton_Click(object sender, RoutedEventArgs e)
+    private void FreezeToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode)
             FreezeGrabFrame();
@@ -1528,7 +1597,7 @@ public partial class GrabFrame : Window
         reDrawTimer.Start();
     }
 
-    private void EditTextBTN_Click(object sender, RoutedEventArgs e)
+    private void EditTextBTN_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         if (sender is ToggleButton toggleButton
             && toggleButton.IsChecked is false
@@ -1630,9 +1699,9 @@ public partial class GrabFrame : Window
             return;
 
         if (aspectMI.IsChecked is false)
-            GrabFrameImage.Stretch = Stretch.Fill;
+            CanvasViewBox.Stretch = Stretch.Fill;
         else
-            GrabFrameImage.Stretch = Stretch.Uniform;
+            CanvasViewBox.Stretch = Stretch.Uniform;
     }
 
     private async void FreezeMI_Click(object sender, RoutedEventArgs e)
@@ -1714,7 +1783,7 @@ public partial class GrabFrame : Window
         UpdateFrameText();
     }
 
-    private async void OpenImageMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void OpenImageMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         // Create OpenFileDialog 
         Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
@@ -1873,5 +1942,13 @@ public partial class GrabFrame : Window
     {
         reSearchTimer.Stop();
         reSearchTimer.Start();
+    }
+
+    private void CanExecuteMergeWordBorders(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (SelectedWordBorders().Count > 1)
+            e.CanExecute = true;
+        else
+            e.CanExecute = false;
     }
 }
