@@ -133,8 +133,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         IsSelected = false;
         WordBorderBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 48, 142, 152));
-        EditWordTextBox.Foreground = contrastingForeground;
-        MainGrid.Background = matchingBackground;
     }
 
     public void EnterEdit()
@@ -193,7 +191,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private void WordBorder_MouseEnter(object sender, RoutedEventArgs e)
     {
-        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+        if (OwnerGrabFrame?.isCtrlDown is true)
             MoveResizeBorder.Visibility = Visibility.Visible;
         else
             MoveResizeBorder.Visibility = Visibility.Collapsed;
@@ -334,6 +332,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private void EditWordTextBox_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        Select();
         e.Handled = true;
     }
 
@@ -341,5 +340,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         debounceTimer.Stop();
         debounceTimer.Start();
+    }
+
+    private void EditWordTextBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        Select();
     }
 }

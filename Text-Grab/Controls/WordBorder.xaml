@@ -108,10 +108,10 @@
             x:Name="WordBorderBorder"
             Margin="0,0,0,0"
             BorderBrush="{StaticResource Teal}"
-            BorderThickness="8,0,0,1"
+            BorderThickness="0,0,0,1"
             ContextMenu="{StaticResource ContextOptions}"
             ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
-            CornerRadius="2">
+            CornerRadius="0">
             <Grid x:Name="MainGrid" ClipToBounds="True">
                 <Viewbox x:Name="EditTextViewBox">
                     <TextBox
@@ -127,6 +127,7 @@
                         FontSize="12"
                         FontWeight="Medium"
                         Foreground="White"
+                        GotFocus="EditWordTextBox_GotFocus"
                         MouseDown="EditWordTextBox_MouseDown"
                         Style="{StaticResource TransparentTextBox}"
                         Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
