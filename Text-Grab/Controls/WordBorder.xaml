@@ -80,6 +80,7 @@
             <MenuItem
                 x:Name="MergeWordBordersMenuItem"
                 Command="{x:Static local:WordBorder.MergeWordsCommand}"
+                InputGestureText="Ctrl + M"
                 Header="_Merge Selected Word Borders" />
             <MenuItem
                 x:Name="BreakIntoWordsMenuItem"
@@ -108,7 +109,7 @@
             x:Name="WordBorderBorder"
             Margin="0,0,0,0"
             BorderBrush="{StaticResource Teal}"
-            BorderThickness="0,0,0,1"
+            BorderThickness="0,0,0,2"
             ContextMenu="{StaticResource ContextOptions}"
             ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
             CornerRadius="0">

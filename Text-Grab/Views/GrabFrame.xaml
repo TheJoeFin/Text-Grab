@@ -341,6 +341,14 @@
                                         InputGestureText="F" />
                                     <Separator />
                                     <MenuItem
+                                        x:Name="TryToNumberMenuItem"
+                                        Click="TryToNumberMenuItem_Click"
+                                        Header="Try To Make _Numbers" />
+                                    <MenuItem
+                                        x:Name="TryToAlphaMenuItem"
+                                        Click="TryToAlphaMenuItem_Click"
+                                        Header="Try To Make _Letters" />
+                                    <MenuItem
                                         Command="{x:Static local:GrabFrame.MergeWordsCommand}"
                                         Header="Merge Word Borders"
                                         InputGestureText="Ctrl + M" />
@@ -459,6 +467,13 @@
                             IsSymbol="True"
                             SymbolText=""
                             ToolTip="Re-OCR Frame (Ctrl + R)" />
+                        <controls:CollapsibleButton
+                            x:Name="OcrFrameBTN"
+                            Margin="0"
+                            ButtonText="OCR Frame"
+                            Click="RefreshBTN_Click"
+                            SymbolText=""
+                            ToolTip="OCR Frame (Ctrl + R)" />
 
                         <ToggleButton
                             x:Name="FreezeToggleButton"

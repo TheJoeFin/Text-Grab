@@ -397,6 +397,9 @@ public partial class GrabFrame : Window
         {
             RectanglesCanvas.Opacity = 1;
             wasAltHeld = false;
+
+            if (IsEditingAnyWordBorders)
+                e.Handled = true;
         }
 
         if (isCtrlDown)
@@ -479,6 +482,8 @@ public partial class GrabFrame : Window
         {
             RectanglesCanvas.Opacity = 0.1;
             wasAltHeld = true;
+            if (IsEditingAnyWordBorders)
+                e.Handled = true;
         }
 
         if (isCtrlDown)
@@ -737,16 +742,13 @@ public partial class GrabFrame : Window
     {
         if (AutoOcrCheckBox.IsChecked is false)
         {
-            RefreshBTN.IsSymbol = false;
-            RefreshBTN.ButtonText = "OCR Frame";
-            // possible other symbol options: 
-            RefreshBTN.SymbolText = "";
+            OcrFrameBTN.Visibility = Visibility.Visible;
+            RefreshBTN.Visibility = Visibility.Collapsed;
         }
         else
         {
-            RefreshBTN.IsSymbol = true;
-            RefreshBTN.ButtonText = "Re-OCR Frame";
-            RefreshBTN.SymbolText = "";
+            OcrFrameBTN.Visibility = Visibility.Collapsed;
+            RefreshBTN.Visibility = Visibility.Visible;
         }
 
         ocrResultOfWindow = null;
@@ -1969,5 +1971,27 @@ public partial class GrabFrame : Window
             e.CanExecute = true;
         else
             e.CanExecute = false;
+    }
+
+    private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        List<WordBorder> wbToEdit = SelectedWordBorders();
+
+        if (wbToEdit.Count == 0)
+            wbToEdit = wordBorders.ToList();
+
+        foreach (WordBorder wb in wbToEdit)
+            wb.Word = wb.Word.TryFixToNumbers();
+    }
+
+    private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        List<WordBorder> wbToEdit = SelectedWordBorders();
+
+        if (wbToEdit.Count == 0)
+            wbToEdit = wordBorders.ToList();
+
+        foreach (WordBorder wb in wbToEdit)
+            wb.Word = wb.Word.TryFixToLetters();
     }
 }
