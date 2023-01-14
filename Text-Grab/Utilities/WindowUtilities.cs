@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,7 +10,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab.Properties;
 using Text_Grab.Views;
-using Screen = System.Windows.Forms.Screen;
+// using Screen = System.Windows.Forms.Screen;
+using WpfScreenHelper;
 
 namespace Text_Grab.Utilities;
 
@@ -46,15 +48,15 @@ public static class WindowUtilities
             couldParseAll = double.TryParse(storedPostion[1], out double parsedY);
             couldParseAll = double.TryParse(storedPostion[2], out double parsedWid);
             couldParseAll = double.TryParse(storedPostion[3], out double parsedHei);
-            Rectangle storedSize = new Rectangle((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
-            Screen[] allScreens = Screen.AllScreens;
+            Rect storedSize = new((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
+            IEnumerable<Screen> allScreens = Screen.AllScreens;
             WindowCollection allWindows = Application.Current.Windows;
 
             if (parsedHei < 10 || parsedWid < 10)
                 return;
 
             foreach (Screen screen in allScreens)
-                if (screen.WorkingArea.IntersectsWith(storedSize))
+                if (screen.WpfBounds.IntersectsWith(storedSize))
                     isStoredRectWithinScreen = true;
 
             if (isStoredRectWithinScreen && couldParseAll)
@@ -71,12 +73,12 @@ public static class WindowUtilities
 
     public static void LaunchFullScreenGrab(TextBox? destinationTextBox = null)
     {
-        Screen[] allScreens = Screen.AllScreens;
+        IEnumerable<Screen> allScreens = Screen.AllScreens;
         WindowCollection allWindows = Application.Current.Windows;
 
         List<FullscreenGrab> allFullscreenGrab = new();
 
-        int numberOfScreens = allScreens.Length;
+        int numberOfScreens = allScreens.Count();
 
         foreach (Window window in allWindows)
             if (window is FullscreenGrab)
@@ -95,26 +97,41 @@ public static class WindowUtilities
         {
             FullscreenGrab fullscreenGrab = allFullscreenGrab[count];
             fullscreenGrab.WindowStartupLocation = WindowStartupLocation.Manual;
-            fullscreenGrab.Width = 200;
+            fullscreenGrab.Width = 400;
             fullscreenGrab.Height = 200;
             fullscreenGrab.DestinationTextBox = destinationTextBox;
             fullscreenGrab.WindowState = WindowState.Normal;
 
-            if (screen.WorkingArea.Left >= 0)
-                fullscreenGrab.Left = screen.WorkingArea.Left;
-            else
-                fullscreenGrab.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
+            System.Windows.Point screenCenterPoint = screen.GetCenterPoint();
+            System.Windows.Point windowCenterPoint = fullscreenGrab.GetWindowCenter();
 
-            if (screen.WorkingArea.Top >= 0)
-                fullscreenGrab.Top = screen.WorkingArea.Top;
-            else
-                fullscreenGrab.Top = screen.WorkingArea.Top + (screen.WorkingArea.Height / 2);
+            double virtualScreenTop = SystemParameters.VirtualScreenTop;
+            double virtualScreenLeft = SystemParameters.VirtualScreenLeft;
+            double virtualScreenWidth = SystemParameters.VirtualScreenWidth;
+            double virtualScreenHeight = SystemParameters.VirtualScreenHeight;
+
+            fullscreenGrab.Left = screenCenterPoint.X - windowCenterPoint.X;
+            fullscreenGrab.Top= screenCenterPoint.Y - windowCenterPoint.Y;
 
             fullscreenGrab.Show();
             fullscreenGrab.Activate();
 
             count++;
         }
+    }
+
+    public static System.Windows.Point GetCenterPoint(this Screen screen)
+    {
+        double x = screen.WpfBounds.Left + (screen.WpfBounds.Width / 2);
+        double y = screen.WpfBounds.Top + (screen.WpfBounds.Height / 2);
+        return new(x, y);
+    }
+
+    public static System.Windows.Point GetWindowCenter(this Window window)
+    {
+        double x = window.Width / 2;
+        double y = window.Height / 2;
+        return new(x, y);
     }
 
     internal static async void CloseAllFullscreenGrabs()
