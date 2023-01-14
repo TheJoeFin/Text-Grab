@@ -382,7 +382,7 @@ public partial class GrabFrame : Window
         return wordBorders.Where(w => w.IsSelected).ToList();
     }
 
-    private float GetWidthOfString(string str, int width, int height)
+    private static float GetWidthOfString(string str, int width, int height)
     {
         using System.Drawing.Bitmap objBitmap = new System.Drawing.Bitmap(width, height);
         using System.Drawing.Graphics objGraphics = System.Drawing.Graphics.FromImage(objBitmap);
