@@ -205,14 +205,6 @@
                             Header="_Delete selected words"
                             InputGestureText="Del" />
                         <Separator />
-                        <MenuItem
-                            x:Name="SearchWithRegexCheckBox"
-                            Header="Search with Regex"
-                            IsCheckable="True" />
-                        <MenuItem
-                            x:Name="ExactMatchChkBx"
-                            Header="Match searches exactly"
-                            IsCheckable="True" />
                     </MenuItem>
                     <MenuItem Header="_Help">
                         <MenuItem
@@ -396,7 +388,24 @@
                         Padding="4"
                         VerticalContentAlignment="Center"
                         GotFocus="SearchBox_GotFocus"
-                        TextChanged="SearchBox_TextChanged" />
+                        TextChanged="SearchBox_TextChanged">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Command="ApplicationCommands.Cut" />
+                                <MenuItem Command="ApplicationCommands.Copy" />
+                                <MenuItem Command="ApplicationCommands.Paste" />
+                                <Separator />
+                                <MenuItem
+                                    x:Name="SearchWithRegexCheckBox"
+                                    Header="Search with Regex"
+                                    IsCheckable="True" />
+                                <MenuItem
+                                    x:Name="ExactMatchChkBx"
+                                    Header="Match searches exactly"
+                                    IsCheckable="True" />
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
                     <Label
                         x:Name="SearchLabel"
                         Grid.Column="1"
