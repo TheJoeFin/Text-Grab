@@ -36,7 +36,7 @@ public class ResultTable
 
     public ResultTable(ref List<WordBorder> wordBorders, DpiScale dpiScale)
     {
-        int borderBuffer = 6;
+        int borderBuffer = 3;
         var leftsMin = wordBorders.Select(x => x.Left).Min();
         var topsMin = wordBorders.Select(x => x.Top).Min();
         var rightsMax = wordBorders.Select(x => x.Right).Max();
@@ -46,8 +46,8 @@ public class ResultTable
         {
             X = (int)leftsMin - borderBuffer,
             Y = (int)topsMin - borderBuffer,
-            Width = (int)(rightsMax - leftsMin) + (borderBuffer * 5),
-            Height = (int)(bottomsMax - topsMin) + (borderBuffer * 5)
+            Width = (int)(rightsMax + borderBuffer),
+            Height = (int)(bottomsMax + borderBuffer)
         };
 
         bordersBorder.Width = (int)(bordersBorder.Width * dpiScale.DpiScaleX);
@@ -632,8 +632,8 @@ public class ResultTable
                 Word = originalWB.Word,
                 Left = originalWB.Left,
                 Top = originalWB.Top,
-                Width = originalWB.Width - 12,
-                Height = originalWB.Height - 6,
+                Width = originalWB.Width > 10 ? originalWB.Width - 6 : originalWB.Width,
+                Height = originalWB.Height > 10 ? originalWB.Height - 6 : originalWB.Height,
                 ResultRowID = originalWB.ResultRowID,
                 ResultColumnID = originalWB.ResultColumnID,
             };
