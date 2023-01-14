@@ -505,6 +505,9 @@ public partial class GrabFrame : Window
     {
         switch (key)
         {
+            case Key.A:
+                SelectAllWordBorders();
+                break;
             case Key.I:
                 InvertSelection();
                 break;
@@ -551,6 +554,12 @@ public partial class GrabFrame : Window
                 return false;
         }
         return true;
+    }
+
+    private void SelectAllWordBorders(object? sender = null, RoutedEventArgs? e = null)
+    {
+        foreach (WordBorder wordBorder in wordBorders)
+            wordBorder.Select();
     }
 
     private void InvertSelection(object? sender = null, RoutedEventArgs? e = null)

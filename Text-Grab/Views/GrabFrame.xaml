@@ -147,6 +147,11 @@
                             Header="Undo"
                             InputGestureText="Ctrl + Z" />
                         <MenuItem
+                            Name="SelectAllMenuItem"
+                            Click="SelectAllWordBorders"
+                            Header="Select All"
+                            InputGestureText="Ctrl + A" />
+                        <MenuItem
                             Name="AddEditOcrMenuItem"
                             Header="Add, move, or Resize lines"
                             InputGestureText="Hold Ctrl"
