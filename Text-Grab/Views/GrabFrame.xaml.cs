@@ -50,6 +50,7 @@ public partial class GrabFrame : Window
     private WordBorder? movingWordBorder;
     private Point startingMovingPoint;
     private Border selectBorder = new();
+    private bool isSearchSelectionOverriden = false;
 
     private ImageSource? frameContentImageSource;
 
@@ -1094,6 +1095,8 @@ public partial class GrabFrame : Window
         else
             SearchLabel.Visibility = Visibility.Collapsed;
 
+        isSearchSelectionOverriden = false;
+
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
@@ -1104,7 +1107,7 @@ public partial class GrabFrame : Window
         if (SearchBox.Text is not string searchText)
             return;
 
-        if (string.IsNullOrWhiteSpace(searchText))
+        if (string.IsNullOrWhiteSpace(searchText) && !isSearchSelectionOverriden)
         {
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
@@ -1245,6 +1248,8 @@ public partial class GrabFrame : Window
         selectBorder.Height = 1;
         selectBorder.Width = 1;
 
+        isSearchSelectionOverriden = true;
+
         if (e.MiddleButton == MouseButtonState.Pressed)
         {
             e.Handled = true;
@@ -1254,11 +1259,6 @@ public partial class GrabFrame : Window
             UnfreezeGrabFrame();
             return;
         }
-
-        // if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-        // {
-        //     isCtrlDown = true;
-        // }
 
         CursorClipper.ClipCursor(RectanglesBorder);
 
