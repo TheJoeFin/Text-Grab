@@ -235,6 +235,7 @@ public partial class GrabFrame : Window
 
     public void MergeSelectedWordBorders()
     {
+        RectanglesCanvas.ContextMenu.IsOpen = false;
         FreezeGrabFrame();
 
         List<WordBorder> selectedWordBorders = wordBorders.Where(w => w.IsSelected).OrderBy(o => o.Left).ToList();
@@ -325,17 +326,15 @@ public partial class GrabFrame : Window
 
     public void BreakWordBorderIntoWords(WordBorder wordBorder)
     {
-        List<string> listOfWords = wordBorder.Word.Split().ToList();
+        // List<string> listOfWords = wordBorder.Word.Split().ToList();
+        ICollection<string> wordLines = wordBorder.Word.Split(Environment.NewLine);
 
         const double widthScaleAdjstFactor = 1.5;
 
         double top = wordBorder.Top;
         double left = wordBorder.Left;
-        int numberOfLines = 1 + wordBorder.Word.Count(c => c == '\n');
+        int numberOfLines = wordLines.Count;
         double wordHeight = wordBorder.Height / numberOfLines;
-        double wordFractionWidth = wordBorder.Width / listOfWords.Count;
-        double lineWidth = (double)GetWidthOfString(wordBorder.Word, (int)wordFractionWidth, (int)wordHeight);
-        double diffBetweenWordAndBorder = (wordBorder.Width - (lineWidth / widthScaleAdjstFactor)) / listOfWords.Count;
 
         DeleteThisWordBorder(wordBorder);
         UndoRedo.StartTransaction();
@@ -347,33 +346,44 @@ public partial class GrabFrame : Window
                 GrabFrameCanvas = RectanglesCanvas
             });
 
-        foreach (string word in listOfWords)
+        int lineItterator = 0;
+        foreach (string line in wordLines)
         {
-            double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / widthScaleAdjstFactor;
-            // wordWidth += 8; // this is to account for the 8px left border thickness
-            WordBorder wordBorderBox = new()
+            double lineWidth = GetWidthOfString(line, (int)wordBorder.Width, (int)wordHeight);
+            ICollection<string> lineWords = line.Split();
+
+            double wordFractionWidth = lineWidth / lineWords.Count;
+            // double diffBetweenWordAndBorder = (wordBorder.Width - (lineWidth / widthScaleAdjstFactor)) / lineWords.Count;
+
+            foreach (string word in lineWords)
             {
-                Width = wordWidth,
-                Height = wordHeight,
-                Word = word,
-                OwnerGrabFrame = this,
-                Top = top,
-                Left = left,
-                MatchingBackground = wordBorder.MatchingBackground,
-            };
-
-            wordBorders.Add(wordBorderBox);
-            _ = RectanglesCanvas.Children.Add(wordBorderBox);
-
-            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
-                new GrabFrameOperationArgs()
+                double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / widthScaleAdjstFactor;
+                WordBorder wordBorderBox = new()
                 {
-                    WordBorder = wordBorderBox,
-                    WordBorders = wordBorders,
-                    GrabFrameCanvas = RectanglesCanvas
-                });
+                    Width = wordWidth,
+                    Height = wordHeight,
+                    Word = word,
+                    OwnerGrabFrame = this,
+                    Top = top + (lineItterator * wordHeight),
+                    Left = left,
+                    MatchingBackground = wordBorder.MatchingBackground,
+                };
 
-            left += wordWidth + diffBetweenWordAndBorder;
+                wordBorders.Add(wordBorderBox);
+                _ = RectanglesCanvas.Children.Add(wordBorderBox);
+
+                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+                    new GrabFrameOperationArgs()
+                    {
+                        WordBorder = wordBorderBox,
+                        WordBorders = wordBorders,
+                        GrabFrameCanvas = RectanglesCanvas
+                    });
+
+                left += wordWidth; // + diffBetweenWordAndBorder;
+            }
+            lineItterator++;
+            left = wordBorder.Left;
         }
         UndoRedo.EndTransaction();
     }
