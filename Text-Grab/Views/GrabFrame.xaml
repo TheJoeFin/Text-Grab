@@ -105,6 +105,7 @@
                     <MenuItem Height="24" Header="File">
                         <MenuItem
                             x:Name="AutoOcrCheckBox"
+                            Click="AutoOcrCheckBox_Click"
                             Header="Auto Start OCR"
                             IsCheckable="True"
                             IsChecked="True" />
@@ -113,6 +114,12 @@
                             Header="Always Update Edit Text Window content"
                             IsCheckable="True"
                             IsChecked="True" />
+                        <MenuItem
+                            x:Name="IsTopmostMenuItem"
+                            Header="Keep Grab Frame On Top"
+                            IsCheckable="True"
+                            IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}" />
+                        <Separator />
                         <MenuItem
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image..."
@@ -142,8 +149,8 @@
                         <MenuItem
                             Name="AddEditOcrMenuItem"
                             Header="Add, move, or Resize lines"
-                            IsCheckable="True"
-                            InputGestureText="Hold Ctrl" />
+                            InputGestureText="Hold Ctrl"
+                            IsCheckable="True" />
                         <Separator />
                         <MenuItem
                             Click="RefreshBTN_Click"
@@ -473,7 +480,8 @@
                             ButtonText="OCR Frame"
                             Click="RefreshBTN_Click"
                             SymbolText=""
-                            ToolTip="OCR Frame (Ctrl + R)" />
+                            ToolTip="OCR Frame (Ctrl + R)"
+                            Visibility="Collapsed" />
 
                         <ToggleButton
                             x:Name="FreezeToggleButton"

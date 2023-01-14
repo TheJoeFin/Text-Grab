@@ -823,17 +823,17 @@ public partial class GrabFrame : Window
     private void GrabFrameWindow_Deactivated(object? sender, EventArgs e)
     {
         if (!IsWordEditMode && !IsFreezeMode)
-            ResetGrabFrame();
-        else
         {
-            RectanglesCanvas.Opacity = 1;
-            if (Keyboard.Modifiers != ModifierKeys.Alt)
-                wasAltHeld = false;
-
-            if (!IsFreezeMode)
-                FreezeGrabFrame();
+            ResetGrabFrame();
+            return;
         }
 
+        RectanglesCanvas.Opacity = 1;
+        if (Keyboard.Modifiers != ModifierKeys.Alt)
+            wasAltHeld = false;
+
+        if (AutoOcrCheckBox.IsChecked is true)
+            FreezeGrabFrame();
     }
 
     private double windowFrameImageScale = 1;
@@ -1194,10 +1194,13 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         ResetGrabFrame();
 
-        await Task.Delay(400);
+        await Task.Delay(200);
 
         frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
         GrabFrameImage.Source = frameContentImageSource;
+
+        if (AutoOcrCheckBox.IsChecked is false)
+            FreezeGrabFrame();
 
         if (SearchBox.Text is string searchText)
             await DrawRectanglesAroundWords(searchText);
@@ -1993,5 +1996,10 @@ public partial class GrabFrame : Window
 
         foreach (WordBorder wb in wbToEdit)
             wb.Word = wb.Word.TryFixToLetters();
+    }
+
+    private void AutoOcrCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        reDrawTimer.Start();
     }
 }
