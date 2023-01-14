@@ -4,12 +4,17 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
@@ -69,6 +74,14 @@ public static class OcrExtensions
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
+    public static async Task<string> GetTextFromAbsoluteRect(Rect rect, Language language)
+    {
+        Rectangle selectedRegion = ShapeExtensions.RectangleFromRect(rect);
+        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
+
+        return await GetTextFromEntireBitmap(bmp, language);
+    }
+
     public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language language)
     {
         Point absPosPoint = passedWindow.GetAbsolutePosition();
@@ -80,6 +93,23 @@ public static class OcrExtensions
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
         return await GetTextFromEntireBitmap(bmp, language);
+    }
+
+    public static async Task<string> GetRegionsTextAsTable(Window passedWindow, Rectangle selectedRegion, Language language)
+    {
+        Point absPosPoint = passedWindow.GetAbsolutePosition();
+
+        int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
+        int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
+
+        Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
+        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
+        double scale = await GetIdealScaleFactorForOCR(bmp, language);
+        using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
+        DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
+        OcrResult ocrResult = await GetOcrResultFromBitmap(scaledBitmap, language);
+        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpiScale);
+        return ResultTable.GetWordsAsTable(wordBorders, dpiScale, LanguageUtilities.IsLanguageSpaceJoining(language));
     }
 
     public static async Task<(OcrResult, double)> GetOcrResultFromRegion(Rectangle region, Language language)
@@ -233,5 +263,4 @@ public static class OcrExtensions
             Height = Math.Abs(bottom - top)
         };
     }
-
 }

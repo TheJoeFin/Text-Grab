@@ -37,7 +37,10 @@ public static class StringMethods
         {'й', 'N'}, {'к', 'k'}, {'л', 'n'}, {'м', 'M'}, {'н', 'H'},
         {'п', 'n'}, {'т', 'T'}, {'ф', 'o'}, {'ц', 'u'}, {'ч', 'u'},
         {'ш', 'w'}, {'щ', 'w'}, {'ъ', 'b'}, {'ы', 'b'}, {'ь', 'b'},
-        {'э', '3'}, {'ю', 'o'}, {'я', 'R'}
+        {'э', '3'}, {'ю', 'o'}, {'я', 'R'},
+
+        // Other Chars
+        {'ø', 'e'},
     };
 
     public static Dictionary<char, char> NumbersToLetters = new()
@@ -585,7 +588,7 @@ public static class StringMethods
 
     public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)
     {
-        Regex regex = new(stringToRemove);
+        Regex regex = new(stringToRemove.EscapeSpecialRegexChars(false));
         return regex.Replace(stringToBeEdited, "");
     }
 

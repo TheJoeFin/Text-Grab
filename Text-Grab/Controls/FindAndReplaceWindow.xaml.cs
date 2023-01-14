@@ -238,8 +238,8 @@ public partial class FindAndReplaceWindow : Window
 
         if (textEditWindow is not null)
         {
-            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
             textEditWindow.PassedTextControl.Focus();
+            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
             this.Focus();
         }
     }

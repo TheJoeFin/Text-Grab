@@ -430,5 +430,29 @@ namespace Text_Grab.Properties {
                 this["ScrollBottomBar"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool GrabFrameAutoOcr {
+            get {
+                return ((bool)(this["GrabFrameAutoOcr"]));
+            }
+            set {
+                this["GrabFrameAutoOcr"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool GrabFrameUpdateEtw {
+            get {
+                return ((bool)(this["GrabFrameUpdateEtw"]));
+            }
+            set {
+                this["GrabFrameUpdateEtw"] = value;
+            }
+        }
     }
 }

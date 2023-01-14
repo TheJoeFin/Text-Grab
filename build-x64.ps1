@@ -4,7 +4,7 @@ $Version = Get-Date -Format "yyyy-MM-dd" # 2020-11-1
 $VersionDot = $Version -replace '-','.'
 $Project = "Text-Grab"
 $Archive = "$BuildPath\$Project-$Version.zip"
-$ArchiveSC = "$BuildPath\$Project-SC-$Version.zip"
+$ArchiveSC = "$BuildPath\$Project-Self-Contained-$Version.zip"
 
 # Clean up
 if(Test-Path -Path $BuildPath)

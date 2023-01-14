@@ -359,6 +359,8 @@ public partial class FullscreenGrab : Window
             BackgroundBrush.Opacity = 0;
             grabbedText = await OcrExtensions.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
+        else if (TableToggleButton.IsChecked is true)
+            grabbedText = await OcrExtensions.GetRegionsTextAsTable(this, regionScaled, selectedOcrLang);
         else
             grabbedText = await OcrExtensions.GetRegionsText(this, regionScaled, selectedOcrLang);
 
@@ -442,6 +444,12 @@ public partial class FullscreenGrab : Window
 
                 FreezeUnfreeze(FreezeMenuItem.IsChecked);
                 break;
+            case Key.T:
+                if (isActive is null)
+                    TableToggleButton.IsChecked = !TableToggleButton.IsChecked;
+                else
+                    TableToggleButton.IsChecked = isActive.Value;
+                break;
             case Key.D1:
             case Key.D2:
             case Key.D3:
@@ -477,6 +485,8 @@ public partial class FullscreenGrab : Window
         GrabFrame grabFrame = new();
         if (destinationTextBox is not null)
             grabFrame.DestinationTextBox = destinationTextBox;
+
+        grabFrame.TableToggleButton.IsChecked = TableToggleButton.IsChecked;
         grabFrame.Show();
 
         double posLeft = Canvas.GetLeft(selectBorder); // * dpi.DpiScaleX;
@@ -506,7 +516,7 @@ public partial class FullscreenGrab : Window
         if (Settings.Default.CorrectToLatin)
             grabbedText = grabbedText.ReplaceGreekOrCyrillicWithLatin();
 
-        if (SingleLineMenuItem.IsChecked is true)
+        if (SingleLineMenuItem.IsChecked is true && TableToggleButton.IsChecked is false)
             grabbedText = grabbedText.MakeStringSingleLine();
 
         textFromOCR = grabbedText;
