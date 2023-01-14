@@ -766,7 +766,7 @@ public partial class GrabFrame : Window
         frameContentImageSource = null;
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
-        MatchesTXTBLK.Text = "Matches: 0";
+        MatchesTXTBLK.Text = "0 Matches";
         UpdateFrameText();
     }
 
@@ -1112,7 +1112,7 @@ public partial class GrabFrame : Window
         {
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
-            MatchesTXTBLK.Text = $"Matches: 0";
+            MatchesTXTBLK.Text = $"0 Matches";
             UpdateFrameText();
             return;
         }
@@ -1134,7 +1134,7 @@ public partial class GrabFrame : Window
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
             UpdateFrameText();
-            MatchesTXTBLK.Text = $"Matches: 0";
+            MatchesTXTBLK.Text = $"0 Matches";
             return;
         }
 
@@ -1150,8 +1150,12 @@ public partial class GrabFrame : Window
         }
 
         int numberOfMatches = wordBorders.Where(w => w.IsSelected).Count();
-        MatchesTXTBLK.Text = $"Matches: {numberOfMatches}";
+        if (numberOfMatches == 1)
+            MatchesTXTBLK.Text = $"{numberOfMatches} Match";
+        else
+            MatchesTXTBLK.Text = $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
+        LanguagesComboBox.Visibility = Visibility.Collapsed;
         UpdateFrameText();
     }
 
@@ -1975,6 +1979,7 @@ public partial class GrabFrame : Window
 
     private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
     {
+        isSearchSelectionOverriden = false;
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }

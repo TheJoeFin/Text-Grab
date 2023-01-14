@@ -397,10 +397,12 @@
                                 <Separator />
                                 <MenuItem
                                     x:Name="SearchWithRegexCheckBox"
+                                    Click="SearchBox_GotFocus"
                                     Header="Search with Regex"
                                     IsCheckable="True" />
                                 <MenuItem
                                     x:Name="ExactMatchChkBx"
+                                    Click="SearchBox_GotFocus"
                                     Header="Match searches exactly"
                                     IsCheckable="True" />
                             </ContextMenu>
@@ -448,12 +450,12 @@
                                     Foreground="White"
                                     Text="Matches: 0" />
                             </MenuItem.Header>
-                            <MenuItem Click="HandleDelete" Header="Delete Matches" />
+                            <MenuItem Click="HandleDelete" Header="Delete Selected" />
                             <Separator />
                             <MenuItem
                                 Name="EditMatchesMenuItem"
                                 Click="EditMatchesMenuItem_Click"
-                                Header="Edit Matches in new Window" />
+                                Header="Edit Selected in new Window" />
                         </MenuItem>
                     </Menu>
 
