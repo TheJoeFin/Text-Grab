@@ -490,7 +490,7 @@ public partial class GrabFrame : Window
         if (isCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
 
-        if (IsEditingAnyWordBorders)
+        if (IsEditingAnyWordBorders || SearchBox.IsFocused)
             return;
 
         if (e.Key == Key.Delete)
@@ -753,6 +753,7 @@ public partial class GrabFrame : Window
         if (AutoOcrCheckBox.IsChecked is false)
         {
             OcrFrameBTN.Visibility = Visibility.Visible;
+            OcrFrameBTN.Focus();
             RefreshBTN.Visibility = Visibility.Collapsed;
         }
         else
@@ -1137,12 +1138,15 @@ public partial class GrabFrame : Window
             return;
         }
 
-        foreach (WordBorder wb in wordBorders)
+        if (!isSearchSelectionOverriden)
         {
-            if (regex.IsMatch(wb.Word))
-                wb.Select();
-            else
-                wb.Deselect();
+            foreach (WordBorder wb in wordBorders)
+            {
+                if (regex.IsMatch(wb.Word))
+                    wb.Select();
+                else
+                    wb.Deselect();
+            }
         }
 
         int numberOfMatches = wordBorders.Where(w => w.IsSelected).Count();
@@ -1950,11 +1954,9 @@ public partial class GrabFrame : Window
         EditTextWindow editWindow = new();
         bool isSpaceJoiningLang = LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage);
         string separator = isSpaceJoiningLang ? " " : "";
-        string stringForETW = string.Join(separator, selectedWords.Select(m => m.Word));
         DpiScale dpiScale = VisualTreeHelper.GetDpi(this);
 
-        if (selectedWords.Count > 6)
-            stringForETW = ResultTable.GetWordsAsTable(selectedWords, dpiScale, isSpaceJoiningLang);
+        string stringForETW = ResultTable.GetWordsAsTable(selectedWords, dpiScale, isSpaceJoiningLang);
 
         editWindow.AddThisText(stringForETW);
         editWindow.Show();
