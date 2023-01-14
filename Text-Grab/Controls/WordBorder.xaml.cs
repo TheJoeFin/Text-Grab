@@ -242,7 +242,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             Select();
     }
 
-    private async void WordBorderControl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void WordBorderControl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (EditWordTextBox.Visibility == Visibility.Collapsed)
         {
@@ -258,27 +258,22 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         if (IsFromEditWindow)
             WindowUtilities.AddTextToOpenWindow(Word);
-
-        if (IsSelected)
-        {
-            await Task.Delay(100);
-            Deselect();
-        }
-        else
-        {
-            await Task.Delay(100);
-            Select();
-        }
     }
 
     private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        Word = Word.TryFixToNumbers();
+        if (EditWordTextBox.SelectedText != string.Empty)
+            EditWordTextBox.SelectedText = EditWordTextBox.SelectedText.TryFixToNumbers();
+        else
+            Word = Word.TryFixToNumbers();
     }
 
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        Word = Word.TryFixToLetters();
+        if (EditWordTextBox.SelectedText != string.Empty)
+            EditWordTextBox.SelectedText = EditWordTextBox.SelectedText.TryFixToLetters();
+        else
+            Word = Word.TryFixToLetters();
     }
 
     private void BreakIntoWordsMenuItem_Click(object sender, RoutedEventArgs e)
