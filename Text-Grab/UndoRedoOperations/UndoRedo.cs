@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Text_Grab.UndoRedoOperations;
 
@@ -73,6 +74,9 @@ class UndoRedo
             case UndoRedoOperation.AddWordBorder:
                 InsertAddWordBorderOperation((GrabFrameOperationArgs)operationArgs);
                 break;
+            case UndoRedoOperation.ChangeWord:
+                InsertChangeWordOperation((GrabFrameOperationArgs)operationArgs);
+                break;
             case UndoRedoOperation.RemoveWordBorder:
                 InsertRemoveWordBorderOperation((GrabFrameOperationArgs)operationArgs);
                 break;
@@ -90,6 +94,9 @@ class UndoRedo
             ClearRedoStack();
         }
     }
+
+    private void InsertChangeWordOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
+        new ChangeWord(TransactionId, args.WordBorder, args.OldWord, args.NewWord));
 
     private void InsertAddWordBorderOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
         new AddWordBorder(TransactionId, args.WordBorder, args.GrabFrameCanvas, args.WordBorders));

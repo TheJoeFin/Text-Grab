@@ -261,18 +261,24 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private void TryToNumberMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        string oldWord = Word;
         if (EditWordTextBox.SelectedText != string.Empty)
             EditWordTextBox.SelectedText = EditWordTextBox.SelectedText.TryFixToNumbers();
         else
             Word = Word.TryFixToNumbers();
+
+        OwnerGrabFrame?.UndoableWordChange(this, oldWord, true);
     }
 
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        string oldWord = Word;
         if (EditWordTextBox.SelectedText != string.Empty)
             EditWordTextBox.SelectedText = EditWordTextBox.SelectedText.TryFixToLetters();
         else
             Word = Word.TryFixToLetters();
+
+        OwnerGrabFrame?.UndoableWordChange(this, oldWord, true);
     }
 
     private void BreakIntoWordsMenuItem_Click(object sender, RoutedEventArgs e)

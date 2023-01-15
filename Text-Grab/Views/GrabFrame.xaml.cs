@@ -229,10 +229,24 @@ public partial class GrabFrame : Window
 
     public void WordChanged()
     {
-        if (!isDrawing)
-            Debug.WriteLine("Word Changed, not when drawing");
         reSearchTimer.Stop();
         reSearchTimer.Start();
+    }
+
+    public void UndoableWordChange(WordBorder wordBorder, string oldWord, bool isSingleTransation)
+    {
+        if (isSingleTransation)
+            UndoRedo.StartTransaction();
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangeWord, new GrabFrameOperationArgs()
+        { 
+            WordBorder = wordBorder,
+            OldWord = oldWord,
+            NewWord = wordBorder.Word
+        });
+
+        if (isSingleTransation)
+            UndoRedo.EndTransaction();
     }
 
     public void MergeSelectedWordBorders()
@@ -721,13 +735,11 @@ public partial class GrabFrame : Window
 
     private async void ReDrawTimer_Tick(object? sender, EventArgs? e)
     {
-        Debug.WriteLine("ReDrawTimer Tick!");
         reDrawTimer.Stop();
 
         if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
         {
             reDrawTimer.Start();
-            Debug.WriteLine("mouse button stil down, restarting timer");
             return;
         }
 
@@ -737,7 +749,6 @@ public partial class GrabFrame : Window
         if (AutoOcrCheckBox.IsChecked is false)
             return;
 
-        Debug.WriteLine("drawing word borders");
         if (SearchBox.Text is string searchText)
             await DrawRectanglesAroundWords(searchText);
     }
@@ -1364,7 +1375,6 @@ public partial class GrabFrame : Window
         {
             isMiddleDown = false;
             FreezeGrabFrame();
-            Debug.WriteLine("Middle mouse up, starting timer");
             reDrawTimer.Start();
             return;
         }
@@ -1641,7 +1651,6 @@ public partial class GrabFrame : Window
             GrabFrameImage.Source = frameContentImageSource;
         else
         {
-            Debug.WriteLine("FrameContentImageSouceIsNull, capturing window bounds");
             frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
             GrabFrameImage.Source = frameContentImageSource;
         }
@@ -2029,8 +2038,14 @@ public partial class GrabFrame : Window
         if (wbToEdit.Count == 0)
             wbToEdit = wordBorders.ToList();
 
+        UndoRedo.StartTransaction();
         foreach (WordBorder wb in wbToEdit)
+        {
+            string oldWord = wb.Word;
             wb.Word = wb.Word.TryFixToNumbers();
+            UndoableWordChange(wb, oldWord, false);
+        }
+        UndoRedo.EndTransaction();
     }
 
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2040,8 +2055,14 @@ public partial class GrabFrame : Window
         if (wbToEdit.Count == 0)
             wbToEdit = wordBorders.ToList();
 
+        UndoRedo.StartTransaction();
         foreach (WordBorder wb in wbToEdit)
+        {
+            string oldWord = wb.Word;
             wb.Word = wb.Word.TryFixToLetters();
+            UndoableWordChange(wb, oldWord, false);
+        }
+        UndoRedo.EndTransaction();
     }
 
     private void AutoOcrCheckBox_Click(object sender, RoutedEventArgs e)
