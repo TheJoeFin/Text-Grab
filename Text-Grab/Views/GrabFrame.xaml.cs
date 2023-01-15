@@ -1,5 +1,6 @@
 ﻿using Fasetto.Word;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -46,8 +47,7 @@ public partial class GrabFrame : Window
     public bool isCtrlDown => KeyboardExtensions.IsCtrlDown() || AddEditOcrMenuItem.IsChecked is true;
     private Point clickedPoint;
     private Side resizingSide = Side.None;
-    private Rect? oldSize;
-    private WordBorder? movingWordBorder;
+    private Dictionary<WordBorder, Rect> movingWordBordersDictionary = new();
     private Point startingMovingPoint;
     private Border selectBorder = new();
     private bool isSearchSelectionOverriden = false;
@@ -318,15 +318,23 @@ public partial class GrabFrame : Window
 
     public void StartWordBorderMoveResize(WordBorder wordBorder, Side sideEnum)
     {
-        movingWordBorder = wordBorder;
         startingMovingPoint = new(wordBorder.Left, wordBorder.Top);
         resizingSide = sideEnum;
-        oldSize = new(wordBorder.Left, wordBorder.Top, wordBorder.Width, wordBorder.Height);
+
+        ICollection<WordBorder> bordersMoving = new List<WordBorder>() { wordBorder };
+
+        if (sideEnum == Side.None)
+            bordersMoving = SelectedWordBorders();
+
+        foreach (WordBorder b in bordersMoving)
+        {
+            Rect originalSize = new(b.Left, b.Top, b.Width, b.Height);
+            movingWordBordersDictionary.Add(b, originalSize);
+        }
     }
 
     public void BreakWordBorderIntoWords(WordBorder wordBorder)
     {
-        // List<string> listOfWords = wordBorder.Word.Split().ToList();
         ICollection<string> wordLines = wordBorder.Word.Split(Environment.NewLine);
 
         const double widthScaleAdjstFactor = 1.5;
@@ -413,7 +421,7 @@ public partial class GrabFrame : Window
                 e.Handled = true;
         }
 
-        if (isCtrlDown)
+        if (!isCtrlDown)
             RectanglesCanvas.Cursor = null;
     }
 
@@ -714,6 +722,9 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         ResetGrabFrame();
 
+        frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+        GrabFrameImage.Source = frameContentImageSource;
+
         if (AutoOcrCheckBox.IsChecked is false)
             return;
 
@@ -723,8 +734,6 @@ public partial class GrabFrame : Window
             return;
         }
 
-        frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
-        GrabFrameImage.Source = frameContentImageSource;
         if (SearchBox.Text is string searchText)
             await DrawRectanglesAroundWords(searchText);
     }
@@ -1294,12 +1303,14 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
+        reDrawTimer.Stop();
+
         if (isCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
         else
             RectanglesCanvas.Cursor = null;
 
-        if (!isSelecting && !isMiddleDown && movingWordBorder is null)
+        if (!isSelecting && !isMiddleDown && movingWordBordersDictionary.Count == 0 )
             return;
 
         Point movingPoint = e.GetPosition(RectanglesCanvas);
@@ -1309,31 +1320,36 @@ public partial class GrabFrame : Window
 
         if (isMiddleDown)
         {
+            frameContentImageSource = null;
             MoveWindowWithMiddleMouse(movingPoint);
             return;
         }
 
-        if (movingWordBorder is not null)
+        if (movingWordBordersDictionary.Count > 0)
         {
             FreezeGrabFrame();
-
-            MoveResizeWordBorder(movingPoint, oldSize ?? new Rect());
+            MoveAllWordBorders(movingPoint);
             return;
         }
 
         selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
         Canvas.SetLeft(selectBorder, left);
 
-        if (isCtrlDown)
-        {
-            UpdateSelectBorderForNewWordBorder(movingPoint);
-            return;
-        }
-
         selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         Canvas.SetTop(selectBorder, top);
 
-        CheckSelectBorderIntersections();
+        if (isCtrlDown)
+        {
+            double smallestHeight = 6;
+            double largestHeight = this.Height;
+            double gridSnapSize = 3.0;
+
+            selectBorder.Height = Math.Clamp(selectBorder.Height, smallestHeight, largestHeight);
+            selectBorder.Height = Math.Round(selectBorder.Height / gridSnapSize) * gridSnapSize;
+            selectBorder.Width = Math.Round(selectBorder.Width / gridSnapSize) * gridSnapSize;
+        }
+        else
+            CheckSelectBorderIntersections();
     }
 
     private void RectanglesCanvas_MouseUp(object sender, MouseButtonEventArgs e)
@@ -1352,48 +1368,50 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (movingWordBorder is not null && oldSize is not null)
+        if (movingWordBordersDictionary.Count > 0)
         {
             UndoRedo.StartTransaction();
-            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ResizeWordBorder,
-                new GrabFrameOperationArgs()
-                {
-                    WordBorder = movingWordBorder,
-                    OldSize = oldSize.Value,
-                    NewSize = new(movingWordBorder.Left, movingWordBorder.Top, movingWordBorder.Width, movingWordBorder.Height)
-                });
+
+            foreach (WordBorder movedWb in movingWordBordersDictionary.Keys)
+            {
+                Rect previousSize = movingWordBordersDictionary[movedWb];
+                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ResizeWordBorder,
+                    new GrabFrameOperationArgs()
+                    {
+                        WordBorder = movedWb,
+                        OldSize = previousSize,
+                        NewSize = new(movedWb.Left, movedWb.Top, movedWb.Width, movedWb.Height)
+                    });
+            }
             UndoRedo.EndTransaction();
         }
 
-        if (isCtrlDown && movingWordBorder is null
+        if (isCtrlDown && movingWordBordersDictionary.Count == 0
             && selectBorder.Height > 6 && selectBorder.Width > 6)
             AddNewWordBorder(selectBorder);
 
         try { RectanglesCanvas.Children.Remove(selectBorder); } catch { }
 
-        movingWordBorder = null;
-        oldSize = null;
+        movingWordBordersDictionary.Clear();
         resizingSide = Side.None;
-        // isCtrlDown = false;
         CheckSelectBorderIntersections(true);
         UpdateFrameText();
     }
 
-    private void UpdateSelectBorderForNewWordBorder(Point movingPoint)
+    private void MoveAllWordBorders(Point movingPoint)
     {
-        double smallestHeight = 6;
-        double largestHeight = this.Height;
-        double gridSnapSize = 3.0;
-
-        selectBorder.Height = Math.Clamp(movingPoint.Y - clickedPoint.Y, smallestHeight, largestHeight);
-        selectBorder.Height = Math.Round(selectBorder.Height / gridSnapSize) * gridSnapSize;
-    }
-
-    private void MoveResizeWordBorder(Point movingPoint, Rect prevSize)
-    {
-        if (movingWordBorder is null)
+        if (movingWordBordersDictionary.Count == 0)
             return;
 
+        foreach (WordBorder movingWb in movingWordBordersDictionary.Keys)
+        {
+            Rect previousSize = movingWordBordersDictionary[movingWb];
+            MoveResizeWordBorder(movingPoint, movingWb, previousSize);
+        }
+    }
+
+    private void MoveResizeWordBorder(Point movingPoint, WordBorder movingWordBorder, Rect prevSize)
+    {
         double xShiftDelta = (movingPoint.X - clickedPoint.X);
         double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
         Canvas.SetZIndex(movingWordBorder, wordBorders.Count + 1);
@@ -1429,8 +1447,8 @@ public partial class GrabFrame : Window
                 }
                 break;
             default:
-                movingWordBorder.Left = startingMovingPoint.X + (movingPoint.X - clickedPoint.X);
-                movingWordBorder.Top = startingMovingPoint.Y + (movingPoint.Y - clickedPoint.Y);
+                movingWordBorder.Left = prevSize.X + xShiftDelta;
+                movingWordBorder.Top = prevSize.Y + yShiftDelta;
                 break;
         }
     }
