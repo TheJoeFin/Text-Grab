@@ -229,6 +229,8 @@ public partial class GrabFrame : Window
 
     public void WordChanged()
     {
+        if (!isDrawing)
+            Debug.WriteLine("Word Changed, not when drawing");
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
@@ -719,8 +721,15 @@ public partial class GrabFrame : Window
 
     private async void ReDrawTimer_Tick(object? sender, EventArgs? e)
     {
+        Debug.WriteLine("ReDrawTimer Tick!");
         reDrawTimer.Stop();
-        ResetGrabFrame();
+
+        if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
+        {
+            reDrawTimer.Start();
+            Debug.WriteLine("mouse button stil down, restarting timer");
+            return;
+        }
 
         frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
         GrabFrameImage.Source = frameContentImageSource;
@@ -728,12 +737,7 @@ public partial class GrabFrame : Window
         if (AutoOcrCheckBox.IsChecked is false)
             return;
 
-        if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
-        {
-            reDrawTimer.Start();
-            return;
-        }
-
+        Debug.WriteLine("drawing word borders");
         if (SearchBox.Text is string searchText)
             await DrawRectanglesAroundWords(searchText);
     }
@@ -785,7 +789,7 @@ public partial class GrabFrame : Window
         frameContentImageSource = null;
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
-        MatchesTXTBLK.Text = "0 Matches";
+        MatchesTXTBLK.Text = "- Matches";
         UpdateFrameText();
     }
 
@@ -1261,6 +1265,7 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        reDrawTimer.Stop();
         GrabBTN.Focus();
 
         if (e.RightButton == MouseButtonState.Pressed)
@@ -1303,8 +1308,6 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
-        reDrawTimer.Stop();
-
         if (isCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
         else
@@ -1320,7 +1323,6 @@ public partial class GrabFrame : Window
 
         if (isMiddleDown)
         {
-            frameContentImageSource = null;
             MoveWindowWithMiddleMouse(movingPoint);
             return;
         }
@@ -1362,8 +1364,7 @@ public partial class GrabFrame : Window
         {
             isMiddleDown = false;
             FreezeGrabFrame();
-
-            reDrawTimer.Stop();
+            Debug.WriteLine("Middle mouse up, starting timer");
             reDrawTimer.Start();
             return;
         }
@@ -1640,6 +1641,7 @@ public partial class GrabFrame : Window
             GrabFrameImage.Source = frameContentImageSource;
         else
         {
+            Debug.WriteLine("FrameContentImageSouceIsNull, capturing window bounds");
             frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
             GrabFrameImage.Source = frameContentImageSource;
         }
