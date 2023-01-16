@@ -51,7 +51,7 @@ public partial class GrabFrame : Window
     private Point startingMovingPoint;
     private Border selectBorder = new();
     private bool isSearchSelectionOverriden = false;
-
+    private bool IsOcrValid = false;
     private ImageSource? frameContentImageSource;
 
     private bool isSpaceJoining = true;
@@ -239,7 +239,7 @@ public partial class GrabFrame : Window
             UndoRedo.StartTransaction();
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangeWord, new GrabFrameOperationArgs()
-        { 
+        {
             WordBorder = wordBorder,
             OldWord = oldWord,
             NewWord = wordBorder.Word
@@ -796,6 +796,7 @@ public partial class GrabFrame : Window
             RefreshBTN.Visibility = Visibility.Visible;
         }
 
+        IsOcrValid = false;
         ocrResultOfWindow = null;
         frameContentImageSource = null;
         RectanglesCanvas.Children.Clear();
@@ -889,6 +890,7 @@ public partial class GrabFrame : Window
             return;
 
         isDrawing = true;
+        IsOcrValid = true;
 
         if (string.IsNullOrWhiteSpace(searchWord))
             searchWord = SearchBox.Text;
@@ -955,8 +957,11 @@ public partial class GrabFrame : Window
                 MatchingBackground = backgroundBrush,
             };
 
-            wordBorders.Add(wordBorderBox);
-            _ = RectanglesCanvas.Children.Add(wordBorderBox);
+            if (IsOcrValid)
+            {
+                wordBorders.Add(wordBorderBox);
+                _ = RectanglesCanvas.Children.Add(wordBorderBox);
+            }
 
             lineNumber++;
         }
@@ -1324,7 +1329,7 @@ public partial class GrabFrame : Window
         else
             RectanglesCanvas.Cursor = null;
 
-        if (!isSelecting && !isMiddleDown && movingWordBordersDictionary.Count == 0 )
+        if (!isSelecting && !isMiddleDown && movingWordBordersDictionary.Count == 0)
             return;
 
         Point movingPoint = e.GetPosition(RectanglesCanvas);
