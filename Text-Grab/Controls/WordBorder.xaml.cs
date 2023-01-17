@@ -306,6 +306,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private void MoveResizeBorder_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        Select();
         OwnerGrabFrame?.StartWordBorderMoveResize(this, Side.None);
     }
 

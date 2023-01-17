@@ -1188,6 +1188,14 @@ public partial class GrabFrame : Window
             }
         }
 
+        UpdateFrameText();
+
+        if (string.IsNullOrEmpty(searchText))
+        {
+            MatchesMenu.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         int numberOfMatches = wordBorders.Where(w => w.IsSelected).Count();
         if (numberOfMatches == 1)
             MatchesTXTBLK.Text = $"{numberOfMatches} Match";
@@ -1195,7 +1203,6 @@ public partial class GrabFrame : Window
             MatchesTXTBLK.Text = $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
         LanguagesComboBox.Visibility = Visibility.Collapsed;
-        UpdateFrameText();
     }
 
     private void UpdateFrameText()
