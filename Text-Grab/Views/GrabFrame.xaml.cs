@@ -139,6 +139,7 @@ public partial class GrabFrame : Window
         _ = UndoRedo.HasRedoOperations();
 
         GetGrabFrameUserSettings();
+        SetRefreshOrOcrFrameBtnVis();
 
         this.DataContext = this;
     }
@@ -736,6 +737,7 @@ public partial class GrabFrame : Window
     private async void ReDrawTimer_Tick(object? sender, EventArgs? e)
     {
         reDrawTimer.Stop();
+        SetRefreshOrOcrFrameBtnVis();
 
         if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
         {
@@ -784,6 +786,19 @@ public partial class GrabFrame : Window
 
     private void ResetGrabFrame()
     {
+        SetRefreshOrOcrFrameBtnVis();
+
+        IsOcrValid = false;
+        ocrResultOfWindow = null;
+        frameContentImageSource = null;
+        RectanglesCanvas.Children.Clear();
+        wordBorders.Clear();
+        MatchesTXTBLK.Text = "- Matches";
+        UpdateFrameText();
+    }
+
+    private void SetRefreshOrOcrFrameBtnVis()
+    {
         if (AutoOcrCheckBox.IsChecked is false)
         {
             OcrFrameBTN.Visibility = Visibility.Visible;
@@ -795,14 +810,6 @@ public partial class GrabFrame : Window
             OcrFrameBTN.Visibility = Visibility.Collapsed;
             RefreshBTN.Visibility = Visibility.Visible;
         }
-
-        IsOcrValid = false;
-        ocrResultOfWindow = null;
-        frameContentImageSource = null;
-        RectanglesCanvas.Children.Clear();
-        wordBorders.Clear();
-        MatchesTXTBLK.Text = "- Matches";
-        UpdateFrameText();
     }
 
     private void Window_LocationChanged(object? sender, EventArgs e)

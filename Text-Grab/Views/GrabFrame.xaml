@@ -111,7 +111,7 @@
                             IsChecked="True" />
                         <MenuItem
                             x:Name="AlwaysUpdateEtwCheckBox"
-                            Header="Always Update Edit Text Window content"
+                            Header="Auto Update Content in Edit Text Window"
                             IsCheckable="True"
                             IsChecked="True" />
                         <MenuItem
