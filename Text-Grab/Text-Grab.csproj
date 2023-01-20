@@ -26,7 +26,14 @@
 	  <None Remove="Images\FSG.jpg" />
 	  <None Remove="Images\GF.jpg" />
 	  <None Remove="Images\QSL.jpg" />
+	  <None Remove="Images\WinSym.png" />
 	  <None Remove="t_ICON2.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Images\WinSym.png">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 
 	<ItemGroup>

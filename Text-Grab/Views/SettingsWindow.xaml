@@ -153,6 +153,7 @@
                                     <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
                                 </TextBlock>
                             </CheckBox>
+                            <!--<controls:ShortcutControl />-->
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
                                 <TextBox
