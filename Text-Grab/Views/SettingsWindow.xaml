@@ -256,6 +256,17 @@
                             Try to read barcodes (Disabling may speed up results)
                         </TextBlock>
                     </CheckBox>
+
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+                        Reset All settings to default settings.
+                    </TextBlock>
+                    <controls:CollapsibleButton
+                        x:Name="ResetSettingsButton"
+                        HorizontalAlignment="Left"
+                        Background="DarkRed"
+                        ButtonText="Reset All Settings"
+                        Click="ResetSettingsButton_Click"
+                        SymbolText="" />
                 </StackPanel>
                 <StackPanel
                     Grid.Row="1"

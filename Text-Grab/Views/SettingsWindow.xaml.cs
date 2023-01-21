@@ -336,5 +336,16 @@ public partial class SettingsWindow : Window
 
         return true;
     }
+
+    private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to reset all settings to default?", "Reset Settings to Default", MessageBoxButton.YesNo);
+
+        if (areYouSure != MessageBoxResult.Yes)
+            return;
+
+        Settings.Default.Reset();
+        this.Close();
+    }
 }
 
