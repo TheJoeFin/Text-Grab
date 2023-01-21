@@ -153,9 +153,8 @@
                                     <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
                                 </TextBlock>
                             </CheckBox>
-                            <!--<controls:ShortcutControl />-->
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="FullScreenHotkeyTextBox"
                                     CharacterCasing="Upper"
@@ -168,7 +167,7 @@
                                     Text="new Full Screen Grab" />
                             </StackPanel>
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="GrabFrameHotkeyTextBox"
                                     CharacterCasing="Upper"
@@ -181,7 +180,7 @@
                                     Text="new Grab Frame" />
                             </StackPanel>
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="EditTextHotKeyTextBox"
                                     CharacterCasing="Upper"
@@ -194,7 +193,7 @@
                                     Text="new Edit Text Window" />
                             </StackPanel>
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="- Win+Shift+" />
+                                <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="LookupHotKeyTextBox"
                                     CharacterCasing="Upper"

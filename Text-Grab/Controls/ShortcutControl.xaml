@@ -6,8 +6,8 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     d:DataContext="{d:DesignInstance Type=local:ShortcutControl}"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
+    d:DesignHeight="50"
+    d:DesignWidth="200"
     mc:Ignorable="d">
     <UserControl.Resources>
         <BitmapImage x:Key="WinSymIcon" UriSource="/Text-Grab;component/Images/WinSym.png" />
@@ -28,11 +28,12 @@
         <Border
             Width="70"
             Height="24"
-            Margin="8,0,0,0"
+            Margin="8,0,8,0"
+            Padding="6,0,0,1"
             Background="White"
             CornerRadius="5">
             <TextBlock
-                HorizontalAlignment="Center"
+                HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 FontSize="16"
                 FontWeight="Medium"
@@ -42,9 +43,9 @@
         <Border
             Width="24"
             Height="24"
-            Margin="8,0,0,0"
             Background="White"
-            CornerRadius="5">
+            CornerRadius="5"
+            Visibility="Collapsed">
             <TextBox
                 x:Name="ShorcutKey"
                 Width="20"
