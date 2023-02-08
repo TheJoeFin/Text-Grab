@@ -12,6 +12,7 @@ using Text_Grab.Properties;
 using Text_Grab.Views;
 // using Screen = System.Windows.Forms.Screen;
 using WpfScreenHelper;
+using static OSInterop;
 
 namespace Text_Grab.Utilities;
 
@@ -111,7 +112,7 @@ public static class WindowUtilities
             double virtualScreenHeight = SystemParameters.VirtualScreenHeight;
 
             fullscreenGrab.Left = screenCenterPoint.X - windowCenterPoint.X;
-            fullscreenGrab.Top= screenCenterPoint.Y - windowCenterPoint.Y;
+            fullscreenGrab.Top = screenCenterPoint.Y - windowCenterPoint.Y;
 
             fullscreenGrab.Show();
             fullscreenGrab.Activate();
@@ -186,15 +187,51 @@ public static class WindowUtilities
 
     internal static void TryInsertString(string stringToInsert)
     {
-        string stringToSend = Regex.Replace(stringToInsert, "[+^%~()\\{\\}\\[\\]]", "{$0}");
+        List<INPUT> inputs = new List<INPUT>();
+        // make sure keys are up.
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LCONTROL);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RCONTROL);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LWIN);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RWIN);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LSHIFT);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RSHIFT);
 
-        try
+        // send Ctrl+V (key downs and key ups)
+        INPUT ctrlDown = new();
+        ctrlDown.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        ctrlDown.U.Ki.WVk = VirtualKeyShort.CONTROL;
+        inputs.Add(ctrlDown);
+
+        INPUT vDown = new();
+        vDown.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        vDown.U.Ki.WVk = VirtualKeyShort.KEY_V;
+        inputs.Add(vDown);
+
+        INPUT vUp = new();
+        vUp.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        vUp.U.Ki.WVk = VirtualKeyShort.KEY_V;
+        vUp.U.Ki.DwFlags = KEYEVENTF.KEYUP;
+        inputs.Add(vUp);
+
+        INPUT ctrlUp = new();
+        ctrlUp.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        ctrlUp.U.Ki.WVk = VirtualKeyShort.CONTROL;
+        ctrlUp.U.Ki.DwFlags = KEYEVENTF.KEYUP;
+        inputs.Add(ctrlUp);
+
+        _ = SendInput((uint)inputs.Count, inputs.ToArray(), INPUT.Size);
+    }
+
+    private static void TryInjectModifierKeyUp(ref List<INPUT> inputs, VirtualKeyShort modifier)
+    {
+        // Most significant bit is set if key is down
+        if ((GetAsyncKeyState((int)modifier) & 0x8000) != 0)
         {
-            System.Windows.Forms.SendKeys.SendWait(stringToSend);
-        }
-        catch (ArgumentException argEx)
-        {
-            Debug.WriteLine($"Failed to Send Keys: {argEx.Message}");
+            var inputEvent = default(INPUT);
+            inputEvent.Type = OSInterop.InputType.INPUT_KEYBOARD;
+            inputEvent.U.Ki.WVk = modifier;
+            inputEvent.U.Ki.DwFlags = KEYEVENTF.KEYUP;
+            inputs.Add(inputEvent);
         }
     }
 
