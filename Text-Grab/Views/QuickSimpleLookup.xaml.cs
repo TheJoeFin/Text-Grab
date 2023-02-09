@@ -52,6 +52,9 @@ public partial class QuickSimpleLookup : Window
         if (File.Exists(cachePath))
             await ReadCsvFileIntoQuickSimpleLookup(cachePath);
 
+        if (Settings.Default.TryInsert)
+            PasteToggleButton.IsChecked = true;
+
         Topmost = false;
         Activate();
         SearchBox.Focus();
@@ -250,14 +253,14 @@ public partial class QuickSimpleLookup : Window
                 }
                 break;
             case Key.E:
-                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
+                if (KeyboardExtensions.IsCtrlDown())
                 {
                     SearchBox.Focus();
                     e.Handled = true;
                 }
                 break;
             case Key.S:
-                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
+                if (KeyboardExtensions.IsCtrlDown())
                 {
                     await WriteDataToCSV();
                     SaveBTN.Visibility = Visibility.Collapsed;
@@ -265,9 +268,16 @@ public partial class QuickSimpleLookup : Window
                 }
                 break;
             case Key.F:
-                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
+                if (KeyboardExtensions.IsCtrlDown())
                 {
                     WindowUtilities.LaunchFullScreenGrab(SearchBox);
+                    e.Handled = true;
+                }
+                break;
+            case Key.I:
+                if (KeyboardExtensions.IsCtrlDown() && PasteToggleButton.IsChecked is bool pasteToggle)
+                {
+                    PasteToggleButton.IsChecked = !pasteToggle;
                     e.Handled = true;
                 }
                 break;
@@ -451,6 +461,9 @@ public partial class QuickSimpleLookup : Window
         {
             Clipboard.SetText(stringBuilder.ToString());
             this.Close();
+
+            if (PasteToggleButton.IsChecked is true)
+                WindowUtilities.TryInsertString(stringBuilder.ToString());
         }
         catch (Exception)
         {
