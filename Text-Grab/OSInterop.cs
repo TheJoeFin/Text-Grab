@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Windows;
-using System.Windows.Interop;
 using System.Runtime.InteropServices;
 
 static class OSInterop
@@ -45,7 +43,6 @@ static class OSInterop
         public int dwFlags;
     }
 
-#pragma warning disable SA1310 // Field names should not contain underscore
     public const int WH_KEYBOARD_LL = 13;
     public const int VK_SHIFT = 0x10;
     public const int VK_CONTROL = 0x11;
@@ -1211,7 +1208,6 @@ static class OSInterop
         internal short WParamH;
     }
 
-#pragma warning restore CA1401 // P/Invokes should not be visible
     [StructLayout(LayoutKind.Sequential)]
     internal struct LowLevelKeyboardInputEvent
     {
@@ -1240,43 +1236,4 @@ static class OSInterop
         /// </summary>
         public IntPtr AdditionalInformation;
     }
-}
-
-static class WPFExtensionMethods
-{
-    public static Point GetAbsolutePosition(this Window w)
-    {
-        if (w.WindowState != WindowState.Maximized)
-            return new Point(w.Left, w.Top);
-
-        Int32Rect r;
-        bool multimonSupported = OSInterop.GetSystemMetrics(OSInterop.SM_CMONITORS) != 0;
-        if (!multimonSupported)
-        {
-            OSInterop.RECT rc = new OSInterop.RECT();
-            OSInterop.SystemParametersInfo(48, 0, ref rc, 0);
-            r = new Int32Rect(rc.left, rc.top, rc.width, rc.height);
-        }
-        else
-        {
-            WindowInteropHelper helper = new WindowInteropHelper(w);
-            IntPtr hmonitor = OSInterop.MonitorFromWindow(new HandleRef(null, helper.EnsureHandle()), 2);
-            OSInterop.MONITORINFOEX info = new OSInterop.MONITORINFOEX();
-            OSInterop.GetMonitorInfo(new HandleRef(null, hmonitor), info);
-            r = new Int32Rect(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.width, info.rcMonitor.height);
-        }
-        return new Point(r.X, r.Y);
-    }
-}
-
-internal static class NativeMethods
-{
-    // See http://msdn.microsoft.com/en-us/library/ms649021%28v=vs.85%29.aspx
-    public const int WM_CLIPBOARDUPDATE = 0x031D;
-    public static IntPtr HWND_MESSAGE = new IntPtr(-3);
-
-    // See http://msdn.microsoft.com/en-us/library/ms632599%28VS.85%29.aspx#message_only
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool AddClipboardFormatListener(IntPtr hwnd);
 }
