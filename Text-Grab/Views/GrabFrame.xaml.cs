@@ -1180,15 +1180,20 @@ public partial class GrabFrame : Window
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
             UpdateFrameText();
-            MatchesTXTBLK.Text = $"0 Matches";
+            MatchesTXTBLK.Text = $"Search Error";
             return;
         }
+
+        int numberOfMatches = 0;
 
         if (!isSearchSelectionOverriden)
         {
             foreach (WordBorder wb in wordBorders)
             {
-                if (regex.IsMatch(wb.Word))
+                int numberOfMatchesInWord = regex.Matches(wb.Word).Count;
+                numberOfMatches += numberOfMatchesInWord;
+
+                if (numberOfMatchesInWord > 0)
                     wb.Select();
                 else
                     wb.Deselect();
@@ -1203,7 +1208,6 @@ public partial class GrabFrame : Window
             return;
         }
 
-        int numberOfMatches = wordBorders.Where(w => w.IsSelected).Count();
         if (numberOfMatches == 1)
             MatchesTXTBLK.Text = $"{numberOfMatches} Match";
         else
