@@ -432,6 +432,9 @@ public partial class QuickSimpleLookup : Window
         if (string.IsNullOrEmpty(stringBuilder.ToString()))
             return;
 
+        if (stringBuilder.Length > 3 && stringBuilder.ToString().EndsWith("\r\n"))
+            stringBuilder.Remove(stringBuilder.Length - 2, 2);
+
         if (DestinationTextBox is not null)
         {
             // Do it this way instead of append text because it inserts the text at the cursor
