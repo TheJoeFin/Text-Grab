@@ -263,7 +263,6 @@ public partial class QuickSimpleLookup : Window
                 if (KeyboardExtensions.IsCtrlDown())
                 {
                     await WriteDataToCSV();
-                    SaveBTN.Visibility = Visibility.Collapsed;
                     e.Handled = true;
                 }
                 break;
@@ -478,8 +477,8 @@ public partial class QuickSimpleLookup : Window
 
     private async Task WriteDataToCSV()
     {
-        if (SearchBox.Text is string text && !string.IsNullOrEmpty(text))
-            return;
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+            SearchBox.Clear();
 
         string saveLookupFilePath = $"C:\\{cacheFilename}";
         if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
@@ -500,7 +499,15 @@ public partial class QuickSimpleLookup : Window
         foreach (LookupItem lookupItem in itemsToSave)
             csvContents.AppendLine(lookupItem.ToCSVString());
 
-        await File.WriteAllTextAsync(saveLookupFilePath, csvContents.ToString());
+        try
+        {
+            await File.WriteAllTextAsync(saveLookupFilePath, csvContents.ToString());
+            SaveBTN.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            System.Windows.Forms.MessageBox.Show($"Failed to save csv file. {ex.Message}");
+        }
     }
 
     private void MainDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -522,9 +529,6 @@ public partial class QuickSimpleLookup : Window
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
-            SearchBox.Clear();
-
         await WriteDataToCSV();
         SaveBTN.Visibility = Visibility.Collapsed;
     }
