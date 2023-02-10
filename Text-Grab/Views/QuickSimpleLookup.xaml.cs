@@ -88,6 +88,11 @@ public partial class QuickSimpleLookup : Window
         if (sender is not TextBox searchingBox || !IsLoaded)
             return;
 
+        if (string.IsNullOrEmpty(searchingBox.Text))
+            SearchLabel.Visibility = Visibility.Visible;
+        else
+            SearchLabel.Visibility = Visibility.Collapsed;
+
         if (searchingBox.Text.Contains('\t'))
         {
             // a tab has been entered and this will be a new entry
@@ -239,7 +244,7 @@ public partial class QuickSimpleLookup : Window
                 e.Handled = true;
                 break;
             case Key.Delete:
-                if (IsEditingDataGrid)
+                if (IsEditingDataGrid || SearchBox.IsFocused)
                     return;
                 RowDeleted();
                 e.Handled = true;

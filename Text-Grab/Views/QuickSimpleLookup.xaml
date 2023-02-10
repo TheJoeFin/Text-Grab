@@ -58,19 +58,30 @@
                 FontSize="16"
                 Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
-                <ToggleButton
-                    x:Name="PasteToggleButton"
-                    Grid.Column="0"
-                    Margin="0,0,5,0"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Padding="7,4"
-                    Style="{StaticResource ToggleSymbolButton}"
-                    ToolTip="(Ctrl + I) Insert the value when it is copied">
-                    <TextBlock FontFamily="Segoe MDL2 Assets" Margin="4">
-                        
-                    </TextBlock>
-                </ToggleButton>
+            <Label
+                x:Name="SearchLabel"
+                Grid.Column="0"
+                Margin="10,0,6,0"
+                Padding="4"
+                VerticalContentAlignment="Center"
+                Content="Type to search..."
+                FontSize="16"
+                Foreground="White"
+                IsHitTestVisible="False"
+                Opacity="0.5" />
+            <ToggleButton
+                x:Name="PasteToggleButton"
+                Grid.Column="0"
+                Margin="0,0,5,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Padding="7,4"
+                Style="{StaticResource ToggleSymbolButton}"
+                ToolTip="(Ctrl + I) Insert the value when it is copied">
+                <TextBlock FontFamily="Segoe MDL2 Assets" Margin="4">
+                    
+                </TextBlock>
+            </ToggleButton>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
