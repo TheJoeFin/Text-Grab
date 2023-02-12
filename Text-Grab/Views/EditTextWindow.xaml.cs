@@ -706,6 +706,14 @@ public partial class EditTextWindow : Window
         this.Close();
     }
 
+    private void CopyClosePasteBTN_Click(object sender, RoutedEventArgs e)
+    {
+        string clipboardText = PassedTextControl.Text;
+        try { System.Windows.Clipboard.SetDataObject(clipboardText, true); } catch { }
+        this.Close();
+        WindowUtilities.TryInsertString(clipboardText);
+    }
+
     private void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
         string fileText = PassedTextControl.Text;

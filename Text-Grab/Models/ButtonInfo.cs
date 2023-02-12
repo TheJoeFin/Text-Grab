@@ -125,6 +125,14 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 1.11,
+            ButtonText = "Copy, Close, Paste",
+            SymbolText = "",
+            Background = "#CC7000",
+            ClickEvent = "CopyClosePasteBTN_Click"
+        },
+        new()
+        {
             OrderNumber = 1.2,
             ButtonText = "Save to File...",
             SymbolText = "",
