@@ -126,7 +126,7 @@ public class ButtonInfo
         new()
         {
             OrderNumber = 1.11,
-            ButtonText = "Copy, Close, Paste",
+            ButtonText = "Close and Insert",
             SymbolText = "",
             Background = "#CC7000",
             ClickEvent = "CopyClosePasteBTN_Click"
