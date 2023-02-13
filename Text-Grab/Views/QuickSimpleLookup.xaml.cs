@@ -388,7 +388,7 @@ public partial class QuickSimpleLookup : Window
 
     }
 
-    private void PutValueIntoClipboard()
+    private async void PutValueIntoClipboard()
     {
         if (MainDataGrid.ItemsSource is not List<LookupItem> lookUpList
             || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
@@ -467,7 +467,7 @@ public partial class QuickSimpleLookup : Window
             this.Close();
 
             if (PasteToggleButton.IsChecked is true)
-                WindowUtilities.TryInsertString(stringBuilder.ToString());
+                await WindowUtilities.TryInsertString(stringBuilder.ToString());
         }
         catch (Exception)
         {

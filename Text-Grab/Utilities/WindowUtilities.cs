@@ -165,8 +165,7 @@ public static class WindowUtilities
             && !string.IsNullOrWhiteSpace(stringFromOCR)
             && !isFromEditWindow)
         {
-            await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
-            TryInsertString(stringFromOCR);
+            await TryInsertString(stringFromOCR);
         }
 
         GC.Collect();
@@ -185,8 +184,10 @@ public static class WindowUtilities
                 fsg.KeyPressed(key, isActive);
     }
 
-    internal static void TryInsertString(string stringToInsert)
+    internal static async Task TryInsertString(string stringToInsert)
     {
+        await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
+
         List<INPUT> inputs = new List<INPUT>();
         // make sure keys are up.
         TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LCONTROL);
@@ -220,6 +221,7 @@ public static class WindowUtilities
         inputs.Add(ctrlUp);
 
         _ = SendInput((uint)inputs.Count, inputs.ToArray(), INPUT.Size);
+        await Task.CompletedTask;
     }
 
     private static void TryInjectModifierKeyUp(ref List<INPUT> inputs, VirtualKeyShort modifier)
