@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Models;
@@ -34,6 +35,8 @@ public partial class QuickSimpleLookup : Window
     private string valueUnderEdit = string.Empty;
 
     private LookupItem? lastSelection;
+    
+    public bool IsFromETW { get; set; } = false;
 
     public QuickSimpleLookup()
     {
@@ -52,8 +55,11 @@ public partial class QuickSimpleLookup : Window
         if (File.Exists(cachePath))
             await ReadCsvFileIntoQuickSimpleLookup(cachePath);
 
-        if (Settings.Default.TryInsert)
+        if (Settings.Default.TryInsert && !IsFromETW)
             PasteToggleButton.IsChecked = true;
+
+        if (IsFromETW)
+            EditWindowToggleButton.IsChecked = true;
 
         Topmost = false;
         Activate();
@@ -257,7 +263,7 @@ public partial class QuickSimpleLookup : Window
                     e.Handled = true;
                 }
                 break;
-            case Key.E:
+            case Key.Q:
                 if (KeyboardExtensions.IsCtrlDown())
                 {
                     SearchBox.Focus();
@@ -282,6 +288,13 @@ public partial class QuickSimpleLookup : Window
                 if (KeyboardExtensions.IsCtrlDown() && PasteToggleButton.IsChecked is bool pasteToggle)
                 {
                     PasteToggleButton.IsChecked = !pasteToggle;
+                    e.Handled = true;
+                }
+                break;
+            case Key.E:
+                if (KeyboardExtensions.IsCtrlDown() && EditWindowToggleButton.IsChecked is bool etwToggle)
+                {
+                    EditWindowToggleButton.IsChecked = !etwToggle;
                     e.Handled = true;
                 }
                 break;
@@ -449,7 +462,7 @@ public partial class QuickSimpleLookup : Window
         if (stringBuilder.Length > 3 && stringBuilder.ToString().EndsWith("\r\n"))
             stringBuilder.Remove(stringBuilder.Length - 2, 2);
 
-        if (DestinationTextBox is not null)
+        if (DestinationTextBox is not null && EditWindowToggleButton.IsChecked is true)
         {
             // Do it this way instead of append text because it inserts the text at the cursor
             // Then puts the cursor at the end of the newly added text
@@ -468,6 +481,13 @@ public partial class QuickSimpleLookup : Window
 
             if (PasteToggleButton.IsChecked is true)
                 await WindowUtilities.TryInsertString(stringBuilder.ToString());
+
+            if (EditWindowToggleButton.IsChecked is true)
+            {
+                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+                etw.PassedTextControl.Text = stringBuilder.ToString();
+                etw.Show();
+            }
         }
         catch (Exception)
         {
@@ -660,5 +680,19 @@ public partial class QuickSimpleLookup : Window
         AddToLookUpResults('\t', searchTextBox.Text);
         searchTextBox.Clear();
         GoToEndOfMainDataGrid();
+    }
+
+    private void PasteToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton toggleButton
+            && toggleButton.IsChecked is true)
+            EditWindowToggleButton.IsChecked = false;
+    }
+
+    private void EditWindowToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton toggleButton
+            && toggleButton.IsChecked is true)
+            PasteToggleButton.IsChecked = false;
     }
 }

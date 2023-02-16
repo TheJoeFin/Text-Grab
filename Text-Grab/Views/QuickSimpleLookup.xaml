@@ -46,7 +46,6 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
-
             <TextBox
                 x:Name="SearchBox"
                 Grid.Column="0"
@@ -69,19 +68,6 @@
                 Foreground="White"
                 IsHitTestVisible="False"
                 Opacity="0.5" />
-            <ToggleButton
-                x:Name="PasteToggleButton"
-                Grid.Column="0"
-                Margin="0,0,5,0"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                Padding="7,4"
-                Style="{StaticResource ToggleSymbolButton}"
-                ToolTip="(Ctrl + I) Insert the value when it is copied">
-                <TextBlock FontFamily="Segoe MDL2 Assets" Margin="4">
-                    
-                </TextBlock>
-            </ToggleButton>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
@@ -108,6 +94,36 @@
                     SymbolText=""
                     ToolTip="Save Lookup Data"
                     Visibility="Collapsed" />
+                <ToggleButton
+                    x:Name="PasteToggleButton"
+                    Grid.Column="0"
+                    Margin="0,0,5,0"
+                    Padding="7,4"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Checked="PasteToggleButton_Checked"
+                    Style="{StaticResource ToggleSymbolButton}"
+                    ToolTip="(Ctrl + I) Insert the value when it is copied"
+                    Unchecked="PasteToggleButton_Checked">
+                    <TextBlock Margin="4" FontFamily="Segoe MDL2 Assets">
+                        
+                    </TextBlock>
+                </ToggleButton>
+                <ToggleButton
+                    x:Name="EditWindowToggleButton"
+                    Grid.Column="0"
+                    Margin="0,0,5,0"
+                    Padding="7,4"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Checked="EditWindowToggleButton_Checked"
+                    Style="{StaticResource ToggleSymbolButton}"
+                    ToolTip="(Ctrl + E) Send value to Edit Text Window"
+                    Unchecked="EditWindowToggleButton_Checked">
+                    <TextBlock Margin="4" FontFamily="Segoe MDL2 Assets">
+                        
+                    </TextBlock>
+                </ToggleButton>
                 <Menu
                     Grid.Column="1"
                     VerticalAlignment="Center"
@@ -158,10 +174,10 @@
             CanUserAddRows="True"
             CanUserDeleteRows="True"
             CanUserResizeRows="True"
-            HorizontalScrollBarVisibility="Disabled"
             CellEditEnding="MainDataGrid_CellEditEnding"
             CellStyle="{DynamicResource DataGridCellStyleDark}"
             ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
+            HorizontalScrollBarVisibility="Disabled"
             ItemsSource="{Binding ItemsDictionary}"
             MinRowHeight="14"
             RowBackground="Transparent"

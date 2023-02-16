@@ -1675,7 +1675,8 @@ public partial class EditTextWindow : Window
     {
         QuickSimpleLookup qsl = new()
         {
-            DestinationTextBox = PassedTextControl
+            DestinationTextBox = PassedTextControl,
+            IsFromETW = true
         };
         qsl.Show();
     }
