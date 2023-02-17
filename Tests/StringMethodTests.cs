@@ -49,6 +49,9 @@ to throw off any easy check";
     [InlineData(1000, "check")]
     [InlineData(-10, "Hello")]
     [InlineData(-1, "Hello")]
+    [InlineData(-1, "")]
+    [InlineData(0, "")]
+    [InlineData(10, "")]
     public void ReturnWordAtCursorWithNewLines(int cursorPosition, string expectedWord)
     {
         // Given
@@ -70,6 +73,16 @@ to throw off any easy check";
         string result = input.TryFixToLetters();
 
         // Assert
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("","")]
+    [InlineData("he11o there", "hello there")]
+    [InlineData("my number is l23456789o", "my number is 1234567890")]
+    public void TryFixNumOrLetters(string input, string expected)
+    {
+        string result = input.TryFixEveryWordLetterNumberErrors();
         Assert.Equal(expected, result);
     }
 
@@ -268,6 +281,14 @@ general ken
 general kenobi
 you are a bold one!", @"hello th
 general ken
+you are a bold o
+", 3, SpotInLine.End)]
+    [InlineData(@"hello there
+general kenobi
+22
+you are a bold one!", @"hello th
+general ken
+
 you are a bold o
 ", 3, SpotInLine.End)]
     public void TestRemoveFromEachLines(string inputString, string expected, int numberOfChars, SpotInLine spotInLine)
