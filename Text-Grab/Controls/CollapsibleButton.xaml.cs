@@ -11,23 +11,32 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class CollapsibleButton : Button, INotifyPropertyChanged
 {
+    #region Fields
+
     private string _buttonText = "Button Text";
 
+    private string _symbolText = "";
     private bool isSymbol = false;
-    public bool IsSymbol
+
+    #endregion Fields
+
+    #region Constructors
+
+    public CollapsibleButton()
     {
-        get { return isSymbol; }
-        set
-        {
-            isSymbol = value;
-            ChangeButtonLayout_Click();
-        }
+        DataContext = this;
+        InitializeComponent();
     }
 
+    #endregion Constructors
 
-    public bool CanChangeStyle { get; set; } = true;
+    #region Events
 
-    public ButtonInfo? CustomButton { get; set; }
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    #endregion Events
+
+    #region Properties
 
     public string ButtonText
     {
@@ -42,8 +51,19 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
         }
     }
 
-    private string _symbolText = "";
+    public bool CanChangeStyle { get; set; } = true;
 
+    public ButtonInfo? CustomButton { get; set; }
+
+    public bool IsSymbol
+    {
+        get { return isSymbol; }
+        set
+        {
+            isSymbol = value;
+            ChangeButtonLayout_Click();
+        }
+    }
     public string SymbolText
     {
         get { return _symbolText; }
@@ -57,29 +77,9 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
         }
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
+    #endregion Properties
 
-    public CollapsibleButton()
-    {
-        DataContext = this;
-        InitializeComponent();
-    }
-
-    private void CollapsibleButton_Loaded(object sender, RoutedEventArgs e)
-    {
-        if (isSymbol)
-        {
-            // change to a symbol button
-            Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
-            if (SymbolButtonStyle != null)
-                this.Style = SymbolButtonStyle;
-            ButtonTextBlock.Visibility = Visibility.Collapsed;
-        }
-    }
+    #region Methods
 
     private void ChangeButtonLayout_Click(object? sender = null, System.Windows.RoutedEventArgs? e = null)
     {
@@ -103,4 +103,23 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
             ButtonTextBlock.Visibility = Visibility.Collapsed;
         }
     }
+
+    private void CollapsibleButton_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (isSymbol)
+        {
+            // change to a symbol button
+            Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
+            if (SymbolButtonStyle != null)
+                this.Style = SymbolButtonStyle;
+            ButtonTextBlock.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    #endregion Methods
 }

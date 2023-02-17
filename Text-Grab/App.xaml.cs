@@ -18,41 +18,53 @@ namespace Text_Grab;
 /// </summary>
 public partial class App : System.Windows.Application
 {
-    public NotifyIcon? TextGrabIcon { get; set; }
+    #region Properties
 
     public List<int> HotKeyIds { get; set; } = new();
-
     public int NumberOfRunningInstances { get; set; } = 0;
+    public NotifyIcon? TextGrabIcon { get; set; }
 
-    async void appStartup(object sender, StartupEventArgs e)
+    #endregion Properties
+
+    #region Methods
+
+    public static void DefaultLaunch()
     {
-        NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
-        Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
 
-        // Register COM server and activator type
-        bool handledArgument = false;
-
-        ToastNotificationManagerCompat.OnActivated += toastArgs =>
+        switch (defaultLaunchSetting)
         {
-            LaunchFromToast(toastArgs);
-        };
-
-        handledArgument = HandleNotifyIcon();
-
-        if (!handledArgument && e.Args.Length > 0)
-            handledArgument = await HandleStartupArgs(e.Args);
-
-        if (handledArgument)
-            return;
-
-        if (Settings.Default.FirstRun)
-        {
-            Settings.Default.CorrectToLatin = LanguageUtilities.IsCurrentLanguageLatinBased();
-            ShowAndSetFirstRun();
-            return;
+            case DefaultLaunchSetting.Fullscreen:
+                WindowUtilities.LaunchFullScreenGrab();
+                break;
+            case DefaultLaunchSetting.GrabFrame:
+                GrabFrame gf = new();
+                gf.Show();
+                break;
+            case DefaultLaunchSetting.EditText:
+                EditTextWindow manipulateTextWindow = new();
+                manipulateTextWindow.Show();
+                break;
+            case DefaultLaunchSetting.QuickLookup:
+                QuickSimpleLookup quickSimpleLookup = new();
+                quickSimpleLookup.Show();
+                break;
+            default:
+                EditTextWindow editTextWindow = new();
+                editTextWindow.Show();
+                break;
         }
+    }
 
-        DefaultLaunch();
+    private static async Task<bool> CheckForOcringFolder(string currentArgument)
+    {
+        if (!Directory.Exists(currentArgument))
+            return false;
+
+        EditTextWindow manipulateTextWindow = new();
+        manipulateTextWindow.Show();
+        await manipulateTextWindow.OcrAllImagesInFolder(currentArgument, false, false);
+        return true;
     }
 
     private static async Task<bool> HandleStartupArgs(string[] args)
@@ -86,28 +98,6 @@ public partial class App : System.Windows.Application
         return await CheckForOcringFolder(currentArgument);
     }
 
-    private static bool TryToOpenFile(string possiblePath)
-    {
-        if (!File.Exists(possiblePath))
-            return false;
-
-        EditTextWindow manipulateTextWindow = new();
-        manipulateTextWindow.OpenThisPath(possiblePath);
-        manipulateTextWindow.Show();
-        return true;
-    }
-
-    private static async Task<bool> CheckForOcringFolder(string currentArgument)
-    {
-        if (!Directory.Exists(currentArgument))
-            return false;
-
-        EditTextWindow manipulateTextWindow = new();
-        manipulateTextWindow.Show();
-        await manipulateTextWindow.OcrAllImagesInFolder(currentArgument, false, false);
-        return true;
-    }
-
     private static void LaunchStandardMode(DefaultLaunchSetting launchMode)
     {
         switch (launchMode)
@@ -130,6 +120,68 @@ public partial class App : System.Windows.Application
             default:
                 break;
         }
+    }
+
+    private static void ShowAndSetFirstRun()
+    {
+        FirstRunWindow frw = new();
+        frw.Show();
+
+        Settings.Default.FirstRun = false;
+        Settings.Default.Save();
+    }
+
+    private static bool TryToOpenFile(string possiblePath)
+    {
+        if (!File.Exists(possiblePath))
+            return false;
+
+        EditTextWindow manipulateTextWindow = new();
+        manipulateTextWindow.OpenThisPath(possiblePath);
+        manipulateTextWindow.Show();
+        return true;
+    }
+
+    private void appExit(object sender, ExitEventArgs e)
+    {
+        TextGrabIcon?.Dispose();
+    }
+
+    async void appStartup(object sender, StartupEventArgs e)
+    {
+        NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
+        Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
+
+        // Register COM server and activator type
+        bool handledArgument = false;
+
+        ToastNotificationManagerCompat.OnActivated += toastArgs =>
+        {
+            LaunchFromToast(toastArgs);
+        };
+
+        handledArgument = HandleNotifyIcon();
+
+        if (!handledArgument && e.Args.Length > 0)
+            handledArgument = await HandleStartupArgs(e.Args);
+
+        if (handledArgument)
+            return;
+
+        if (Settings.Default.FirstRun)
+        {
+            Settings.Default.CorrectToLatin = LanguageUtilities.IsCurrentLanguageLatinBased();
+            ShowAndSetFirstRun();
+            return;
+        }
+
+        DefaultLaunch();
+    }
+    private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        // unhandled exceptions thrown from UI thread
+        Debug.WriteLine($"Unhandled exception: {e.Exception}");
+        e.Handled = true;
     }
 
     private bool HandleNotifyIcon()
@@ -159,52 +211,5 @@ public partial class App : System.Windows.Application
         }));
     }
 
-    private static void ShowAndSetFirstRun()
-    {
-        FirstRunWindow frw = new();
-        frw.Show();
-
-        Settings.Default.FirstRun = false;
-        Settings.Default.Save();
-    }
-
-    public static void DefaultLaunch()
-    {
-        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
-
-        switch (defaultLaunchSetting)
-        {
-            case DefaultLaunchSetting.Fullscreen:
-                WindowUtilities.LaunchFullScreenGrab();
-                break;
-            case DefaultLaunchSetting.GrabFrame:
-                GrabFrame gf = new();
-                gf.Show();
-                break;
-            case DefaultLaunchSetting.EditText:
-                EditTextWindow manipulateTextWindow = new();
-                manipulateTextWindow.Show();
-                break;
-            case DefaultLaunchSetting.QuickLookup:
-                QuickSimpleLookup quickSimpleLookup = new();
-                quickSimpleLookup.Show();
-                break;
-            default:
-                EditTextWindow editTextWindow = new();
-                editTextWindow.Show();
-                break;
-        }
-    }
-
-    private void appExit(object sender, ExitEventArgs e)
-    {
-        TextGrabIcon?.Dispose();
-    }
-
-    private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
-        // unhandled exceptions thrown from UI thread
-        Debug.WriteLine($"Unhandled exception: {e.Exception}");
-        e.Handled = true;
-    }
+    #endregion Methods
 }

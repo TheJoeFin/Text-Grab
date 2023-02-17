@@ -10,28 +10,33 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class AddOrRemoveWindow : Window
 {
+    #region Fields
+
     public static RoutedCommand AddRemoveCmd = new();
 
-    public int? LengthToChange { get; set; }
+    #endregion Fields
 
-    public string TextToAdd { get; set; } = "";
-
-    public SpotInLine SpotInLine { get; set; } = SpotInLine.Beginning;
-
-    public AddRemove AddRemove { get; set; } = AddRemove.Add;
-
-    public string SelectedTextFromEditTextWindow { get; set; } = "";
+    #region Constructors
 
     public AddOrRemoveWindow()
     {
         InitializeComponent();
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
-    {
-        TextToAddTextBox.Text = SelectedTextFromEditTextWindow;
-        LengthTextBox.Text = SelectedTextFromEditTextWindow.Length.ToString();
-    }
+    #endregion Constructors
+
+    #region Properties
+
+    public AddRemove AddRemove { get; set; } = AddRemove.Add;
+    public int? LengthToChange { get; set; }
+
+    public string SelectedTextFromEditTextWindow { get; set; } = "";
+    public SpotInLine SpotInLine { get; set; } = SpotInLine.Beginning;
+    public string TextToAdd { get; set; } = "";
+
+    #endregion Properties
+
+    #region Methods
 
     private void AddRemove_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
@@ -69,23 +74,6 @@ public partial class AddOrRemoveWindow : Window
         Close();
     }
 
-    private void RemoveRadioButton_Checked(object sender, RoutedEventArgs e)
-    {
-        if (sender is not RadioButton removeRadioButton)
-            return;
-
-        if (removeRadioButton.IsChecked is true)
-        {
-            TextToAddTextBox.IsEnabled = false;
-            LengthTextBox.IsEnabled = true;
-        }
-        else
-        {
-            TextToAddTextBox.IsEnabled = true;
-            LengthTextBox.IsEnabled = false;
-        }
-    }
-
     private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (sender is not TextBox addTextTextBox)
@@ -105,6 +93,23 @@ public partial class AddOrRemoveWindow : Window
         }
     }
 
+    private void RemoveRadioButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not RadioButton removeRadioButton)
+            return;
+
+        if (removeRadioButton.IsChecked is true)
+        {
+            TextToAddTextBox.IsEnabled = false;
+            LengthTextBox.IsEnabled = true;
+        }
+        else
+        {
+            TextToAddTextBox.IsEnabled = true;
+            LengthTextBox.IsEnabled = false;
+        }
+    }
+
     private void Window_KeyUp(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
@@ -119,4 +124,12 @@ public partial class AddOrRemoveWindow : Window
                 this.Close();
         }
     }
+
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        TextToAddTextBox.Text = SelectedTextFromEditTextWindow;
+        LengthTextBox.Text = SelectedTextFromEditTextWindow.Length.ToString();
+    }
+
+    #endregion Methods
 }

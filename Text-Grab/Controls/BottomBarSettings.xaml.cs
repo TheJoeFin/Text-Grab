@@ -11,8 +11,7 @@ namespace Text_Grab.Controls;
 
 public partial class BottomBarSettings : Window
 {
-    private ObservableCollection<ButtonInfo> ButtonsInRightList { get; set; }
-    private ObservableCollection<ButtonInfo> ButtonsInLeftList { get; set; }
+    #region Constructors
 
     public BottomBarSettings()
     {
@@ -34,55 +33,16 @@ public partial class BottomBarSettings : Window
         ShowScrollbarCheckBox.IsChecked = Settings.Default.ScrollBottomBar;
     }
 
-    private void MoveRightButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (LeftListBox.SelectedItem is not ButtonInfo customButton)
-            return;
+    #endregion Constructors
 
-        ButtonsInRightList.Add(customButton);
-        ButtonsInLeftList.Remove(customButton);
-    }
+    #region Properties
 
-    private void MoveLeftButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (RightListBox.SelectedItem is not ButtonInfo customButton)
-            return;
+    private ObservableCollection<ButtonInfo> ButtonsInLeftList { get; set; }
+    private ObservableCollection<ButtonInfo> ButtonsInRightList { get; set; }
 
-        // ButtonsInLeftList.Add(customButton);
-        InsertSorted(ButtonsInLeftList, customButton, p => p.OrderNumber);
-        ButtonsInRightList.Remove(customButton);
-    }
+    #endregion Properties
 
-    private void MoveUpButton_Click(object sender, RoutedEventArgs e)
-    {
-        int newIndex = MoveUp(ButtonsInRightList, RightListBox.SelectedIndex);
-        RightListBox.SelectedIndex = newIndex;
-    }
-
-    private void MoveDownButton_Click(object sender, RoutedEventArgs e)
-    {
-        int newIndex = MoveDown(ButtonsInRightList, RightListBox.SelectedIndex);
-        RightListBox.SelectedIndex = newIndex;
-    }
-
-    private void SaveBTN_Click(object sender, RoutedEventArgs e)
-    {
-        Settings.Default.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
-        Settings.Default.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
-        Settings.Default.Save();
-
-        CustomBottomBarUtilities.SaveCustomBottomBarItemsSetting(ButtonsInRightList.ToList());
-        if (Owner is EditTextWindow etw)
-            etw.SetBottomBarButtons();
-
-        this.Close();
-    }
-
-
-    private void CloseBTN_Click(object sender, RoutedEventArgs e)
-    {
-        this.Close();
-    }
+    #region Methods
 
     public static void InsertSorted<T>(ObservableCollection<T> collection, T item, Func<T, double> propertySelector)
     {
@@ -92,18 +52,6 @@ public partial class BottomBarSettings : Window
             index++;
         }
         collection.Insert(index, item);
-    }
-
-    public static int MoveUp<T>(ObservableCollection<T> collection, int index)
-    {
-        if (index > 0 && index < collection.Count)
-        {
-            T item = collection[index];
-            collection.RemoveAt(index);
-            collection.Insert(index - 1, item);
-            return index - 1;
-        }
-        return 0;
     }
 
     public static int MoveDown<T>(ObservableCollection<T> collection, int index)
@@ -118,5 +66,64 @@ public partial class BottomBarSettings : Window
         return collection.Count;
     }
 
+    public static int MoveUp<T>(ObservableCollection<T> collection, int index)
+    {
+        if (index > 0 && index < collection.Count)
+        {
+            T item = collection[index];
+            collection.RemoveAt(index);
+            collection.Insert(index - 1, item);
+            return index - 1;
+        }
+        return 0;
+    }
 
+    private void CloseBTN_Click(object sender, RoutedEventArgs e)
+    {
+        this.Close();
+    }
+
+    private void MoveDownButton_Click(object sender, RoutedEventArgs e)
+    {
+        int newIndex = MoveDown(ButtonsInRightList, RightListBox.SelectedIndex);
+        RightListBox.SelectedIndex = newIndex;
+    }
+
+    private void MoveLeftButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (RightListBox.SelectedItem is not ButtonInfo customButton)
+            return;
+
+        // ButtonsInLeftList.Add(customButton);
+        InsertSorted(ButtonsInLeftList, customButton, p => p.OrderNumber);
+        ButtonsInRightList.Remove(customButton);
+    }
+
+    private void MoveRightButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (LeftListBox.SelectedItem is not ButtonInfo customButton)
+            return;
+
+        ButtonsInRightList.Add(customButton);
+        ButtonsInLeftList.Remove(customButton);
+    }
+    private void MoveUpButton_Click(object sender, RoutedEventArgs e)
+    {
+        int newIndex = MoveUp(ButtonsInRightList, RightListBox.SelectedIndex);
+        RightListBox.SelectedIndex = newIndex;
+    }
+    private void SaveBTN_Click(object sender, RoutedEventArgs e)
+    {
+        Settings.Default.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
+        Settings.Default.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
+        Settings.Default.Save();
+
+        CustomBottomBarUtilities.SaveCustomBottomBarItemsSetting(ButtonsInRightList.ToList());
+        if (Owner is EditTextWindow etw)
+            etw.SetBottomBarButtons();
+
+        this.Close();
+    }
+
+    #endregion Methods
 }
