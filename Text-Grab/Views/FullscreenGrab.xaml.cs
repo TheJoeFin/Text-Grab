@@ -496,12 +496,6 @@ public partial class FullscreenGrab : Window
 
         string grabbedText = string.Empty;
 
-        if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
-        {
-            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-            destinationTextBox = etw.PassedTextControl;
-        }
-
         if (NewGrabFrameMenuItem.IsChecked is true)
         {
             PlaceGrabFrameInSelectionRect();
@@ -527,6 +521,12 @@ public partial class FullscreenGrab : Window
 
         if (!string.IsNullOrWhiteSpace(grabbedText))
         {
+            if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
+            {
+                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+                destinationTextBox = etw.PassedTextControl;
+            }
+
             HandleTextFromOcr(grabbedText);
             WindowUtilities.CloseAllFullscreenGrabs();
         }
