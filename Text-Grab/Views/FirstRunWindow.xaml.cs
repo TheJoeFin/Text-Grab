@@ -15,36 +15,25 @@ namespace Text_Grab;
 /// </summary>
 public partial class FirstRunWindow : Window
 {
+    #region Constructors
+
     public FirstRunWindow()
     {
         InitializeComponent();
     }
 
-    private void OkayButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (System.Windows.Application.Current.Windows.Count == 1)
-        {
-            DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
-            switch (defaultLaunchSetting)
-            {
-                case DefaultLaunchSetting.Fullscreen:
-                    WindowUtilities.LaunchFullScreenGrab();
-                    break;
-                case DefaultLaunchSetting.GrabFrame:
-                    WindowUtilities.OpenOrActivateWindow<GrabFrame>();
-                    break;
-                case DefaultLaunchSetting.EditText:
-                    WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-                    break;
-                case DefaultLaunchSetting.QuickLookup:
-                    WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
-                    break;
-                default:
-                    break;
-            }
-        }
+    #endregion Constructors
 
-        this.Close();
+    #region Methods
+
+    private void BackgroundCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        {
+            Settings.Default.RunInTheBackground = (bool)checkBox.IsChecked;
+            ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
+            Settings.Default.Save();
+        }
     }
 
     private async void FirstRun_Loaded(object sender, RoutedEventArgs e)
@@ -102,6 +91,47 @@ public partial class FirstRunWindow : Window
         NotificationsCheckBox.IsChecked = Settings.Default.ShowToast;
     }
 
+    private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
+
+    private void NotificationsCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        {
+            Settings.Default.ShowToast = (bool)checkBox.IsChecked;
+            Settings.Default.Save();
+        }
+    }
+
+    private void OkayButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (System.Windows.Application.Current.Windows.Count == 1)
+        {
+            DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+            switch (defaultLaunchSetting)
+            {
+                case DefaultLaunchSetting.Fullscreen:
+                    WindowUtilities.LaunchFullScreenGrab();
+                    break;
+                case DefaultLaunchSetting.GrabFrame:
+                    WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+                    break;
+                case DefaultLaunchSetting.EditText:
+                    WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+                    break;
+                case DefaultLaunchSetting.QuickLookup:
+                    WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        this.Close();
+    }
     private void RadioButton_Checked(object sender, RoutedEventArgs e)
     {
         if (this.IsLoaded != true)
@@ -118,62 +148,11 @@ public partial class FirstRunWindow : Window
 
         Settings.Default.Save();
     }
-
-    private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-    {
-        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
-        e.Handled = true;
-    }
-
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
 
         this.Close();
-    }
-
-    private void TryFullscreen_Click(object sender, RoutedEventArgs e)
-    {
-        WindowUtilities.LaunchFullScreenGrab();
-    }
-
-    private void TryGrabFrame_Click(object sender, RoutedEventArgs e)
-    {
-        WindowUtilities.OpenOrActivateWindow<GrabFrame>();
-    }
-
-    private void TryEditWindow_Click(object sender, RoutedEventArgs e)
-    {
-        WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-    }
-
-    private void TryQuickLookup_Click(object sender, RoutedEventArgs e)
-    {
-        WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
-    }
-
-    private void Window_Closed(object? sender, EventArgs e)
-    {
-        WindowUtilities.ShouldShutDown();
-    }
-
-    private void NotificationsCheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
-        {
-            Settings.Default.ShowToast = (bool)checkBox.IsChecked;
-            Settings.Default.Save();
-        }
-    }
-
-    private void BackgroundCheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
-        {
-            Settings.Default.RunInTheBackground = (bool)checkBox.IsChecked;
-            ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
-            Settings.Default.Save();
-        }
     }
 
     private async void StartupCheckbox_Checked(object sender, RoutedEventArgs e)
@@ -185,4 +164,30 @@ public partial class FirstRunWindow : Window
             Settings.Default.Save();
         }
     }
+
+    private void TryEditWindow_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+    }
+
+    private void TryFullscreen_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.LaunchFullScreenGrab();
+    }
+
+    private void TryGrabFrame_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<GrabFrame>();
+    }
+    private void TryQuickLookup_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
+    }
+
+    private void Window_Closed(object? sender, EventArgs e)
+    {
+        WindowUtilities.ShouldShutDown();
+    }
+
+    #endregion Methods
 }

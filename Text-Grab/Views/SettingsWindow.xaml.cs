@@ -15,107 +15,149 @@ namespace Text_Grab;
 /// </summary>
 public partial class SettingsWindow : Window
 {
-    public double InsertDelaySeconds { get; set; } = 3;
+    #region Fields
 
-    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
     private Brush BadBrush = new SolidColorBrush(Colors.Red);
+    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
 
+    #endregion Fields
 
+    #region Constructors
 
     public SettingsWindow()
     {
         InitializeComponent();
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    #endregion Constructors
+
+    #region Properties
+
+    public double InsertDelaySeconds { get; set; } = 3;
+
+    #endregion Properties
+
+    #region Methods
+
+    private void AboutBTN_Click(object sender, RoutedEventArgs e)
     {
-        ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
-        ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
-        NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
-        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
-        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
-        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
-        ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
-        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
+        WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
-        InsertDelaySeconds = Settings.Default.InsertDelay;
-        SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
-
-
-        if (ImplementAppOptions.IsPackaged())
+        foreach (Window window in allWindows)
         {
-            StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
-
-            switch (startupTask.State)
+            if (window is FirstRunWindow firstRunWindowOpen)
             {
-                case StartupTaskState.Disabled:
-                    // Task is disabled but can be enabled.
-                    StartupOnLoginCheckBox.IsChecked = false;
-                    break;
-                case StartupTaskState.DisabledByUser:
-                    // Task is disabled and user must enable it manually.
-                    StartupOnLoginCheckBox.IsChecked = false;
-                    StartupOnLoginCheckBox.IsEnabled = false;
-
-                    StartupTextBlock.Text += "\nDisabled in Task Manager";
-                    break;
-                case StartupTaskState.Enabled:
-                    StartupOnLoginCheckBox.IsChecked = true;
-                    break;
+                firstRunWindowOpen.Activate();
+                return;
             }
         }
-        else
-        {
-            StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
-        }
 
-        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
-        switch (defaultLaunchSetting)
-        {
-            case DefaultLaunchSetting.Fullscreen:
-                FullScreenRDBTN.IsChecked = true;
-                break;
-            case DefaultLaunchSetting.GrabFrame:
-                GrabFrameRDBTN.IsChecked = true;
-                break;
-            case DefaultLaunchSetting.EditText:
-                EditTextRDBTN.IsChecked = true;
-                break;
-            case DefaultLaunchSetting.QuickLookup:
-                QuickLookupRDBTN.IsChecked = true;
-                break;
-            default:
-                FullScreenRDBTN.IsChecked = true;
-                break;
-        }
-
-        FullScreenHotkeyTextBox.Text = Settings.Default.FullscreenGrabHotKey;
-        GrabFrameHotkeyTextBox.Text = Settings.Default.GrabFrameHotkey;
-        EditTextHotKeyTextBox.Text = Settings.Default.EditWindowHotKey;
-        LookupHotKeyTextBox.Text = Settings.Default.LookupHotKey;
+        FirstRunWindow frw = new();
+        frw.Show();
     }
 
-    private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
+    private void CloseBTN_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded)
-            return;
+        Close();
+    }
 
-        if (sender is TextBox numberInputBox)
+    private bool HotKeysAllDifferent()
+    {
+        if (EditTextHotKeyTextBox is null
+            || FullScreenHotkeyTextBox is null
+            || GrabFrameHotkeyTextBox is null
+            || LookupHotKeyTextBox is null)
+            return false;
+
+        string gfKey = GrabFrameHotkeyTextBox.Text.Trim().ToUpper();
+        string fsgKey = FullScreenHotkeyTextBox.Text.Trim().ToUpper();
+        string etwKey = EditTextHotKeyTextBox.Text.Trim().ToUpper();
+        string qslKey = LookupHotKeyTextBox.Text.Trim().ToUpper();
+
+        bool anyMatchingKeys = false;
+
+        if (!string.IsNullOrEmpty(gfKey))
         {
-            bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
-            if (wasAbleToConvert && parsedText > 0 && parsedText < 10)
+            if (gfKey == fsgKey
+                || gfKey == etwKey
+                || gfKey == qslKey)
             {
-                InsertDelaySeconds = parsedText;
-                DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
-                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+                GrabFrameHotkeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
             }
             else
-            {
-                InsertDelaySeconds = 3;
-                DelayTimeErrorSeconds.Visibility = Visibility.Visible;
-                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Red);
-            }
+                GrabFrameHotkeyTextBox.BorderBrush = GoodBrush;
         }
+
+        if (!string.IsNullOrEmpty(fsgKey))
+        {
+            if (fsgKey == gfKey
+                || fsgKey == etwKey
+                || fsgKey == qslKey)
+            {
+                FullScreenHotkeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                FullScreenHotkeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (!string.IsNullOrEmpty(etwKey))
+        {
+            if (etwKey == gfKey
+                || etwKey == fsgKey
+                || etwKey == qslKey)
+            {
+                EditTextHotKeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                EditTextHotKeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (!string.IsNullOrEmpty(qslKey))
+        {
+            if (qslKey == gfKey
+                || qslKey == fsgKey
+                || qslKey == etwKey)
+            {
+                LookupHotKeyTextBox.BorderBrush = BadBrush;
+                anyMatchingKeys = true;
+            }
+            else
+                LookupHotKeyTextBox.BorderBrush = GoodBrush;
+        }
+
+        if (anyMatchingKeys)
+            return false;
+
+        return true;
+    }
+
+    private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox hotkeytextbox
+            || hotkeytextbox.Text is null
+            || !IsLoaded)
+            return;
+
+        if (string.IsNullOrEmpty(hotkeytextbox.Text))
+        {
+            hotkeytextbox.BorderBrush = GoodBrush;
+            return;
+        }
+
+        hotkeytextbox.Text = hotkeytextbox.Text[0].ToString();
+
+        KeyConverter keyConverter = new();
+        Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
+        if (convertedKey is not null && HotKeysAllDifferent())
+        {
+            hotkeytextbox.BorderBrush = GoodBrush;
+            return;
+        }
+
+        hotkeytextbox.BorderBrush = BadBrush;
     }
 
     private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -124,9 +166,15 @@ public partial class SettingsWindow : Window
         e.Handled = true;
     }
 
-    private void CloseBTN_Click(object sender, RoutedEventArgs e)
+    private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        Close();
+        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to reset all settings to default?", "Reset Settings to Default", MessageBoxButton.YesNo);
+
+        if (areYouSure != MessageBoxResult.Yes)
+            return;
+
+        Settings.Default.Reset();
+        this.Close();
     }
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
@@ -216,21 +264,27 @@ public partial class SettingsWindow : Window
         Close();
     }
 
-    private void AboutBTN_Click(object sender, RoutedEventArgs e)
+    private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
     {
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        if (!IsLoaded)
+            return;
 
-        foreach (Window window in allWindows)
+        if (sender is TextBox numberInputBox)
         {
-            if (window is FirstRunWindow firstRunWindowOpen)
+            bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
+            if (wasAbleToConvert && parsedText > 0 && parsedText < 10)
             {
-                firstRunWindowOpen.Activate();
-                return;
+                InsertDelaySeconds = parsedText;
+                DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
+                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            }
+            else
+            {
+                InsertDelaySeconds = 3;
+                DelayTimeErrorSeconds.Visibility = Visibility.Visible;
+                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Red);
             }
         }
-
-        FirstRunWindow frw = new();
-        frw.Show();
     }
 
     private void Window_Closed(object? sender, EventArgs e)
@@ -238,114 +292,74 @@ public partial class SettingsWindow : Window
         WindowUtilities.ShouldShutDown();
     }
 
-    private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        if (sender is not TextBox hotkeytextbox
-            || hotkeytextbox.Text is null
-            || !IsLoaded)
-            return;
+        ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+        ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
+        NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
+        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
+        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
+        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
+        ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
+        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
 
-        if (string.IsNullOrEmpty(hotkeytextbox.Text))
+        InsertDelaySeconds = Settings.Default.InsertDelay;
+        SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
+
+
+        if (ImplementAppOptions.IsPackaged())
         {
-            hotkeytextbox.BorderBrush = GoodBrush;
-            return;
+            StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
+
+            switch (startupTask.State)
+            {
+                case StartupTaskState.Disabled:
+                    // Task is disabled but can be enabled.
+                    StartupOnLoginCheckBox.IsChecked = false;
+                    break;
+                case StartupTaskState.DisabledByUser:
+                    // Task is disabled and user must enable it manually.
+                    StartupOnLoginCheckBox.IsChecked = false;
+                    StartupOnLoginCheckBox.IsEnabled = false;
+
+                    StartupTextBlock.Text += "\nDisabled in Task Manager";
+                    break;
+                case StartupTaskState.Enabled:
+                    StartupOnLoginCheckBox.IsChecked = true;
+                    break;
+            }
+        }
+        else
+        {
+            StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        hotkeytextbox.Text = hotkeytextbox.Text[0].ToString();
-
-        KeyConverter keyConverter = new();
-        Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
-        if (convertedKey is not null && HotKeysAllDifferent())
+        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        switch (defaultLaunchSetting)
         {
-            hotkeytextbox.BorderBrush = GoodBrush;
-            return;
+            case DefaultLaunchSetting.Fullscreen:
+                FullScreenRDBTN.IsChecked = true;
+                break;
+            case DefaultLaunchSetting.GrabFrame:
+                GrabFrameRDBTN.IsChecked = true;
+                break;
+            case DefaultLaunchSetting.EditText:
+                EditTextRDBTN.IsChecked = true;
+                break;
+            case DefaultLaunchSetting.QuickLookup:
+                QuickLookupRDBTN.IsChecked = true;
+                break;
+            default:
+                FullScreenRDBTN.IsChecked = true;
+                break;
         }
 
-        hotkeytextbox.BorderBrush = BadBrush;
+        FullScreenHotkeyTextBox.Text = Settings.Default.FullscreenGrabHotKey;
+        GrabFrameHotkeyTextBox.Text = Settings.Default.GrabFrameHotkey;
+        EditTextHotKeyTextBox.Text = Settings.Default.EditWindowHotKey;
+        LookupHotKeyTextBox.Text = Settings.Default.LookupHotKey;
     }
 
-    private bool HotKeysAllDifferent()
-    {
-        if (EditTextHotKeyTextBox is null
-            || FullScreenHotkeyTextBox is null
-            || GrabFrameHotkeyTextBox is null
-            || LookupHotKeyTextBox is null)
-            return false;
-
-        string gfKey = GrabFrameHotkeyTextBox.Text.Trim().ToUpper();
-        string fsgKey = FullScreenHotkeyTextBox.Text.Trim().ToUpper();
-        string etwKey = EditTextHotKeyTextBox.Text.Trim().ToUpper();
-        string qslKey = LookupHotKeyTextBox.Text.Trim().ToUpper();
-
-        bool anyMatchingKeys = false;
-
-        if (!string.IsNullOrEmpty(gfKey))
-        {
-            if (gfKey == fsgKey
-                || gfKey == etwKey
-                || gfKey == qslKey)
-            {
-                GrabFrameHotkeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
-            }
-            else
-                GrabFrameHotkeyTextBox.BorderBrush = GoodBrush;
-        }
-
-        if (!string.IsNullOrEmpty(fsgKey))
-        {
-            if (fsgKey == gfKey
-                || fsgKey == etwKey
-                || fsgKey == qslKey)
-            {
-                FullScreenHotkeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
-            }
-            else
-                FullScreenHotkeyTextBox.BorderBrush = GoodBrush;
-        }
-
-        if (!string.IsNullOrEmpty(etwKey))
-        {
-            if (etwKey == gfKey
-                || etwKey == fsgKey
-                || etwKey == qslKey)
-            {
-                EditTextHotKeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
-            }
-            else
-                EditTextHotKeyTextBox.BorderBrush = GoodBrush;
-        }
-
-        if (!string.IsNullOrEmpty(qslKey))
-        {
-            if (qslKey == gfKey
-                || qslKey == fsgKey
-                || qslKey == etwKey)
-            {
-                LookupHotKeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
-            }
-            else
-                LookupHotKeyTextBox.BorderBrush = GoodBrush;
-        }
-
-        if (anyMatchingKeys)
-            return false;
-
-        return true;
-    }
-
-    private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to reset all settings to default?", "Reset Settings to Default", MessageBoxButton.YesNo);
-
-        if (areYouSure != MessageBoxResult.Yes)
-            return;
-
-        Settings.Default.Reset();
-        this.Close();
-    }
+    #endregion Methods
 }
 
