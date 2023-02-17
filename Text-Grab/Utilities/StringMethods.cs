@@ -649,20 +649,23 @@ public static class StringMethods
         return sb.ToString().Trim();
     }
 
-    public static string LimitCharactersPerLine(this string stringToEdit, int characterLimit)
+    public static string LimitCharactersPerLine(this string stringToEdit, int characterLimit, SpotInLine spotInLine)
     {
         string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
         StringBuilder returnStringBuilder = new();
         foreach (string line in splitString)
         {
-            if (line.Length < characterLimit)
+            int lineLimit = Math.Clamp(characterLimit, 0, line.Length);
+            if (line.Length < lineLimit)
             {
                 returnStringBuilder.AppendLine(line);
                 continue;
             }
 
-            returnStringBuilder.AppendLine(line.Substring(0, characterLimit));
+            if (spotInLine== SpotInLine.Beginning)
+                returnStringBuilder.AppendLine(line.Substring(0, lineLimit));
+            else
+                returnStringBuilder.AppendLine(line.Substring(line.Length - (lineLimit), lineLimit));
         }
 
         return returnStringBuilder.ToString().Trim();

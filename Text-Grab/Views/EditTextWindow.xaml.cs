@@ -1740,5 +1740,10 @@ public partial class EditTextWindow : Window
         Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
 
+    internal void LimitNumberOfCharsPerLine(int numberOfChars, SpotInLine spotInLine)
+    {
+        PassedTextControl.Text = PassedTextControl.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
+    }
+
     #endregion Methods
 }

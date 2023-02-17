@@ -19,6 +19,10 @@
             CanExecute="AddRemove_CanExecute"
             Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
             Executed="AddRemove_Executed" />
+        <CommandBinding
+            CanExecute="AddRemove_CanExecute"
+            Command="{x:Static local:AddOrRemoveWindow.ApplyCmd}"
+            Executed="Apply_Executed" />
     </Window.CommandBindings>
     <Grid Margin="12">
         <Grid.RowDefinitions>
@@ -51,6 +55,7 @@
             <RadioButton
                 x:Name="RemoveRadioButton"
                 Grid.Row="1"
+                Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
                 Checked="RemoveRadioButton_Checked"
                 GroupName="AddOrRemoveRDBTNs"
@@ -58,6 +63,19 @@
                 Unchecked="RemoveRadioButton_Checked">
                 <TextBlock Style="{StaticResource TextBodyNormal}">
                     Remove
+                </TextBlock>
+            </RadioButton>
+            <RadioButton
+                x:Name="LimitRadioButton"
+                Grid.Row="1"
+                Margin="0,0,12,0"
+                VerticalContentAlignment="Center"
+                Checked="RemoveRadioButton_Checked"
+                GroupName="AddOrRemoveRDBTNs"
+                IsChecked="False"
+                Unchecked="RemoveRadioButton_Checked">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Limit
                 </TextBlock>
             </RadioButton>
         </StackPanel>
@@ -121,13 +139,27 @@
                 AcceptsTab="True"
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
-        <local:CollapsibleButton
-            x:Name="DoneButton"
+        <StackPanel
             Grid.Row="7"
             HorizontalAlignment="Center"
-            VerticalAlignment="Bottom"
-            ButtonText="Done"
-            Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
-            SymbolText="" />
+            Orientation="Horizontal">
+            <local:CollapsibleButton
+                x:Name="ApplyButton"
+                Grid.Row="7"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                ButtonText="Apply"
+                Command="{x:Static local:AddOrRemoveWindow.ApplyCmd}"
+                IsSymbol="True"
+                SymbolText="" />
+            <local:CollapsibleButton
+                x:Name="DoneButton"
+                Grid.Row="7"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                ButtonText="Done"
+                Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
+                SymbolText="" />
+        </StackPanel>
     </Grid>
 </Window>

@@ -202,7 +202,7 @@
                 <MenuItem
                     x:Name="AddRemoveAtMenuItem"
                     Click="AddRemoveAtMenuItem_Click"
-                    Header="_Add or Remove at..." />
+                    Header="_Add, Remove, Limit..." />
             </MenuItem>
             <MenuItem Header="_Selection">
                 <MenuItem

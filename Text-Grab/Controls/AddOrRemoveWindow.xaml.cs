@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Windows.Graphics.Printing.Workflow;
 
 namespace Text_Grab.Controls;
 
@@ -13,6 +14,7 @@ public partial class AddOrRemoveWindow : Window
     #region Fields
 
     public static RoutedCommand AddRemoveCmd = new();
+    public static RoutedCommand ApplyCmd = new();
 
     #endregion Fields
 
@@ -42,7 +44,8 @@ public partial class AddOrRemoveWindow : Window
     {
         if (AddRadioButton.IsChecked is true && !string.IsNullOrEmpty(TextToAddTextBox.Text))
             e.CanExecute = true;
-        else if (RemoveRadioButton.IsChecked is true && LengthToChange is not null)
+        else if ((RemoveRadioButton.IsChecked is true || LimitRadioButton.IsChecked is true)
+            && LengthToChange is not null)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -53,25 +56,58 @@ public partial class AddOrRemoveWindow : Window
         if (Owner is not EditTextWindow etwOwner)
             return;
 
-        if (AddRadioButton.IsChecked is true)
-        {
-            if (BeginningRDBTN.IsChecked is true)
-                etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.Beginning);
-            else
-                etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.End);
-        }
-        else
-        {
-            if (LengthToChange is null)
-                return;
-
-            if (BeginningRDBTN.IsChecked is true)
-                etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.Beginning);
-            else
-                etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.End);
-        }
+        Apply(etwOwner);
 
         Close();
+    }
+
+    private void Apply(EditTextWindow etwOwner)
+    {
+        if (AddRadioButton.IsChecked is true)
+            AddText(etwOwner);
+        else if (RemoveRadioButton.IsChecked is true)
+            RemoveText(etwOwner);
+        else
+            LimitText(etwOwner);
+    }
+
+    private void LimitText(EditTextWindow etwOwner)
+    {
+        if (LengthToChange is null)
+            return;
+
+        if (BeginningRDBTN.IsChecked is true)
+            etwOwner.LimitNumberOfCharsPerLine(LengthToChange.Value, SpotInLine.Beginning);
+        else
+            etwOwner.LimitNumberOfCharsPerLine(LengthToChange.Value, SpotInLine.End);
+
+    }
+
+    private void RemoveText(EditTextWindow etwOwner)
+    {
+        if (LengthToChange is null)
+            return;
+
+        if (BeginningRDBTN.IsChecked is true)
+            etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.Beginning);
+        else
+            etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.End);
+    }
+
+    private void AddText(EditTextWindow etwOwner)
+    {
+        if (BeginningRDBTN.IsChecked is true)
+            etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.Beginning);
+        else
+            etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.End);
+    }
+
+    private void Apply_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (Owner is not EditTextWindow etwOwner)
+            return;
+
+        Apply(etwOwner);
     }
 
     private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
