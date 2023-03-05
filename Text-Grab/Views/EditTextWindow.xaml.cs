@@ -41,6 +41,7 @@ public partial class EditTextWindow : Window
     public static RoutedCommand DeleteAllSelectionPatternCmd = new();
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
     public static RoutedCommand IsolateSelectionCmd = new();
+    public static RoutedCommand LaunchCmd = new();
     public static RoutedCommand OcrPasteCommand = new();
     public static RoutedCommand ReplaceReservedCmd = new();
     public static RoutedCommand SingleLineCmd = new();
@@ -99,6 +100,7 @@ public partial class EditTextWindow : Window
             {nameof(SplitOnSelectionCmd), SplitOnSelectionCmd},
             {nameof(IsolateSelectionCmd), IsolateSelectionCmd},
             {nameof(SingleLineCmd), SingleLineCmd},
+            {nameof(LaunchCmd), LaunchCmd},
             {nameof(ToggleCaseCmd), ToggleCaseCmd},
             {nameof(ReplaceReservedCmd), ReplaceReservedCmd},
             {nameof(UnstackCmd), UnstackCmd},
@@ -227,6 +229,11 @@ public partial class EditTextWindow : Window
 
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
+    }
+
+    internal void LimitNumberOfCharsPerLine(int numberOfChars, SpotInLine spotInLine)
+    {
+        PassedTextControl.Text = PassedTextControl.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
     }
 
     internal async void OpenThisPath(string pathOfFileToOpen, bool isMultipleFiles = false)
@@ -432,6 +439,34 @@ public partial class EditTextWindow : Window
 
         Settings.Default.EditWindowIsOnTop = Topmost;
     }
+
+    private void CanLaunchUriExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
+
+        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
+        {
+            e.CanExecute = true;
+            return;
+        }
+
+        e.CanExecute = false;
+    }
+
+    private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+    {
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
+
+        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
+            Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
+    }
+
 
     private void CanOcrPasteExecute(object sender, CanExecuteRoutedEventArgs e)
     {
@@ -1739,11 +1774,5 @@ public partial class EditTextWindow : Window
 
         Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
-
-    internal void LimitNumberOfCharsPerLine(int numberOfChars, SpotInLine spotInLine)
-    {
-        PassedTextControl.Text = PassedTextControl.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
-    }
-
     #endregion Methods
 }

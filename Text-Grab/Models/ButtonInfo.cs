@@ -196,6 +196,13 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 2.4,
+            ButtonText = "Launch URL",
+            SymbolText = "",
+            Command = "LaunchCmd"
+        },
+        new()
+        {
             OrderNumber = 3.1,
             ButtonText = "Trim Each Line",
             SymbolText = "",

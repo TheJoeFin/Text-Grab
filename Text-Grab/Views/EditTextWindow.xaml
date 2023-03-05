@@ -105,6 +105,10 @@
             CanExecute="CanOcrPasteExecute"
             Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
             Executed="PasteExecuted" />
+        <CommandBinding
+            CanExecute="CanLaunchUriExecute"
+            Command="{x:Static local:EditTextWindow.LaunchCmd}"
+            Executed="LaunchUriExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -160,6 +164,10 @@
                     Header="OCR Paste"
                     InputGestureText="Ctrl + Shift + V" />
                 <Separator />
+                <MenuItem
+                    x:Name="LaunchUriMenuItem"
+                    Command="{x:Static local:EditTextWindow.LaunchCmd}"
+                    Header="Launch URL" />
                 <MenuItem
                     x:Name="SingleLineMenuItem"
                     Command="{x:Static local:EditTextWindow.SingleLineCmd}"
