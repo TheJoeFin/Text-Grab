@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,10 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Navigation;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -24,7 +21,6 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
 using Windows.Storage;
 using Windows.Storage.Streams;
-using Windows.System;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Text_Grab;
@@ -365,7 +361,7 @@ public partial class EditTextWindow : Window
                 MenuItem mi = new();
                 mi.Header = str;
                 mi.FontWeight = FontWeights.Bold;
-                mi.Command = EditingCommands.CorrectSpellingError;
+                mi.Command = System.Windows.Documents.EditingCommands.CorrectSpellingError;
                 mi.CommandParameter = str;
                 mi.CommandTarget = PassedTextControl;
                 PassedTextControl.ContextMenu.Items.Insert(cmdIndex, mi);
@@ -385,7 +381,7 @@ public partial class EditTextWindow : Window
             cmdIndex++;
             MenuItem ignoreAllMI = new();
             ignoreAllMI.Header = "Ignore All";
-            ignoreAllMI.Command = EditingCommands.IgnoreSpellingError;
+            ignoreAllMI.Command = System.Windows.Documents.EditingCommands.IgnoreSpellingError;
             ignoreAllMI.CommandTarget = PassedTextControl;
             PassedTextControl.ContextMenu.Items.Insert(cmdIndex, ignoreAllMI);
             cmdIndex++;
@@ -571,7 +567,7 @@ public partial class EditTextWindow : Window
 
     private async void ContactMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        _ = await Launcher.LaunchUriAsync(new Uri(string.Format("mailto:support@textgrab.net")));
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format("mailto:support@textgrab.net")));
     }
 
     private void CopyCloseBTN_Click(object sender, RoutedEventArgs e)
@@ -695,7 +691,7 @@ public partial class EditTextWindow : Window
     private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
     {
         Uri source = new("https://github.com/TheJoeFin/Text-Grab/issues", UriKind.Absolute);
-        RequestNavigateEventArgs e = new(source, "https://github.com/TheJoeFin/Text-Grab/issues");
+        System.Windows.Navigation.RequestNavigateEventArgs e = new(source, "https://github.com/TheJoeFin/Text-Grab/issues");
         Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
         e.Handled = true;
     }
@@ -709,7 +705,7 @@ public partial class EditTextWindow : Window
     {
         using (FontDialog fd = new())
         {
-            Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
+            System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
             fd.Font = currentFont;
             var result = fd.ShowDialog();
             if (result == System.Windows.Forms.DialogResult.OK)
@@ -1189,7 +1185,7 @@ public partial class EditTextWindow : Window
 
     private async void RateAndReview_Click(object sender, RoutedEventArgs e)
     {
-        _ = await Launcher.LaunchUriAsync(new Uri(string.Format("ms-windows-store:REVIEW?PFN={0}", "40087JoeFinApps.TextGrab_kdbpvth5scec4")));
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format("ms-windows-store:REVIEW?PFN={0}", "40087JoeFinApps.TextGrab_kdbpvth5scec4")));
     }
 
     private void ReadEncodedString(string possiblyEndcodedString)
