@@ -51,7 +51,7 @@ The second use case takes a single click and attempts to copy the word which was
 If the click point or selected region has no text in it the Text Grab window stays active. To exit the application, press the escape key, right-click and choose cancel, or Alt+F4.
 
 ### 2. Grab Frame Mode
-![Grab Frame](images/2-3-Grab-Frame-Medium.gif)
+![Grab Frame](images/3-2-GF-Editing-Table-2.gif)
 
 Grab frame is mostly a transparent frame with a search bar and Grab button. The Grab Frame can be positioned wherever you want to copy the text. This can be done by searching for text, clicking on a word border, and/or clicking on the Grab button.
 
@@ -75,6 +75,7 @@ There are several tools with in the Edit Text Window which make it quick and eas
 - Remove duplicate lines
 - Convert stacked data to table format
 - Copy text from every image in a folder
+- Launch URLs
 - And more!
 
 ### 4. Quick Simple Lookup
