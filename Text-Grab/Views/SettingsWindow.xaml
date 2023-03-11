@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab Settings"
     Width="660"
     Height="600"
@@ -26,7 +27,6 @@
         <Style x:Key="ShortCutTextBox" TargetType="TextBox">
             <Setter Property="Width" Value="24" />
             <Setter Property="Padding" Value="0,2" />
-            <Setter Property="BorderThickness" Value="2" />
             <Setter Property="TextAlignment" Value="Center" />
         </Style>
     </Window.Resources>
@@ -54,7 +54,7 @@
                             VerticalAlignment="Center"
                             Foreground="White"
                             Style="{StaticResource TextBodyNormal}"
-                            Text="Version 3.3.0" />
+                            Text="Version 4.X.0" />
 
                         <controls:CollapsibleButton
                             x:Name="AboutBTN"
@@ -66,11 +66,11 @@
                     </Grid>
 
                     <!--  Show Toast on success  -->
-                    <CheckBox Name="ShowToastCheckBox" Style="{StaticResource labelText}">
+                    <ui:ToggleSwitch Name="ShowToastCheckBox">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Show Toast when text is copied. Opens window to display and edit text.
                         </TextBlock>
-                    </CheckBox>
+                    </ui:ToggleSwitch>
 
                     <!--  default launch  -->
                     <TextBlock
@@ -114,51 +114,58 @@
                     <!--  Pick Language  -->
 
                     <!--    -->
-                    <CheckBox Name="ErrorCorrectBox" Style="{StaticResource labelText}">
+                    <ui:ToggleSwitch Name="ErrorCorrectBox" Margin="0,12,0,0">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Correct common confusions between numbers and letters
                         </TextBlock>
-                    </CheckBox>
+                    </ui:ToggleSwitch>
 
-                    <CheckBox Name="CorrectToLatin" Style="{StaticResource labelText}">
+                    <ui:ToggleSwitch Name="CorrectToLatin" Margin="0,12,0,0">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Correct misidentifications between Greek and Cyrillic to Latin letters
                         </TextBlock>
-                    </CheckBox>
+                    </ui:ToggleSwitch>
 
-                    <CheckBox Name="NeverUseClipboardChkBx" Style="{StaticResource labelText}">
+                    <ui:ToggleSwitch Name="NeverUseClipboardChkBx" Margin="0,12,0,0">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Never automatically add text to the clipboard
                         </TextBlock>
-                    </CheckBox>
+                    </ui:ToggleSwitch>
                     <Border
                         Margin="0,16,0,0"
                         Padding="20,10"
                         Background="#000"
                         CornerRadius="6">
                         <StackPanel>
-                            <CheckBox Name="RunInBackgroundChkBx" Style="{StaticResource labelText}">
+                            <ui:ToggleSwitch Name="RunInBackgroundChkBx" Margin="0,12,0,0">
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
                                     Run Text Grab in the background and enable hotkeys
                                 </TextBlock>
-                            </CheckBox>
+                            </ui:ToggleSwitch>
                             <TextBlock
                                 Margin="24,0,0,0"
                                 Foreground="LightGray"
                                 Style="{StaticResource TextBodyNormal}">
                                 <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run>
                             </TextBlock>
-                            <CheckBox x:Name="GlobalHotkeysCheckbox" Style="{StaticResource labelText}">
+                            <ui:ToggleSwitch x:Name="GlobalHotkeysCheckbox" Margin="0,12,0,0">
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
                                     <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
                                 </TextBlock>
-                            </CheckBox>
+                            </ui:ToggleSwitch>
                             <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
                                 <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="FullScreenHotkeyTextBox"
+                                    Width="30"
+                                    Margin="-2,-1,0,0"
+                                    Padding="0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Background="White"
                                     CharacterCasing="Upper"
-                                    Style="{StaticResource ShortCutTextBox}"
+                                    FontWeight="Medium"
+                                    Foreground="Black"
                                     Text="F"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -170,8 +177,15 @@
                                 <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="GrabFrameHotkeyTextBox"
+                                    Width="30"
+                                    Margin="-2,-1,0,0"
+                                    Padding="0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Background="White"
                                     CharacterCasing="Upper"
-                                    Style="{StaticResource ShortCutTextBox}"
+                                    FontWeight="Medium"
+                                    Foreground="Black"
                                     Text="G"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -183,8 +197,15 @@
                                 <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="EditTextHotKeyTextBox"
+                                    Width="30"
+                                    Margin="-2,-1,0,0"
+                                    Padding="0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Background="White"
                                     CharacterCasing="Upper"
-                                    Style="{StaticResource ShortCutTextBox}"
+                                    FontWeight="Medium"
+                                    Foreground="Black"
                                     Text="E"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -196,8 +217,15 @@
                                 <controls:ShortcutControl />
                                 <TextBox
                                     x:Name="LookupHotKeyTextBox"
+                                    Width="30"
+                                    Margin="-2,-1,0,0"
+                                    Padding="0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Background="White"
                                     CharacterCasing="Upper"
-                                    Style="{StaticResource ShortCutTextBox}"
+                                    FontWeight="Medium"
+                                    Foreground="Black"
                                     Text="Q"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -207,31 +235,30 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <CheckBox Name="StartupOnLoginCheckBox" Style="{StaticResource labelText}">
+                    <ui:ToggleSwitch Name="StartupOnLoginCheckBox" Margin="0,12,0,0">
                         <TextBlock x:Name="StartupTextBlock" Style="{StaticResource TextBodyNormal}">
                             Auto start Text Grab when you login
                         </TextBlock>
-                    </CheckBox>
+                    </ui:ToggleSwitch>
                     <Border
                         Margin="0,16,0,0"
                         Padding="24,0,20,16"
                         Background="#000"
                         CornerRadius="6">
                         <StackPanel>
-                            <CheckBox Name="TryInsertCheckbox" Style="{StaticResource labelText}">
+                            <ui:ToggleSwitch Name="TryInsertCheckbox" Margin="0,12,0,0">
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
                                     (Experimental) Try to Insert text in text fields after Fullscreen Grab after:
                                 </TextBlock>
-                            </CheckBox>
+                            </ui:ToggleSwitch>
                             <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                                 <TextBox
                                     x:Name="SecondsTextBox"
-                                    Width="48"
                                     Margin="24,0,0,0"
                                     Padding="2"
                                     HorizontalAlignment="Left"
                                     BorderThickness="2"
-                                    Text="3"
+                                    Text="0.5"
                                     TextChanged="ValidateTextIsNumber" />
                                 <TextBlock
                                     Margin="4,0,0,0"
@@ -248,14 +275,14 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <CheckBox
+                    <ui:ToggleSwitch
                         Name="ReadBarcodesBarcode"
-                        IsChecked="True"
-                        Style="{StaticResource labelText}">
+                        Margin="0,12,0,0"
+                        IsChecked="True">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
                             Try to read barcodes (Disabling may speed up results)
                         </TextBlock>
-                    </CheckBox>
+                    </ui:ToggleSwitch>
 
                     <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
                         Reset All settings to default settings.
