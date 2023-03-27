@@ -97,6 +97,9 @@ public static class StringMethods
         if (string.IsNullOrEmpty(input))
             return (0, 0);
 
+        if (cursorPosition < 0)
+            cursorPosition = 0;
+
         // Check if the cursor is at a space
         if (char.IsWhiteSpace(input[cursorPosition]))
             cursorPosition = findNearestLetterIndex(input, cursorPosition);
