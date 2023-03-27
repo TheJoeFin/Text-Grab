@@ -98,11 +98,13 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Menu
+                    Height="24"
                     VerticalAlignment="Center"
                     Background="{StaticResource DarkBackground}"
+                    ClipToBounds="True"
                     Foreground="White"
                     WindowChrome.IsHitTestVisibleInChrome="True">
-                    <MenuItem Height="24" Header="File">
+                    <MenuItem Header="File">
                         <MenuItem
                             x:Name="AutoOcrCheckBox"
                             Click="AutoOcrCheckBox_Click"
@@ -435,13 +437,15 @@
                     <Menu
                         x:Name="MatchesMenu"
                         Grid.Column="2"
+                        Height="28"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         d:Visibility="Visible"
                         Background="{StaticResource DarkBackground}"
+                        ClipToBounds="True"
                         Foreground="White"
                         Visibility="Collapsed">
-                        <MenuItem Height="28">
+                        <MenuItem>
                             <MenuItem.Header>
                                 <TextBlock
                                     x:Name="MatchesTXTBLK"
