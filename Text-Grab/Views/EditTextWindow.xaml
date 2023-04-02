@@ -405,7 +405,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel
                     Name="BottomBarButtons"
-                    Margin="5,0"
+                    Margin="8,8"
                     Orientation="Horizontal" />
                 <TextBlock
                     x:Name="BottomBarText"

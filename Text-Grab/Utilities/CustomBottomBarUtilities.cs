@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
@@ -57,21 +58,46 @@ public class CustomBottomBarUtilities
         Settings.Default.Save();
     }
 
-    public static List<CollapsibleButton> GetBottomBarButtons(EditTextWindow editTextWindow)
+    public static List<Wpf.Ui.Controls.Button> GetBottomBarButtons(EditTextWindow editTextWindow)
     {
-        List<CollapsibleButton> bottomBarButtons = new();
+        List<Wpf.Ui.Controls.Button> bottomBarButtons = new();
         Dictionary<string, RoutedCommand> _localRoutedCommands = new();
         List<MethodInfo> methods = GetMethods(editTextWindow);
         Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
         foreach (ButtonInfo buttonItem in GetCustomBottomBarItemsSetting())
         {
-            CollapsibleButton button = new()
+            StackPanel buttonContent = new()
             {
-                ButtonText = buttonItem.ButtonText,
-                SymbolText = buttonItem.SymbolText,
-                IsSymbol = buttonItem.IsSymbol,
-                CustomButton = buttonItem
+                Children =
+                {
+                    new TextBlock()
+                    {
+                        Text = buttonItem.SymbolText,
+                        FontFamily = new("Segoe MDL2 Assets"),
+                        VerticalAlignment = VerticalAlignment.Center
+                    }                    
+                },
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            if (!buttonItem.IsSymbol)
+            {
+                TextBlock buttonText = new()
+                {
+                    Text = buttonItem.ButtonText,
+                    FontFamily = new("Segoe UI"),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(6, 0, 0, 0)
+                };
+                buttonContent.Children.Add(buttonText);
+            }
+            
+            Wpf.Ui.Controls.Button button = new()
+            {
+                Content = buttonContent,
+                Margin = new Thickness(0,0,8,0)
             };
 
             if (buttonItem.Background != "Transparent"

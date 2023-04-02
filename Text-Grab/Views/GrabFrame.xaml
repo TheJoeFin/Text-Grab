@@ -417,7 +417,7 @@
                         Padding="4"
                         VerticalContentAlignment="Center"
                         Content="Search For Text..."
-                        Foreground="Black"
+                        Foreground="LightGray"
                         IsHitTestVisible="False"
                         Opacity="0.5"
                         Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
@@ -429,7 +429,7 @@
                         VerticalAlignment="Center"
                         CanChangeStyle="False"
                         Click="ClearBTN_Click"
-                        Foreground="Black"
+                        Foreground="LightGray"
                         IsSymbol="True"
                         SymbolText=""
                         Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
