@@ -97,6 +97,7 @@ public class CustomBottomBarUtilities
             Wpf.Ui.Controls.Button button = new()
             {
                 Content = buttonContent,
+                Height = 30,
                 Margin = new Thickness(0,0,8,0)
             };
 
@@ -105,6 +106,12 @@ public class CustomBottomBarUtilities
                 .ConvertFromString(buttonItem.Background) is SolidColorBrush solidColorBrush)
             {
                 button.Background = solidColorBrush;
+            }
+            else
+            {
+                SolidColorBrush? tealColor = App.Current.FindResource("DarkTeal") as SolidColorBrush;
+                if (tealColor != null)
+                    button.Background = tealColor;
             }
 
             if (GetMethodInfoForName(buttonItem.ClickEvent, methods) is MethodInfo method

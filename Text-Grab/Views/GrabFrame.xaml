@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="GrabFrameWindow"
     Title="Grab Frame"
     Width="800"
@@ -565,16 +566,26 @@
                             Visibility="Collapsed" />
                     </StackPanel>
 
-                    <controls:CollapsibleButton
+                    <ui:Button
                         x:Name="GrabBTN"
                         Grid.Column="5"
                         Width="110"
                         Margin="0"
-                        ButtonText="Grab"
-                        CanChangeStyle="False"
+                        Background="{StaticResource DarkTeal}"
                         Click="GrabBTN_Click"
-                        SymbolText=""
-                        ToolTip="Grab text in the Grab Frame" />
+                        ToolTip="Grab text in the Grab Frame">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe MDL2 Assets"
+                                Text="" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe UI"
+                                Text="Grab" />
+                        </StackPanel>
+                    </ui:Button>
                 </Grid>
             </Border>
         </Grid>

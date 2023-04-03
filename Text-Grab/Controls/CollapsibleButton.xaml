@@ -20,7 +20,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <TextBlock
-            Margin="8,0,8,0"
+            Margin="12,2"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             d:Text=""
@@ -29,10 +29,9 @@
         <TextBlock
             x:Name="ButtonTextBlock"
             Grid.Column="1"
-            Margin="0,0,8,0"
+            Margin="0,0,12,0"
             VerticalAlignment="Center"
             d:Text="Design Text"
-            FontFamily="Segoe UI"
             Text="{Binding Path=ButtonText, Mode=OneWay}" />
     </Grid>
     <Button.ContextMenu>

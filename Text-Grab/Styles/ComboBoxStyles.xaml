@@ -83,6 +83,7 @@
                         Background="{StaticResource ComboBox.Static.Background}"
                         BorderBrush="{StaticResource ComboBox.Static.Border}"
                         BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="4"
                         SnapsToDevicePixels="true">
                         <Border
                             x:Name="splitBorder"
@@ -90,7 +91,7 @@
                             Margin="0"
                             HorizontalAlignment="Right"
                             BorderBrush="#444444"
-                            BorderThickness="1"
+                            BorderThickness="0"
                             SnapsToDevicePixels="true">
                             <Path
                                 x:Name="arrow"
@@ -204,7 +205,8 @@
                         x:Name="dropDownBorder"
                         Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
                         BorderBrush="{DynamicResource {x:Static SystemColors.WindowFrameBrushKey}}"
-                        BorderThickness="1">
+                        BorderThickness="0"
+                        CornerRadius="4">
                         <ScrollViewer x:Name="DropDownScrollViewer">
                             <Grid
                                 x:Name="grid"
@@ -242,7 +244,8 @@
             <Border
                 x:Name="border"
                 Margin="{TemplateBinding BorderThickness}"
-                Background="{StaticResource TextBox.Static.Background}">
+                Background="{StaticResource TextBox.Static.Background}"
+                CornerRadius="4">
                 <TextBox
                     x:Name="PART_EditableTextBox"
                     Margin="{TemplateBinding Padding}"
@@ -302,7 +305,8 @@
                         x:Name="dropDownBorder"
                         Background="#444444"
                         BorderBrush="{DynamicResource {x:Static SystemColors.WindowFrameBrushKey}}"
-                        BorderThickness="1">
+                        BorderThickness="0"
+                        CornerRadius="4">
                         <ScrollViewer x:Name="DropDownScrollViewer">
                             <Grid x:Name="grid" RenderOptions.ClearTypeHint="Enabled">
                                 <Canvas
@@ -372,7 +376,7 @@
         <Setter Property="Background" Value="{StaticResource ComboBox.Static.Border}" />
         <Setter Property="BorderBrush" Value="{StaticResource ComboBox.Static.Border}" />
         <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         <Setter Property="Padding" Value="6,3,5,3" />
