@@ -20,8 +20,7 @@ Helvetica
 Courier
 Palatino-Roman
 Helvetica-Narrow
-Bookman-Demi
-";
+Bookman-Demi";
 
         string testImagePath = @".\Images\font_sample.png";
 
@@ -41,8 +40,7 @@ Times New Roman
 Georgia
 Segoe
 Rockwell Condensed
-Couier New
-";
+Couier New";
 
         string testImagePath = @".\Images\FontTest.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);

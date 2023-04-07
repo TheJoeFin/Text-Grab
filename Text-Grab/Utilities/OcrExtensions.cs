@@ -79,7 +79,7 @@ public static class OcrExtensions
         Rectangle selectedRegion = ShapeExtensions.RectangleFromRect(rect);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
 
-        return await GetTextFromEntireBitmap(bmp, language);
+        return GetStringFromOcrOutputs(await GetTextFromEntireBitmap(bmp, language));
     }
 
     public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language language)
@@ -92,7 +92,7 @@ public static class OcrExtensions
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
-        return await GetTextFromEntireBitmap(bmp, language);
+        return GetStringFromOcrOutputs( await GetTextFromEntireBitmap(bmp, language));
     }
 
     public static async Task<string> GetRegionsTextAsTable(Window passedWindow, Rectangle selectedRegion, Language language)
@@ -155,11 +155,12 @@ public static class OcrExtensions
         return stringBuilder.ToString();
     }
 
-    public async static Task<string> GetTextFromEntireBitmap(Bitmap bitmap, Language language)
+    public async static Task<List<OcrOutput>> GetTextFromEntireBitmap(Bitmap bitmap, Language language)
     {
         double scale = await GetIdealScaleFactorForOCR(bitmap, language);
         Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
 
+        List<OcrOutput> outputs = new();
         StringBuilder text = new();
 
         OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(scaledBitmap, language);
@@ -171,12 +172,37 @@ public static class OcrExtensions
         if (LanguageUtilities.IsLanguageRightToLeft(language))
             text.ReverseWordsForRightToLeft();
 
+        OcrOutput paragraphsOutput = new()
+        {
+            Kind = OcrOutputKind.Paragraph,
+            RawOutput = text.ToString(),
+            Language = language,
+            SourceBitmap = scaledBitmap,
+        };
+
+        outputs.Add(paragraphsOutput);
+
         if (Settings.Default.TryToReadBarcodes)
         {
-            string barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
+            OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
+            outputs.Add(barcodeResult);
+        }
 
-            if (!string.IsNullOrWhiteSpace(barcodeResult))
-                text.AppendLine(barcodeResult);
+        return outputs;
+    }
+
+    public static string GetStringFromOcrOutputs(List<OcrOutput> outputs)
+    {
+        StringBuilder text = new();
+
+        foreach (OcrOutput output in outputs)
+        {
+            output.CleanOutput();
+
+            if (!string.IsNullOrWhiteSpace(output.CleanedOutput))
+                text.Append(output.CleanedOutput);
+            else if (!string.IsNullOrWhiteSpace(output.RawOutput))
+                text.Append(output.RawOutput);
         }
 
         return text.ToString();
@@ -189,7 +215,7 @@ public static class OcrExtensions
         droppedImage.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
         Language language = LanguageUtilities.GetOCRLanguage();
-        return await GetTextFromEntireBitmap(bmp, language);
+        return GetStringFromOcrOutputs(await GetTextFromEntireBitmap(bmp, language));
     }
 
     public static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language OcrLang)
