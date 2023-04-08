@@ -165,7 +165,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
-                                    Foreground="Black"
+                                    Style="{StaticResource TextBoxStyle1}"
                                     Text="F"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -185,7 +185,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
-                                    Foreground="Black"
+                                    Style="{StaticResource TextBoxStyle1}"
                                     Text="G"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -205,7 +205,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
-                                    Foreground="Black"
+                                    Style="{StaticResource TextBoxStyle1}"
                                     Text="E"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -225,7 +225,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
-                                    Foreground="Black"
+                                    Style="{StaticResource TextBoxStyle1}"
                                     Text="Q"
                                     TextChanged="HotkeyTextBox_TextChanged" />
                                 <TextBlock
@@ -254,10 +254,15 @@
                             <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                                 <TextBox
                                     x:Name="SecondsTextBox"
+                                    Width="40"
+                                    Height="26"
                                     Margin="24,0,0,0"
-                                    Padding="2"
                                     HorizontalAlignment="Left"
-                                    BorderThickness="2"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Background="White"
+                                    FontWeight="Medium"
+                                    Style="{StaticResource TextBoxStyle1}"
                                     Text="0.5"
                                     TextChanged="ValidateTextIsNumber" />
                                 <TextBlock
