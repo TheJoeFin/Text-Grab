@@ -5,9 +5,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Add Or Remove At"
-    Width="340"
-    Height="256"
+    Title="Add or remove text on each line"
+    Width="330"
+    Height="320"
     Background="{StaticResource DarkBackground}"
     KeyUp="Window_KeyUp"
     Loaded="Window_Loaded"
@@ -26,24 +26,21 @@
     </Window.CommandBindings>
     <Grid Margin="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="auto" />
-
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Style="{StaticResource TextBodyNormal}" Text="Add or remove text on each line" />
-
-        <StackPanel
-            Grid.Row="1"
-            Margin="0,12"
-            Orientation="Horizontal">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
             <RadioButton
                 x:Name="AddRadioButton"
-                Grid.Row="1"
+                Grid.Column="0"
                 Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
                 GroupName="AddOrRemoveRDBTNs"
@@ -54,7 +51,7 @@
             </RadioButton>
             <RadioButton
                 x:Name="RemoveRadioButton"
-                Grid.Row="1"
+                Grid.Column="1"
                 Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
                 Checked="RemoveRadioButton_Checked"
@@ -67,7 +64,7 @@
             </RadioButton>
             <RadioButton
                 x:Name="LimitRadioButton"
-                Grid.Row="1"
+                Grid.Column="2"
                 Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
                 Checked="RemoveRadioButton_Checked"
@@ -78,10 +75,10 @@
                     Limit
                 </TextBlock>
             </RadioButton>
-        </StackPanel>
+        </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBlock Style="{StaticResource TextBodyNormal}">
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                 From The:
             </TextBlock>
             <RadioButton
@@ -114,11 +111,11 @@
         </StackPanel>
 
         <StackPanel
-            Grid.Row="3"
-            Margin="0,12"
+            Grid.Row="2"
             Orientation="Horizontal">
             <TextBlock
                 Width="184"
+                VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Number of characters" />
             <TextBox
@@ -128,9 +125,10 @@
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal">
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
             <TextBlock
                 Width="106"
+                VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Text to add" />
             <TextBox
@@ -140,8 +138,9 @@
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
         <StackPanel
-            Grid.Row="7"
+            Grid.Row="4"
             HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
             Orientation="Horizontal">
             <local:CollapsibleButton
                 x:Name="ApplyButton"

@@ -791,7 +791,7 @@ public partial class GrabFrame : Window
             Width = (int)((ActualWidth + 2) * dpi.DpiScaleX),
             Height = (int)((ActualHeight - 64) * dpi.DpiScaleY),
             X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
-            Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
+            Y = (int)((windowPosition.Y + 32) * dpi.DpiScaleY)
         };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)

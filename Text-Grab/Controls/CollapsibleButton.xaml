@@ -14,7 +14,7 @@
     Loaded="CollapsibleButton_Loaded"
     Style="{StaticResource TealColor}"
     mc:Ignorable="d">
-    <Grid HorizontalAlignment="Left" VerticalAlignment="Center">
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="auto" />
             <ColumnDefinition Width="*" />
