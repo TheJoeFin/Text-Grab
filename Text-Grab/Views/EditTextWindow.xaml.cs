@@ -211,7 +211,7 @@ public partial class EditTextWindow : Window
     {
         BottomBarButtons.Children.Clear();
 
-        List<Wpf.Ui.Controls.Button> buttons = CustomBottomBarUtilities.GetBottomBarButtons(this);
+        List<CollapsibleButton> buttons = CustomBottomBarUtilities.GetBottomBarButtons(this);
 
         if (Settings.Default.ScrollBottomBar)
             BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
@@ -223,7 +223,7 @@ public partial class EditTextWindow : Window
         else
             BottomBarText.Visibility = Visibility.Collapsed;
 
-        foreach (Wpf.Ui.Controls.Button collapsibleButton in buttons)
+        foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
     }
 

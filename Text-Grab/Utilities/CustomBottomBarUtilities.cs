@@ -58,47 +58,21 @@ public class CustomBottomBarUtilities
         Settings.Default.Save();
     }
 
-    public static List<Wpf.Ui.Controls.Button> GetBottomBarButtons(EditTextWindow editTextWindow)
+    public static List<CollapsibleButton> GetBottomBarButtons(EditTextWindow editTextWindow)
     {
-        List<Wpf.Ui.Controls.Button> bottomBarButtons = new();
+        List<CollapsibleButton> bottomBarButtons = new();
         Dictionary<string, RoutedCommand> _localRoutedCommands = new();
         List<MethodInfo> methods = GetMethods(editTextWindow);
         Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
         foreach (ButtonInfo buttonItem in GetCustomBottomBarItemsSetting())
         {
-            StackPanel buttonContent = new()
+            CollapsibleButton button = new()
             {
-                Children =
-                {
-                    new TextBlock()
-                    {
-                        Text = buttonItem.SymbolText,
-                        FontFamily = new("Segoe MDL2 Assets"),
-                        VerticalAlignment = VerticalAlignment.Center
-                    }                    
-                },
-                Orientation = Orientation.Horizontal,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-
-            if (!buttonItem.IsSymbol)
-            {
-                TextBlock buttonText = new()
-                {
-                    Text = buttonItem.ButtonText,
-                    FontFamily = new("Segoe UI"),
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Margin = new Thickness(6, 0, 0, 0)
-                };
-                buttonContent.Children.Add(buttonText);
-            }
-            
-            Wpf.Ui.Controls.Button button = new()
-            {
-                Content = buttonContent,
-                Height = 30,
-                Margin = new Thickness(0,0,8,0)
+                ButtonText = buttonItem.ButtonText,
+                SymbolText = buttonItem.SymbolText,
+                IsSymbol = buttonItem.IsSymbol,
+                CustomButton = buttonItem
             };
 
             if (buttonItem.Background != "Transparent"
@@ -106,12 +80,6 @@ public class CustomBottomBarUtilities
                 .ConvertFromString(buttonItem.Background) is SolidColorBrush solidColorBrush)
             {
                 button.Background = solidColorBrush;
-            }
-            else
-            {
-                SolidColorBrush? tealColor = App.Current.FindResource("DarkTeal") as SolidColorBrush;
-                if (tealColor != null)
-                    button.Background = tealColor;
             }
 
             if (GetMethodInfoForName(buttonItem.ClickEvent, methods) is MethodInfo method
