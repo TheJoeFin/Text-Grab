@@ -1,4 +1,5 @@
 using System.Drawing;
+using Text_Grab.Models;
 using ZXing.Windows.Compatibility;
 
 namespace Text_Grab.Utilities;
@@ -6,7 +7,7 @@ namespace Text_Grab.Utilities;
 public static class BarcodeUtilities
 {
 
-    public static string TryToReadBarcodes(Bitmap bitmap)
+    public static OcrOutput TryToReadBarcodes(Bitmap bitmap)
     {
         BarcodeReader barcodeReader = new()
         {
@@ -16,8 +17,15 @@ public static class BarcodeUtilities
 
         ZXing.Result result = barcodeReader.Decode(bitmap);
 
-        if (result is null)
-            return string.Empty;
-        return result.Text;
+        string resultString = string.Empty;
+        if (result is not null)
+            resultString = result.Text;
+
+        return new OcrOutput ()
+        {
+            Kind = OcrOutputKind.Barcode,
+            RawOutput = resultString,
+            SourceBitmap = bitmap,
+        };
     }
 }

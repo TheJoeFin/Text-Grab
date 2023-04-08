@@ -36,3 +36,11 @@ public enum Side
     Top = 3,
     Bottom = 4
 }
+
+public enum OcrOutputKind
+{
+    None = 0,
+    Line = 1,
+    Paragraph = 2,
+    Barcode = 3,
+}
