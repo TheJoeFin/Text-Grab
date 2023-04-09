@@ -13,14 +13,14 @@
     MinWidth="200"
     MinHeight="300"
     d:Height="1200"
-    Background="{StaticResource DarkControlBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="labelText" TargetType="CheckBox">
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="White" />
             <Setter Property="Margin" Value="0,16,0,0" />
         </Style>
 
@@ -52,7 +52,6 @@
                         <!--  Version Text  -->
                         <TextBlock
                             VerticalAlignment="Center"
-                            Foreground="White"
                             Style="{StaticResource TextBodyNormal}"
                             Text="Version 4.X.0" />
 
@@ -65,6 +64,11 @@
                             SymbolText="" />
                     </Grid>
 
+                    <controls:CollapsibleButton
+                        HorizontalAlignment="Left"
+                        ButtonText="Toggle Theme"
+                        Click="CollapsibleButton_Click"
+                        SymbolText="" />
                     <!--  Show Toast on success  -->
                     <ui:ToggleSwitch Name="ShowToastCheckBox">
                         <TextBlock Style="{StaticResource TextBodyNormal}">
@@ -134,7 +138,7 @@
                     <Border
                         Margin="0,16,0,0"
                         Padding="20,10"
-                        Background="#000"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
                         CornerRadius="6">
                         <StackPanel>
                             <ui:ToggleSwitch Name="RunInBackgroundChkBx" Margin="0,12,0,0">
@@ -142,10 +146,7 @@
                                     Run Text Grab in the background and enable hotkeys
                                 </TextBlock>
                             </ui:ToggleSwitch>
-                            <TextBlock
-                                Margin="24,0,0,0"
-                                Foreground="LightGray"
-                                Style="{StaticResource TextBodyNormal}">
+                            <TextBlock Margin="24,0,0,0" Style="{StaticResource TextBodyNormal}">
                                 <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run>
                             </TextBlock>
                             <ui:ToggleSwitch x:Name="GlobalHotkeysCheckbox" Margin="0,12,0,0">
@@ -165,6 +166,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
+                                    Foreground="Black"
                                     Style="{StaticResource TextBoxStyle1}"
                                     Text="F"
                                     TextChanged="HotkeyTextBox_TextChanged" />
@@ -185,6 +187,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
+                                    Foreground="Black"
                                     Style="{StaticResource TextBoxStyle1}"
                                     Text="G"
                                     TextChanged="HotkeyTextBox_TextChanged" />
@@ -205,6 +208,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
+                                    Foreground="Black"
                                     Style="{StaticResource TextBoxStyle1}"
                                     Text="E"
                                     TextChanged="HotkeyTextBox_TextChanged" />
@@ -225,6 +229,7 @@
                                     Background="White"
                                     CharacterCasing="Upper"
                                     FontWeight="Medium"
+                                    Foreground="Black"
                                     Style="{StaticResource TextBoxStyle1}"
                                     Text="Q"
                                     TextChanged="HotkeyTextBox_TextChanged" />
@@ -243,7 +248,7 @@
                     <Border
                         Margin="0,16,0,0"
                         Padding="24,0,20,16"
-                        Background="#000"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
                         CornerRadius="6">
                         <StackPanel>
                             <ui:ToggleSwitch Name="TryInsertCheckbox" Margin="0,12,0,0">
@@ -262,6 +267,7 @@
                                     VerticalContentAlignment="Center"
                                     Background="White"
                                     FontWeight="Medium"
+                                    Foreground="Black"
                                     Style="{StaticResource TextBoxStyle1}"
                                     Text="0.5"
                                     TextChanged="ValidateTextIsNumber" />

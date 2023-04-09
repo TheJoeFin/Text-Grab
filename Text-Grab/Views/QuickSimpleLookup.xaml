@@ -6,10 +6,11 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Quick Simple Lookup"
     Width="800"
     Height="400"
-    Background="{StaticResource DarkBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     Closing="Window_Closing"
     Loaded="Window_Loaded"
     PreviewKeyDown="QuickSimpleLookup_PreviewKeyDown"
@@ -19,19 +20,9 @@
 
     <Window.Resources>
         <Style x:Key="CellTextBlock" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="White" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="6" />
             <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style TargetType="TextBox">
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="Padding" Value="3,5" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Background" Value="{StaticResource DarkTeal}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="SelectionBrush" Value="White" />
-            <Setter Property="SelectionOpacity" Value="0.2" />
         </Style>
     </Window.Resources>
 
@@ -49,13 +40,7 @@
             <TextBox
                 x:Name="SearchBox"
                 Grid.Column="0"
-                Margin="4,0,0,0"
-                Padding="8"
-                VerticalAlignment="Center"
                 AcceptsTab="True"
-                Background="{StaticResource DarkControlBackground}"
-                FontSize="16"
-                Foreground="White"
                 TextChanged="SearchBox_TextChanged" />
             <Label
                 x:Name="SearchLabel"
@@ -65,7 +50,7 @@
                 VerticalContentAlignment="Center"
                 Content="Type to search..."
                 FontSize="16"
-                Foreground="White"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 IsHitTestVisible="False"
                 Opacity="0.5" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -87,7 +72,6 @@
                     ToolTip="New Fullscreen Grab (Ctrl + F)" />
                 <controls:CollapsibleButton
                     x:Name="SaveBTN"
-                    Background="{StaticResource DarkTeal}"
                     ButtonText="Save Lookup Data"
                     Click="SaveBTN_Click"
                     IsSymbol="True"
@@ -127,8 +111,7 @@
                 <Menu
                     Grid.Column="1"
                     VerticalAlignment="Center"
-                    Background="{StaticResource DarkBackground}"
-                    Foreground="White"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     IsMainMenu="True">
                     <MenuItem>
                         <MenuItem.Header>
@@ -167,7 +150,7 @@
         <DataGrid
             x:Name="MainDataGrid"
             Grid.Row="1"
-            AlternatingRowBackground="{StaticResource DarkBackground}"
+            AlternatingRowBackground="{DynamicResource ApplicationBackgroundBrush}"
             AutoGenerateColumns="False"
             Background="Transparent"
             BeginningEdit="MainDataGrid_BeginningEdit"
@@ -188,7 +171,7 @@
                 <DataGridTemplateColumn Width="*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
-                            Background="{StaticResource DarkControlBackground}"
+                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
                             Style="{StaticResource CellTextBlock}"
                             Text="Ctrl + Enter to copy" />
                     </DataGridTemplateColumn.Header>
@@ -206,7 +189,7 @@
                 <DataGridTemplateColumn Width="3*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
-                            Background="{StaticResource DarkControlBackground}"
+                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
                             Style="{StaticResource CellTextBlock}"
                             Text="Press Enter to copy" />
                     </DataGridTemplateColumn.Header>
@@ -238,6 +221,7 @@
                 Grid.Column="0"
                 Padding="10,4"
                 HorizontalAlignment="Left"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 Style="{StaticResource CellTextBlock}">
                 Shift + Enter to copy entire selected row(s).
             </TextBlock>
@@ -245,6 +229,7 @@
                 Grid.Column="1"
                 Padding="10,4"
                 HorizontalAlignment="Center"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 Style="{StaticResource CellTextBlock}">
                 Shift + Ctrl + Enter to copy all results.
             </TextBlock>
@@ -253,6 +238,7 @@
                 Grid.Column="2"
                 Padding="10,4"
                 HorizontalAlignment="Right"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 Style="{StaticResource CellTextBlock}"
                 Text="0 Rows" />
         </Grid>

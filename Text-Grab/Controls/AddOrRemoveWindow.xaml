@@ -8,7 +8,7 @@
     Title="Add or remove text on each line"
     Width="330"
     Height="320"
-    Background="{StaticResource DarkBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     KeyUp="Window_KeyUp"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
@@ -110,9 +110,7 @@
             </RadioButton>
         </StackPanel>
 
-        <StackPanel
-            Grid.Row="2"
-            Orientation="Horizontal">
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
             <TextBlock
                 Width="184"
                 VerticalAlignment="Center"

@@ -17,7 +17,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <SolidColorBrush x:Key="TextBox.Static.Background" Color="#071818" />
+    <SolidColorBrush x:Key="TextBox.Static.Background" Color="{DynamicResource ApplicationBackgroundColor}" />
     <Style x:Key="ComboBoxEditableTextBox" TargetType="{x:Type TextBox}">
         <Setter Property="OverridesDefaultStyle" Value="true" />
         <Setter Property="AllowDrop" Value="true" />
@@ -48,12 +48,12 @@
     <SolidColorBrush x:Key="ComboBox.Static.Editable.Button.Border" Color="#444444" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Background" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Border" Color="#1E595F" />
-    <SolidColorBrush x:Key="ComboBox.MouseOver.Glyph" Color="White" />
+    <SolidColorBrush x:Key="ComboBox.MouseOver.Glyph" Color="{DynamicResource TextFillColorPrimary}" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Background" Color="#308e98" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Border" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Button.Background" Color="#308e98" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Button.Border" Color="#1E595F" />
-    <SolidColorBrush x:Key="ComboBox.Pressed.Background" Color="#071818" />
+    <SolidColorBrush x:Key="ComboBox.Pressed.Background" Color="{DynamicResource ApplicationBackgroundColor}" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Border" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Glyph" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Background" Color="#444444" />

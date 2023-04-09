@@ -42,7 +42,6 @@
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="16" />
             <Setter Property="Margin" Value="4" />
-            <Setter Property="Foreground" Value="White" />
         </Style>
     </Window.Resources>
 
@@ -80,7 +79,7 @@
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
     <Border
-        BorderBrush="{StaticResource DarkBackground}"
+        BorderBrush="{DynamicResource ApplicationBackgroundBrush}"
         BorderThickness="2,2,2,2"
         ClipToBounds="True">
         <Grid ClipToBounds="False">
@@ -93,7 +92,7 @@
                 Grid.Row="0"
                 Grid.RowSpan="3"
                 VerticalAlignment="Top"
-                Background="{StaticResource DarkBackground}">
+                Background="{DynamicResource ApplicationBackgroundBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -104,9 +103,8 @@
                 <Menu
                     Height="32"
                     VerticalAlignment="Center"
-                    Background="{StaticResource DarkBackground}"
                     ClipToBounds="True"
-                    Foreground="White"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     WindowChrome.IsHitTestVisibleInChrome="True">
                     <MenuItem Header="File">
                         <MenuItem
@@ -270,10 +268,7 @@
                         Margin="0,-2,0,0"
                         Click="OnMinimizeButtonClick"
                         Style="{StaticResource TitleBarButtonStyle}">
-                        <TextBlock
-                            FontFamily="Segoe MDL2 Assets"
-                            Foreground="White"
-                            Text="" />
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                     </Button>
                     <Button
                         x:Name="RestoreButton"
@@ -285,7 +280,6 @@
                         <TextBlock
                             x:Name="RestoreTextlock"
                             FontFamily="Segoe MDL2 Assets"
-                            Foreground="White"
                             Text="" />
                     </Button>
                     <Button
@@ -295,10 +289,7 @@
                         Margin="0,-2,0,0"
                         Click="OnCloseButtonClick"
                         Style="{StaticResource TitleBarCloseButtonStyle}">
-                        <TextBlock
-                            FontFamily="Segoe MDL2 Assets"
-                            Foreground="White"
-                            Text="" />
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                     </Button>
 
                 </StackPanel>
@@ -373,7 +364,7 @@
                     </Grid>
                 </Viewbox>
             </Border>
-            <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
+            <Border Grid.Row="2" Background="{DynamicResource ApplicationBackgroundBrush}">
                 <Grid
                     Height="30"
                     Margin="6"
@@ -422,7 +413,7 @@
                         Padding="4"
                         VerticalContentAlignment="Center"
                         Content="Search For Text..."
-                        Foreground="LightGray"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                         IsHitTestVisible="False"
                         Opacity="0.5"
                         Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
@@ -446,9 +437,8 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         d:Visibility="Visible"
-                        Background="{StaticResource DarkBackground}"
                         ClipToBounds="True"
-                        Foreground="White"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                         Visibility="Collapsed">
                         <MenuItem>
                             <MenuItem.Header>
@@ -456,7 +446,6 @@
                                     x:Name="MatchesTXTBLK"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
-                                    Foreground="White"
                                     Text="Matches: 0" />
                             </MenuItem.Header>
                             <MenuItem Click="HandleDelete" Header="Delete Selected" />
@@ -472,6 +461,7 @@
                         x:Name="LanguagesComboBox"
                         Grid.Column="3"
                         MinWidth="60"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                         PreviewMouseDown="LanguagesComboBox_MouseDown"
                         SelectionChanged="LanguagesComboBox_SelectionChanged">
                         <ComboBox.ItemTemplate>
@@ -581,7 +571,6 @@
                         Grid.Column="5"
                         Width="110"
                         Margin="0"
-                        Background="{StaticResource DarkTeal}"
                         ButtonText="Grab"
                         Click="GrabBTN_Click"
                         SymbolText=""

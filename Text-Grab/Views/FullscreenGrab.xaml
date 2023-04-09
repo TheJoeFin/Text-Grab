@@ -24,7 +24,6 @@
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="16" />
             <Setter Property="Margin" Value="4" />
-            <Setter Property="Foreground" Value="White" />
         </Style>
         <Style TargetType="ToggleButton">
             <Setter Property="Margin" Value="2,0" />
@@ -59,7 +58,7 @@
                 <SolidColorBrush
                     x:Name="BackgroundBrush"
                     Opacity="0"
-                    Color="Black" />
+                    Color="{DynamicResource ApplicationBackgroundColor}" />
             </Canvas.Background>
             <Canvas.ContextMenu>
                 <ContextMenu>
@@ -109,7 +108,7 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
             d:Visibility="Visible"
-            Background="{StaticResource DarkControlBackground}"
+            Background="{DynamicResource ApplicationBackgroundBrush}"
             CornerRadius="8"
             Visibility="Collapsed">
             <StackPanel
@@ -120,6 +119,7 @@
                 <ComboBox
                     x:Name="LanguagesComboBox"
                     Margin="0,0,0,2"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     PreviewMouseDown="LanguagesComboBox_PreviewMouseDown"
                     SelectionChanged="LanguagesComboBox_SelectionChanged">
                     <ComboBox.ItemTemplate>

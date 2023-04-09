@@ -7,12 +7,12 @@
     <Style x:Key="TextBodyNormal" TargetType="TextBlock">
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="Padding" Value="0" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="FontSize" Value="16" />
     </Style>
     <Style x:Key="TextHeader" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="FontSize" Value="20" />
         <Setter Property="FontWeight" Value="Bold" />
     </Style>

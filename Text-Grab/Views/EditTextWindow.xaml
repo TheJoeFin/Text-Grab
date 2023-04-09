@@ -13,8 +13,9 @@
     MinWidth="200"
     MinHeight="200"
     Activated="Window_Activated"
-    Background="{StaticResource DarkBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Initialized="Window_Initialized"
     Loaded="Window_Loaded"
     PreviewKeyDown="EditTextWindow_PreviewKeyDown"
@@ -117,11 +118,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-        <Menu
-            Grid.Row="0"
-            Background="{StaticResource DarkBackground}"
-            Foreground="White"
-            IsMainMenu="True">
+        <Menu Grid.Row="0" IsMainMenu="True">
             <MenuItem Header="_File">
                 <MenuItem
                     x:Name="OpenFileMenuItem"
@@ -372,10 +369,8 @@
             AcceptsTab="True"
             AllowDrop="True"
             AutoWordSelection="True"
-            Background="{StaticResource DarkControlBackground}"
             ContextMenuOpening="PassedTextControl_ContextMenuOpening"
             FontSize="16"
-            Foreground="White"
             HorizontalScrollBarVisibility="Auto"
             IsInactiveSelectionHighlightEnabled="True"
             PreviewDragOver="ETWindow_DragOver"
@@ -414,7 +409,6 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     FontFamily="Cascadia Mono"
-                    Foreground="White"
                     Text="Ln 1, Col 0" />
                 <Grid.ContextMenu>
                     <ContextMenu>

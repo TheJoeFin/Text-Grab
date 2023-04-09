@@ -361,5 +361,12 @@ public partial class SettingsWindow : Window
     }
 
     #endregion Methods
+
+    private void CollapsibleButton_Click(object sender, RoutedEventArgs e)
+    {
+        var currentTheme = Wpf.Ui.Appearance.Theme.GetAppTheme();
+
+        Wpf.Ui.Appearance.Theme.Apply(currentTheme == Wpf.Ui.Appearance.ThemeType.Light ? Wpf.Ui.Appearance.ThemeType.Dark : Wpf.Ui.Appearance.ThemeType.Light);
+    }
 }
 
