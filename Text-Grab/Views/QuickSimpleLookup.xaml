@@ -40,12 +40,13 @@
             <TextBox
                 x:Name="SearchBox"
                 Grid.Column="0"
+                Margin="6,0,0,0"
                 AcceptsTab="True"
                 TextChanged="SearchBox_TextChanged" />
             <Label
                 x:Name="SearchLabel"
                 Grid.Column="0"
-                Margin="10,0,6,0"
+                Margin="16,0,6,0"
                 Padding="4"
                 VerticalContentAlignment="Center"
                 Content="Type to search..."

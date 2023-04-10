@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="FirstRun"
     Title="About Text Grab"
     Width="800"
@@ -14,8 +15,9 @@
     MinHeight="200"
     Padding="50"
     d:Height="5000"
-    Background="{StaticResource DarkControlBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Loaded="FirstRun_Loaded"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -25,7 +27,6 @@
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="Margin" Value="50,30,50,0" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Foreground" Value="White" />
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="FontSize" Value="16" />
         </Style>
@@ -80,7 +81,6 @@
                     HorizontalAlignment="Center"
                     VerticalContentAlignment="Center"
                     Checked="RadioButton_Checked"
-                    Foreground="White"
                     GroupName="DefaultLaunch">
                     <TextBlock Style="{StaticResource TextBodyNormal}">
                         Full-Screen
@@ -314,7 +314,7 @@
                     Height="620"
                     Source="/Text-Grab;component/Images/Toast.png" />
             </Viewbox>
-            <CheckBox
+            <ui:ToggleSwitch
                 x:Name="NotificationsCheckBox"
                 Margin="50,5,50,0"
                 Checked="NotificationsCheckBox_Checked"
@@ -326,12 +326,12 @@
                     Style="{StaticResource TextBody}">
                     Enable Notifications
                 </TextBlock>
-            </CheckBox>
+            </ui:ToggleSwitch>
 
             <TextBlock Style="{StaticResource TextBody}">
                 Running in the background enables shortcut keys and faster launch times.
             </TextBlock>
-            <CheckBox
+            <ui:ToggleSwitch
                 x:Name="BackgroundCheckBox"
                 Margin="50,5,50,0"
                 Checked="BackgroundCheckBox_Checked"
@@ -339,12 +339,12 @@
                 <TextBlock Margin="0" Style="{StaticResource TextBody}">
                     Run Text Grab in the background
                 </TextBlock>
-            </CheckBox>
+            </ui:ToggleSwitch>
 
             <TextBlock Style="{StaticResource TextBody}">
                 Launching Text Grab on startup keeps the app ready for quick access.
             </TextBlock>
-            <CheckBox
+            <ui:ToggleSwitch
                 x:Name="StartupCheckbox"
                 Margin="50,5,50,0"
                 Checked="StartupCheckbox_Checked"
@@ -355,7 +355,7 @@
                     Style="{StaticResource TextBody}">
                     Start Text Grab on startup
                 </TextBlock>
-            </CheckBox>
+            </ui:ToggleSwitch>
 
             <TextBlock Style="{StaticResource TextHeaderFirstRun}">
                 How Text Grab is Different

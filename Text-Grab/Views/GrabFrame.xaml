@@ -428,7 +428,7 @@
                         Foreground="LightGray"
                         IsSymbol="True"
                         SymbolText=""
-                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
+                        Visibility="Collapsed" />
 
                     <Menu
                         x:Name="MatchesMenu"

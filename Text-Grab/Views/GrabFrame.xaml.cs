@@ -656,11 +656,16 @@ public partial class GrabFrame : Window
         if (this.Width < 390)
         {
             SearchBox.Visibility = Visibility.Collapsed;
+            ClearBTN.Visibility = Visibility.Collapsed;
             MatchesMenu.Visibility = Visibility.Collapsed;
         }
         else
         {
             SearchBox.Visibility = Visibility.Visible;
+            if (!string.IsNullOrEmpty(SearchBox.Text))
+                ClearBTN.Visibility = Visibility.Visible;
+            else
+                ClearBTN.Visibility = Visibility.Collapsed;
         }
 
         if (this.Width < 480)
@@ -1763,9 +1768,15 @@ public partial class GrabFrame : Window
         if (sender is not TextBox searchBox) return;
 
         if (string.IsNullOrEmpty(SearchBox.Text))
+        {
+            ClearBTN.Visibility = Visibility.Collapsed;
             SearchLabel.Visibility = Visibility.Visible;
+        }
         else
+        {
+            ClearBTN.Visibility = Visibility.Visible;
             SearchLabel.Visibility = Visibility.Collapsed;
+        }
 
         isSearchSelectionOverriden = false;
 

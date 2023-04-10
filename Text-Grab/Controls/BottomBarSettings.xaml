@@ -5,12 +5,20 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Bottom Bar Settings"
-    Width="900"
+    Width="950"
     Height="500"
-    Background="{StaticResource DarkBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
+    <Window.Resources>
+        <Style x:Key="headerStyle" TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="Visibility" Value="Visible" />
+            <Setter Property="Height" Value="30" />
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -22,10 +30,15 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
+        <TextBlock
+            Grid.Column="0"
+            Padding="52,0"
+            FontSize="16"
+            Text="Is Icon" />
 
         <ListView
             x:Name="LeftListBox"
-            Margin="8"
+            Margin="8,24,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
             d:ItemsSource="{d:SampleData ItemCount=5}"
@@ -34,8 +47,9 @@
             ItemsSource="{Binding ButtonsInLeftList}"
             ScrollViewer.VerticalScrollBarVisibility="Visible">
             <ListView.View>
-                <GridView>
-                    <GridViewColumn Width="40" Header="Icon">
+                <GridView ColumnHeaderContainerStyle="{StaticResource headerStyle}">
+                    <GridViewColumn Width="40">
+                        <GridViewColumnHeader Content="Icon" />
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock
@@ -50,7 +64,7 @@
                     <GridViewColumn Width="72" Header="Icon Mode">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox
+                                <ui:ToggleSwitch
                                     Grid.Column="2"
                                     HorizontalAlignment="Center"
                                     IsChecked="{Binding IsSymbol}" />
@@ -80,17 +94,16 @@
                 x:Name="MoveRightButton"
                 ButtonText="Add"
                 Click="MoveRightButton_Click"
-                IsSymbol="True"
                 SymbolText="" />
             <local:CollapsibleButton
                 x:Name="MoveLeftButton"
                 ButtonText="Remove"
                 Click="MoveLeftButton_Click"
-                IsSymbol="True"
                 SymbolText="" />
         </StackPanel>
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="*" />
@@ -107,9 +120,15 @@
                     Click="MoveDownButton_Click"
                     SymbolText="" />
             </StackPanel>
+            <TextBlock
+                Grid.Row="1"
+                Padding="0,0,308,0"
+                HorizontalAlignment="Right"
+                FontSize="16"
+                Text="Is Icon" />
             <ListView
                 x:Name="RightListBox"
-                Grid.Row="1"
+                Grid.Row="2"
                 Margin="8"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
@@ -135,7 +154,7 @@
                         <GridViewColumn Width="72" Header="Icon Mode">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox
+                                    <ui:ToggleSwitch
                                         Grid.Column="2"
                                         HorizontalAlignment="Center"
                                         IsChecked="{Binding IsSymbol}" />
@@ -158,23 +177,23 @@
             </ListView>
 
             <StackPanel
-                Grid.Row="2"
+                Grid.Row="3"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Orientation="Horizontal">
-                <CheckBox
+                <ui:ToggleSwitch
                     x:Name="ShowCursorTextCheckBox"
                     Margin="0,0,20,0"
                     VerticalContentAlignment="Center">
                     <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                         Show Cursor/Selection Text
                     </TextBlock>
-                </CheckBox>
-                <CheckBox x:Name="ShowScrollbarCheckBox" VerticalContentAlignment="Center">
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch x:Name="ShowScrollbarCheckBox" VerticalContentAlignment="Center">
                     <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                         Show Scrollbar
                     </TextBlock>
-                </CheckBox>
+                </ui:ToggleSwitch>
 
             </StackPanel>
         </Grid>

@@ -10,7 +10,7 @@
                 <ControlTemplate TargetType="{x:Type GridViewColumnHeader}">
                     <Border
                         Background="Transparent"
-                        BorderBrush="Black"
+                        BorderBrush="{DynamicResource ControlStrongFillColorDefaultBrush}"
                         BorderThickness="0,0,0,1">
                         <TextBlock
                             x:Name="ContentHeader"

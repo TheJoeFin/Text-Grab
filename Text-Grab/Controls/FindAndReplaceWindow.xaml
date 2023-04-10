@@ -5,13 +5,15 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Find and Replace"
     Width="520"
     Height="560"
     MinWidth="400"
     MinHeight="300"
-    Background="{StaticResource DarkBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     KeyUp="Window_KeyUp"
     Loaded="FindAndReplacedLoaded"
     mc:Ignorable="d">
@@ -63,6 +65,7 @@
             <ToggleButton
                 x:Name="MoreOptionsToggleButton"
                 Width="32"
+                Margin="6,6,0,0"
                 Background="Transparent"
                 BorderBrush="Transparent"
                 Click="MoreOptionsToggleButton_Click"
@@ -74,7 +77,6 @@
             <TextBox
                 x:Name="FindTextBox"
                 Grid.Column="1"
-                Height="30"
                 Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
                 FontFamily="Segoe UI"
@@ -83,7 +85,7 @@
                 x:Name="FindButton"
                 Grid.Row="0"
                 Grid.Column="2"
-                Width="110"
+                Width="130"
                 Margin="0,6,6,0"
                 Padding="4"
                 ButtonText="Find"
@@ -94,7 +96,6 @@
                 x:Name="ReplaceTextBox"
                 Grid.Row="1"
                 Grid.Column="1"
-                Height="30"
                 Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
                 FontFamily="Segoe UI"
@@ -103,7 +104,7 @@
                 x:Name="ReplaceButton"
                 Grid.Row="1"
                 Grid.Column="2"
-                Width="110"
+                Width="130"
                 Margin="0,6,6,0"
                 Padding="4"
                 ButtonText="Replace"
@@ -121,23 +122,22 @@
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Visible">
-                <CheckBox
+                <ui:ToggleSwitch
                     x:Name="ExactMatchCheckBox"
                     Margin="6"
                     VerticalAlignment="Center"
                     VerticalContentAlignment="Center"
-                    Checked="OptionsChangedRefresh"
-                    Foreground="White">
+                    Checked="OptionsChangedRefresh">
                     <TextBlock Style="{StaticResource TextBodyNormal}">
                         Match Exactly
                     </TextBlock>
-                </CheckBox>
+                </ui:ToggleSwitch>
 
                 <local:CollapsibleButton
                     x:Name="DeleteAllMatches"
+                    Width="140"
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
-                    Width="110"
                     Background="Red"
                     ButtonText="Delete All"
                     Command="{x:Static local:FindAndReplaceWindow.DeleteAllCmd}"
@@ -147,7 +147,7 @@
                     x:Name="ReplaceAllButton"
                     Grid.Row="2"
                     Grid.Column="2"
-                    Width="110"
+                    Width="130"
                     Height="30"
                     Margin="0,0,6,0"
                     Padding="4"
@@ -165,7 +165,7 @@
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Visible">
-                <CheckBox
+                <ui:ToggleSwitch
                     x:Name="UsePaternCheckBox"
                     Margin="6"
                     VerticalAlignment="Center"
@@ -173,11 +173,11 @@
                     <TextBlock Style="{StaticResource TextBodyNormal}">
                         Search With Regex
                     </TextBlock>
-                </CheckBox>
+                </ui:ToggleSwitch>
 
                 <local:CollapsibleButton
                     x:Name="ExtractSimplePattern"
-                    Width="110"
+                    Width="140"
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
                     ButtonText="Extract Regex"
@@ -186,8 +186,8 @@
 
                 <local:CollapsibleButton
                     x:Name="MatchesToEditWindow"
+                    Width="130"
                     Margin="0,0,6,0"
-                    Width="110"
                     VerticalAlignment="Center"
                     ButtonText="Edit Matches"
                     Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}"
@@ -204,12 +204,12 @@
             Foreground="{StaticResource Teal}"
             Text="Matches" />
 
-        <Border Grid.Row="2" Background="{StaticResource DarkControlBackground}">
+        <Border Grid.Row="2" Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}">
             <ListView
                 x:Name="ResultsListView"
                 Grid.Row="2"
                 Background="Transparent"
-                Foreground="White"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 ScrollViewer.CanContentScroll="True"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                 SelectionChanged="ResultsListView_SelectionChanged"
@@ -225,12 +225,33 @@
                                 <ColumnDefinition Width="auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding Count}" Margin="0,0,8,0"/>
-                            <TextBlock Grid.Column="1" HorizontalAlignment="right" Text="At index:" Margin="0,0,8,0"/>
-                            <TextBlock Grid.Column="2" HorizontalAlignment="Left" Text="{Binding SelectionStart}" />
-                            <TextBlock Grid.Column="3" Foreground="Gray" HorizontalAlignment="Right" Text="{Binding PreviewLeft}" />
-                            <TextBlock Grid.Column="4" Text="{Binding Text}" FontWeight="Bold" />
-                            <TextBlock Grid.Column="5" Foreground="Gray" HorizontalAlignment="Left" Text="{Binding PreviewRight}" />
+                            <TextBlock
+                                Grid.Column="0"
+                                Margin="0,0,8,0"
+                                Text="{Binding Count}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Margin="0,0,8,0"
+                                HorizontalAlignment="right"
+                                Text="At index:" />
+                            <TextBlock
+                                Grid.Column="2"
+                                HorizontalAlignment="Left"
+                                Text="{Binding SelectionStart}" />
+                            <TextBlock
+                                Grid.Column="3"
+                                HorizontalAlignment="Right"
+                                Foreground="Gray"
+                                Text="{Binding PreviewLeft}" />
+                            <TextBlock
+                                Grid.Column="4"
+                                FontWeight="Bold"
+                                Text="{Binding Text}" />
+                            <TextBlock
+                                Grid.Column="5"
+                                HorizontalAlignment="Left"
+                                Foreground="Gray"
+                                Text="{Binding PreviewRight}" />
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

@@ -278,13 +278,13 @@ public static class StringMethods
         workingString.Replace('\r', ' ');
 
         Regex regex = new("[ ]{2,}");
-        string temp = regex.Replace(workingString.ToString(), " ").Trim();
+        string temp = regex.Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
 
         workingString.Append(endingNewLines);
 
-        return workingString.ToString().Trim();
+        return workingString.ToString();
     }
 
     public static string ToCamel(this string stringToCamel)
