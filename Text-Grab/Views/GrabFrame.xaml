@@ -23,6 +23,7 @@
     DragLeave="GrabFrameWindow_DragLeave"
     DragOver="GrabFrameWindow_DragOver"
     Drop="GrabFrameWindow_Drop"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Initialized="GrabFrameWindow_Initialized"
     Loaded="GrabFrame_Loaded"
     LocationChanged="Window_LocationChanged"
@@ -104,7 +105,6 @@
                     Height="32"
                     VerticalAlignment="Center"
                     ClipToBounds="True"
-                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     WindowChrome.IsHitTestVisibleInChrome="True">
                     <MenuItem Header="File">
                         <MenuItem
@@ -236,8 +236,8 @@
                     Orientation="Horizontal">
                     <Image
                         x:Name="WindowIcon"
-                        Width="18"
-                        Height="18"
+                        Width="22"
+                        Height="22"
                         Margin="4,2,4,4"
                         Source="{StaticResource TextGrabIcon}"
                         Stretch="UniformToFill" />
@@ -246,7 +246,6 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         FontSize="13"
-                        Foreground="White"
                         Text="Grab Frame">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
