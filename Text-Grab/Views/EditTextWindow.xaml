@@ -378,7 +378,7 @@
             SelectionChanged="PassedTextControl_SelectionChanged"
             SizeChanged="PassedTextControl_SizeChanged"
             SpellCheck.IsEnabled="True"
-            Style="{DynamicResource TextBoxStyle1}"
+            Style="{DynamicResource TextBoxStyle2}"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="WrapWithOverflow"
             VerticalScrollBarVisibility="Auto" />
