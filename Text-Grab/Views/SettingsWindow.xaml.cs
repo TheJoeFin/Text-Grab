@@ -179,6 +179,13 @@ public partial class SettingsWindow : Window
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
+        if (SystemThemeRdBtn.IsChecked is true)
+            Settings.Default.AppTheme = "System";
+        else if (LightThemeRdBtn.IsChecked is true)
+            Settings.Default.AppTheme = "Light";
+        else if (DarkThemeRdBtn.IsChecked is true)
+            Settings.Default.AppTheme = "Dark";
+
         if (ShowToastCheckBox.IsChecked != null)
             Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
 
@@ -259,7 +266,7 @@ public partial class SettingsWindow : Window
             NotifyIconUtilities.UnregisterHotkeys(app);
             NotifyIconUtilities.RegisterHotKeys(app);
         }
-
+        app.SetTheme();
 
         Close();
     }
@@ -294,6 +301,23 @@ public partial class SettingsWindow : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        AppTheme appTheme = Enum.Parse<AppTheme>(Settings.Default.AppTheme, true);
+        switch (appTheme)
+        {
+            case AppTheme.System:
+                SystemThemeRdBtn.IsChecked = true;
+                break;
+            case AppTheme.Dark:
+                DarkThemeRdBtn.IsChecked = true;
+                break;
+            case AppTheme.Light:
+                LightThemeRdBtn.IsChecked = true;
+                break;
+            default:
+                SystemThemeRdBtn.IsChecked = true;
+                break;
+        }
+
         ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
         ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
         NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
@@ -362,11 +386,5 @@ public partial class SettingsWindow : Window
 
     #endregion Methods
 
-    private void CollapsibleButton_Click(object sender, RoutedEventArgs e)
-    {
-        var currentTheme = Wpf.Ui.Appearance.Theme.GetAppTheme();
-
-        Wpf.Ui.Appearance.Theme.Apply(currentTheme == Wpf.Ui.Appearance.ThemeType.Light ? Wpf.Ui.Appearance.ThemeType.Dark : Wpf.Ui.Appearance.ThemeType.Light);
-    }
 }
 

@@ -44,3 +44,10 @@ public enum OcrOutputKind
     Paragraph = 2,
     Barcode = 3,
 }
+
+public enum AppTheme
+{
+    System = 0,
+    Dark = 1,
+    Light = 2
+}

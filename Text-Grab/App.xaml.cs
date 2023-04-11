@@ -1,4 +1,6 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
+using Microsoft.Win32;
+using RegistryUtils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,6 +12,7 @@ using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Wpf.Ui.Appearance;
 
 namespace Text_Grab;
 
@@ -20,10 +23,10 @@ public partial class App : System.Windows.Application
 {
     #region Properties
 
+    public AppTheme CurrentAppTheme { get; set; } = AppTheme.System;
     public List<int> HotKeyIds { get; set; } = new();
     public int NumberOfRunningInstances { get; set; } = 0;
     public NotifyIcon? TextGrabIcon { get; set; }
-
     #endregion Properties
 
     #region Methods
@@ -54,6 +57,39 @@ public partial class App : System.Windows.Application
                 editTextWindow.Show();
                 break;
         }
+    }
+    public void SetTheme(object? sender = null, EventArgs? e = null)
+    {
+        CurrentAppTheme = Enum.Parse<AppTheme>(Settings.Default.AppTheme.ToString(), true);
+
+        switch (CurrentAppTheme)
+        {
+            case AppTheme.System:
+                if (SystemThemeUtility.IsLightTheme())
+                    Theme.Apply(ThemeType.Light);
+                else
+                    Theme.Apply(ThemeType.Dark);
+                break;
+            case AppTheme.Dark:
+                Theme.Apply(ThemeType.Dark);
+                break;
+            case AppTheme.Light:
+                Theme.Apply(ThemeType.Light);
+                break;
+            default:
+                Theme.Apply(ThemeType.Dark);
+                break;
+        }
+    }
+
+    public void WatchTheme()
+    {
+        if (Registry.CurrentUser.OpenSubKey(SystemThemeUtility.themeKeyPath) is not RegistryKey key)
+            return;
+
+        RegistryMonitor monitor = new(key);
+        monitor.RegChanged += new EventHandler(SetTheme);
+        monitor.Start();
     }
 
     private static async Task<bool> CheckForOcringFolder(string currentArgument)
@@ -176,7 +212,10 @@ public partial class App : System.Windows.Application
         }
 
         DefaultLaunch();
+        SetTheme();
+        WatchTheme();
     }
+
     private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         // unhandled exceptions thrown from UI thread
@@ -210,6 +249,5 @@ public partial class App : System.Windows.Application
             mtw.Show();
         }));
     }
-
     #endregion Methods
 }
