@@ -215,7 +215,12 @@ public partial class App : System.Windows.Application
         WatchTheme();
 
         if (handledArgument)
+        {
+            // arguments were passed, so don't show firstRun dialog
+            Settings.Default.FirstRun = false;
+            Settings.Default.Save();
             return;
+        }
 
         if (Settings.Default.FirstRun)
         {
