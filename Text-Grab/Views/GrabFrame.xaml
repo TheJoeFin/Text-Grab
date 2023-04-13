@@ -68,20 +68,18 @@
             Command="{x:Static local:GrabFrame.MergeWordsCommand}"
             Executed="MergeWordBordersExecuted" />
 
-
     </Window.CommandBindings>
-
 
     <WindowChrome.WindowChrome>
         <WindowChrome
             CaptionHeight="32"
-            CornerRadius="6"
+            CornerRadius="8,8,2,8"
             GlassFrameThickness="0"
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
     <Border
         BorderBrush="{DynamicResource ApplicationBackgroundBrush}"
-        BorderThickness="2,2,2,2"
+        BorderThickness="2"
         ClipToBounds="True">
         <Grid ClipToBounds="False">
             <Grid.RowDefinitions>

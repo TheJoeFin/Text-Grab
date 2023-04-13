@@ -13,6 +13,7 @@ using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab;
 
@@ -70,18 +71,18 @@ public partial class App : System.Windows.Application
             {
                 case AppTheme.System:
                     if (SystemThemeUtility.IsLightTheme())
-                        Theme.Apply(ThemeType.Light);
+                        Theme.Apply(ThemeType.Light, WindowBackdropType.None);
                     else
-                        Theme.Apply(ThemeType.Dark);
+                        Theme.Apply(ThemeType.Dark, WindowBackdropType.None);
                     break;
                 case AppTheme.Dark:
-                    Theme.Apply(ThemeType.Dark);
+                    Theme.Apply(ThemeType.Dark, WindowBackdropType.None);
                     break;
                 case AppTheme.Light:
-                    Theme.Apply(ThemeType.Light);
+                    Theme.Apply(ThemeType.Light, WindowBackdropType.None);
                     break;
                 default:
-                    Theme.Apply(ThemeType.Dark);
+                    Theme.Apply(ThemeType.Dark, WindowBackdropType.None);
                     break;
             }
         }

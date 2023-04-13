@@ -107,10 +107,18 @@
             Padding="8"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
+            d:Background="White"
             d:Visibility="Visible"
             Background="{DynamicResource ApplicationBackgroundBrush}"
             CornerRadius="8"
             Visibility="Collapsed">
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="32"
+                    Direction="0"
+                    Opacity="0.6"
+                    RenderingBias="Performance" />
+            </Border.Effect>
             <StackPanel
                 Margin="2,0"
                 HorizontalAlignment="Center"
