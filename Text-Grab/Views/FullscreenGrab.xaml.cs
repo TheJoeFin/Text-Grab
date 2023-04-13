@@ -41,6 +41,7 @@ public partial class FullscreenGrab : Window
     public FullscreenGrab()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     #endregion Constructors

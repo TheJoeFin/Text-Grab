@@ -61,11 +61,13 @@ public partial class EditTextWindow : Window
     public EditTextWindow()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     public EditTextWindow(string possiblyEndcodedString, bool isEncoded = true)
     {
         InitializeComponent();
+        App.SetTheme();
 
         if (isEncoded)
             ReadEncodedString(possiblyEndcodedString);

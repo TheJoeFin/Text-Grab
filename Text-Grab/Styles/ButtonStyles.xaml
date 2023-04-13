@@ -85,6 +85,7 @@
                             <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="{StaticResource Button.Disabled.Foreground}" />
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Foreground" Value="White" />
                             <Setter TargetName="border" Property="Background" Value="#1E595F" />
                         </Trigger>
                     </ControlTemplate.Triggers>

@@ -23,7 +23,6 @@ public partial class App : System.Windows.Application
 {
     #region Properties
 
-    public AppTheme CurrentAppTheme { get; set; } = AppTheme.System;
     public List<int> HotKeyIds { get; set; } = new();
     public int NumberOfRunningInstances { get; set; } = 0;
     public NotifyIcon? TextGrabIcon { get; set; }
@@ -58,27 +57,39 @@ public partial class App : System.Windows.Application
                 break;
         }
     }
-    public void SetTheme(object? sender = null, EventArgs? e = null)
+    public static void SetTheme(object? sender = null, EventArgs? e = null)
     {
-        CurrentAppTheme = Enum.Parse<AppTheme>(Settings.Default.AppTheme.ToString(), true);
+        bool gotTheme = Enum.TryParse<AppTheme>(Settings.Default.AppTheme.ToString(), true, out AppTheme currentAppTheme);
 
-        switch (CurrentAppTheme)
+        if (!gotTheme)
+            return;
+
+        try
         {
-            case AppTheme.System:
-                if (SystemThemeUtility.IsLightTheme())
-                    Theme.Apply(ThemeType.Light);
-                else
+            switch (currentAppTheme)
+            {
+                case AppTheme.System:
+                    if (SystemThemeUtility.IsLightTheme())
+                        Theme.Apply(ThemeType.Light);
+                    else
+                        Theme.Apply(ThemeType.Dark);
+                    break;
+                case AppTheme.Dark:
                     Theme.Apply(ThemeType.Dark);
-                break;
-            case AppTheme.Dark:
-                Theme.Apply(ThemeType.Dark);
-                break;
-            case AppTheme.Light:
-                Theme.Apply(ThemeType.Light);
-                break;
-            default:
-                Theme.Apply(ThemeType.Dark);
-                break;
+                    break;
+                case AppTheme.Light:
+                    Theme.Apply(ThemeType.Light);
+                    break;
+                default:
+                    Theme.Apply(ThemeType.Dark);
+                    break;
+            }
+        }
+        catch (Exception)
+        {
+#if DEBUG
+            throw;
+#endif
         }
     }
 
@@ -201,6 +212,8 @@ public partial class App : System.Windows.Application
         if (!handledArgument && e.Args.Length > 0)
             handledArgument = await HandleStartupArgs(e.Args);
 
+        WatchTheme();
+
         if (handledArgument)
             return;
 
@@ -212,8 +225,6 @@ public partial class App : System.Windows.Application
         }
 
         DefaultLaunch();
-        SetTheme();
-        WatchTheme();
     }
 
     private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

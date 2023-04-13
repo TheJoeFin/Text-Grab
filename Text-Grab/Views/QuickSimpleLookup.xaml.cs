@@ -37,6 +37,7 @@ public partial class QuickSimpleLookup : Window
     public QuickSimpleLookup()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     #endregion Constructors

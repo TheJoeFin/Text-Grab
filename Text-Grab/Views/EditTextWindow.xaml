@@ -41,24 +41,24 @@
             <Separator />
             <MenuItem
                 Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                Header="_Isolate Selected Text"
+                Header="Isolate Selected Text"
                 InputGestureText="Ctrl + I" />
             <MenuItem
                 Click="SelectLineMenuItem_Click"
-                Header="Select _Line"
+                Header="Select Line"
                 InputGestureText="Ctrl + L" />
             <MenuItem
                 Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                Header="Toggle _Case"
+                Header="Toggle Case"
                 InputGestureText="Shift + F3" />
             <Separator />
             <MenuItem
                 Click="MoveLineUpMenuItem_Click"
-                Header="Move Selection _Up"
+                Header="Move Selection Up"
                 InputGestureText="Alt + Up" />
             <MenuItem
                 Click="MoveLineDownMenuItem_Click"
-                Header="Move Selection _Down"
+                Header="Move Selection Down"
                 InputGestureText="Alt + Down" />
         </ContextMenu>
     </Window.Resources>

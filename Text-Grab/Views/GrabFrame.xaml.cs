@@ -76,6 +76,7 @@ public partial class GrabFrame : Window
     public GrabFrame()
     {
         InitializeComponent();
+        App.SetTheme();
 
         LoadOcrLanguages();
 

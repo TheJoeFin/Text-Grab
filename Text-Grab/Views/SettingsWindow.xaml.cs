@@ -27,6 +27,7 @@ public partial class SettingsWindow : Window
     public SettingsWindow()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     #endregion Constructors
@@ -266,7 +267,7 @@ public partial class SettingsWindow : Window
             NotifyIconUtilities.UnregisterHotkeys(app);
             NotifyIconUtilities.RegisterHotKeys(app);
         }
-        app.SetTheme();
+        App.SetTheme();
 
         Close();
     }
