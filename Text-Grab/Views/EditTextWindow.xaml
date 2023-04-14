@@ -342,6 +342,10 @@
                     x:Name="NewWindowFromSelectionMenuItem"
                     Click="NewWindowWithText_Clicked"
                     Header="New Window with Selected Text" />
+                <MenuItem
+                    x:Name="MakeCodeMenuItem"
+                    Click="MakeCodeMenuItem_Click"
+                    Header="Make QR Code" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem

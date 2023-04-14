@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -454,18 +455,6 @@ public partial class EditTextWindow : Window
         e.CanExecute = false;
     }
 
-    private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
-    {
-        string possibleURL = PassedTextControl.SelectedText;
-
-        if (string.IsNullOrEmpty(possibleURL))
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
-
-        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
-            Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
-    }
-
-
     private void CanOcrPasteExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         _IsAccessingClipboard = true;
@@ -908,6 +897,16 @@ public partial class EditTextWindow : Window
         qsl.Show();
     }
 
+    private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+    {
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
+
+        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
+            Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
+    }
     private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
     {
         FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
@@ -925,6 +924,18 @@ public partial class EditTextWindow : Window
                 PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
             }
         }
+    }
+
+    private void MakeCodeMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            return;
+
+        string text = GetSelectedTextOrAllText();
+        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
+
+        QrCodeWindow window = new(qrBitmap, text);
+        window.Show();
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)

@@ -1,5 +1,9 @@
+using System;
 using System.Drawing;
 using Text_Grab.Models;
+using ZXing.Common;
+using ZXing.QrCode.Internal;
+using ZXing.Rendering;
 using ZXing.Windows.Compatibility;
 
 namespace Text_Grab.Utilities;
@@ -27,5 +31,27 @@ public static class BarcodeUtilities
             RawOutput = resultString,
             SourceBitmap = bitmap,
         };
+    }
+
+    public static Bitmap GetQrCodeForText(string text)
+    {
+        BarcodeWriter barcodeWriter = new();
+
+        barcodeWriter.Format = ZXing.BarcodeFormat.QR_CODE;
+        barcodeWriter.Renderer = new BitmapRenderer();
+
+        EncodingOptions encodingOptions = new()
+        {
+            Width = 500,
+            Height = 500,
+            Margin = 5,
+        };
+        encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+
+        barcodeWriter.Options = encodingOptions;
+
+        Bitmap bitmap = barcodeWriter.Write(text);
+
+        return bitmap;
     }
 }
