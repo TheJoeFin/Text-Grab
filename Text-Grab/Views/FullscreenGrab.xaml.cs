@@ -506,12 +506,12 @@ public partial class FullscreenGrab : Window
         if (regionScaled.Width < 3 || regionScaled.Height < 3)
         {
             BackgroundBrush.Opacity = 0;
-            grabbedText = await OcrExtensions.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
+            grabbedText = await OcrExtensions.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
         else if (TableToggleButton.IsChecked is true)
-            grabbedText = await OcrExtensions.GetRegionsTextAsTable(this, regionScaled, selectedOcrLang);
+            grabbedText = await OcrExtensions.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
-            grabbedText = await OcrExtensions.GetRegionsText(this, regionScaled, selectedOcrLang);
+            grabbedText = await OcrExtensions.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
 
         if (!string.IsNullOrWhiteSpace(grabbedText))
         {

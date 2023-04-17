@@ -74,15 +74,15 @@ public static class OcrExtensions
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
-    public static async Task<string> GetTextFromAbsoluteRect(Rect rect, Language language)
+    public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, Language language)
     {
         Rectangle selectedRegion = ShapeExtensions.RectangleFromRect(rect);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
 
-        return GetStringFromOcrOutputs(await GetTextFromEntireBitmap(bmp, language));
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
-    public static async Task<string> GetRegionsText(Window passedWindow, Rectangle selectedRegion, Language language)
+    public static async Task<string> GetRegionsTextAsync(Window passedWindow, Rectangle selectedRegion, Language language)
     {
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
@@ -92,10 +92,10 @@ public static class OcrExtensions
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
-        return GetStringFromOcrOutputs( await GetTextFromEntireBitmap(bmp, language));
+        return GetStringFromOcrOutputs( await GetTextFromImageAsync(bmp, language));
     }
 
-    public static async Task<string> GetRegionsTextAsTable(Window passedWindow, Rectangle selectedRegion, Language language)
+    public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, Language language)
     {
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
@@ -104,27 +104,58 @@ public static class OcrExtensions
 
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
-        double scale = await GetIdealScaleFactorForOCR(bmp, language);
+        double scale = await GetIdealScaleFactorForOcrAsync(bmp, language);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
         DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
-        OcrResult ocrResult = await GetOcrResultFromBitmap(scaledBitmap, language);
+        OcrResult ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, language);
         List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpiScale);
         return ResultTable.GetWordsAsTable(wordBorders, dpiScale, LanguageUtilities.IsLanguageSpaceJoining(language));
     }
 
-    public static async Task<(OcrResult, double)> GetOcrResultFromRegion(Rectangle region, Language language)
+    public static async Task<(OcrResult, double)> GetOcrResultFromRegionAsync(Rectangle region, Language language)
     {
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
 
-        double scale = await GetIdealScaleFactorForOCR(bmp, language);
+        double scale = await GetIdealScaleFactorForOcrAsync(bmp, language);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
 
-        OcrResult ocrResult = await GetOcrResultFromBitmap(scaledBitmap, language);
+        OcrResult ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, language);
 
         return (ocrResult, scale);
     }
 
-    public async static Task<OcrResult> GetOcrResultFromBitmap(Bitmap scaledBitmap, Language selectedLanguage)
+    public async static Task<OcrResult> GetOcrFromStreamAsync(MemoryStream memoryStream, Language language)
+    {
+        memoryStream.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memoryStream.AsRandomAccessStream());
+        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+        await memoryStream.FlushAsync();
+
+        return await GetOcrResultFromImageAsync(softwareBmp, language);
+    }
+
+    public async static Task<OcrResult> GetOcrFromStreamAsync(IRandomAccessStream stream, Language language)
+    {
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(stream);
+        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+
+        return await GetOcrResultFromImageAsync(softwareBmp, language);
+    }
+
+    public async static Task<OcrResult> GetOcrResultFromImageAsync(BitmapImage scaledBitmap, Language language)
+    {
+        Bitmap bitmap = ImageMethods.BitmapImageToBitmap(scaledBitmap);
+        return await GetOcrResultFromImageAsync(bitmap, language);
+    }
+
+    public async static Task<OcrResult> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, Language language)
+    {
+        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(language);
+        return await ocrEngine.RecognizeAsync(scaledBitmap);
+    }
+
+    public async static Task<OcrResult> GetOcrResultFromImageAsync(Bitmap scaledBitmap, Language language)
     {
         await using MemoryStream memory = new();
 
@@ -135,35 +166,97 @@ public static class OcrExtensions
 
         await memory.FlushAsync();
 
-        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(selectedLanguage);
-        return await ocrEngine.RecognizeAsync(softwareBmp);
+        return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
 
-    public async static Task<string> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, Language language)
+    public async static Task<List<OcrOutput>> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, Language language)
     {
-        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(randomAccessStream);
-        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
-
-        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(language);
-        OcrResult ocrResult = await ocrEngine.RecognizeAsync(softwareBmp);
-
-        StringBuilder stringBuilder = new();
-
-        foreach (OcrLine line in ocrResult.Lines)
-            line.GetTextFromOcrLine(LanguageUtilities.IsLanguageSpaceJoining(language), stringBuilder);
-
-        return stringBuilder.ToString();
-    }
-
-    public async static Task<List<OcrOutput>> GetTextFromEntireBitmap(Bitmap bitmap, Language language)
-    {
-        double scale = await GetIdealScaleFactorForOCR(bitmap, language);
-        Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
+        OcrResult ocrResult = await GetOcrFromStreamAsync(randomAccessStream, language);
 
         List<OcrOutput> outputs = new();
+
+        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, null, ocrResult);
+
+        outputs.Add(paragraphsOutput);
+
+        if (Settings.Default.TryToReadBarcodes)
+        {
+            Bitmap bitmap = ImageMethods.GetBitmapFromIRandomAccessStream(randomAccessStream);
+            OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(bitmap);
+            outputs.Add(barcodeResult);
+        }
+
+        return outputs;
+    }
+
+    public async static Task<List<OcrOutput>> GetTextFromImageAsync(SoftwareBitmap softwareBitmap, Language language)
+    {
+        throw new NotImplementedException();
+
+        // TODO:    scale software bitmaps
+        //          Store software bitmaps on OcrOutput
+        //          Read QR Codes from software bitmaps
+    }
+
+    public async static Task<List<OcrOutput>> GetTextFromImageAsync(BitmapImage bitmapImage, Language language)
+    {
+        Bitmap bitmap = ImageMethods.BitmapImageToBitmap(bitmapImage);
+        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
+        Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
+
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(scaledBitmap, language);
+
+        List<OcrOutput> outputs = new();
+
+        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
+
+        outputs.Add(paragraphsOutput);
+
+        if (Settings.Default.TryToReadBarcodes)
+        {
+            OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
+            outputs.Add(barcodeResult);
+        }
+
+        return outputs;
+    }
+
+    public async static Task<List<OcrOutput>> GetTextFromStreamAsync(MemoryStream stream, Language language)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async static Task<List<OcrOutput>> GetTextFromStreamAsync(IRandomAccessStream stream, Language language)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async static Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language)
+    {
+        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
+        Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
+
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(scaledBitmap, language);
+
+        List<OcrOutput> outputs = new();
+
+        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
+
+        outputs.Add(paragraphsOutput);
+
+        if (Settings.Default.TryToReadBarcodes)
+        {
+            OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
+            outputs.Add(barcodeResult);
+        }
+
+        return outputs;
+    }
+
+    private static OcrOutput GetTextFromOcrResult(Language language, Bitmap? scaledBitmap, OcrResult ocrResult)
+    {
         StringBuilder text = new();
 
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(scaledBitmap, language);
         bool isSpaceJoiningOCRLang = LanguageUtilities.IsLanguageSpaceJoining(language);
 
         foreach (OcrLine ocrLine in ocrResult.Lines)
@@ -179,16 +272,7 @@ public static class OcrExtensions
             Language = language,
             SourceBitmap = scaledBitmap,
         };
-
-        outputs.Add(paragraphsOutput);
-
-        if (Settings.Default.TryToReadBarcodes)
-        {
-            OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
-            outputs.Add(barcodeResult);
-        }
-
-        return outputs;
+        return paragraphsOutput;
     }
 
     public static string GetStringFromOcrOutputs(List<OcrOutput> outputs)
@@ -208,26 +292,26 @@ public static class OcrExtensions
         return text.ToString();
     }
 
-    public static async Task<string> OcrAbsoluteFilePath(string absolutePath)
+    public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath)
     {
         Uri fileURI = new(absolutePath, UriKind.Absolute);
         BitmapImage droppedImage = new(fileURI);
         droppedImage.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
         Language language = LanguageUtilities.GetOCRLanguage();
-        return GetStringFromOcrOutputs(await GetTextFromEntireBitmap(bmp, language));
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
-    public static async Task<string> GetClickedWord(Window passedWindow, Point clickedPoint, Language OcrLang)
+    public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, Language OcrLang)
     {
         using Bitmap bmp = ImageMethods.GetWindowsBoundsBitmap(passedWindow);
-        string ocrText = await GetTextFromClickedWord(clickedPoint, bmp, OcrLang);
+        string ocrText = await GetTextFromClickedWordAsync(clickedPoint, bmp, OcrLang);
         return ocrText.Trim();
     }
 
-    private static async Task<string> GetTextFromClickedWord(Point singlePoint, Bitmap bitmap, Language language)
+    private static async Task<string> GetTextFromClickedWordAsync(Point singlePoint, Bitmap bitmap, Language language)
     {
-        return GetTextFromClickedWord(singlePoint, await OcrExtensions.GetOcrResultFromBitmap(bitmap, language));
+        return GetTextFromClickedWord(singlePoint, await OcrExtensions.GetOcrResultFromImageAsync(bitmap, language));
     }
 
     private static string GetTextFromClickedWord(Point singlePoint, OcrResult ocrResult)
@@ -242,12 +326,24 @@ public static class OcrExtensions
         return string.Empty;
     }
 
-    public async static Task<double> GetIdealScaleFactorForOCR(Bitmap bitmap, Language selectedLanguage)
+    public async static Task<double> GetIdealScaleFactorForOcrAsync(SoftwareBitmap bitmap, Language selectedLanguage)
+    {
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
+
+        return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.PixelHeight, bitmap.PixelWidth);
+    }
+
+    public async static Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, Language selectedLanguage)
+    {
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
+
+        return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.Height, bitmap.Width);
+    }
+
+    private static double GetIdealScaleFactorForOcrResult(OcrResult ocrResult, int height, int width)
     {
         List<double> heightsList = new();
         double scaleFactor = 1.5;
-
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(bitmap, selectedLanguage);
 
         foreach (OcrLine ocrLine in ocrResult.Lines)
             foreach (OcrWord ocrWord in ocrLine.Words)
@@ -263,9 +359,9 @@ public static class OcrExtensions
 
         scaleFactor = idealLineHeight / lineHeight;
 
-        if (bitmap.Width * scaleFactor > OcrEngine.MaxImageDimension || bitmap.Height * scaleFactor > OcrEngine.MaxImageDimension)
+        if (width * scaleFactor > OcrEngine.MaxImageDimension || height * scaleFactor > OcrEngine.MaxImageDimension)
         {
-            int largerDim = Math.Max(bitmap.Width, bitmap.Height);
+            int largerDim = Math.Max(width, height);
             // find the largest possible scale factor, because the ideal scale factor is too high
 
             scaleFactor = OcrEngine.MaxImageDimension / largerDim;

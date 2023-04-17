@@ -180,6 +180,12 @@ public static class ImageMethods
         return bmp;
     }
 
+    public static Bitmap GetBitmapFromIRandomAccessStream(IRandomAccessStream stream)
+    {
+        Bitmap bitmap = new(stream.AsStream());
+        return bitmap;
+    }
+
     public static BitmapImage GetBitmapImageFromIRandomAccessStream(IRandomAccessStream stream)
     {
         BitmapImage bmp = new();

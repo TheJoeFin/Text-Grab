@@ -248,7 +248,7 @@ public partial class EditTextWindow : Window
         {
             try
             {
-                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePath(OpenedFilePath));
+                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePathAsync(OpenedFilePath));
             }
             catch (Exception)
             {
@@ -290,7 +290,7 @@ public partial class EditTextWindow : Window
         returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrdText = await OcrExtensions.OcrAbsoluteFilePath(path);
+            string ocrdText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
 
             if (!string.IsNullOrWhiteSpace(ocrdText))
             {
@@ -1042,6 +1042,7 @@ public partial class EditTextWindow : Window
             {
                 await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                 {
+                    PassedTextControl.AppendText(Environment.NewLine);
                     PassedTextControl.AppendText(ocrFile.OcrResult);
                     PassedTextControl.ScrollToEnd();
                 });
@@ -1154,7 +1155,8 @@ public partial class EditTextWindow : Window
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
@@ -1177,7 +1179,8 @@ public partial class EditTextWindow : Window
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
                 }

@@ -534,7 +534,7 @@ public partial class GrabFrame : Window
         double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
         Rect rect = selectBorder.GetAbsolutePlacement(true);
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
-        string ocrText = await OcrExtensions.GetTextFromAbsoluteRect(rect.GetScaleSizeByFraction(viewBoxZoomFactor), CurrentLanguage);
+        string ocrText = await OcrExtensions.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), CurrentLanguage);
 
         if (Settings.Default.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
@@ -795,7 +795,7 @@ public partial class GrabFrame : Window
         };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, windowFrameImageScale) = await OcrExtensions.GetOcrResultFromRegion(rectCanvasSize, CurrentLanguage);
+            (ocrResultOfWindow, windowFrameImageScale) = await OcrExtensions.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
 
         if (ocrResultOfWindow is null)
             return;
