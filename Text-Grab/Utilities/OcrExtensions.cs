@@ -126,11 +126,12 @@ public static class OcrExtensions
 
     public async static Task<OcrResult> GetOcrFromStreamAsync(MemoryStream memoryStream, Language language)
     {
-        memoryStream.Position = 0;
-        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memoryStream.AsRandomAccessStream());
+        using WrappingStream wrapper = new(memoryStream);
+        wrapper.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(wrapper.AsRandomAccessStream());
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
 
-        await memoryStream.FlushAsync();
+        await wrapper.FlushAsync();
 
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
@@ -158,13 +159,14 @@ public static class OcrExtensions
     public async static Task<OcrResult> GetOcrResultFromImageAsync(Bitmap scaledBitmap, Language language)
     {
         await using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
 
-        scaledBitmap.Save(memory, ImageFormat.Bmp);
-        memory.Position = 0;
-        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(memory.AsRandomAccessStream());
+        scaledBitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(wrapper.AsRandomAccessStream());
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+        await wrapper.FlushAsync();
 
-        await memory.FlushAsync();
 
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
