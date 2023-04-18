@@ -25,7 +25,7 @@ Bookman-Demi";
         string testImagePath = @".\Images\font_sample.png";
 
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -45,7 +45,7 @@ Couier New";
         string testImagePath = @".\Images\FontTest.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -74,7 +74,7 @@ December	12	Winter";
         Language englishLanguage = new("en-US");
         Bitmap testBitmap = new(getPathToImages(testImagePath));
         // When
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
@@ -100,6 +100,20 @@ December	12	Winter";
     }
 
     [WpfFact]
+    public async Task ReadQrCode()
+    {
+        string expectedResult = "This is a test of the QR Code system";
+
+        string testImagePath = @".\Images\QrCodeTestImage.png";
+        Uri uri = new Uri(testImagePath, UriKind.Relative);
+        // When
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
+
+        // Then
+        Assert.Equal(expectedResult, ocrTextResult);
+    }
+
+    [WpfFact]
     public async Task AnalyzeTable2()
     {
         string expectedResult = @"Test	Text
@@ -117,7 +131,7 @@ December	12	Winter";
         Language englishLanguage = new("en-US");
         Bitmap testBitmap = new(getPathToImages(testImagePath));
         // When
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()

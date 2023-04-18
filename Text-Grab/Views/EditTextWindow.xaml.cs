@@ -46,6 +46,7 @@ public partial class EditTextWindow : Window
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
+    public static RoutedCommand MakeQrCodeCmd = new();
     public bool LaunchedFromNotification = false;
     CancellationTokenSource? cancellationTokenForDirOCR;
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
@@ -250,7 +251,7 @@ public partial class EditTextWindow : Window
         {
             try
             {
-                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePath(OpenedFilePath));
+                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePathAsync(OpenedFilePath));
             }
             catch (Exception)
             {
@@ -292,7 +293,7 @@ public partial class EditTextWindow : Window
         returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrdText = await OcrExtensions.OcrAbsoluteFilePath(path);
+            string ocrdText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
 
             if (!string.IsNullOrWhiteSpace(ocrdText))
             {
@@ -926,18 +927,6 @@ public partial class EditTextWindow : Window
         }
     }
 
-    private void MakeCodeMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
-            return;
-
-        string text = GetSelectedTextOrAllText();
-        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
-
-        QrCodeWindow window = new(qrBitmap, text);
-        window.Show();
-    }
-
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
     {
         SelectLine(sender, e);
@@ -1044,6 +1033,7 @@ public partial class EditTextWindow : Window
             {
                 await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                 {
+                    PassedTextControl.AppendText(Environment.NewLine);
                     PassedTextControl.AppendText(ocrFile.OcrResult);
                     PassedTextControl.ScrollToEnd();
                 });
@@ -1156,7 +1146,8 @@ public partial class EditTextWindow : Window
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
@@ -1179,7 +1170,8 @@ public partial class EditTextWindow : Window
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
                 }
@@ -1271,6 +1263,34 @@ public partial class EditTextWindow : Window
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
     {
         PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
+    }
+
+    private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
+            e.CanExecute = false;
+        else
+            e.CanExecute = true;
+    }
+
+    private void MakeQrCodeExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            return;
+
+        string text = GetSelectedTextOrAllText();
+
+        bool lengthError = false;
+        int maxCharLength = 2953;
+        if (text.Length > maxCharLength)
+        {
+            text = text.Substring(0, maxCharLength);
+            lengthError = true;
+        }
+        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
+        
+        QrCodeWindow window = new(qrBitmap, text, lengthError);
+        window.Show();
     }
 
     private void ReplaceReservedCharsCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)

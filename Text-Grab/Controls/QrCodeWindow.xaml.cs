@@ -14,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Text_Grab.Controls
 {
@@ -24,13 +25,16 @@ namespace Text_Grab.Controls
     {
         public Bitmap Bitmap { get; set; }
         public string TextOfCode { get; set; }
-        public QrCodeWindow(Bitmap bitmap, string textOfCode)
+        public QrCodeWindow(Bitmap bitmap, string textOfCode, bool showError = false)
         {
             InitializeComponent();
             Bitmap = bitmap;
             TextOfCode = textOfCode;
             CodeImage.ToolTip = textOfCode;
             CodeImage.Source = ImageMethods.BitmapToImageSource(Bitmap);
+
+            if (showError)
+                LengthErrorTextBlock.Visibility = Visibility.Visible;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)

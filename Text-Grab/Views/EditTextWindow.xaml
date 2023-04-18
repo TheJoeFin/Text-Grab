@@ -111,6 +111,10 @@
             CanExecute="CanLaunchUriExecute"
             Command="{x:Static local:EditTextWindow.LaunchCmd}"
             Executed="LaunchUriExecuted" />
+        <CommandBinding
+            CanExecute="MakeQrCodeCanExecute"
+            Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
+            Executed="MakeQrCodeExecuted" />
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -344,7 +348,7 @@
                     Header="New Window with Selected Text" />
                 <MenuItem
                     x:Name="MakeCodeMenuItem"
-                    Click="MakeCodeMenuItem_Click"
+                    Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
                     Header="Make QR Code" />
             </MenuItem>
             <MenuItem Header="_Help">
