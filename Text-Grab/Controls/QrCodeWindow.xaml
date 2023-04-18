@@ -12,6 +12,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <local:CollapsibleButton
@@ -19,9 +20,18 @@
             ButtonText="Save Code"
             Click="SaveButton_Click"
             SymbolText="" />
+        <TextBlock
+            x:Name="LengthErrorTextBlock"
+            Grid.Row="1"
+            Padding="20,4"
+            FontWeight="Bold"
+            TextWrapping="Wrap"
+            Visibility="Collapsed">
+            ⚠️ The text has been trimmed to the maximum allowable length of QR Codes.
+        </TextBlock>
         <Image
             Name="CodeImage"
-            Grid.Row="1"
+            Grid.Row="2"
             Margin="0" />
     </Grid>
 </Window>

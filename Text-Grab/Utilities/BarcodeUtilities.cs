@@ -35,10 +35,11 @@ public static class BarcodeUtilities
 
     public static Bitmap GetQrCodeForText(string text)
     {
-        BarcodeWriter barcodeWriter = new();
-
-        barcodeWriter.Format = ZXing.BarcodeFormat.QR_CODE;
-        barcodeWriter.Renderer = new BitmapRenderer();
+        BarcodeWriter barcodeWriter = new()
+        {
+            Format = ZXing.BarcodeFormat.QR_CODE,
+            Renderer = new BitmapRenderer()
+        };
 
         EncodingOptions encodingOptions = new()
         {
@@ -47,7 +48,6 @@ public static class BarcodeUtilities
             Margin = 5,
         };
         encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
-
         barcodeWriter.Options = encodingOptions;
 
         Bitmap bitmap = barcodeWriter.Write(text);
