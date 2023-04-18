@@ -258,19 +258,7 @@ public static class StringMethods
 
     public static string MakeStringSingleLine(this string textToEdit)
     {
-        StringBuilder endingNewLines = new();
-
-        for (int i = textToEdit.Length - 1; i >= 0; i--)
-        {
-            if (textToEdit[i] == '\n'
-                || textToEdit[i] == '\r')
-                endingNewLines.Insert(0, textToEdit[i]);
-            else
-                break;
-        }
-
-        StringBuilder workingString = new();
-        workingString.Append(textToEdit);
+        StringBuilder workingString = new(textToEdit);
 
         workingString.Replace("\r\n", " ");
         workingString.Replace(Environment.NewLine, " ");
@@ -281,8 +269,11 @@ public static class StringMethods
         string temp = regex.Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
+        if (workingString[0] == ' ')
+            workingString.Remove(0, 1);
 
-        workingString.Append(endingNewLines);
+        if (workingString[workingString.Length - 1] == ' ')
+            workingString.Remove(workingString.Length - 1, 1);
 
         return workingString.ToString();
     }
