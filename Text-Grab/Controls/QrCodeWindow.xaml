@@ -24,7 +24,10 @@
             x:Name="LengthErrorTextBlock"
             Grid.Row="1"
             Padding="20,4"
+            HorizontalAlignment="Center"
+            d:Visibility="Visible"
             FontWeight="Bold"
+            TextAlignment="Center"
             TextWrapping="Wrap"
             Visibility="Collapsed">
             ⚠️ The text has been trimmed to the maximum allowable length of QR Codes.
