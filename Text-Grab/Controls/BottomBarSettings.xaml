@@ -1,4 +1,4 @@
-<Window
+<ui:FluentWindow
     x:Class="Text_Grab.Controls.BottomBarSettings"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -14,6 +14,8 @@
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.Resources>
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
+
         <Style x:Key="headerStyle" TargetType="{x:Type GridViewColumnHeader}">
             <Setter Property="Visibility" Value="Visible" />
             <Setter Property="Height" Value="30" />
@@ -27,10 +29,18 @@
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
+        <ui:TitleBar
+            Title="Edit Text"
+            Grid.ColumnSpan="3"
+            Height="32"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
         <TextBlock
+            Grid.Row="1"
             Grid.Column="0"
             Padding="52,0"
             FontSize="16"
@@ -38,6 +48,7 @@
 
         <ListView
             x:Name="LeftListBox"
+            Grid.Row="1"
             Margin="8,24,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
@@ -86,6 +97,7 @@
             </ListView.View>
         </ListView>
         <StackPanel
+            Grid.Row="1"
             Grid.Column="1"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
@@ -101,7 +113,7 @@
                 Click="MoveLeftButton_Click"
                 SymbolText="" />
         </StackPanel>
-        <Grid Grid.Column="2">
+        <Grid Grid.Row="1" Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
@@ -178,9 +190,10 @@
 
             <StackPanel
                 Grid.Row="3"
+                Margin="0,26,0,0"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
-                Orientation="Horizontal">
+                Orientation="Vertical">
                 <ui:ToggleSwitch
                     x:Name="ShowCursorTextCheckBox"
                     Margin="0,0,20,0"
@@ -189,7 +202,10 @@
                         Show Cursor/Selection Text
                     </TextBlock>
                 </ui:ToggleSwitch>
-                <ui:ToggleSwitch x:Name="ShowScrollbarCheckBox" VerticalContentAlignment="Center">
+                <ui:ToggleSwitch
+                    x:Name="ShowScrollbarCheckBox"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
                     <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                         Show Scrollbar
                     </TextBlock>
@@ -199,7 +215,7 @@
         </Grid>
 
         <StackPanel
-            Grid.Row="1"
+            Grid.Row="2"
             Grid.ColumnSpan="3"
             Margin="0,12,0,6"
             HorizontalAlignment="Center"
@@ -217,4 +233,4 @@
                 SymbolText="" />
         </StackPanel>
     </Grid>
-</Window>
+</ui:FluentWindow>
