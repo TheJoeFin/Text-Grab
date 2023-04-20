@@ -68,6 +68,7 @@
                     Background="DarkGreen"
                     ButtonText="Add Item"
                     Click="AddItemBtn_Click"
+                    Foreground="White"
                     SymbolText=""
                     Visibility="Collapsed" />
                 <controls:CollapsibleButton

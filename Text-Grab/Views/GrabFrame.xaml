@@ -75,7 +75,7 @@
     <WindowChrome.WindowChrome>
         <WindowChrome
             CaptionHeight="32"
-            CornerRadius="8,8,2,8"
+            CornerRadius="18,18,2,18"
             GlassFrameThickness="0"
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
@@ -101,6 +101,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
                 <Menu
                     Height="32"
                     VerticalAlignment="Center"
@@ -230,8 +231,10 @@
                     </MenuItem>
                 </Menu>
                 <StackPanel
-                    Grid.Column="1"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
                     HorizontalAlignment="Center"
+                    Background="{DynamicResource ApplicationBackgroundBrush}"
                     ClipToBounds="True"
                     Orientation="Horizontal">
                     <Image
@@ -258,8 +261,18 @@
                         </TextBlock.Style>
                     </TextBlock>
                 </StackPanel>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <ui:TitleBar
+                    Grid.ColumnSpan="3"
+                    Width="200"
+                    Height="32"
+                    Padding="8,2"
+                    HorizontalAlignment="Right"
+                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    WindowChrome.IsHitTestVisibleInChrome="True" />
+                <StackPanel
+                    Grid.Column="2"
+                    Orientation="Horizontal"
+                    Visibility="Collapsed">
                     <Button
                         x:Name="MinimizeButton"
                         Width="46"
