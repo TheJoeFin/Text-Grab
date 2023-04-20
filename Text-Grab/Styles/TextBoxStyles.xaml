@@ -100,7 +100,7 @@
         </Style.Triggers>
     </Style>
     <Style x:Key="TextBoxStyle2" TargetType="{x:Type TextBox}">
-        <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorBaseBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
@@ -115,6 +115,7 @@
                 <ControlTemplate TargetType="{x:Type TextBox}">
                     <Border
                         x:Name="border"
+                        Padding="8,0,0,0"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
@@ -123,7 +124,7 @@
                         SnapsToDevicePixels="True">
                         <ScrollViewer
                             x:Name="PART_ContentHost"
-                            Padding="12,0,4,0"
+                            Padding="0"
                             Focusable="false"
                             HorizontalScrollBarVisibility="Hidden"
                             VerticalScrollBarVisibility="Hidden" />

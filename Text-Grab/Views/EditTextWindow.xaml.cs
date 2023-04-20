@@ -22,6 +22,7 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Wpf.Ui.Controls.Window;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Text_Grab;
@@ -30,7 +31,7 @@ namespace Text_Grab;
 /// Interaction logic for ManipulateTextWindow.xaml
 /// </summary>
 
-public partial class EditTextWindow : Window
+public partial class EditTextWindow : FluentWindow
 {
     #region Fields
 
