@@ -115,7 +115,7 @@
                 <ControlTemplate TargetType="{x:Type TextBox}">
                     <Border
                         x:Name="border"
-                        Padding="8,0,0,0"
+                        Padding="4,0,0,0"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"

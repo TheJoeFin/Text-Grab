@@ -21,6 +21,7 @@ public partial class FirstRunWindow : FluentWindow
     public FirstRunWindow()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     #endregion Constructors

@@ -387,6 +387,7 @@
             AcceptsTab="True"
             AllowDrop="True"
             AutoWordSelection="True"
+            CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
             ContextMenuOpening="PassedTextControl_ContextMenuOpening"
             FontSize="16"
             HorizontalScrollBarVisibility="Auto"
