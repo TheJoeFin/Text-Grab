@@ -367,10 +367,7 @@
                     </StackPanel>
                     <TextBlock Grid.Row="2" Style="{StaticResource TextBodyNormal}">
                         What do you want to see here? Submit an issue on GitHub<LineBreak />
-                        <Hyperlink
-                            Foreground="DeepSkyBlue"
-                            NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues"
-                            RequestNavigate="Hyperlink_RequestNavigate">
+                        <Hyperlink NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues" RequestNavigate="Hyperlink_RequestNavigate">
                             https://github.com/TheJoeFin/Text-Grab/issues
                         </Hyperlink>
                     </TextBlock>

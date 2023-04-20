@@ -8,12 +8,15 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls.Window;
+using Wpf.Ui.Extensions;
+using Wpf.Ui.Services;
 
 namespace Text_Grab;
 
@@ -92,6 +95,9 @@ public partial class App : System.Windows.Application
             throw;
 #endif
         }
+
+        Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
+        Accent.Apply(teal);
     }
 
     public void WatchTheme()
