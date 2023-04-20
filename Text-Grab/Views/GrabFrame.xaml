@@ -17,6 +17,8 @@
     AllowDrop="True"
     AllowsTransparency="True"
     Background="Transparent"
+    BorderBrush="Gray"
+    BorderThickness="0.2"
     Closed="Window_Closed"
     Closing="GrabFrameWindow_Closing"
     Deactivated="GrabFrameWindow_Deactivated"
