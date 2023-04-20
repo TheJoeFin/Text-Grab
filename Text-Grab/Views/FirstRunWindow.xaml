@@ -22,7 +22,7 @@
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
         <Style x:Key="TextBody" TargetType="TextBlock">
             <Setter Property="MaxWidth" Value="600" />
             <Setter Property="HorizontalAlignment" Value="Left" />

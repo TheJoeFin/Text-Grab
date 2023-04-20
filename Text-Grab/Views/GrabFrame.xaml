@@ -37,7 +37,7 @@
     WindowStyle="None"
     mc:Ignorable="d">
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
 
         <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Center" />

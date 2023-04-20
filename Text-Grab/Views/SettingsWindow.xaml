@@ -19,7 +19,7 @@
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
 
         <Style x:Key="labelText" TargetType="CheckBox">
             <Setter Property="VerticalContentAlignment" Value="Center" />

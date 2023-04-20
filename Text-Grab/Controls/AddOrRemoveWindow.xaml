@@ -26,7 +26,7 @@
             Executed="Apply_Executed" />
     </Window.CommandBindings>
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
     </Window.Resources>
     <Grid Margin="12">
         <Grid.RowDefinitions>

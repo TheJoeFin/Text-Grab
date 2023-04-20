@@ -19,7 +19,7 @@
     mc:Ignorable="d">
 
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
 
         <Style x:Key="CellTextBlock" TargetType="TextBlock">
             <Setter Property="FontSize" Value="14" />

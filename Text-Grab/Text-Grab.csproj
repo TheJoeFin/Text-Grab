@@ -8,7 +8,7 @@
 		<UseWPF>true</UseWPF>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<UseWindowsForms>true</UseWindowsForms>
-		<ApplicationIcon>t_ICON2.ico</ApplicationIcon>
+		<ApplicationIcon>TealSelect.ico</ApplicationIcon>
 		<StartupObject>Text_Grab.App</StartupObject>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
@@ -26,8 +26,14 @@
 	  <None Remove="Images\FSG.jpg" />
 	  <None Remove="Images\GF.jpg" />
 	  <None Remove="Images\QSL.jpg" />
+	  <None Remove="Images\TealSelect40.png" />
 	  <None Remove="Images\WinSym.png" />
+	  <None Remove="TealSelect.ico" />
 	  <None Remove="t_ICON2.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Images\TealSelect40.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -71,6 +77,7 @@
 			<Generator>MSBuild:Compile</Generator>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
+		<Resource Include="TealSelect.ico" />
 		<Resource Include="t_ICON2.ico" />
 	</ItemGroup>
 
