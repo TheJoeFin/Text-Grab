@@ -7,13 +7,14 @@ using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab;
 
 /// <summary>
 /// Interaction logic for FirstRunWindow.xaml
 /// </summary>
-public partial class FirstRunWindow : Window
+public partial class FirstRunWindow : FluentWindow
 {
     #region Constructors
 

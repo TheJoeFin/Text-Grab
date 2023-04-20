@@ -7,13 +7,14 @@ using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab;
 
 /// <summary>
 /// Interaction logic for Settings.xaml
 /// </summary>
-public partial class SettingsWindow : Window
+public partial class SettingsWindow : FluentWindow
 {
     #region Fields
 

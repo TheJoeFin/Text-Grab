@@ -14,13 +14,14 @@ using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab.Views;
 
 /// <summary>
 /// Interaction logic for QuickSimpleLookup.xaml
 /// </summary>
-public partial class QuickSimpleLookup : Window
+public partial class QuickSimpleLookup : FluentWindow
 {
     #region Fields
 
