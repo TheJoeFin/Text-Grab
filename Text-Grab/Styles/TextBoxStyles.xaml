@@ -16,22 +16,22 @@
     <Color x:Key="ControlDarkColor">#1F5E65</Color>
 
     <Color x:Key="ControlMouseOverColor">#0F2E31</Color>
-    <Color x:Key="ControlPressedColor">#000000</Color>
+    <Color x:Key="ControlPressedColor">#0F2E31</Color>
 
 
     <Color x:Key="GlyphColor">White</Color>
     <Color x:Key="GlyphMouseOver">#308E98</Color>
 
     <!--  Border colors  -->
-    <Color x:Key="BorderLightColor">#FFCCCCCC</Color>
-    <Color x:Key="BorderMediumColor">#FF888888</Color>
-    <Color x:Key="BorderDarkColor">#FF444444</Color>
+    <Color x:Key="BorderLightColor">#33CCCCCC</Color>
+    <Color x:Key="BorderMediumColor">#66888888</Color>
+    <Color x:Key="BorderDarkColor">#11444444</Color>
 
-    <Color x:Key="PressedBorderLightColor">#FF888888</Color>
-    <Color x:Key="PressedBorderDarkColor">#FF444444</Color>
+    <Color x:Key="PressedBorderLightColor">#55888888</Color>
+    <Color x:Key="PressedBorderDarkColor">#55444444</Color>
 
-    <Color x:Key="DisabledBorderLightColor">#FFAAAAAA</Color>
-    <Color x:Key="DisabledBorderDarkColor">#FF888888</Color>
+    <Color x:Key="DisabledBorderLightColor">#55AAAAAA</Color>
+    <Color x:Key="DisabledBorderDarkColor">#88888888</Color>
 
     <Color x:Key="DefaultBorderBrushDarkColor">Black</Color>
 
@@ -43,7 +43,7 @@
     <Color x:Key="NavButtonFrameColor">#1F5E65</Color>
 
 
-    <SolidColorBrush x:Key="TextBox.Static.Border" Color="#FFABAdB3" />
+    <SolidColorBrush x:Key="TextBox.Static.Border" Color="#88ABAdB3" />
     <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#4DECFD" />
     <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#1F5E65" />
     <SolidColorBrush x:Key="TextBox.IsDragging.Border" Color="#3CB1BE" />
@@ -164,21 +164,14 @@
                     <Border
                         x:Name="Border"
                         Margin="1"
-                        BorderThickness="1"
                         CornerRadius="1">
-                        <Border.BorderBrush>
-                            <SolidColorBrush Color="{DynamicResource ControlDarkColor}" />
-                        </Border.BorderBrush>
-                        <Border.Background>
-                            <SolidColorBrush Color="{DynamicResource DisabledControlDarkColor}" />
-                        </Border.Background>
                         <Path
                             x:Name="Arrow"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Data="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}">
                             <Path.Fill>
-                                <SolidColorBrush Color="{DynamicResource GlyphColor}" />
+                                <SolidColorBrush x:Name="ArrowFill" Color="{DynamicResource ControlMediumColor}" />
                             </Path.Fill>
                         </Path>
                         <VisualStateManager.VisualStateGroups>
@@ -234,7 +227,7 @@
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="1" />
+                        CornerRadius="5" />
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="false">
                             <Setter TargetName="thumbBorder" Property="Opacity" Value="0.56" />
@@ -263,8 +256,8 @@
             </Grid.RowDefinitions>
             <Border
                 Grid.RowSpan="3"
-                Background="#444444"
-                CornerRadius="1" />
+                Background="{DynamicResource SolidBackgroundFillColorBrush}"
+                CornerRadius="4" />
             <RepeatButton
                 Grid.Row="0"
                 Height="18"
@@ -305,17 +298,17 @@
     <ControlTemplate x:Key="HorizontalScrollBar" TargetType="{x:Type ScrollBar}">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition MaxWidth="18" />
+                <ColumnDefinition MaxWidth="14" />
                 <ColumnDefinition Width="0.00001*" />
-                <ColumnDefinition MaxWidth="18" />
+                <ColumnDefinition MaxWidth="14" />
             </Grid.ColumnDefinitions>
             <Border
                 Grid.ColumnSpan="3"
-                Background="#444444"
+                Background="{DynamicResource SolidBackgroundFillColorBrush}"
                 CornerRadius="1" />
             <RepeatButton
                 Grid.Column="0"
-                Width="18"
+                Width="14"
                 Command="ScrollBar.LineLeftCommand"
                 Content="M 4 0 L 4 8 L 0 4 Z"
                 Style="{StaticResource ScrollBarLineButton}" />
@@ -343,7 +336,7 @@
             </Track>
             <RepeatButton
                 Grid.Column="2"
-                Width="18"
+                Width="14"
                 Command="ScrollBar.LineRightCommand"
                 Content="M 0 0 L 4 4 L 0 8 Z"
                 Style="{StaticResource ScrollBarLineButton}" />
@@ -356,11 +349,11 @@
         <Style.Triggers>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto" />
-                <Setter Property="Height" Value="18" />
+                <Setter Property="Height" Value="14" />
                 <Setter Property="Template" Value="{StaticResource HorizontalScrollBar}" />
             </Trigger>
             <Trigger Property="Orientation" Value="Vertical">
-                <Setter Property="Width" Value="18" />
+                <Setter Property="Width" Value="14" />
                 <Setter Property="Height" Value="Auto" />
                 <Setter Property="Template" Value="{StaticResource VerticalScrollBar}" />
             </Trigger>

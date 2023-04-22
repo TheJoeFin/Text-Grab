@@ -120,7 +120,9 @@
                 </ToggleButton>
                 <Menu
                     Grid.Column="1"
+                    Height="32"
                     VerticalAlignment="Center"
+                    ClipToBounds="True"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     IsMainMenu="True">
                     <MenuItem>

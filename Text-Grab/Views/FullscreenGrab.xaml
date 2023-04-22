@@ -115,7 +115,7 @@
             <Border.Effect>
                 <DropShadowEffect
                     BlurRadius="32"
-                    Direction="0"
+                    Direction="-90"
                     Opacity="0.6"
                     RenderingBias="Performance" />
             </Border.Effect>
@@ -126,7 +126,7 @@
                 Orientation="Horizontal">
                 <ComboBox
                     x:Name="LanguagesComboBox"
-                    Margin="0,0,0,2"
+                    Margin="0"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     PreviewMouseDown="LanguagesComboBox_PreviewMouseDown"
                     SelectionChanged="LanguagesComboBox_SelectionChanged">
