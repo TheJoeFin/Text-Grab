@@ -29,7 +29,6 @@
 	  <None Remove="Images\TealSelect40.png" />
 	  <None Remove="Images\WinSym.png" />
 	  <None Remove="TealSelect.ico" />
-	  <None Remove="t_ICON2.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -78,7 +77,6 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
 		<Resource Include="TealSelect.ico" />
-		<Resource Include="t_ICON2.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
