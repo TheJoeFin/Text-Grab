@@ -93,7 +93,6 @@ public partial class EditTextWindow : FluentWindow
 
     #region Methods
 
-    // a method which populates localRoutedCommands with all of the public static commands on this page
     public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {
         return new Dictionary<string, RoutedCommand>()
@@ -109,7 +108,8 @@ public partial class EditTextWindow : FluentWindow
             {nameof(DeleteAllSelectionCmd), DeleteAllSelectionCmd},
             {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
-            {nameof(OcrPasteCommand), OcrPasteCommand}
+            {nameof(OcrPasteCommand), OcrPasteCommand},
+            {nameof(MakeQrCodeCmd), MakeQrCodeCmd}
         };
     }
 
