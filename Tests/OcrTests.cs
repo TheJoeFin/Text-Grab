@@ -1,8 +1,6 @@
 using System.Drawing;
 using System.Text;
 using System.Windows;
-using System.Windows.Media.Imaging;
-using Text_Grab;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -22,13 +20,12 @@ Helvetica
 Courier
 Palatino-Roman
 Helvetica-Narrow
-Bookman-Demi
-";
+Bookman-Demi";
 
         string testImagePath = @".\Images\font_sample.png";
 
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -43,13 +40,12 @@ Times New Roman
 Georgia
 Segoe
 Rockwell Condensed
-Couier New
-";
+Couier New";
 
         string testImagePath = @".\Images\FontTest.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePath(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -78,7 +74,7 @@ December	12	Winter";
         Language englishLanguage = new("en-US");
         Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
@@ -104,6 +100,20 @@ December	12	Winter";
     }
 
     [WpfFact]
+    public async Task ReadQrCode()
+    {
+        string expectedResult = "This is a test of the QR Code system";
+
+        string testImagePath = @".\Images\QrCodeTestImage.png";
+        Uri uri = new Uri(testImagePath, UriKind.Relative);
+        // When
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
+
+        // Then
+        Assert.Equal(expectedResult, ocrTextResult);
+    }
+
+    [WpfFact]
     public async Task AnalyzeTable2()
     {
         string expectedResult = @"Test	Text
@@ -121,7 +131,7 @@ December	12	Winter";
         Language englishLanguage = new("en-US");
         Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()

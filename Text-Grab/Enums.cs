@@ -1,5 +1,4 @@
-﻿
-namespace Text_Grab;
+﻿namespace Text_Grab;
 
 public enum DefaultLaunchSetting
 {
@@ -27,4 +26,28 @@ public enum CurrentCase
     Camel = 1,
     Upper = 2,
     Unknown = 3
+}
+
+public enum Side
+{
+    None = 0,
+    Left = 1,
+    Right = 2,
+    Top = 3,
+    Bottom = 4
+}
+
+public enum OcrOutputKind
+{
+    None = 0,
+    Line = 1,
+    Paragraph = 2,
+    Barcode = 3,
+}
+
+public enum AppTheme
+{
+    System = 0,
+    Dark = 1,
+    Light = 2
 }

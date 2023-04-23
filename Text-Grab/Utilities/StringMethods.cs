@@ -37,7 +37,10 @@ public static class StringMethods
         {'й', 'N'}, {'к', 'k'}, {'л', 'n'}, {'м', 'M'}, {'н', 'H'},
         {'п', 'n'}, {'т', 'T'}, {'ф', 'o'}, {'ц', 'u'}, {'ч', 'u'},
         {'ш', 'w'}, {'щ', 'w'}, {'ъ', 'b'}, {'ы', 'b'}, {'ь', 'b'},
-        {'э', '3'}, {'ю', 'o'}, {'я', 'R'}
+        {'э', '3'}, {'ю', 'o'}, {'я', 'R'},
+
+        // Other Chars
+        {'ø', 'e'},
     };
 
     public static Dictionary<char, char> NumbersToLetters = new()
@@ -93,6 +96,9 @@ public static class StringMethods
     {
         if (string.IsNullOrEmpty(input))
             return (0, 0);
+
+        if (cursorPosition < 0)
+            cursorPosition = 0;
 
         // Check if the cursor is at a space
         if (char.IsWhiteSpace(input[cursorPosition]))
@@ -252,19 +258,7 @@ public static class StringMethods
 
     public static string MakeStringSingleLine(this string textToEdit)
     {
-        StringBuilder endingNewLines = new();
-
-        for (int i = textToEdit.Length - 1; i >= 0; i--)
-        {
-            if (textToEdit[i] == '\n'
-                || textToEdit[i] == '\r')
-                endingNewLines.Insert(0, textToEdit[i]);
-            else
-                break;
-        }
-
-        StringBuilder workingString = new();
-        workingString.Append(textToEdit);
+        StringBuilder workingString = new(textToEdit);
 
         workingString.Replace("\r\n", " ");
         workingString.Replace(Environment.NewLine, " ");
@@ -272,13 +266,16 @@ public static class StringMethods
         workingString.Replace('\r', ' ');
 
         Regex regex = new("[ ]{2,}");
-        string temp = regex.Replace(workingString.ToString(), " ").Trim();
+        string temp = regex.Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
+        if (workingString[0] == ' ')
+            workingString.Remove(0, 1);
 
-        workingString.Append(endingNewLines);
+        if (workingString[workingString.Length - 1] == ' ')
+            workingString.Remove(workingString.Length - 1, 1);
 
-        return workingString.ToString().Trim();
+        return workingString.ToString();
     }
 
     public static string ToCamel(this string stringToCamel)
@@ -585,7 +582,7 @@ public static class StringMethods
 
     public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)
     {
-        Regex regex = new(stringToRemove);
+        Regex regex = new(stringToRemove.EscapeSpecialRegexChars(false));
         return regex.Replace(stringToBeEdited, "");
     }
 
@@ -646,20 +643,23 @@ public static class StringMethods
         return sb.ToString().Trim();
     }
 
-    public static string LimitCharactersPerLine(this string stringToEdit, int characterLimit)
+    public static string LimitCharactersPerLine(this string stringToEdit, int characterLimit, SpotInLine spotInLine)
     {
         string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
-
         StringBuilder returnStringBuilder = new();
         foreach (string line in splitString)
         {
-            if (line.Length < characterLimit)
+            int lineLimit = Math.Clamp(characterLimit, 0, line.Length);
+            if (line.Length < lineLimit)
             {
                 returnStringBuilder.AppendLine(line);
                 continue;
             }
 
-            returnStringBuilder.AppendLine(line.Substring(0, characterLimit));
+            if (spotInLine== SpotInLine.Beginning)
+                returnStringBuilder.AppendLine(line.Substring(0, lineLimit));
+            else
+                returnStringBuilder.AppendLine(line.Substring(line.Length - (lineLimit), lineLimit));
         }
 
         return returnStringBuilder.ToString().Trim();

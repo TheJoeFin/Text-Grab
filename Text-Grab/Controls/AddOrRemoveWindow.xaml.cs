@@ -2,42 +2,51 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Windows.Graphics.Printing.Workflow;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab.Controls;
 
 /// <summary>
 /// Interaction logic for AddOrRemoveWindow.xaml
 /// </summary>
-public partial class AddOrRemoveWindow : Window
+public partial class AddOrRemoveWindow : FluentWindow
 {
+    #region Fields
+
     public static RoutedCommand AddRemoveCmd = new();
+    public static RoutedCommand ApplyCmd = new();
 
-    public int? LengthToChange { get; set; }
+    #endregion Fields
 
-    public string TextToAdd { get; set; } = "";
-
-    public SpotInLine SpotInLine { get; set; } = SpotInLine.Beginning;
-
-    public AddRemove AddRemove { get; set; } = AddRemove.Add;
-
-    public string SelectedTextFromEditTextWindow { get; set; } = "";
+    #region Constructors
 
     public AddOrRemoveWindow()
     {
         InitializeComponent();
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
-    {
-        TextToAddTextBox.Text = SelectedTextFromEditTextWindow;
-        LengthTextBox.Text = SelectedTextFromEditTextWindow.Length.ToString();
-    }
+    #endregion Constructors
+
+    #region Properties
+
+    public AddRemove AddRemove { get; set; } = AddRemove.Add;
+    public int? LengthToChange { get; set; }
+
+    public string SelectedTextFromEditTextWindow { get; set; } = "";
+    public SpotInLine SpotInLine { get; set; } = SpotInLine.Beginning;
+    public string TextToAdd { get; set; } = "";
+
+    #endregion Properties
+
+    #region Methods
 
     private void AddRemove_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (AddRadioButton.IsChecked is true && !string.IsNullOrEmpty(TextToAddTextBox.Text))
             e.CanExecute = true;
-        else if (RemoveRadioButton.IsChecked is true && LengthToChange is not null)
+        else if ((RemoveRadioButton.IsChecked is true || LimitRadioButton.IsChecked is true)
+            && LengthToChange is not null)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -48,42 +57,58 @@ public partial class AddOrRemoveWindow : Window
         if (Owner is not EditTextWindow etwOwner)
             return;
 
-        if (AddRadioButton.IsChecked is true)
-        {
-            if (BeginningRDBTN.IsChecked is true)
-                etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.Beginning);
-            else
-                etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.End);
-        }
-        else
-        {
-            if (LengthToChange is null)
-                return;
-
-            if (BeginningRDBTN.IsChecked is true)
-                etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.Beginning);
-            else
-                etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.End);
-        }
+        Apply(etwOwner);
 
         Close();
     }
 
-    private void RemoveRadioButton_Checked(object sender, RoutedEventArgs e)
+    private void Apply(EditTextWindow etwOwner)
     {
-        if (sender is not RadioButton removeRadioButton)
+        if (AddRadioButton.IsChecked is true)
+            AddText(etwOwner);
+        else if (RemoveRadioButton.IsChecked is true)
+            RemoveText(etwOwner);
+        else
+            LimitText(etwOwner);
+    }
+
+    private void LimitText(EditTextWindow etwOwner)
+    {
+        if (LengthToChange is null)
             return;
 
-        if (removeRadioButton.IsChecked is true)
-        {
-            TextToAddTextBox.IsEnabled = false;
-            LengthTextBox.IsEnabled = true;
-        }
+        if (BeginningRDBTN.IsChecked is true)
+            etwOwner.LimitNumberOfCharsPerLine(LengthToChange.Value, SpotInLine.Beginning);
         else
-        {
-            TextToAddTextBox.IsEnabled = true;
-            LengthTextBox.IsEnabled = false;
-        }
+            etwOwner.LimitNumberOfCharsPerLine(LengthToChange.Value, SpotInLine.End);
+
+    }
+
+    private void RemoveText(EditTextWindow etwOwner)
+    {
+        if (LengthToChange is null)
+            return;
+
+        if (BeginningRDBTN.IsChecked is true)
+            etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.Beginning);
+        else
+            etwOwner.RemoveCharsFromEditTextWindow(LengthToChange.Value, SpotInLine.End);
+    }
+
+    private void AddText(EditTextWindow etwOwner)
+    {
+        if (BeginningRDBTN.IsChecked is true)
+            etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.Beginning);
+        else
+            etwOwner.AddCharsToEditTextWindow(TextToAddTextBox.Text, SpotInLine.End);
+    }
+
+    private void Apply_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (Owner is not EditTextWindow etwOwner)
+            return;
+
+        Apply(etwOwner);
     }
 
     private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -105,6 +130,23 @@ public partial class AddOrRemoveWindow : Window
         }
     }
 
+    private void RemoveRadioButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not RadioButton removeRadioButton)
+            return;
+
+        if (removeRadioButton.IsChecked is true)
+        {
+            TextToAddTextBox.IsEnabled = false;
+            LengthTextBox.IsEnabled = true;
+        }
+        else
+        {
+            TextToAddTextBox.IsEnabled = true;
+            LengthTextBox.IsEnabled = false;
+        }
+    }
+
     private void Window_KeyUp(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
@@ -119,4 +161,12 @@ public partial class AddOrRemoveWindow : Window
                 this.Close();
         }
     }
+
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        TextToAddTextBox.Text = SelectedTextFromEditTextWindow;
+        LengthTextBox.Text = SelectedTextFromEditTextWindow.Length.ToString();
+    }
+
+    #endregion Methods
 }

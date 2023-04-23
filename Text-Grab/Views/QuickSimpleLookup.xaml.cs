@@ -8,153 +8,62 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab.Views;
 
 /// <summary>
 /// Interaction logic for QuickSimpleLookup.xaml
 /// </summary>
-public partial class QuickSimpleLookup : Window
+public partial class QuickSimpleLookup : FluentWindow
 {
-    public List<LookupItem> ItemsDictionary { get; set; } = new();
-
-    public bool IsEditingDataGrid { get; set; } = false;
+    #region Fields
 
     public TextBox? DestinationTextBox;
-
     private string cacheFilename = "QuickSimpleLookupCache.csv";
-
+    private LookupItem? lastSelection;
     private int rowCount = 0;
-
     private string valueUnderEdit = string.Empty;
+
+    #endregion Fields
+
+    #region Constructors
 
     public QuickSimpleLookup()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    #endregion Constructors
+
+    #region Properties
+
+    public bool IsEditingDataGrid { get; set; } = false;
+    public bool IsFromETW { get; set; } = false;
+    public List<LookupItem> ItemsDictionary { get; set; } = new();
+
+    #endregion Properties
+
+    #region Methods
+
+    private static LookupItem ParseStringToLookupItem(char splitChar, string row)
     {
-        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-        string cachePath = $"{exePath}\\{cacheFilename}";
+        List<string> cells = row.Split(splitChar).ToList();
+        LookupItem newRow = new LookupItem();
+        if (cells.FirstOrDefault() is String firstCell)
+            newRow.shortValue = firstCell;
 
-        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation)
-            && File.Exists(Settings.Default.LookupFileLocation))
-            cachePath = Settings.Default.LookupFileLocation;
-
-        if (File.Exists(cachePath))
-            await ReadCsvFileIntoQuickSimpleLookup(cachePath);
-
-        Topmost = false;
-        Activate();
-        SearchBox.Focus();
-
-        if (MainDataGrid.Items.Count > 0)
-            MainDataGrid.SelectedIndex = 0;
-        else
-            PopulateSampleData();
-    }
-
-    private void PopulateSampleData()
-    {
-        LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly");
-        ItemsDictionary.Add(sampleItem1);
-
-        LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File");
-        ItemsDictionary.Add(sampleItem2);
-
-        LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices");
-        ItemsDictionary.Add(sampleItem3);
-
-        LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.");
-        ItemsDictionary.Add(sampleItem4);
-
-        MainDataGrid.ItemsSource = null;
-        MainDataGrid.ItemsSource = ItemsDictionary;
-    }
-
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (sender is not TextBox searchingBox || !IsLoaded)
-            return;
-
-        if (searchingBox.Text.Contains('\t'))
-        {
-            // a tab has been entered and this will be a new entry
-            AddItemBtn.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            AddItemBtn.Visibility = Visibility.Collapsed;
-        }
-
-        MainDataGrid.ItemsSource = null;
-
-        if (string.IsNullOrEmpty(searchingBox.Text))
-        {
-            MainDataGrid.ItemsSource = ItemsDictionary;
-            MainDataGrid.CanUserAddRows = true;
-        }
-        else
-            MainDataGrid.CanUserAddRows = false;
-
-        List<string> searchArray = SearchBox.Text.ToLower().Split().ToList();
-        searchArray.Sort();
-
-        List<LookupItem> filteredList = new List<LookupItem>();
-
-        foreach (LookupItem lItem in ItemsDictionary)
-        {
-            string lItemAsString = lItem.ToString().ToLower();
-            bool matchAllSearchWords = true;
-
-            foreach (var searchWord in searchArray)
-            {
-                if (!lItemAsString.Contains(searchWord))
-                    matchAllSearchWords = false;
-            }
-
-            if (matchAllSearchWords)
-                filteredList.Add(lItem);
-        }
-
-        MainDataGrid.ItemsSource = filteredList;
-
-        if (MainDataGrid.Items.Count > 0)
-            MainDataGrid.SelectedIndex = 0;
-
-        UpdateRowCount();
-    }
-
-    private void UpdateRowCount()
-    {
-        if (MainDataGrid.ItemsSource is List<LookupItem> list)
-        {
-            rowCount = list.Count;
-            RowCountTextBlock.Text = $"{rowCount} Rows";
-        }
-    }
-
-    private void ParseBTN_Click(object sender, RoutedEventArgs e)
-    {
-        string clipboardContent = Clipboard.GetText();
-
-        if (string.IsNullOrEmpty(clipboardContent))
-            return;
-
-        MainDataGrid.ItemsSource = null;
-
-        ItemsDictionary.AddRange(ParseStringToRows(clipboardContent));
-
-        MainDataGrid.ItemsSource = ItemsDictionary;
-
-        UpdateRowCount();
-        SaveBTN.Visibility = Visibility.Visible;
+        newRow.longValue = "";
+        if (cells.Count > 1 && cells[1] is String)
+            newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+        return newRow;
     }
 
     private static IEnumerable<LookupItem> ParseStringToRows(string clipboardContent, bool isCSV = false)
@@ -172,74 +81,77 @@ public partial class QuickSimpleLookup : Window
         }
     }
 
-    private static LookupItem ParseStringToLookupItem(char splitChar, string row)
+    private void AddItemBtn_Click(object sender, RoutedEventArgs e)
     {
-        List<string> cells = row.Split(splitChar).ToList();
-        LookupItem newRow = new LookupItem();
-        if (cells.FirstOrDefault() is String firstCell)
-            newRow.shortValue = firstCell;
+        if (SearchBox is not TextBox searchTextBox)
+            return;
 
-        newRow.longValue = "";
-        if (cells.Count > 1 && cells[1] is String)
-            newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
-        return newRow;
+        AddToLookUpResults('\t', searchTextBox.Text);
+        searchTextBox.Clear();
+        GoToEndOfMainDataGrid();
     }
 
-    private async void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    private void AddToLookUpResults(char splitChar, string text)
     {
-        switch (e.Key)
+        LookupItem newItem = ParseStringToLookupItem(splitChar, text);
+
+        MainDataGrid.ItemsSource = null;
+        ItemsDictionary.Add(newItem);
+        MainDataGrid.ItemsSource = ItemsDictionary;
+
+        UpdateRowCount();
+        MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
+        AddItemBtn.Visibility = Visibility.Collapsed;
+        SaveBTN.Visibility = Visibility.Visible;
+    }
+
+    private void ClearOrExit()
+    {
+        if (string.IsNullOrEmpty(SearchBox.Text))
         {
-            case Key.Enter:
-                if (IsEditingDataGrid)
-                    return;
-                e.Handled = true;
-                if (SearchBox is TextBox searchTextBox && searchTextBox.Text.Contains('\t'))
-                {
-                    AddToLookUpResults('\t', searchTextBox.Text);
-                    searchTextBox.Clear();
-                    GoToEndOfMainDataGrid();
-                }
-                else
-                    PutValueIntoClipboard();
-                break;
-            case Key.Escape:
-                if (IsEditingDataGrid)
-                    return;
-                ClearOrExit();
-                e.Handled = true;
-                break;
-            case Key.Down:
-                if (SearchBox.IsFocused)
-                {
-                    int selectedIndex = MainDataGrid.SelectedIndex;
-                    MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
-                    e.Handled = true;
-                }
-                break;
-            case Key.S:
-                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
-                {
-                    await WriteDataToCSV();
-                    SaveBTN.Visibility = Visibility.Collapsed;
-                    e.Handled = true;
-                }
-                break;
-            case Key.F:
-                if (Keyboard.IsKeyDown(Key.RightCtrl) || Keyboard.IsKeyDown(Key.LeftCtrl))
-                {
-                    WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
-                    e.Handled = true;
-                }
-                break;
-            case Key.End:
-                GoToEndOfMainDataGrid();
-                break;
-            case Key.Home:
-                GoToBeginningOfMainDataGrid();
-                break;
-            default:
-                break;
+            this.Close();
+            return;
         }
+
+        lastSelection = GetMainDataGridSelection().FirstOrDefault();
+
+        SearchBox.Clear();
+        SearchBox.Focus();
+
+    }
+
+    private void EditingTextBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TextBox tb)
+            return;
+
+        valueUnderEdit = tb.Text;
+
+        tb.Focus();
+        tb.SelectAll();
+    }
+
+    private void EditWindowToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton toggleButton
+            && toggleButton.IsChecked is true)
+            PasteToggleButton.IsChecked = false;
+    }
+
+    private List<LookupItem> GetMainDataGridSelection()
+    {
+        var selectedItems = MainDataGrid.SelectedItems as List<LookupItem>;
+
+        if (selectedItems is null || selectedItems.Count == 0)
+        {
+            selectedItems = new List<LookupItem>();
+            if (MainDataGrid.SelectedItem is not LookupItem selectedLookupItem)
+                return selectedItems;
+
+            selectedItems.Add(selectedLookupItem);
+        }
+
+        return selectedItems;
     }
 
     private void GoToBeginningOfMainDataGrid()
@@ -261,139 +173,14 @@ public partial class QuickSimpleLookup : Window
 
         if (lookupItemsList.Count < 1)
             return;
-        
+
         MainDataGrid.ScrollIntoView(lookupItemsList.Last());
         MainDataGrid.SelectedItem = lookupItemsList.Last();
     }
 
-    private void AddToLookUpResults(char splitChar, string text)
+    private void MainDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
-        LookupItem newItem = ParseStringToLookupItem(splitChar, text);
-
-        MainDataGrid.ItemsSource = null;
-        ItemsDictionary.Add(newItem);
-        MainDataGrid.ItemsSource = ItemsDictionary;
-
-        UpdateRowCount();
-        MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
-        AddItemBtn.Visibility = Visibility.Collapsed;
-        SaveBTN.Visibility = Visibility.Visible;
-    }
-
-    private void ClearOrExit()
-    {
-        if (string.IsNullOrEmpty(SearchBox.Text))
-            this.Close();
-        else
-        {
-            SearchBox.Clear();
-            SearchBox.Focus();
-        }
-    }
-
-    private void PutValueIntoClipboard()
-    {
-        if (MainDataGrid.ItemsSource is not List<LookupItem> lookUpList
-            || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
-            return;
-
-        List<LookupItem> selectedLookupItems = new();
-
-        foreach (object item in MainDataGrid.SelectedItems)
-        {
-            if (item is LookupItem selectedLookupItem)
-                selectedLookupItems.Add(selectedLookupItem);
-        }
-
-        if (selectedLookupItems.Count == 0)
-            selectedLookupItems.Add(firstLookupItem);
-
-        StringBuilder stringBuilder = new();
-
-        // string textVal = lookupItem.longValue as string;
-
-        if ((Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
-        {
-            // Copy all of the filtered results into the clipboard
-            foreach (object item in MainDataGrid.ItemsSource)
-            {
-                if (item is not LookupItem luItem)
-                    continue;
-
-                stringBuilder.AppendLine(String.Join(" ", new string[] { luItem.shortValue as string, luItem.longValue as string }));
-            }
-        }
-        else
-        {
-            foreach (LookupItem lItem in selectedLookupItems)
-            {
-                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-                    stringBuilder.AppendLine(lItem.shortValue);
-                else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
-                    stringBuilder.AppendLine(String.Join(" ", new string[] { lItem.shortValue, lItem.longValue }));
-                else
-                    stringBuilder.AppendLine(lItem.longValue);
-            }
-        }
-
-        if (string.IsNullOrEmpty(stringBuilder.ToString()))
-            return;
-
-        if (DestinationTextBox is not null)
-        {
-            // Do it this way instead of append text because it inserts the text at the cursor
-            // Then puts the cursor at the end of the newly added text
-            // AppendText() just adds the text to the end no matter what.
-            DestinationTextBox.SelectedText = stringBuilder.ToString();
-            DestinationTextBox.Select(DestinationTextBox.SelectionStart + stringBuilder.ToString().Length, 0);
-            DestinationTextBox.Focus();
-        }
-        else
-        {
-            try
-            {
-                Clipboard.SetText(stringBuilder.ToString());
-            }
-            catch (Exception)
-            {
-                Debug.WriteLine("Failed to set clipboard text");
-            }
-        }
-
-        this.Close();
-    }
-
-    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-    {
-
-    }
-
-    private async Task WriteDataToCSV()
-    {
-        if (SearchBox.Text is string text && !string.IsNullOrEmpty(text))
-            return;
-
-        string saveLookupFilePath = $"C:\\{cacheFilename}";
-        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
-        {
-            string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-            saveLookupFilePath = $"{exePath}\\{cacheFilename}";
-        }
-        else
-        {
-            saveLookupFilePath = Settings.Default.LookupFileLocation;
-        }
-
-        StringBuilder csvContents = new();
-
-        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave)
-            return;
-
-        foreach (LookupItem lookupItem in itemsToSave)
-            csvContents.AppendLine(lookupItem.ToCSVString());
-
-        await File.WriteAllTextAsync(saveLookupFilePath, csvContents.ToString());
+        IsEditingDataGrid = true;
     }
 
     private void MainDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -413,20 +200,6 @@ public partial class QuickSimpleLookup : Window
         }
     }
 
-    private async void SaveBTN_Click(object sender, RoutedEventArgs e)
-    {
-        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
-            SearchBox.Clear();
-
-        await WriteDataToCSV();
-        SaveBTN.Visibility = Visibility.Collapsed;
-    }
-
-    private void MainDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
-    {
-        IsEditingDataGrid = true;
-    }
-
     private void MainDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (MainDataGrid.ItemsSource is List<LookupItem> list
@@ -439,20 +212,26 @@ public partial class QuickSimpleLookup : Window
         }
     }
 
-    private void EditingTextBox_Loaded(object sender, RoutedEventArgs e)
+    private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not TextBox tb)
-            return;
-
-        valueUnderEdit = tb.Text;
-
-        tb.Focus();
-        tb.SelectAll();
+        WindowUtilities.LaunchFullScreenGrab(SearchBox);
     }
 
-    private void TextGrabSettingsMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ParseBTN_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+        string clipboardContent = Clipboard.GetText();
+
+        if (string.IsNullOrEmpty(clipboardContent))
+            return;
+
+        MainDataGrid.ItemsSource = null;
+
+        ItemsDictionary.AddRange(ParseStringToRows(clipboardContent));
+
+        MainDataGrid.ItemsSource = ItemsDictionary;
+
+        UpdateRowCount();
+        SaveBTN.Visibility = Visibility.Visible;
     }
 
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
@@ -476,25 +255,11 @@ public partial class QuickSimpleLookup : Window
         SaveBTN.Visibility = Visibility.Visible;
     }
 
-    private async Task ReadCsvFileIntoQuickSimpleLookup(string csvToOpenPath)
+    private void PasteToggleButton_Checked(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            using FileStream fs = new(csvToOpenPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using StreamReader sr = new(fs, Encoding.Default);
-            string cacheRAW = await sr.ReadToEndAsync();
-
-            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
-        }
-        catch (Exception ex)
-        {
-            System.Windows.Forms.MessageBox.Show($"Failed to read csv file. {ex.Message}");
-        }
-
-        MainDataGrid.ItemsSource = null;
-        MainDataGrid.ItemsSource = ItemsDictionary;
-
-        UpdateRowCount();
+        if (sender is ToggleButton toggleButton
+            && toggleButton.IsChecked is true)
+            EditWindowToggleButton.IsChecked = false;
     }
 
     private async void PickSaveLocation_Click(object sender, RoutedEventArgs e)
@@ -531,18 +296,414 @@ public partial class QuickSimpleLookup : Window
             await WriteDataToCSV();
     }
 
-    private void NewFullscreen_Click(object sender, RoutedEventArgs e)
+    private void PopulateSampleData()
     {
-        WindowUtilities.LaunchFullScreenGrab(true, destinationTextBox: SearchBox);
+        LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly");
+        ItemsDictionary.Add(sampleItem1);
+
+        LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File");
+        ItemsDictionary.Add(sampleItem2);
+
+        LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices");
+        ItemsDictionary.Add(sampleItem3);
+
+        LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.");
+        ItemsDictionary.Add(sampleItem4);
+
+        MainDataGrid.ItemsSource = null;
+        MainDataGrid.ItemsSource = ItemsDictionary;
     }
 
-    private void AddItemBtn_Click(object sender, RoutedEventArgs e)
+    private async void PutValueIntoClipboard()
     {
-        if (SearchBox is not TextBox searchTextBox)
+        if (MainDataGrid.ItemsSource is not List<LookupItem> lookUpList
+            || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
             return;
 
-        AddToLookUpResults('\t', searchTextBox.Text);
-        searchTextBox.Clear();
-        GoToEndOfMainDataGrid();
+        List<LookupItem> selectedLookupItems = new();
+
+        foreach (object item in MainDataGrid.SelectedItems)
+            if (item is LookupItem selectedLookupItem)
+                selectedLookupItems.Add(selectedLookupItem);
+
+        if (selectedLookupItems.Count == 0)
+            selectedLookupItems.Add(firstLookupItem);
+
+        StringBuilder stringBuilder = new();
+
+        switch (KeyboardExtensions.GetKeyboardModifiersDown())
+        {
+            case KeyboardModifiersDown.ShiftCtrlAlt:
+            case KeyboardModifiersDown.ShiftCtrl:
+                // Copy all of the filtered results into the clipboard
+                foreach (object item in MainDataGrid.ItemsSource)
+                {
+                    if (item is not LookupItem luItem)
+                        continue;
+
+                    stringBuilder.AppendLine(luItem.ToString());
+                }
+                break;
+            case KeyboardModifiersDown.CtrlAlt:
+                if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
+                    return;
+
+                if (Uri.TryCreate(lookupItem.longValue, UriKind.Absolute, out var uri))
+                {
+                    Process.Start(new ProcessStartInfo(lookupItem.longValue) { UseShellExecute = true });
+                    this.Close();
+                    return;
+                }
+                break;
+            case KeyboardModifiersDown.Ctrl:
+                foreach (LookupItem lItem in selectedLookupItems)
+                    stringBuilder.AppendLine(lItem.shortValue);
+                break;
+            case KeyboardModifiersDown.Shift:
+                foreach (LookupItem lItem in selectedLookupItems)
+                    stringBuilder.AppendLine(lItem.ToString());
+                break;
+            default:
+                foreach (LookupItem lItem in selectedLookupItems)
+                    stringBuilder.AppendLine(lItem.longValue);
+                break;
+        }
+
+        if (string.IsNullOrEmpty(stringBuilder.ToString()))
+            return;
+
+        if (stringBuilder.Length > 3 && stringBuilder.ToString().EndsWith("\r\n"))
+            stringBuilder.Remove(stringBuilder.Length - 2, 2);
+
+        if (DestinationTextBox is not null && EditWindowToggleButton.IsChecked is true)
+        {
+            // Do it this way instead of append text because it inserts the text at the cursor
+            // Then puts the cursor at the end of the newly added text
+            // AppendText() just adds the text to the end no matter what.
+            DestinationTextBox.SelectedText = stringBuilder.ToString();
+            DestinationTextBox.Select(DestinationTextBox.SelectionStart + stringBuilder.ToString().Length, 0);
+            DestinationTextBox.Focus();
+            this.Close();
+            return;
+        }
+
+        try
+        {
+            Clipboard.SetText(stringBuilder.ToString());
+            this.Close();
+
+            if (PasteToggleButton.IsChecked is true)
+                await WindowUtilities.TryInsertString(stringBuilder.ToString());
+
+            if (EditWindowToggleButton.IsChecked is true)
+            {
+                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+                etw.PassedTextControl.Text = stringBuilder.ToString();
+                etw.Show();
+            }
+        }
+        catch (Exception)
+        {
+            Debug.WriteLine("Failed to set clipboard text");
+        }
     }
+
+    private async void QuickSimpleLookup_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Enter:
+                if (IsEditingDataGrid)
+                    return;
+                e.Handled = true;
+                if (SearchBox is TextBox searchTextBox && searchTextBox.Text.Contains('\t'))
+                {
+                    AddToLookUpResults('\t', searchTextBox.Text);
+                    searchTextBox.Clear();
+                    GoToEndOfMainDataGrid();
+                }
+                else
+                    PutValueIntoClipboard();
+                break;
+            case Key.Escape:
+                if (IsEditingDataGrid)
+                    return;
+                ClearOrExit();
+                e.Handled = true;
+                break;
+            case Key.Delete:
+                if (IsEditingDataGrid || SearchBox.IsFocused)
+                    return;
+                RowDeleted();
+                e.Handled = true;
+                break;
+            case Key.Down:
+                if (SearchBox.IsFocused)
+                {
+                    int selectedIndex = MainDataGrid.SelectedIndex;
+                    MainDataGrid.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+                    e.Handled = true;
+                }
+                break;
+            case Key.Q:
+                if (KeyboardExtensions.IsCtrlDown())
+                {
+                    SearchBox.Focus();
+                    e.Handled = true;
+                }
+                break;
+            case Key.S:
+                if (KeyboardExtensions.IsCtrlDown())
+                {
+                    await WriteDataToCSV();
+                    e.Handled = true;
+                }
+                break;
+            case Key.F:
+                if (KeyboardExtensions.IsCtrlDown())
+                {
+                    WindowUtilities.LaunchFullScreenGrab(SearchBox);
+                    e.Handled = true;
+                }
+                break;
+            case Key.I:
+                if (KeyboardExtensions.IsCtrlDown() && PasteToggleButton.IsChecked is bool pasteToggle)
+                {
+                    PasteToggleButton.IsChecked = !pasteToggle;
+                    e.Handled = true;
+                }
+                break;
+            case Key.E:
+                if (KeyboardExtensions.IsCtrlDown() && EditWindowToggleButton.IsChecked is bool etwToggle)
+                {
+                    EditWindowToggleButton.IsChecked = !etwToggle;
+                    e.Handled = true;
+                }
+                break;
+            case Key.End:
+                GoToEndOfMainDataGrid();
+                break;
+            case Key.Home:
+                GoToBeginningOfMainDataGrid();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private async Task ReadCsvFileIntoQuickSimpleLookup(string csvToOpenPath)
+    {
+        try
+        {
+            using FileStream fs = new(csvToOpenPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using StreamReader sr = new(fs, Encoding.Default);
+            string cacheRAW = await sr.ReadToEndAsync();
+
+            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
+        }
+        catch (Exception ex)
+        {
+            System.Windows.Forms.MessageBox.Show($"Failed to read csv file. {ex.Message}");
+        }
+
+        MainDataGrid.ItemsSource = null;
+        MainDataGrid.ItemsSource = ItemsDictionary;
+
+        UpdateRowCount();
+    }
+
+    private void RowDeleted()
+    {
+        var currentItemSource = MainDataGrid.ItemsSource;
+        if (currentItemSource is not List<LookupItem> filteredLookupList)
+            return;
+
+        List<LookupItem> selectedItems = GetMainDataGridSelection();
+
+        MainDataGrid.ItemsSource = null;
+
+        foreach (object item in selectedItems)
+        {
+            if (item is LookupItem selectedLookupItem)
+            {
+                filteredLookupList.Remove(selectedLookupItem);
+                ItemsDictionary.Remove(selectedLookupItem);
+                SaveBTN.Visibility = Visibility.Visible;
+            }
+        }
+
+        MainDataGrid.ItemsSource = filteredLookupList;
+    }
+
+    private async void SaveBTN_Click(object sender, RoutedEventArgs e)
+    {
+        await WriteDataToCSV();
+        SaveBTN.Visibility = Visibility.Collapsed;
+    }
+
+    private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox searchingBox || !IsLoaded)
+            return;
+
+        if (string.IsNullOrEmpty(searchingBox.Text))
+            SearchLabel.Visibility = Visibility.Visible;
+        else
+            SearchLabel.Visibility = Visibility.Collapsed;
+
+        if (searchingBox.Text.Contains('\t'))
+        {
+            // a tab has been entered and this will be a new entry
+            AddItemBtn.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            AddItemBtn.Visibility = Visibility.Collapsed;
+        }
+
+        MainDataGrid.ItemsSource = null;
+
+        if (string.IsNullOrEmpty(searchingBox.Text))
+        {
+            MainDataGrid.ItemsSource = ItemsDictionary;
+            MainDataGrid.CanUserAddRows = true;
+            int maxMsDelay = 300;
+            if (lastSelection is not null)
+            {
+                int lastSelectionInt = ItemsDictionary.IndexOf(lastSelection);
+                DataGridRow row = (DataGridRow)MainDataGrid.ItemContainerGenerator.ContainerFromIndex(lastSelectionInt);
+                if (row is null)
+                {
+                    MainDataGrid.UpdateLayout();
+                    MainDataGrid.ScrollIntoView(MainDataGrid.Items[lastSelectionInt]);
+                    await Task.Delay(lastSelectionInt > maxMsDelay ? maxMsDelay : lastSelectionInt);
+                    row = (DataGridRow)MainDataGrid.ItemContainerGenerator.ContainerFromIndex(lastSelectionInt);
+                }
+
+                if (row is not null)
+                {
+                    row.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                    await Task.Delay(lastSelectionInt > maxMsDelay ? maxMsDelay : lastSelectionInt);
+                }
+
+                MainDataGrid.SelectedIndex = lastSelectionInt;
+                lastSelection = null;
+                UpdateRowCount();
+                SearchBox.Focus();
+                return;
+            }
+        }
+        else
+            MainDataGrid.CanUserAddRows = false;
+
+        List<string> searchArray = SearchBox.Text.ToLower().Split().ToList();
+        searchArray.Sort();
+
+        List<LookupItem> filteredList = new List<LookupItem>();
+
+        foreach (LookupItem lItem in ItemsDictionary)
+        {
+            string lItemAsString = lItem.ToString().ToLower();
+            bool matchAllSearchWords = true;
+
+            foreach (var searchWord in searchArray)
+            {
+                if (!lItemAsString.Contains(searchWord))
+                    matchAllSearchWords = false;
+            }
+
+            if (matchAllSearchWords)
+                filteredList.Add(lItem);
+        }
+
+        MainDataGrid.ItemsSource = filteredList;
+
+        if (MainDataGrid.Items.Count > 0)
+            MainDataGrid.SelectedIndex = 0;
+
+        UpdateRowCount();
+    }
+
+    private void TextGrabSettingsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+    }
+
+    private void UpdateRowCount()
+    {
+        if (MainDataGrid.ItemsSource is List<LookupItem> list)
+        {
+            rowCount = list.Count;
+            RowCountTextBlock.Text = $"{rowCount} Rows";
+        }
+    }
+
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+
+    }
+
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
+        string cachePath = $"{exePath}\\{cacheFilename}";
+
+        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation)
+            && File.Exists(Settings.Default.LookupFileLocation))
+            cachePath = Settings.Default.LookupFileLocation;
+
+        if (File.Exists(cachePath))
+            await ReadCsvFileIntoQuickSimpleLookup(cachePath);
+
+        if (Settings.Default.TryInsert && !IsFromETW)
+            PasteToggleButton.IsChecked = true;
+
+        if (IsFromETW)
+            EditWindowToggleButton.IsChecked = true;
+
+        Topmost = false;
+        Activate();
+        SearchBox.Focus();
+
+        if (MainDataGrid.Items.Count > 0)
+            MainDataGrid.SelectedIndex = 0;
+        else
+            PopulateSampleData();
+    }
+    private async Task WriteDataToCSV()
+    {
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+            SearchBox.Clear();
+
+        string saveLookupFilePath = $"C:\\{cacheFilename}";
+        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
+        {
+            string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
+            saveLookupFilePath = $"{exePath}\\{cacheFilename}";
+        }
+        else
+        {
+            saveLookupFilePath = Settings.Default.LookupFileLocation;
+        }
+
+        StringBuilder csvContents = new();
+
+        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave)
+            return;
+
+        foreach (LookupItem lookupItem in itemsToSave)
+            csvContents.AppendLine(lookupItem.ToCSVString());
+
+        try
+        {
+            await File.WriteAllTextAsync(saveLookupFilePath, csvContents.ToString());
+            SaveBTN.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            System.Windows.Forms.MessageBox.Show($"Failed to save csv file. {ex.Message}");
+        }
+    }
+
+    #endregion Methods
 }

@@ -51,7 +51,7 @@ The second use case takes a single click and attempts to copy the word which was
 If the click point or selected region has no text in it the Text Grab window stays active. To exit the application, press the escape key, right-click and choose cancel, or Alt+F4.
 
 ### 2. Grab Frame Mode
-![Grab Frame](images/2-3-Grab-Frame-Medium.gif)
+![Grab Frame](images/3-2-GF-Editing-Table-2.gif)
 
 Grab frame is mostly a transparent frame with a search bar and Grab button. The Grab Frame can be positioned wherever you want to copy the text. This can be done by searching for text, clicking on a word border, and/or clicking on the Grab button.
 
@@ -75,6 +75,7 @@ There are several tools with in the Edit Text Window which make it quick and eas
 - Remove duplicate lines
 - Convert stacked data to table format
 - Copy text from every image in a folder
+- Launch URLs
 - And more!
 
 ### 4. Quick Simple Lookup
@@ -100,6 +101,11 @@ Arguments
 
 ## Principles
 Text Grab is designed to have multiple modes, from minimal to fully featured; all focused on productivity. By using Windows 10’s OCR capabilities Text Grab can launch quickly without needing to run in the background. Pinning Text Grab to the Taskbar enables launching via keyboard shortcut. Now with version 2.4 when the background process is enabled Text Grab can be activated from anywhere using global hotkeys. The full-screen mode is designed to be used hundreds of times a day. Reducing clicks and menus means saving time, which is the primary focus of Text Grab. The Grab Frame tool can be positioned on top of any text content for quick OCR any time. When it comes to manipulating the text you've copied the Edit Text Window offers a wide range of tools to speed up common tasks and take the raw text into clean usable content.
+
+### Packages Used
+- ZXing.Net - Barcode and QR Code scanning: https://github.com/micjahn/ZXing.Net
+- WPF UI - Fluent UI Style: https://github.com/lepoco/wpfui
+- Microsoft Community Toolkit: https://github.com/CommunityToolkit
 
 ### Thanks for using Text Grab
 Hopefully this simple app makes you more productive and saves you time from transcribing text.

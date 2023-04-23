@@ -1,14 +1,15 @@
-﻿<Window
+﻿<ui:FluentWindow
     x:Class="Text_Grab.Controls.AddOrRemoveWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Add Or Remove At"
-    Width="340"
-    Height="256"
-    Background="{StaticResource DarkBackground}"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Add or remove text on each line"
+    Width="330"
+    Height="320"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     KeyUp="Window_KeyUp"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
@@ -19,27 +20,39 @@
             CanExecute="AddRemove_CanExecute"
             Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
             Executed="AddRemove_Executed" />
+        <CommandBinding
+            CanExecute="AddRemove_CanExecute"
+            Command="{x:Static local:AddOrRemoveWindow.ApplyCmd}"
+            Executed="Apply_Executed" />
     </Window.CommandBindings>
-    <Grid Margin="12">
+    <Window.Resources>
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+    <Grid Margin="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="auto" />
-
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Style="{StaticResource TextBodyNormal}" Text="Add or remove text on each line" />
 
-        <StackPanel
-            Grid.Row="1"
-            Margin="0,12"
-            Orientation="Horizontal">
+        <ui:TitleBar
+            Title="Edit Text"
+            Height="32"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+
+        <Grid Grid.Row="1" Margin="12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
             <RadioButton
                 x:Name="AddRadioButton"
-                Grid.Row="1"
+                Grid.Column="0"
                 Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
                 GroupName="AddOrRemoveRDBTNs"
@@ -50,7 +63,8 @@
             </RadioButton>
             <RadioButton
                 x:Name="RemoveRadioButton"
-                Grid.Row="1"
+                Grid.Column="1"
+                Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
                 Checked="RemoveRadioButton_Checked"
                 GroupName="AddOrRemoveRDBTNs"
@@ -60,10 +74,26 @@
                     Remove
                 </TextBlock>
             </RadioButton>
-        </StackPanel>
+            <RadioButton
+                x:Name="LimitRadioButton"
+                Grid.Column="2"
+                Margin="0,0,12,0"
+                VerticalContentAlignment="Center"
+                Checked="RemoveRadioButton_Checked"
+                GroupName="AddOrRemoveRDBTNs"
+                IsChecked="False"
+                Unchecked="RemoveRadioButton_Checked">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Limit
+                </TextBlock>
+            </RadioButton>
+        </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBlock Style="{StaticResource TextBodyNormal}">
+        <StackPanel
+            Grid.Row="2"
+            Margin="12,0"
+            Orientation="Horizontal">
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                 From The:
             </TextBlock>
             <RadioButton
@@ -97,10 +127,11 @@
 
         <StackPanel
             Grid.Row="3"
-            Margin="0,12"
+            Margin="12,0"
             Orientation="Horizontal">
             <TextBlock
                 Width="184"
+                VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Number of characters" />
             <TextBox
@@ -110,9 +141,13 @@
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal">
+        <StackPanel
+            Grid.Row="4"
+            Margin="12,0"
+            Orientation="Horizontal">
             <TextBlock
                 Width="106"
+                VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Text to add" />
             <TextBox
@@ -121,13 +156,28 @@
                 AcceptsTab="True"
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
-        <local:CollapsibleButton
-            x:Name="DoneButton"
-            Grid.Row="7"
+        <StackPanel
+            Grid.Row="5"
             HorizontalAlignment="Center"
             VerticalAlignment="Bottom"
-            ButtonText="Done"
-            Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
-            SymbolText="" />
+            Orientation="Horizontal">
+            <local:CollapsibleButton
+                x:Name="ApplyButton"
+                Grid.Row="7"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                ButtonText="Apply"
+                Command="{x:Static local:AddOrRemoveWindow.ApplyCmd}"
+                IsSymbol="True"
+                SymbolText="" />
+            <local:CollapsibleButton
+                x:Name="DoneButton"
+                Grid.Row="7"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                ButtonText="Done"
+                Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
+                SymbolText="" />
+        </StackPanel>
     </Grid>
-</Window>
+</ui:FluentWindow>

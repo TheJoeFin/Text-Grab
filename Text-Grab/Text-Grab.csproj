@@ -8,7 +8,7 @@
 		<UseWPF>true</UseWPF>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<UseWindowsForms>true</UseWindowsForms>
-		<ApplicationIcon>t_ICON2.ico</ApplicationIcon>
+		<ApplicationIcon>TealSelect.ico</ApplicationIcon>
 		<StartupObject>Text_Grab.App</StartupObject>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
@@ -26,7 +26,19 @@
 	  <None Remove="Images\FSG.jpg" />
 	  <None Remove="Images\GF.jpg" />
 	  <None Remove="Images\QSL.jpg" />
-	  <None Remove="t_ICON2.ico" />
+	  <None Remove="Images\TealSelect40.png" />
+	  <None Remove="Images\WinSym.png" />
+	  <None Remove="TealSelect.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Images\TealSelect40.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Images\WinSym.png">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -43,8 +55,10 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
 		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
-		<PackageReference Include="ZXing.Net" Version="0.16.8" />
-		<PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.10" />
+		<PackageReference Include="WPF-UI" Version="3.0.0-preview.1" />
+		<PackageReference Include="WpfScreenHelper" Version="2.1.0" />
+		<PackageReference Include="ZXing.Net" Version="0.16.9" />
+		<PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.12" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -62,7 +76,7 @@
 			<Generator>MSBuild:Compile</Generator>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
-		<Resource Include="t_ICON2.ico" />
+		<Resource Include="TealSelect.ico" />
 	</ItemGroup>
 
 	<ItemGroup>

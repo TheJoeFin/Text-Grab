@@ -1,4 +1,4 @@
-﻿<Window
+﻿<ui:FluentWindow
     x:Class="Text_Grab.EditTextWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -6,14 +6,16 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Edit Text"
     Width="680"
     Height="450"
     MinWidth="200"
     MinHeight="200"
     Activated="Window_Activated"
-    Background="{StaticResource DarkBackground}"
+    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
     Closed="Window_Closed"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Initialized="Window_Initialized"
     Loaded="Window_Loaded"
     PreviewKeyDown="EditTextWindow_PreviewKeyDown"
@@ -24,6 +26,7 @@
             <Setter Property="Padding" Value="6" />
             <Setter Property="Margin" Value="10,10,0,10" />
         </Style>
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
 
         <ContextMenu x:Key="ContextMenuResource">
             <MenuItem Command="ApplicationCommands.Undo" />
@@ -33,30 +36,30 @@
             <MenuItem Command="ApplicationCommands.Copy" />
             <MenuItem Command="ApplicationCommands.Paste" />
             <MenuItem
-                Command="{x:Static local:EditTextWindow.PasteCommand}"
+                Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
                 Header="OCR Paste"
                 InputGestureText="Ctrl + Shift + V" />
             <Separator />
             <MenuItem
                 Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                Header="_Isolate Selected Text"
+                Header="Isolate Selected Text"
                 InputGestureText="Ctrl + I" />
             <MenuItem
                 Click="SelectLineMenuItem_Click"
-                Header="Select _Line"
+                Header="Select Line"
                 InputGestureText="Ctrl + L" />
             <MenuItem
                 Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                Header="Toggle _Case"
+                Header="Toggle Case"
                 InputGestureText="Shift + F3" />
             <Separator />
             <MenuItem
                 Click="MoveLineUpMenuItem_Click"
-                Header="Move Selection _Up"
+                Header="Move Selection Up"
                 InputGestureText="Alt + Up" />
             <MenuItem
                 Click="MoveLineDownMenuItem_Click"
-                Header="Move Selection _Down"
+                Header="Move Selection Down"
                 InputGestureText="Alt + Down" />
         </ContextMenu>
     </Window.Resources>
@@ -102,20 +105,33 @@
             Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
             Executed="InsertSelectionOnEveryLine" />
         <CommandBinding
-            CanExecute="CanPasteExecute"
-            Command="{x:Static local:EditTextWindow.PasteCommand}"
+            CanExecute="CanOcrPasteExecute"
+            Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
             Executed="PasteExecuted" />
+        <CommandBinding
+            CanExecute="CanLaunchUriExecute"
+            Command="{x:Static local:EditTextWindow.LaunchCmd}"
+            Executed="LaunchUriExecuted" />
+        <CommandBinding
+            CanExecute="MakeQrCodeCanExecute"
+            Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
+            Executed="MakeQrCodeExecuted" />
     </Window.CommandBindings>
-    <Grid>
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
+        <ui:TitleBar
+            Title="Edit Text"
+            Height="32"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
         <Menu
-            Grid.Row="0"
-            Background="{StaticResource DarkBackground}"
-            Foreground="White"
+            Grid.Row="1"
+            ClipToBounds="True"
             IsMainMenu="True">
             <MenuItem Header="_File">
                 <MenuItem
@@ -156,10 +172,14 @@
                 <MenuItem Command="ApplicationCommands.Copy" />
                 <MenuItem Command="ApplicationCommands.Paste" />
                 <MenuItem
-                    Command="{x:Static local:EditTextWindow.PasteCommand}"
+                    Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
                     Header="OCR Paste"
                     InputGestureText="Ctrl + Shift + V" />
                 <Separator />
+                <MenuItem
+                    x:Name="LaunchUriMenuItem"
+                    Command="{x:Static local:EditTextWindow.LaunchCmd}"
+                    Header="Launch URL" />
                 <MenuItem
                     x:Name="SingleLineMenuItem"
                     Command="{x:Static local:EditTextWindow.SingleLineCmd}"
@@ -202,7 +222,7 @@
                 <MenuItem
                     x:Name="AddRemoveAtMenuItem"
                     Click="AddRemoveAtMenuItem_Click"
-                    Header="_Add or Remove at..." />
+                    Header="_Add, Remove, Limit..." />
             </MenuItem>
             <MenuItem Header="_Selection">
                 <MenuItem
@@ -336,6 +356,10 @@
                     x:Name="NewWindowFromSelectionMenuItem"
                     Click="NewWindowWithText_Clicked"
                     Header="New Window with Selected Text" />
+                <MenuItem
+                    x:Name="MakeCodeMenuItem"
+                    Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
+                    Header="Make QR Code" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem
@@ -362,15 +386,14 @@
         </Menu>
         <TextBox
             x:Name="PassedTextControl"
-            Grid.Row="1"
+            Grid.Row="2"
             AcceptsReturn="True"
             AcceptsTab="True"
             AllowDrop="True"
             AutoWordSelection="True"
-            Background="{StaticResource DarkControlBackground}"
+            CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
             ContextMenuOpening="PassedTextControl_ContextMenuOpening"
             FontSize="16"
-            Foreground="White"
             HorizontalScrollBarVisibility="Auto"
             IsInactiveSelectionHighlightEnabled="True"
             PreviewDragOver="ETWindow_DragOver"
@@ -378,14 +401,14 @@
             SelectionChanged="PassedTextControl_SelectionChanged"
             SizeChanged="PassedTextControl_SizeChanged"
             SpellCheck.IsEnabled="True"
-            Style="{DynamicResource TextBoxStyle1}"
+            Style="{DynamicResource TextBoxStyle2}"
             TextChanged="PassedTextControl_TextChanged"
             TextWrapping="WrapWithOverflow"
             VerticalScrollBarVisibility="Auto" />
 
         <ScrollViewer
             x:Name="BottomBarScrollViewer"
-            Grid.Row="2"
+            Grid.Row="3"
             CanContentScroll="True"
             HorizontalScrollBarVisibility="Auto"
             PanningMode="HorizontalOnly"
@@ -400,7 +423,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel
                     Name="BottomBarButtons"
-                    Margin="5,0"
+                    Margin="8,0"
                     Orientation="Horizontal" />
                 <TextBlock
                     x:Name="BottomBarText"
@@ -409,7 +432,6 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     FontFamily="Cascadia Mono"
-                    Foreground="White"
                     Text="Ln 1, Col 0" />
                 <Grid.ContextMenu>
                     <ContextMenu>
@@ -419,4 +441,4 @@
             </Grid>
         </ScrollViewer>
     </Grid>
-</Window>
+</ui:FluentWindow>

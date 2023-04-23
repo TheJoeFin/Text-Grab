@@ -9,6 +9,9 @@
     d:DesignHeight="30"
     d:DesignWidth="80"
     MouseDoubleClick="WordBorderControl_MouseDoubleClick"
+    MouseEnter="WordBorder_MouseEnter"
+    MouseLeave="WordBorder_MouseLeave"
+    MouseMove="WordBorder_MouseEnter"
     ToolTip="{Binding Path=Word, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
     Unloaded="WordBorderControl_Unloaded"
     mc:Ignorable="d">
@@ -63,40 +66,133 @@
                 </MultiTrigger>
             </Style.Triggers>
         </Style>
+
+        <ContextMenu x:Key="ContextOptions">
+            <MenuItem
+                x:Name="TryToNumberMenuItem"
+                Click="TryToNumberMenuItem_Click"
+                Header="Try To Make _Numbers" />
+            <MenuItem
+                x:Name="TryToAlphaMenuItem"
+                Click="TryToAlphaMenuItem_Click"
+                Header="Try To Make _Letters" />
+            <Separator />
+            <MenuItem
+                x:Name="MergeWordBordersMenuItem"
+                Command="{x:Static local:WordBorder.MergeWordsCommand}"
+                InputGestureText="Ctrl + M"
+                Header="_Merge Selected Word Borders" />
+            <MenuItem
+                x:Name="BreakIntoWordsMenuItem"
+                Click="BreakIntoWordsMenuItem_Click"
+                Header="_Break into words" />
+            <MenuItem
+                x:Name="SearchForSimilarMenuItem"
+                Click="SearchForSimilarMenuItem_Click"
+                Header="_Search for similar text" />
+            <Separator />
+            <MenuItem
+                x:Name="DeleteWordMenuItem"
+                Click="DeleteWordMenuItem_Click"
+                Header="_Delete" />
+        </ContextMenu>
     </UserControl.Resources>
-    <Border
-        x:Name="WordBorderBorder"
-        Margin="0,0,0,0"
-        BorderBrush="#308E98"
-        BorderThickness="8,0,0,1"
-        CornerRadius="2">
-        <Grid x:Name="MainGrid" ClipToBounds="True">
-            <Viewbox x:Name="EditTextViewBox">
-                <TextBox
-                    x:Name="EditWordTextBox"
-                    Margin="-1,-3,-1,-1"
-                    d:Text="Test g"
-                    ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
-                    FontFamily="Segoe UI"
-                    FontWeight="Medium"
-                    Foreground="White"
-                    Style="{StaticResource TransparentTextBox}"
-                    Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    Visibility="Collapsed">
-                    <TextBox.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem
-                                x:Name="TryToNumberMenuItem"
-                                Click="TryToNumberMenuItem_Click"
-                                Header="Try To Make _Numbers" />
-                            <MenuItem
-                                x:Name="TryToAlphaMenuItem"
-                                Click="TryToAlphaMenuItem_Click"
-                                Header="Try To Make _Letters" />
-                        </ContextMenu>
-                    </TextBox.ContextMenu>
-                </TextBox>
-            </Viewbox>
-        </Grid>
-    </Border>
+
+    <UserControl.CommandBindings>
+        <CommandBinding
+            CanExecute="CanMergeWordBorderExecute"
+            Command="{x:Static local:WordBorder.MergeWordsCommand}"
+            Executed="MergeWordBordersExecuted" />
+    </UserControl.CommandBindings>
+    <Grid>
+        <Border
+            x:Name="WordBorderBorder"
+            Margin="0,0,0,0"
+            BorderBrush="#308E98"
+            BorderThickness="0,0,0,2"
+            ContextMenu="{StaticResource ContextOptions}"
+            ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
+            CornerRadius="0">
+            <Grid x:Name="MainGrid" ClipToBounds="True">
+                <Viewbox x:Name="EditTextViewBox">
+                    <TextBox
+                        x:Name="EditWordTextBox"
+                        MinWidth="10"
+                        MinHeight="14"
+                        Margin="-1,-3,-1,-1"
+                        d:Text="Test g"
+                        AcceptsReturn="True"
+                        ContextMenu="{StaticResource ContextOptions}"
+                        ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
+                        FontFamily="Segoe UI"
+                        FontSize="12"
+                        FontWeight="Medium"
+                        Foreground="White"
+                        GotFocus="EditWordTextBox_GotFocus"
+                        MouseDown="EditWordTextBox_MouseDown"
+                        Style="{StaticResource TransparentTextBox}"
+                        Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        TextChanged="EditWordTextBox_TextChanged"
+                        Visibility="Visible" />
+                </Viewbox>
+            </Grid>
+        </Border>
+        <Border
+            Name="MoveResizeBorder"
+            d:Visibility="Visible"
+            Background="Transparent"
+            BorderBrush="#308E98"
+            BorderThickness="2"
+            CornerRadius="2"
+            Cursor="SizeAll"
+            Visibility="Collapsed">
+            <Grid>
+                <Grid Background="Transparent" MouseDown="MoveResizeBorder_MouseDown" />
+                <Border
+                    Width="6"
+                    Height="12"
+                    Margin="-4"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Background="#18474C"
+                    CornerRadius="1"
+                    Cursor="SizeWE"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Left" />
+                <Border
+                    Width="20"
+                    Height="6"
+                    Margin="-4"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Background="#18474C"
+                    CornerRadius="1"
+                    Cursor="SizeNS"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Top" />
+                <Border
+                    Width="6"
+                    Height="12"
+                    Margin="-4"
+                    HorizontalAlignment="right"
+                    VerticalAlignment="Center"
+                    Background="#18474C"
+                    CornerRadius="1"
+                    Cursor="SizeWE"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Right" />
+                <Border
+                    Width="20"
+                    Height="6"
+                    Margin="-4"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Background="#18474C"
+                    CornerRadius="1"
+                    Cursor="SizeNS"
+                    MouseDown="SizeHandle_MouseDown"
+                    Tag="Bottom" />
+            </Grid>
+        </Border>
+    </Grid>
 </UserControl>

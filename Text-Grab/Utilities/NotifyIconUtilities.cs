@@ -20,7 +20,7 @@ public static class NotifyIconUtilities
 
         NotifyIcon icon = new();
         icon.Text = "Text Grab";
-        icon.Icon = new Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico", UriKind.Relative)).Stream);
+        icon.Icon = new Icon(System.Windows.Application.GetResourceStream(new Uri("/TealSelect.ico", UriKind.Relative)).Stream);
         icon.Visible = true;
 
         ContextMenuStrip? contextMenu = new();
@@ -30,7 +30,7 @@ public static class NotifyIconUtilities
         ToolStripMenuItem? quickSimpleLookupItem = new("&Quick Simple Lookup");
         quickSimpleLookupItem.Click += (s, e) => { QuickSimpleLookup qsl = new(); qsl.Show(); };
         ToolStripMenuItem? fullscreenGrabItem = new("&Fullscreen Grab");
-        fullscreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(true); };
+        fullscreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(); };
         ToolStripMenuItem? grabFrameItem = new("&Grab Frame");
         grabFrameItem.Click += (s, e) => { GrabFrame gf = new(); gf.Show(); };
         ToolStripMenuItem? editTextWindowItem = new("&Edit Text Window");
@@ -127,7 +127,7 @@ public static class NotifyIconUtilities
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
-                WindowUtilities.LaunchFullScreenGrab(true);
+                WindowUtilities.LaunchFullScreenGrab();
             }));
         }
         else if (grabFrameKey is not null && e.Key == grabFrameKey.Value)

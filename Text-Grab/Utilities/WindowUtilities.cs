@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,7 +10,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab.Properties;
 using Text_Grab.Views;
-using Screen = System.Windows.Forms.Screen;
+// using Screen = System.Windows.Forms.Screen;
+using WpfScreenHelper;
+using static OSInterop;
 
 namespace Text_Grab.Utilities;
 
@@ -46,15 +49,15 @@ public static class WindowUtilities
             couldParseAll = double.TryParse(storedPostion[1], out double parsedY);
             couldParseAll = double.TryParse(storedPostion[2], out double parsedWid);
             couldParseAll = double.TryParse(storedPostion[3], out double parsedHei);
-            Rectangle storedSize = new Rectangle((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
-            Screen[] allScreens = Screen.AllScreens;
+            Rect storedSize = new((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
+            IEnumerable<Screen> allScreens = Screen.AllScreens;
             WindowCollection allWindows = Application.Current.Windows;
 
             if (parsedHei < 10 || parsedWid < 10)
                 return;
 
             foreach (Screen screen in allScreens)
-                if (screen.WorkingArea.IntersectsWith(storedSize))
+                if (screen.WpfBounds.IntersectsWith(storedSize))
                     isStoredRectWithinScreen = true;
 
             if (isStoredRectWithinScreen && couldParseAll)
@@ -69,62 +72,67 @@ public static class WindowUtilities
         }
     }
 
-    public static void LaunchFullScreenGrab(bool openAnyway = false,
-                                            bool setBackgroundImage = false,
-                                            TextBox? destinationTextBox = null)
+    public static void LaunchFullScreenGrab(TextBox? destinationTextBox = null)
     {
-        Screen[] allScreens = Screen.AllScreens;
+        IEnumerable<Screen> allScreens = Screen.AllScreens;
         WindowCollection allWindows = Application.Current.Windows;
 
         List<FullscreenGrab> allFullscreenGrab = new();
 
-        foreach (Screen screen in allScreens)
+        int numberOfScreens = allScreens.Count();
+
+        foreach (Window window in allWindows)
+            if (window is FullscreenGrab)
+                allFullscreenGrab.Add((FullscreenGrab)window);
+
+        int numberOfFullscreenGrabWindowsToCreate = numberOfScreens - allFullscreenGrab.Count;
+
+        for (int i = 0; i < numberOfFullscreenGrabWindowsToCreate; i++)
         {
-            bool screenHasWindow = true;
-
-            foreach (Window window in allWindows)
-            {
-                System.Drawing.Point windowCenter =
-                    new System.Drawing.Point(
-                        (int)(window.Left + (window.Width / 2)),
-                        (int)(window.Top + (window.Height / 2)));
-                screenHasWindow = screen.Bounds.Contains(windowCenter);
-            }
-
-            if (allWindows.Count < 1)
-                screenHasWindow = false;
-
-            if (!screenHasWindow || openAnyway)
-            {
-                FullscreenGrab fullscreenGrab = new FullscreenGrab
-                {
-                    WindowStartupLocation = WindowStartupLocation.Manual,
-                    Width = 200,
-                    Height = 200,
-                    DestinationTextBox = destinationTextBox,
-                    IsFreeze = setBackgroundImage,
-                    WindowState = WindowState.Normal
-                };
-
-                if (screen.WorkingArea.Left >= 0)
-                    fullscreenGrab.Left = screen.WorkingArea.Left;
-                else
-                    fullscreenGrab.Left = screen.WorkingArea.Left + (screen.WorkingArea.Width / 2);
-
-                if (screen.WorkingArea.Top >= 0)
-                    fullscreenGrab.Top = screen.WorkingArea.Top;
-                else
-                    fullscreenGrab.Top = screen.WorkingArea.Top + (screen.WorkingArea.Height / 2);
-
-                fullscreenGrab.Show();
-                fullscreenGrab.Activate();
-                allFullscreenGrab.Add(fullscreenGrab);
-            }
+            allFullscreenGrab.Add(new FullscreenGrab());
         }
 
-        if (setBackgroundImage)
-            foreach (FullscreenGrab fsg in allFullscreenGrab)
-                fsg.SetImageToBackground();
+        int count = 0;
+
+        foreach (Screen screen in allScreens)
+        {
+            FullscreenGrab fullscreenGrab = allFullscreenGrab[count];
+            fullscreenGrab.WindowStartupLocation = WindowStartupLocation.Manual;
+            fullscreenGrab.Width = 400;
+            fullscreenGrab.Height = 200;
+            fullscreenGrab.DestinationTextBox = destinationTextBox;
+            fullscreenGrab.WindowState = WindowState.Normal;
+
+            System.Windows.Point screenCenterPoint = screen.GetCenterPoint();
+            System.Windows.Point windowCenterPoint = fullscreenGrab.GetWindowCenter();
+
+            double virtualScreenTop = SystemParameters.VirtualScreenTop;
+            double virtualScreenLeft = SystemParameters.VirtualScreenLeft;
+            double virtualScreenWidth = SystemParameters.VirtualScreenWidth;
+            double virtualScreenHeight = SystemParameters.VirtualScreenHeight;
+
+            fullscreenGrab.Left = screenCenterPoint.X - windowCenterPoint.X;
+            fullscreenGrab.Top = screenCenterPoint.Y - windowCenterPoint.Y;
+
+            fullscreenGrab.Show();
+            fullscreenGrab.Activate();
+
+            count++;
+        }
+    }
+
+    public static System.Windows.Point GetCenterPoint(this Screen screen)
+    {
+        double x = screen.WpfBounds.Left + (screen.WpfBounds.Width / 2);
+        double y = screen.WpfBounds.Top + (screen.WpfBounds.Height / 2);
+        return new(x, y);
+    }
+
+    public static System.Windows.Point GetWindowCenter(this Window window)
+    {
+        double x = window.Width / 2;
+        double y = window.Height / 2;
+        return new(x, y);
     }
 
     internal static async void CloseAllFullscreenGrabs()
@@ -157,8 +165,7 @@ public static class WindowUtilities
             && !string.IsNullOrWhiteSpace(stringFromOCR)
             && !isFromEditWindow)
         {
-            await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
-            TryInsertString(stringFromOCR);
+            await TryInsertString(stringFromOCR);
         }
 
         GC.Collect();
@@ -177,17 +184,56 @@ public static class WindowUtilities
                 fsg.KeyPressed(key, isActive);
     }
 
-    internal static void TryInsertString(string stringToInsert)
+    internal static async Task TryInsertString(string stringToInsert)
     {
-        string stringToSend = Regex.Replace(stringToInsert, "[+^%~()\\{\\}\\[\\]]", "{$0}");
+        await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
 
-        try
+        List<INPUT> inputs = new List<INPUT>();
+        // make sure keys are up.
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LCONTROL);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RCONTROL);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LWIN);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RWIN);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LSHIFT);
+        TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RSHIFT);
+
+        // send Ctrl+V (key downs and key ups)
+        INPUT ctrlDown = new();
+        ctrlDown.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        ctrlDown.U.Ki.WVk = VirtualKeyShort.CONTROL;
+        inputs.Add(ctrlDown);
+
+        INPUT vDown = new();
+        vDown.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        vDown.U.Ki.WVk = VirtualKeyShort.KEY_V;
+        inputs.Add(vDown);
+
+        INPUT vUp = new();
+        vUp.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        vUp.U.Ki.WVk = VirtualKeyShort.KEY_V;
+        vUp.U.Ki.DwFlags = KEYEVENTF.KEYUP;
+        inputs.Add(vUp);
+
+        INPUT ctrlUp = new();
+        ctrlUp.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        ctrlUp.U.Ki.WVk = VirtualKeyShort.CONTROL;
+        ctrlUp.U.Ki.DwFlags = KEYEVENTF.KEYUP;
+        inputs.Add(ctrlUp);
+
+        _ = SendInput((uint)inputs.Count, inputs.ToArray(), INPUT.Size);
+        await Task.CompletedTask;
+    }
+
+    private static void TryInjectModifierKeyUp(ref List<INPUT> inputs, VirtualKeyShort modifier)
+    {
+        // Most significant bit is set if key is down
+        if ((GetAsyncKeyState((int)modifier) & 0x8000) != 0)
         {
-            System.Windows.Forms.SendKeys.SendWait(stringToSend);
-        }
-        catch (ArgumentException argEx)
-        {
-            Debug.WriteLine($"Failed to Send Keys: {argEx.Message}");
+            var inputEvent = default(INPUT);
+            inputEvent.Type = OSInterop.InputType.INPUT_KEYBOARD;
+            inputEvent.U.Ki.WVk = modifier;
+            inputEvent.U.Ki.DwFlags = KEYEVENTF.KEYUP;
+            inputs.Add(inputEvent);
         }
     }
 

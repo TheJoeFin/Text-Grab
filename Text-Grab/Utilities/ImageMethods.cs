@@ -7,6 +7,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Shell;
 using Text_Grab.Views;
 using Windows.Storage.Streams;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
@@ -97,10 +98,13 @@ public static class ImageMethods
 
         if (isGrabFrame)
         {
-            thisCorrectedLeft = (int)((absPosPoint.X + 2) * dpi.DpiScaleX);
-            thisCorrectedTop = (int)((absPosPoint.Y + 26) * dpi.DpiScaleY);
-            windowWidth -= (int)(4 * dpi.DpiScaleX);
-            windowHeight -= (int)(70 * dpi.DpiScaleY);
+            int borderThickness = 2;
+            int titleBarHeight = 32;
+            int bottomBarHeight = 42;
+            thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
+            thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
+            windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
+            windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
         }
 
         Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -142,6 +146,25 @@ public static class ImageMethods
 
     }
 
+    public static Bitmap InteropBitmapToBitmap(System.Windows.Interop.InteropBitmap source)
+    {
+        Bitmap bmp = new(
+          source.PixelWidth,
+          source.PixelHeight,
+          System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+        BitmapData data = bmp.LockBits(
+          new Rectangle(System.Drawing.Point.Empty, bmp.Size),
+          ImageLockMode.WriteOnly,
+          System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+        source.CopyPixels(
+          Int32Rect.Empty,
+          data.Scan0,
+          data.Height * data.Stride,
+          data.Stride);
+        bmp.UnlockBits(data);
+        return bmp;
+    }
+
     public static Bitmap BitmapSourceToBitmap(BitmapSource source)
     {
         Bitmap bmp = new(
@@ -159,6 +182,12 @@ public static class ImageMethods
           data.Stride);
         bmp.UnlockBits(data);
         return bmp;
+    }
+
+    public static Bitmap GetBitmapFromIRandomAccessStream(IRandomAccessStream stream)
+    {
+        Bitmap bitmap = new(stream.AsStream());
+        return bitmap;
     }
 
     public static BitmapImage GetBitmapImageFromIRandomAccessStream(IRandomAccessStream stream)

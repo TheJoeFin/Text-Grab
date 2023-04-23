@@ -49,6 +49,7 @@ to throw off any easy check";
     [InlineData(1000, "check")]
     [InlineData(-10, "Hello")]
     [InlineData(-1, "Hello")]
+    [InlineData(10, "this")]
     public void ReturnWordAtCursorWithNewLines(int cursorPosition, string expectedWord)
     {
         // Given
@@ -70,6 +71,16 @@ to throw off any easy check";
         string result = input.TryFixToLetters();
 
         // Assert
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("","")]
+    [InlineData("he11o there", "hello there")]
+    [InlineData("my number is l23456789o", "my number is 1234567890")]
+    public void TryFixNumOrLetters(string input, string expected)
+    {
+        string result = input.TryFixEveryWordLetterNumberErrors();
         Assert.Equal(expected, result);
     }
 
@@ -270,6 +281,14 @@ you are a bold one!", @"hello th
 general ken
 you are a bold o
 ", 3, SpotInLine.End)]
+    [InlineData(@"hello there
+general kenobi
+22
+you are a bold one!", @"hello th
+general ken
+
+you are a bold o
+", 3, SpotInLine.End)]
     public void TestRemoveFromEachLines(string inputString, string expected, int numberOfChars, SpotInLine spotInLine)
     {
         Assert.Equal(expected, inputString.RemoveFromEachLine(numberOfChars, spotInLine));
@@ -348,20 +367,29 @@ you are a bold one! Awesome", " Awesome", SpotInLine.End)]
     [Theory]
     [InlineData(@"hello there
 general kenobi", @"hello ther
-general ke", 10)]
+general ke", 10, SpotInLine.Beginning)]
     [InlineData(@"hello there
 general kenobi", @"hello there
-general kenobi", 100)]
+neral kenobi", 12, SpotInLine.End)]
+    [InlineData(@"hello there
+general kenobi", @"hello there
+general kenobi", 100, SpotInLine.Beginning)]
+    [InlineData(@"hello there
+general kenobi", @"hello there
+general kenobi", 100, SpotInLine.End)]
     [InlineData(@"hello there
 general kenobi
 you are a bold one!", @"hello
 gener
-you a", 5)]
+you a", 5, SpotInLine.Beginning)]
     [InlineData(@"hello there
 general kenobi
-you are a bold one!", @"", 0)]
-    public void TestLimitEachLine(string inputString, string expected, int charLimit)
+you are a bold one!", @"", 0, SpotInLine.Beginning)]
+    [InlineData(@"hello there
+general kenobi
+you are a bold one!", @"", 0, SpotInLine.End)]
+    public void TestLimitEachLine(string inputString, string expected, int charLimit, SpotInLine spotInLine)
     {
-        Assert.Equal(expected, inputString.LimitCharactersPerLine(charLimit));
+        Assert.Equal(expected, inputString.LimitCharactersPerLine(charLimit, spotInLine));
     }
 }

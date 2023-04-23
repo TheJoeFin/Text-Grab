@@ -7,14 +7,19 @@ assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
+**Describe the pain point and your solution**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+**Mode which would include change**
+- [ ] Full-screen Grab
+- [ ] Grab Frame
+- [ ] Edit Text Window
+- [ ] Quick Simple Lookup
+- [ ] Settings Window
+- [ ] General
 
-**Describe alternatives you've considered**
+**Describe alternatives you've tried or considered**
 A clear and concise description of any alternative solutions or features you've considered.
 
-**Additional context**
+**Screenshots or sketches**
 Add any other context or screenshots about the feature request here.

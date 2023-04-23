@@ -125,6 +125,14 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 1.11,
+            ButtonText = "Close and Insert",
+            SymbolText = "",
+            Background = "#CC7000",
+            ClickEvent = "CopyClosePasteBTN_Click"
+        },
+        new()
+        {
             OrderNumber = 1.2,
             ButtonText = "Save to File...",
             SymbolText = "",
@@ -185,6 +193,13 @@ public class ButtonInfo
             ButtonText = "OCR Paste",
             SymbolText = "",
             Command = "PasteCommand"
+        },
+        new()
+        {
+            OrderNumber = 2.4,
+            ButtonText = "Launch URL",
+            SymbolText = "",
+            Command = "LaunchCmd"
         },
         new()
         {
@@ -353,6 +368,13 @@ public class ButtonInfo
             ButtonText = "New Window from Selection",
             SymbolText = "",
             ClickEvent = "NewWindowWithText_Clicked"
+        },
+        new()
+        {
+            OrderNumber = 5.7,
+            ButtonText = "Make QR Code",
+            SymbolText = "",
+            Command = "MakeQrCodeCmd"
         }
     };
 }

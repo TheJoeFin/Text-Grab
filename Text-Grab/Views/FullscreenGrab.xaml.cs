@@ -19,27 +19,37 @@ namespace Text_Grab.Views;
 /// </summary>
 public partial class FullscreenGrab : Window
 {
+    #region Fields
+
+    private System.Windows.Point clickedPoint = new System.Windows.Point();
+    private TextBox? destinationTextBox;
+    private DpiScale? dpiScale;
+    private bool isComboBoxReady = false;
     private bool isSelecting = false;
     private bool isShiftDown = false;
-    private System.Windows.Point clickedPoint = new System.Windows.Point();
-    private System.Windows.Point shiftPoint = new System.Windows.Point();
     private Border selectBorder = new Border();
-
-    private System.Windows.Forms.Screen? currentScreen { get; set; }
-
-    private DpiScale? dpiScale;
-
-    private System.Windows.Point GetMousePos() => this.PointToScreen(Mouse.GetPosition(this));
-
     double selectLeft;
     double selectTop;
-
+    private System.Windows.Point shiftPoint = new System.Windows.Point();
     double xShiftDelta;
     double yShiftDelta;
 
-    private TextBox? destinationTextBox;
-    public TextBox? DestinationTextBox 
-    { 
+    #endregion Fields
+
+    #region Constructors
+
+    public FullscreenGrab()
+    {
+        InitializeComponent();
+        App.SetTheme();
+    }
+
+    #endregion Constructors
+
+    #region Properties
+
+    public TextBox? DestinationTextBox
+    {
         get { return destinationTextBox; }
         set
         {
@@ -51,16 +61,13 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    public string? textFromOCR { get; set; }
-
     public bool IsFreeze { get; set; } = false;
+    public string? textFromOCR { get; set; }
+    private System.Windows.Forms.Screen? currentScreen { get; set; }
 
-    private bool isComboBoxReady = false;
+    #endregion Properties
 
-    public FullscreenGrab()
-    {
-        InitializeComponent();
-    }
+    #region Methods
 
     public void SetImageToBackground()
     {
@@ -69,127 +76,70 @@ public partial class FullscreenGrab : Window
         BackgroundBrush.Opacity = 0.2;
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    internal void KeyPressed(Key key, bool? isActive = null)
     {
-        WindowState = WindowState.Maximized;
-        FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
-        this.KeyDown += FullscreenGrab_KeyDown;
-        this.KeyUp += FullscreenGrab_KeyUp;
-
-        SetImageToBackground();
-
-        if (Settings.Default.FSGMakeSingleLineToggle)
-            SingleLineMenuItem.IsChecked = true;
-
-        TopButtonsStackPanel.Visibility = Visibility.Visible;
-
-        LoadOcrLanguages();
-    }
-
-    private void Window_Unloaded(object sender, RoutedEventArgs e)
-    {
-        BackgroundImage.Source = null;
-        BackgroundImage.UpdateLayout();
-        // EditWindow = null;
-        currentScreen = null;
-        dpiScale = null;
-        Language = null;
-        textFromOCR = null;
-
-        this.Loaded -= Window_Loaded;
-        this.Unloaded -= Window_Unloaded;
-
-        RegionClickCanvas.MouseDown -= RegionClickCanvas_MouseDown;
-        RegionClickCanvas.MouseMove -= RegionClickCanvas_MouseMove;
-        RegionClickCanvas.MouseUp -= RegionClickCanvas_MouseUp;
-
-        SingleLineMenuItem.Click -= SingleLineMenuItem_Click;
-        FreezeMenuItem.Click -= FreezeMenuItem_Click;
-        NewGrabFrameMenuItem.Click -= NewGrabFrameMenuItem_Click;
-        SendToEtwMenuItem.Click -= NewEditTextMenuItem_Click;
-        SettingsMenuItem.Click -= SettingsMenuItem_Click;
-        CancelMenuItem.Click -= CancelMenuItem_Click;
-
-        LanguagesComboBox.SelectionChanged -= LanguagesComboBox_SelectionChanged;
-
-        SingleLineToggleButton.Click -= SingleLineMenuItem_Click;
-        FreezeToggleButton.Click -= FreezeMenuItem_Click;
-        NewGrabFrameToggleButton.Click -= NewGrabFrameMenuItem_Click;
-        SendToEditTextToggleButton.Click -= NewEditTextMenuItem_Click;
-        SettingsButton.Click -= SettingsMenuItem_Click;
-        CancelButton.Click -= CancelMenuItem_Click;
-
-        this.KeyDown -= FullscreenGrab_KeyDown;
-        this.KeyUp -= FullscreenGrab_KeyUp;
-    }
-
-    private void LoadOcrLanguages()
-    {
-        if (LanguagesComboBox.Items.Count > 0)
-            return;
-
-        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
-        Language firstLang = LanguageUtilities.GetOCRLanguage();
-
-        int count = 0;
-
-        foreach (Language language in possibleOCRLangs)
+        switch (key)
         {
-            LanguagesComboBox.Items.Add(language);
+            // This case is handled in the WindowUtilities.FullscreenKeyDown
+            // case Key.Escape:
+            //     WindowUtilities.CloseAllFullscreenGrabs();
+            //     break;
+            case Key.G:
+                if (isActive is null)
+                    NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
+                else
+                    NewGrabFrameMenuItem.IsChecked = isActive.Value;
+                break;
+            case Key.S:
+                if (isActive is null)
+                    SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
+                else
+                    SingleLineMenuItem.IsChecked = isActive.Value;
 
-            if (language.LanguageTag == firstLang?.LanguageTag)
-                LanguagesComboBox.SelectedIndex = count;
+                Settings.Default.FSGMakeSingleLineToggle = SingleLineMenuItem.IsChecked;
+                Settings.Default.Save();
+                break;
+            case Key.E:
+                if (isActive is null)
+                    SendToEtwMenuItem.IsChecked = !SendToEtwMenuItem.IsChecked;
+                else
+                    SendToEtwMenuItem.IsChecked = isActive.Value;
+                break;
+            case Key.F:
+                if (isActive is null)
+                    FreezeMenuItem.IsChecked = !FreezeMenuItem.IsChecked;
+                else
+                    FreezeMenuItem.IsChecked = isActive.Value;
 
-            count++;
-        }
+                FreezeUnfreeze(FreezeMenuItem.IsChecked);
+                break;
+            case Key.T:
+                if (isActive is null)
+                    TableToggleButton.IsChecked = !TableToggleButton.IsChecked;
+                else
+                    TableToggleButton.IsChecked = isActive.Value;
+                break;
+            case Key.D1:
+            case Key.D2:
+            case Key.D3:
+            case Key.D4:
+            case Key.D5:
+            case Key.D6:
+            case Key.D7:
+            case Key.D8:
+            case Key.D9:
+                int numberPressed = (int)key - 34; // D1 casts to 35, D2 to 36, etc.
+                int numberOfLanguages = LanguagesComboBox.Items.Count;
 
-        isComboBoxReady = true;
-    }
-
-    private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
-    {
-        switch (e.Key)
-        {
-            case Key.LeftShift:
-            case Key.RightShift:
-                isShiftDown = false;
-                clickedPoint = new System.Windows.Point(clickedPoint.X + xShiftDelta, clickedPoint.Y + yShiftDelta);
+                if (numberPressed <= numberOfLanguages
+                    && numberPressed - 1 >= 0
+                    && numberPressed - 1 != LanguagesComboBox.SelectedIndex
+                    && isComboBoxReady)
+                    LanguagesComboBox.SelectedIndex = numberPressed - 1;
                 break;
             default:
                 break;
         }
-    }
-
-    private void FullscreenGrab_KeyDown(object sender, KeyEventArgs e)
-    {
-        WindowUtilities.FullscreenKeyDown(e.Key);
-    }
-
-    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
-        WindowUtilities.CloseAllFullscreenGrabs();
-    }
-
-    private void SingleLineMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
-    {
-        bool isActive = CheckIfCheckingOrUnchecking(sender);
-
-        WindowUtilities.FullscreenKeyDown(Key.S, isActive);
-    }
-
-    private void NewGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        bool isActive = CheckIfCheckingOrUnchecking(sender);
-
-        WindowUtilities.FullscreenKeyDown(Key.G, isActive);
-    }
-
-    private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
-    {
-        bool isActive = CheckIfCheckingOrUnchecking(sender);
-
-        WindowUtilities.FullscreenKeyDown(Key.E, isActive);
     }
 
     private static bool CheckIfCheckingOrUnchecking(object? sender)
@@ -202,9 +152,8 @@ public partial class FullscreenGrab : Window
         return isActive;
     }
 
-    private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
+    private void CancelMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
         WindowUtilities.CloseAllFullscreenGrabs();
     }
 
@@ -232,8 +181,210 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    private void CancelMenuItem_Click(object sender, RoutedEventArgs e)
+    private void FullscreenGrab_KeyDown(object sender, KeyEventArgs e)
     {
+        WindowUtilities.FullscreenKeyDown(e.Key);
+    }
+
+    private void FullscreenGrab_KeyUp(object sender, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.LeftShift:
+            case Key.RightShift:
+                isShiftDown = false;
+                clickedPoint = new System.Windows.Point(clickedPoint.X + xShiftDelta, clickedPoint.Y + yShiftDelta);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void HandleTextFromOcr(string grabbedText)
+    {
+        if (SingleLineMenuItem.IsChecked is true && TableToggleButton.IsChecked is false)
+            grabbedText = grabbedText.MakeStringSingleLine();
+
+        textFromOCR = grabbedText;
+
+        if (!Settings.Default.NeverAutoUseClipboard
+            && destinationTextBox is null)
+            try { Clipboard.SetDataObject(grabbedText, true); } catch { }
+
+        if (Settings.Default.ShowToast
+            && destinationTextBox is null)
+            NotificationUtilities.ShowToast(grabbedText);
+
+        if (destinationTextBox is not null)
+        {
+            // Do it this way instead of append text because it inserts the text at the cursor
+            // Then puts the cursor at the end of the newly added text
+            // AppendText() just adds the text to the end no matter what.
+            destinationTextBox.SelectedText = grabbedText;
+            destinationTextBox.Select(destinationTextBox.SelectionStart + grabbedText.Length, 0);
+            destinationTextBox.Focus();
+        }
+    }
+
+    private void LanguagesComboBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.MiddleButton == MouseButtonState.Pressed)
+        {
+            Settings.Default.LastUsedLang = String.Empty;
+            Settings.Default.Save();
+        }
+    }
+
+    private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ComboBox languageCmbBox || !isComboBoxReady)
+            return;
+
+        Language? pickedLang = languageCmbBox.SelectedItem as Language;
+
+        if (pickedLang != null)
+        {
+            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
+            Settings.Default.Save();
+        }
+
+        int selection = languageCmbBox.SelectedIndex;
+
+        switch (selection)
+        {
+            case 0:
+                WindowUtilities.FullscreenKeyDown(Key.D1);
+                break;
+            case 1:
+                WindowUtilities.FullscreenKeyDown(Key.D2);
+                break;
+            case 2:
+                WindowUtilities.FullscreenKeyDown(Key.D3);
+                break;
+            case 3:
+                WindowUtilities.FullscreenKeyDown(Key.D4);
+                break;
+            case 4:
+                WindowUtilities.FullscreenKeyDown(Key.D5);
+                break;
+            case 5:
+                WindowUtilities.FullscreenKeyDown(Key.D6);
+                break;
+            case 6:
+                WindowUtilities.FullscreenKeyDown(Key.D7);
+                break;
+            case 7:
+                WindowUtilities.FullscreenKeyDown(Key.D8);
+                break;
+            case 8:
+                WindowUtilities.FullscreenKeyDown(Key.D9);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void LoadOcrLanguages()
+    {
+        if (LanguagesComboBox.Items.Count > 0)
+            return;
+
+        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
+        Language firstLang = LanguageUtilities.GetOCRLanguage();
+
+        int count = 0;
+
+        foreach (Language language in possibleOCRLangs)
+        {
+            LanguagesComboBox.Items.Add(language);
+
+            if (language.LanguageTag == firstLang?.LanguageTag)
+                LanguagesComboBox.SelectedIndex = count;
+
+            count++;
+        }
+
+        isComboBoxReady = true;
+    }
+
+    private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+        WindowUtilities.CloseAllFullscreenGrabs();
+    }
+
+    private void NewGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool isActive = CheckIfCheckingOrUnchecking(sender);
+        WindowUtilities.FullscreenKeyDown(Key.G, isActive);
+    }
+
+    private void PanSelection(System.Windows.Point movingPoint)
+    {
+        if (!isShiftDown)
+        {
+            shiftPoint = movingPoint;
+            selectLeft = Canvas.GetLeft(selectBorder);
+            selectTop = Canvas.GetTop(selectBorder);
+        }
+
+        isShiftDown = true;
+        xShiftDelta = (movingPoint.X - shiftPoint.X);
+        yShiftDelta = (movingPoint.Y - shiftPoint.Y);
+
+        double leftValue = selectLeft + xShiftDelta;
+        double topValue = selectTop + yShiftDelta;
+
+        if (currentScreen is not null && dpiScale is not null)
+        {
+            double currentScreenLeft = currentScreen.Bounds.Left; // Should always be 0
+            double currentScreenRight = currentScreen.Bounds.Right / dpiScale.Value.DpiScaleX;
+            double currentScreenTop = currentScreen.Bounds.Top; // Should always be 0
+            double currentScreenBottom = currentScreen.Bounds.Bottom / dpiScale.Value.DpiScaleY;
+
+            leftValue = Math.Clamp(leftValue, currentScreenLeft, (currentScreenRight - selectBorder.Width));
+            topValue = Math.Clamp(topValue, currentScreenTop, (currentScreenBottom - selectBorder.Height));
+        }
+
+        clippingGeometry.Rect = new Rect(
+            new System.Windows.Point(leftValue, topValue),
+            new System.Windows.Size(selectBorder.Width - 2, selectBorder.Height - 2));
+        Canvas.SetLeft(selectBorder, leftValue - 1);
+        Canvas.SetTop(selectBorder, topValue - 1);
+    }
+
+    private void PlaceGrabFrameInSelectionRect()
+    {
+        // Make a new GrabFrame and show it on screen
+        // Then place it where the user just drew the region
+        // Add space around the window to account for titlebar
+        // bottom bar and width of GrabFrame
+        System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
+        GrabFrame grabFrame = new();
+        if (destinationTextBox is not null)
+            grabFrame.DestinationTextBox = destinationTextBox;
+
+        grabFrame.TableToggleButton.IsChecked = TableToggleButton.IsChecked;
+        grabFrame.Show();
+
+        double posLeft = Canvas.GetLeft(selectBorder); // * dpi.DpiScaleX;
+        double posTop = Canvas.GetTop(selectBorder); // * dpi.DpiScaleY;
+        grabFrame.Left = posLeft + (absPosPoint.X / dpi.PixelsPerDip);
+        grabFrame.Top = posTop + (absPosPoint.Y / dpi.PixelsPerDip);
+
+        grabFrame.Left -= (2 / dpi.PixelsPerDip);
+        grabFrame.Top -= (34 / dpi.PixelsPerDip);
+        // if (grabFrame.Top < 0)
+        //     grabFrame.Top = 0;
+
+        if (selectBorder.Width > 20 && selectBorder.Height > 20)
+        {
+            grabFrame.Width = selectBorder.Width + 4;
+            grabFrame.Height = selectBorder.Height + 72;
+        }
+        grabFrame.Activate();
         WindowUtilities.CloseAllFullscreenGrabs();
     }
 
@@ -356,13 +507,21 @@ public partial class FullscreenGrab : Window
         if (regionScaled.Width < 3 || regionScaled.Height < 3)
         {
             BackgroundBrush.Opacity = 0;
-            grabbedText = await OcrExtensions.GetClickedWord(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
+            grabbedText = await OcrExtensions.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
+        else if (TableToggleButton.IsChecked is true)
+            grabbedText = await OcrExtensions.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
-            grabbedText = await OcrExtensions.GetRegionsText(this, regionScaled, selectedOcrLang);
+            grabbedText = await OcrExtensions.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
 
         if (!string.IsNullOrWhiteSpace(grabbedText))
         {
+            if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
+            {
+                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+                destinationTextBox = etw.PassedTextControl;
+            }
+
             HandleTextFromOcr(grabbedText);
             WindowUtilities.CloseAllFullscreenGrabs();
         }
@@ -370,223 +529,75 @@ public partial class FullscreenGrab : Window
             BackgroundBrush.Opacity = .2;
     }
 
-    private void PanSelection(System.Windows.Point movingPoint)
+    private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!isShiftDown)
-        {
-            shiftPoint = movingPoint;
-            selectLeft = Canvas.GetLeft(selectBorder);
-            selectTop = Canvas.GetTop(selectBorder);
-        }
-
-        isShiftDown = true;
-        xShiftDelta = (movingPoint.X - shiftPoint.X);
-        yShiftDelta = (movingPoint.Y - shiftPoint.Y);
-
-        double leftValue = selectLeft + xShiftDelta;
-        double topValue = selectTop + yShiftDelta;
-
-        if (currentScreen is not null && dpiScale is not null)
-        {
-            double currentScreenLeft = currentScreen.Bounds.Left; // Should always be 0
-            double currentScreenRight = currentScreen.Bounds.Right / dpiScale.Value.DpiScaleX;
-            double currentScreenTop = currentScreen.Bounds.Top; // Should always be 0
-            double currentScreenBottom = currentScreen.Bounds.Bottom / dpiScale.Value.DpiScaleY;
-
-            leftValue = Math.Clamp(leftValue, currentScreenLeft, (currentScreenRight - selectBorder.Width));
-            topValue = Math.Clamp(topValue, currentScreenTop, (currentScreenBottom - selectBorder.Height));
-        }
-
-        clippingGeometry.Rect = new Rect(
-            new System.Windows.Point(leftValue, topValue),
-            new System.Windows.Size(selectBorder.Width - 2, selectBorder.Height - 2));
-        Canvas.SetLeft(selectBorder, leftValue - 1);
-        Canvas.SetTop(selectBorder, topValue - 1);
+        bool isActive = CheckIfCheckingOrUnchecking(sender);
+        WindowUtilities.FullscreenKeyDown(Key.E, isActive);
     }
 
-    internal void KeyPressed(Key key, bool? isActive = null)
+    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        switch (key)
-        {
-            // This case is handled in the WindowUtilities.FullscreenKeyDown
-            // case Key.Escape:
-            //     WindowUtilities.CloseAllFullscreenGrabs();
-            //     break;
-            case Key.G:
-                if (isActive is null)
-                    NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
-                else
-                    NewGrabFrameMenuItem.IsChecked = isActive.Value;
-                break;
-            case Key.S:
-                if (isActive is null)
-                    SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
-                else
-                    SingleLineMenuItem.IsChecked = isActive.Value;
-
-                Settings.Default.FSGMakeSingleLineToggle = SingleLineMenuItem.IsChecked;
-                Settings.Default.Save();
-                break;
-            case Key.E:
-                if (isActive is null)
-                    SendToEtwMenuItem.IsChecked = !SendToEtwMenuItem.IsChecked;
-                else
-                    SendToEtwMenuItem.IsChecked = isActive.Value;
-                break;
-            case Key.F:
-                if (isActive is null)
-                    FreezeMenuItem.IsChecked = !FreezeMenuItem.IsChecked;
-                else
-                    FreezeMenuItem.IsChecked = isActive.Value;
-
-                FreezeUnfreeze(FreezeMenuItem.IsChecked);
-                break;
-            case Key.D1:
-            case Key.D2:
-            case Key.D3:
-            case Key.D4:
-            case Key.D5:
-            case Key.D6:
-            case Key.D7:
-            case Key.D8:
-            case Key.D9:
-                int numberPressed = (int)key - 34; // D1 casts to 35, D2 to 36, etc.
-                int numberOfLanguages = LanguagesComboBox.Items.Count;
-
-                if (numberPressed <= numberOfLanguages
-                    && numberPressed - 1 >= 0
-                    && numberPressed - 1 != LanguagesComboBox.SelectedIndex
-                    && isComboBoxReady)
-                    LanguagesComboBox.SelectedIndex = numberPressed - 1;
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void PlaceGrabFrameInSelectionRect()
-    {
-        // Make a new GrabFrame and show it on screen
-        // Then place it where the user just drew the region
-        // Add space around the window to account for titlebar
-        // bottom bar and width of GrabFrame
-        System.Windows.Point absPosPoint = this.GetAbsolutePosition();
-        DpiScale dpi = VisualTreeHelper.GetDpi(this);
-        int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
-        GrabFrame grabFrame = new();
-        grabFrame.Show();
-        double posLeft = Canvas.GetLeft(selectBorder); // * dpi.DpiScaleX;
-        double posTop = Canvas.GetTop(selectBorder); // * dpi.DpiScaleY;
-        grabFrame.Left = posLeft + (absPosPoint.X / dpi.PixelsPerDip);
-        grabFrame.Top = posTop + (absPosPoint.Y / dpi.PixelsPerDip);
-
-        grabFrame.Left -= (2 / dpi.PixelsPerDip);
-        grabFrame.Top -= (34 / dpi.PixelsPerDip);
-        // if (grabFrame.Top < 0)
-        //     grabFrame.Top = 0;
-
-        if (selectBorder.Width > 20 && selectBorder.Height > 20)
-        {
-            grabFrame.Width = selectBorder.Width + 4;
-            grabFrame.Height = selectBorder.Height + 72;
-        }
-        grabFrame.Activate();
+        WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
         WindowUtilities.CloseAllFullscreenGrabs();
     }
 
-    private void HandleTextFromOcr(string grabbedText)
+    private void SingleLineMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
-        if (Settings.Default.CorrectErrors)
-            grabbedText = grabbedText.TryFixEveryWordLetterNumberErrors();
-
-        if (Settings.Default.CorrectToLatin)
-            grabbedText = grabbedText.ReplaceGreekOrCyrillicWithLatin();
-
-        if (SingleLineMenuItem.IsChecked is true)
-            grabbedText = grabbedText.MakeStringSingleLine();
-
-        textFromOCR = grabbedText;
-
-        if (!Settings.Default.NeverAutoUseClipboard
-            && destinationTextBox is null)
-            try { Clipboard.SetDataObject(grabbedText, true); } catch { }
-
-        if (Settings.Default.ShowToast
-            && destinationTextBox is null)
-            NotificationUtilities.ShowToast(grabbedText);
-
-        if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
-        {
-            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-            destinationTextBox = etw.PassedTextControl;
-        }
-
-        if (destinationTextBox is not null)
-        {
-            // Do it this way instead of append text because it inserts the text at the cursor
-            // Then puts the cursor at the end of the newly added text
-            // AppendText() just adds the text to the end no matter what.
-            destinationTextBox.SelectedText = grabbedText;
-            destinationTextBox.Select(destinationTextBox.SelectionStart + grabbedText.Length, 0);
-            destinationTextBox.Focus();
-        }
+        bool isActive = CheckIfCheckingOrUnchecking(sender);
+        WindowUtilities.FullscreenKeyDown(Key.S, isActive);
     }
 
-    private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        if (sender is not ComboBox languageCmbBox || !isComboBoxReady)
-            return;
+        WindowState = WindowState.Maximized;
+        FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
+        this.KeyDown += FullscreenGrab_KeyDown;
+        this.KeyUp += FullscreenGrab_KeyUp;
 
-        Language? pickedLang = languageCmbBox.SelectedItem as Language;
+        SetImageToBackground();
 
-        if (pickedLang != null)
-        {
-            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
-            Settings.Default.Save();
-        }
+        if (Settings.Default.FSGMakeSingleLineToggle)
+            SingleLineMenuItem.IsChecked = true;
 
-        int selection = languageCmbBox.SelectedIndex;
+        TopButtonsStackPanel.Visibility = Visibility.Visible;
 
-        switch (selection)
-        {
-            case 0:
-                WindowUtilities.FullscreenKeyDown(Key.D1);
-                break;
-            case 1:
-                WindowUtilities.FullscreenKeyDown(Key.D2);
-                break;
-            case 2:
-                WindowUtilities.FullscreenKeyDown(Key.D3);
-                break;
-            case 3:
-                WindowUtilities.FullscreenKeyDown(Key.D4);
-                break;
-            case 4:
-                WindowUtilities.FullscreenKeyDown(Key.D5);
-                break;
-            case 5:
-                WindowUtilities.FullscreenKeyDown(Key.D6);
-                break;
-            case 6:
-                WindowUtilities.FullscreenKeyDown(Key.D7);
-                break;
-            case 7:
-                WindowUtilities.FullscreenKeyDown(Key.D8);
-                break;
-            case 8:
-                WindowUtilities.FullscreenKeyDown(Key.D9);
-                break;
-            default:
-                break;
-        }
+        LoadOcrLanguages();
     }
 
-    private void LanguagesComboBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    private void Window_Unloaded(object sender, RoutedEventArgs e)
     {
-        if (e.MiddleButton == MouseButtonState.Pressed)
-        {
-            Settings.Default.LastUsedLang = String.Empty;
-            Settings.Default.Save();
-        }
+        BackgroundImage.Source = null;
+        BackgroundImage.UpdateLayout();
+        currentScreen = null;
+        dpiScale = null;
+        textFromOCR = null;
+
+        this.Loaded -= Window_Loaded;
+        this.Unloaded -= Window_Unloaded;
+
+        RegionClickCanvas.MouseDown -= RegionClickCanvas_MouseDown;
+        RegionClickCanvas.MouseMove -= RegionClickCanvas_MouseMove;
+        RegionClickCanvas.MouseUp -= RegionClickCanvas_MouseUp;
+
+        SingleLineMenuItem.Click -= SingleLineMenuItem_Click;
+        FreezeMenuItem.Click -= FreezeMenuItem_Click;
+        NewGrabFrameMenuItem.Click -= NewGrabFrameMenuItem_Click;
+        SendToEtwMenuItem.Click -= NewEditTextMenuItem_Click;
+        SettingsMenuItem.Click -= SettingsMenuItem_Click;
+        CancelMenuItem.Click -= CancelMenuItem_Click;
+
+        LanguagesComboBox.SelectionChanged -= LanguagesComboBox_SelectionChanged;
+
+        SingleLineToggleButton.Click -= SingleLineMenuItem_Click;
+        FreezeToggleButton.Click -= FreezeMenuItem_Click;
+        NewGrabFrameToggleButton.Click -= NewGrabFrameMenuItem_Click;
+        SendToEditTextToggleButton.Click -= NewEditTextMenuItem_Click;
+        SettingsButton.Click -= SettingsMenuItem_Click;
+        CancelButton.Click -= CancelMenuItem_Click;
+
+        this.KeyDown -= FullscreenGrab_KeyDown;
+        this.KeyUp -= FullscreenGrab_KeyUp;
     }
+
+    #endregion Methods
 }

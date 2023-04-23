@@ -1,4 +1,4 @@
-﻿<Window
+﻿<ui:FluentWindow
     x:Class="Text_Grab.FirstRunWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="FirstRun"
     Title="About Text Grab"
     Width="800"
@@ -14,18 +15,19 @@
     MinHeight="200"
     Padding="50"
     d:Height="5000"
-    Background="{StaticResource DarkControlBackground}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Loaded="FirstRun_Loaded"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.Resources>
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
         <Style x:Key="TextBody" TargetType="TextBlock">
             <Setter Property="MaxWidth" Value="600" />
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="Margin" Value="50,30,50,0" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Foreground" Value="White" />
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="FontSize" Value="16" />
         </Style>
@@ -36,375 +38,385 @@
             <Setter Property="Margin" Value="25,25,0,-20" />
         </Style>
     </Window.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical">
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}" Text="Welcome to Text Grab!" />
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar
+            Title="Edit Text"
+            Height="32"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Style="{StaticResource TextHeaderFirstRun}" Text="Welcome to Text Grab!" />
 
-            <TextBlock Style="{StaticResource TextBody}">
-                Text Grab has three different modes for working with text.<LineBreak />
-                1. Full-Screen - Similar to taking a screenshot, but for copying text<LineBreak />
-                2. Grab Frame - An overlay for picking and finding text on screen<LineBreak />
-                3. Edit Text - Like Notepad, but with tools for fixing and changing text<LineBreak />
-                4. Quick Simple Lookup - An editable list of text items to quickly search and copy.<LineBreak />
-                <LineBreak />
-                Right click on Text Grab in the Start Menu, or on the Taskbar to launch the different modes. The mode can be changed in the settings at any time.</TextBlock>
+                <TextBlock Style="{StaticResource TextBody}">
+                    Text Grab has three different modes for working with text.<LineBreak />
+                    1. Full-Screen - Similar to taking a screenshot, but for copying text<LineBreak />
+                    2. Grab Frame - An overlay for picking and finding text on screen<LineBreak />
+                    3. Edit Text - Like Notepad, but with tools for fixing and changing text<LineBreak />
+                    4. Quick Simple Lookup - An editable list of text items to quickly search and copy.<LineBreak />
+                    <LineBreak />
+                    Right click on Text Grab in the Start Menu, or on the Taskbar to launch the different modes. The mode can be changed in the settings at any time.</TextBlock>
 
-            <Grid MaxWidth="2000">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+                <Grid MaxWidth="2000">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto" />
-                    <RowDefinition Height="auto" />
-                    <RowDefinition Height="auto" />
-                    <RowDefinition Height="auto" />
-                    <RowDefinition Height="auto" />
-                </Grid.RowDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                    </Grid.RowDefinitions>
 
-                <TextBlock
-                    Grid.Row="2"
-                    Grid.ColumnSpan="4"
-                    Margin="0,30,0,10"
-                    HorizontalAlignment="Center"
-                    Style="{StaticResource TextHeader}"
-                    Text="Default Launch Window" />
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.ColumnSpan="4"
+                        Margin="0,30,0,10"
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource TextHeader}"
+                        Text="Default Launch Window" />
 
-                <RadioButton
-                    x:Name="FullScreenRDBTN"
-                    Grid.Row="3"
-                    Grid.Column="0"
-                    HorizontalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="RadioButton_Checked"
-                    Foreground="White"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Full-Screen
-                    </TextBlock>
-                </RadioButton>
-                <StackPanel
-                    Grid.Row="4"
-                    Grid.Column="0"
-                    Orientation="Vertical">
-                    <Viewbox
+                    <RadioButton
+                        x:Name="FullScreenRDBTN"
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        HorizontalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Checked="RadioButton_Checked"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Full-Screen
+                        </TextBlock>
+                    </RadioButton>
+                    <StackPanel
                         Grid.Row="4"
                         Grid.Column="0"
-                        Margin="20">
-                        <Image
-                            Width="800"
-                            Height="620"
-                            Source="/Text-Grab;component/Images/FSG.jpg" />
-                    </Viewbox>
-                    <TextBlock HorizontalAlignment="Center">
-                        <Hyperlink
-                            x:Name="TryFullscreen"
-                            Click="TryFullscreen_Click"
-                            FontSize="14"
-                            Foreground="SkyBlue">
-                            Try a Full-Screen Grab
-                        </Hyperlink>
-                    </TextBlock>
-                </StackPanel>
+                        Orientation="Vertical">
+                        <Viewbox
+                            Grid.Row="4"
+                            Grid.Column="0"
+                            Margin="20">
+                            <Image
+                                Width="800"
+                                Height="620"
+                                Source="/Text-Grab;component/Images/FSG.jpg" />
+                        </Viewbox>
+                        <TextBlock HorizontalAlignment="Center">
+                            <Hyperlink
+                                x:Name="TryFullscreen"
+                                Click="TryFullscreen_Click"
+                                FontSize="14"
+                                Foreground="SkyBlue">
+                                Try a Full-Screen Grab
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
 
-                <RadioButton
-                    x:Name="GrabFrameRDBTN"
-                    Grid.Row="3"
-                    Grid.Column="1"
-                    HorizontalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="RadioButton_Checked"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Grab Frame
-                    </TextBlock>
-                </RadioButton>
-                <StackPanel
-                    Grid.Row="4"
-                    Grid.Column="1"
-                    Orientation="Vertical">
-                    <Viewbox
+                    <RadioButton
+                        x:Name="GrabFrameRDBTN"
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        HorizontalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Checked="RadioButton_Checked"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Grab Frame
+                        </TextBlock>
+                    </RadioButton>
+                    <StackPanel
                         Grid.Row="4"
                         Grid.Column="1"
-                        Margin="20">
-                        <Image
-                            Width="800"
-                            Height="620"
-                            Source="/Text-Grab;component/Images/GF.jpg" />
-                    </Viewbox>
-                    <TextBlock HorizontalAlignment="Center">
-                        <Hyperlink
-                            x:Name="TryGrabFrame"
-                            Click="TryGrabFrame_Click"
-                            FontSize="14"
-                            Foreground="SkyBlue">
-                            Show a Grab Frame
-                        </Hyperlink>
-                    </TextBlock>
-                </StackPanel>
+                        Orientation="Vertical">
+                        <Viewbox
+                            Grid.Row="4"
+                            Grid.Column="1"
+                            Margin="20">
+                            <Image
+                                Width="800"
+                                Height="620"
+                                Source="/Text-Grab;component/Images/GF.jpg" />
+                        </Viewbox>
+                        <TextBlock HorizontalAlignment="Center">
+                            <Hyperlink
+                                x:Name="TryGrabFrame"
+                                Click="TryGrabFrame_Click"
+                                FontSize="14"
+                                Foreground="SkyBlue">
+                                Show a Grab Frame
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
 
-                <RadioButton
-                    x:Name="EditWindowRDBTN"
-                    Grid.Row="3"
-                    Grid.Column="2"
-                    HorizontalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="RadioButton_Checked"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Edit Text Window
-                    </TextBlock>
-                </RadioButton>
-                <StackPanel
-                    Grid.Row="4"
-                    Grid.Column="2"
-                    Orientation="Vertical">
-                    <Viewbox
+                    <RadioButton
+                        x:Name="EditWindowRDBTN"
+                        Grid.Row="3"
+                        Grid.Column="2"
+                        HorizontalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Checked="RadioButton_Checked"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Edit Text Window
+                        </TextBlock>
+                    </RadioButton>
+                    <StackPanel
                         Grid.Row="4"
                         Grid.Column="2"
-                        Margin="20">
-                        <Image
-                            Width="800"
-                            Height="620"
-                            Source="/Text-Grab;component/Images/ETW.jpg" />
-                    </Viewbox>
-                    <TextBlock HorizontalAlignment="Center">
-                        <Hyperlink
-                            x:Name="TryEditWindow"
-                            Click="TryEditWindow_Click"
-                            FontSize="14"
-                            Foreground="SkyBlue">
-                            Open an Edit Window
-                        </Hyperlink>
-                    </TextBlock>
-                </StackPanel>
+                        Orientation="Vertical">
+                        <Viewbox
+                            Grid.Row="4"
+                            Grid.Column="2"
+                            Margin="20">
+                            <Image
+                                Width="800"
+                                Height="620"
+                                Source="/Text-Grab;component/Images/ETW.jpg" />
+                        </Viewbox>
+                        <TextBlock HorizontalAlignment="Center">
+                            <Hyperlink
+                                x:Name="TryEditWindow"
+                                Click="TryEditWindow_Click"
+                                FontSize="14"
+                                Foreground="SkyBlue">
+                                Open an Edit Window
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
 
-                <RadioButton
-                    x:Name="QuickLookupRDBTN"
-                    Grid.Row="3"
-                    Grid.Column="3"
-                    HorizontalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="RadioButton_Checked"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Quick Simple Lookup
-                    </TextBlock>
-                </RadioButton>
-                <StackPanel
-                    Grid.Row="4"
-                    Grid.Column="3"
-                    Orientation="Vertical">
-                    <Viewbox
+                    <RadioButton
+                        x:Name="QuickLookupRDBTN"
+                        Grid.Row="3"
+                        Grid.Column="3"
+                        HorizontalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Checked="RadioButton_Checked"
+                        GroupName="DefaultLaunch">
+                        <TextBlock Style="{StaticResource TextBodyNormal}">
+                            Quick Simple Lookup
+                        </TextBlock>
+                    </RadioButton>
+                    <StackPanel
                         Grid.Row="4"
-                        Grid.Column="2"
-                        Margin="20">
-                        <Image
-                            Width="800"
-                            Height="620"
-                            Source="/Text-Grab;component/Images/QSL.jpg" />
-                    </Viewbox>
-                    <TextBlock HorizontalAlignment="Center">
-                        <Hyperlink
-                            x:Name="TryQuickLookup"
-                            Click="TryQuickLookup_Click"
-                            FontSize="14"
-                            Foreground="SkyBlue">
-                            Launch Quick Simple Lookup
-                        </Hyperlink>
-                    </TextBlock>
-                </StackPanel>
-            </Grid>
+                        Grid.Column="3"
+                        Orientation="Vertical">
+                        <Viewbox
+                            Grid.Row="4"
+                            Grid.Column="2"
+                            Margin="20">
+                            <Image
+                                Width="800"
+                                Height="620"
+                                Source="/Text-Grab;component/Images/QSL.jpg" />
+                        </Viewbox>
+                        <TextBlock HorizontalAlignment="Center">
+                            <Hyperlink
+                                x:Name="TryQuickLookup"
+                                Click="TryQuickLookup_Click"
+                                FontSize="14"
+                                Foreground="SkyBlue">
+                                Launch Quick Simple Lookup
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
 
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                How Full-Screen works
-            </TextBlock>
+                <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                    How Full-Screen works
+                </TextBlock>
 
-            <Image
-                MaxWidth="600"
-                Margin="0,30,0,0"
-                HorizontalAlignment="Left"
-                Source="/Text-Grab;component/Images/FSG.jpg"
-                Stretch="Uniform" />
-
-            <TextBlock Style="{StaticResource TextBody}">
-                Like a screenshot tool but instead of a photo output you get the text within the selection. This works two different ways:<LineBreak />
-                1. Draw a rectangle around the text you wish to copy<LineBreak />
-                2. Click on a single word you wish to copy<LineBreak />
-                • Both methods use the built-in Windows 10 OCR engine.<LineBreak />
-                • If there is no result Text Grab returns to Selection Mode to try again.<LineBreak />
-                • When text is recognized from the screen it gets put in your Windows clipboard.<LineBreak />
-                • Then paste using Ctrl + V into any program.<LineBreak />
-                • To view a history of your clipboard use the Windows 10 clipboard manager by pressing Win+V.</TextBlock>
-
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                How Grab Frame works
-            </TextBlock>
-            <Image
-                MaxWidth="600"
-                Margin="0,30,0,0"
-                HorizontalAlignment="Left"
-                Source="/Text-Grab;component/Images/GF.jpg"
-                Stretch="Uniform" />
-            <TextBlock Style="{StaticResource TextBody}">
-                • The Grab Frame is a window which can be moved or resized. It stays on top of other windows and will read all of the text within the border.<LineBreak />
-                • Click or drag to select Word Borders then add them to the clipboard by clicking &quot;Grab&quot;.<LineBreak />
-                • Drop an image onto the Grab Frame to view the image and copy text.<LineBreak />
-                • Pause the Grab Frame and scroll to zoom in on a piece of text.<LineBreak />
-                • Edit each line to correct any errors and fix up the results to be perfect.<LineBreak />
-                • Table mode will draw a grid around the lines to be pasted into a table easily.<LineBreak />
-                • If there is no search string or clicked word borders then the Grab Frame reads all text within the window and copies it to the clipboard.</TextBlock>
-
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                What the Edit Text Window can do
-            </TextBlock>
-            <Image
-                MaxWidth="600"
-                Margin="0,30,0,0"
-                HorizontalAlignment="Left"
-                Source="/Text-Grab;component/Images/ETW.jpg"
-                Stretch="Uniform" />
-            <TextBlock Style="{StaticResource TextBody}">
-                • Similar to Notepad, the Edit Text Window is a &quot;Pure Text&quot; editing experience, with no formatting.<LineBreak />
-                • This means copying text into or out of the Window will remove all formatting, but linebreaks and tabs will remain.<LineBreak />
-                • Gather text using Fullscreen Grabs or Grab Frames.<LineBreak />
-                • There are several tools with in the Edit Text Window which make it quick and easy to fix or change text.</TextBlock>
-            <TextBlock Margin="70,0,0,0" Style="{StaticResource TextBody}">
-                - Make text into a single line<LineBreak />
-                - Toggle between UPPERCASE, lowercase, and Titlecase<LineBreak />
-                - Trim spaces and empty lines<LineBreak />
-                - Isolate selected text<LineBreak />
-                - Replace reserved characters<LineBreak />
-                - Find and replace<LineBreak />
-                - Extract regular expressions<LineBreak />
-                - And more!</TextBlock>
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                Where does Quick Simple Lookup fit in?
-            </TextBlock>
-            <Image
-                MaxWidth="600"
-                Margin="0,30,0,0"
-                HorizontalAlignment="Left"
-                Source="/Text-Grab;component/Images/QSL.jpg"
-                Stretch="Uniform" />
-            <TextBlock Style="{StaticResource TextBody}">
-                • Unlike Full-Screen or Grab Frame modes Quick Simple Lookup does not use OCR.<LineBreak />
-                • Fast to launch and load the lookup table. (default hotkey Win+Shift+Q)<LineBreak />
-                • Search for any item in any way you like to filter results quickly.<LineBreak />
-                • Press Enter to copy the looup value and close the window in a snap!<LineBreak />
-                • Now paste the text into the app you need it.<LineBreak />
-            </TextBlock>
-
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                Application Options
-            </TextBlock>
-
-            <TextBlock Style="{StaticResource TextBody}">
-                Clicking on notifications puts the copied text into an Edit Text Window to be copied, corrected, changed, amended, or more!
-            </TextBlock>
-            <Viewbox
-                MaxHeight="160"
-                Margin="50,10"
-                HorizontalAlignment="Left">
                 <Image
-                    Width="800"
-                    Height="620"
-                    Source="/Text-Grab;component/Images/Toast.png" />
-            </Viewbox>
-            <CheckBox
-                x:Name="NotificationsCheckBox"
-                Margin="50,5,50,0"
-                Checked="NotificationsCheckBox_Checked"
-                IsChecked="True"
-                Unchecked="NotificationsCheckBox_Checked">
-                <TextBlock
-                    Margin="0"
-                    VerticalAlignment="Center"
-                    Style="{StaticResource TextBody}">
-                    Enable Notifications
+                    MaxWidth="600"
+                    Margin="0,30,0,0"
+                    HorizontalAlignment="Left"
+                    Source="/Text-Grab;component/Images/FSG.jpg"
+                    Stretch="Uniform" />
+
+                <TextBlock Style="{StaticResource TextBody}">
+                    Like a screenshot tool but instead of a photo output you get the text within the selection. This works two different ways:<LineBreak />
+                    1. Draw a rectangle around the text you wish to copy<LineBreak />
+                    2. Click on a single word you wish to copy<LineBreak />
+                    • Both methods use the built-in Windows 10 OCR engine.<LineBreak />
+                    • If there is no result Text Grab returns to Selection Mode to try again.<LineBreak />
+                    • When text is recognized from the screen it gets put in your Windows clipboard.<LineBreak />
+                    • Then paste using Ctrl + V into any program.<LineBreak />
+                    • To view a history of your clipboard use the Windows 10 clipboard manager by pressing Win+V.</TextBlock>
+
+                <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                    How Grab Frame works
                 </TextBlock>
-            </CheckBox>
+                <Image
+                    MaxWidth="600"
+                    Margin="0,30,0,0"
+                    HorizontalAlignment="Left"
+                    Source="/Text-Grab;component/Images/GF.jpg"
+                    Stretch="Uniform" />
+                <TextBlock Style="{StaticResource TextBody}">
+                    • The Grab Frame is a window which can be moved or resized. It stays on top of other windows and will read all of the text within the border.<LineBreak />
+                    • Click or drag to select Word Borders then add them to the clipboard by clicking &quot;Grab&quot;.<LineBreak />
+                    • Drop an image onto the Grab Frame to view the image and copy text.<LineBreak />
+                    • Pause the Grab Frame and scroll to zoom in on a piece of text.<LineBreak />
+                    • Edit each line to correct any errors and fix up the results to be perfect.<LineBreak />
+                    • Table mode will draw a grid around the lines to be pasted into a table easily.<LineBreak />
+                    • If there is no search string or clicked word borders then the Grab Frame reads all text within the window and copies it to the clipboard.</TextBlock>
 
-            <TextBlock Style="{StaticResource TextBody}">
-                Running in the background enables shortcut keys and faster launch times.
-            </TextBlock>
-            <CheckBox
-                x:Name="BackgroundCheckBox"
-                Margin="50,5,50,0"
-                Checked="BackgroundCheckBox_Checked"
-                Unchecked="BackgroundCheckBox_Checked">
-                <TextBlock Margin="0" Style="{StaticResource TextBody}">
-                    Run Text Grab in the background
+                <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                    What the Edit Text Window can do
                 </TextBlock>
-            </CheckBox>
-
-            <TextBlock Style="{StaticResource TextBody}">
-                Launching Text Grab on startup keeps the app ready for quick access.
-            </TextBlock>
-            <CheckBox
-                x:Name="StartupCheckbox"
-                Margin="50,5,50,0"
-                Checked="StartupCheckbox_Checked"
-                Unchecked="StartupCheckbox_Checked">
-                <TextBlock
-                    x:Name="StartupTextblock"
-                    Margin="0"
-                    Style="{StaticResource TextBody}">
-                    Start Text Grab on startup
+                <Image
+                    MaxWidth="600"
+                    Margin="0,30,0,0"
+                    HorizontalAlignment="Left"
+                    Source="/Text-Grab;component/Images/ETW.jpg"
+                    Stretch="Uniform" />
+                <TextBlock Style="{StaticResource TextBody}">
+                    • Similar to Notepad, the Edit Text Window is a &quot;Pure Text&quot; editing experience, with no formatting.<LineBreak />
+                    • This means copying text into or out of the Window will remove all formatting, but linebreaks and tabs will remain.<LineBreak />
+                    • Gather text using Fullscreen Grabs or Grab Frames.<LineBreak />
+                    • There are several tools with in the Edit Text Window which make it quick and easy to fix or change text.</TextBlock>
+                <TextBlock Margin="70,0,0,0" Style="{StaticResource TextBody}">
+                    - Make text into a single line<LineBreak />
+                    - Toggle between UPPERCASE, lowercase, and Titlecase<LineBreak />
+                    - Trim spaces and empty lines<LineBreak />
+                    - Isolate selected text<LineBreak />
+                    - Replace reserved characters<LineBreak />
+                    - Find and replace<LineBreak />
+                    - Extract regular expressions<LineBreak />
+                    - And more!</TextBlock>
+                <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                    Where does Quick Simple Lookup fit in?
                 </TextBlock>
-            </CheckBox>
+                <Image
+                    MaxWidth="600"
+                    Margin="0,30,0,0"
+                    HorizontalAlignment="Left"
+                    Source="/Text-Grab;component/Images/QSL.jpg"
+                    Stretch="Uniform" />
+                <TextBlock Style="{StaticResource TextBody}">
+                    • Unlike Full-Screen or Grab Frame modes Quick Simple Lookup does not use OCR.<LineBreak />
+                    • Fast to launch and load the lookup table. (default hotkey Win+Shift+Q)<LineBreak />
+                    • Search for any item in any way you like to filter results quickly.<LineBreak />
+                    • Press Enter to copy the looup value and close the window in a snap!<LineBreak />
+                    • Now paste the text into the app you need it.<LineBreak />
+                </TextBlock>
 
-            <TextBlock Style="{StaticResource TextHeaderFirstRun}">
-                How Text Grab is Different
-            </TextBlock>
-            <TextBlock Style="{StaticResource TextBody}">
-                Text Grab was designed with speed, efficiency, and privacy in mind.<LineBreak />
-                - With no cumbersome UI Text Grab can be used like a basic part of the operating system.<LineBreak />
-                - Paired with the Windows 10 Clipboard manager, Text Grab fulfills its goal without duplicating tools found elsewhere in Windows.<LineBreak />
-                - By using the built-in OCR engine Text Grab does not have to constantly run in the background.<LineBreak />
-                - The OCR engine built into Windows 10 enables Text Grab to respect users' privacy and not transmit data regarding the copied text.<LineBreak />
-                - This does mean I will not be able to directly improve the OCR accuracy since the code is owned and maintained by Microsoft.<LineBreak />
-                <LineBreak />
-                I hope you find Text Grab as useful as I do. If you have any questions or comments please visit the GitHub page for Text Grab at:<Hyperlink
-                    Foreground="DeepSkyBlue"
-                    NavigateUri="https://github.com/TheJoeFin/Text-Grab/"
-                    RequestNavigate="Hyperlink_RequestNavigate">
-                    GitHub.com/TheJoeFin/Text-Grab/
-                </Hyperlink>
-                or email:<Hyperlink
-                    Foreground="DeepSkyBlue"
-                    NavigateUri="mailto:support@textgrab.net"
-                    RequestNavigate="Hyperlink_RequestNavigate">
-                    support@TextGrab.net
-                </Hyperlink>
+                <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                    Application Options
+                </TextBlock>
 
-                <LineBreak />
-                <LineBreak />
-                Joe</TextBlock>
+                <TextBlock Style="{StaticResource TextBody}">
+                    Clicking on notifications puts the copied text into an Edit Text Window to be copied, corrected, changed, amended, or more!
+                </TextBlock>
+                <Viewbox
+                    MaxHeight="160"
+                    Margin="50,10"
+                    HorizontalAlignment="Left">
+                    <Image
+                        Width="800"
+                        Height="620"
+                        Source="/Text-Grab;component/Images/Toast.png" />
+                </Viewbox>
+                <ui:ToggleSwitch
+                    x:Name="NotificationsCheckBox"
+                    Margin="50,5,50,0"
+                    Checked="NotificationsCheckBox_Checked"
+                    IsChecked="True"
+                    Unchecked="NotificationsCheckBox_Checked">
+                    <TextBlock
+                        Margin="0"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource TextBody}">
+                        Enable Notifications
+                    </TextBlock>
+                </ui:ToggleSwitch>
 
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <TextBlock Style="{StaticResource TextBody}">
+                    Running in the background enables shortcut keys and faster launch times.
+                </TextBlock>
+                <ui:ToggleSwitch
+                    x:Name="BackgroundCheckBox"
+                    Margin="50,5,50,0"
+                    Checked="BackgroundCheckBox_Checked"
+                    Unchecked="BackgroundCheckBox_Checked">
+                    <TextBlock Margin="0" Style="{StaticResource TextBody}">
+                        Run Text Grab in the background
+                    </TextBlock>
+                </ui:ToggleSwitch>
 
-                <controls:CollapsibleButton
-                    x:Name="SettingsButton"
-                    Width="100"
-                    Background="DimGray"
-                    ButtonText="Settings"
-                    CanChangeStyle="False"
-                    Click="SettingsButton_Click"
-                    SymbolText="" />
+                <TextBlock Style="{StaticResource TextBody}">
+                    Launching Text Grab on startup keeps the app ready for quick access.
+                </TextBlock>
+                <ui:ToggleSwitch
+                    x:Name="StartupCheckbox"
+                    Margin="50,5,50,0"
+                    Checked="StartupCheckbox_Checked"
+                    Unchecked="StartupCheckbox_Checked">
+                    <TextBlock
+                        x:Name="StartupTextblock"
+                        Margin="0"
+                        Style="{StaticResource TextBody}">
+                        Start Text Grab on startup
+                    </TextBlock>
+                </ui:ToggleSwitch>
 
-                <controls:CollapsibleButton
-                    x:Name="OkayButton"
-                    Width="100"
-                    Margin="20"
-                    ButtonText="Okay"
-                    CanChangeStyle="False"
-                    Click="OkayButton_Click"
-                    SymbolText="" />
+                <TextBlock Style="{StaticResource TextHeaderFirstRun}">
+                    How Text Grab is Different
+                </TextBlock>
+                <TextBlock Style="{StaticResource TextBody}">
+                    Text Grab was designed with speed, efficiency, and privacy in mind.<LineBreak />
+                    - With no cumbersome UI Text Grab can be used like a basic part of the operating system.<LineBreak />
+                    - Paired with the Windows 10 Clipboard manager, Text Grab fulfills its goal without duplicating tools found elsewhere in Windows.<LineBreak />
+                    - By using the built-in OCR engine Text Grab does not have to constantly run in the background.<LineBreak />
+                    - The OCR engine built into Windows 10 enables Text Grab to respect users' privacy and not transmit data regarding the copied text.<LineBreak />
+                    - This does mean I will not be able to directly improve the OCR accuracy since the code is owned and maintained by Microsoft.<LineBreak />
+                    <LineBreak />
+                    I hope you find Text Grab as useful as I do. If you have any questions or comments please visit the GitHub page for Text Grab at:<Hyperlink
+                        Foreground="DeepSkyBlue"
+                        NavigateUri="https://github.com/TheJoeFin/Text-Grab/"
+                        RequestNavigate="Hyperlink_RequestNavigate">
+                        GitHub.com/TheJoeFin/Text-Grab/
+                    </Hyperlink>
+                    or email:<Hyperlink
+                        Foreground="DeepSkyBlue"
+                        NavigateUri="mailto:support@textgrab.net"
+                        RequestNavigate="Hyperlink_RequestNavigate">
+                        support@TextGrab.net
+                    </Hyperlink>
+
+                    <LineBreak />
+                    <LineBreak />
+                    Joe</TextBlock>
+
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+
+                    <controls:CollapsibleButton
+                        x:Name="SettingsButton"
+                        Width="100"
+                        Background="DimGray"
+                        ButtonText="Settings"
+                        CanChangeStyle="False"
+                        Click="SettingsButton_Click"
+                        SymbolText="" />
+
+                    <controls:CollapsibleButton
+                        x:Name="OkayButton"
+                        Width="100"
+                        Margin="20"
+                        ButtonText="Okay"
+                        CanChangeStyle="False"
+                        Click="OkayButton_Click"
+                        SymbolText="" />
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
-</Window>
+        </ScrollViewer>
+    </Grid>
+</ui:FluentWindow>

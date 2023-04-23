@@ -15,9 +15,9 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <SolidColorBrush x:Key="{x:Static DataGrid.FocusBorderBrushKey}" Color="#FF000000" />
+    <SolidColorBrush x:Key="{x:Static DataGrid.FocusBorderBrushKey}" Color="{DynamicResource SolidBackgroundFillColorBaseAlt}" />
     <Style x:Key="DataGridRowStyleDark" TargetType="{x:Type DataGridRow}">
-        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+        <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorBaseAltBrush}" />
         <Setter Property="SnapsToDevicePixels" Value="true" />
         <Setter Property="Validation.ErrorTemplate" Value="{x:Null}" />
         <Setter Property="ValidationErrorTemplate">
@@ -97,7 +97,7 @@
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background" Value="{StaticResource DarkTeal}" />
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                <Setter Property="Foreground" Value="White" />
                 <Setter Property="BorderBrush" Value="{StaticResource Teal}" />
                 <Setter Property="BorderThickness" Value="2" />
             </Trigger>
@@ -109,9 +109,9 @@
                     <Condition Property="IsSelected" Value="true" />
                     <Condition Property="Selector.IsSelectionActive" Value="false" />
                 </MultiTrigger.Conditions>
-                <Setter Property="Background" Value="Black" />
+                <Setter Property="Background" Value="{DynamicResource ApplicationBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}" />
-                <Setter Property="Foreground" Value="Gray" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             </MultiTrigger>
             <Trigger Property="IsEnabled" Value="false">
                 <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
@@ -126,7 +126,7 @@
                     <Grid>
                         <theme:DataGridHeaderBorder
                             Padding="{TemplateBinding Padding}"
-                            Background="{StaticResource DarkControlBackground}"
+                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             IsClickable="{TemplateBinding CanUserSort}"

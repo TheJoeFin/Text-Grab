@@ -24,11 +24,17 @@
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="16" />
             <Setter Property="Margin" Value="4" />
-            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style TargetType="ToggleButton">
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid d:Background="NavajoWhite">
         <Viewbox>
             <Image x:Name="BackgroundImage" Stretch="UniformToFill" />
         </Viewbox>
@@ -52,7 +58,7 @@
                 <SolidColorBrush
                     x:Name="BackgroundBrush"
                     Opacity="0"
-                    Color="Beige" />
+                    Color="{DynamicResource ApplicationBackgroundColor}" />
             </Canvas.Background>
             <Canvas.ContextMenu>
                 <ContextMenu>
@@ -60,6 +66,11 @@
                         Name="SingleLineMenuItem"
                         Click="SingleLineMenuItem_Click"
                         Header="Make Result Text Single Line"
+                        IsCheckable="True" />
+                    <MenuItem
+                        Name="TableMenuItem"
+                        Click="SingleLineMenuItem_Click"
+                        Header="OCR text as a table"
                         IsCheckable="True" />
                     <MenuItem
                         Name="FreezeMenuItem"
@@ -90,94 +101,126 @@
                 </ContextMenu>
             </Canvas.ContextMenu>
         </Canvas>
-        <StackPanel
+        <Border
             x:Name="TopButtonsStackPanel"
-            Margin="0"
+            Margin="12"
+            Padding="8"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
-            Background="{StaticResource DarkControlBackground}"
-            Orientation="Horizontal"
+            d:Background="White"
+            d:Visibility="Visible"
+            Background="{DynamicResource ApplicationBackgroundBrush}"
+            CornerRadius="8"
             Visibility="Collapsed">
-            <ComboBox
-                x:Name="LanguagesComboBox"
-                PreviewMouseDown="LanguagesComboBox_PreviewMouseDown"
-                SelectionChanged="LanguagesComboBox_SelectionChanged">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            FontFamily="Segoe UI"
-                            Style="{StaticResource SymbolTextStyle}"
-                            Text="{Binding LanguageTag}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-            <ToggleButton
-                x:Name="SingleLineToggleButton"
-                Margin="4,0,0,4"
-                Click="SingleLineMenuItem_Click"
-                IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
-                Style="{StaticResource ToggleSymbolButton}">
-                <TextBlock
-                    Style="{StaticResource SymbolTextStyle}"
-                    Text=""
-                    ToolTip="(S) Make result a single line" />
-            </ToggleButton>
-            <ToggleButton
-                x:Name="FreezeToggleButton"
-                Margin="0,0,0,4"
-                Click="FreezeMenuItem_Click"
-                IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
-                Style="{StaticResource ToggleSymbolButton}">
-                <TextBlock
-                    Style="{StaticResource SymbolTextStyle}"
-                    Text=""
-                    ToolTip="(F) Freeze what is on screens" />
-            </ToggleButton>
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="32"
+                    Direction="-90"
+                    Opacity="0.6"
+                    RenderingBias="Performance" />
+            </Border.Effect>
+            <StackPanel
+                Margin="2,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Orientation="Horizontal">
+                <ComboBox
+                    x:Name="LanguagesComboBox"
+                    Margin="0"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    PreviewMouseDown="LanguagesComboBox_PreviewMouseDown"
+                    SelectionChanged="LanguagesComboBox_SelectionChanged">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe UI"
+                                Style="{StaticResource SymbolTextStyle}"
+                                Text="{Binding LanguageTag}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ToggleButton
+                    x:Name="FreezeToggleButton"
+                    Width="34"
+                    Height="34"
+                    Margin="4,0,2,0"
+                    Click="FreezeMenuItem_Click"
+                    IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
+                    Style="{StaticResource ToggleSymbolButton}"
+                    ToolTip="(F) Freeze what is on screens">
+                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                </ToggleButton>
+                <ToggleButton
+                    x:Name="SingleLineToggleButton"
+                    Width="34"
+                    Height="34"
+                    Margin="2,0"
+                    d:IsChecked="True"
+                    Click="SingleLineMenuItem_Click"
+                    IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
+                    Style="{StaticResource ToggleSymbolButton}"
+                    ToolTip="(S) Make result a single line">
+                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                </ToggleButton>
+                <ToggleButton
+                    x:Name="TableToggleButton"
+                    Width="34"
+                    Height="34"
+                    Margin="2,0"
+                    d:IsChecked="True"
+                    IsChecked="{Binding IsChecked, ElementName=TableMenuItem, Mode=TwoWay}"
+                    Style="{StaticResource ToggleSymbolButton}"
+                    ToolTip="(T) OCR text as a table">
+                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
+                </ToggleButton>
 
-            <ToggleButton
-                x:Name="NewGrabFrameToggleButton"
-                Margin="4,0,0,4"
-                Click="NewGrabFrameMenuItem_Click"
-                IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
-                Style="{StaticResource ToggleSymbolButton}">
-                <TextBlock
-                    Style="{StaticResource SymbolTextStyle}"
-                    Text=""
-                    ToolTip="(G) Place a Grab Frame" />
-            </ToggleButton>
-            <ToggleButton
-                x:Name="SendToEditTextToggleButton"
-                Margin="4,0,0,4"
-                Click="SendToEditTextToggleButton_Click"
-                IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
-                Style="{StaticResource ToggleSymbolButton}">
-                <TextBlock
-                    Style="{StaticResource SymbolTextStyle}"
-                    Text=""
-                    ToolTip="(E) Send to an Edit Text Window" />
-            </ToggleButton>
-            <Button
-                x:Name="SettingsButton"
-                Margin="0,0,0,4"
-                Click="SettingsMenuItem_Click"
-                Style="{StaticResource SymbolButton}">
-                <TextBlock
-                    Style="{StaticResource SymbolTextStyle}"
-                    Text=""
-                    ToolTip="Settings" />
-            </Button>
-            <Button
-                x:Name="CancelButton"
-                Margin="4,0,4,4"
-                Click="CancelMenuItem_Click"
-                Style="{StaticResource SymbolButton}">
-                <TextBlock
-                    Style="{StaticResource SymbolTextStyle}"
-                    Text=""
-                    ToolTip="(Esc) Cancel" />
-            </Button>
-        </StackPanel>
+                <ToggleButton
+                    x:Name="NewGrabFrameToggleButton"
+                    Width="34"
+                    Height="34"
+                    Margin="2,0"
+                    d:IsChecked="True"
+                    Click="NewGrabFrameMenuItem_Click"
+                    IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
+                    Style="{StaticResource ToggleSymbolButton}"
+                    ToolTip="(G) Place a Grab Frame">
+                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                </ToggleButton>
+                <ToggleButton
+                    x:Name="SendToEditTextToggleButton"
+                    Width="34"
+                    Height="34"
+                    Margin="2,0"
+                    d:IsChecked="True"
+                    Click="SendToEditTextToggleButton_Click"
+                    IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
+                    Style="{StaticResource ToggleSymbolButton}"
+                    ToolTip="(E) Send to an Edit Text Window">
+                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                </ToggleButton>
+                <Button
+                    x:Name="SettingsButton"
+                    Width="34"
+                    Height="34"
+                    Margin="2,0"
+                    Click="SettingsMenuItem_Click"
+                    Style="{StaticResource SymbolButton}"
+                    ToolTip="Settings">
+                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                </Button>
+                <Button
+                    x:Name="CancelButton"
+                    Width="34"
+                    Height="34"
+                    Margin="2,0,0,0"
+                    Click="CancelMenuItem_Click"
+                    Style="{StaticResource SymbolButton}"
+                    ToolTip="(Esc) Cancel">
+                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                </Button>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
