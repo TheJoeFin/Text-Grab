@@ -50,7 +50,6 @@ public partial class SettingsWindow : FluentWindow
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
-        UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
         CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -345,6 +344,7 @@ public partial class SettingsWindow : FluentWindow
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
         CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
+        UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -405,5 +405,13 @@ public partial class SettingsWindow : FluentWindow
 
     #endregion Methods
 
+    private void MoreInfoHyperlink_Click(object sender, RoutedEventArgs e)
+    {
+        TessMoreInfoBorder.Visibility = Visibility.Visible;
+    }
+    private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
+    {
+        TessMoreInfoBorder.Visibility = Visibility.Collapsed;
+    }
 }
 

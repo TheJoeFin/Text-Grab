@@ -12,7 +12,7 @@
     Height="600"
     MinWidth="200"
     MinHeight="300"
-    d:Height="1200"
+    d:Height="2000"
     Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -159,11 +159,6 @@
                         </RadioButton>
 
                         <!--  Pick Language  -->
-                        <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Use Tesseract, when possible.
-                            </TextBlock>
-                        </ui:ToggleSwitch>
 
                         <!--    -->
                         <ui:ToggleSwitch Name="ErrorCorrectBox" Margin="0,12,0,0">
@@ -301,7 +296,7 @@
                             <StackPanel>
                                 <ui:ToggleSwitch Name="TryInsertCheckbox" Margin="0,12,0,0">
                                     <TextBlock Style="{StaticResource TextBodyNormal}">
-                                        (Experimental) Try to Insert text in text fields after Fullscreen Grab after:
+                                        Try to Insert text in text fields after Fullscreen Grab after:
                                     </TextBlock>
                                 </ui:ToggleSwitch>
                                 <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
@@ -342,6 +337,52 @@
                                 Try to read barcodes (Disabling may speed up results)
                             </TextBlock>
                         </ui:ToggleSwitch>
+
+                        <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                                Use Tesseract, when possible.<LineBreak /> <Hyperlink Click="MoreInfoHyperlink_Click">
+                                    More information
+                                </Hyperlink>
+                            </TextBlock>
+                        </ui:ToggleSwitch>
+                        <Border
+                            x:Name="TessMoreInfoBorder"
+                            Margin="0,16,0,0"
+                            Padding="20,10"
+                            d:Visibility="Visible"
+                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                            CornerRadius="6"
+                            Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource TextHeader}" Text="What is Tesseract?" />
+                                <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
+                                    Tesseract is an optical character recognition engine for various operating systems. It is free software, released under the Apache License. Originally developed by Hewlett-Packard as proprietary software in the 1980s, it was released as open source in 2005 and development has been sponsored by Google since 2006.<LineBreak /><Hyperlink NavigateUri="https://en.wikipedia.org/wiki/Tesseract_(software)">
+                                        More...
+                                    </Hyperlink>
+                                </TextBlock>
+                                <TextBlock
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource TextHeader}"
+                                    Text="How does Text Grab use Tesseract?" />
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Hello" />
+                                <TextBlock
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource TextHeader}"
+                                    Text="How do I get Tesseract?" />
+                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                    The source repository is on GitHub<Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract">here</Hyperlink><LineBreak />
+                                    UB Mannheim maintains an installer for Windows<Hyperlink NavigateUri="https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/">here</Hyperlink>
+                                </TextBlock>
+                                <TextBlock
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource TextHeader}"
+                                    Text="Why should I use Tesseract?" />
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Hello" />
+                                <TextBlock HorizontalAlignment="Right">
+                                    <Hyperlink Click="TessInfoCloseHypBtn_Click">Done</Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
 
                         <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
                             Reset All settings to default settings.
