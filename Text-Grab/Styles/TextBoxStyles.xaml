@@ -12,7 +12,7 @@
     <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>
 
     <Color x:Key="ControlLightColor">White</Color>
-    <Color x:Key="ControlMediumColor">#308E98</Color>
+    <Color x:Key="ControlMediumColor">#28767f</Color>
     <Color x:Key="ControlDarkColor">#1F5E65</Color>
 
     <Color x:Key="ControlMouseOverColor">#0F2E31</Color>
