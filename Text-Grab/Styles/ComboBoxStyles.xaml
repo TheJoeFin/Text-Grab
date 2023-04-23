@@ -17,7 +17,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <SolidColorBrush x:Key="TextBox.Static.Background" Color="#071818" />
+    <SolidColorBrush x:Key="TextBox.Static.Background" Color="{DynamicResource ApplicationBackgroundColor}" />
     <Style x:Key="ComboBoxEditableTextBox" TargetType="{x:Type TextBox}">
         <Setter Property="OverridesDefaultStyle" Value="true" />
         <Setter Property="AllowDrop" Value="true" />
@@ -31,7 +31,7 @@
                 <ControlTemplate TargetType="{x:Type TextBox}">
                     <ScrollViewer
                         x:Name="PART_ContentHost"
-                        Background="#444444"
+                        Background="{DynamicResource ControlFillColorDefault}"
                         Focusable="false"
                         HorizontalScrollBarVisibility="Hidden"
                         VerticalScrollBarVisibility="Hidden" />
@@ -41,35 +41,35 @@
     </Style>
     <SolidColorBrush x:Key="ComboBox.Static.Background" Color="Transparent" />
     <SolidColorBrush x:Key="ComboBox.Static.Border" Color="Transparent" />
-    <SolidColorBrush x:Key="ComboBox.Static.Glyph" Color="White" />
-    <SolidColorBrush x:Key="ComboBox.Static.Editable.Background" Color="#444444" />
+    <SolidColorBrush x:Key="ComboBox.Static.Glyph" Color="{DynamicResource TextFillColorPrimary}" />
+    <SolidColorBrush x:Key="ComboBox.Static.Editable.Background" Color="{DynamicResource ControlFillColorDefault}" />
     <SolidColorBrush x:Key="ComboBox.Static.Editable.Border" Color="#1E595F" />
-    <SolidColorBrush x:Key="ComboBox.Static.Editable.Button.Background" Color="#444444" />
-    <SolidColorBrush x:Key="ComboBox.Static.Editable.Button.Border" Color="#444444" />
+    <SolidColorBrush x:Key="ComboBox.Static.Editable.Button.Background" Color="{DynamicResource ControlFillColorDefault}" />
+    <SolidColorBrush x:Key="ComboBox.Static.Editable.Button.Border" Color="{DynamicResource ControlFillColorDefault}" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Background" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Border" Color="#1E595F" />
-    <SolidColorBrush x:Key="ComboBox.MouseOver.Glyph" Color="White" />
+    <SolidColorBrush x:Key="ComboBox.MouseOver.Glyph" Color="{DynamicResource TextFillColorPrimary}" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Background" Color="#308e98" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Border" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Button.Background" Color="#308e98" />
     <SolidColorBrush x:Key="ComboBox.MouseOver.Editable.Button.Border" Color="#1E595F" />
-    <SolidColorBrush x:Key="ComboBox.Pressed.Background" Color="#071818" />
+    <SolidColorBrush x:Key="ComboBox.Pressed.Background" Color="{DynamicResource ApplicationBackgroundColor}" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Border" Color="#1E595F" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Glyph" Color="#1E595F" />
-    <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Background" Color="#444444" />
+    <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Background" Color="{DynamicResource ControlFillColorDefault}" />
     <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Border" Color="#1E595F" />
     <LinearGradientBrush x:Key="ComboBox.Pressed.Editable.Button.Background" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Offset="0.0" Color="#444444" />
         <GradientStop Offset="1.0" Color="#1E595F" />
     </LinearGradientBrush>
     <SolidColorBrush x:Key="ComboBox.Pressed.Editable.Button.Border" Color="#FF569DE5" />
-    <SolidColorBrush x:Key="ComboBox.Disabled.Background" Color="#444444" />
+    <SolidColorBrush x:Key="ComboBox.Disabled.Background" Color="{DynamicResource ControlFillColorDefault}" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Border" Color="Transparent" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Glyph" Color="#444444" />
-    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Background" Color="#444444" />
+    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Background" Color="{DynamicResource ControlFillColorDefault}" />
     <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Border" Color="Transparent" />
-    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Button.Background" Color="#444444" />
-    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Button.Border" Color="#444444" />
+    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Button.Background" Color="{DynamicResource ControlFillColorDefault}" />
+    <SolidColorBrush x:Key="ComboBox.Disabled.Editable.Button.Border" Color="{DynamicResource ControlFillColorDefault}" />
     <Style x:Key="ComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
         <Setter Property="OverridesDefaultStyle" Value="true" />
         <Setter Property="IsTabStop" Value="false" />
@@ -83,6 +83,7 @@
                         Background="{StaticResource ComboBox.Static.Background}"
                         BorderBrush="{StaticResource ComboBox.Static.Border}"
                         BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="4"
                         SnapsToDevicePixels="true">
                         <Border
                             x:Name="splitBorder"
@@ -90,7 +91,7 @@
                             Margin="0"
                             HorizontalAlignment="Right"
                             BorderBrush="#444444"
-                            BorderThickness="1"
+                            BorderThickness="0"
                             SnapsToDevicePixels="true">
                             <Path
                                 x:Name="arrow"
@@ -204,11 +205,12 @@
                         x:Name="dropDownBorder"
                         Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
                         BorderBrush="{DynamicResource {x:Static SystemColors.WindowFrameBrushKey}}"
-                        BorderThickness="1">
+                        BorderThickness="0"
+                        CornerRadius="4">
                         <ScrollViewer x:Name="DropDownScrollViewer">
                             <Grid
                                 x:Name="grid"
-                                Background="#444444"
+                                Background="{DynamicResource ApplicationBackgroundBrush}"
                                 RenderOptions.ClearTypeHint="Enabled">
                                 <Canvas
                                     x:Name="canvas"
@@ -242,7 +244,8 @@
             <Border
                 x:Name="border"
                 Margin="{TemplateBinding BorderThickness}"
-                Background="{StaticResource TextBox.Static.Background}">
+                Background="{StaticResource TextBox.Static.Background}"
+                CornerRadius="4">
                 <TextBox
                     x:Name="PART_EditableTextBox"
                     Margin="{TemplateBinding Padding}"
@@ -300,9 +303,10 @@
                     Color="Transparent">
                     <Border
                         x:Name="dropDownBorder"
-                        Background="#444444"
+                        Background="{DynamicResource ApplicationBackgroundBrush}"
                         BorderBrush="{DynamicResource {x:Static SystemColors.WindowFrameBrushKey}}"
-                        BorderThickness="1">
+                        BorderThickness="0"
+                        CornerRadius="4">
                         <ScrollViewer x:Name="DropDownScrollViewer">
                             <Grid x:Name="grid" RenderOptions.ClearTypeHint="Enabled">
                                 <Canvas
@@ -372,7 +376,7 @@
         <Setter Property="Background" Value="{StaticResource ComboBox.Static.Border}" />
         <Setter Property="BorderBrush" Value="{StaticResource ComboBox.Static.Border}" />
         <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         <Setter Property="Padding" Value="6,3,5,3" />

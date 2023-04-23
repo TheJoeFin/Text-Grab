@@ -368,6 +368,13 @@ public class ButtonInfo
             ButtonText = "New Window from Selection",
             SymbolText = "",
             ClickEvent = "NewWindowWithText_Clicked"
+        },
+        new()
+        {
+            OrderNumber = 5.7,
+            ButtonText = "Make QR Code",
+            SymbolText = "",
+            Command = "MakeQrCodeCmd"
         }
     };
 }

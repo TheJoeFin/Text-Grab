@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -21,6 +22,7 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Wpf.Ui.Controls.Window;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Text_Grab;
@@ -29,7 +31,7 @@ namespace Text_Grab;
 /// Interaction logic for ManipulateTextWindow.xaml
 /// </summary>
 
-public partial class EditTextWindow : Window
+public partial class EditTextWindow : FluentWindow
 {
     #region Fields
 
@@ -45,6 +47,7 @@ public partial class EditTextWindow : Window
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
+    public static RoutedCommand MakeQrCodeCmd = new();
     public bool LaunchedFromNotification = false;
     CancellationTokenSource? cancellationTokenForDirOCR;
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
@@ -61,11 +64,13 @@ public partial class EditTextWindow : Window
     public EditTextWindow()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     public EditTextWindow(string possiblyEndcodedString, bool isEncoded = true)
     {
         InitializeComponent();
+        App.SetTheme();
 
         if (isEncoded)
             ReadEncodedString(possiblyEndcodedString);
@@ -88,7 +93,6 @@ public partial class EditTextWindow : Window
 
     #region Methods
 
-    // a method which populates localRoutedCommands with all of the public static commands on this page
     public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {
         return new Dictionary<string, RoutedCommand>()
@@ -104,7 +108,8 @@ public partial class EditTextWindow : Window
             {nameof(DeleteAllSelectionCmd), DeleteAllSelectionCmd},
             {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
-            {nameof(OcrPasteCommand), OcrPasteCommand}
+            {nameof(OcrPasteCommand), OcrPasteCommand},
+            {nameof(MakeQrCodeCmd), MakeQrCodeCmd}
         };
     }
 
@@ -247,7 +252,7 @@ public partial class EditTextWindow : Window
         {
             try
             {
-                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePath(OpenedFilePath));
+                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePathAsync(OpenedFilePath));
             }
             catch (Exception)
             {
@@ -289,7 +294,7 @@ public partial class EditTextWindow : Window
         returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrdText = await OcrExtensions.OcrAbsoluteFilePath(path);
+            string ocrdText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
 
             if (!string.IsNullOrWhiteSpace(ocrdText))
             {
@@ -451,18 +456,6 @@ public partial class EditTextWindow : Window
 
         e.CanExecute = false;
     }
-
-    private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
-    {
-        string possibleURL = PassedTextControl.SelectedText;
-
-        if (string.IsNullOrEmpty(possibleURL))
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
-
-        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
-            Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
-    }
-
 
     private void CanOcrPasteExecute(object sender, CanExecuteRoutedEventArgs e)
     {
@@ -906,6 +899,16 @@ public partial class EditTextWindow : Window
         qsl.Show();
     }
 
+    private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+    {
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
+
+        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out var uri))
+            Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
+    }
     private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
     {
         FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
@@ -1031,6 +1034,7 @@ public partial class EditTextWindow : Window
             {
                 await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                 {
+                    PassedTextControl.AppendText(Environment.NewLine);
                     PassedTextControl.AppendText(ocrFile.OcrResult);
                     PassedTextControl.ScrollToEnd();
                 });
@@ -1143,7 +1147,8 @@ public partial class EditTextWindow : Window
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
@@ -1166,7 +1171,8 @@ public partial class EditTextWindow : Window
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    string text = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
                 }
@@ -1258,6 +1264,34 @@ public partial class EditTextWindow : Window
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
     {
         PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
+    }
+
+    private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
+            e.CanExecute = false;
+        else
+            e.CanExecute = true;
+    }
+
+    private void MakeQrCodeExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            return;
+
+        string text = GetSelectedTextOrAllText();
+
+        bool lengthError = false;
+        int maxCharLength = 2953;
+        if (text.Length > maxCharLength)
+        {
+            text = text.Substring(0, maxCharLength);
+            lengthError = true;
+        }
+        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
+        
+        QrCodeWindow window = new(qrBitmap, text, lengthError);
+        window.Show();
     }
 
     private void ReplaceReservedCharsCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)

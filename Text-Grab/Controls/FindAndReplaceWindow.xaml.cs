@@ -9,13 +9,14 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab.Controls;
 
 /// <summary>
 /// Interaction logic for FindAndReplaceWindow.xaml
 /// </summary>
-public partial class FindAndReplaceWindow : Window
+public partial class FindAndReplaceWindow : FluentWindow
 {
     #region Fields
 

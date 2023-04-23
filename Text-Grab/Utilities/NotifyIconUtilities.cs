@@ -20,7 +20,7 @@ public static class NotifyIconUtilities
 
         NotifyIcon icon = new();
         icon.Text = "Text Grab";
-        icon.Icon = new Icon(System.Windows.Application.GetResourceStream(new Uri("/t_ICON2.ico", UriKind.Relative)).Stream);
+        icon.Icon = new Icon(System.Windows.Application.GetResourceStream(new Uri("/TealSelect.ico", UriKind.Relative)).Stream);
         icon.Visible = true;
 
         ContextMenuStrip? contextMenu = new();
