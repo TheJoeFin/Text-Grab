@@ -2,11 +2,13 @@
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Globalization;
+using Windows.Media.Ocr;
 
 namespace Text_Grab.Models;
 
 public record OcrOutput
 {
+    public OcrEngineKind Engine { get; set; } = OcrEngineKind.Windows;
     public OcrOutputKind Kind { get; set; } = OcrOutputKind.None;
     public string RawOutput { get; set; } = string.Empty;
     public string CleanedOutput { get; set; } = string.Empty;

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 
@@ -20,10 +21,20 @@ namespace Text_Grab.Utilities;
 
 public static class TesseractHelper
 {
-    public static Task<string> GetTextFromBitmap(Bitmap bmp, bool outputHocr)
+    public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, bool outputHocr)
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
-        return TesseractHelper.GetTextFromImagePath(TempImagePath(), outputHocr);
+
+        OcrOutput ocrOutput = new OcrOutput()
+        {
+            Engine = OcrEngineKind.Tesseract,
+            Kind = OcrOutputKind.Paragraph,
+            SourceBitmap = bmp,
+            RawOutput = await TesseractHelper.GetTextFromImagePath(TempImagePath(), outputHocr)
+        };
+        ocrOutput.CleanOutput();
+
+        return ocrOutput;
     }
 
     public static async Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr)

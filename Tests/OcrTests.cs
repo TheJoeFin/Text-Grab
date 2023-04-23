@@ -1,6 +1,8 @@
 using System.Drawing;
 using System.Text;
 using System.Windows;
+using System.Windows.Media.Imaging;
+using Text_Grab;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -25,7 +27,7 @@ Bookman-Demi";
         string testImagePath = @".\Images\font_sample.png";
 
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -45,7 +47,7 @@ Couier New";
         string testImagePath = @".\Images\FontTest.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -107,7 +109,7 @@ December	12	Winter";
         string testImagePath = @".\Images\QrCodeTestImage.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -180,21 +182,21 @@ December	12	Winter";
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
         Language language = LanguageUtilities.GetOCRLanguage();
-        double idealScaleFactor = await OcrExtensions.GetIdealScaleFactorForOCR(bmp, language);
+        double idealScaleFactor = await OcrExtensions.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
-        string tessoutput = await TesseractHelper.GetTextFromBitmap(scaledBMP, true);
+        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, true);
 
-        string[] tessoutputArray = tessoutput.Split(Environment.NewLine);
+        string[] tessoutputArray = tessoutput.RawOutput.Split(Environment.NewLine);
         StringBuilder sb2 = new();
         foreach (string line in tessoutputArray.Skip(intialLinesToSkip).ToArray())
             sb2.AppendLine(line);
 
-        tessoutput = sb2.ToString();
+        tessoutput.RawOutput = sb2.ToString();
 
         // Then
-        Assert.Equal(hocrFileContents, tessoutput);
+        Assert.Equal(hocrFileContents, tessoutput.RawOutput);
     }
 
     private string getPathToLocalFile(string imageRelativePath)

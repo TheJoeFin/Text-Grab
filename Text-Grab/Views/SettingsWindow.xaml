@@ -159,6 +159,11 @@
                         </RadioButton>
 
                         <!--  Pick Language  -->
+                        <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
+                            <TextBlock Style="{StaticResource TextBodyNormal}">
+                                Use Tesseract, when possible.
+                            </TextBlock>
+                        </ui:ToggleSwitch>
 
                         <!--    -->
                         <ui:ToggleSwitch Name="ErrorCorrectBox" Margin="0,12,0,0">

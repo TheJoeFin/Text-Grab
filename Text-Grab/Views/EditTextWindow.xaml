@@ -363,10 +363,6 @@
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem
-                    x:Name="OpenFileInTesseractMenuItem"
-                    Click="OpenFileInTesseractMenuItem_Click"
-                    Header="Open with Tesseract" />
-                <MenuItem
                     x:Name="ContactMenuItem"
                     Click="ContactMenuItem_Click"
                     Header="_Contact The Developer..." />

@@ -43,6 +43,15 @@ public partial class SettingsWindow : FluentWindow
 
     private void AboutBTN_Click(object sender, RoutedEventArgs e)
     {
+        ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+        ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
+        NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
+        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
+        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
+        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
+        ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
+        UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
+        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
         foreach (Window window in allWindows)
@@ -181,6 +190,8 @@ public partial class SettingsWindow : FluentWindow
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
+        if (ShowToastCheckBox.IsChecked is bool showToast)
+            Settings.Default.ShowToast = showToast;
         if (SystemThemeRdBtn.IsChecked is true)
             Settings.Default.AppTheme = "System";
         else if (LightThemeRdBtn.IsChecked is true)
@@ -228,7 +239,7 @@ public partial class SettingsWindow : FluentWindow
             Settings.Default.TryToReadBarcodes = readBarcodes;
 
         if (UseTesseractCheckBox.IsChecked is bool useTesseract)
-            Settings.Default.UserTesseract = useTesseract;
+            Settings.Default.UseTesseract = useTesseract;
 
         if (ReadBarcodesBarcode.IsChecked is not null)
             Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;

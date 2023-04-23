@@ -242,9 +242,17 @@ public static class OcrExtensions
 
         List<OcrOutput> outputs = new();
 
-        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
+        if (Settings.Default.UseTesseract)
+        {
+            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBitmap, false);
+            outputs.Add(tesseractOutput);
+        }
+        else
+        {
+            OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
+            outputs.Add(paragraphsOutput);
+        }
 
-        outputs.Add(paragraphsOutput);
 
         if (Settings.Default.TryToReadBarcodes)
         {
@@ -259,10 +267,6 @@ public static class OcrExtensions
     {
         StringBuilder text = new();
 
-        if (Settings.Default.UserTesseract)
-            return await TesseractHelper.GetTextFromBitmap(scaledBitmap, false);
-
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromBitmap(scaledBitmap, language);
         bool isSpaceJoiningOCRLang = LanguageUtilities.IsLanguageSpaceJoining(language);
 
         foreach (OcrLine ocrLine in ocrResult.Lines)
