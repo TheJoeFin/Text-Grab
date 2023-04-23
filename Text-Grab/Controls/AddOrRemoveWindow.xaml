@@ -28,7 +28,7 @@
     <Window.Resources>
         <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
     </Window.Resources>
-    <Grid Margin="12">
+    <Grid Margin="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
@@ -44,7 +44,7 @@
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="12,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
@@ -89,7 +89,10 @@
             </RadioButton>
         </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
+        <StackPanel
+            Grid.Row="2"
+            Margin="12,0"
+            Orientation="Horizontal">
             <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                 From The:
             </TextBlock>
@@ -122,7 +125,10 @@
             </RadioButton>
         </StackPanel>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal">
+        <StackPanel
+            Grid.Row="3"
+            Margin="12,0"
+            Orientation="Horizontal">
             <TextBlock
                 Width="184"
                 VerticalAlignment="Center"
@@ -135,7 +141,10 @@
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal">
+        <StackPanel
+            Grid.Row="4"
+            Margin="12,0"
+            Orientation="Horizontal">
             <TextBlock
                 Width="106"
                 VerticalAlignment="Center"
