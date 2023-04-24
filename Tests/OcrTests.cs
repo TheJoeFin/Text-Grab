@@ -201,7 +201,8 @@ December	12	Winter";
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
-        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, true);
+        Language englishLanguage = new("en-US");
+        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
 
         string[] tessoutputArray = tessoutput.RawOutput.Split(Environment.NewLine);
         StringBuilder sb2 = new();
@@ -229,7 +230,8 @@ December	12	Winter";
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
-        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, false);
+        Language englishLanguage = new("en-US");
+        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
 
         // Then
         Assert.Equal(fontSampleResultForTesseract, tessoutput.RawOutput);

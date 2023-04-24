@@ -226,7 +226,7 @@ public static class OcrExtensions
 
         if (Settings.Default.UseTesseract)
         {
-            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBitmap, false);
+            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBitmap, language);
             outputs.Add(tesseractOutput);
         }
         else
