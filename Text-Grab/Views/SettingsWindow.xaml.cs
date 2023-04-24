@@ -407,7 +407,10 @@ public partial class SettingsWindow : FluentWindow
 
     private void MoreInfoHyperlink_Click(object sender, RoutedEventArgs e)
     {
-        TessMoreInfoBorder.Visibility = Visibility.Visible;
+        if (TessMoreInfoBorder.Visibility == Visibility.Visible)
+            TessMoreInfoBorder.Visibility = Visibility.Collapsed;
+        else
+            TessMoreInfoBorder.Visibility = Visibility.Visible;
     }
     private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
     {

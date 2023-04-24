@@ -12,6 +12,7 @@
     Height="600"
     MinWidth="200"
     MinHeight="300"
+    d:Background="Black"
     d:Height="2000"
     Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
@@ -357,27 +358,34 @@
                                 <TextBlock Style="{StaticResource TextHeader}" Text="What is Tesseract?" />
                                 <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
                                     Tesseract is an optical character recognition engine for various operating systems. It is free software, released under the Apache License. Originally developed by Hewlett-Packard as proprietary software in the 1980s, it was released as open source in 2005 and development has been sponsored by Google since 2006.<LineBreak /><Hyperlink NavigateUri="https://en.wikipedia.org/wiki/Tesseract_(software)">
-                                        More...
+                                        More: https://en.wikipedia.org/wiki/Tesseract_(software)
                                     </Hyperlink>
                                 </TextBlock>
                                 <TextBlock
                                     Margin="0,12,0,0"
                                     Style="{StaticResource TextHeader}"
                                     Text="How does Text Grab use Tesseract?" />
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Hello" />
+                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                    Text Grab will capture the image then pass it to the Tesseract EXE. Then Tesseract returns the result of the OCR to Text Grab and error occurs according to user settings.<LineBreak />
+                                    Does not use Tesseract: Table Recogintion and the Grab Frame.</TextBlock>
                                 <TextBlock
                                     Margin="0,12,0,0"
                                     Style="{StaticResource TextHeader}"
                                     Text="How do I get Tesseract?" />
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
-                                    The source repository is on GitHub<Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract">here</Hyperlink><LineBreak />
-                                    UB Mannheim maintains an installer for Windows<Hyperlink NavigateUri="https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/">here</Hyperlink>
+                                    The source repository is on GitHub:<LineBreak />
+                                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract">https://github.com/tesseract-ocr/tesseract</Hyperlink>
+                                    <LineBreak />
+                                    UB Mannheim maintains an installer for Windows:<LineBreak />
+                                    <Hyperlink NavigateUri="https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/">https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/</Hyperlink>
                                 </TextBlock>
                                 <TextBlock
                                     Margin="0,12,0,0"
                                     Style="{StaticResource TextHeader}"
                                     Text="Why should I use Tesseract?" />
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Hello" />
+                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                    Tesseract is known for having the best OCR capabilities. While the Windows OCR is convenient and fast, it has not been updated in years and Microsoft has no plans to update it.<LineBreak />
+                                    Feel free to try Tesseract and hopefully it will work well for you. Ideally Text Grab can bring together the convenience with the power of Tesseract.</TextBlock>
                                 <TextBlock HorizontalAlignment="Right">
                                     <Hyperlink Click="TessInfoCloseHypBtn_Click">Done</Hyperlink>
                                 </TextBlock>
