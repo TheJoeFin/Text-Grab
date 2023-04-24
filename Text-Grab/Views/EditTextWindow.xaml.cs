@@ -160,6 +160,15 @@ public partial class EditTextWindow : FluentWindow
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText($"{imageFiles.Count} images found");
         PassedTextControl.AppendText(Environment.NewLine);
+
+        if (Settings.Default.UseTesseract)
+        {
+            PassedTextControl.AppendText("Using Tesseract restricts parallel processing. ");
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText("May be slower if processing many images");
+            PassedTextControl.AppendText(Environment.NewLine);
+        }
+
         PassedTextControl.AppendText("Press Escape to cancel");
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(Environment.NewLine);
@@ -1016,10 +1025,14 @@ public partial class EditTextWindow : FluentWindow
             return;
 
         Language? selectedLanguage = LanguageUtilities.GetOCRLanguage();
+        int degreesOfParallel = 6;
+
+        if (Settings.Default.UseTesseract)
+            degreesOfParallel = 1;
 
         ParallelOptions parallelOptions = new()
         {
-            MaxDegreeOfParallelism = 6,
+            MaxDegreeOfParallelism = degreesOfParallel,
             CancellationToken = cancellationTokenForDirOCR.Token
         };
 
