@@ -105,6 +105,7 @@ Text Grab is designed to have multiple modes, from minimal to fully featured; al
 ### Packages Used
 - ZXing.Net - Barcode and QR Code scanning: https://github.com/micjahn/ZXing.Net
 - WPF UI - Fluent UI Style: https://github.com/lepoco/wpfui
+- CliWrap: https://github.com/Tyrrrz/CliWrap
 - Microsoft Community Toolkit: https://github.com/CommunityToolkit
 
 ### Thanks for using Text Grab
