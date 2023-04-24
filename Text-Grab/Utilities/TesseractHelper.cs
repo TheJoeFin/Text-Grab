@@ -8,6 +8,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Text_Grab.Models;
+using CliWrap;
+using System.Text;
+using CliWrap.Buffered;
 
 namespace Text_Grab.Utilities;
 
@@ -21,6 +24,38 @@ namespace Text_Grab.Utilities;
 
 public static class TesseractHelper
 {
+    private const string rawPath = @"%LOCALAPPDATA%\Tesseract-OCR\tesseract.exe";
+
+    private const string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
+
+    public static async Task<string> GetTextFromImagePathAsync(string imagePath)
+    {
+        string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
+        string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
+        string argumentsString = $"\"{imagePath}\" - -l eng";
+
+        if (!File.Exists(tesExePath))
+            tesExePath = programsPath;
+
+        if (!File.Exists(tesExePath))
+            tesExePath = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe";
+
+        if (!File.Exists(tesExePath))
+            return "Cannot find tesseract.exe";
+
+        BufferedCommandResult result = await Cli.Wrap(tesExePath)
+            .WithValidation(CommandResultValidation.None)
+            .WithArguments(args => args
+                .Add(imagePath)
+                .Add("-")
+                .Add("-l")
+                .Add("eng")
+            )
+            .ExecuteBufferedAsync();
+
+        return result.StandardOutput;
+    }
+
     public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, bool outputHocr)
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
@@ -30,7 +65,7 @@ public static class TesseractHelper
             Engine = OcrEngineKind.Tesseract,
             Kind = OcrOutputKind.Paragraph,
             SourceBitmap = bmp,
-            RawOutput = await TesseractHelper.GetTextFromImagePath(TempImagePath(), outputHocr)
+            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath())
         };
         ocrOutput.CleanOutput();
 
@@ -39,9 +74,7 @@ public static class TesseractHelper
 
     public static async Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr)
     {
-        string rawPath = @"%LOCALAPPDATA%\Tesseract-OCR\tesseract.exe";
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
-        string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
         string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
 
         if (!File.Exists(tesExePath))
@@ -109,11 +142,11 @@ public static class TesseractHelper
 
 public class TessOcrLine
 {
+    public int Height { get; set; }
     public string Text { get; set; } = string.Empty;
+    public int Width { get; set; }
     public int X { get; set; }
     public int Y { get; set; }
-    public int Width { get; set; }
-    public int Height { get; set; }
 }
 
 public static class HocrReader
