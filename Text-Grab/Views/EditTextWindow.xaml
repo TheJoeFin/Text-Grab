@@ -153,6 +153,10 @@
                     x:Name="CopyAndCloseMenuItem"
                     Click="CopyCloseBTN_Click"
                     Header="_Copy And Close" />
+                <MenuItem
+                    x:Name="CloseAndInsertMenuItem"
+                    Click="CopyClosePasteBTN_Click"
+                    Header="Close and I_nsert" />
                 <Separator />
                 <MenuItem
                     x:Name="SettingsMenuItem"
