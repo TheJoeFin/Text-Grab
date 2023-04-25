@@ -43,6 +43,14 @@ public partial class SettingsWindow : FluentWindow
 
     private void AboutBTN_Click(object sender, RoutedEventArgs e)
     {
+        ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+        ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
+        NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
+        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
+        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
+        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
+        ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
+        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
         foreach (Window window in allWindows)
@@ -181,6 +189,8 @@ public partial class SettingsWindow : FluentWindow
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
+        if (ShowToastCheckBox.IsChecked is bool showToast)
+            Settings.Default.ShowToast = showToast;
         if (SystemThemeRdBtn.IsChecked is true)
             Settings.Default.AppTheme = "System";
         else if (LightThemeRdBtn.IsChecked is true)
@@ -200,29 +210,35 @@ public partial class SettingsWindow : FluentWindow
         else if (QuickLookupRDBTN.IsChecked is true)
             Settings.Default.DefaultLaunch = "QuickLookup";
 
-        if (ErrorCorrectBox.IsChecked is not null)
-            Settings.Default.CorrectErrors = (bool)ErrorCorrectBox.IsChecked;
+        if (ErrorCorrectBox.IsChecked is bool errorCorrect)
+            Settings.Default.CorrectErrors = errorCorrect;
 
-        if (NeverUseClipboardChkBx.IsChecked is not null)
-            Settings.Default.NeverAutoUseClipboard = (bool)NeverUseClipboardChkBx.IsChecked;
+        if (NeverUseClipboardChkBx.IsChecked is bool neverClipboard)
+            Settings.Default.NeverAutoUseClipboard = neverClipboard;
 
-        if (RunInBackgroundChkBx.IsChecked is not null)
+        if (RunInBackgroundChkBx.IsChecked is bool runInBackaground)
         {
-            Settings.Default.RunInTheBackground = (bool)RunInBackgroundChkBx.IsChecked;
+            Settings.Default.RunInTheBackground = runInBackaground;
             ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
         }
 
-        if (TryInsertCheckbox.IsChecked is not null)
-            Settings.Default.TryInsert = (bool)TryInsertCheckbox.IsChecked;
+        if (TryInsertCheckbox.IsChecked is bool tryInsert)
+            Settings.Default.TryInsert = tryInsert;
 
-        if (StartupOnLoginCheckBox.IsChecked is not null)
+        if (StartupOnLoginCheckBox.IsChecked is bool startupOnLogin)
         {
-            Settings.Default.StartupOnLogin = (bool)StartupOnLoginCheckBox.IsChecked;
+            Settings.Default.StartupOnLogin = startupOnLogin;
             await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
         }
 
-        if (GlobalHotkeysCheckbox.IsChecked is not null)
-            Settings.Default.GlobalHotkeysEnabled = (bool)GlobalHotkeysCheckbox.IsChecked;
+        if (GlobalHotkeysCheckbox.IsChecked is bool globalHotKeys)
+            Settings.Default.GlobalHotkeysEnabled = globalHotKeys;
+
+        if (ReadBarcodesBarcode.IsChecked is bool readBarcodes)
+            Settings.Default.TryToReadBarcodes = readBarcodes;
+
+        if (UseTesseractCheckBox.IsChecked is bool useTesseract)
+            Settings.Default.UseTesseract = useTesseract;
 
         if (ReadBarcodesBarcode.IsChecked is not null)
             Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;
@@ -328,6 +344,7 @@ public partial class SettingsWindow : FluentWindow
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
         CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
+        UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -388,5 +405,16 @@ public partial class SettingsWindow : FluentWindow
 
     #endregion Methods
 
+    private void MoreInfoHyperlink_Click(object sender, RoutedEventArgs e)
+    {
+        if (TessMoreInfoBorder.Visibility == Visibility.Visible)
+            TessMoreInfoBorder.Visibility = Visibility.Collapsed;
+        else
+            TessMoreInfoBorder.Visibility = Visibility.Visible;
+    }
+    private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
+    {
+        TessMoreInfoBorder.Visibility = Visibility.Collapsed;
+    }
 }
 
