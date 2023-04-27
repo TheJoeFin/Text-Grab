@@ -53,7 +53,7 @@
                 <TextBlock Style="{StaticResource TextHeaderFirstRun}" Text="Welcome to Text Grab!" />
 
                 <TextBlock Style="{StaticResource TextBody}">
-                    Text Grab has three different modes for working with text.<LineBreak />
+                    Text Grab has four different modes for working with text.<LineBreak />
                     1. Full-Screen - Similar to taking a screenshot, but for copying text<LineBreak />
                     2. Grab Frame - An overlay for picking and finding text on screen<LineBreak />
                     3. Edit Text - Like Notepad, but with tools for fixing and changing text<LineBreak />
