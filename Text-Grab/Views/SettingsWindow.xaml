@@ -357,7 +357,7 @@
                             <StackPanel>
                                 <TextBlock Style="{StaticResource TextHeader}" Text="What is Tesseract?" />
                                 <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
-                                    Tesseract is an optical character recognition engine for various operating systems. It is free software, released under the Apache License. Originally developed by Hewlett-Packard as proprietary software in the 1980s, it was released as open source in 2005 and development has been sponsored by Google since 2006.<LineBreak /><Hyperlink NavigateUri="https://en.wikipedia.org/wiki/Tesseract_(software)">
+                                    Tesseract is an optical character recognition engine for various operating systems. It is free software, released under the Apache License. Originally developed by Hewlett-Packard as proprietary software in the 1980s, it was released as open source in 2005 and development has been sponsored by Google since 2006.<LineBreak /><Hyperlink NavigateUri="https://en.wikipedia.org/wiki/Tesseract_(software)" RequestNavigate="Hyperlink_RequestNavigate">
                                         More: https://en.wikipedia.org/wiki/Tesseract_(software)
                                     </Hyperlink>
                                 </TextBlock>
@@ -372,12 +372,12 @@
                                     Margin="0,12,0,0"
                                     Style="{StaticResource TextHeader}"
                                     Text="How do I get Tesseract?" />
-                                <TextBlock Style="{StaticResource TextBodyNormal}">
+                                <TextBlock IsEnabled="True" Style="{StaticResource TextBodyNormal}">
                                     The source repository is on GitHub:<LineBreak />
-                                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract">https://github.com/tesseract-ocr/tesseract</Hyperlink>
+                                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tesseract</Hyperlink>
                                     <LineBreak />
                                     UB Mannheim maintains an installer for Windows:<LineBreak />
-                                    <Hyperlink NavigateUri="https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/">https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/</Hyperlink>
+                                    <Hyperlink NavigateUri="https://github.com/UB-Mannheim/tesseract/wiki" RequestNavigate="Hyperlink_RequestNavigate">https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/</Hyperlink>
                                 </TextBlock>
                                 <TextBlock
                                     Margin="0,12,0,0"
