@@ -75,6 +75,12 @@ public static class OcrExtensions
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
+    public static void RemoveTrailingNewlines(this StringBuilder text)
+    {
+        while (text.Length > 0 && (text[^1] == '\n' || text[^1] == '\r'))
+            text.Length--;
+    }
+
     public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, Language language)
     {
         Rectangle selectedRegion = ShapeExtensions.RectangleFromRect(rect);

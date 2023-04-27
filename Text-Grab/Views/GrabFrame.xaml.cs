@@ -820,6 +820,7 @@ public partial class GrabFrame : Window
         {
             StringBuilder lineText = new();
             ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
+            lineText.RemoveTrailingNewlines();
 
             Rect lineRect = ocrLine.GetBoundingRect();
 
