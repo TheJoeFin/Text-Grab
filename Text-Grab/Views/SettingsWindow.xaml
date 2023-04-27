@@ -341,7 +341,7 @@
 
                         <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
                             <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
-                                Use Tesseract, when possible.<LineBreak /> <Hyperlink Click="MoreInfoHyperlink_Click">
+                                EXPERIMENTAL 🧪 Use Tesseract, when possible.<LineBreak /> <Hyperlink Click="MoreInfoHyperlink_Click">
                                     More information
                                 </Hyperlink>
                             </TextBlock>
