@@ -22,7 +22,7 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
-            Title="Edit Text"
+            Title="QR Code"
             Height="32"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
