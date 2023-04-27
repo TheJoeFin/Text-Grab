@@ -4,7 +4,7 @@
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net6.0-windows10.0.20348.0</TargetFramework>
 		<RootNamespace>Text_Grab</RootNamespace>
-    <Nullable>enable</Nullable>
+		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<UseWindowsForms>true</UseWindowsForms>
@@ -22,34 +22,34 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="Images\ETW.jpg" />
-	  <None Remove="Images\FSG.jpg" />
-	  <None Remove="Images\GF.jpg" />
-	  <None Remove="Images\QSL.jpg" />
-	  <None Remove="Images\TealSelect40.png" />
-	  <None Remove="Images\WinSym.png" />
-	  <None Remove="TealSelect.ico" />
+		<None Remove="Images\ETW.jpg" />
+		<None Remove="Images\FSG.jpg" />
+		<None Remove="Images\GF.jpg" />
+		<None Remove="Images\QSL.jpg" />
+		<None Remove="Images\TealSelect40.png" />
+		<None Remove="Images\WinSym.png" />
+		<None Remove="TealSelect.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Images\TealSelect40.png" />
+		<Resource Include="Images\TealSelect40.png" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Images\WinSym.png">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Resource>
+		<Resource Include="Images\WinSym.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="..\README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	  <None Include="..\Text-Grab-Package\Images\SmallTile.scale-125.png">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\Text-Grab-Package\Images\SmallTile.scale-125.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -94,5 +94,4 @@
 			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
 		</None>
 	</ItemGroup>
-
 </Project>
