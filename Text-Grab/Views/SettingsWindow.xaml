@@ -377,7 +377,7 @@
                                     <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tesseract</Hyperlink>
                                     <LineBreak />
                                     UB Mannheim maintains an installer for Windows:<LineBreak />
-                                    <Hyperlink NavigateUri="https://github.com/UB-Mannheim/tesseract/wiki" RequestNavigate="Hyperlink_RequestNavigate">https://hypi.app/assets/wp/wp-content/uploads/2019/10/wiki/</Hyperlink>
+                                    <Hyperlink NavigateUri="https://github.com/UB-Mannheim/tesseract/wiki" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/UB-Mannheim/tesseract/wiki/</Hyperlink>
                                 </TextBlock>
                                 <TextBlock
                                     Margin="0,12,0,0"
