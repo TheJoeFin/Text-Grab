@@ -34,6 +34,7 @@
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <ui:TitleBar
             Title="Edit Text"
@@ -253,6 +254,29 @@
                 Style="{StaticResource CellTextBlock}"
                 Text="0 Rows" />
         </Grid>
-
+        <Grid
+            x:Name="ErrorBar"
+            Grid.Row="5"
+            Background="DarkRed"
+            Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                Padding="10,4"
+                Foreground="White"
+                Style="{StaticResource CellTextBlock}"
+                Text="⚠️ Failed to add text to clipboard." />
+            <ui:Button
+                Name="ErrorBarOkay"
+                Grid.Column="2"
+                Margin="8,4"
+                Padding="12,3,12,4"
+                Appearance="Primary"
+                Click="ErrorBarOkay_Click"
+                Content="Okay" />
+        </Grid>
     </Grid>
 </ui:FluentWindow>

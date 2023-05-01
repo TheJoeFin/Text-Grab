@@ -402,9 +402,10 @@ public partial class QuickSimpleLookup : FluentWindow
                 etw.Show();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Debug.WriteLine("Failed to set clipboard text");
+            Debug.WriteLine($"Failed to set clipboard text: {ex.Message}");
+            ErrorBar.Visibility = Visibility.Visible;
         }
     }
 
@@ -706,4 +707,9 @@ public partial class QuickSimpleLookup : FluentWindow
     }
 
     #endregion Methods
+
+    private void ErrorBarOkay_Click(object sender, RoutedEventArgs e)
+    {
+        ErrorBar.Visibility = Visibility.Collapsed;
+    }
 }
