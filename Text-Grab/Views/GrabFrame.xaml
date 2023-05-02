@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="GrabFrameWindow"
     Title="Grab Frame"
     Width="800"
@@ -16,12 +17,15 @@
     AllowDrop="True"
     AllowsTransparency="True"
     Background="Transparent"
+    BorderBrush="Gray"
+    BorderThickness="0.2"
     Closed="Window_Closed"
     Closing="GrabFrameWindow_Closing"
     Deactivated="GrabFrameWindow_Deactivated"
     DragLeave="GrabFrameWindow_DragLeave"
     DragOver="GrabFrameWindow_DragOver"
     Drop="GrabFrameWindow_Drop"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Initialized="GrabFrameWindow_Initialized"
     Loaded="GrabFrame_Loaded"
     LocationChanged="Window_LocationChanged"
@@ -33,7 +37,7 @@
     WindowStyle="None"
     mc:Ignorable="d">
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/t_32.png" />
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
 
         <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Center" />
@@ -41,7 +45,6 @@
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="16" />
             <Setter Property="Margin" Value="4" />
-            <Setter Property="Foreground" Value="White" />
         </Style>
     </Window.Resources>
 
@@ -67,21 +70,22 @@
             Command="{x:Static local:GrabFrame.MergeWordsCommand}"
             Executed="MergeWordBordersExecuted" />
 
-
     </Window.CommandBindings>
-
 
     <WindowChrome.WindowChrome>
         <WindowChrome
-            CaptionHeight="24"
-            CornerRadius="6"
+            CaptionHeight="32"
+            CornerRadius="18,18,2,18"
             GlassFrameThickness="0"
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
-    <Border BorderBrush="{StaticResource DarkBackground}" BorderThickness="2,2,2,2">
+    <Border
+        BorderBrush="{DynamicResource ApplicationBackgroundBrush}"
+        BorderThickness="2"
+        ClipToBounds="True">
         <Grid ClipToBounds="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="24" />
+                <RowDefinition Height="32" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
@@ -89,7 +93,7 @@
                 Grid.Row="0"
                 Grid.RowSpan="3"
                 VerticalAlignment="Top"
-                Background="{StaticResource DarkBackground}">
+                Background="{DynamicResource ApplicationBackgroundBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -97,12 +101,13 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
                 <Menu
+                    Height="32"
                     VerticalAlignment="Center"
-                    Background="{StaticResource DarkBackground}"
-                    Foreground="White"
+                    ClipToBounds="True"
                     WindowChrome.IsHitTestVisibleInChrome="True">
-                    <MenuItem Height="24" Header="File">
+                    <MenuItem Header="File">
                         <MenuItem
                             x:Name="AutoOcrCheckBox"
                             Click="AutoOcrCheckBox_Click"
@@ -226,13 +231,16 @@
                     </MenuItem>
                 </Menu>
                 <StackPanel
-                    Grid.Column="1"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
                     HorizontalAlignment="Center"
+                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    ClipToBounds="True"
                     Orientation="Horizontal">
                     <Image
                         x:Name="WindowIcon"
-                        Width="18"
-                        Height="18"
+                        Width="22"
+                        Height="22"
                         Margin="4,2,4,4"
                         Source="{StaticResource TextGrabIcon}"
                         Stretch="UniformToFill" />
@@ -241,7 +249,6 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         FontSize="13"
-                        Foreground="White"
                         Text="Grab Frame">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -254,44 +261,47 @@
                         </TextBlock.Style>
                     </TextBlock>
                 </StackPanel>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <ui:TitleBar
+                    Grid.ColumnSpan="3"
+                    Width="200"
+                    Height="32"
+                    Padding="8,2"
+                    HorizontalAlignment="Right"
+                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    WindowChrome.IsHitTestVisibleInChrome="True" />
+                <StackPanel
+                    Grid.Column="2"
+                    Orientation="Horizontal"
+                    Visibility="Collapsed">
                     <Button
                         x:Name="MinimizeButton"
                         Width="46"
-                        Height="24"
+                        Height="32"
                         Margin="0,-2,0,0"
                         Click="OnMinimizeButtonClick"
                         Style="{StaticResource TitleBarButtonStyle}">
-                        <TextBlock
-                            FontFamily="Segoe MDL2 Assets"
-                            Foreground="White"
-                            Text="" />
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                     </Button>
                     <Button
                         x:Name="RestoreButton"
                         Width="46"
-                        Height="24"
+                        Height="32"
                         Margin="0,-2,0,0"
                         Click="OnRestoreButtonClick"
                         Style="{StaticResource TitleBarButtonStyle}">
                         <TextBlock
                             x:Name="RestoreTextlock"
                             FontFamily="Segoe MDL2 Assets"
-                            Foreground="White"
                             Text="" />
                     </Button>
                     <Button
                         x:Name="CloseButton"
                         Width="46"
-                        Height="24"
+                        Height="32"
                         Margin="0,-2,0,0"
                         Click="OnCloseButtonClick"
                         Style="{StaticResource TitleBarCloseButtonStyle}">
-                        <TextBlock
-                            FontFamily="Segoe MDL2 Assets"
-                            Foreground="White"
-                            Text="" />
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                     </Button>
 
                 </StackPanel>
@@ -366,7 +376,7 @@
                     </Grid>
                 </Viewbox>
             </Border>
-            <Border Grid.Row="2" Background="{StaticResource DarkBackground}">
+            <Border Grid.Row="2" Background="{DynamicResource ApplicationBackgroundBrush}">
                 <Grid
                     Height="30"
                     Margin="6"
@@ -415,7 +425,7 @@
                         Padding="4"
                         VerticalContentAlignment="Center"
                         Content="Search For Text..."
-                        Foreground="Black"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                         IsHitTestVisible="False"
                         Opacity="0.5"
                         Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
@@ -427,27 +437,27 @@
                         VerticalAlignment="Center"
                         CanChangeStyle="False"
                         Click="ClearBTN_Click"
-                        Foreground="Black"
+                        Foreground="LightGray"
                         IsSymbol="True"
                         SymbolText=""
-                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
+                        Visibility="Collapsed" />
 
                     <Menu
                         x:Name="MatchesMenu"
                         Grid.Column="2"
+                        Height="28"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         d:Visibility="Visible"
-                        Background="{StaticResource DarkBackground}"
-                        Foreground="White"
+                        ClipToBounds="True"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                         Visibility="Collapsed">
-                        <MenuItem Height="28">
+                        <MenuItem>
                             <MenuItem.Header>
                                 <TextBlock
                                     x:Name="MatchesTXTBLK"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
-                                    Foreground="White"
                                     Text="Matches: 0" />
                             </MenuItem.Header>
                             <MenuItem Click="HandleDelete" Header="Delete Selected" />
@@ -463,6 +473,7 @@
                         x:Name="LanguagesComboBox"
                         Grid.Column="3"
                         MinWidth="60"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                         PreviewMouseDown="LanguagesComboBox_MouseDown"
                         SelectionChanged="LanguagesComboBox_SelectionChanged">
                         <ComboBox.ItemTemplate>
@@ -484,6 +495,8 @@
                         Orientation="Horizontal">
                         <controls:CollapsibleButton
                             x:Name="RefreshBTN"
+                            Width="30"
+                            Height="30"
                             Margin="0"
                             ButtonText="Re-OCR Frame"
                             Click="RefreshBTN_Click"
@@ -501,8 +514,9 @@
 
                         <ToggleButton
                             x:Name="FreezeToggleButton"
+                            Width="30"
+                            Height="30"
                             Margin="6,0,0,0"
-                            Padding="7,4"
                             Click="FreezeToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(F) Freeze the content within Grab Frame">
@@ -513,8 +527,9 @@
 
                         <ToggleButton
                             x:Name="TableToggleButton"
+                            Width="30"
+                            Height="30"
                             Margin="6,0,0,0"
-                            Padding="7,4"
                             Click="TableToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) Analyze content as tables">
@@ -539,8 +554,10 @@
 
                         <ToggleButton
                             x:Name="EditTextToggleButton"
+                            Width="30"
+                            Height="30"
                             Margin="6,0,0,0"
-                            Padding="7,4"
+                            d:IsChecked="True"
                             Click="EditTextBTN_Click"
                             IsChecked="False"
                             Style="{StaticResource ToggleSymbolButton}"
@@ -567,7 +584,6 @@
                         Width="110"
                         Margin="0"
                         ButtonText="Grab"
-                        CanChangeStyle="False"
                         Click="GrabBTN_Click"
                         SymbolText=""
                         ToolTip="Grab text in the Grab Frame" />

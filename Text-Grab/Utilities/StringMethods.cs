@@ -97,6 +97,9 @@ public static class StringMethods
         if (string.IsNullOrEmpty(input))
             return (0, 0);
 
+        if (cursorPosition < 0)
+            cursorPosition = 0;
+
         // Check if the cursor is at a space
         if (char.IsWhiteSpace(input[cursorPosition]))
             cursorPosition = findNearestLetterIndex(input, cursorPosition);
@@ -255,19 +258,7 @@ public static class StringMethods
 
     public static string MakeStringSingleLine(this string textToEdit)
     {
-        StringBuilder endingNewLines = new();
-
-        for (int i = textToEdit.Length - 1; i >= 0; i--)
-        {
-            if (textToEdit[i] == '\n'
-                || textToEdit[i] == '\r')
-                endingNewLines.Insert(0, textToEdit[i]);
-            else
-                break;
-        }
-
-        StringBuilder workingString = new();
-        workingString.Append(textToEdit);
+        StringBuilder workingString = new(textToEdit);
 
         workingString.Replace("\r\n", " ");
         workingString.Replace(Environment.NewLine, " ");
@@ -275,13 +266,16 @@ public static class StringMethods
         workingString.Replace('\r', ' ');
 
         Regex regex = new("[ ]{2,}");
-        string temp = regex.Replace(workingString.ToString(), " ").Trim();
+        string temp = regex.Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
+        if (workingString[0] == ' ')
+            workingString.Remove(0, 1);
 
-        workingString.Append(endingNewLines);
+        if (workingString[workingString.Length - 1] == ' ')
+            workingString.Remove(workingString.Length - 1, 1);
 
-        return workingString.ToString().Trim();
+        return workingString.ToString();
     }
 
     public static string ToCamel(this string stringToCamel)

@@ -22,6 +22,7 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Wpf.Ui.Controls.Window;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Text_Grab;
@@ -30,7 +31,7 @@ namespace Text_Grab;
 /// Interaction logic for ManipulateTextWindow.xaml
 /// </summary>
 
-public partial class EditTextWindow : Window
+public partial class EditTextWindow : FluentWindow
 {
     #region Fields
 
@@ -63,11 +64,13 @@ public partial class EditTextWindow : Window
     public EditTextWindow()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     public EditTextWindow(string possiblyEndcodedString, bool isEncoded = true)
     {
         InitializeComponent();
+        App.SetTheme();
 
         if (isEncoded)
             ReadEncodedString(possiblyEndcodedString);
@@ -90,7 +93,6 @@ public partial class EditTextWindow : Window
 
     #region Methods
 
-    // a method which populates localRoutedCommands with all of the public static commands on this page
     public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {
         return new Dictionary<string, RoutedCommand>()
@@ -106,7 +108,8 @@ public partial class EditTextWindow : Window
             {nameof(DeleteAllSelectionCmd), DeleteAllSelectionCmd},
             {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
-            {nameof(OcrPasteCommand), OcrPasteCommand}
+            {nameof(OcrPasteCommand), OcrPasteCommand},
+            {nameof(MakeQrCodeCmd), MakeQrCodeCmd}
         };
     }
 
@@ -157,6 +160,15 @@ public partial class EditTextWindow : Window
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText($"{imageFiles.Count} images found");
         PassedTextControl.AppendText(Environment.NewLine);
+
+        if (Settings.Default.UseTesseract)
+        {
+            PassedTextControl.AppendText("Using Tesseract restricts parallel processing. ");
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText("May be slower if processing many images");
+            PassedTextControl.AppendText(Environment.NewLine);
+        }
+
         PassedTextControl.AppendText("Press Escape to cancel");
         PassedTextControl.AppendText(Environment.NewLine);
         PassedTextControl.AppendText(Environment.NewLine);
@@ -1013,10 +1025,14 @@ public partial class EditTextWindow : Window
             return;
 
         Language? selectedLanguage = LanguageUtilities.GetOCRLanguage();
+        int degreesOfParallel = 6;
+
+        if (Settings.Default.UseTesseract)
+            degreesOfParallel = 1;
 
         ParallelOptions parallelOptions = new()
         {
-            MaxDegreeOfParallelism = 6,
+            MaxDegreeOfParallelism = degreesOfParallel,
             CancellationToken = cancellationTokenForDirOCR.Token
         };
 

@@ -92,6 +92,9 @@
     <Setting Name="TryToReadBarcodes" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="UseTesseract" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <Setting Name="CorrectToLatin" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
@@ -109,6 +112,9 @@
     </Setting>
     <Setting Name="GrabFrameUpdateEtw" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="AppTheme" Type="System.String" Scope="User">
+      <Value Profile="(Default)">System</Value>
     </Setting>
   </Settings>
 </SettingsFile>

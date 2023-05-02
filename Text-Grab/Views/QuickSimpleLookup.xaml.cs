@@ -14,13 +14,14 @@ using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab.Views;
 
 /// <summary>
 /// Interaction logic for QuickSimpleLookup.xaml
 /// </summary>
-public partial class QuickSimpleLookup : Window
+public partial class QuickSimpleLookup : FluentWindow
 {
     #region Fields
 
@@ -37,6 +38,7 @@ public partial class QuickSimpleLookup : Window
     public QuickSimpleLookup()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     #endregion Constructors
@@ -400,9 +402,10 @@ public partial class QuickSimpleLookup : Window
                 etw.Show();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Debug.WriteLine("Failed to set clipboard text");
+            Debug.WriteLine($"Failed to set clipboard text: {ex.Message}");
+            ErrorBar.Visibility = Visibility.Visible;
         }
     }
 
@@ -704,4 +707,9 @@ public partial class QuickSimpleLookup : Window
     }
 
     #endregion Methods
+
+    private void ErrorBarOkay_Click(object sender, RoutedEventArgs e)
+    {
+        ErrorBar.Visibility = Visibility.Collapsed;
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -72,6 +73,12 @@ public static class OcrExtensions
 
         if (Settings.Default.CorrectToLatin)
             text.ReplaceGreekOrCyrillicWithLatin();
+    }
+
+    public static void RemoveTrailingNewlines(this StringBuilder text)
+    {
+        while (text.Length > 0 && (text[^1] == '\n' || text[^1] == '\r'))
+            text.Length--;
     }
 
     public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, Language language)
@@ -191,7 +198,7 @@ public static class OcrExtensions
         return outputs;
     }
 
-    public async static Task<List<OcrOutput>> GetTextFromImageAsync(SoftwareBitmap softwareBitmap, Language language)
+    public static Task<List<OcrOutput>> GetTextFromImageAsync(SoftwareBitmap softwareBitmap, Language language)
     {
         throw new NotImplementedException();
 
@@ -203,48 +210,37 @@ public static class OcrExtensions
     public async static Task<List<OcrOutput>> GetTextFromImageAsync(BitmapImage bitmapImage, Language language)
     {
         Bitmap bitmap = ImageMethods.BitmapImageToBitmap(bitmapImage);
-        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
-        Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
-
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(scaledBitmap, language);
-
-        List<OcrOutput> outputs = new();
-
-        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
-
-        outputs.Add(paragraphsOutput);
-
-        if (Settings.Default.TryToReadBarcodes)
-        {
-            OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
-            outputs.Add(barcodeResult);
-        }
-
-        return outputs;
+        return await GetTextFromImageAsync(bitmap, language);
     }
 
-    public async static Task<List<OcrOutput>> GetTextFromStreamAsync(MemoryStream stream, Language language)
+    public static Task<List<OcrOutput>> GetTextFromStreamAsync(MemoryStream stream, Language language)
     {
         throw new NotImplementedException();
     }
 
-    public async static Task<List<OcrOutput>> GetTextFromStreamAsync(IRandomAccessStream stream, Language language)
+    public static Task<List<OcrOutput>> GetTextFromStreamAsync(IRandomAccessStream stream, Language language)
     {
         throw new NotImplementedException();
     }
 
     public async static Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language)
     {
+        List<OcrOutput> outputs = new();
+
         double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
         Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
 
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(scaledBitmap, language);
-
-        List<OcrOutput> outputs = new();
-
-        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
-
-        outputs.Add(paragraphsOutput);
+        if (Settings.Default.UseTesseract)
+        {
+            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBitmap, language);
+            outputs.Add(tesseractOutput);
+        }
+        else
+        {
+            OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(scaledBitmap, language);
+            OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
+            outputs.Add(paragraphsOutput);
+        }
 
         if (Settings.Default.TryToReadBarcodes)
         {

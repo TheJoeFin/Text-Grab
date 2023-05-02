@@ -6,10 +6,11 @@ using System.Windows;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab.Controls;
 
-public partial class BottomBarSettings : Window
+public partial class BottomBarSettings : FluentWindow
 {
     #region Constructors
 

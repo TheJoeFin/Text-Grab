@@ -1,4 +1,6 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
+using Microsoft.Win32;
+using RegistryUtils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,10 +8,15 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls.Window;
+using Wpf.Ui.Extensions;
+using Wpf.Ui.Services;
 
 namespace Text_Grab;
 
@@ -23,7 +30,6 @@ public partial class App : System.Windows.Application
     public List<int> HotKeyIds { get; set; } = new();
     public int NumberOfRunningInstances { get; set; } = 0;
     public NotifyIcon? TextGrabIcon { get; set; }
-
     #endregion Properties
 
     #region Methods
@@ -54,6 +60,54 @@ public partial class App : System.Windows.Application
                 editTextWindow.Show();
                 break;
         }
+    }
+    public static void SetTheme(object? sender = null, EventArgs? e = null)
+    {
+        bool gotTheme = Enum.TryParse<AppTheme>(Settings.Default.AppTheme.ToString(), true, out AppTheme currentAppTheme);
+
+        if (!gotTheme)
+            return;
+
+        try
+        {
+            switch (currentAppTheme)
+            {
+                case AppTheme.System:
+                    if (SystemThemeUtility.IsLightTheme())
+                        Theme.Apply(ThemeType.Light, WindowBackdropType.None);
+                    else
+                        Theme.Apply(ThemeType.Dark, WindowBackdropType.None);
+                    break;
+                case AppTheme.Dark:
+                    Theme.Apply(ThemeType.Dark, WindowBackdropType.None);
+                    break;
+                case AppTheme.Light:
+                    Theme.Apply(ThemeType.Light, WindowBackdropType.None);
+                    break;
+                default:
+                    Theme.Apply(ThemeType.Dark, WindowBackdropType.None);
+                    break;
+            }
+        }
+        catch (Exception)
+        {
+#if DEBUG
+            throw;
+#endif
+        }
+
+        Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
+        Accent.Apply(teal);
+    }
+
+    public void WatchTheme()
+    {
+        if (Registry.CurrentUser.OpenSubKey(SystemThemeUtility.themeKeyPath) is not RegistryKey key)
+            return;
+
+        RegistryMonitor monitor = new(key);
+        monitor.RegChanged += new EventHandler(SetTheme);
+        monitor.Start();
     }
 
     private static async Task<bool> CheckForOcringFolder(string currentArgument)
@@ -165,8 +219,15 @@ public partial class App : System.Windows.Application
         if (!handledArgument && e.Args.Length > 0)
             handledArgument = await HandleStartupArgs(e.Args);
 
+        WatchTheme();
+
         if (handledArgument)
+        {
+            // arguments were passed, so don't show firstRun dialog
+            Settings.Default.FirstRun = false;
+            Settings.Default.Save();
             return;
+        }
 
         if (Settings.Default.FirstRun)
         {
@@ -177,6 +238,7 @@ public partial class App : System.Windows.Application
 
         DefaultLaunch();
     }
+
     private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         // unhandled exceptions thrown from UI thread
@@ -210,6 +272,5 @@ public partial class App : System.Windows.Application
             mtw.Show();
         }));
     }
-
     #endregion Methods
 }

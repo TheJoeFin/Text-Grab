@@ -41,6 +41,7 @@ public partial class FullscreenGrab : Window
     public FullscreenGrab()
     {
         InitializeComponent();
+        App.SetTheme();
     }
 
     #endregion Constructors
@@ -567,10 +568,8 @@ public partial class FullscreenGrab : Window
     {
         BackgroundImage.Source = null;
         BackgroundImage.UpdateLayout();
-        // EditWindow = null;
         currentScreen = null;
         dpiScale = null;
-        Language = null;
         textFromOCR = null;
 
         this.Loaded -= Window_Loaded;

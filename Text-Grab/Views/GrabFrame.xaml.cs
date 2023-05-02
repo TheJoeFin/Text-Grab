@@ -76,6 +76,7 @@ public partial class GrabFrame : Window
     public GrabFrame()
     {
         InitializeComponent();
+        App.SetTheme();
 
         LoadOcrLanguages();
 
@@ -656,11 +657,16 @@ public partial class GrabFrame : Window
         if (this.Width < 390)
         {
             SearchBox.Visibility = Visibility.Collapsed;
+            ClearBTN.Visibility = Visibility.Collapsed;
             MatchesMenu.Visibility = Visibility.Collapsed;
         }
         else
         {
             SearchBox.Visibility = Visibility.Visible;
+            if (!string.IsNullOrEmpty(SearchBox.Text))
+                ClearBTN.Visibility = Visibility.Visible;
+            else
+                ClearBTN.Visibility = Visibility.Collapsed;
         }
 
         if (this.Width < 480)
@@ -791,7 +797,7 @@ public partial class GrabFrame : Window
             Width = (int)((ActualWidth + 2) * dpi.DpiScaleX),
             Height = (int)((ActualHeight - 64) * dpi.DpiScaleY),
             X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
-            Y = (int)((windowPosition.Y + 24) * dpi.DpiScaleY)
+            Y = (int)((windowPosition.Y + 32) * dpi.DpiScaleY)
         };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
@@ -814,6 +820,7 @@ public partial class GrabFrame : Window
         {
             StringBuilder lineText = new();
             ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
+            lineText.RemoveTrailingNewlines();
 
             Rect lineRect = ocrLine.GetBoundingRect();
 
@@ -1763,9 +1770,15 @@ public partial class GrabFrame : Window
         if (sender is not TextBox searchBox) return;
 
         if (string.IsNullOrEmpty(SearchBox.Text))
+        {
+            ClearBTN.Visibility = Visibility.Collapsed;
             SearchLabel.Visibility = Visibility.Visible;
+        }
         else
+        {
+            ClearBTN.Visibility = Visibility.Visible;
             SearchLabel.Visibility = Visibility.Collapsed;
+        }
 
         isSearchSelectionOverriden = false;
 

@@ -1,6 +1,8 @@
 using System.Drawing;
 using System.Text;
 using System.Windows;
+using System.Windows.Media.Imaging;
+using Text_Grab;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -11,50 +13,33 @@ namespace Tests;
 
 public class OcrTests
 {
-    [Fact]
-    public async Task OcrFontSampleImage()
-    {
-        // Given
-        string expectedResult = @"Times-Roman
+        private const string fontSamplePath = @".\Images\font_sample.png";
+        private const string fontSampleResult = @"Times-Roman
 Helvetica
 Courier
 Palatino-Roman
 Helvetica-Narrow
 Bookman-Demi";
 
-        string testImagePath = @".\Images\font_sample.png";
+        private const string fontSampleResultForTesseract = @"Times-Roman
+Helvetica
+Courier
+Palatino-Roman
+Helvetica-Narrow
 
-        // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
+Bookman-Demi
+";
 
-        // Then
-        Assert.Equal(expectedResult, ocrTextResult);
-    }
-
-    [Fact]
-    public async Task OcrFontTestImage()
-    {
-        // Given
-        string expectedResult = @"Arial
+    private const string fontTestPath = @".\Images\FontTest.png";
+    private const string fontTestResult = @"Arial
 Times New Roman
 Georgia
 Segoe
 Rockwell Condensed
 Couier New";
 
-        string testImagePath = @".\Images\FontTest.png";
-        Uri uri = new Uri(testImagePath, UriKind.Relative);
-        // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
-
-        // Then
-        Assert.Equal(expectedResult, ocrTextResult);
-    }
-
-    [WpfFact]
-    public async Task AnalyzeTable()
-    {
-        string expectedResult = @"Month	Int	Season
+    private const string tableTestPath = @".\Images\Table-Test.png";
+    private const string tableTestResult = @"Month	Int	Season
 January	1	Winter
 February	2	Winter
 March	3	Spring
@@ -68,11 +53,44 @@ October	10	Fall
 November	11	Fall
 December	12	Winter";
 
+    [Fact]
+    public async Task OcrFontSampleImage()
+    {
+        // Given
+        string testImagePath = fontSamplePath;
 
-        string testImagePath = @".\Images\Table-Test.png";
+        // When
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+
+        // Then
+        Assert.Equal(fontSampleResult, ocrTextResult);
+    }
+
+    [Fact]
+    public async Task OcrFontTestImage()
+    {
+        // Given
+        string testImagePath = fontTestPath;
+        string expectedResult = fontTestResult;
+
+        Uri uri = new Uri(testImagePath, UriKind.Relative);
+        // When
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+
+        // Then
+        Assert.Equal(expectedResult, ocrTextResult);
+    }
+
+    [WpfFact]
+    public async Task AnalyzeTable()
+    {
+        string testImagePath = tableTestPath;
+        string expectedResult = tableTestResult;
+
+
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         Language englishLanguage = new("en-US");
-        Bitmap testBitmap = new(getPathToImages(testImagePath));
+        Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
         OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
@@ -107,7 +125,7 @@ December	12	Winter";
         string testImagePath = @".\Images\QrCodeTestImage.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToImages(testImagePath));
+        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -129,7 +147,7 @@ December	12	Winter";
         string testImagePath = @".\Images\Table-Test-2.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         Language englishLanguage = new("en-US");
-        Bitmap testBitmap = new(getPathToImages(testImagePath));
+        Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
         OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
@@ -155,7 +173,71 @@ December	12	Winter";
         Assert.Equal(expectedResult, stringBuilder.ToString());
     }
 
-    private string getPathToImages(string imageRelativePath)
+    // [WpfFact]
+    public async Task TesseractHocr()
+    {
+        int intialLinesToSkip = 12;
+
+        // Given
+        string hocrFilePath = getPathToLocalFile(@"TextFiles\font_sample.hocr");
+        string[] hocrFileContentsArray = await File.ReadAllLinesAsync(hocrFilePath);
+
+        // combine string array into one string
+        StringBuilder sb = new();
+        foreach (string line in hocrFileContentsArray.Skip(intialLinesToSkip).ToArray())
+            sb.AppendLine(line);
+
+        string hocrFileContents = sb.ToString();
+
+        string testImagePath = fontSamplePath;
+        // need to scale to get the test to match the output
+        // Bitmap scaledBMP = ImageMethods
+        Uri fileURI = new(getPathToLocalFile(testImagePath), UriKind.Absolute);
+        BitmapImage bmpImg = new(fileURI);
+        bmpImg.Freeze();
+        Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
+        Language language = LanguageUtilities.GetOCRLanguage();
+        double idealScaleFactor = await OcrExtensions.GetIdealScaleFactorForOcrAsync(bmp, language);
+        Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
+
+        // When
+        Language englishLanguage = new("en-US");
+        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
+
+        string[] tessoutputArray = tessoutput.RawOutput.Split(Environment.NewLine);
+        StringBuilder sb2 = new();
+        foreach (string line in tessoutputArray.Skip(intialLinesToSkip).ToArray())
+            sb2.AppendLine(line);
+
+        tessoutput.RawOutput = sb2.ToString();
+
+        // Then
+        Assert.Equal(hocrFileContents, tessoutput.RawOutput);
+    }
+
+    [WpfFact]
+    public async Task TesseractFontSample()
+    {
+        string testImagePath = fontSamplePath;
+        // need to scale to get the test to match the output
+        // Bitmap scaledBMP = ImageMethods
+        Uri fileURI = new(getPathToLocalFile(testImagePath), UriKind.Absolute);
+        BitmapImage bmpImg = new(fileURI);
+        bmpImg.Freeze();
+        Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
+        Language language = LanguageUtilities.GetOCRLanguage();
+        double idealScaleFactor = await OcrExtensions.GetIdealScaleFactorForOcrAsync(bmp, language);
+        Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
+
+        // When
+        Language englishLanguage = new("en-US");
+        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
+
+        // Then
+        Assert.Equal(fontSampleResultForTesseract, tessoutput.RawOutput);
+    }
+
+    private string getPathToLocalFile(string imageRelativePath)
     {
         Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
         string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);

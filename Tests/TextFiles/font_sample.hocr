@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title></title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+  <meta name='ocr-system' content='tesseract v5.3.0.20221222' />
+  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
+ </head>
+ <body>
+  <div class='ocr_page' id='page_1' title='image "c:\Users\jfinney\Documents\Text Grab\Text-Grab\Tests\bin\Debug\net6.0-windows10.0.20348\Images\font_sample.png"; bbox 0 0 505 556; ppageno 0; scan_res 120 120'>
+   <div class='ocr_carea' id='block_1_1' title="bbox 33 26 426 432">
+    <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 33 26 426 432">
+     <span class='ocr_line' id='line_1_1' title="bbox 33 26 346 64; baseline 0 0; x_size 47.204967; x_descenders 9.2049685; x_ascenders 12">
+      <span class='ocrx_word' id='word_1_1' title='bbox 33 26 346 64; x_wconf 90'>Times-Roman</span>
+     </span>
+     <span class='ocr_line' id='line_1_2' title="bbox 37 115 258 157; baseline 0.005 -1; x_size 52.975155; x_descenders 10.975155; x_ascenders 11">
+      <span class='ocrx_word' id='word_1_2' title='bbox 37 115 258 157; x_wconf 96'>Helvetica</span>
+     </span>
+     <span class='ocr_line' id='line_1_3' title="bbox 36 212 260 248; baseline -0.004 0; x_size 43.850929; x_descenders 8.8509312; x_ascenders 10">
+      <span class='ocrx_word' id='word_1_3' title='bbox 36 212 260 248; x_wconf 96'>Courier</span>
+     </span>
+     <span class='ocr_line' id='line_1_4' title="bbox 34 299 426 340; baseline 0 -1; x_size 49.204967; x_descenders 9.2049685; x_ascenders 14">
+      <span class='ocrx_word' id='word_1_4' title='bbox 34 299 426 340; x_wconf 91'>Palatino-Roman</span>
+     </span>
+     <span class='ocr_line' id='line_1_5' title="bbox 36 391 377 432; baseline 0 -1; x_size 50.267082; x_descenders 10.26708; x_ascenders 11">
+      <span class='ocrx_word' id='word_1_5' title='bbox 36 391 377 432; x_wconf 90'>Helvetica-Narrow</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_carea' id='block_1_2' title="bbox 33 482 469 523">
+    <p class='ocr_par' id='par_1_2' lang='eng' title="bbox 33 482 469 523">
+     <span class='ocr_line' id='line_1_6' title="bbox 33 482 469 523; baseline -0.002 0; x_size 45.403507; x_descenders 5.4035087; x_ascenders 12">
+      <span class='ocrx_word' id='word_1_6' title='bbox 33 482 469 523; x_wconf 87'>Bookman-Demi</span>
+     </span>
+    </p>
+   </div>
+  </div>
+ </body>
+</html>
+

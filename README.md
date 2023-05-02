@@ -1,4 +1,6 @@
 # Text-Grab
+![Version 4 icon](Text-Grab/images/TealSelect40.png) <- Text Grab's new Icon
+![All Modes In Light Mode](images/All-Modes-Light.png)
 
 This is a minimal optical character recognition (OCR) utility for Windows 10/11 which makes all visible text available to be copied. 
 
@@ -42,7 +44,7 @@ Get the code:
 ## Text Grab has Four Modes
 
 ### 1. Full-Screen Mode (basis of [Text Extractor](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor))
-![Select text from a region](images/2-3-Full-Screen-Grab-med.gif)
+![Select text from a region](images/FSG-V4.gif)
 
 The first full screen use case is the most obvious, selecting a region of the screen and the text within the selected region will be added to the clipboard.
 
@@ -101,6 +103,12 @@ Arguments
 
 ## Principles
 Text Grab is designed to have multiple modes, from minimal to fully featured; all focused on productivity. By using Windows 10’s OCR capabilities Text Grab can launch quickly without needing to run in the background. Pinning Text Grab to the Taskbar enables launching via keyboard shortcut. Now with version 2.4 when the background process is enabled Text Grab can be activated from anywhere using global hotkeys. The full-screen mode is designed to be used hundreds of times a day. Reducing clicks and menus means saving time, which is the primary focus of Text Grab. The Grab Frame tool can be positioned on top of any text content for quick OCR any time. When it comes to manipulating the text you've copied the Edit Text Window offers a wide range of tools to speed up common tasks and take the raw text into clean usable content.
+
+### Packages Used
+- ZXing.Net - Barcode and QR Code scanning: https://github.com/micjahn/ZXing.Net
+- WPF UI - Fluent UI Style: https://github.com/lepoco/wpfui
+- CliWrap: https://github.com/Tyrrrz/CliWrap
+- Microsoft Community Toolkit: https://github.com/CommunityToolkit
 
 ### Thanks for using Text Grab
 Hopefully this simple app makes you more productive and saves you time from transcribing text.

@@ -37,10 +37,23 @@ public enum Side
     Bottom = 4
 }
 
+public enum OcrEngineKind
+{
+    Windows = 0,
+    Tesseract = 1,
+}
+
 public enum OcrOutputKind
 {
     None = 0,
     Line = 1,
     Paragraph = 2,
     Barcode = 3,
+}
+
+public enum AppTheme
+{
+    System = 0,
+    Dark = 1,
+    Light = 2
 }
