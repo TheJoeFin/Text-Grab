@@ -1,5 +1,6 @@
 # Text-Grab
-Text Grab's new Icon: ![Version 4 icon](Text-Grab/images/TealSelect40.png)
+![Version 4 icon](Text-Grab/images/TealSelect40.png) <- Text Grab's new Icon
+![All Modes In Light Mode](images/All-Modes-Light.png)
 
 This is a minimal optical character recognition (OCR) utility for Windows 10/11 which makes all visible text available to be copied. 
 
@@ -43,7 +44,7 @@ Get the code:
 ## Text Grab has Four Modes
 
 ### 1. Full-Screen Mode (basis of [Text Extractor](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor))
-![Select text from a region](images/2-3-Full-Screen-Grab-med.gif)
+![Select text from a region](images/FSG-V4.gif)
 
 The first full screen use case is the most obvious, selecting a region of the screen and the text within the selected region will be added to the clipboard.
 
