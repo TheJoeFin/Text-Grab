@@ -22,16 +22,28 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="Images\ETW.jpg" />
-		<None Remove="Images\FSG.jpg" />
-		<None Remove="Images\GF.jpg" />
-		<None Remove="Images\QSL.jpg" />
+		<None Remove="Images\ETW.png" />
+		<None Remove="Images\FSG.png" />
+		<None Remove="Images\GF.png" />
+		<None Remove="Images\QSL.png" />
 		<None Remove="Images\TealSelect40.png" />
 		<None Remove="Images\WinSym.png" />
 		<None Remove="TealSelect.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="Images\ETW.png">
+		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\FSG.png">
+		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\GF.png">
+		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\QSL.png">
+		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		</Resource>
 		<Resource Include="Images\TealSelect40.png" />
 	</ItemGroup>
 
@@ -63,10 +75,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="Images\ETW.jpg" />
-		<Resource Include="Images\FSG.jpg" />
-		<Resource Include="Images\GF.jpg" />
-		<Resource Include="Images\QSL.jpg" />
 		<Resource Include="Images\Text-Grab-Icon.png" />
 		<Resource Include="Images\t_32.png" />
 		<Resource Include="Images\Toast.png" />

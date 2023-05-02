@@ -108,7 +108,7 @@
                             <Image
                                 Width="800"
                                 Height="620"
-                                Source="/Text-Grab;component/Images/FSG.jpg" />
+                                Source="/Text-Grab;component/Images/FSG.png" />
                         </Viewbox>
                         <TextBlock HorizontalAlignment="Center">
                             <Hyperlink
@@ -144,7 +144,7 @@
                             <Image
                                 Width="800"
                                 Height="620"
-                                Source="/Text-Grab;component/Images/GF.jpg" />
+                                Source="/Text-Grab;component/Images/GF.png" />
                         </Viewbox>
                         <TextBlock HorizontalAlignment="Center">
                             <Hyperlink
@@ -180,7 +180,7 @@
                             <Image
                                 Width="800"
                                 Height="620"
-                                Source="/Text-Grab;component/Images/ETW.jpg" />
+                                Source="/Text-Grab;component/Images/ETW.png" />
                         </Viewbox>
                         <TextBlock HorizontalAlignment="Center">
                             <Hyperlink
@@ -216,7 +216,7 @@
                             <Image
                                 Width="800"
                                 Height="620"
-                                Source="/Text-Grab;component/Images/QSL.jpg" />
+                                Source="/Text-Grab;component/Images/QSL.png" />
                         </Viewbox>
                         <TextBlock HorizontalAlignment="Center">
                             <Hyperlink
@@ -238,7 +238,7 @@
                     MaxWidth="600"
                     Margin="0,30,0,0"
                     HorizontalAlignment="Left"
-                    Source="/Text-Grab;component/Images/FSG.jpg"
+                    Source="/Text-Grab;component/Images/FSG.png"
                     Stretch="Uniform" />
 
                 <TextBlock Style="{StaticResource TextBody}">
@@ -258,7 +258,7 @@
                     MaxWidth="600"
                     Margin="0,30,0,0"
                     HorizontalAlignment="Left"
-                    Source="/Text-Grab;component/Images/GF.jpg"
+                    Source="/Text-Grab;component/Images/GF.png"
                     Stretch="Uniform" />
                 <TextBlock Style="{StaticResource TextBody}">
                     • The Grab Frame is a window which can be moved or resized. It stays on top of other windows and will read all of the text within the border.<LineBreak />
@@ -276,7 +276,7 @@
                     MaxWidth="600"
                     Margin="0,30,0,0"
                     HorizontalAlignment="Left"
-                    Source="/Text-Grab;component/Images/ETW.jpg"
+                    Source="/Text-Grab;component/Images/ETW.png"
                     Stretch="Uniform" />
                 <TextBlock Style="{StaticResource TextBody}">
                     • Similar to Notepad, the Edit Text Window is a &quot;Pure Text&quot; editing experience, with no formatting.<LineBreak />
@@ -299,7 +299,7 @@
                     MaxWidth="600"
                     Margin="0,30,0,0"
                     HorizontalAlignment="Left"
-                    Source="/Text-Grab;component/Images/QSL.jpg"
+                    Source="/Text-Grab;component/Images/QSL.png"
                     Stretch="Uniform" />
                 <TextBlock Style="{StaticResource TextBody}">
                     • Unlike Full-Screen or Grab Frame modes Quick Simple Lookup does not use OCR.<LineBreak />
