@@ -1,5 +1,4 @@
 # Text-Grab
-![Version 4 icon](Text-Grab/images/TealSelect40.png) <- Text Grab's new Icon
 ![All Modes In Light Mode](images/All-Modes-Light.png)
 
 This is a minimal optical character recognition (OCR) utility for Windows 10/11 which makes all visible text available to be copied. 
