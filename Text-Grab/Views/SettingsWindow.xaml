@@ -66,7 +66,7 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 Style="{StaticResource TextBodyNormal}"
-                                Text="Version 4.0.0-beta1" />
+                                Text="Version 4.0.0" />
 
                             <controls:CollapsibleButton
                                 x:Name="AboutBTN"
