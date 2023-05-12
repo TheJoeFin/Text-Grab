@@ -26,8 +26,7 @@
             <Setter Property="Padding" Value="6" />
             <Setter Property="Margin" Value="10,10,0,10" />
         </Style>
-        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
-
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
         <ContextMenu x:Key="ContextMenuResource">
             <MenuItem Command="ApplicationCommands.Undo" />
             <MenuItem Command="ApplicationCommands.Redo" />
