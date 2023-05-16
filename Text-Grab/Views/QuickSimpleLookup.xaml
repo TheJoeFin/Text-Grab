@@ -10,7 +10,6 @@
     Title="Quick Simple Lookup"
     Width="800"
     Height="400"
-    Background="{DynamicResource ApplicationBackgroundBrush}"
     Closing="Window_Closing"
     Loaded="Window_Loaded"
     PreviewKeyDown="QuickSimpleLookup_PreviewKeyDown"
@@ -28,7 +27,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
