@@ -138,6 +138,46 @@ public partial class QuickSimpleLookup : FluentWindow
             PasteToggleButton.IsChecked = false;
     }
 
+    private void EnterAltMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.CtrlAlt);
+    }
+
+    private void EnterButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsEditingDataGrid)
+            return;
+        e.Handled = true;
+        if (SearchBox is TextBox searchTextBox && searchTextBox.Text.Contains('\t'))
+        {
+            AddToLookUpResults('\t', searchTextBox.Text);
+            searchTextBox.Clear();
+            GoToEndOfMainDataGrid();
+        }
+        else
+            PutValueIntoClipboard();
+    }
+
+    private void EnterCtrlMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.Ctrl);
+    }
+
+    private void EnterShiftCtrlMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.ShiftCtrl);
+    }
+
+    private void EnterShiftMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.Shift);
+    }
+
+    private void ErrorBarOkay_Click(object sender, RoutedEventArgs e)
+    {
+        ErrorBar.Visibility = Visibility.Collapsed;
+    }
+
     private List<LookupItem> GetMainDataGridSelection()
     {
         var selectedItems = MainDataGrid.SelectedItems as List<LookupItem>;
@@ -708,46 +748,5 @@ public partial class QuickSimpleLookup : FluentWindow
             System.Windows.Forms.MessageBox.Show($"Failed to save csv file. {ex.Message}");
         }
     }
-
     #endregion Methods
-
-    private void ErrorBarOkay_Click(object sender, RoutedEventArgs e)
-    {
-        ErrorBar.Visibility = Visibility.Collapsed;
-    }
-
-    private void EnterButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (IsEditingDataGrid)
-            return;
-        e.Handled = true;
-        if (SearchBox is TextBox searchTextBox && searchTextBox.Text.Contains('\t'))
-        {
-            AddToLookUpResults('\t', searchTextBox.Text);
-            searchTextBox.Clear();
-            GoToEndOfMainDataGrid();
-        }
-        else
-            PutValueIntoClipboard();
-    }
-
-    private void EnterShiftMI_Click(object sender, RoutedEventArgs e)
-    {
-        PutValueIntoClipboard(KeyboardModifiersDown.Shift);
-    }
-
-    private void EnterCtrlMI_Click(object sender, RoutedEventArgs e)
-    {
-        PutValueIntoClipboard(KeyboardModifiersDown.Ctrl);
-    }
-
-    private void EnterAltMI_Click(object sender, RoutedEventArgs e)
-    {
-        PutValueIntoClipboard(KeyboardModifiersDown.CtrlAlt);
-    }
-
-    private void EnterShiftCtrlMI_Click(object sender, RoutedEventArgs e)
-    {
-        PutValueIntoClipboard(KeyboardModifiersDown.ShiftCtrl);
-    }
 }
