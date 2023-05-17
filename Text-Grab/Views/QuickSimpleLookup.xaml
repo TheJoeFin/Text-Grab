@@ -157,6 +157,24 @@
                             Header="Text Grab Settings" />
                     </MenuItem>
                 </Menu>
+                <controls:CollapsibleButton
+                    x:Name="EnterButton"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    ButtonText="Enter"
+                    Click="EnterButton_Click"
+                    IsSymbol="True"
+                    SymbolText=""
+                    ToolTip="Go (Enter)">
+                    <controls:CollapsibleButton.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Click="EnterShiftMI_Click" Header="Shift + Enter" />
+                            <MenuItem Click="EnterCtrlMI_Click" Header="Ctrl + Enter" />
+                            <MenuItem Click="EnterAltMI_Click" Header="Alt + Enter" />
+                            <MenuItem Click="EnterShiftCtrlMI_Click" Header="Shift + Ctrl + Enter" />
+                        </ContextMenu>
+                    </controls:CollapsibleButton.ContextMenu>
+                </controls:CollapsibleButton>
             </StackPanel>
         </Grid>
         <DataGrid

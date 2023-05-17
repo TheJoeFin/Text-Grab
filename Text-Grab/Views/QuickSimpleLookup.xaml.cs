@@ -314,7 +314,7 @@ public partial class QuickSimpleLookup : FluentWindow
         MainDataGrid.ItemsSource = ItemsDictionary;
     }
 
-    private async void PutValueIntoClipboard()
+    private async void PutValueIntoClipboard(KeyboardModifiersDown? keysDown = null)
     {
         if (MainDataGrid.ItemsSource is not List<LookupItem> lookUpList
             || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
@@ -331,7 +331,10 @@ public partial class QuickSimpleLookup : FluentWindow
 
         StringBuilder stringBuilder = new();
 
-        switch (KeyboardExtensions.GetKeyboardModifiersDown())
+        if (keysDown is null)
+            keysDown = KeyboardExtensions.GetKeyboardModifiersDown();
+
+        switch (keysDown)
         {
             case KeyboardModifiersDown.ShiftCtrlAlt:
             case KeyboardModifiersDown.ShiftCtrl:
@@ -711,5 +714,40 @@ public partial class QuickSimpleLookup : FluentWindow
     private void ErrorBarOkay_Click(object sender, RoutedEventArgs e)
     {
         ErrorBar.Visibility = Visibility.Collapsed;
+    }
+
+    private void EnterButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsEditingDataGrid)
+            return;
+        e.Handled = true;
+        if (SearchBox is TextBox searchTextBox && searchTextBox.Text.Contains('\t'))
+        {
+            AddToLookUpResults('\t', searchTextBox.Text);
+            searchTextBox.Clear();
+            GoToEndOfMainDataGrid();
+        }
+        else
+            PutValueIntoClipboard();
+    }
+
+    private void EnterShiftMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.Shift);
+    }
+
+    private void EnterCtrlMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.Ctrl);
+    }
+
+    private void EnterAltMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.CtrlAlt);
+    }
+
+    private void EnterShiftCtrlMI_Click(object sender, RoutedEventArgs e)
+    {
+        PutValueIntoClipboard(KeyboardModifiersDown.ShiftCtrl);
     }
 }
