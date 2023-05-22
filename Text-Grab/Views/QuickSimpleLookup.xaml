@@ -164,7 +164,7 @@
                     ButtonText="Enter"
                     Click="EnterButton_Click"
                     IsSymbol="True"
-                    SymbolText=""
+                    SymbolText=""
                     ToolTip="Go (Enter)">
                     <controls:CollapsibleButton.ContextMenu>
                         <ContextMenu>
