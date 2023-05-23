@@ -339,14 +339,39 @@
                     x:Name="ListFilesMenuItem"
                     Click="ListFilesMenuItem_Click"
                     Header="_List Files and Folders From Folder..." />
+                <Separator />
                 <MenuItem
                     x:Name="ReadFolderOfImages"
                     Click="ReadFolderOfImages_Click"
                     Header="_Extract Text from Images in Folder..." />
                 <MenuItem
+                    x:Name="RecursiveFoldersCheck"
+                    Header="Scan all folders recursively"
+                    IsCheckable="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
                     x:Name="ReadFolderOfImagesWriteTxtFiles"
-                    Click="ReadFolderOfImagesWriteTxtFiles_Click"
-                    Header="Write ._Txt File For Each Image in Folder..." />
+                    Header="Write ._Txt File For Each Image"
+                    IsCheckable="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
+                    x:Name="OutputFilenamesCheck"
+                    Header="Write File names in output"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
+                    x:Name="OutputHeaderCheck"
+                    Header="Include output header text"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
+                    x:Name="OutputFooterCheck"
+                    Header="Include output footer text"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    StaysOpenOnClick="True" />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem

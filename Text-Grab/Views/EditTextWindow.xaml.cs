@@ -128,12 +128,18 @@ public partial class EditTextWindow : FluentWindow
         return PassedTextControl;
     }
 
-    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles, bool recursive)
+    public async Task OcrAllImagesInFolder(string folderPath, OcrDirectoryOptions options)
     {
         IEnumerable<String>? files = null;
 
+        if (string.IsNullOrWhiteSpace(folderPath) && string.IsNullOrWhiteSpace(options.Path))
+            return;
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            folderPath = options.Path;
+
         SearchOption searchOption = SearchOption.TopDirectoryOnly;
-        if (recursive)
+        if (options.IsRecursive)
             searchOption = SearchOption.AllDirectories;
 
         try
@@ -156,22 +162,25 @@ public partial class EditTextWindow : FluentWindow
             return;
         }
 
-        PassedTextControl.AppendText(folderPath);
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"{imageFiles.Count} images found");
-        PassedTextControl.AppendText(Environment.NewLine);
-
-        if (Settings.Default.UseTesseract)
+        if (options.OutputHeader)
         {
-            PassedTextControl.AppendText("Using Tesseract restricts parallel processing. ");
+            PassedTextControl.AppendText(folderPath);
             PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText("May be slower if processing many images");
+            PassedTextControl.AppendText($"{imageFiles.Count} images found");
+            PassedTextControl.AppendText(Environment.NewLine);
+
+            if (Settings.Default.UseTesseract)
+            {
+                PassedTextControl.AppendText("Using Tesseract restricts parallel processing. ");
+                PassedTextControl.AppendText(Environment.NewLine);
+                PassedTextControl.AppendText("May be slower if processing many images");
+                PassedTextControl.AppendText(Environment.NewLine);
+            }
+
+            PassedTextControl.AppendText("Press Escape to cancel");
+            PassedTextControl.AppendText(Environment.NewLine);
             PassedTextControl.AppendText(Environment.NewLine);
         }
-
-        PassedTextControl.AppendText("Press Escape to cancel");
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText(Environment.NewLine);
 
         cancellationTokenForDirOCR = new();
         Stopwatch stopwatch = new();
@@ -187,10 +196,13 @@ public partial class EditTextWindow : FluentWindow
 
         try
         {
-            await OcrAllImagesInParallel(writeToTextFiles, ocrFileResults);
+            await OcrAllImagesInParallel(options, ocrFileResults);
 
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
+            if (options.OutputFooter)
+            {
+                PassedTextControl.AppendText(Environment.NewLine);
+                PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
+            }
         }
         catch (OperationCanceledException)
         {
@@ -206,10 +218,13 @@ public partial class EditTextWindow : FluentWindow
         Mouse.OverrideCursor = null;
         stopwatch.Stop();
 
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"----- from {folderPath}");
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
+        if (options.OutputFooter)
+        {
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText($"----- from {folderPath}");
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
+        }
         PassedTextControl.ScrollToEnd();
 
         GC.Collect();
@@ -297,10 +312,11 @@ public partial class EditTextWindow : FluentWindow
         return listOfNames.ToString();
     }
 
-    private static async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
+    private static async Task<string> OcrFile(string path, Language? selectedLanguage, OcrDirectoryOptions options)
     {
         StringBuilder returnString = new();
-        returnString.AppendLine(Path.GetFileName(path));
+        if (options.OutputFileNames)
+            returnString.AppendLine(Path.GetFileName(path));
         try
         {
             string ocrdText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
@@ -309,7 +325,7 @@ public partial class EditTextWindow : FluentWindow
             {
                 returnString.AppendLine(ocrdText);
 
-                if (writeResultToTextFile && Path.GetDirectoryName(path) is string dir)
+                if (options.WriteTxtFiles && Path.GetDirectoryName(path) is string dir)
                 {
                     using StreamWriter outputFile = new StreamWriter(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
                     outputFile.WriteLine(ocrdText);
@@ -1052,7 +1068,7 @@ public partial class EditTextWindow : FluentWindow
         newEtwWithText.Show();
     }
 
-    private async Task OcrAllImagesInParallel(bool writeToTextFiles, List<AsyncOcrFileResult> ocrFileResults)
+    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults)
     {
         if (cancellationTokenForDirOCR is null)
             return;
@@ -1073,10 +1089,10 @@ public partial class EditTextWindow : FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
-            if (!writeToTextFiles)
+            if (!options.WriteTxtFiles)
             {
                 await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                 {
@@ -1271,40 +1287,18 @@ public partial class EditTextWindow : FluentWindow
 
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
 
-        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to OCR images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
-
-        if (resultRecursive == MessageBoxResult.Cancel)
-            return;
-
-        bool isRecursive = false;
-        if (resultRecursive == MessageBoxResult.Yes)
-            isRecursive = true;
-
-        if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath, false, isRecursive);
-    }
-
-    private async void ReadFolderOfImagesWriteTxtFiles_Click(object sender, RoutedEventArgs e)
-    {
-        FolderBrowserDialog folderBrowserDialog = new();
-        DialogResult result = folderBrowserDialog.ShowDialog();
-
-        if (result is not System.Windows.Forms.DialogResult.OK)
-            return;
-
-        string chosenFolderPath = folderBrowserDialog.SelectedPath;
-
-        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to make .txt files with the OCR result for all images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
-
-        if (resultRecursive == MessageBoxResult.Cancel)
-            return;
-
-        bool isRecursive = false;
-        if (resultRecursive == MessageBoxResult.Yes)
-            isRecursive = true;
+        OcrDirectoryOptions ocrDirectoryOptions = new()
+        {
+            Path = chosenFolderPath,
+            IsRecursive = RecursiveFoldersCheck.IsChecked is true ? true : false,
+            WriteTxtFiles = ReadFolderOfImagesWriteTxtFiles.IsChecked is true ? true : false,
+            OutputFileNames = OutputFilenamesCheck.IsChecked is true ? true : false,
+            OutputFooter = OutputFooterCheck.IsChecked is true ? true : false,
+            OutputHeader = OutputHeaderCheck.IsChecked is true ? true : false
+        };
 
         if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath, true, isRecursive);
+            await OcrAllImagesInFolder(chosenFolderPath, ocrDirectoryOptions);
     }
 
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)

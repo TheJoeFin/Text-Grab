@@ -117,7 +117,8 @@ public partial class App : System.Windows.Application
 
         EditTextWindow manipulateTextWindow = new();
         manipulateTextWindow.Show();
-        await manipulateTextWindow.OcrAllImagesInFolder(currentArgument, false, false);
+        OcrDirectoryOptions options = new();
+        await manipulateTextWindow.OcrAllImagesInFolder(currentArgument, options);
         return true;
     }
 
