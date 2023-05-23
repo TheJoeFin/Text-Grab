@@ -40,6 +40,7 @@ public partial class EditTextWindow : FluentWindow
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
     public static RoutedCommand IsolateSelectionCmd = new();
     public static RoutedCommand LaunchCmd = new();
+    public static RoutedCommand MakeQrCodeCmd = new();
     public static RoutedCommand OcrPasteCommand = new();
     public static RoutedCommand ReplaceReservedCmd = new();
     public static RoutedCommand SingleLineCmd = new();
@@ -47,7 +48,6 @@ public partial class EditTextWindow : FluentWindow
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
-    public static RoutedCommand MakeQrCodeCmd = new();
     public bool LaunchedFromNotification = false;
     CancellationTokenSource? cancellationTokenForDirOCR;
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
@@ -937,6 +937,34 @@ public partial class EditTextWindow : FluentWindow
         }
     }
 
+    private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
+            e.CanExecute = false;
+        else
+            e.CanExecute = true;
+    }
+
+    private void MakeQrCodeExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            return;
+
+        string text = GetSelectedTextOrAllText();
+
+        bool lengthError = false;
+        int maxCharLength = 2953;
+        if (text.Length > maxCharLength)
+        {
+            text = text.Substring(0, maxCharLength);
+            lengthError = true;
+        }
+        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
+
+        QrCodeWindow window = new(qrBitmap, text, lengthError);
+        window.Show();
+    }
+
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
     {
         SelectLine(sender, e);
@@ -1279,34 +1307,6 @@ public partial class EditTextWindow : FluentWindow
         PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
     }
 
-    private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
-    }
-
-    private void MakeQrCodeExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
-            return;
-
-        string text = GetSelectedTextOrAllText();
-
-        bool lengthError = false;
-        int maxCharLength = 2953;
-        if (text.Length > maxCharLength)
-        {
-            text = text.Substring(0, maxCharLength);
-            lengthError = true;
-        }
-        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
-        
-        QrCodeWindow window = new(qrBitmap, text, lengthError);
-        window.Show();
-    }
-
     private void ReplaceReservedCharsCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         bool containsAnyReservedChars = false;
@@ -1425,6 +1425,14 @@ public partial class EditTextWindow : FluentWindow
         LaunchFindAndReplace();
     }
 
+    private void SelectAllMenuItem_Click(Object? sender = null, RoutedEventArgs? e = null)
+    {
+        if (!IsLoaded)
+            return;
+
+        PassedTextControl.SelectAll();
+    }
+
     private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (PassedTextControl.SelectedText.Contains(Environment.NewLine)
@@ -1445,6 +1453,14 @@ public partial class EditTextWindow : FluentWindow
     private void SelectLineMenuItem_Click(object sender, RoutedEventArgs e)
     {
         SelectLine();
+    }
+
+    private void SelectNoneMenuItem_Click(Object? sender = null, RoutedEventArgs? e = null)
+    {
+        if (!IsLoaded)
+            return;
+
+        PassedTextControl.Select(0, 0);
     }
 
     private void SelectWord(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -1540,6 +1556,10 @@ public partial class EditTextWindow : FluentWindow
         RoutedCommand pasteCommand = new();
         _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
+
+        RoutedCommand selectAllCommand = new();
+        _ = selectAllCommand.InputGestures.Add(new KeyGesture(Key.A, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(selectAllCommand, SelectAllMenuItem_Click));
 
         RoutedCommand EscapeKeyed = new();
         _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));

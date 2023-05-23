@@ -48,6 +48,10 @@
                 Header="Select Line"
                 InputGestureText="Ctrl + L" />
             <MenuItem
+                Click="SelectAllMenuItem_Click"
+                Header="Select All"
+                InputGestureText="Ctrl + A" />
+            <MenuItem
                 Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                 Header="Toggle Case"
                 InputGestureText="Shift + F3" />
@@ -243,7 +247,15 @@
                     Click="SelectLineMenuItem_Click"
                     Header="Select _Line"
                     InputGestureText="Ctrl + L" />
-                <MenuItem Command="ApplicationCommands.SelectAll" />
+                <MenuItem
+                    x:Name="SelectAllMenuItem"
+                    Click="SelectAllMenuItem_Click"
+                    Header="Select All"
+                    InputGestureText="Ctrl + A" />
+                <MenuItem
+                    x:Name="SelectNoneMenuItem"
+                    Click="SelectNoneMenuItem_Click"
+                    Header="Select None" />
                 <Separator />
                 <MenuItem
                     x:Name="MoveLineUpMenuItem"
