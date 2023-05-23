@@ -67,15 +67,15 @@ public partial class EditTextWindow : FluentWindow
         App.SetTheme();
     }
 
-    public EditTextWindow(string possiblyEndcodedString, bool isEncoded = true)
+    public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
     {
         InitializeComponent();
         App.SetTheme();
 
         if (isEncoded)
-            ReadEncodedString(possiblyEndcodedString);
+            ReadEncodedString(possiblyEncodedString);
         else
-            PassedTextControl.Text = possiblyEndcodedString;
+            PassedTextControl.Text = possiblyEncodedString;
 
         LaunchedFromNotification = true;
     }
@@ -128,12 +128,12 @@ public partial class EditTextWindow : FluentWindow
         return PassedTextControl;
     }
 
-    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles, bool recrusive)
+    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles, bool recursive)
     {
         IEnumerable<String>? files = null;
 
         SearchOption searchOption = SearchOption.TopDirectoryOnly;
-        if (recrusive)
+        if (recursive)
             searchOption = SearchOption.AllDirectories;
 
         try
@@ -610,6 +610,11 @@ public partial class EditTextWindow : FluentWindow
         PassedTextControl.Text = sb.ToString();
     }
 
+    private void DeleteSelectedTextMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PassedTextControl.SelectedText = String.Empty;
+    }
+
     private void EditBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
     {
         BottomBarSettings bbs = new();
@@ -980,9 +985,9 @@ public partial class EditTextWindow : FluentWindow
             PassedTextControl.Text += Environment.NewLine;
         }
 
-        IEnumerable<int> indiciesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
+        IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
 
-        foreach (int newLineIndex in indiciesOfNewLine)
+        foreach (int newLineIndex in indicesOfNewLine)
         {
             int newLineEnd = newLineIndex;
             if (newLineEnd >= selectionIndex)
@@ -1010,9 +1015,9 @@ public partial class EditTextWindow : FluentWindow
         int selectionIndex = PassedTextControl.SelectionStart;
         int indexOfPreviousNewline = 0;
 
-        IEnumerable<int> indiciesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
+        IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
 
-        foreach (int newLineIndex in indiciesOfNewLine)
+        foreach (int newLineIndex in indicesOfNewLine)
         {
             int newLineEnd = newLineIndex + Environment.NewLine.Length;
             if (newLineEnd < selectionIndex)
@@ -1043,8 +1048,8 @@ public partial class EditTextWindow : FluentWindow
     {
         string selectedText = PassedTextControl.SelectedText;
         PassedTextControl.SelectedText = "";
-        EditTextWindow newETWwithText = new(selectedText, false);
-        newETWwithText.Show();
+        EditTextWindow newEtwWithText = new(selectedText, false);
+        newEtwWithText.Show();
     }
 
     private async Task OcrAllImagesInParallel(bool writeToTextFiles, List<AsyncOcrFileResult> ocrFileResults)
@@ -1235,9 +1240,9 @@ public partial class EditTextWindow : FluentWindow
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format("ms-windows-store:REVIEW?PFN={0}", "40087JoeFinApps.TextGrab_kdbpvth5scec4")));
     }
 
-    private void ReadEncodedString(string possiblyEndcodedString)
+    private void ReadEncodedString(string possiblyEncodedString)
     {
-        string rawEncodedString = possiblyEndcodedString.Substring(5);
+        string rawEncodedString = possiblyEncodedString.Substring(5);
         try
         {
             // restore the padding '=' in base64 string

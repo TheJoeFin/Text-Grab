@@ -55,6 +55,7 @@
                 Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                 Header="Toggle Case"
                 InputGestureText="Shift + F3" />
+            <MenuItem Click="DeleteSelectedTextMenuItem_Click" Header="Delete Selected Text" />
             <Separator />
             <MenuItem
                 Click="MoveLineUpMenuItem_Click"
@@ -256,6 +257,10 @@
                     x:Name="SelectNoneMenuItem"
                     Click="SelectNoneMenuItem_Click"
                     Header="Select None" />
+                <MenuItem
+                    x:Name="DeleteSelectedTextMenuItem"
+                    Click="DeleteSelectedTextMenuItem_Click"
+                    Header="Delete Selected Text" />
                 <Separator />
                 <MenuItem
                     x:Name="MoveLineUpMenuItem"
