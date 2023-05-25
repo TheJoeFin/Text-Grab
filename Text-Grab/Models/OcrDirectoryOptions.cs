@@ -1,4 +1,4 @@
-﻿namespace Text_Grab;
+﻿namespace Text_Grab.Models;
 
 public record OcrDirectoryOptions
 {
