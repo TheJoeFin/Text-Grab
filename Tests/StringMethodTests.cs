@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Text_Grab;
+using System.Linq;
 using Text_Grab.Utilities;
 
 namespace Tests;
@@ -39,6 +40,25 @@ lines
 of text which has several lines
 and some spaces at the ends of line 
 to throw off any easy check";
+
+    [Theory]
+    [InlineData("Hello", "", " this ...")]
+    [InlineData("lots", "Hello this is ", " ...")]
+    [InlineData("of", "...", " text ...")]
+    [InlineData("several", "...h has ", " lines...")]
+    public void ReturnPreviewsFromWord(string firstWord, string expectedLeftPreview, string expectedRightPreview)
+    {
+        int length = firstWord.Length;
+        int previewLength = 6;
+
+        int cursorPosition = multiLineInput.IndexOf(firstWord);
+
+        string PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref multiLineInput, cursorPosition, previewLength);
+        string PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref multiLineInput, cursorPosition + length, previewLength);
+
+        Assert.Equal(expectedLeftPreview, PreviewLeft);
+        Assert.Equal(expectedRightPreview, PreviewRight);
+    }
 
     [Theory]
     [InlineData(15, "lots")]

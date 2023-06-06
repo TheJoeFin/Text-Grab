@@ -48,9 +48,14 @@
                 Header="Select Line"
                 InputGestureText="Ctrl + L" />
             <MenuItem
+                Click="SelectAllMenuItem_Click"
+                Header="Select All"
+                InputGestureText="Ctrl + A" />
+            <MenuItem
                 Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                 Header="Toggle Case"
                 InputGestureText="Shift + F3" />
+            <MenuItem Click="DeleteSelectedTextMenuItem_Click" Header="Delete Selected Text" />
             <Separator />
             <MenuItem
                 Click="MoveLineUpMenuItem_Click"
@@ -243,7 +248,19 @@
                     Click="SelectLineMenuItem_Click"
                     Header="Select _Line"
                     InputGestureText="Ctrl + L" />
-                <MenuItem Command="ApplicationCommands.SelectAll" />
+                <MenuItem
+                    x:Name="SelectAllMenuItem"
+                    Click="SelectAllMenuItem_Click"
+                    Header="Select All"
+                    InputGestureText="Ctrl + A" />
+                <MenuItem
+                    x:Name="SelectNoneMenuItem"
+                    Click="SelectNoneMenuItem_Click"
+                    Header="Select None" />
+                <MenuItem
+                    x:Name="DeleteSelectedTextMenuItem"
+                    Click="DeleteSelectedTextMenuItem_Click"
+                    Header="Delete Selected Text" />
                 <Separator />
                 <MenuItem
                     x:Name="MoveLineUpMenuItem"
@@ -322,14 +339,39 @@
                     x:Name="ListFilesMenuItem"
                     Click="ListFilesMenuItem_Click"
                     Header="_List Files and Folders From Folder..." />
+                <Separator />
                 <MenuItem
                     x:Name="ReadFolderOfImages"
                     Click="ReadFolderOfImages_Click"
                     Header="_Extract Text from Images in Folder..." />
                 <MenuItem
+                    x:Name="RecursiveFoldersCheck"
+                    Header="Scan all folders recursively"
+                    IsCheckable="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
                     x:Name="ReadFolderOfImagesWriteTxtFiles"
-                    Click="ReadFolderOfImagesWriteTxtFiles_Click"
-                    Header="Write ._Txt File For Each Image in Folder..." />
+                    Header="Write ._Txt File For Each Image"
+                    IsCheckable="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
+                    x:Name="OutputFilenamesCheck"
+                    Header="Write File names in output"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
+                    x:Name="OutputHeaderCheck"
+                    Header="Include output header text"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    StaysOpenOnClick="True" />
+                <MenuItem
+                    x:Name="OutputFooterCheck"
+                    Header="Include output footer text"
+                    IsCheckable="True"
+                    IsChecked="True"
+                    StaysOpenOnClick="True" />
             </MenuItem>
             <MenuItem Header="_Window">
                 <MenuItem

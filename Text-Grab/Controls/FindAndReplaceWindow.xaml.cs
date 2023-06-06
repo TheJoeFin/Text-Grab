@@ -117,8 +117,8 @@ public partial class FindAndReplaceWindow : FluentWindow
             {
                 Index = m.Index,
                 Text = m.Value.MakeStringSingleLine(),
-                PreviewLeft = GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12).MakeStringSingleLine(),
-                PreviewRight = GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12).MakeStringSingleLine(),
+                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12),
+                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12),
                 Count = count
             };
             FindResults.Add(fr);
@@ -144,70 +144,6 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         if (textEditWindow is not null && etw == textEditWindow)
             Close();
-    }
-
-    // a method which uses GetNewLineIndexToLeft and returns the string from the given index to the newLine character to the left of the given index
-    // if the string is longer the x number of characters, it will return the last x number of characters
-    // and if the string is at the beginning don't add "..." to the beginning
-    private static string GetCharactersToLeftOfNewLine(ref string mainString, int index, int numberOfCharacters)
-    {
-        int newLineIndex = GetNewLineIndexToLeft(ref mainString, index);
-
-        if (newLineIndex < 1)
-            return mainString.Substring(0, index);
-
-        newLineIndex++;
-
-        if (newLineIndex > mainString.Length)
-            return mainString.Substring(mainString.Length, 0);
-
-        if (index - newLineIndex < 0)
-            return mainString.Substring(newLineIndex, 0);
-
-        if (index - newLineIndex < numberOfCharacters)
-            return "..." + mainString.Substring(newLineIndex, index - newLineIndex);
-
-        return "..." + mainString.Substring(index - numberOfCharacters, numberOfCharacters);
-    }
-
-    // same as GetCharactersToLeftOfNewLine but to the right
-    private static string GetCharactersToRightOfNewLine(ref string mainString, int index, int numberOfCharacters)
-    {
-        int newLineIndex = GetNewLineIndexToRight(ref mainString, index);
-        if (newLineIndex < 1)
-            return mainString.Substring(index);
-
-        if (newLineIndex - index > numberOfCharacters)
-            return mainString.Substring(index, numberOfCharacters) + "...";
-
-        if (newLineIndex == mainString.Length)
-            return mainString.Substring(index);
-
-        return mainString.Substring(index, newLineIndex - index) + "...";
-    }
-
-    // a method which returns the nearst newLine character index to the left of the given index
-    private static int GetNewLineIndexToLeft(ref string mainString, int index)
-    {
-        char newLineChar = Environment.NewLine.ToArray().Last();
-
-        int newLineIndex = index;
-        while (newLineIndex > 0 && newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
-            newLineIndex--;
-
-        return newLineIndex;
-    }
-
-    // a method which returns the nearst newLine character index to the right of the given index
-    private static int GetNewLineIndexToRight(ref string mainString, int index)
-    {
-        char newLineChar = Environment.NewLine.ToArray().First();
-
-        int newLineIndex = index;
-        while (newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
-            newLineIndex++;
-
-        return newLineIndex;
     }
 
     private void ChangeFindText_Tick(object? sender, EventArgs? e)

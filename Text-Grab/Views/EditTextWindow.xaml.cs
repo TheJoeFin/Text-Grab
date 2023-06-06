@@ -40,6 +40,7 @@ public partial class EditTextWindow : FluentWindow
     public static RoutedCommand InsertSelectionOnEveryLineCmd = new();
     public static RoutedCommand IsolateSelectionCmd = new();
     public static RoutedCommand LaunchCmd = new();
+    public static RoutedCommand MakeQrCodeCmd = new();
     public static RoutedCommand OcrPasteCommand = new();
     public static RoutedCommand ReplaceReservedCmd = new();
     public static RoutedCommand SingleLineCmd = new();
@@ -47,7 +48,6 @@ public partial class EditTextWindow : FluentWindow
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
-    public static RoutedCommand MakeQrCodeCmd = new();
     public bool LaunchedFromNotification = false;
     CancellationTokenSource? cancellationTokenForDirOCR;
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
@@ -67,15 +67,15 @@ public partial class EditTextWindow : FluentWindow
         App.SetTheme();
     }
 
-    public EditTextWindow(string possiblyEndcodedString, bool isEncoded = true)
+    public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
     {
         InitializeComponent();
         App.SetTheme();
 
         if (isEncoded)
-            ReadEncodedString(possiblyEndcodedString);
+            ReadEncodedString(possiblyEncodedString);
         else
-            PassedTextControl.Text = possiblyEndcodedString;
+            PassedTextControl.Text = possiblyEncodedString;
 
         LaunchedFromNotification = true;
     }
@@ -128,12 +128,18 @@ public partial class EditTextWindow : FluentWindow
         return PassedTextControl;
     }
 
-    public async Task OcrAllImagesInFolder(string folderPath, bool writeToTextFiles, bool recrusive)
+    public async Task OcrAllImagesInFolder(string folderPath, OcrDirectoryOptions options)
     {
         IEnumerable<String>? files = null;
 
+        if (string.IsNullOrWhiteSpace(folderPath) && string.IsNullOrWhiteSpace(options.Path))
+            return;
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            folderPath = options.Path;
+
         SearchOption searchOption = SearchOption.TopDirectoryOnly;
-        if (recrusive)
+        if (options.IsRecursive)
             searchOption = SearchOption.AllDirectories;
 
         try
@@ -156,22 +162,25 @@ public partial class EditTextWindow : FluentWindow
             return;
         }
 
-        PassedTextControl.AppendText(folderPath);
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"{imageFiles.Count} images found");
-        PassedTextControl.AppendText(Environment.NewLine);
-
-        if (Settings.Default.UseTesseract)
+        if (options.OutputHeader)
         {
-            PassedTextControl.AppendText("Using Tesseract restricts parallel processing. ");
+            PassedTextControl.AppendText(folderPath);
             PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText("May be slower if processing many images");
+            PassedTextControl.AppendText($"{imageFiles.Count} images found");
+            PassedTextControl.AppendText(Environment.NewLine);
+
+            if (Settings.Default.UseTesseract)
+            {
+                PassedTextControl.AppendText("Using Tesseract restricts parallel processing. ");
+                PassedTextControl.AppendText(Environment.NewLine);
+                PassedTextControl.AppendText("May be slower if processing many images");
+                PassedTextControl.AppendText(Environment.NewLine);
+            }
+
+            PassedTextControl.AppendText("Press Escape to cancel");
+            PassedTextControl.AppendText(Environment.NewLine);
             PassedTextControl.AppendText(Environment.NewLine);
         }
-
-        PassedTextControl.AppendText("Press Escape to cancel");
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText(Environment.NewLine);
 
         cancellationTokenForDirOCR = new();
         Stopwatch stopwatch = new();
@@ -187,10 +196,13 @@ public partial class EditTextWindow : FluentWindow
 
         try
         {
-            await OcrAllImagesInParallel(writeToTextFiles, ocrFileResults);
+            await OcrAllImagesInParallel(options, ocrFileResults);
 
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
+            if (options.OutputFooter)
+            {
+                PassedTextControl.AppendText(Environment.NewLine);
+                PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} images");
+            }
         }
         catch (OperationCanceledException)
         {
@@ -206,10 +218,13 @@ public partial class EditTextWindow : FluentWindow
         Mouse.OverrideCursor = null;
         stopwatch.Stop();
 
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"----- from {folderPath}");
-        PassedTextControl.AppendText(Environment.NewLine);
-        PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
+        if (options.OutputFooter)
+        {
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText($"----- from {folderPath}");
+            PassedTextControl.AppendText(Environment.NewLine);
+            PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed.ToString("c")}");
+        }
         PassedTextControl.ScrollToEnd();
 
         GC.Collect();
@@ -297,10 +312,11 @@ public partial class EditTextWindow : FluentWindow
         return listOfNames.ToString();
     }
 
-    private static async Task<string> OcrFile(string path, Language? selectedLanguage, bool writeResultToTextFile)
+    private static async Task<string> OcrFile(string path, Language? selectedLanguage, OcrDirectoryOptions options)
     {
         StringBuilder returnString = new();
-        returnString.AppendLine(Path.GetFileName(path));
+        if (options.OutputFileNames)
+            returnString.AppendLine(Path.GetFileName(path));
         try
         {
             string ocrdText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
@@ -309,7 +325,7 @@ public partial class EditTextWindow : FluentWindow
             {
                 returnString.AppendLine(ocrdText);
 
-                if (writeResultToTextFile && Path.GetDirectoryName(path) is string dir)
+                if (options.WriteTxtFiles && Path.GetDirectoryName(path) is string dir)
                 {
                     using StreamWriter outputFile = new StreamWriter(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
                     outputFile.WriteLine(ocrdText);
@@ -608,6 +624,11 @@ public partial class EditTextWindow : FluentWindow
         }
 
         PassedTextControl.Text = sb.ToString();
+    }
+
+    private void DeleteSelectedTextMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PassedTextControl.SelectedText = String.Empty;
     }
 
     private void EditBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
@@ -937,6 +958,34 @@ public partial class EditTextWindow : FluentWindow
         }
     }
 
+    private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
+            e.CanExecute = false;
+        else
+            e.CanExecute = true;
+    }
+
+    private void MakeQrCodeExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            return;
+
+        string text = GetSelectedTextOrAllText();
+
+        bool lengthError = false;
+        int maxCharLength = 2953;
+        if (text.Length > maxCharLength)
+        {
+            text = text.Substring(0, maxCharLength);
+            lengthError = true;
+        }
+        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
+
+        QrCodeWindow window = new(qrBitmap, text, lengthError);
+        window.Show();
+    }
+
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
     {
         SelectLine(sender, e);
@@ -952,9 +1001,9 @@ public partial class EditTextWindow : FluentWindow
             PassedTextControl.Text += Environment.NewLine;
         }
 
-        IEnumerable<int> indiciesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
+        IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
 
-        foreach (int newLineIndex in indiciesOfNewLine)
+        foreach (int newLineIndex in indicesOfNewLine)
         {
             int newLineEnd = newLineIndex;
             if (newLineEnd >= selectionIndex)
@@ -982,9 +1031,9 @@ public partial class EditTextWindow : FluentWindow
         int selectionIndex = PassedTextControl.SelectionStart;
         int indexOfPreviousNewline = 0;
 
-        IEnumerable<int> indiciesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
+        IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
 
-        foreach (int newLineIndex in indiciesOfNewLine)
+        foreach (int newLineIndex in indicesOfNewLine)
         {
             int newLineEnd = newLineIndex + Environment.NewLine.Length;
             if (newLineEnd < selectionIndex)
@@ -1015,11 +1064,11 @@ public partial class EditTextWindow : FluentWindow
     {
         string selectedText = PassedTextControl.SelectedText;
         PassedTextControl.SelectedText = "";
-        EditTextWindow newETWwithText = new(selectedText, false);
-        newETWwithText.Show();
+        EditTextWindow newEtwWithText = new(selectedText, false);
+        newEtwWithText.Show();
     }
 
-    private async Task OcrAllImagesInParallel(bool writeToTextFiles, List<AsyncOcrFileResult> ocrFileResults)
+    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults)
     {
         if (cancellationTokenForDirOCR is null)
             return;
@@ -1040,10 +1089,10 @@ public partial class EditTextWindow : FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, writeToTextFiles);
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
-            if (!writeToTextFiles)
+            if (!options.WriteTxtFiles)
             {
                 await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                 {
@@ -1207,9 +1256,9 @@ public partial class EditTextWindow : FluentWindow
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format("ms-windows-store:REVIEW?PFN={0}", "40087JoeFinApps.TextGrab_kdbpvth5scec4")));
     }
 
-    private void ReadEncodedString(string possiblyEndcodedString)
+    private void ReadEncodedString(string possiblyEncodedString)
     {
-        string rawEncodedString = possiblyEndcodedString.Substring(5);
+        string rawEncodedString = possiblyEncodedString.Substring(5);
         try
         {
             // restore the padding '=' in base64 string
@@ -1238,73 +1287,23 @@ public partial class EditTextWindow : FluentWindow
 
         string chosenFolderPath = folderBrowserDialog.SelectedPath;
 
-        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to OCR images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
-
-        if (resultRecursive == MessageBoxResult.Cancel)
-            return;
-
-        bool isRecursive = false;
-        if (resultRecursive == MessageBoxResult.Yes)
-            isRecursive = true;
-
-        if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath, false, isRecursive);
-    }
-
-    private async void ReadFolderOfImagesWriteTxtFiles_Click(object sender, RoutedEventArgs e)
-    {
-        FolderBrowserDialog folderBrowserDialog = new();
-        DialogResult result = folderBrowserDialog.ShowDialog();
-
-        if (result is not System.Windows.Forms.DialogResult.OK)
-            return;
-
-        string chosenFolderPath = folderBrowserDialog.SelectedPath;
-
-        MessageBoxResult resultRecursive = MessageBox.Show("Would you like to make .txt files with the OCR result for all images in every sub-folder?", "OCR Options", MessageBoxButton.YesNoCancel);
-
-        if (resultRecursive == MessageBoxResult.Cancel)
-            return;
-
-        bool isRecursive = false;
-        if (resultRecursive == MessageBoxResult.Yes)
-            isRecursive = true;
+        OcrDirectoryOptions ocrDirectoryOptions = new()
+        {
+            Path = chosenFolderPath,
+            IsRecursive = RecursiveFoldersCheck.IsChecked is true ? true : false,
+            WriteTxtFiles = ReadFolderOfImagesWriteTxtFiles.IsChecked is true ? true : false,
+            OutputFileNames = OutputFilenamesCheck.IsChecked is true ? true : false,
+            OutputFooter = OutputFooterCheck.IsChecked is true ? true : false,
+            OutputHeader = OutputHeaderCheck.IsChecked is true ? true : false
+        };
 
         if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath, true, isRecursive);
+            await OcrAllImagesInFolder(chosenFolderPath, ocrDirectoryOptions);
     }
 
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
     {
         PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
-    }
-
-    private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
-    }
-
-    private void MakeQrCodeExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
-            return;
-
-        string text = GetSelectedTextOrAllText();
-
-        bool lengthError = false;
-        int maxCharLength = 2953;
-        if (text.Length > maxCharLength)
-        {
-            text = text.Substring(0, maxCharLength);
-            lengthError = true;
-        }
-        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
-        
-        QrCodeWindow window = new(qrBitmap, text, lengthError);
-        window.Show();
     }
 
     private void ReplaceReservedCharsCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1425,6 +1424,14 @@ public partial class EditTextWindow : FluentWindow
         LaunchFindAndReplace();
     }
 
+    private void SelectAllMenuItem_Click(Object? sender = null, RoutedEventArgs? e = null)
+    {
+        if (!IsLoaded)
+            return;
+
+        PassedTextControl.SelectAll();
+    }
+
     private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (PassedTextControl.SelectedText.Contains(Environment.NewLine)
@@ -1445,6 +1452,14 @@ public partial class EditTextWindow : FluentWindow
     private void SelectLineMenuItem_Click(object sender, RoutedEventArgs e)
     {
         SelectLine();
+    }
+
+    private void SelectNoneMenuItem_Click(Object? sender = null, RoutedEventArgs? e = null)
+    {
+        if (!IsLoaded)
+            return;
+
+        PassedTextControl.Select(0, 0);
     }
 
     private void SelectWord(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -1540,6 +1555,10 @@ public partial class EditTextWindow : FluentWindow
         RoutedCommand pasteCommand = new();
         _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
+
+        RoutedCommand selectAllCommand = new();
+        _ = selectAllCommand.InputGestures.Add(new KeyGesture(Key.A, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(selectAllCommand, SelectAllMenuItem_Click));
 
         RoutedCommand EscapeKeyed = new();
         _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));

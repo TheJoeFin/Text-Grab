@@ -679,4 +679,62 @@ public static class StringMethods
         // in the range U+0000 to U+007F (inclusive)
         return c >= '\u0000' && c <= '\u007F';
     }
+
+    public static string GetCharactersToLeftOfNewLine(ref string mainString, int index, int numberOfCharacters)
+    {
+        int newLineIndex = GetNewLineIndexToLeft(ref mainString, index);
+
+        if (newLineIndex < 1)
+            return mainString.Substring(0, index);
+
+        newLineIndex++;
+
+        if (newLineIndex > mainString.Length)
+            return mainString.Substring(mainString.Length, 0);
+
+        if (index - newLineIndex < 0)
+            return mainString.Substring(newLineIndex, 0);
+
+        if (index - newLineIndex < numberOfCharacters)
+            return string.Concat("...", mainString.AsSpan(newLineIndex, index - newLineIndex));
+
+        return string.Concat("...", mainString.AsSpan(index - numberOfCharacters, numberOfCharacters));
+    }
+
+    public static string GetCharactersToRightOfNewLine(ref string mainString, int index, int numberOfCharacters)
+    {
+        int newLineIndex = GetNewLineIndexToRight(ref mainString, index);
+        if (newLineIndex < 1)
+            return mainString.Substring(index);
+
+        if (newLineIndex - index > numberOfCharacters)
+            return string.Concat(mainString.AsSpan(index, numberOfCharacters), "...");
+
+        if (newLineIndex == mainString.Length)
+            return mainString.Substring(index);
+
+        return string.Concat(mainString.AsSpan(index, newLineIndex - index), "...");
+    }
+
+    public static int GetNewLineIndexToLeft(ref string mainString, int index)
+    {
+        char newLineChar = Environment.NewLine.ToArray().Last();
+
+        int newLineIndex = index;
+        while (newLineIndex > 0 && newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
+            newLineIndex--;
+
+        return newLineIndex;
+    }
+
+    public static int GetNewLineIndexToRight(ref string mainString, int index)
+    {
+        char newLineChar = Environment.NewLine.ToArray().First();
+
+        int newLineIndex = index;
+        while (newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
+            newLineIndex++;
+
+        return newLineIndex;
+    }
 }
