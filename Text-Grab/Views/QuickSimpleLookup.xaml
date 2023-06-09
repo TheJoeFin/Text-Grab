@@ -10,7 +10,7 @@
     Title="Quick Simple Lookup"
     Width="800"
     Height="400"
-    Closing="Window_Closing"
+    Closed="FluentWindow_Closed"
     Loaded="Window_Loaded"
     PreviewKeyDown="QuickSimpleLookup_PreviewKeyDown"
     Topmost="True"

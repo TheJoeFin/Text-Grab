@@ -27,10 +27,10 @@ public partial class QuickSimpleLookup : FluentWindow
 
     public TextBox? DestinationTextBox;
     private string cacheFilename = "QuickSimpleLookupCache.csv";
+    private bool isPuttingValueIn = false;
     private LookupItem? lastSelection;
     private int rowCount = 0;
     private string valueUnderEdit = string.Empty;
-
     #endregion Fields
 
     #region Constructors
@@ -117,7 +117,6 @@ public partial class QuickSimpleLookup : FluentWindow
 
         SearchBox.Clear();
         SearchBox.Focus();
-
     }
 
     private void EditingTextBox_Loaded(object sender, RoutedEventArgs e)
@@ -176,6 +175,12 @@ public partial class QuickSimpleLookup : FluentWindow
     private void ErrorBarOkay_Click(object sender, RoutedEventArgs e)
     {
         ErrorBar.Visibility = Visibility.Collapsed;
+    }
+
+    private void FluentWindow_Closed(object sender, EventArgs e)
+    {
+        if (!isPuttingValueIn)
+            WindowUtilities.ShouldShutDown();
     }
 
     private List<LookupItem> GetMainDataGridSelection()
@@ -360,6 +365,8 @@ public partial class QuickSimpleLookup : FluentWindow
             || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
             return;
 
+        isPuttingValueIn = true;
+
         List<LookupItem> selectedLookupItems = new();
 
         foreach (object item in MainDataGrid.SelectedItems)
@@ -434,22 +441,24 @@ public partial class QuickSimpleLookup : FluentWindow
         {
             Clipboard.SetText(stringBuilder.ToString());
             this.Close();
-
-            if (PasteToggleButton.IsChecked is true)
-                await WindowUtilities.TryInsertString(stringBuilder.ToString());
-
-            if (EditWindowToggleButton.IsChecked is true)
-            {
-                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-                etw.PassedTextControl.Text = stringBuilder.ToString();
-                etw.Show();
-            }
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Failed to set clipboard text: {ex.Message}");
             ErrorBar.Visibility = Visibility.Visible;
         }
+
+        if (PasteToggleButton.IsChecked is true)
+            await WindowUtilities.TryInsertString(stringBuilder.ToString());
+
+        if (EditWindowToggleButton.IsChecked is true)
+        {
+            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            etw.PassedTextControl.Text = stringBuilder.ToString();
+            etw.Show();
+        }
+
+        WindowUtilities.ShouldShutDown();
     }
 
     private async void QuickSimpleLookup_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -680,11 +689,6 @@ public partial class QuickSimpleLookup : FluentWindow
             rowCount = list.Count;
             RowCountTextBlock.Text = $"{rowCount} Rows";
         }
-    }
-
-    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-    {
-
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
