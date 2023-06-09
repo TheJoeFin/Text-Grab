@@ -104,6 +104,9 @@ public partial class FullscreenGrab : Window
                     SendToEtwMenuItem.IsChecked = !SendToEtwMenuItem.IsChecked;
                 else
                     SendToEtwMenuItem.IsChecked = isActive.Value;
+
+                Settings.Default.FsgSendEtwToggle = SendToEtwMenuItem.IsChecked;
+                Settings.Default.Save();
                 break;
             case Key.F:
                 if (isActive is null)
@@ -558,6 +561,9 @@ public partial class FullscreenGrab : Window
 
         if (Settings.Default.FSGMakeSingleLineToggle)
             SingleLineMenuItem.IsChecked = true;
+
+        if (Settings.Default.FsgSendEtwToggle)
+            SendToEditTextToggleButton.IsChecked = true;
 
         TopButtonsStackPanel.Visibility = Visibility.Visible;
 
