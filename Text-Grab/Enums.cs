@@ -1,6 +1,6 @@
 ﻿namespace Text_Grab;
 
-public enum DefaultLaunchSetting
+public enum TextGrabMode
 {
     Fullscreen = 0,
     GrabFrame = 1,

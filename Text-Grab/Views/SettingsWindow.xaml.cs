@@ -377,19 +377,19 @@ public partial class SettingsWindow : FluentWindow
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
         switch (defaultLaunchSetting)
         {
-            case DefaultLaunchSetting.Fullscreen:
+            case TextGrabMode.Fullscreen:
                 FullScreenRDBTN.IsChecked = true;
                 break;
-            case DefaultLaunchSetting.GrabFrame:
+            case TextGrabMode.GrabFrame:
                 GrabFrameRDBTN.IsChecked = true;
                 break;
-            case DefaultLaunchSetting.EditText:
+            case TextGrabMode.EditText:
                 EditTextRDBTN.IsChecked = true;
                 break;
-            case DefaultLaunchSetting.QuickLookup:
+            case TextGrabMode.QuickLookup:
                 QuickLookupRDBTN.IsChecked = true;
                 break;
             default:
