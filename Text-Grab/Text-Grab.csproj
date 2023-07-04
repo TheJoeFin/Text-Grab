@@ -19,6 +19,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>SmallTile.scale-125.png</PackageIcon>
 		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 	</PropertyGroup>
 
 	<ItemGroup>
