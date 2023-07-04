@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,6 +23,7 @@ using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.UndoRedoOperations;
 using Text_Grab.Utilities;
 using Windows.Globalization;
@@ -1109,6 +1111,8 @@ public partial class GrabFrame : Window
 
     private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        Singleton<HistoryService>.Instance.SaveToHistory(this);
+
         FrameText = "";
         wordBorders.Clear();
         UpdateFrameText();
@@ -2104,6 +2108,30 @@ public partial class GrabFrame : Window
         ResetGrabFrame();
         reDrawTimer.Stop();
         reDrawTimer.Start();
+    }
+
+    internal HistoryInfo AsHistoryItem()
+    {
+        System.Drawing.Bitmap? bitmap = null;
+        
+        if (frameContentImageSource is BitmapImage image)
+            bitmap = ImageMethods.BitmapImageToBitmap(image);
+
+        JsonSerializerOptions options = new()
+        {
+            AllowTrailingCommas = true,
+        };
+
+        string textInFrame = JsonSerializer.Serialize<List<WordBorder>>(wordBorders.ToList(), options);
+
+        HistoryInfo historyInfo = new()
+        {
+            TextContent = FrameText,
+            TextInFrame = textInFrame,
+            ImageContent = bitmap,
+        };
+
+        return historyInfo;
     }
 
     #endregion Methods
