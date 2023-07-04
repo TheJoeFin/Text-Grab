@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Wpf.Ui.Appearance;
@@ -201,6 +202,7 @@ public partial class App : System.Windows.Application
     private void appExit(object sender, ExitEventArgs e)
     {
         TextGrabIcon?.Dispose();
+        Singleton<HistoryService>.Instance.WriteHistory();
     }
 
     async void appStartup(object sender, StartupEventArgs e)
@@ -210,6 +212,8 @@ public partial class App : System.Windows.Application
 
         // Register COM server and activator type
         bool handledArgument = false;
+
+        await Singleton<HistoryService>.Instance.LoadHistory();
 
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {

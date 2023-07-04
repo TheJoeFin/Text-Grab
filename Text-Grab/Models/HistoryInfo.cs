@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Text.Json.Serialization;
+using System.Windows;
 
 namespace Text_Grab.Models;
 
@@ -8,14 +9,16 @@ public class HistoryInfo
 {
     public TextGrabMode SourceMode { get; set; }
 
-    public DateTime CaptureTime { get; set; }
+    public DateTimeOffset CaptureDateTime { get; set; }
 
-    public string TextContent { get; set; }
+    public string TextContent { get; set; } = string.Empty;
 
-    public string TextInFrame { get; set; }
+    public string WordBorderInfoJson { get; set; } = string.Empty;
 
-    public string ImagePath { get; set; }
+    public string ImagePath { get; set; } = string.Empty;
 
     [JsonIgnore]
     public Bitmap? ImageContent { get; set; }
+
+    public Rect Rect { get; set; } = Rect.Empty;
 }

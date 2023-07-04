@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
@@ -14,12 +17,14 @@ namespace Text_Grab.Services;
 public class HistoryService
 {
     private List<HistoryInfo> History { get; set; } = new();
-    private string historyFilename = "History.json";
-    private readonly string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
+    private static readonly string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
+    private static readonly string historyFilename = "History.json";
+    private static readonly string historyDirectory = $"{exePath}\\history";
+    private static readonly string historyFilePath = $"{historyDirectory}\\{historyFilename}";
 
     private (bool hasHistory, HistoryInfo? lastHistoryItem) GetLastHistory()
     {
-        if (History is null)
+        if (History is null || History.Count == 0)
             return (false, null);
 
         return (true, History.LastOrDefault());
@@ -27,7 +32,8 @@ public class HistoryService
 
     private void GetHistoryAsGrabFrame(HistoryInfo historyInfo)
     {
-
+        GrabFrame grabFrame = new(historyInfo);
+        grabFrame.Show();
     }
 
     private void GetHistoryAsEditTextWindow(HistoryInfo historyInfo)
@@ -35,20 +41,42 @@ public class HistoryService
 
     }
 
-    public HistoryService()
+    public void WriteHistory()
     {
-        LoadHistory();
+        if (History.Count == 0) return;
+
+        string historyAsJson = JsonSerializer.Serialize(History);
+
+        try
+        {
+            if (!Directory.Exists(historyDirectory))
+                Directory.CreateDirectory(historyDirectory);
+
+            if (!File.Exists(historyFilePath))
+                File.Create(historyFilePath);
+
+            File.WriteAllText(historyFilePath, historyAsJson);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to save history json file. {ex.Message}");
+        }
     }
 
     public async Task LoadHistory()
     {
-        History.Clear();
+        if (!File.Exists(historyFilePath))
+            return;
+
+        string rawText = await File.ReadAllTextAsync(historyFilePath);
+
+        if (string.IsNullOrWhiteSpace(rawText)) return;
         
-        string historyFilePath = $"{exePath}\\{historyFilename}";
+        var tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText);
 
-        string historyAsJson = JsonSerializer.Serialize(History);
-
-        await File.WriteAllTextAsync(historyFilePath, historyAsJson);
+        History.Clear();
+        if (tempHistory is List<HistoryInfo> jsonList && jsonList.Count > 0)
+            History = new(tempHistory);
     }
 
     public bool GetLastHistoryAsGrabFrame()
@@ -77,7 +105,7 @@ public class HistoryService
     {
         HistoryInfo historyInfo = grabFrameToSave.AsHistoryItem();
         string imgRandomName = Guid.NewGuid().ToString();
-        string imgPath = $"{exePath}\\{historyFilename}.bmp";
+        string imgPath = $"{exePath}\\history\\{imgRandomName}.bmp";
 
         if (historyInfo.ImageContent is not null)
             historyInfo.ImageContent.Save(imgPath);
@@ -85,8 +113,11 @@ public class HistoryService
         historyInfo.ImagePath = imgPath;
 
         History.Add(historyInfo);
+    }
 
-        // Need to break WordBorders out as WordBorder Info to serialize
+    public void SaveToHistory(FullscreenGrab fsgToSave)
+    {
+
     }
 
     public void SaveToHistory(EditTextWindow etwToSave)

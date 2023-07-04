@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
@@ -44,6 +45,22 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         debounceTimer.Interval = new(0, 0, 0, 0, 300);
         debounceTimer.Tick += DebounceTimer_Tick;
+    }
+
+    public WordBorder(WordBorderInfo info)
+    {
+        Word = info.Word;
+        left = info.Left;
+        top = info.Top;
+        LineNumber = info.LineNumber;
+        ResultColumnID = info.ResultColumnID;
+        ResultRowID = info.ResultRowID;
+
+        if (info.MatchingBackground != "Transparent"
+            && new BrushConverter().ConvertFromString(info.MatchingBackground) is SolidColorBrush solidColorBrush)
+        {
+            MatchingBackground = solidColorBrush;
+        }
     }
 
     #endregion Constructors

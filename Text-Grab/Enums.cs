@@ -1,23 +1,16 @@
 ﻿namespace Text_Grab;
 
-public enum TextGrabMode
-{
-    Fullscreen = 0,
-    GrabFrame = 1,
-    EditText = 2,
-    QuickLookup = 3
-}
-
 public enum AddRemove
 {
     Add = 0,
     Remove = 1,
 }
 
-public enum SpotInLine
+public enum AppTheme
 {
-    Beginning = 0,
-    End = 1,
+    System = 0,
+    Dark = 1,
+    Light = 2
 }
 
 public enum CurrentCase
@@ -26,15 +19,6 @@ public enum CurrentCase
     Camel = 1,
     Upper = 2,
     Unknown = 3
-}
-
-public enum Side
-{
-    None = 0,
-    Left = 1,
-    Right = 2,
-    Top = 3,
-    Bottom = 4
 }
 
 public enum OcrEngineKind
@@ -51,9 +35,31 @@ public enum OcrOutputKind
     Barcode = 3,
 }
 
-public enum AppTheme
+public enum Side
 {
-    System = 0,
-    Dark = 1,
-    Light = 2
+    None = 0,
+    Left = 1,
+    Right = 2,
+    Top = 3,
+    Bottom = 4
+}
+
+public enum SpotInLine
+{
+    Beginning = 0,
+    End = 1,
+}
+
+public enum TextGrabMode
+{
+    Fullscreen = 0,
+    GrabFrame = 1,
+    EditText = 2,
+    QuickLookup = 3
+}
+public enum VirtualKeyCodes : short
+{
+    LeftButton = 0x01,
+    RightButton = 0x02,
+    MiddleButton = 0x04
 }
