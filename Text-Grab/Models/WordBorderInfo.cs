@@ -12,6 +12,11 @@ public class WordBorderInfo
     public int ResultRowID { get; set; } = 0;
     public string MatchingBackground { get; set; } = "Transparent";
 
+    public WordBorderInfo()
+    {
+
+    }
+
     public WordBorderInfo(WordBorder wordBorder)
     {
         Word = wordBorder.Word;

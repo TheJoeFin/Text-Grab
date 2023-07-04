@@ -16,6 +16,7 @@ using System.Windows.Input;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
@@ -1837,4 +1838,9 @@ public partial class EditTextWindow : FluentWindow
         Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
     #endregion Methods
+
+    private void OpenLastAsGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
+    }
 }

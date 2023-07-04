@@ -93,6 +93,7 @@ public partial class GrabFrame : Window
         System.Drawing.Bitmap bgBitmap = new System.Drawing.Bitmap(historyInfo.ImagePath);
         frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
         GrabFrameImage.Source = frameContentImageSource;
+        FreezeGrabFrame();
 
         List<WordBorderInfo>? wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(historyInfo.WordBorderInfoJson);
 

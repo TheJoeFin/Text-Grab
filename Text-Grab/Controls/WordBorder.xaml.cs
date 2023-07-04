@@ -39,6 +39,11 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public WordBorder()
     {
+        StandardInitialization();
+    }
+
+    private void StandardInitialization()
+    {
         InitializeComponent();
         DataContext = this;
         contextMenuBaseSize = WordBorderBorder.ContextMenu.Items.Count;
@@ -49,9 +54,11 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public WordBorder(WordBorderInfo info)
     {
+        StandardInitialization();
+
         Word = info.Word;
-        left = info.Left;
-        top = info.Top;
+        Left = info.Left;
+        Top = info.Top;
         LineNumber = info.LineNumber;
         ResultColumnID = info.ResultColumnID;
         ResultRowID = info.ResultRowID;
