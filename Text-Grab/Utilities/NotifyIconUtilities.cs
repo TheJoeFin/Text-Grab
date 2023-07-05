@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Views;
 
 namespace Text_Grab.Utilities;
@@ -27,6 +28,8 @@ public static class NotifyIconUtilities
 
         ToolStripMenuItem? settingsItem = new("&Settings");
         settingsItem.Click += (s, e) => { SettingsWindow sw = new(); sw.Show(); };
+        ToolStripMenuItem? editLastItem = new("&Edit Last Grab");
+        editLastItem.Click += (s, e) => { Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame(); };
         ToolStripMenuItem? quickSimpleLookupItem = new("&Quick Simple Lookup");
         quickSimpleLookupItem.Click += (s, e) => { QuickSimpleLookup qsl = new(); qsl.Show(); };
         ToolStripMenuItem? fullscreenGrabItem = new("&Fullscreen Grab");
@@ -45,6 +48,7 @@ public static class NotifyIconUtilities
                 grabFrameItem,
                 editTextWindowItem,
                 quickSimpleLookupItem,
+                editLastItem,
                 settingsItem,
                 exitItem
             }
