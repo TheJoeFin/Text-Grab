@@ -1128,6 +1128,11 @@ public partial class EditTextWindow : FluentWindow
         CheckForGrabFrameOrLaunch();
     }
 
+    private void OpenLastAsGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
+    }
+
     private void PassedTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         PassedTextControl.ContextMenu = null;
@@ -1838,9 +1843,4 @@ public partial class EditTextWindow : FluentWindow
         Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
     #endregion Methods
-
-    private void OpenLastAsGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
-    }
 }

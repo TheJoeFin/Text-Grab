@@ -6,7 +6,12 @@ namespace Text_Grab;
 
 public static class ShapeExtensions
 {
-    public static Rectangle RectangleFromRect(Rect rect)
+    public static Rect AsRect(this Rectangle rectangle)
+    {
+        return new Rect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+    }
+
+    public static Rectangle AsRectangle(this Rect rect)
     {
         return new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
     }

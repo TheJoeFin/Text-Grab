@@ -95,27 +95,36 @@ public partial class GrabFrame : Window
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
 
-        List<WordBorderInfo>? wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(historyInfo.WordBorderInfoJson);
+        List<WordBorderInfo>? wbInfoList = null;
 
-        if (wbInfoList is null || wbInfoList.Count == 0)
-            return;
+        if (!string.IsNullOrWhiteSpace(historyInfo.WordBorderInfoJson))
+            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(historyInfo.WordBorderInfoJson);
 
-        foreach (WordBorderInfo info in wbInfoList)
+        if (wbInfoList is not null && wbInfoList.Count > 0)
         {
-            WordBorder wb = new(info);
-            wb.OwnerGrabFrame = this;
+            foreach (WordBorderInfo info in wbInfoList)
+            {
+                WordBorder wb = new(info);
+                wb.OwnerGrabFrame = this;
             
-            wordBorders.Add(wb);
-            _ = RectanglesCanvas.Children.Add(wb);
+                wordBorders.Add(wb);
+                _ = RectanglesCanvas.Children.Add(wb);
+            }
+        }
+        else
+            reDrawTimer.Start();
+
+        if (historyInfo.PositionRect != Rect.Empty)
+        {
+            this.Left = historyInfo.PositionRect.Left;
+            this.Top = historyInfo.PositionRect.Top;
+            this.Height = historyInfo.PositionRect.Height;
+            this.Width = historyInfo.PositionRect.Width;
         }
 
-        if (historyInfo.Rect != Rect.Empty)
-        {
-            this.Left = historyInfo.Rect.Left;
-            this.Top = historyInfo.Rect.Top;
-            this.Height = historyInfo.Rect.Height;
-            this.Width = historyInfo.Rect.Width;
-        }
+        TableToggleButton.IsChecked = historyInfo.IsTable;
+
+        UpdateFrameText();
     }
 
     private void StandardInitialize()
@@ -260,7 +269,9 @@ public partial class GrabFrame : Window
             TextContent = FrameText,
             WordBorderInfoJson = wbInfoJson,
             ImageContent = bitmap,
-            Rect = sizePosRect,
+            PositionRect = sizePosRect,
+            IsTable = TableToggleButton.IsChecked!.Value,
+            SourceMode = TextGrabMode.GrabFrame,
         };
 
         return historyInfo;

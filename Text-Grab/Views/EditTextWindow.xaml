@@ -167,10 +167,6 @@
                     Click="SettingsMenuItem_Click"
                     Header="Text Grab Sett_ings..." />
                 <MenuItem
-                    x:Name="OpenLastAsGrabFrameMenuItem"
-                    Click="OpenLastAsGrabFrameMenuItem_Click"
-                    Header="Open Last as Grab Frame" />
-                <MenuItem
                     x:Name="CloseMenuItem"
                     Click="CloseMenuItem_Click"
                     Header="_Exit"
@@ -396,6 +392,10 @@
                     Header="Open _Fullscreen on Launch"
                     IsCheckable="True"
                     IsChecked="False" />
+                <MenuItem
+                    x:Name="OpenLastAsGrabFrameMenuItem"
+                    Click="OpenLastAsGrabFrameMenuItem_Click"
+                    Header="Edit Last Grab" />
                 <Separator />
                 <MenuItem
                     x:Name="NewWindowMenuItem"

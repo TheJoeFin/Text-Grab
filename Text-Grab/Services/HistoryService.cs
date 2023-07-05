@@ -115,9 +115,17 @@ public class HistoryService
         History.Add(historyInfo);
     }
 
-    public void SaveToHistory(FullscreenGrab fsgToSave)
+    public void SaveToHistory(HistoryInfo infoFromFullscreenGrab)
     {
+        string imgRandomName = Guid.NewGuid().ToString();
+        string imgPath = $"{exePath}\\history\\{imgRandomName}.bmp";
 
+        if (infoFromFullscreenGrab.ImageContent is not null)
+            infoFromFullscreenGrab.ImageContent.Save(imgPath);
+
+        infoFromFullscreenGrab.ImagePath = imgPath;
+
+        History.Add(infoFromFullscreenGrab);
     }
 
     public void SaveToHistory(EditTextWindow etwToSave)

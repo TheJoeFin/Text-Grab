@@ -7,7 +7,9 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.Globalization;
 using Windows.Media.Ocr;
@@ -360,7 +362,7 @@ public partial class FullscreenGrab : Window
     {
         // Make a new GrabFrame and show it on screen
         // Then place it where the user just drew the region
-        // Add space around the window to account for titlebar
+        // Add space around the window to account for Titlebar
         // bottom bar and width of GrabFrame
         System.Windows.Point absPosPoint = this.GetAbsolutePosition();
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
@@ -517,6 +519,18 @@ public partial class FullscreenGrab : Window
         else
             grabbedText = await OcrExtensions.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
 
+        HistoryInfo fsgHistoryItem = new()
+        {
+            CaptureDateTime = DateTimeOffset.Now,
+            PositionRect = regionScaled.AsRect(),
+            IsTable = TableToggleButton.IsChecked!.Value,
+            TextContent = grabbedText,
+            ImageContent = ImageMethods.GetRegionOfScreenAsBitmap(regionScaled),
+            SourceMode = TextGrabMode.Fullscreen,
+        };
+
+        Singleton<HistoryService>.Instance.SaveToHistory(fsgHistoryItem);
+
         if (!string.IsNullOrWhiteSpace(grabbedText))
         {
             if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
@@ -604,6 +618,5 @@ public partial class FullscreenGrab : Window
         this.KeyDown -= FullscreenGrab_KeyDown;
         this.KeyUp -= FullscreenGrab_KeyUp;
     }
-
     #endregion Methods
 }
