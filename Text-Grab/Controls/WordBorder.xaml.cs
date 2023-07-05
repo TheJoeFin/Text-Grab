@@ -57,8 +57,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         StandardInitialization();
 
         Word = info.Word;
-        Left = info.Left;
-        Top = info.Top;
+        Left = info.BorderRect.Left;
+        Top = info.BorderRect.Top;
+        Width = info.BorderRect.Width;
+        Height = info.BorderRect.Height;
         LineNumber = info.LineNumber;
         ResultColumnID = info.ResultColumnID;
         ResultRowID = info.ResultRowID;
