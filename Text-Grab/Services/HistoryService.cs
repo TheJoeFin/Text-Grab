@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Text_Grab.Models;
+using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 
@@ -30,21 +31,10 @@ public class HistoryService
         return (true, History.LastOrDefault());
     }
 
-    private void GetHistoryAsGrabFrame(HistoryInfo historyInfo)
-    {
-        GrabFrame grabFrame = new(historyInfo);
-        grabFrame.Show();
-    }
-
-    private void GetHistoryAsEditTextWindow(HistoryInfo historyInfo)
-    {
-        EditTextWindow etw = new(historyInfo);
-        etw.Show();
-    }
-
     public void WriteHistory()
     {
-        if (History.Count == 0) return;
+        if (History.Count == 0) 
+            return;
 
         JsonSerializerOptions options = new()
         {
@@ -52,7 +42,11 @@ public class HistoryService
             WriteIndented = true,
         };
 
-        string historyAsJson = JsonSerializer.Serialize(History.OrderBy(x => x.CaptureDateTime).TakeLast(50), options);
+        string historyAsJson = JsonSerializer
+            .Serialize(History
+                .OrderBy(x => x.CaptureDateTime)
+                .TakeLast(50), 
+            options);
 
         try
         {
@@ -93,7 +87,8 @@ public class HistoryService
         if (lastHistoryItem is not HistoryInfo historyInfo)
             return false;
 
-        GetHistoryAsGrabFrame(historyInfo);
+        GrabFrame grabFrame = new(historyInfo);
+        grabFrame.Show();
         return true;
     }
 
@@ -104,15 +99,23 @@ public class HistoryService
         if (!hasHistory || lastHistoryItem is not HistoryInfo historyInfo)
             return false;
 
-        GetHistoryAsEditTextWindow(historyInfo);
+        EditTextWindow etw = new(historyInfo);
+        etw.Show();
         return true;
     }
 
     public void SaveToHistory(GrabFrame grabFrameToSave)
     {
+        if (!Settings.Default.UseHistory)
+            return;
+
         HistoryInfo historyInfo = grabFrameToSave.AsHistoryItem();
         string imgRandomName = Guid.NewGuid().ToString();
-        string imgPath = $"{exePath}\\history\\{imgRandomName}.bmp";
+
+        if (!Directory.Exists(historyDirectory))
+            Directory.CreateDirectory(historyDirectory);
+
+        string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
 
         if (historyInfo.ImageContent is not null)
             historyInfo.ImageContent.Save(imgPath);
@@ -124,8 +127,15 @@ public class HistoryService
 
     public void SaveToHistory(HistoryInfo infoFromFullscreenGrab)
     {
+        if (!Settings.Default.UseHistory)
+            return;
+
         string imgRandomName = Guid.NewGuid().ToString();
-        string imgPath = $"{exePath}\\history\\{imgRandomName}.bmp";
+
+        if (!Directory.Exists(historyDirectory))
+            Directory.CreateDirectory(historyDirectory);
+
+        string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
 
         if (infoFromFullscreenGrab.ImageContent is not null)
             infoFromFullscreenGrab.ImageContent.Save(imgPath);
@@ -137,6 +147,9 @@ public class HistoryService
 
     public void SaveToHistory(EditTextWindow etwToSave)
     {
+        if (!Settings.Default.UseHistory)
+            return;
+
         HistoryInfo historyInfo = etwToSave.AsHistoryItem();
 
         foreach (HistoryInfo inHistoryItem in History)
@@ -157,5 +170,14 @@ public class HistoryService
     internal List<HistoryInfo> GetEditWindows()
     {
         return History.Where(h => h.SourceMode == TextGrabMode.EditText).ToList();
+    }
+
+    internal void DeleteHistory()
+    {
+        if (!Directory.Exists(historyDirectory))
+            return;
+
+        History.Clear();
+        Directory.Delete(historyDirectory, true );
     }
 }

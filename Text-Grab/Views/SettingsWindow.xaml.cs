@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
 using Wpf.Ui.Controls.Window;
@@ -64,6 +65,16 @@ public partial class SettingsWindow : FluentWindow
 
         FirstRunWindow frw = new();
         frw.Show();
+    }
+
+    private void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to delete all history?", "Reset Settings to Default", MessageBoxButton.YesNo);
+
+        if (areYouSure != MessageBoxResult.Yes)
+            return;
+
+        Singleton<HistoryService>.Instance.DeleteHistory();
     }
 
     private void CloseBTN_Click(object sender, RoutedEventArgs e)
@@ -146,34 +157,42 @@ public partial class SettingsWindow : FluentWindow
 
     private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (sender is not TextBox hotkeytextbox
-            || hotkeytextbox.Text is null
+        if (sender is not TextBox hotKeyTextBox
+            || hotKeyTextBox.Text is null
             || !IsLoaded)
             return;
 
-        if (string.IsNullOrEmpty(hotkeytextbox.Text))
+        if (string.IsNullOrEmpty(hotKeyTextBox.Text))
         {
-            hotkeytextbox.BorderBrush = GoodBrush;
+            hotKeyTextBox.BorderBrush = GoodBrush;
             return;
         }
 
-        hotkeytextbox.Text = hotkeytextbox.Text[0].ToString();
+        hotKeyTextBox.Text = hotKeyTextBox.Text[0].ToString();
 
         KeyConverter keyConverter = new();
-        Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotkeytextbox.Text.ToUpper());
+        Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotKeyTextBox.Text.ToUpper());
         if (convertedKey is not null && HotKeysAllDifferent())
         {
-            hotkeytextbox.BorderBrush = GoodBrush;
+            hotKeyTextBox.BorderBrush = GoodBrush;
             return;
         }
 
-        hotkeytextbox.BorderBrush = BadBrush;
+        hotKeyTextBox.BorderBrush = BadBrush;
     }
 
     private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
     {
         Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
         e.Handled = true;
+    }
+
+    private void MoreInfoHyperlink_Click(object sender, RoutedEventArgs e)
+    {
+        if (TessMoreInfoBorder.Visibility == Visibility.Visible)
+            TessMoreInfoBorder.Visibility = Visibility.Collapsed;
+        else
+            TessMoreInfoBorder.Visibility = Visibility.Visible;
     }
 
     private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -184,6 +203,7 @@ public partial class SettingsWindow : FluentWindow
             return;
 
         Settings.Default.Reset();
+        Singleton<HistoryService>.Instance.DeleteHistory();
         this.Close();
     }
 
@@ -216,9 +236,9 @@ public partial class SettingsWindow : FluentWindow
         if (NeverUseClipboardChkBx.IsChecked is bool neverClipboard)
             Settings.Default.NeverAutoUseClipboard = neverClipboard;
 
-        if (RunInBackgroundChkBx.IsChecked is bool runInBackaground)
+        if (RunInBackgroundChkBx.IsChecked is bool runInBackground)
         {
-            Settings.Default.RunInTheBackground = runInBackaground;
+            Settings.Default.RunInTheBackground = runInBackground;
             ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
         }
 
@@ -245,6 +265,9 @@ public partial class SettingsWindow : FluentWindow
 
         if (CorrectToLatin.IsChecked is not null)
             Settings.Default.CorrectToLatin = (bool)CorrectToLatin.IsChecked;
+
+        if (HistorySwitch.IsChecked is not null)
+            Settings.Default.UseHistory = (bool)HistorySwitch.IsChecked;
 
         if (HotKeysAllDifferent())
         {
@@ -287,6 +310,11 @@ public partial class SettingsWindow : FluentWindow
         App.SetTheme();
 
         Close();
+    }
+
+    private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
+    {
+        TessMoreInfoBorder.Visibility = Visibility.Collapsed;
     }
 
     private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
@@ -345,6 +373,7 @@ public partial class SettingsWindow : FluentWindow
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
         CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
         UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
+        HistorySwitch.IsChecked = Settings.Default.UseHistory;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -402,19 +431,6 @@ public partial class SettingsWindow : FluentWindow
         EditTextHotKeyTextBox.Text = Settings.Default.EditWindowHotKey;
         LookupHotKeyTextBox.Text = Settings.Default.LookupHotKey;
     }
-
     #endregion Methods
-
-    private void MoreInfoHyperlink_Click(object sender, RoutedEventArgs e)
-    {
-        if (TessMoreInfoBorder.Visibility == Visibility.Visible)
-            TessMoreInfoBorder.Visibility = Visibility.Collapsed;
-        else
-            TessMoreInfoBorder.Visibility = Visibility.Visible;
-    }
-    private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
-    {
-        TessMoreInfoBorder.Visibility = Visibility.Collapsed;
-    }
 }
 

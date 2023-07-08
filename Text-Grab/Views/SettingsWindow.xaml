@@ -339,6 +339,23 @@
                             </TextBlock>
                         </ui:ToggleSwitch>
 
+                        <ui:ToggleSwitch
+                            Name="HistorySwitch"
+                            Margin="0,20,0,0"
+                            IsChecked="True">
+                            <TextBlock Style="{StaticResource TextBodyNormal}">
+                                Keep recent history of Grabs and Edit Text Windows
+                            </TextBlock>
+                        </ui:ToggleSwitch>
+
+                        <controls:CollapsibleButton
+                            x:Name="ClearHistoryButton"
+                            HorizontalAlignment="Left"
+                            Background="DarkRed"
+                            ButtonText="Clear History"
+                            Click="ClearHistoryButton_Click"
+                            SymbolText="" />
+
                         <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
                             <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                                 EXPERIMENTAL 🧪 Use Tesseract, when possible.<LineBreak /> <Hyperlink Click="MoreInfoHyperlink_Click">

@@ -490,5 +490,17 @@ namespace Text_Grab.Properties {
                 this["FsgSendEtwToggle"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UseHistory {
+            get {
+                return ((bool)(this["UseHistory"]));
+            }
+            set {
+                this["UseHistory"] = value;
+            }
+        }
     }
 }

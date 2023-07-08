@@ -90,6 +90,12 @@ public partial class GrabFrame : Window
 
         FrameText = historyInfo.TextContent;
 
+        if (!File.Exists(historyInfo.ImagePath))
+        {
+            Close();
+            return;
+        }
+            
         System.Drawing.Bitmap bgBitmap = new System.Drawing.Bitmap(historyInfo.ImagePath);
         frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
         GrabFrameImage.Source = frameContentImageSource;
@@ -112,7 +118,10 @@ public partial class GrabFrame : Window
             }
         }
         else
+        {
             reDrawTimer.Start();
+            ShouldSaveOnClose = true;
+        }
 
         if (historyInfo.PositionRect != Rect.Empty)
         {

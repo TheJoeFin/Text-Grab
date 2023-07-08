@@ -470,7 +470,6 @@ public partial class FullscreenGrab : Window
 
         isSelecting = false;
         currentScreen = null;
-        TopButtonsStackPanel.Visibility = Visibility.Visible;
         CursorClipper.UnClipCursor();
         RegionClickCanvas.ReleaseMouseCapture();
         clippingGeometry.Rect = new Rect(
@@ -518,7 +517,9 @@ public partial class FullscreenGrab : Window
         if (selectedOcrLang is null)
             selectedOcrLang = LanguageUtilities.GetOCRLanguage();
 
-        if (regionScaled.Width < 3 || regionScaled.Height < 3)
+        bool isSmallClick = (regionScaled.Width < 3 || regionScaled.Height < 3);
+
+        if (isSmallClick)
         {
             BackgroundBrush.Opacity = 0;
             grabbedText = await OcrExtensions.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
@@ -528,27 +529,30 @@ public partial class FullscreenGrab : Window
         else
             grabbedText = await OcrExtensions.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
 
-        GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
-
-        Rect historyRect = new()
+        if (Settings.Default.UseHistory && !isSmallClick)
         {
-            X = posLeft,
-            Y = posTop,
-            Width = selectBorder.Width,
-            Height = selectBorder.Height,
-        };
+            GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
+            
+            Rect historyRect = new()
+            {
+                X = posLeft,
+                Y = posTop,
+                Width = selectBorder.Width,
+                Height = selectBorder.Height,
+            };
 
-        HistoryInfo fsgHistoryItem = new()
-        {
-            CaptureDateTime = DateTimeOffset.Now,
-            PositionRect = historyRect,
-            IsTable = TableToggleButton.IsChecked!.Value,
-            TextContent = grabbedText,
-            ImageContent = ImageMethods.GetRegionOfScreenAsBitmap(regionScaled),
-            SourceMode = TextGrabMode.Fullscreen,
-        };
+            HistoryInfo fsgHistoryItem = new()
+            {
+                CaptureDateTime = DateTimeOffset.Now,
+                PositionRect = historyRect,
+                IsTable = TableToggleButton.IsChecked!.Value,
+                TextContent = grabbedText,
+                ImageContent = ImageMethods.GetRegionOfScreenAsBitmap(regionScaled),
+                SourceMode = TextGrabMode.Fullscreen,
+            };
 
-        Singleton<HistoryService>.Instance.SaveToHistory(fsgHistoryItem);
+            Singleton<HistoryService>.Instance.SaveToHistory(fsgHistoryItem);
+        }
 
         if (!string.IsNullOrWhiteSpace(grabbedText))
         {
@@ -562,7 +566,10 @@ public partial class FullscreenGrab : Window
             WindowUtilities.CloseAllFullscreenGrabs();
         }
         else
+        {
             BackgroundBrush.Opacity = .2;
+            TopButtonsStackPanel.Visibility = Visibility.Visible;
+        }
     }
 
     private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
