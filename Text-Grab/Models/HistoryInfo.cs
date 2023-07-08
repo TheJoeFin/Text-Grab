@@ -20,7 +20,24 @@ public class HistoryInfo
     [JsonIgnore]
     public Bitmap? ImageContent { get; set; }
 
-    public Rect PositionRect { get; set; } = Rect.Empty;
+    [JsonIgnore]
+    public Rect PositionRect
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(RectAsString))
+                return Rect.Empty;
+
+            return Rect.Parse(RectAsString);
+        }
+
+        set
+        {
+            RectAsString = value.ToString();
+        }
+    }
+
+    private string RectAsString { get; set; } = string.Empty;
 
     public bool IsTable { get; set; } = false;
 }

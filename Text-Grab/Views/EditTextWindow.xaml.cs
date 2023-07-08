@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Humanizer;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -79,6 +80,22 @@ public partial class EditTextWindow : FluentWindow
             PassedTextControl.Text = possiblyEncodedString;
 
         LaunchedFromNotification = true;
+    }
+
+    public EditTextWindow(HistoryInfo historyInfo)
+    {
+        InitializeComponent();
+        App.SetTheme();
+
+        PassedTextControl.Text = historyInfo.TextContent;
+
+        if (historyInfo.PositionRect != Rect.Empty)
+        {
+            this.Left = historyInfo.PositionRect.X;
+            this.Top = historyInfo.PositionRect.Y;
+            this.Width = historyInfo.PositionRect.Width;
+            this.Height = historyInfo.PositionRect.Height;
+        }
     }
 
     #endregion Constructors
@@ -255,6 +272,18 @@ public partial class EditTextWindow : FluentWindow
 
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
+    }
+
+    internal HistoryInfo AsHistoryItem()
+    {
+        HistoryInfo historyInfo = new()
+        {
+            CaptureDateTime = DateTimeOffset.Now,
+            TextContent = PassedTextControl.Text,
+            SourceMode = TextGrabMode.EditText,
+        };
+
+        return historyInfo;
     }
 
     internal void LimitNumberOfCharsPerLine(int numberOfChars, SpotInLine spotInLine)
@@ -1133,6 +1162,42 @@ public partial class EditTextWindow : FluentWindow
         Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
     }
 
+    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        List<HistoryInfo> etwHistories = Singleton<HistoryService>.Instance.GetEditWindows();
+        etwHistories.Reverse();
+
+        OpenRecentMenuItem.Items.Clear();
+
+        if (etwHistories.Count < 1)
+        {
+            OpenRecentMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in etwHistories)
+        {
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) => 
+            { 
+                if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+                {
+                    PassedTextControl.Text = history.TextContent;
+                    return;
+                }
+
+                EditTextWindow etw = new(history);
+                etw.Show();
+            };
+
+            if (PassedTextControl.Text == history.TextContent)
+                menuItem.IsEnabled = false;
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.Truncate(20)}";
+            OpenRecentMenuItem.Items.Add(menuItem);
+        }
+    }
+
     private void PassedTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         PassedTextControl.ContextMenu = null;
@@ -1781,7 +1846,6 @@ public partial class EditTextWindow : FluentWindow
         PassedTextControl.Focus();
     }
 
-    // private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     private void Window_Closed(object? sender, EventArgs e)
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
@@ -1808,6 +1872,12 @@ public partial class EditTextWindow : FluentWindow
         WindowUtilities.ShouldShutDown();
     }
 
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (string.IsNullOrEmpty(OpenedFilePath) 
+            && !string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            Singleton<HistoryService>.Instance.SaveToHistory(this);
+    }
     private void Window_Initialized(object sender, EventArgs e)
     {
         PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;

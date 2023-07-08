@@ -15,6 +15,7 @@
     Activated="Window_Activated"
     Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
     Closed="Window_Closed"
+    Closing="Window_Closing"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Initialized="Window_Initialized"
     Loaded="Window_Loaded"
@@ -137,12 +138,13 @@
             Grid.Row="1"
             ClipToBounds="True"
             IsMainMenu="True">
-            <MenuItem Header="_File">
+            <MenuItem Header="_File" SubmenuOpened="MenuItem_SubmenuOpened">
                 <MenuItem
                     x:Name="OpenFileMenuItem"
                     Click="OpenFileMenuItem_Click"
                     Header="_Open File..."
                     InputGestureText="Ctrl + O" />
+                <MenuItem x:Name="OpenRecentMenuItem" Header="Recent" />
                 <MenuItem
                     x:Name="SaveFileMenuItem"
                     Click="SaveBTN_Click"

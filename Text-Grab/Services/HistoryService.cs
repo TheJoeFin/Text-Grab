@@ -38,14 +38,21 @@ public class HistoryService
 
     private void GetHistoryAsEditTextWindow(HistoryInfo historyInfo)
     {
-
+        EditTextWindow etw = new(historyInfo);
+        etw.Show();
     }
 
     public void WriteHistory()
     {
         if (History.Count == 0) return;
 
-        string historyAsJson = JsonSerializer.Serialize(History);
+        JsonSerializerOptions options = new()
+        {
+            AllowTrailingCommas = true,
+            WriteIndented = true,
+        };
+
+        string historyAsJson = JsonSerializer.Serialize(History.TakeLast(50), options);
 
         try
         {
@@ -71,7 +78,7 @@ public class HistoryService
         string rawText = await File.ReadAllTextAsync(historyFilePath);
 
         if (string.IsNullOrWhiteSpace(rawText)) return;
-        
+
         var tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText);
 
         History.Clear();
@@ -81,9 +88,9 @@ public class HistoryService
 
     public bool GetLastHistoryAsGrabFrame()
     {
-        (bool hasHistory, HistoryInfo? lastHistoryItem) = GetLastHistory();
+        HistoryInfo? lastHistoryItem = History.Where(h => h.SourceMode != TextGrabMode.EditText).LastOrDefault();
 
-        if (!hasHistory || lastHistoryItem is not HistoryInfo historyInfo)
+        if (lastHistoryItem is not HistoryInfo historyInfo)
             return false;
 
         GetHistoryAsGrabFrame(historyInfo);
@@ -130,6 +137,25 @@ public class HistoryService
 
     public void SaveToHistory(EditTextWindow etwToSave)
     {
+        HistoryInfo historyInfo = etwToSave.AsHistoryItem();
 
+        foreach (HistoryInfo inHistoryItem in History)
+        {
+            if (inHistoryItem.SourceMode != TextGrabMode.EditText)
+                continue;
+
+            if (inHistoryItem.TextContent == historyInfo.TextContent)
+            {
+                inHistoryItem.CaptureDateTime = DateTimeOffset.Now;
+                return;
+            }
+        }
+
+        History.Add(historyInfo);
+    }
+
+    internal List<HistoryInfo> GetEditWindows()
+    {
+        return History.Where(h => h.SourceMode == TextGrabMode.EditText).ToList();
     }
 }
