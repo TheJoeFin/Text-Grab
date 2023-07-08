@@ -17,51 +17,33 @@ namespace Text_Grab.Services;
 
 public class HistoryService
 {
-    private List<HistoryInfo> History { get; set; } = new();
     private static readonly string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-    private static readonly string historyFilename = "History.json";
     private static readonly string historyDirectory = $"{exePath}\\history";
+    private static readonly string historyFilename = "History.json";
     private static readonly string historyFilePath = $"{historyDirectory}\\{historyFilename}";
-
-    private (bool hasHistory, HistoryInfo? lastHistoryItem) GetLastHistory()
+    private List<HistoryInfo> History { get; set; } = new();
+    public bool GetLastHistoryAsEditTextWindow()
     {
-        if (History is null || History.Count == 0)
-            return (false, null);
+        (bool hasHistory, HistoryInfo? lastHistoryItem) = GetLastHistory();
 
-        return (true, History.LastOrDefault());
+        if (!hasHistory || lastHistoryItem is not HistoryInfo historyInfo)
+            return false;
+
+        EditTextWindow etw = new(historyInfo);
+        etw.Show();
+        return true;
     }
 
-    public void WriteHistory()
+    public bool GetLastHistoryAsGrabFrame()
     {
-        if (History.Count == 0) 
-            return;
+        HistoryInfo? lastHistoryItem = History.Where(h => h.SourceMode != TextGrabMode.EditText).LastOrDefault();
 
-        JsonSerializerOptions options = new()
-        {
-            AllowTrailingCommas = true,
-            WriteIndented = true,
-        };
+        if (lastHistoryItem is not HistoryInfo historyInfo)
+            return false;
 
-        string historyAsJson = JsonSerializer
-            .Serialize(History
-                .OrderBy(x => x.CaptureDateTime)
-                .TakeLast(50), 
-            options);
-
-        try
-        {
-            if (!Directory.Exists(historyDirectory))
-                Directory.CreateDirectory(historyDirectory);
-
-            if (!File.Exists(historyFilePath))
-                File.Create(historyFilePath);
-
-            File.WriteAllText(historyFilePath, historyAsJson);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to save history json file. {ex.Message}");
-        }
+        GrabFrame grabFrame = new(historyInfo);
+        grabFrame.Show();
+        return true;
     }
 
     public async Task LoadHistory()
@@ -78,30 +60,6 @@ public class HistoryService
         History.Clear();
         if (tempHistory is List<HistoryInfo> jsonList && jsonList.Count > 0)
             History = new(tempHistory);
-    }
-
-    public bool GetLastHistoryAsGrabFrame()
-    {
-        HistoryInfo? lastHistoryItem = History.Where(h => h.SourceMode != TextGrabMode.EditText).LastOrDefault();
-
-        if (lastHistoryItem is not HistoryInfo historyInfo)
-            return false;
-
-        GrabFrame grabFrame = new(historyInfo);
-        grabFrame.Show();
-        return true;
-    }
-
-    public bool GetLastHistoryAsEditTextWindow()
-    {
-        (bool hasHistory, HistoryInfo? lastHistoryItem) = GetLastHistory();
-
-        if (!hasHistory || lastHistoryItem is not HistoryInfo historyInfo)
-            return false;
-
-        EditTextWindow etw = new(historyInfo);
-        etw.Show();
-        return true;
     }
 
     public void SaveToHistory(GrabFrame grabFrameToSave)
@@ -167,9 +125,37 @@ public class HistoryService
         History.Add(historyInfo);
     }
 
-    internal List<HistoryInfo> GetEditWindows()
+    public void WriteHistory()
     {
-        return History.Where(h => h.SourceMode == TextGrabMode.EditText).ToList();
+        if (History.Count == 0)
+            return;
+
+        JsonSerializerOptions options = new()
+        {
+            AllowTrailingCommas = true,
+            WriteIndented = true,
+        };
+
+        string historyAsJson = JsonSerializer
+            .Serialize(History
+                .OrderBy(x => x.CaptureDateTime)
+                .TakeLast(50),
+            options);
+
+        try
+        {
+            if (!Directory.Exists(historyDirectory))
+                Directory.CreateDirectory(historyDirectory);
+
+            if (!File.Exists(historyFilePath))
+                File.Create(historyFilePath);
+
+            File.WriteAllText(historyFilePath, historyAsJson);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to save history json file. {ex.Message}");
+        }
     }
 
     internal void DeleteHistory()
@@ -178,6 +164,19 @@ public class HistoryService
             return;
 
         History.Clear();
-        Directory.Delete(historyDirectory, true );
+        Directory.Delete(historyDirectory, true);
+    }
+
+    internal List<HistoryInfo> GetEditWindows()
+    {
+        return History.Where(h => h.SourceMode == TextGrabMode.EditText).ToList();
+    }
+
+    private (bool hasHistory, HistoryInfo? lastHistoryItem) GetLastHistory()
+    {
+        if (History is null || History.Count == 0)
+            return (false, null);
+
+        return (true, History.LastOrDefault());
     }
 }
