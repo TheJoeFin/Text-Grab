@@ -52,7 +52,7 @@ public class HistoryService
             WriteIndented = true,
         };
 
-        string historyAsJson = JsonSerializer.Serialize(History.TakeLast(50), options);
+        string historyAsJson = JsonSerializer.Serialize(History.OrderBy(x => x.CaptureDateTime).TakeLast(50), options);
 
         try
         {
