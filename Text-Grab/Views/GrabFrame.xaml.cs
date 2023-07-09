@@ -129,11 +129,38 @@ public partial class GrabFrame : Window
             this.Top = historyInfo.PositionRect.Top;
             this.Height = historyInfo.PositionRect.Height;
             this.Width = historyInfo.PositionRect.Width;
+
+            if (historyInfo.SourceMode == TextGrabMode.Fullscreen)
+            {
+                int borderThickness = 2;
+                int titleBarHeight = 32;
+                int bottomBarHeight = 42;
+                this.Height += (titleBarHeight + bottomBarHeight);
+                this.Width += (2 * borderThickness);
+            }
         }
 
         TableToggleButton.IsChecked = historyInfo.IsTable;
 
         UpdateFrameText();
+    }
+
+    public Rect GetImageContentRect()
+    {
+        // This is a WIP to try to remove the gray letterboxes on either
+        // side of the image when zooming it.
+        
+        Rect imageRect = Rect.Empty;
+
+        if (frameContentImageSource is null)
+            return imageRect;
+
+        imageRect = RectanglesCanvas.GetAbsolutePlacement(true);
+        var rectCanvasSize = RectanglesCanvas.RenderSize;
+        imageRect.Width = rectCanvasSize.Width;
+        imageRect.Height = rectCanvasSize.Height;
+
+        return imageRect;
     }
 
     private void StandardInitialize()
