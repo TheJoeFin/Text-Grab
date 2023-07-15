@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -30,13 +31,10 @@ public class HistoryService
         saveTimer.Tick += SaveTimer_Tick;
     }
 
-    private void SaveTimer_Tick(object? sender, EventArgs e)
-    {
-        saveTimer.Stop();
-        WriteHistory();
-    }
-
     private List<HistoryInfo> History { get; set; } = new();
+
+    public Bitmap? CachedBitmap { get; set; }
+
     public bool GetLastHistoryAsEditTextWindow()
     {
         (bool hasHistory, HistoryInfo? lastHistoryItem) = GetLastHistory();
@@ -182,6 +180,12 @@ public class HistoryService
         }
     }
 
+    internal void CacheLastBitmap(Bitmap bmp)
+    {
+        CachedBitmap = null;
+        CachedBitmap = bmp;
+    }
+
     internal void DeleteHistory()
     {
         if (!Directory.Exists(historyDirectory))
@@ -202,5 +206,12 @@ public class HistoryService
             return (false, null);
 
         return (true, History.LastOrDefault());
+    }
+
+    private void SaveTimer_Tick(object? sender, EventArgs e)
+    {
+        saveTimer.Stop();
+        WriteHistory();
+        CachedBitmap = null;
     }
 }

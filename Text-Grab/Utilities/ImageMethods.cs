@@ -8,6 +8,8 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
+using Text_Grab.Services;
+using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.Storage.Streams;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
@@ -78,6 +80,8 @@ public static class ImageMethods
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
         bmp = PadImage(bmp);
+
+        Singleton<HistoryService>.Instance.CacheLastBitmap(bmp);
         return bmp;
     }
 

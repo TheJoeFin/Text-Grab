@@ -372,7 +372,6 @@ public partial class FullscreenGrab : Window
         {
             Left = posLeft,
             Top = posTop,
-
         };
 
         grabFrame.Left -= (2 / dpi.PixelsPerDip);
@@ -532,7 +531,7 @@ public partial class FullscreenGrab : Window
         if (Settings.Default.UseHistory && !isSmallClick)
         {
             GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
-            
+
             Rect historyRect = new()
             {
                 X = posLeft,
@@ -547,7 +546,7 @@ public partial class FullscreenGrab : Window
                 PositionRect = historyRect,
                 IsTable = TableToggleButton.IsChecked!.Value,
                 TextContent = grabbedText,
-                ImageContent = ImageMethods.GetRegionOfScreenAsBitmap(regionScaled),
+                ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
                 SourceMode = TextGrabMode.Fullscreen,
             };
 
