@@ -199,10 +199,10 @@ public partial class App : System.Windows.Application
         return true;
     }
 
-    private void appExit(object sender, ExitEventArgs e)
+    private async void appExit(object sender, ExitEventArgs e)
     {
         TextGrabIcon?.Dispose();
-        Singleton<HistoryService>.Instance.WriteHistory();
+        await Singleton<HistoryService>.Instance.WriteHistory();
     }
 
     async void appStartup(object sender, StartupEventArgs e)
@@ -213,7 +213,7 @@ public partial class App : System.Windows.Application
         // Register COM server and activator type
         bool handledArgument = false;
 
-        await Singleton<HistoryService>.Instance.LoadHistory();
+        await Singleton<HistoryService>.Instance.LoadHistories();
 
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {

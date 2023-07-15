@@ -20,9 +20,9 @@ public class HistoryService
 {
     private static readonly string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
     private static readonly string historyDirectory = $"{exePath}\\history";
-    private static readonly string historyFilename = "History.json";
-    private static readonly string historyFilePath = $"{historyDirectory}\\{historyFilename}";
 
+    private static readonly int maxHistoryTextOnly = 100;
+    private static readonly int maxHistoryWithImages = 5;
     private DispatcherTimer saveTimer = new();
 
     public HistoryService()
@@ -31,48 +31,46 @@ public class HistoryService
         saveTimer.Tick += SaveTimer_Tick;
     }
 
-    private List<HistoryInfo> History { get; set; } = new();
-
     public Bitmap? CachedBitmap { get; set; }
-
-    public bool GetLastHistoryAsEditTextWindow()
-    {
-        (bool hasHistory, HistoryInfo? lastHistoryItem) = GetLastHistory();
-
-        if (!hasHistory || lastHistoryItem is not HistoryInfo historyInfo)
-            return false;
-
-        EditTextWindow etw = new(historyInfo);
-        etw.Show();
-        return true;
-    }
-
+    private List<HistoryInfo> HistoryTextOnly { get; set; } = new();
+    private List<HistoryInfo> HistoryWithImage { get; set; } = new();
     public bool GetLastHistoryAsGrabFrame()
     {
-        HistoryInfo? lastHistoryItem = History.Where(h => h.SourceMode != TextGrabMode.EditText).LastOrDefault();
+        HistoryInfo? lastHistoryItem = HistoryWithImage.LastOrDefault();
 
         if (lastHistoryItem is not HistoryInfo historyInfo)
             return false;
 
         GrabFrame grabFrame = new(historyInfo);
-        grabFrame.Show();
+
+        try { grabFrame.Show(); }
+        catch { return false; }
         return true;
     }
 
-    public async Task LoadHistory()
+    public async Task LoadHistories()
     {
+        HistoryTextOnly = await LoadHistory(nameof(HistoryTextOnly));
+        HistoryWithImage = await LoadHistory(nameof(HistoryWithImage));
+    }
+
+    public async Task<List<HistoryInfo>> LoadHistory(string fileName)
+    {
+        string historyFilePath = $"{historyDirectory}\\{fileName}.json";
+        
         if (!File.Exists(historyFilePath))
-            return;
+            return new List<HistoryInfo>();
 
         string rawText = await File.ReadAllTextAsync(historyFilePath);
 
-        if (string.IsNullOrWhiteSpace(rawText)) return;
+        if (string.IsNullOrWhiteSpace(rawText)) return new List<HistoryInfo>();
 
         var tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText);
 
-        History.Clear();
         if (tempHistory is List<HistoryInfo> jsonList && jsonList.Count > 0)
-            History = new(tempHistory);
+            return tempHistory;
+
+        return new List<HistoryInfo>();
     }
 
     public void SaveToHistory(GrabFrame grabFrameToSave)
@@ -93,7 +91,7 @@ public class HistoryService
 
         historyInfo.ImagePath = imgPath;
 
-        History.Add(historyInfo);
+        HistoryWithImage.Add(historyInfo);
 
         saveTimer.Stop();
         saveTimer.Start();
@@ -116,7 +114,7 @@ public class HistoryService
 
         infoFromFullscreenGrab.ImagePath = imgPath;
 
-        History.Add(infoFromFullscreenGrab);
+        HistoryWithImage.Add(infoFromFullscreenGrab);
 
         saveTimer.Stop();
         saveTimer.Start();
@@ -129,7 +127,7 @@ public class HistoryService
 
         HistoryInfo historyInfo = etwToSave.AsHistoryItem();
 
-        foreach (HistoryInfo inHistoryItem in History)
+        foreach (HistoryInfo inHistoryItem in HistoryTextOnly)
         {
             if (inHistoryItem.SourceMode != TextGrabMode.EditText)
                 continue;
@@ -141,16 +139,27 @@ public class HistoryService
             }
         }
 
-        History.Add(historyInfo);
+        HistoryTextOnly.Add(historyInfo);
 
         saveTimer.Stop();
         saveTimer.Start();
     }
 
-    public void WriteHistory()
+    public async Task WriteHistory()
     {
-        if (History.Count == 0)
-            return;
+        if (HistoryTextOnly.Count > 0)
+            await WriteHistoryFiles(HistoryTextOnly, nameof(HistoryTextOnly), maxHistoryTextOnly);
+
+        if (HistoryWithImage.Count > 0)
+        {
+            ClearOldImages();
+            await WriteHistoryFiles(HistoryWithImage, nameof(HistoryWithImage), maxHistoryWithImages);
+        }
+    }
+
+    public async Task WriteHistoryFiles(List<HistoryInfo> history, string fileName, int maxNumberToSave)
+    {
+        string historyFilePath = $"{historyDirectory}\\{fileName}.json";
 
         JsonSerializerOptions options = new()
         {
@@ -159,9 +168,9 @@ public class HistoryService
         };
 
         string historyAsJson = JsonSerializer
-            .Serialize(History
+            .Serialize(history
                 .OrderBy(x => x.CaptureDateTime)
-                .TakeLast(50),
+                .TakeLast(maxNumberToSave),
             options);
 
         try
@@ -172,7 +181,7 @@ public class HistoryService
             if (!File.Exists(historyFilePath))
                 File.Create(historyFilePath);
 
-            File.WriteAllText(historyFilePath, historyAsJson);
+            await File.WriteAllTextAsync(historyFilePath, historyAsJson);
         }
         catch (Exception ex)
         {
@@ -191,27 +200,35 @@ public class HistoryService
         if (!Directory.Exists(historyDirectory))
             return;
 
-        History.Clear();
+        HistoryWithImage.Clear();
+        HistoryTextOnly.Clear();
         Directory.Delete(historyDirectory, true);
     }
 
     internal List<HistoryInfo> GetEditWindows()
     {
-        return History.Where(h => h.SourceMode == TextGrabMode.EditText).ToList();
+        return HistoryTextOnly;
     }
 
-    private (bool hasHistory, HistoryInfo? lastHistoryItem) GetLastHistory()
+    private void ClearOldImages()
     {
-        if (History is null || History.Count == 0)
-            return (false, null);
+        int numberToRemove = HistoryWithImage.Count - maxHistoryWithImages;
 
-        return (true, History.LastOrDefault());
+        if (numberToRemove < 1)
+            return;
+
+        List<HistoryInfo> imagesToRemove = HistoryWithImage.Take(numberToRemove).ToList();
+
+        foreach (HistoryInfo infoItem in imagesToRemove)
+        {
+            if (File.Exists(infoItem.ImagePath))
+                File.Delete(infoItem.ImagePath);
+        }
     }
-
-    private void SaveTimer_Tick(object? sender, EventArgs e)
+    private async void SaveTimer_Tick(object? sender, EventArgs e)
     {
         saveTimer.Stop();
-        WriteHistory();
+        await WriteHistory();
         CachedBitmap = null;
     }
 }
