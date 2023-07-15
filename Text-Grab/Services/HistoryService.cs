@@ -21,6 +21,21 @@ public class HistoryService
     private static readonly string historyDirectory = $"{exePath}\\history";
     private static readonly string historyFilename = "History.json";
     private static readonly string historyFilePath = $"{historyDirectory}\\{historyFilename}";
+
+    private DispatcherTimer saveTimer = new();
+
+    public HistoryService()
+    {
+        saveTimer.Interval = new(0, 0, 0, 0, 500);
+        saveTimer.Tick += SaveTimer_Tick;
+    }
+
+    private void SaveTimer_Tick(object? sender, EventArgs e)
+    {
+        saveTimer.Stop();
+        WriteHistory();
+    }
+
     private List<HistoryInfo> History { get; set; } = new();
     public bool GetLastHistoryAsEditTextWindow()
     {
@@ -81,6 +96,9 @@ public class HistoryService
         historyInfo.ImagePath = imgPath;
 
         History.Add(historyInfo);
+
+        saveTimer.Stop();
+        saveTimer.Start();
     }
 
     public void SaveToHistory(HistoryInfo infoFromFullscreenGrab)
@@ -101,6 +119,9 @@ public class HistoryService
         infoFromFullscreenGrab.ImagePath = imgPath;
 
         History.Add(infoFromFullscreenGrab);
+
+        saveTimer.Stop();
+        saveTimer.Start();
     }
 
     public void SaveToHistory(EditTextWindow etwToSave)
@@ -123,6 +144,9 @@ public class HistoryService
         }
 
         History.Add(historyInfo);
+
+        saveTimer.Stop();
+        saveTimer.Start();
     }
 
     public void WriteHistory()
