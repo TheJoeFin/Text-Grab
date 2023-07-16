@@ -1164,22 +1164,59 @@ public partial class EditTextWindow : FluentWindow
 
     private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
-        List<HistoryInfo> etwHistories = Singleton<HistoryService>.Instance.GetEditWindows();
-        etwHistories.Reverse();
+        LoadRecentTextHistory();
+        LoadRecentGrabsHistory();
+    }
+
+    private void LoadRecentGrabsHistory()
+    {
+        List<HistoryInfo> grabsHistory = Singleton<HistoryService>.Instance.GetRecentGrabs();
+        grabsHistory = grabsHistory.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        OpenRecentGrabsMenuItem.Items.Clear();
+
+        if (grabsHistory.Count < 1)
+        {
+            OpenRecentGrabsMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in grabsHistory)
+        {
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
+                continue;
+
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                GrabFrame grabFrame = new(history);
+                try { grabFrame.Show(); }
+                catch { menuItem.IsEnabled = false; }
+            };
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            OpenRecentGrabsMenuItem.Items.Add(menuItem);
+        }
+    }
+
+    private void LoadRecentTextHistory()
+    {
+        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
+        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
 
         OpenRecentMenuItem.Items.Clear();
 
-        if (etwHistories.Count < 1)
+        if (grabsHistories.Count < 1)
         {
             OpenRecentMenuItem.IsEnabled = false;
             return;
         }
 
-        foreach (HistoryInfo history in etwHistories)
+        foreach (HistoryInfo history in grabsHistories)
         {
             MenuItem menuItem = new();
-            menuItem.Click += (object sender, RoutedEventArgs args) => 
-            { 
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
                 if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
                 {
                     PassedTextControl.Text = history.TextContent;
@@ -1193,7 +1230,7 @@ public partial class EditTextWindow : FluentWindow
             if (PassedTextControl.Text == history.TextContent)
                 menuItem.IsEnabled = false;
 
-            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.Truncate(20)}";
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
             OpenRecentMenuItem.Items.Add(menuItem);
         }
     }

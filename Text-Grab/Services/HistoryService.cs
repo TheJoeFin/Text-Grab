@@ -22,7 +22,7 @@ public class HistoryService
     private static readonly string historyDirectory = $"{exePath}\\history";
 
     private static readonly int maxHistoryTextOnly = 100;
-    private static readonly int maxHistoryWithImages = 5;
+    private static readonly int maxHistoryWithImages = 10;
     private DispatcherTimer saveTimer = new();
 
     public HistoryService()
@@ -210,6 +210,11 @@ public class HistoryService
         return HistoryTextOnly;
     }
 
+    internal List<HistoryInfo> GetRecentGrabs()
+    {
+        return HistoryWithImage;
+    }
+
     private void ClearOldImages()
     {
         int numberToRemove = HistoryWithImage.Count - maxHistoryWithImages;
@@ -218,6 +223,9 @@ public class HistoryService
             return;
 
         List<HistoryInfo> imagesToRemove = HistoryWithImage.Take(numberToRemove).ToList();
+
+        for (int i = 0; i < numberToRemove; i++)
+            HistoryWithImage.RemoveAt(0);
 
         foreach (HistoryInfo infoItem in imagesToRemove)
         {

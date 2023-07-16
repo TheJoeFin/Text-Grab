@@ -145,6 +145,7 @@
                     Header="_Open File..."
                     InputGestureText="Ctrl + O" />
                 <MenuItem x:Name="OpenRecentMenuItem" Header="Recent" />
+                <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
                 <MenuItem
                     x:Name="SaveFileMenuItem"
                     Click="SaveBTN_Click"
