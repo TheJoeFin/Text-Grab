@@ -3,14 +3,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Windows.Graphics.Printing.Workflow;
-using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab.Controls;
 
 /// <summary>
 /// Interaction logic for AddOrRemoveWindow.xaml
 /// </summary>
-public partial class AddOrRemoveWindow : FluentWindow
+public partial class AddOrRemoveWindow : Wpf.Ui.Controls.FluentWindow
 {
     #region Fields
 

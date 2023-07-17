@@ -7,14 +7,13 @@ using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
-using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab;
 
 /// <summary>
 /// Interaction logic for Settings.xaml
 /// </summary>
-public partial class SettingsWindow : FluentWindow
+public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 {
     #region Fields
 
@@ -146,7 +145,7 @@ public partial class SettingsWindow : FluentWindow
 
     private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (sender is not TextBox hotkeytextbox
+        if (sender is not System.Windows.Controls.TextBox hotkeytextbox
             || hotkeytextbox.Text is null
             || !IsLoaded)
             return;
