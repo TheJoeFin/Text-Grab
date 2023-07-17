@@ -9,7 +9,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
-using Wpf.Ui.Controls.Window;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls;
 

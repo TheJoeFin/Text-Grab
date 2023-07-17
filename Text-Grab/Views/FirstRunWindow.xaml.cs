@@ -7,7 +7,7 @@ using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel;
-using Wpf.Ui.Controls.Window;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab;
 

@@ -8,14 +8,13 @@ using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
-using Wpf.Ui.Controls.Window;
 
 namespace Text_Grab;
 
 /// <summary>
 /// Interaction logic for Settings.xaml
 /// </summary>
-public partial class SettingsWindow : FluentWindow
+public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 {
     #region Fields
 

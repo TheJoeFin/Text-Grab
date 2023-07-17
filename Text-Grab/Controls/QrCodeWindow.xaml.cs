@@ -2,7 +2,7 @@
 using System;
 using System.Drawing;
 using System.Windows;
-using Wpf.Ui.Controls.Window;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls
 {
