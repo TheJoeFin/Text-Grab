@@ -107,7 +107,7 @@
                     VerticalAlignment="Center"
                     ClipToBounds="True"
                     WindowChrome.IsHitTestVisibleInChrome="True">
-                    <MenuItem Header="File">
+                    <MenuItem Header="File" SubmenuOpened="MenuItem_SubmenuOpened">
                         <MenuItem
                             x:Name="AutoOcrCheckBox"
                             Click="AutoOcrCheckBox_Click"
@@ -129,6 +129,7 @@
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image..."
                             InputGestureText="Ctrl + O" />
+                        <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
                         <Separator />
                         <MenuItem
                             Name="SettingsMenuItem"

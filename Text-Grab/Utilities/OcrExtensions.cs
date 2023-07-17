@@ -83,7 +83,7 @@ public static class OcrExtensions
 
     public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, Language language)
     {
-        Rectangle selectedRegion = ShapeExtensions.RectangleFromRect(rect);
+        Rectangle selectedRegion = rect.AsRectangle();
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
 
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));

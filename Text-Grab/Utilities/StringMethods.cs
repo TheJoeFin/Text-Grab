@@ -258,6 +258,10 @@ public static class StringMethods
 
     public static string MakeStringSingleLine(this string textToEdit)
     {
+        if (!textToEdit.Contains('\n')
+            && !textToEdit.Contains('\r'))
+            return textToEdit;
+
         StringBuilder workingString = new(textToEdit);
 
         workingString.Replace("\r\n", " ");

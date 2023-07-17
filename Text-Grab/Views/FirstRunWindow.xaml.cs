@@ -40,19 +40,19 @@ public partial class FirstRunWindow : FluentWindow
 
     private async void FirstRun_Loaded(object sender, RoutedEventArgs e)
     {
-        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
         switch (defaultLaunchSetting)
         {
-            case DefaultLaunchSetting.Fullscreen:
+            case TextGrabMode.Fullscreen:
                 FullScreenRDBTN.IsChecked = true;
                 break;
-            case DefaultLaunchSetting.GrabFrame:
+            case TextGrabMode.GrabFrame:
                 GrabFrameRDBTN.IsChecked = true;
                 break;
-            case DefaultLaunchSetting.EditText:
+            case TextGrabMode.EditText:
                 EditWindowRDBTN.IsChecked = true;
                 break;
-            case DefaultLaunchSetting.QuickLookup:
+            case TextGrabMode.QuickLookup:
                 QuickLookupRDBTN.IsChecked = true;
                 break;
             default:
@@ -112,19 +112,19 @@ public partial class FirstRunWindow : FluentWindow
     {
         if (System.Windows.Application.Current.Windows.Count == 1)
         {
-            DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+            TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
             switch (defaultLaunchSetting)
             {
-                case DefaultLaunchSetting.Fullscreen:
+                case TextGrabMode.Fullscreen:
                     WindowUtilities.LaunchFullScreenGrab();
                     break;
-                case DefaultLaunchSetting.GrabFrame:
+                case TextGrabMode.GrabFrame:
                     WindowUtilities.OpenOrActivateWindow<GrabFrame>();
                     break;
-                case DefaultLaunchSetting.EditText:
+                case TextGrabMode.EditText:
                     WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
                     break;
-                case DefaultLaunchSetting.QuickLookup:
+                case TextGrabMode.QuickLookup:
                     WindowUtilities.OpenOrActivateWindow<QuickSimpleLookup>();
                     break;
                 default:

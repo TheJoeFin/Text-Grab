@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Humanizer;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -16,6 +17,7 @@ using System.Windows.Input;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
@@ -55,6 +57,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private WindowState? prevWindowState;
     private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
+    private string historyId = string.Empty;
 
     #endregion Fields
 
@@ -77,6 +80,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.Text = possiblyEncodedString;
 
         LaunchedFromNotification = true;
+    }
+
+    public EditTextWindow(HistoryInfo historyInfo)
+    {
+        InitializeComponent();
+        App.SetTheme();
+
+        PassedTextControl.Text = historyInfo.TextContent;
+
+        historyId = historyInfo.ID;
+
+        if (historyInfo.PositionRect != Rect.Empty)
+        {
+            this.Left = historyInfo.PositionRect.X;
+            this.Top = historyInfo.PositionRect.Y;
+            this.Width = historyInfo.PositionRect.Width;
+            this.Height = historyInfo.PositionRect.Height;
+        }
     }
 
     #endregion Constructors
@@ -253,6 +274,22 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
+    }
+
+    internal HistoryInfo AsHistoryItem()
+    {
+        HistoryInfo historyInfo = new()
+        {
+            ID = historyId,
+            CaptureDateTime = DateTimeOffset.Now,
+            TextContent = PassedTextControl.Text,
+            SourceMode = TextGrabMode.EditText,
+        };
+
+        if (string.IsNullOrWhiteSpace(historyInfo.ID))
+            historyInfo.ID = Guid.NewGuid().ToString();
+
+        return historyInfo;
     }
 
     internal void LimitNumberOfCharsPerLine(int numberOfChars, SpotInLine spotInLine)
@@ -1126,6 +1163,84 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         CheckForGrabFrameOrLaunch();
     }
 
+    private void OpenLastAsGrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
+    }
+
+    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        LoadRecentTextHistory();
+        LoadRecentGrabsHistory();
+    }
+
+    private void LoadRecentGrabsHistory()
+    {
+        List<HistoryInfo> grabsHistory = Singleton<HistoryService>.Instance.GetRecentGrabs();
+        grabsHistory = grabsHistory.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        OpenRecentGrabsMenuItem.Items.Clear();
+
+        if (grabsHistory.Count < 1)
+        {
+            OpenRecentGrabsMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in grabsHistory)
+        {
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
+                continue;
+
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                GrabFrame grabFrame = new(history);
+                try { grabFrame.Show(); }
+                catch { menuItem.IsEnabled = false; }
+            };
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            OpenRecentGrabsMenuItem.Items.Add(menuItem);
+        }
+    }
+
+    private void LoadRecentTextHistory()
+    {
+        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
+        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        OpenRecentMenuItem.Items.Clear();
+
+        if (grabsHistories.Count < 1)
+        {
+            OpenRecentMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in grabsHistories)
+        {
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+                {
+                    PassedTextControl.Text = history.TextContent;
+                    return;
+                }
+
+                EditTextWindow etw = new(history);
+                etw.Show();
+            };
+
+            if (PassedTextControl.Text == history.TextContent)
+                menuItem.IsEnabled = false;
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            OpenRecentMenuItem.Items.Add(menuItem);
+        }
+    }
+
     private void PassedTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         PassedTextControl.ContextMenu = null;
@@ -1774,7 +1889,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Focus();
     }
 
-    // private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     private void Window_Closed(object? sender, EventArgs e)
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
@@ -1801,6 +1915,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         WindowUtilities.ShouldShutDown();
     }
 
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (string.IsNullOrEmpty(OpenedFilePath) 
+            && !string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            Singleton<HistoryService>.Instance.SaveToHistory(this);
+    }
     private void Window_Initialized(object sender, EventArgs e)
     {
         PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;

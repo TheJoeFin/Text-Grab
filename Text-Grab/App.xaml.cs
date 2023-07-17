@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Wpf.Ui.Appearance;
@@ -36,22 +37,22 @@ public partial class App : System.Windows.Application
 
     public static void DefaultLaunch()
     {
-        DefaultLaunchSetting defaultLaunchSetting = Enum.Parse<DefaultLaunchSetting>(Settings.Default.DefaultLaunch, true);
+        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
 
         switch (defaultLaunchSetting)
         {
-            case DefaultLaunchSetting.Fullscreen:
+            case TextGrabMode.Fullscreen:
                 WindowUtilities.LaunchFullScreenGrab();
                 break;
-            case DefaultLaunchSetting.GrabFrame:
+            case TextGrabMode.GrabFrame:
                 GrabFrame gf = new();
                 gf.Show();
                 break;
-            case DefaultLaunchSetting.EditText:
+            case TextGrabMode.EditText:
                 EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
                 break;
-            case DefaultLaunchSetting.QuickLookup:
+            case TextGrabMode.QuickLookup:
                 QuickSimpleLookup quickSimpleLookup = new();
                 quickSimpleLookup.Show();
                 break;
@@ -138,7 +139,7 @@ public partial class App : System.Windows.Application
             return true;
         }
 
-        bool isStandardMode = Enum.TryParse<DefaultLaunchSetting>(currentArgument, true, out DefaultLaunchSetting launchMode);
+        bool isStandardMode = Enum.TryParse<TextGrabMode>(currentArgument, true, out TextGrabMode launchMode);
 
         if (isStandardMode)
         {
@@ -153,22 +154,22 @@ public partial class App : System.Windows.Application
         return await CheckForOcringFolder(currentArgument);
     }
 
-    private static void LaunchStandardMode(DefaultLaunchSetting launchMode)
+    private static void LaunchStandardMode(TextGrabMode launchMode)
     {
         switch (launchMode)
         {
-            case DefaultLaunchSetting.EditText:
+            case TextGrabMode.EditText:
                 EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
                 break;
-            case DefaultLaunchSetting.GrabFrame:
+            case TextGrabMode.GrabFrame:
                 GrabFrame gf = new();
                 gf.Show();
                 break;
-            case DefaultLaunchSetting.Fullscreen:
+            case TextGrabMode.Fullscreen:
                 WindowUtilities.LaunchFullScreenGrab();
                 break;
-            case DefaultLaunchSetting.QuickLookup:
+            case TextGrabMode.QuickLookup:
                 QuickSimpleLookup qsl = new();
                 qsl.Show();
                 break;
@@ -197,9 +198,10 @@ public partial class App : System.Windows.Application
         return true;
     }
 
-    private void appExit(object sender, ExitEventArgs e)
+    private async void appExit(object sender, ExitEventArgs e)
     {
         TextGrabIcon?.Dispose();
+        await Singleton<HistoryService>.Instance.WriteHistory();
     }
 
     async void appStartup(object sender, StartupEventArgs e)
@@ -209,6 +211,8 @@ public partial class App : System.Windows.Application
 
         // Register COM server and activator type
         bool handledArgument = false;
+
+        await Singleton<HistoryService>.Instance.LoadHistories();
 
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {

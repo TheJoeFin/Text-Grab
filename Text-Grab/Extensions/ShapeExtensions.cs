@@ -6,7 +6,12 @@ namespace Text_Grab;
 
 public static class ShapeExtensions
 {
-    public static Rectangle RectangleFromRect(Rect rect)
+    public static Rect AsRect(this Rectangle rectangle)
+    {
+        return new Rect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+    }
+
+    public static Rectangle AsRectangle(this Rect rect)
     {
         return new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
     }
@@ -41,5 +46,32 @@ public static class ShapeExtensions
                     rect.Y,
                     rect.Width * scaleFactor,
                     rect.Height * scaleFactor);
+    }
+
+    public static bool IsGood(this Rect rect)
+    {
+        if (double.IsNaN(rect.X) 
+            || double.IsNegativeInfinity(rect.X)
+            || double.IsPositiveInfinity(rect.X))
+            return false;
+        
+        if (double.IsNaN(rect.Y) 
+            || double.IsNegativeInfinity(rect.Y)
+            || double.IsPositiveInfinity(rect.Y))
+            return false;
+
+        if (double.IsNaN(rect.Height)
+            || rect.Height == 0
+            || double.IsNegativeInfinity(rect.Height)
+            || double.IsPositiveInfinity(rect.Height))
+            return false;
+
+        if (double.IsNaN(rect.Width)
+            || rect.Width == 0
+            || double.IsNegativeInfinity(rect.Width)
+            || double.IsPositiveInfinity(rect.Width))
+            return false;
+
+        return true;
     }
 }

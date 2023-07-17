@@ -8,6 +8,8 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
+using Text_Grab.Services;
+using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.Storage.Streams;
 using BitmapEncoder = System.Windows.Media.Imaging.BitmapEncoder;
@@ -78,15 +80,13 @@ public static class ImageMethods
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
         bmp = PadImage(bmp);
+
+        Singleton<HistoryService>.Instance.CacheLastBitmap(bmp);
         return bmp;
     }
 
     public static Bitmap GetWindowsBoundsBitmap(Window passedWindow)
     {
-        bool isGrabFrame = false;
-        if (passedWindow is GrabFrame)
-            isGrabFrame = true;
-
         DpiScale dpi = VisualTreeHelper.GetDpi(passedWindow);
         int windowWidth = (int)(passedWindow.ActualWidth * dpi.DpiScaleX);
         int windowHeight = (int)(passedWindow.ActualHeight * dpi.DpiScaleY);
@@ -96,15 +96,27 @@ public static class ImageMethods
         int thisCorrectedLeft = (int)(absPosPoint.X);
         int thisCorrectedTop = (int)(absPosPoint.Y);
 
-        if (isGrabFrame)
+        if (passedWindow is GrabFrame grabFrame)
         {
-            int borderThickness = 2;
-            int titleBarHeight = 32;
-            int bottomBarHeight = 42;
-            thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
-            thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
-            windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
-            windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
+            Rect imageRect = grabFrame.GetImageContentRect();
+
+            if (false) // (imageRect.IsGood())
+            {
+                windowHeight = (int)imageRect.Height;
+                windowWidth = (int)imageRect.Width;
+                thisCorrectedLeft = (int)imageRect.X;
+                thisCorrectedTop = (int)imageRect.Y;
+            }
+            else
+            {
+                int borderThickness = 2;
+                int titleBarHeight = 32;
+                int bottomBarHeight = 42;
+                thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
+                thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
+                windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
+                windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
+            }
         }
 
         Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);

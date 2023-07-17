@@ -1,4 +1,5 @@
 ﻿using Fasetto.Word;
+using Humanizer;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,6 +24,7 @@ using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.UndoRedoOperations;
 using Text_Grab.Utilities;
 using Windows.Globalization;
@@ -44,7 +47,7 @@ public partial class GrabFrame : Window
     public static RoutedCommand PasteCommand = new();
     public static RoutedCommand RedoCommand = new();
     public static RoutedCommand UndoCommand = new();
-    private ResultTable? AnalyedResultTable;
+    private ResultTable? AnalyzedResultTable;
     private Point clickedPoint;
     private Language? currentLanguage;
     private TextBox? destinationTextBox;
@@ -54,7 +57,7 @@ public partial class GrabFrame : Window
     private bool isLanguageBoxLoaded = false;
     private bool isMiddleDown = false;
     private bool IsOcrValid = false;
-    private bool isSearchSelectionOverriden = false;
+    private bool isSearchSelectionOverridden = false;
     private bool isSelecting;
     private bool isSpaceJoining = true;
     private Dictionary<WordBorder, Rect> movingWordBordersDictionary = new();
@@ -68,12 +71,101 @@ public partial class GrabFrame : Window
     private bool wasAltHeld = false;
     private double windowFrameImageScale = 1;
     private ObservableCollection<WordBorder> wordBorders = new();
+    private string historyId = string.Empty;
 
     #endregion Fields
 
     #region Constructors
 
     public GrabFrame()
+    {
+        StandardInitialize();
+
+        reDrawTimer.Start();
+    }
+
+    public GrabFrame(HistoryInfo historyInfo)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = false;
+        FrameText = historyInfo.TextContent;
+        historyId = historyInfo.ID;
+
+        if (!File.Exists(historyInfo.ImagePath))
+        {
+            Close();
+            return;
+        }
+            
+        System.Drawing.Bitmap bgBitmap = new System.Drawing.Bitmap(historyInfo.ImagePath);
+        frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
+        GrabFrameImage.Source = frameContentImageSource;
+        FreezeGrabFrame();
+
+        List<WordBorderInfo>? wbInfoList = null;
+
+        if (!string.IsNullOrWhiteSpace(historyInfo.WordBorderInfoJson))
+            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(historyInfo.WordBorderInfoJson);
+
+        if (wbInfoList is not null && wbInfoList.Count > 0)
+        {
+            foreach (WordBorderInfo info in wbInfoList)
+            {
+                WordBorder wb = new(info);
+                wb.OwnerGrabFrame = this;
+            
+                wordBorders.Add(wb);
+                _ = RectanglesCanvas.Children.Add(wb);
+            }
+        }
+        else
+        {
+            reDrawTimer.Start();
+            ShouldSaveOnClose = true;
+        }
+
+        if (historyInfo.PositionRect != Rect.Empty)
+        {
+            this.Left = historyInfo.PositionRect.Left;
+            this.Top = historyInfo.PositionRect.Top;
+            this.Height = historyInfo.PositionRect.Height;
+            this.Width = historyInfo.PositionRect.Width;
+
+            if (historyInfo.SourceMode == TextGrabMode.Fullscreen)
+            {
+                int borderThickness = 2;
+                int titleBarHeight = 32;
+                int bottomBarHeight = 42;
+                this.Height += (titleBarHeight + bottomBarHeight);
+                this.Width += (2 * borderThickness);
+            }
+        }
+
+        TableToggleButton.IsChecked = historyInfo.IsTable;
+
+        UpdateFrameText();
+    }
+
+    public Rect GetImageContentRect()
+    {
+        // This is a WIP to try to remove the gray letterboxes on either
+        // side of the image when zooming it.
+        
+        Rect imageRect = Rect.Empty;
+
+        if (frameContentImageSource is null)
+            return imageRect;
+
+        imageRect = RectanglesCanvas.GetAbsolutePlacement(true);
+        var rectCanvasSize = RectanglesCanvas.RenderSize;
+        imageRect.Width = rectCanvasSize.Width;
+        imageRect.Height = rectCanvasSize.Height;
+
+        return imageRect;
+    }
+
+    private void StandardInitialize()
     {
         InitializeComponent();
         App.SetTheme();
@@ -85,7 +177,6 @@ public partial class GrabFrame : Window
         WindowResizer resizer = new(this);
         reDrawTimer.Interval = new(0, 0, 0, 0, 500);
         reDrawTimer.Tick += ReDrawTimer_Tick;
-        reDrawTimer.Start();
 
         reSearchTimer.Interval = new(0, 0, 0, 0, 300);
         reSearchTimer.Tick += ReSearchTimer_Tick;
@@ -104,17 +195,6 @@ public partial class GrabFrame : Window
     }
 
     #endregion Constructors
-
-    #region Enums
-
-    public enum VirtualKeyCodes : short
-    {
-        LeftButton = 0x01,
-        RightButton = 0x02,
-        MiddleButton = 0x04
-    }
-
-    #endregion Enums
 
     #region Properties
 
@@ -153,6 +233,8 @@ public partial class GrabFrame : Window
     public bool IsFromEditWindow => destinationTextBox is not null;
     public bool IsWordEditMode { get; set; } = true;
 
+    public bool ShouldSaveOnClose { get; set; } = true;
+
     #endregion Properties
 
     #region Methods
@@ -167,7 +249,7 @@ public partial class GrabFrame : Window
     /// From StackOverFlow https://stackoverflow.com/a/69318375/7438031
     /// Author https://stackoverflow.com/users/9610801/paul-nakitare
     /// Accessed on 1/6/2023
-    /// Modifed by Joseph Finney
+    /// Modified by Joseph Finney
     public static string GetImageFilter()
     {
         string imageExtensions = string.Empty;
@@ -197,11 +279,49 @@ public partial class GrabFrame : Window
         return result;
     }
 
+    public HistoryInfo AsHistoryItem()
+    {
+        System.Drawing.Bitmap? bitmap = null;
+
+        if (frameContentImageSource is BitmapImage image)
+            bitmap = ImageMethods.BitmapImageToBitmap(image);
+
+        List<WordBorderInfo> wbInfoList = new();
+
+        foreach (WordBorder wb in wordBorders)
+            wbInfoList.Add(new WordBorderInfo(wb));
+
+        string wbInfoJson = JsonSerializer.Serialize<List<WordBorderInfo>>(wbInfoList);
+
+        Rect sizePosRect = new()
+        {
+            Width = this.Width,
+            Height = this.Height,
+            X = this.Left,
+            Y = this.Top
+        };
+
+        HistoryInfo historyInfo = new()
+        {
+            ID = historyId,
+            CaptureDateTime = DateTimeOffset.UtcNow,
+            TextContent = FrameText,
+            WordBorderInfoJson = wbInfoJson,
+            ImageContent = bitmap,
+            PositionRect = sizePosRect,
+            IsTable = TableToggleButton.IsChecked!.Value,
+            SourceMode = TextGrabMode.GrabFrame,
+        };
+
+        return historyInfo;
+    }
+
     public void BreakWordBorderIntoWords(WordBorder wordBorder)
     {
         ICollection<string> wordLines = wordBorder.Word.Split(Environment.NewLine);
 
-        const double widthScaleAdjstFactor = 1.5;
+        const double widthScaleAdjustFactor = 1.5;
+        ShouldSaveOnClose = true;
 
         double top = wordBorder.Top;
         double left = wordBorder.Left;
@@ -218,25 +338,25 @@ public partial class GrabFrame : Window
                 GrabFrameCanvas = RectanglesCanvas
             });
 
-        int lineItterator = 0;
+        int lineIterator = 0;
         foreach (string line in wordLines)
         {
             double lineWidth = GetWidthOfString(line, (int)wordBorder.Width, (int)wordHeight);
             ICollection<string> lineWords = line.Split();
 
             double wordFractionWidth = lineWidth / lineWords.Count;
-            // double diffBetweenWordAndBorder = (wordBorder.Width - (lineWidth / widthScaleAdjstFactor)) / lineWords.Count;
+            // double diffBetweenWordAndBorder = (wordBorder.Width - (lineWidth / widthScaleAdjustFactor)) / lineWords.Count;
 
             foreach (string word in lineWords)
             {
-                double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / widthScaleAdjstFactor;
+                double wordWidth = (double)GetWidthOfString(word, (int)wordFractionWidth, (int)wordHeight) / widthScaleAdjustFactor;
                 WordBorder wordBorderBox = new()
                 {
                     Width = wordWidth,
                     Height = wordHeight,
                     Word = word,
                     OwnerGrabFrame = this,
-                    Top = top + (lineItterator * wordHeight),
+                    Top = top + (lineIterator * wordHeight),
                     Left = left,
                     MatchingBackground = wordBorder.MatchingBackground,
                 };
@@ -254,7 +374,7 @@ public partial class GrabFrame : Window
 
                 left += wordWidth; // + diffBetweenWordAndBorder;
             }
-            lineItterator++;
+            lineIterator++;
             left = wordBorder.Left;
         }
         UndoRedo.EndTransaction();
@@ -262,6 +382,7 @@ public partial class GrabFrame : Window
 
     public void DeleteThisWordBorder(WordBorder wordBorder)
     {
+        ShouldSaveOnClose = true;
         wordBorders.Remove(wordBorder);
         RectanglesCanvas.Children.Remove(wordBorder);
         UndoRedo.StartTransaction();
@@ -337,6 +458,7 @@ public partial class GrabFrame : Window
 
     public void MergeSelectedWordBorders()
     {
+        ShouldSaveOnClose = true;
         RectanglesCanvas.ContextMenu.IsOpen = false;
         FreezeGrabFrame();
 
@@ -452,9 +574,10 @@ public partial class GrabFrame : Window
         }
     }
 
-    public void UndoableWordChange(WordBorder wordBorder, string oldWord, bool isSingleTransation)
+    public void UndoableWordChange(WordBorder wordBorder, string oldWord, bool isSingleTransaction)
     {
-        if (isSingleTransation)
+        ShouldSaveOnClose = true;
+        if (isSingleTransaction)
             UndoRedo.StartTransaction();
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangeWord, new GrabFrameOperationArgs()
@@ -464,7 +587,7 @@ public partial class GrabFrame : Window
             NewWord = wordBorder.Word
         });
 
-        if (isSingleTransation)
+        if (isSingleTransaction)
             UndoRedo.EndTransaction();
     }
 
@@ -473,7 +596,6 @@ public partial class GrabFrame : Window
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
-
     internal void SearchForSimilar(WordBorder wordBorder)
     {
         TextBox wordTextBox = wordBorder.EditWordTextBox;
@@ -528,6 +650,7 @@ public partial class GrabFrame : Window
     {
         FreezeGrabFrame();
 
+        ShouldSaveOnClose = true;
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
@@ -680,9 +803,9 @@ public partial class GrabFrame : Window
         Rect rectSelect = new Rect(Canvas.GetLeft(selectBorder), Canvas.GetTop(selectBorder), selectBorder.Width, selectBorder.Height);
 
         bool clickedEmptySpace = true;
-        bool smallSelction = false;
+        bool smallSelection = false;
         if (rectSelect.Width < 10 && rectSelect.Height < 10)
-            smallSelction = true;
+            smallSelection = true;
 
         foreach (WordBorder wordBorder in wordBorders)
         {
@@ -692,7 +815,7 @@ public partial class GrabFrame : Window
             {
                 clickedEmptySpace = false;
 
-                if (!smallSelction)
+                if (!smallSelection)
                 {
                     wordBorder.Select();
                     wordBorder.WasRegionSelected = true;
@@ -710,7 +833,7 @@ public partial class GrabFrame : Window
             else
             {
                 if (wordBorder.WasRegionSelected
-                    && !smallSelction)
+                    && !smallSelection)
                     wordBorder.Deselect();
             }
 
@@ -719,7 +842,7 @@ public partial class GrabFrame : Window
         }
 
         if (clickedEmptySpace
-            && smallSelction
+            && smallSelection
             && finalCheck)
         {
             foreach (WordBorder wb in wordBorders)
@@ -762,6 +885,7 @@ public partial class GrabFrame : Window
 
     private void DeleteWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
     {
+        ShouldSaveOnClose = true;
         UndoRedo.StartTransaction();
         var deletedWordBorders = DeleteSelectedWordBorders();
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
@@ -1109,6 +1233,9 @@ public partial class GrabFrame : Window
 
     private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (ShouldSaveOnClose)
+            Singleton<HistoryService>.Instance.SaveToHistory(this);
+
         FrameText = "";
         wordBorders.Clear();
         UpdateFrameText();
@@ -1502,7 +1629,7 @@ public partial class GrabFrame : Window
         selectBorder.Height = 1;
         selectBorder.Width = 1;
 
-        isSearchSelectionOverriden = true;
+        isSearchSelectionOverridden = true;
 
         if (e.MiddleButton == MouseButtonState.Pressed)
         {
@@ -1680,7 +1807,7 @@ public partial class GrabFrame : Window
         if (SearchBox.Text is not string searchText)
             return;
 
-        if (string.IsNullOrWhiteSpace(searchText) && !isSearchSelectionOverriden)
+        if (string.IsNullOrWhiteSpace(searchText) && !isSearchSelectionOverridden)
         {
             foreach (WordBorder wb in wordBorders)
                 wb.Deselect();
@@ -1712,7 +1839,7 @@ public partial class GrabFrame : Window
 
         int numberOfMatches = 0;
 
-        if (!isSearchSelectionOverriden)
+        if (!isSearchSelectionOverridden)
         {
             foreach (WordBorder wb in wordBorders)
             {
@@ -1757,7 +1884,7 @@ public partial class GrabFrame : Window
 
     private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
     {
-        isSearchSelectionOverriden = false;
+        isSearchSelectionOverridden = false;
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
@@ -1780,7 +1907,7 @@ public partial class GrabFrame : Window
             SearchLabel.Visibility = Visibility.Collapsed;
         }
 
-        isSearchSelectionOverriden = false;
+        isSearchSelectionOverridden = false;
 
         reSearchTimer.Stop();
         reSearchTimer.Start();
@@ -1926,9 +2053,9 @@ public partial class GrabFrame : Window
 
         try
         {
-            AnalyedResultTable = new();
-            AnalyedResultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
-            RectanglesCanvas.Children.Add(AnalyedResultTable.TableLines);
+            AnalyzedResultTable = new();
+            AnalyzedResultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
+            RectanglesCanvas.Children.Add(AnalyzedResultTable.TableLines);
         }
         catch (Exception ex)
         {
@@ -1989,6 +2116,7 @@ public partial class GrabFrame : Window
         Topmost = true;
         GrabFrameImage.Opacity = 0;
         frameContentImageSource = null;
+        historyId = string.Empty;
         RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         FreezeToggleButton.Visibility = Visibility.Visible;
@@ -2106,5 +2234,35 @@ public partial class GrabFrame : Window
         reDrawTimer.Start();
     }
 
+    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetRecentGrabs();
+        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        OpenRecentGrabsMenuItem.Items.Clear();
+
+        if (grabsHistories.Count < 1)
+        {
+            OpenRecentGrabsMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in grabsHistories)
+        {
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
+                continue;
+
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                GrabFrame grabFrame = new(history);
+                try { grabFrame.Show(); }
+                catch { menuItem.IsEnabled = false; }
+            };
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            OpenRecentGrabsMenuItem.Items.Add(menuItem);
+        }
+    }
     #endregion Methods
 }

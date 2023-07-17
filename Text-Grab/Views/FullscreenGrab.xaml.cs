@@ -7,7 +7,9 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.Globalization;
 using Windows.Media.Ocr;
@@ -360,35 +362,43 @@ public partial class FullscreenGrab : Window
     {
         // Make a new GrabFrame and show it on screen
         // Then place it where the user just drew the region
-        // Add space around the window to account for titlebar
+        // Add space around the window to account for Titlebar
         // bottom bar and width of GrabFrame
-        System.Windows.Point absPosPoint = this.GetAbsolutePosition();
-        DpiScale dpi = VisualTreeHelper.GetDpi(this);
-        int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
-        GrabFrame grabFrame = new();
+        DpiScale dpi;
+        double posLeft, posTop;
+        GetDpiAdjustedRegionOfSelectBorder(out dpi, out posLeft, out posTop);
+
+        GrabFrame grabFrame = new()
+        {
+            Left = posLeft,
+            Top = posTop,
+        };
+
+        grabFrame.Left -= (2 / dpi.PixelsPerDip);
+        grabFrame.Top -= (48 / dpi.PixelsPerDip);
+
         if (destinationTextBox is not null)
             grabFrame.DestinationTextBox = destinationTextBox;
 
         grabFrame.TableToggleButton.IsChecked = TableToggleButton.IsChecked;
-        grabFrame.Show();
-
-        double posLeft = Canvas.GetLeft(selectBorder); // * dpi.DpiScaleX;
-        double posTop = Canvas.GetTop(selectBorder); // * dpi.DpiScaleY;
-        grabFrame.Left = posLeft + (absPosPoint.X / dpi.PixelsPerDip);
-        grabFrame.Top = posTop + (absPosPoint.Y / dpi.PixelsPerDip);
-
-        grabFrame.Left -= (2 / dpi.PixelsPerDip);
-        grabFrame.Top -= (34 / dpi.PixelsPerDip);
-        // if (grabFrame.Top < 0)
-        //     grabFrame.Top = 0;
-
         if (selectBorder.Width > 20 && selectBorder.Height > 20)
         {
             grabFrame.Width = selectBorder.Width + 4;
-            grabFrame.Height = selectBorder.Height + 72;
+            grabFrame.Height = selectBorder.Height + 74;
         }
+        grabFrame.Show();
         grabFrame.Activate();
         WindowUtilities.CloseAllFullscreenGrabs();
+    }
+
+    private void GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop)
+    {
+        System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+        dpi = VisualTreeHelper.GetDpi(this);
+        int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
+
+        posLeft = Canvas.GetLeft(selectBorder) + (absPosPoint.X / dpi.PixelsPerDip);
+        posTop = Canvas.GetTop(selectBorder) + (absPosPoint.Y / dpi.PixelsPerDip);
     }
 
     private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -459,7 +469,6 @@ public partial class FullscreenGrab : Window
 
         isSelecting = false;
         currentScreen = null;
-        TopButtonsStackPanel.Visibility = Visibility.Visible;
         CursorClipper.UnClipCursor();
         RegionClickCanvas.ReleaseMouseCapture();
         clippingGeometry.Rect = new Rect(
@@ -507,7 +516,9 @@ public partial class FullscreenGrab : Window
         if (selectedOcrLang is null)
             selectedOcrLang = LanguageUtilities.GetOCRLanguage();
 
-        if (regionScaled.Width < 3 || regionScaled.Height < 3)
+        bool isSmallClick = (regionScaled.Width < 3 || regionScaled.Height < 3);
+
+        if (isSmallClick)
         {
             BackgroundBrush.Opacity = 0;
             grabbedText = await OcrExtensions.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
@@ -516,6 +527,32 @@ public partial class FullscreenGrab : Window
             grabbedText = await OcrExtensions.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
             grabbedText = await OcrExtensions.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
+
+        if (Settings.Default.UseHistory && !isSmallClick)
+        {
+            GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
+
+            Rect historyRect = new()
+            {
+                X = posLeft,
+                Y = posTop,
+                Width = selectBorder.Width,
+                Height = selectBorder.Height,
+            };
+
+            HistoryInfo fsgHistoryItem = new()
+            {
+                ID = Guid.NewGuid().ToString(),
+                CaptureDateTime = DateTimeOffset.Now,
+                PositionRect = historyRect,
+                IsTable = TableToggleButton.IsChecked!.Value,
+                TextContent = grabbedText,
+                ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
+                SourceMode = TextGrabMode.Fullscreen,
+            };
+
+            Singleton<HistoryService>.Instance.SaveToHistory(fsgHistoryItem);
+        }
 
         if (!string.IsNullOrWhiteSpace(grabbedText))
         {
@@ -529,7 +566,10 @@ public partial class FullscreenGrab : Window
             WindowUtilities.CloseAllFullscreenGrabs();
         }
         else
+        {
             BackgroundBrush.Opacity = .2;
+            TopButtonsStackPanel.Visibility = Visibility.Visible;
+        }
     }
 
     private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
@@ -604,6 +644,5 @@ public partial class FullscreenGrab : Window
         this.KeyDown -= FullscreenGrab_KeyDown;
         this.KeyUp -= FullscreenGrab_KeyUp;
     }
-
     #endregion Methods
 }
