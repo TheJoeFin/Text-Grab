@@ -58,6 +58,7 @@ public partial class EditTextWindow : FluentWindow
 
     private WindowState? prevWindowState;
     private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
+    private string historyId = string.Empty;
 
     #endregion Fields
 
@@ -88,6 +89,8 @@ public partial class EditTextWindow : FluentWindow
         App.SetTheme();
 
         PassedTextControl.Text = historyInfo.TextContent;
+
+        historyId = historyInfo.ID;
 
         if (historyInfo.PositionRect != Rect.Empty)
         {
@@ -278,10 +281,14 @@ public partial class EditTextWindow : FluentWindow
     {
         HistoryInfo historyInfo = new()
         {
+            ID = historyId,
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
         };
+
+        if (string.IsNullOrWhiteSpace(historyInfo.ID))
+            historyInfo.ID = Guid.NewGuid().ToString();
 
         return historyInfo;
     }

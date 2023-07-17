@@ -81,15 +81,30 @@ public class HistoryService
         HistoryInfo historyInfo = grabFrameToSave.AsHistoryItem();
         string imgRandomName = Guid.NewGuid().ToString();
 
-        if (!Directory.Exists(historyDirectory))
-            Directory.CreateDirectory(historyDirectory);
+        if (string.IsNullOrEmpty(historyInfo.ID))
+        {
+            historyInfo.ID = Guid.NewGuid().ToString();
 
-        string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
+            if (!Directory.Exists(historyDirectory))
+                Directory.CreateDirectory(historyDirectory);
 
-        if (historyInfo.ImageContent is not null)
-            historyInfo.ImageContent.Save(imgPath);
+            string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
 
-        historyInfo.ImagePath = imgPath;
+            if (historyInfo.ImageContent is not null)
+                historyInfo.ImageContent.Save(imgPath);
+
+            historyInfo.ImagePath = imgPath;
+        }
+        else
+        {
+            HistoryInfo? prevHistory = HistoryWithImage.Where(h => h.ID == historyInfo.ID).FirstOrDefault();
+
+            if (prevHistory is not null)
+            {
+                historyInfo.ImagePath = prevHistory.ImagePath;
+                HistoryWithImage.Remove(prevHistory);
+            }
+        }
 
         HistoryWithImage.Add(historyInfo);
 

@@ -5,20 +5,23 @@ using System.Windows;
 
 namespace Text_Grab.Models;
 
-public class HistoryInfo
+public class HistoryInfo : IEquatable<HistoryInfo>
 {
-    public TextGrabMode SourceMode { get; set; }
+    public HistoryInfo()
+    {
+
+    }
 
     public DateTimeOffset CaptureDateTime { get; set; }
 
-    public string TextContent { get; set; } = string.Empty;
-
-    public string WordBorderInfoJson { get; set; } = string.Empty;
-
-    public string ImagePath { get; set; } = string.Empty;
+    public string ID { get; set; } = "";
 
     [JsonIgnore]
     public Bitmap? ImageContent { get; set; }
+
+    public string ImagePath { get; set; } = string.Empty;
+
+    public bool IsTable { get; set; } = false;
 
     [JsonIgnore]
     public Rect PositionRect
@@ -37,7 +40,22 @@ public class HistoryInfo
         }
     }
 
+    public TextGrabMode SourceMode { get; set; }
+
+    public string TextContent { get; set; } = string.Empty;
+
+    public string WordBorderInfoJson { get; set; } = string.Empty;
+
     private string RectAsString { get; set; } = string.Empty;
 
-    public bool IsTable { get; set; } = false;
+    public bool Equals(HistoryInfo? other)
+    {
+        if (other is null)
+            return false;
+
+        if (other.ID == this.ID)
+            return true;
+
+        return false;
+    }
 }

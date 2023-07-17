@@ -71,6 +71,7 @@ public partial class GrabFrame : Window
     private bool wasAltHeld = false;
     private double windowFrameImageScale = 1;
     private ObservableCollection<WordBorder> wordBorders = new();
+    private string historyId = string.Empty;
 
     #endregion Fields
 
@@ -88,8 +89,8 @@ public partial class GrabFrame : Window
         StandardInitialize();
 
         ShouldSaveOnClose = false;
-
         FrameText = historyInfo.TextContent;
+        historyId = historyInfo.ID;
 
         if (!File.Exists(historyInfo.ImagePath))
         {
@@ -302,6 +303,7 @@ public partial class GrabFrame : Window
 
         HistoryInfo historyInfo = new()
         {
+            ID = historyId,
             CaptureDateTime = DateTimeOffset.UtcNow,
             TextContent = FrameText,
             WordBorderInfoJson = wbInfoJson,
@@ -319,6 +321,7 @@ public partial class GrabFrame : Window
         ICollection<string> wordLines = wordBorder.Word.Split(Environment.NewLine);
 
         const double widthScaleAdjustFactor = 1.5;
+        ShouldSaveOnClose = true;
 
         double top = wordBorder.Top;
         double left = wordBorder.Left;
@@ -379,6 +382,7 @@ public partial class GrabFrame : Window
 
     public void DeleteThisWordBorder(WordBorder wordBorder)
     {
+        ShouldSaveOnClose = true;
         wordBorders.Remove(wordBorder);
         RectanglesCanvas.Children.Remove(wordBorder);
         UndoRedo.StartTransaction();
@@ -454,6 +458,7 @@ public partial class GrabFrame : Window
 
     public void MergeSelectedWordBorders()
     {
+        ShouldSaveOnClose = true;
         RectanglesCanvas.ContextMenu.IsOpen = false;
         FreezeGrabFrame();
 
@@ -571,6 +576,7 @@ public partial class GrabFrame : Window
 
     public void UndoableWordChange(WordBorder wordBorder, string oldWord, bool isSingleTransaction)
     {
+        ShouldSaveOnClose = true;
         if (isSingleTransaction)
             UndoRedo.StartTransaction();
 
@@ -644,6 +650,7 @@ public partial class GrabFrame : Window
     {
         FreezeGrabFrame();
 
+        ShouldSaveOnClose = true;
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
@@ -878,6 +885,7 @@ public partial class GrabFrame : Window
 
     private void DeleteWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
     {
+        ShouldSaveOnClose = true;
         UndoRedo.StartTransaction();
         var deletedWordBorders = DeleteSelectedWordBorders();
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
@@ -2108,6 +2116,7 @@ public partial class GrabFrame : Window
         Topmost = true;
         GrabFrameImage.Opacity = 0;
         frameContentImageSource = null;
+        historyId = string.Empty;
         RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         FreezeToggleButton.Visibility = Visibility.Visible;
