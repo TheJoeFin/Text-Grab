@@ -48,6 +48,11 @@ public class HistoryService
         return true;
     }
 
+    public bool HasAnyHistoryWithImages()
+    {
+        return HistoryWithImage.Count > 0;
+    }
+
     public async Task LoadHistories()
     {
         HistoryTextOnly = await LoadHistory(nameof(HistoryTextOnly));
@@ -248,6 +253,7 @@ public class HistoryService
                 File.Delete(infoItem.ImagePath);
         }
     }
+
     private async void SaveTimer_Tick(object? sender, EventArgs e)
     {
         saveTimer.Stop();

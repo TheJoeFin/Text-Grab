@@ -40,6 +40,7 @@
         </Viewbox>
         <Canvas
             Name="RegionClickCanvas"
+            ContextMenuOpening="RegionClickCanvas_ContextMenuOpening"
             Cursor="Cross"
             MouseDown="RegionClickCanvas_MouseDown"
             MouseMove="RegionClickCanvas_MouseMove"
@@ -90,7 +91,7 @@
                         Header="Send to Edit Text Window"
                         IsCheckable="True" />
                     <MenuItem
-                        Name="EditLastGrab"
+                        Name="EditLastGrabMenuItem"
                         Click="EditLastGrab_Click"
                         Header="Edit Last Grab" />
                     <MenuItem

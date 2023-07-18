@@ -51,14 +51,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand UnstackGroupCmd = new();
     public bool LaunchedFromNotification = false;
     CancellationTokenSource? cancellationTokenForDirOCR;
+    private string historyId = string.Empty;
     private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
 
     private WindowState? prevWindowState;
     private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
-    private string historyId = string.Empty;
-
     #endregion Fields
 
     #region Constructors
@@ -994,6 +993,73 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private void LoadRecentGrabsHistory()
+    {
+        List<HistoryInfo> grabsHistory = Singleton<HistoryService>.Instance.GetRecentGrabs();
+        grabsHistory = grabsHistory.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        OpenRecentGrabsMenuItem.Items.Clear();
+
+        if (grabsHistory.Count < 1)
+        {
+            OpenRecentGrabsMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in grabsHistory)
+        {
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
+                continue;
+
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                GrabFrame grabFrame = new(history);
+                try { grabFrame.Show(); }
+                catch { menuItem.IsEnabled = false; }
+            };
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            OpenRecentGrabsMenuItem.Items.Add(menuItem);
+        }
+    }
+
+    private void LoadRecentTextHistory()
+    {
+        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
+        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        OpenRecentMenuItem.Items.Clear();
+
+        if (grabsHistories.Count < 1)
+        {
+            OpenRecentMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in grabsHistories)
+        {
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+                {
+                    PassedTextControl.Text = history.TextContent;
+                    return;
+                }
+
+                EditTextWindow etw = new(history);
+                etw.Show();
+            };
+
+            if (PassedTextControl.Text == history.TextContent)
+                menuItem.IsEnabled = false;
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            OpenRecentMenuItem.Items.Add(menuItem);
+        }
+    }
+
     private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
@@ -1020,6 +1086,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         QrCodeWindow window = new(qrBitmap, text, lengthError);
         window.Show();
+    }
+
+    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        LoadRecentTextHistory();
+        LoadRecentGrabsHistory();
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -1167,80 +1239,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
     }
-
-    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        LoadRecentTextHistory();
-        LoadRecentGrabsHistory();
-    }
-
-    private void LoadRecentGrabsHistory()
-    {
-        List<HistoryInfo> grabsHistory = Singleton<HistoryService>.Instance.GetRecentGrabs();
-        grabsHistory = grabsHistory.OrderByDescending(x => x.CaptureDateTime).ToList();
-
-        OpenRecentGrabsMenuItem.Items.Clear();
-
-        if (grabsHistory.Count < 1)
-        {
-            OpenRecentGrabsMenuItem.IsEnabled = false;
-            return;
-        }
-
-        foreach (HistoryInfo history in grabsHistory)
-        {
-            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
-                continue;
-
-            MenuItem menuItem = new();
-            menuItem.Click += (object sender, RoutedEventArgs args) =>
-            {
-                GrabFrame grabFrame = new(history);
-                try { grabFrame.Show(); }
-                catch { menuItem.IsEnabled = false; }
-            };
-
-            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
-            OpenRecentGrabsMenuItem.Items.Add(menuItem);
-        }
-    }
-
-    private void LoadRecentTextHistory()
-    {
-        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
-        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
-
-        OpenRecentMenuItem.Items.Clear();
-
-        if (grabsHistories.Count < 1)
-        {
-            OpenRecentMenuItem.IsEnabled = false;
-            return;
-        }
-
-        foreach (HistoryInfo history in grabsHistories)
-        {
-            MenuItem menuItem = new();
-            menuItem.Click += (object sender, RoutedEventArgs args) =>
-            {
-                if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
-                {
-                    PassedTextControl.Text = history.TextContent;
-                    return;
-                }
-
-                EditTextWindow etw = new(history);
-                etw.Show();
-            };
-
-            if (PassedTextControl.Text == history.TextContent)
-                menuItem.IsEnabled = false;
-
-            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
-            OpenRecentMenuItem.Items.Add(menuItem);
-        }
-    }
-
     private void PassedTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         PassedTextControl.ContextMenu = null;
@@ -1943,6 +1941,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
     }
+
+    private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
+    }
+
     private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
     {
         if (!IsLoaded)

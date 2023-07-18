@@ -376,7 +376,10 @@
                     IsChecked="True"
                     StaysOpenOnClick="True" />
             </MenuItem>
-            <MenuItem Header="_Window">
+            <MenuItem
+                x:Name="WindowMenuItem"
+                Header="_Window"
+                SubmenuOpened="WindowMenuItem_SubmenuOpened">
                 <MenuItem
                     x:Name="AlwaysOnTop"
                     Click="AlwaysOnTop_Checked"

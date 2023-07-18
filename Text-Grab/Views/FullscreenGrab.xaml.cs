@@ -164,6 +164,7 @@ public partial class FullscreenGrab : Window
 
     private void EditLastGrab_Click(object sender, RoutedEventArgs e)
     {
+        Close();
         Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
     }
 
@@ -405,6 +406,12 @@ public partial class FullscreenGrab : Window
         grabFrame.Activate();
         WindowUtilities.CloseAllFullscreenGrabs();
     }
+
+    private void RegionClickCanvas_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        EditLastGrabMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
+    }
+
     private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.RightButton == MouseButtonState.Pressed)
