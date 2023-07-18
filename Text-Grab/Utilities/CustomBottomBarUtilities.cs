@@ -72,7 +72,8 @@ public class CustomBottomBarUtilities
                 ButtonText = buttonItem.ButtonText,
                 SymbolText = buttonItem.SymbolText,
                 IsSymbol = buttonItem.IsSymbol,
-                CustomButton = buttonItem
+                CustomButton = buttonItem,
+                ToolTip = buttonItem.ButtonText
             };
 
             if (buttonItem.Background != "Transparent"
