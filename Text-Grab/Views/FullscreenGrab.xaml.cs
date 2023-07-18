@@ -162,6 +162,11 @@ public partial class FullscreenGrab : Window
         WindowUtilities.CloseAllFullscreenGrabs();
     }
 
+    private void EditLastGrab_Click(object sender, RoutedEventArgs e)
+    {
+        Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
+    }
+
     private void FreezeMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
@@ -203,6 +208,16 @@ public partial class FullscreenGrab : Window
             default:
                 break;
         }
+    }
+
+    private void GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop)
+    {
+        System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+        dpi = VisualTreeHelper.GetDpi(this);
+        int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
+
+        posLeft = Canvas.GetLeft(selectBorder) + (absPosPoint.X / dpi.PixelsPerDip);
+        posTop = Canvas.GetTop(selectBorder) + (absPosPoint.Y / dpi.PixelsPerDip);
     }
 
     private void HandleTextFromOcr(string grabbedText)
@@ -390,17 +405,6 @@ public partial class FullscreenGrab : Window
         grabFrame.Activate();
         WindowUtilities.CloseAllFullscreenGrabs();
     }
-
-    private void GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop)
-    {
-        System.Windows.Point absPosPoint = this.GetAbsolutePosition();
-        dpi = VisualTreeHelper.GetDpi(this);
-        int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
-
-        posLeft = Canvas.GetLeft(selectBorder) + (absPosPoint.X / dpi.PixelsPerDip);
-        posTop = Canvas.GetTop(selectBorder) + (absPosPoint.Y / dpi.PixelsPerDip);
-    }
-
     private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.RightButton == MouseButtonState.Pressed)

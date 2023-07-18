@@ -90,6 +90,10 @@
                         Header="Send to Edit Text Window"
                         IsCheckable="True" />
                     <MenuItem
+                        Name="EditLastGrab"
+                        Click="EditLastGrab_Click"
+                        Header="Edit Last Grab" />
+                    <MenuItem
                         Name="SettingsMenuItem"
                         Click="SettingsMenuItem_Click"
                         Header="Settings" />
