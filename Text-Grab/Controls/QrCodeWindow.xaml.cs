@@ -2,10 +2,9 @@
 using Microsoft.Win32;
 using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
-using System.Reflection.Metadata;
 using System.Windows;
-using System.Windows.Media.Imaging;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
@@ -17,7 +16,13 @@ namespace Text_Grab.Controls
     /// </summary>
     public partial class QrCodeWindow : FluentWindow
     {
+        #region Private Fields
+
         private string qrCodeFileName = string.Empty;
+        private string tempPath = string.Empty;
+        private IntPtr hBitmap;
+
+        #endregion Private Fields
 
         #region Public Constructors
 
@@ -33,7 +38,13 @@ namespace Text_Grab.Controls
                 LengthErrorTextBlock.Visibility = Visibility.Visible;
 
             UiTitleBar.Title = $"QR Code: {TextOfCode.Truncate(30)}";
-            qrCodeFileName = $"QR-{TextOfCode.Truncate(20, "-").ReplaceReservedCharacters()}.png";
+            int maxLength = 20;
+            int trimLength = TextOfCode.Length < maxLength ? TextOfCode.Length : maxLength;
+            qrCodeFileName = $"QR-{TextOfCode.Substring(0, trimLength).ReplaceReservedCharacters()}.png";
+            tempPath = Path.Combine(Path.GetTempPath(), qrCodeFileName);
+
+            QrBitmap.Save(tempPath, ImageFormat.Png);
+            hBitmap = QrBitmap.GetHbitmap();
         }
 
         #endregion Public Constructors
@@ -49,19 +60,12 @@ namespace Text_Grab.Controls
 
         private void CodeImage_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            string tempPath = Path.Combine(
-                Path.GetTempPath(), qrCodeFileName);
             try
             {
                 // DoDragDrop with file thumbnail as drag image
-                QrBitmap.Save(tempPath);
                 var dataObject = DragDataObject.FromFile(tempPath);
-                using var bitmap = QrBitmap;
-                IntPtr hBitmap = bitmap.GetHbitmap();
-
-                dataObject.SetDragImage(hBitmap, bitmap.Width, bitmap.Height);
+                dataObject.SetDragImage(hBitmap, QrBitmap.Width, QrBitmap.Height);
                 DragDrop.DoDragDrop(this, dataObject, DragDropEffects.Copy);
-
             }
             catch
             {
@@ -69,19 +73,21 @@ namespace Text_Grab.Controls
                 IDataObject dataObject = new DataObject(DataFormats.FileDrop, new[] { tempPath });
                 DragDrop.DoDragDrop(this, dataObject, DragDropEffects.Copy);
             }
-            finally
-            {
-                if (File.Exists(tempPath))
-                {
-                    try { File.Delete(tempPath); }
-                    catch { }
-                }
-            }
         }
 
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
             Clipboard.SetData(DataFormats.Bitmap, QrBitmap);
+        }
+
+        private void FluentWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            NativeMethods.DeleteObject(hBitmap);
+            if (File.Exists(tempPath))
+            {
+                try { File.Delete(tempPath); }
+                catch { }
+            }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -99,7 +105,6 @@ namespace Text_Grab.Controls
 
             QrBitmap.Save(dialog.FileName);
         }
-
         #endregion Private Methods
     }
 }
