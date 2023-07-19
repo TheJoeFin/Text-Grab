@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -186,15 +187,15 @@ public class HistoryService
         saveTimer.Start();
     }
 
-    public async Task WriteHistory()
+    public void WriteHistory()
     {
         if (HistoryTextOnly.Count > 0)
-            await WriteHistoryFiles(HistoryTextOnly, nameof(HistoryTextOnly), maxHistoryTextOnly);
+            WriteHistoryFiles(HistoryTextOnly, nameof(HistoryTextOnly), maxHistoryTextOnly);
 
         if (HistoryWithImage.Count > 0)
         {
             ClearOldImages();
-            await WriteHistoryFiles(HistoryWithImage, nameof(HistoryWithImage), maxHistoryWithImages);
+            WriteHistoryFiles(HistoryWithImage, nameof(HistoryWithImage), maxHistoryWithImages);
         }
     }
 
@@ -221,7 +222,7 @@ public class HistoryService
         return new List<HistoryInfo>();
     }
 
-    private static async Task WriteHistoryFiles(List<HistoryInfo> history, string fileName, int maxNumberToSave)
+    private static void WriteHistoryFiles(List<HistoryInfo> history, string fileName, int maxNumberToSave)
     {
         string historyFilePath = $"{historyDirectory}\\{fileName}.json";
 
@@ -242,15 +243,22 @@ public class HistoryService
             if (!Directory.Exists(historyDirectory))
                 Directory.CreateDirectory(historyDirectory);
 
-            if (!File.Exists(historyFilePath))
-                File.Create(historyFilePath);
+            if (File.Exists(historyFilePath))
+                File.Delete(historyFilePath);
 
-            await File.WriteAllTextAsync(historyFilePath, historyAsJson);
+            using FileStream fs = File.Create(historyFilePath);
+            AddText(fs, historyAsJson);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Failed to save history json file. {ex.Message}");
         }
+    }
+
+    private static void AddText(FileStream fs, string value)
+    {
+        byte[] info = new UTF8Encoding(true).GetBytes(value);
+        fs.Write(info, 0, info.Length);
     }
 
     private void ClearOldImages()
@@ -272,10 +280,10 @@ public class HistoryService
         }
     }
 
-    private async void SaveTimer_Tick(object? sender, EventArgs e)
+    private void SaveTimer_Tick(object? sender, EventArgs e)
     {
         saveTimer.Stop();
-        await WriteHistory();
+        WriteHistory();
         CachedBitmap = null;
     }
 

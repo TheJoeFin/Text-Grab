@@ -198,10 +198,10 @@ public partial class App : System.Windows.Application
         return true;
     }
 
-    private async void appExit(object sender, ExitEventArgs e)
+    private void appExit(object sender, ExitEventArgs e)
     {
         TextGrabIcon?.Dispose();
-        await Singleton<HistoryService>.Instance.WriteHistory();
+        Singleton<HistoryService>.Instance.WriteHistory();
     }
 
     async void appStartup(object sender, StartupEventArgs e)
