@@ -354,16 +354,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrdText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
+            string ocrText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
 
-            if (!string.IsNullOrWhiteSpace(ocrdText))
+            if (!string.IsNullOrWhiteSpace(ocrText))
             {
-                returnString.AppendLine(ocrdText);
+                returnString.AppendLine(ocrText);
 
                 if (options.WriteTxtFiles && Path.GetDirectoryName(path) is string dir)
                 {
                     using StreamWriter outputFile = new StreamWriter(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
-                    outputFile.WriteLine(ocrdText);
+                    outputFile.WriteLine(ocrText);
                 }
             }
             else
@@ -392,7 +392,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Select(currentSelectionIndex + currentSelectionLength, 0);
     }
 
-    private void AddPossibleMailtoToRightClickMenu(int caretIndex)
+    private void AddPossibleMailToToRightClickMenu(int caretIndex)
     {
         string possibleEmail = PassedTextControl.SelectedText;
 
@@ -482,10 +482,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        AddOrRemoveWindow aorw = new();
-        aorw.Owner = this;
-        aorw.SelectedTextFromEditTextWindow = PassedTextControl.SelectedText;
-        aorw.ShowDialog();
+        AddOrRemoveWindow addRemoveWindow = new();
+        addRemoveWindow.Owner = this;
+        addRemoveWindow.SelectedTextFromEditTextWindow = PassedTextControl.SelectedText;
+        addRemoveWindow.ShowDialog();
     }
 
     private void AlwaysOnTop_Checked(object sender, RoutedEventArgs e)
@@ -933,18 +933,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void LaunchFindAndReplace()
     {
-        FindAndReplaceWindow farw = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
 
-        farw.StringFromWindow = PassedTextControl.Text;
-        farw.TextEditWindow = this;
-        farw.Show();
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.TextEditWindow = this;
+        findAndReplaceWindow.Show();
 
 
         if (PassedTextControl.SelectedText.Length > 0)
         {
-            farw.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
-            farw.FindTextBox.Select(farw.FindTextBox.Text.Length, 0);
-            farw.SearchForText();
+            findAndReplaceWindow.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
+            findAndReplaceWindow.FindTextBox.Select(findAndReplaceWindow.FindTextBox.Text.Length, 0);
+            findAndReplaceWindow.SearchForText();
         }
     }
 
@@ -1259,7 +1259,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         AddPossibleURLToRightClickMenu(caretIndex);
 
-        AddPossibleMailtoToRightClickMenu(caretIndex);
+        AddPossibleMailToToRightClickMenu(caretIndex);
 
     }
 
@@ -1904,8 +1904,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 grabFrame.DestinationTextBox = null;
             }
-            else if (window is FullscreenGrab fullscreenGrab)
-                fullscreenGrab.DestinationTextBox = null;
+            else if (window is FullscreenGrab fullScreenGrab)
+                fullScreenGrab.DestinationTextBox = null;
             else if (window is FindAndReplaceWindow findAndReplaceWindow)
                 findAndReplaceWindow.ShouldCloseWithThisETW(this);
         }

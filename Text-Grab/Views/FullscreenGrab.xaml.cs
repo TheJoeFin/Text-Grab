@@ -310,12 +310,12 @@ public partial class FullscreenGrab : Window
         if (LanguagesComboBox.Items.Count > 0)
             return;
 
-        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
+        IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
         Language firstLang = LanguageUtilities.GetOCRLanguage();
 
         int count = 0;
 
-        foreach (Language language in possibleOCRLangs)
+        foreach (Language language in possibleOCRLanguages)
         {
             LanguagesComboBox.Items.Add(language);
 
