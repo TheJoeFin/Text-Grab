@@ -402,19 +402,19 @@
                 <MenuItem
                     x:Name="NewWindowMenuItem"
                     Click="NewWindow_Clicked"
-                    Header="New Window" />
+                    Header="_New Window" />
                 <MenuItem
                     x:Name="NewWindowFromSelectionMenuItem"
                     Click="NewWindowWithText_Clicked"
-                    Header="New Window with Selected Text" />
+                    Header="New Window with Selected _Text" />
                 <MenuItem
                     x:Name="MakeCodeMenuItem"
                     Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
-                    Header="Make QR Code" />
+                    Header="Make _QR Code" />
                 <MenuItem
                     x:Name="OpenLastAsGrabFrameMenuItem"
                     Click="OpenLastAsGrabFrameMenuItem_Click"
-                    Header="Edit Last Grab" />
+                    Header="Edit _Last Grab" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem

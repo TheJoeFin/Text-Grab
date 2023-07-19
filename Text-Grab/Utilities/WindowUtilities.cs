@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Security.Permissions;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -133,6 +134,18 @@ public static class WindowUtilities
         double x = window.Width / 2;
         double y = window.Height / 2;
         return new(x, y);
+    }
+
+    public static void CenterOverThisWindow(this Window newWindow, Window bottomWindow)
+    {
+        System.Windows.Point newWindowCenter = newWindow.GetWindowCenter();
+        System.Windows.Point bottomWindowCenter = bottomWindow.GetWindowCenter();
+
+        double newWindowTop = (bottomWindow.Top + bottomWindowCenter.Y) - newWindowCenter.Y;
+        double newWindowLeft = (bottomWindow.Left + bottomWindowCenter.X) - newWindowCenter.X;
+
+        newWindow.Top = newWindowTop;
+        newWindow.Left = newWindowLeft;
     }
 
     internal static async void CloseAllFullscreenGrabs()

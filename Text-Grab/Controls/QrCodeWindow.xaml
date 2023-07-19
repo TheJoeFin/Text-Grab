@@ -8,7 +8,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab QR Code"
     Width="400"
-    Height="450"
+    Height="550"
     mc:Ignorable="d">
     <Window.Resources>
         <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
@@ -48,6 +48,7 @@
         <Image
             Name="CodeImage"
             Grid.Row="3"
-            Margin="0" />
+            Margin="0"
+            MouseLeftButtonDown="CodeImage_MouseLeftButtonDown" />
     </Grid>
 </ui:FluentWindow>

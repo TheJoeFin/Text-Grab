@@ -1085,6 +1085,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
 
         QrCodeWindow window = new(qrBitmap, text, lengthError);
+        window.CenterOverThisWindow(this);
         window.Show();
     }
 
@@ -1669,7 +1670,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
 
         RoutedCommand selectAllCommand = new();
-        _ = selectAllCommand.InputGestures.Add(new KeyGesture(Key.A, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = selectAllCommand.InputGestures.Add(new KeyGesture(Key.A, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(selectAllCommand, SelectAllMenuItem_Click));
 
         RoutedCommand EscapeKeyed = new();
