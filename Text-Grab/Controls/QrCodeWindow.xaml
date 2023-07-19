@@ -22,17 +22,26 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
+            x:Name="UiTitleBar"
             Title="QR Code"
             Height="32"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-
-        <local:CollapsibleButton
-            x:Name="SaveButton"
+        <StackPanel
             Grid.Row="1"
-            ButtonText="Save Code"
-            Click="SaveButton_Click"
-            SymbolText="" />
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <local:CollapsibleButton
+                x:Name="SaveButton"
+                ButtonText="Save as file..."
+                Click="SaveButton_Click"
+                SymbolText="" />
+            <local:CollapsibleButton
+                x:Name="CopyButton"
+                ButtonText="Copy to clipboard"
+                Click="CopyButton_Click"
+                SymbolText="" />
+        </StackPanel>
         <TextBlock
             x:Name="LengthErrorTextBlock"
             Grid.Row="2"

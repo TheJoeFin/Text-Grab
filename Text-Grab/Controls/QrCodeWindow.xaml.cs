@@ -17,6 +17,8 @@ namespace Text_Grab.Controls
     /// </summary>
     public partial class QrCodeWindow : FluentWindow
     {
+        private string qrCodeFileName = string.Empty;
+
         #region Public Constructors
 
         public QrCodeWindow(Bitmap bitmap, string textOfCode, bool showError = false)
@@ -29,6 +31,9 @@ namespace Text_Grab.Controls
 
             if (showError)
                 LengthErrorTextBlock.Visibility = Visibility.Visible;
+
+            UiTitleBar.Title = $"QR Code: {TextOfCode.Truncate(30)}";
+            qrCodeFileName = $"QR-{TextOfCode.Truncate(20, "-").ReplaceReservedCharacters()}.png";
         }
 
         #endregion Public Constructors
@@ -45,8 +50,7 @@ namespace Text_Grab.Controls
         private void CodeImage_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             string tempPath = Path.Combine(
-                Path.GetTempPath(),
-                $"QR-{TextOfCode.Truncate(20, "-").ReplaceReservedCharacters()}.png");
+                Path.GetTempPath(), qrCodeFileName);
             try
             {
                 // DoDragDrop with file thumbnail as drag image
@@ -75,10 +79,16 @@ namespace Text_Grab.Controls
             }
         }
 
+        private void CopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            Clipboard.SetData(DataFormats.Bitmap, QrBitmap);
+        }
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog dialog = new()
             {
+                FileName = qrCodeFileName,
                 Filter = "Image | *.png",
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                 RestoreDirectory = true,
