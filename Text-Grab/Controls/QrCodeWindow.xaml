@@ -7,9 +7,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab QR Code"
-    Closing="FluentWindow_Closing"
     Width="400"
     Height="550"
+    Closing="FluentWindow_Closing"
     mc:Ignorable="d">
     <Window.Resources>
         <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />

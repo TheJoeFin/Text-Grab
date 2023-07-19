@@ -49,6 +49,7 @@
                 x:Name="SearchBox"
                 Grid.Column="0"
                 Margin="6,0,0,0"
+                VerticalAlignment="Center"
                 AcceptsTab="True"
                 TextChanged="SearchBox_TextChanged" />
             <Label
@@ -56,6 +57,7 @@
                 Grid.Column="0"
                 Margin="16,0,6,0"
                 Padding="4"
+                VerticalAlignment="Center"
                 VerticalContentAlignment="Center"
                 Content="Type to search..."
                 FontSize="16"

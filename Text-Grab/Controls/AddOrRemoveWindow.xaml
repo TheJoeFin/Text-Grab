@@ -137,7 +137,9 @@
             <TextBox
                 x:Name="LengthTextBox"
                 Width="50"
+                VerticalAlignment="Center"
                 IsEnabled="False"
+                MaxLines="1"
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
 
@@ -153,7 +155,9 @@
             <TextBox
                 x:Name="TextToAddTextBox"
                 Width="128"
+                VerticalAlignment="Center"
                 AcceptsTab="True"
+                MaxLines="1"
                 TextChanged="InputTextBox_TextChanged" />
         </StackPanel>
         <StackPanel

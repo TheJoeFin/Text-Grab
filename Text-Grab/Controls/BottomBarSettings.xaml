@@ -117,8 +117,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
-                <RowDefinition Height="auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                 <local:CollapsibleButton
