@@ -71,7 +71,7 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public string WordBorderInfoJson { get; set; } = string.Empty;
 
-    private string RectAsString { get; set; } = string.Empty;
+    public string RectAsString { get; set; } = string.Empty;
 
     #endregion Properties
 

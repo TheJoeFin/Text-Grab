@@ -322,6 +322,10 @@
                     Click="FSGDelayMenuItem_Click"
                     Header="Fullscreen with 2 second _delay" />
                 <MenuItem
+                    x:Name="PreviousRegionMenuItem"
+                    Click="PreviousRegion_Click"
+                    Header="Grab previous region" />
+                <MenuItem
                     x:Name="GrabFrameMenuItem"
                     Click="GrabFrameMenuItem_Click"
                     Header="New _Grab Frame"

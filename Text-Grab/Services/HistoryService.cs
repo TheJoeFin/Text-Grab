@@ -70,6 +70,16 @@ public class HistoryService
         return HistoryTextOnly;
     }
 
+    public HistoryInfo? GetLastFullScreenGrabInfo()
+    {
+        return HistoryWithImage.Where(h => h.SourceMode == TextGrabMode.Fullscreen).LastOrDefault();
+    }
+
+    public bool HasAnyFullscreenHistory()
+    {
+        return HistoryWithImage.Any(h => h.SourceMode == TextGrabMode.Fullscreen);
+    }
+
     public bool GetLastHistoryAsGrabFrame()
     {
         HistoryInfo? lastHistoryItem = HistoryWithImage.LastOrDefault();
@@ -198,7 +208,6 @@ public class HistoryService
             WriteHistoryFiles(HistoryWithImage, nameof(HistoryWithImage), maxHistoryWithImages);
         }
     }
-
     #endregion Public Methods
 
     #region Private Methods
@@ -285,6 +294,5 @@ public class HistoryService
         WriteHistory();
         CachedBitmap = null;
     }
-
     #endregion Private Methods
 }

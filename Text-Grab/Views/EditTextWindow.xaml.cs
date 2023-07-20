@@ -280,6 +280,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         HistoryInfo historyInfo = new()
         {
             ID = historyId,
+            LanguageTag = LanguageUtilities.GetCurrentInputLanguage().LanguageTag,
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
@@ -1362,6 +1363,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (e is not null)
             e.Handled = true;
+    }
+
+    private async void PreviousRegion_Click(object sender, RoutedEventArgs e)
+    {
+        HistoryService hs = Singleton<HistoryService>.Instance;
+
+        if (hs.HasAnyFullscreenHistory())
+            AddThisText(await OcrUtilities.GetTextFromPreviousFullscreenRegion());
     }
 
     private async void RateAndReview_Click(object sender, RoutedEventArgs e)

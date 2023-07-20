@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
@@ -170,6 +171,18 @@ public static class OcrUtilities
 
 
         return await GetOcrResultFromImageAsync(softwareBmp, language);
+    }
+
+    public async static Task<string> GetTextFromPreviousFullscreenRegion()
+    {
+        HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();
+
+        if (lastFsg is null)
+            return string.Empty;
+
+        Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+
+        return await GetTextFromAbsoluteRectAsync(scaledRect, lastFsg.OcrLanguage);
     }
 
     public async static Task<List<OcrOutput>> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, Language language)

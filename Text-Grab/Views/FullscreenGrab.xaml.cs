@@ -554,6 +554,8 @@ public partial class FullscreenGrab : Window
             HistoryInfo fsgHistoryItem = new()
             {
                 ID = Guid.NewGuid().ToString(),
+                DpiScaleFactor = m.M11,
+                LanguageTag = selectedOcrLang.LanguageTag,
                 CaptureDateTime = DateTimeOffset.Now,
                 PositionRect = historyRect,
                 IsTable = TableToggleButton.IsChecked!.Value,

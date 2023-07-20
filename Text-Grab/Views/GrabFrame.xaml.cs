@@ -90,6 +90,7 @@ public partial class GrabFrame : Window
         ShouldSaveOnClose = false;
         FrameText = historyInfo.TextContent;
         historyId = historyInfo.ID;
+        currentLanguage = historyInfo.OcrLanguage;
 
         if (!File.Exists(historyInfo.ImagePath))
         {
@@ -306,6 +307,7 @@ public partial class GrabFrame : Window
         HistoryInfo historyInfo = new()
         {
             ID = historyId,
+            LanguageTag = CurrentLanguage.LanguageTag,
             CaptureDateTime = DateTimeOffset.UtcNow,
             TextContent = FrameText,
             WordBorderInfoJson = wbInfoJson,
