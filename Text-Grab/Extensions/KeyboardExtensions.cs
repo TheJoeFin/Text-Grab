@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace Text_Grab.Utilities;
+namespace Text_Grab;
 
 public static class KeyboardExtensions
 {
@@ -34,11 +34,11 @@ public static class KeyboardExtensions
 
     public static bool IsShiftAltDown() => IsShiftDown() && IsAltDown();
 
-    public static bool IsShfitCtrlAltDown() => IsShiftDown() && IsCtrlDown() && IsAltDown();
+    public static bool IsShiftCtrlAltDown() => IsShiftDown() && IsCtrlDown() && IsAltDown();
 
     public static KeyboardModifiersDown GetKeyboardModifiersDown()
     {
-        if (IsShfitCtrlAltDown()) return KeyboardModifiersDown.ShiftCtrlAlt;
+        if (IsShiftCtrlAltDown()) return KeyboardModifiersDown.ShiftCtrlAlt;
         if (IsShiftAltDown()) return KeyboardModifiersDown.ShiftAlt;
         if (IsCtrlAltDown()) return KeyboardModifiersDown.CtrlAlt;
         if (IsShiftCtrlDown()) return KeyboardModifiersDown.ShiftCtrl;

@@ -311,7 +311,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             try
             {
-                stringBuilder.Append(await OcrExtensions.OcrAbsoluteFilePathAsync(OpenedFilePath));
+                stringBuilder.Append(await OcrUtilities.OcrAbsoluteFilePathAsync(OpenedFilePath));
             }
             catch (Exception)
             {
@@ -354,7 +354,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrText = await OcrExtensions.OcrAbsoluteFilePathAsync(path);
+            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path);
 
             if (!string.IsNullOrWhiteSpace(ocrText))
             {
@@ -575,7 +575,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void CheckRightToLeftLanguage()
     {
-        if (LanguageUtilities.IsLanguageRightToLeft(LanguageUtilities.GetCurrentInputLanguage()))
+        if (LanguageUtilities.GetCurrentInputLanguage().IsRightToLeft())
             PassedTextControl.TextAlignment = TextAlignment.Right;
     }
 
@@ -1322,8 +1322,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
-                string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
+                List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
@@ -1346,8 +1346,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    List<OcrOutput> outputs = await OcrExtensions.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
-                    string text = OcrExtensions.GetStringFromOcrOutputs(outputs);
+                    List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
                 }

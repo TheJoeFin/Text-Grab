@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Windows.Input;
-using System.Windows.Markup;
 using Text_Grab.Properties;
 using Windows.Globalization;
 using Windows.Media.Ocr;
@@ -12,23 +10,6 @@ namespace Text_Grab.Utilities;
 
 public static class LanguageUtilities
 {
-
-    public static bool IsLanguageSpaceJoining(Language selectedLanguage)
-    {
-        if (selectedLanguage.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase))
-            return false;
-        else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase))
-            return false;
-        return true;
-    }
-
-    public static bool IsLanguageRightToLeft(Language language)
-    {
-        XmlLanguage lang = XmlLanguage.GetLanguage(language.LanguageTag);
-        CultureInfo culture = lang.GetEquivalentCulture();
-        return culture.TextInfo.IsRightToLeft;
-    }
-
     public static Language GetCurrentInputLanguage()
     {
         // use currently selected Language
@@ -43,9 +24,9 @@ public static class LanguageUtilities
         if (!string.IsNullOrEmpty(Settings.Default.LastUsedLang))
             selectedLanguage = new(Settings.Default.LastUsedLang);
 
-        List<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages.ToList();
+        List<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages.ToList();
 
-        if (possibleOCRLangs.Count == 0)
+        if (possibleOCRLanguages.Count == 0)
         {
             System.Windows.MessageBox.Show("No possible OCR languages are installed.", "Text Grab");
             throw new Exception("No possible OCR languages are installed");
@@ -53,15 +34,15 @@ public static class LanguageUtilities
 
         // If the selected input language or last used language is not a possible OCR Language
         // then we need to find a similar language to use
-        if (possibleOCRLangs.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
+        if (possibleOCRLanguages.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
         {
-            List<Language> similarLanguages = possibleOCRLangs.Where(
+            List<Language> similarLanguages = possibleOCRLanguages.Where(
                 la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
 
             if (similarLanguages is not null && similarLanguages.Count > 0)
                 selectedLanguage = similarLanguages.First();
             else
-                selectedLanguage = possibleOCRLangs.First();
+                selectedLanguage = possibleOCRLanguages.First();
         }
 
         return selectedLanguage;
@@ -70,26 +51,6 @@ public static class LanguageUtilities
     public static bool IsCurrentLanguageLatinBased()
     {
         Language lang = GetCurrentInputLanguage();
-        return IsLatinBased(lang);
-    }
-
-    public static bool IsLatinBased(Language language)
-    {
-        // List of latin-based languages
-        List<string> latinLanguages = new List<string>()
-    {
-        "en",  // English
-        "es",  // Spanish
-        "fr",  // French
-        "it",  // Italian
-        "ro",  // Romanian
-        "pt"   // Portuguese
-    };
-
-        // Get the abbreviated name of the culture
-        string abbreviatedName = language.AbbreviatedName.ToLowerInvariant();
-
-        // Check if the abbreviated name of the culture is in the list of latin-based languages
-        return latinLanguages.Contains(abbreviatedName);
+        return lang.IsLatinBased();
     }
 }

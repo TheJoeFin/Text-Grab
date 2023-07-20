@@ -493,7 +493,7 @@ public partial class GrabFrame : Window
         string mergedContent = ResultTable.GetWordsAsTable(
             selectedWordBorders,
             dpi,
-            LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage));
+            CurrentLanguage.IsSpaceJoining());
         mergedContent = mergedContent.Replace('\t', ' ');
 
         SolidColorBrush backgroundBrush = new(Colors.Black);
@@ -660,7 +660,7 @@ public partial class GrabFrame : Window
         double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
         Rect rect = selectBorder.GetAbsolutePlacement(true);
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
-        string ocrText = await OcrExtensions.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), CurrentLanguage);
+        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), CurrentLanguage);
 
         if (Settings.Default.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
@@ -932,12 +932,12 @@ public partial class GrabFrame : Window
         };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, windowFrameImageScale) = await OcrExtensions.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
+            (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
 
         if (ocrResultOfWindow is null)
             return;
 
-        isSpaceJoining = LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage);
+        isSpaceJoining = CurrentLanguage.IsSpaceJoining();
 
         System.Drawing.Bitmap? bmp = null;
 
@@ -1011,7 +1011,7 @@ public partial class GrabFrame : Window
             return;
 
         EditTextWindow editWindow = new();
-        bool isSpaceJoiningLang = LanguageUtilities.IsLanguageSpaceJoining(CurrentLanguage);
+        bool isSpaceJoiningLang = CurrentLanguage.IsSpaceJoining();
         string separator = isSpaceJoiningLang ? " " : "";
         DpiScale dpiScale = VisualTreeHelper.GetDpi(this);
 

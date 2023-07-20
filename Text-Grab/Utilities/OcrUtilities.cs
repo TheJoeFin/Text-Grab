@@ -25,7 +25,7 @@ using Point = System.Windows.Point;
 
 namespace Text_Grab.Utilities;
 
-public static class OcrExtensions
+public static class OcrUtilities
 {
 
     public static void GetTextFromOcrLine(this OcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
@@ -75,12 +75,6 @@ public static class OcrExtensions
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
-    public static void RemoveTrailingNewlines(this StringBuilder text)
-    {
-        while (text.Length > 0 && (text[^1] == '\n' || text[^1] == '\r'))
-            text.Length--;
-    }
-
     public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, Language language)
     {
         Rectangle selectedRegion = rect.AsRectangle();
@@ -116,7 +110,7 @@ public static class OcrExtensions
         DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
         OcrResult ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, language);
         List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpiScale);
-        return ResultTable.GetWordsAsTable(wordBorders, dpiScale, LanguageUtilities.IsLanguageSpaceJoining(language));
+        return ResultTable.GetWordsAsTable(wordBorders, dpiScale, language.IsSpaceJoining());
     }
 
     public static async Task<(OcrResult, double)> GetOcrResultFromRegionAsync(Rectangle region, Language language)
@@ -237,7 +231,7 @@ public static class OcrExtensions
         }
         else
         {
-            OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(scaledBitmap, language);
+            OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, language);
             OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
             outputs.Add(paragraphsOutput);
         }
@@ -255,12 +249,12 @@ public static class OcrExtensions
     {
         StringBuilder text = new();
 
-        bool isSpaceJoiningOCRLang = LanguageUtilities.IsLanguageSpaceJoining(language);
+        bool isSpaceJoiningOCRLang = language.IsSpaceJoining();
 
         foreach (OcrLine ocrLine in ocrResult.Lines)
             ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
 
-        if (LanguageUtilities.IsLanguageRightToLeft(language))
+        if (language.IsRightToLeft())
             text.ReverseWordsForRightToLeft();
 
         OcrOutput paragraphsOutput = new()
@@ -309,7 +303,7 @@ public static class OcrExtensions
 
     private static async Task<string> GetTextFromClickedWordAsync(Point singlePoint, Bitmap bitmap, Language language)
     {
-        return GetTextFromClickedWord(singlePoint, await OcrExtensions.GetOcrResultFromImageAsync(bitmap, language));
+        return GetTextFromClickedWord(singlePoint, await OcrUtilities.GetOcrResultFromImageAsync(bitmap, language));
     }
 
     private static string GetTextFromClickedWord(Point singlePoint, OcrResult ocrResult)
@@ -326,14 +320,14 @@ public static class OcrExtensions
 
     public async static Task<double> GetIdealScaleFactorForOcrAsync(SoftwareBitmap bitmap, Language selectedLanguage)
     {
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
 
         return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.PixelHeight, bitmap.PixelWidth);
     }
 
     public async static Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, Language selectedLanguage)
     {
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
 
         return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.Height, bitmap.Width);
     }

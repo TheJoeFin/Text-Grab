@@ -60,7 +60,7 @@ December	12	Winter";
         string testImagePath = fontSamplePath;
 
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(fontSampleResult, ocrTextResult);
@@ -75,7 +75,7 @@ December	12	Winter";
 
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -92,7 +92,7 @@ December	12	Winter";
         Language englishLanguage = new("en-US");
         Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
@@ -125,7 +125,7 @@ December	12	Winter";
         string testImagePath = @".\Images\QrCodeTestImage.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrExtensions.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -149,7 +149,7 @@ December	12	Winter";
         Language englishLanguage = new("en-US");
         Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrExtensions.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
@@ -197,7 +197,7 @@ December	12	Winter";
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
         Language language = LanguageUtilities.GetOCRLanguage();
-        double idealScaleFactor = await OcrExtensions.GetIdealScaleFactorForOcrAsync(bmp, language);
+        double idealScaleFactor = await OcrUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
@@ -226,7 +226,7 @@ December	12	Winter";
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
         Language language = LanguageUtilities.GetOCRLanguage();
-        double idealScaleFactor = await OcrExtensions.GetIdealScaleFactorForOcrAsync(bmp, language);
+        double idealScaleFactor = await OcrUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When

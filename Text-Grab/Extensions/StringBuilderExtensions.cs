@@ -3,17 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Text_Grab.Utilities;
 
-namespace Text_Grab.Utilities;
+namespace Text_Grab;
 
 public static class StringBuilderExtensions
 {
     public static void CharDictionaryReplace(this StringBuilder stringBuilder, Dictionary<char, char> charDictionary)
     {
-        foreach (Char key in charDictionary.Keys)
+        foreach (char key in charDictionary.Keys)
         {
             stringBuilder.Replace(key, charDictionary[key]);
         }
+    }
+
+    public static void RemoveTrailingNewlines(this StringBuilder text)
+    {
+        while (text.Length > 0 && (text[^1] == '\n' || text[^1] == '\r'))
+            text.Length--;
     }
 
     public static void ReplaceGreekOrCyrillicWithLatin(this StringBuilder stringBuilder)
@@ -65,7 +72,7 @@ public static class StringBuilderExtensions
             {
                 bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordText);
 
-                if (firstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
+                if (firstWord || !isThisWordSpaceJoining && !isPrevWordSpaceJoining)
                     _ = text.Append(wordText);
                 else
                     _ = text.Append(' ').Append(wordText);
