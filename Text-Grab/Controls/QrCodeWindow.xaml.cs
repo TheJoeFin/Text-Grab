@@ -16,15 +16,14 @@ namespace Text_Grab.Controls
     /// </summary>
     public partial class QrCodeWindow : FluentWindow
     {
-        #region Private Fields
+        #region Fields
 
+        private IntPtr hBitmap;
         private string qrCodeFileName = string.Empty;
         private string tempPath = string.Empty;
-        private IntPtr hBitmap;
+        #endregion Fields
 
-        #endregion Private Fields
-
-        #region Public Constructors
+        #region Constructors
 
         public QrCodeWindow(Bitmap bitmap, string textOfCode, bool showError = false)
         {
@@ -47,16 +46,16 @@ namespace Text_Grab.Controls
             hBitmap = QrBitmap.GetHbitmap();
         }
 
-        #endregion Public Constructors
+        #endregion Constructors
 
-        #region Public Properties
+        #region Properties
 
         public Bitmap QrBitmap { get; set; }
         public string TextOfCode { get; set; }
 
-        #endregion Public Properties
+        #endregion Properties
 
-        #region Private Methods
+        #region Methods
 
         private void CodeImage_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -105,6 +104,6 @@ namespace Text_Grab.Controls
 
             QrBitmap.Save(dialog.FileName);
         }
-        #endregion Private Methods
+        #endregion Methods
     }
 }

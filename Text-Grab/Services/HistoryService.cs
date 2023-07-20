@@ -19,7 +19,7 @@ namespace Text_Grab.Services;
 
 public class HistoryService
 {
-    #region Private Fields
+    #region Fields
 
     private static readonly string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
     private static readonly string historyDirectory = $"{exePath}\\history";
@@ -29,9 +29,9 @@ public class HistoryService
     private List<HistoryInfo> HistoryTextOnly = new();
     private List<HistoryInfo> HistoryWithImage = new();
     private DispatcherTimer saveTimer = new();
-    #endregion Private Fields
+    #endregion Fields
 
-    #region Public Constructors
+    #region Constructors
 
     public HistoryService()
     {
@@ -39,13 +39,13 @@ public class HistoryService
         saveTimer.Tick += SaveTimer_Tick;
     }
 
-    #endregion Public Constructors
+    #endregion Constructors
 
-    #region Public Properties
+    #region Properties
 
     public Bitmap? CachedBitmap { get; set; }
 
-    #endregion Public Properties
+    #endregion Properties
 
     #region Public Methods
 
@@ -203,6 +203,12 @@ public class HistoryService
 
     #region Private Methods
 
+    private static void AddText(FileStream fs, string value)
+    {
+        byte[] info = new UTF8Encoding(true).GetBytes(value);
+        fs.Write(info, 0, info.Length);
+    }
+
     private static async Task<List<HistoryInfo>> LoadHistory(string fileName)
     {
         string historyFilePath = $"{historyDirectory}\\{fileName}.json";
@@ -254,13 +260,6 @@ public class HistoryService
             Debug.WriteLine($"Failed to save history json file. {ex.Message}");
         }
     }
-
-    private static void AddText(FileStream fs, string value)
-    {
-        byte[] info = new UTF8Encoding(true).GetBytes(value);
-        fs.Write(info, 0, info.Length);
-    }
-
     private void ClearOldImages()
     {
         int numberToRemove = HistoryWithImage.Count - maxHistoryWithImages;
