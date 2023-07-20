@@ -69,6 +69,10 @@
 
         <ContextMenu x:Key="ContextOptions">
             <MenuItem
+                x:Name="CopyWordMenuItem"
+                Click="CopyWordMenuItem_Click"
+                Header="Copy Text" />
+            <MenuItem
                 x:Name="TryToNumberMenuItem"
                 Click="TryToNumberMenuItem_Click"
                 Header="Try To Make _Numbers" />
@@ -80,8 +84,8 @@
             <MenuItem
                 x:Name="MergeWordBordersMenuItem"
                 Command="{x:Static local:WordBorder.MergeWordsCommand}"
-                InputGestureText="Ctrl + M"
-                Header="_Merge Selected Word Borders" />
+                Header="_Merge Selected Word Borders"
+                InputGestureText="Ctrl + M" />
             <MenuItem
                 x:Name="BreakIntoWordsMenuItem"
                 Click="BreakIntoWordsMenuItem_Click"

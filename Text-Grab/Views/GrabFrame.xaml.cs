@@ -52,6 +52,7 @@ public partial class GrabFrame : Window
     private Language? currentLanguage;
     private TextBox? destinationTextBox;
     private ImageSource? frameContentImageSource;
+    private string historyId = string.Empty;
     private bool IsDragOver = false;
     private bool isDrawing = false;
     private bool isLanguageBoxLoaded = false;
@@ -71,8 +72,6 @@ public partial class GrabFrame : Window
     private bool wasAltHeld = false;
     private double windowFrameImageScale = 1;
     private ObservableCollection<WordBorder> wordBorders = new();
-    private string historyId = string.Empty;
-
     #endregion Fields
 
     #region Constructors
@@ -864,6 +863,11 @@ public partial class GrabFrame : Window
         _ = await Launcher.LaunchUriAsync(new Uri(string.Format("mailto:support@textgrab.net")));
     }
 
+    private void CopyText_Click(object sender, RoutedEventArgs e)
+    {
+        try { Clipboard.SetDataObject(FrameText, true); } catch { }
+    }
+
     private List<WordBorder> DeleteSelectedWordBorders()
     {
         FreezeGrabFrame();
@@ -1469,6 +1473,37 @@ public partial class GrabFrame : Window
         }
 
         isLanguageBoxLoaded = true;
+    }
+
+    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetRecentGrabs();
+        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        OpenRecentGrabsMenuItem.Items.Clear();
+
+        if (grabsHistories.Count < 1)
+        {
+            OpenRecentGrabsMenuItem.IsEnabled = false;
+            return;
+        }
+
+        foreach (HistoryInfo history in grabsHistories)
+        {
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
+                continue;
+
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                GrabFrame grabFrame = new(history);
+                try { grabFrame.Show(); }
+                catch { menuItem.IsEnabled = false; }
+            };
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            OpenRecentGrabsMenuItem.Items.Add(menuItem);
+        }
     }
 
     private void MergeWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -2232,37 +2267,6 @@ public partial class GrabFrame : Window
         ResetGrabFrame();
         reDrawTimer.Stop();
         reDrawTimer.Start();
-    }
-
-    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetRecentGrabs();
-        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
-
-        OpenRecentGrabsMenuItem.Items.Clear();
-
-        if (grabsHistories.Count < 1)
-        {
-            OpenRecentGrabsMenuItem.IsEnabled = false;
-            return;
-        }
-
-        foreach (HistoryInfo history in grabsHistories)
-        {
-            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
-                continue;
-
-            MenuItem menuItem = new();
-            menuItem.Click += (object sender, RoutedEventArgs args) =>
-            {
-                GrabFrame grabFrame = new(history);
-                try { grabFrame.Show(); }
-                catch { menuItem.IsEnabled = false; }
-            };
-
-            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
-            OpenRecentGrabsMenuItem.Items.Add(menuItem);
-        }
     }
     #endregion Methods
 }

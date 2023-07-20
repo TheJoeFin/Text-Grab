@@ -342,6 +342,12 @@
                                         Click="OpenImageMenuItem_Click"
                                         Header="Open Image..."
                                         InputGestureText="Ctrl + O" />
+                                    <Separator />
+                                    <MenuItem
+                                        x:Name="CopyText"
+                                        Click="CopyText_Click"
+                                        Header="Copy Text" />
+                                    <Separator />
                                     <MenuItem
                                         x:Name="AspectRationMI"
                                         Checked="AspectRationMI_Checked"

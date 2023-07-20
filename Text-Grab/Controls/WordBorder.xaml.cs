@@ -10,6 +10,7 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Text_Grab.Controls;
 
@@ -42,16 +43,6 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         StandardInitialization();
     }
 
-    private void StandardInitialization()
-    {
-        InitializeComponent();
-        DataContext = this;
-        contextMenuBaseSize = WordBorderBorder.ContextMenu.Items.Count;
-
-        debounceTimer.Interval = new(0, 0, 0, 0, 300);
-        debounceTimer.Tick += DebounceTimer_Tick;
-    }
-
     public WordBorder(WordBorderInfo info)
     {
         StandardInitialization();
@@ -72,6 +63,15 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         }
     }
 
+    private void StandardInitialization()
+    {
+        InitializeComponent();
+        DataContext = this;
+        contextMenuBaseSize = WordBorderBorder.ContextMenu.Items.Count;
+
+        debounceTimer.Interval = new(0, 0, 0, 0, 300);
+        debounceTimer.Tick += DebounceTimer_Tick;
+    }
     #endregion Constructors
 
     #region Events
@@ -216,6 +216,11 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             e.CanExecute = true;
         else
             e.CanExecute = false;
+    }
+
+    private void CopyWordMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        try { Clipboard.SetDataObject(Word, true); } catch { }
     }
 
     private void DebounceTimer_Tick(object? sender, EventArgs e)
@@ -377,6 +382,5 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         this.MouseDown -= WordBorderControl_MouseDown;
         this.Unloaded -= WordBorderControl_Unloaded;
     }
-
     #endregion Methods
 }
