@@ -1801,8 +1801,13 @@ public partial class GrabFrame : Window
             return;
         }
 
-        frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
-        GrabFrameImage.Source = frameContentImageSource;
+        // does not re-OCR frame content at zoomed level
+        // it just takes the original source image
+        if (frameContentImageSource is null)
+        {
+            frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+            GrabFrameImage.Source = frameContentImageSource;
+        }
 
         if (AutoOcrCheckBox.IsChecked is false)
             return;
