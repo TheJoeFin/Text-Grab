@@ -113,6 +113,9 @@ public partial class GrabFrame : Window
             {
                 WordBorder wb = new(info);
                 wb.OwnerGrabFrame = this;
+
+                if (wb.IsBarcode)
+                    wb.SetAsBarcode();
             
                 wordBorders.Add(wb);
                 _ = RectanglesCanvas.Children.Add(wb);
@@ -2110,33 +2113,30 @@ public partial class GrabFrame : Window
 
         ZXing.Result result = barcodeReader.Decode(bitmapOfGrabFrame);
 
-        if (result is not null)
-        {
-            ResultPoint[] rawPoints = result.ResultPoints;
+        if (result is null)
+            return;
 
-            float[] xs = rawPoints.Reverse().Take(4).Select(x => x.X).ToArray();
-            float[] ys = rawPoints.Reverse().Take(4).Select(x => x.Y).ToArray();
+        ResultPoint[] rawPoints = result.ResultPoints;
 
-            Point minPoint = new Point(xs.Min(), ys.Min());
-            Point maxPoint = new Point(xs.Max(), ys.Max());
-            Point diffs = new Point(maxPoint.X - minPoint.X, maxPoint.Y - minPoint.Y);
+        float[] xs = rawPoints.Reverse().Take(4).Select(x => x.X).ToArray();
+        float[] ys = rawPoints.Reverse().Take(4).Select(x => x.Y).ToArray();
 
-            if (diffs.Y < 5)
-                diffs.Y = diffs.X / 10;
+        Point minPoint = new Point(xs.Min(), ys.Min());
+        Point maxPoint = new Point(xs.Max(), ys.Max());
+        Point diffs = new Point(maxPoint.X - minPoint.X, maxPoint.Y - minPoint.Y);
 
+        if (diffs.Y < 5)
+            diffs.Y = diffs.X / 10;
 
-            WordBorder wb = new();
-            wb.Word = result.Text;
-            wb.Width = diffs.X / dpi.DpiScaleX + 12;
-            wb.Height = diffs.Y / dpi.DpiScaleY + 12;
-            wb.SetAsBarcode();
-            wordBorders.Add(wb);
-            _ = RectanglesCanvas.Children.Add(wb);
-            double left = minPoint.X / (dpi.DpiScaleX) - 6;
-            double top = minPoint.Y / (dpi.DpiScaleY) - 6;
-            Canvas.SetLeft(wb, left);
-            Canvas.SetTop(wb, top);
-        }
+        WordBorder wb = new();
+        wb.Word = result.Text;
+        wb.Width = diffs.X / dpi.DpiScaleX + 12;
+        wb.Height = diffs.Y / dpi.DpiScaleY + 12;
+        wb.Left = minPoint.X / (dpi.DpiScaleX) - 6;
+        wb.Top = minPoint.Y / (dpi.DpiScaleY) - 6;
+        wb.SetAsBarcode();
+        wordBorders.Add(wb);
+        _ = RectanglesCanvas.Children.Add(wb);
     }
 
     private void UndoExecuted(object sender, ExecutedRoutedEventArgs e)

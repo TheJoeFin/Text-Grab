@@ -11,6 +11,7 @@ public class WordBorderInfo
     public int ResultColumnID { get; set; } = 0;
     public int ResultRowID { get; set; } = 0;
     public string MatchingBackground { get; set; } = "Transparent";
+    public bool IsBarcode { get; set; } = false;
 
     public WordBorderInfo()
     {
@@ -24,6 +25,7 @@ public class WordBorderInfo
         ResultColumnID = wordBorder.ResultColumnID;
         ResultRowID = wordBorder.ResultRowID;
         MatchingBackground = wordBorder.MatchingBackground.ToString();
+        IsBarcode = wordBorder.IsBarcode;
         BorderRect = new()
         {
             X = wordBorder.Left,

@@ -55,6 +55,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         LineNumber = info.LineNumber;
         ResultColumnID = info.ResultColumnID;
         ResultRowID = info.ResultRowID;
+        IsBarcode = info.IsBarcode;
 
         if (info.MatchingBackground != "Transparent"
             && new BrushConverter().ConvertFromString(info.MatchingBackground) is SolidColorBrush solidColorBrush)
@@ -83,10 +84,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     #region Properties
 
     public double Bottom => Top + Height;
+    public bool IsBarcode { get; set; } = false;
     public bool IsEditing => EditWordTextBox.IsFocused;
     public bool IsFromEditWindow { get; set; } = false;
     public bool IsSelected { get; set; } = false;
-
     public double Left
     {
         get { return left; }
@@ -177,10 +178,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         EditWordTextBox.SelectAll();
     }
 
-    public bool IntersectsWith(Rect rectToChek)
+    public bool IntersectsWith(Rect rectToCheck)
     {
         Rect wbRect = new(Left, Top, Width, Height);
-        return rectToChek.IntersectsWith(wbRect);
+        return rectToCheck.IntersectsWith(wbRect);
     }
 
     public void Select()
@@ -191,6 +192,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public void SetAsBarcode()
     {
+        IsBarcode = true;
+
         EditWordTextBox.TextWrapping = TextWrapping.Wrap;
         EditWordTextBox.TextAlignment = TextAlignment.Center;
 
@@ -242,14 +245,15 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         while (textBoxContextMenu.Items.Count > contextMenuBaseSize)
         {
-            senderElement.ContextMenu?.Items.RemoveAt(contextMenuBaseSize);
+            textBoxContextMenu.Items.RemoveAt(contextMenuBaseSize);
         }
 
         if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
         {
             string headerText = $"Try to go to: {Word}";
-            if (headerText.Length > 36)
-                headerText = headerText.Substring(0, 36) + "...";
+            int maxLength = 36;
+            if (headerText.Length > maxLength)
+                headerText = string.Concat(headerText.AsSpan(0, maxLength), "...");
 
             MenuItem urlMi = new();
             urlMi.Header = headerText;
@@ -257,7 +261,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             {
                 Process.Start(new ProcessStartInfo(Word) { UseShellExecute = true });
             };
-            senderElement.ContextMenu?.Items.Add(urlMi);
+            textBoxContextMenu.Items.Add(urlMi);
         }
     }
 

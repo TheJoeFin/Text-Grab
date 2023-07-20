@@ -70,33 +70,40 @@
         <ContextMenu x:Key="ContextOptions">
             <MenuItem
                 x:Name="CopyWordMenuItem"
+                HorizontalAlignment="Left"
                 Click="CopyWordMenuItem_Click"
                 Header="Copy Text" />
             <MenuItem
                 x:Name="TryToNumberMenuItem"
+                HorizontalAlignment="Left"
                 Click="TryToNumberMenuItem_Click"
                 Header="Try To Make _Numbers" />
             <MenuItem
                 x:Name="TryToAlphaMenuItem"
+                HorizontalAlignment="Left"
                 Click="TryToAlphaMenuItem_Click"
                 Header="Try To Make _Letters" />
             <Separator />
             <MenuItem
                 x:Name="MergeWordBordersMenuItem"
+                HorizontalAlignment="Left"
                 Command="{x:Static local:WordBorder.MergeWordsCommand}"
                 Header="_Merge Selected Word Borders"
                 InputGestureText="Ctrl + M" />
             <MenuItem
                 x:Name="BreakIntoWordsMenuItem"
+                HorizontalAlignment="Left"
                 Click="BreakIntoWordsMenuItem_Click"
                 Header="_Break into words" />
             <MenuItem
                 x:Name="SearchForSimilarMenuItem"
+                HorizontalAlignment="Left"
                 Click="SearchForSimilarMenuItem_Click"
                 Header="_Search for similar text" />
             <Separator />
             <MenuItem
                 x:Name="DeleteWordMenuItem"
+                HorizontalAlignment="Left"
                 Click="DeleteWordMenuItem_Click"
                 Header="_Delete" />
         </ContextMenu>
