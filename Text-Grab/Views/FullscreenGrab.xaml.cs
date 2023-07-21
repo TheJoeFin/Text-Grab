@@ -44,6 +44,8 @@ public partial class FullscreenGrab : Window
     {
         InitializeComponent();
         App.SetTheme();
+        if (Settings.Default.UseTesseract)
+            TesseractTextBlock.Visibility = Visibility.Visible;
     }
 
     #endregion Constructors
@@ -305,12 +307,17 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    private void LoadOcrLanguages()
+    private async void LoadOcrLanguages()
     {
         if (LanguagesComboBox.Items.Count > 0)
             return;
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
+
+        bool usingTesseract = Settings.Default.UseTesseract;
+        if (usingTesseract)
+            possibleOCRLanguages = await TesseractHelper.TesseractLanguages();
+
         Language firstLang = LanguageUtilities.GetOCRLanguage();
 
         int count = 0;
@@ -319,8 +326,18 @@ public partial class FullscreenGrab : Window
         {
             LanguagesComboBox.Items.Add(language);
 
-            if (language.LanguageTag == firstLang?.LanguageTag)
-                LanguagesComboBox.SelectedIndex = count;
+            if (!usingTesseract)
+            {
+                if (language.LanguageTag == firstLang?.LanguageTag
+                    || language.AbbreviatedName.ToLower() == firstLang?.DisplayName)
+                    LanguagesComboBox.SelectedIndex = count;
+            }
+            else
+            {
+                if (language.DisplayName == firstLang?.AbbreviatedName.ToLower()
+                    || language.DisplayName == firstLang?.DisplayName.ToLower())
+                    LanguagesComboBox.SelectedIndex = count;
+            }
 
             count++;
         }

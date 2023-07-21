@@ -32,6 +32,9 @@ public static class LanguageUtilities
             throw new Exception("No possible OCR languages are installed");
         }
 
+        if (Settings.Default.UseTesseract)
+            return selectedLanguage;
+
         // If the selected input language or last used language is not a possible OCR Language
         // then we need to find a similar language to use
         if (possibleOCRLanguages.All(l => l.LanguageTag != selectedLanguage.LanguageTag))

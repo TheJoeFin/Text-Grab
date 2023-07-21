@@ -129,6 +129,13 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Orientation="Horizontal">
+                <TextBlock
+                    x:Name="TesseractTextBlock"
+                    Margin="4,1,4,0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="Tesseract"
+                    Visibility="Collapsed" />
                 <ComboBox
                     x:Name="LanguagesComboBox"
                     Margin="0"

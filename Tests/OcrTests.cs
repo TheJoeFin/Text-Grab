@@ -240,6 +240,34 @@ December	12	Winter";
         Assert.Equal(fontSampleResultForTesseract, tessoutput.RawOutput);
     }
 
+    [WpfFact]
+    public async Task GetTessLanguages()
+    {
+        string expected = "eng,equ,osd";
+        List<string> actualStrings = await TesseractHelper.TesseractLangsAsStrings();
+        string joinedString = string.Join(',', actualStrings.ToArray());
+
+        Assert.Equal(expected, joinedString);
+    }
+
+    [WpfFact]
+    public async Task GetTesseractStrongLanguages()
+    {
+        List<Language> expectedList = new()
+        {
+            new Language("eng"),
+            new Language("equ"),
+            new Language("osd")
+        };
+
+        List<Language> actualList = await TesseractHelper.TesseractLanguages();
+
+        string expectedAbbreviatedName = string.Join(',', expectedList.Select(l => l.AbbreviatedName).ToArray());
+        string actualAbbreviatedName = string.Join(',', actualList.Select(l => l.AbbreviatedName).ToArray());
+
+        Assert.Equal(expectedAbbreviatedName, actualAbbreviatedName);
+    }
+
     private string getPathToLocalFile(string imageRelativePath)
     {
         Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
