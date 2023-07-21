@@ -56,13 +56,16 @@ public static class TesseractHelper
         if (string.IsNullOrWhiteSpace(tesseractPath))
             return "Cannot find tesseract.exe";
 
+        // probably not needed, but if the Windows languages get passed it, it should still work
+        string languageString = language.DisplayName != "" ? language.DisplayName : language.AbbreviatedName.ToLower();
+
         BufferedCommandResult result = await Cli.Wrap(tesseractPath)
             .WithValidation(CommandResultValidation.None)
             .WithArguments(args => args
                 .Add(imagePath)
                 .Add("-")
                 .Add("-l")
-                .Add(language.AbbreviatedName)
+                .Add(languageString)
             )
             .ExecuteBufferedAsync();
 

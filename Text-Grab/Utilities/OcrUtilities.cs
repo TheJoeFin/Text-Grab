@@ -234,20 +234,25 @@ public static class OcrUtilities
     {
         List<OcrOutput> outputs = new();
 
-        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
-        Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
-
         if (Settings.Default.UseTesseract)
         {
-            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBitmap, language);
+            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, language);
             outputs.Add(tesseractOutput);
+
+            if (Settings.Default.TryToReadBarcodes)
+            {
+                OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(bitmap);
+                outputs.Add(barcodeResult);
+            }
+
+            return outputs;
         }
-        else
-        {
-            OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, language);
-            OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
-            outputs.Add(paragraphsOutput);
-        }
+
+        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
+        Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, language);
+        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
+        outputs.Add(paragraphsOutput);
 
         if (Settings.Default.TryToReadBarcodes)
         {
