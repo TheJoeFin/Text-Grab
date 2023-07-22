@@ -29,27 +29,43 @@ public static class TesseractHelper
 
     private const string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
 
-    public static async Task<string> GetTextFromImagePathAsync(string imagePath, Language language)
+    private static string GetTesseractPath()
     {
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
         string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
+        string basicPath = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe";
 
-        if (!File.Exists(tesExePath))
-            tesExePath = programsPath;
+        if (File.Exists(tesExePath))
+            return tesExePath;
 
-        if (!File.Exists(tesExePath))
-            tesExePath = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe";
+        tesExePath = programsPath;
 
-        if (!File.Exists(tesExePath))
+        if (File.Exists(programsPath))
+            return programsPath;
+
+        if (File.Exists(basicPath))
+            return basicPath;
+
+        return string.Empty;
+    }
+
+    public static async Task<string> GetTextFromImagePathAsync(string imagePath, Language language)
+    {
+        string tesseractPath = GetTesseractPath();
+
+        if (string.IsNullOrWhiteSpace(tesseractPath))
             return "Cannot find tesseract.exe";
 
-        BufferedCommandResult result = await Cli.Wrap(tesExePath)
+        // probably not needed, but if the Windows languages get passed it, it should still work
+        string languageString = language.DisplayName != "" ? language.DisplayName : language.AbbreviatedName.ToLower();
+
+        BufferedCommandResult result = await Cli.Wrap(tesseractPath)
             .WithValidation(CommandResultValidation.None)
             .WithArguments(args => args
                 .Add(imagePath)
                 .Add("-")
                 .Add("-l")
-                .Add(language.AbbreviatedName)
+                .Add(languageString)
             )
             .ExecuteBufferedAsync();
 
@@ -137,6 +153,50 @@ public static class TesseractHelper
         }
 
         return $"{exePath}\\tempImage.png";
+    }
+
+    public async static Task<List<string>> TesseractLangsAsStrings()
+    {
+        List<string> languageStrings = new();
+
+        string tesseractPath = GetTesseractPath();
+
+        if (string.IsNullOrWhiteSpace(tesseractPath))
+        {
+            languageStrings.Add("eng");
+            return languageStrings;
+        }
+
+        BufferedCommandResult result = await Cli.Wrap(tesseractPath)
+            .WithValidation(CommandResultValidation.None)
+            .WithArguments(args => args
+                .Add("--list-langs")
+            ).ExecuteBufferedAsync();
+
+        if (string.IsNullOrWhiteSpace(result.StandardOutput))
+        {
+            languageStrings.Add("eng");
+            return languageStrings;
+        }
+
+        string[] tempList = result.StandardOutput.Split(Environment.NewLine);
+
+        foreach (string item in tempList)
+            if (item.Length < 8 && !string.IsNullOrWhiteSpace(item))
+                languageStrings.Add(item);
+
+        return languageStrings;
+    }
+
+    public async static Task<List<Language>> TesseractLanguages()
+    {
+        List<string> languageStrings = await TesseractLangsAsStrings();
+        List<Language> tesseractLanguages = new();
+
+        foreach (string language in languageStrings)
+            tesseractLanguages.Add(new Language(language));
+
+        return tesseractLanguages;
     }
 }
 
