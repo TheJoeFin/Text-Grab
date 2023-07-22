@@ -26,14 +26,18 @@ namespace Text_Grab.Utilities;
 public static class TesseractHelper
 {
     private const string rawPath = @"%LOCALAPPDATA%\Tesseract-OCR\tesseract.exe";
-
     private const string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
+    private const string basicPath = @"C:\Program Files\Tesseract-OCR\tesseract.exe";
+
+    public static bool CanLocateTesseractExe()
+    {
+        return !string.IsNullOrEmpty(GetTesseractPath());
+    }
 
     private static string GetTesseractPath()
     {
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
         string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
-        string basicPath = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe";
 
         if (File.Exists(tesExePath))
             return tesExePath;
@@ -90,16 +94,9 @@ public static class TesseractHelper
 
     public static async Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr)
     {
-        string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
-        string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
+        string tesExePath = GetTesseractPath();
 
-        if (!File.Exists(tesExePath))
-            tesExePath = programsPath;
-
-        if (!File.Exists(tesExePath))
-            tesExePath = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe";
-
-        if (!File.Exists(tesExePath))
+        if (string.IsNullOrEmpty(tesExePath))
             return "Cannot find tesseract.exe";
 
         string argumentsString = $"\"{pathToFile}\" - -l eng";

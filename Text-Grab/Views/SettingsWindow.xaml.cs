@@ -371,7 +371,6 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
         CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
-        UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
         HistorySwitch.IsChecked = Settings.Default.UseHistory;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
@@ -429,6 +428,19 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         GrabFrameHotkeyTextBox.Text = Settings.Default.GrabFrameHotkey;
         EditTextHotKeyTextBox.Text = Settings.Default.EditWindowHotKey;
         LookupHotKeyTextBox.Text = Settings.Default.LookupHotKey;
+
+        if (TesseractHelper.CanLocateTesseractExe())
+        {
+            UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
+        }
+        else
+        {
+            UseTesseractCheckBox.IsChecked = false;
+            UseTesseractCheckBox.IsEnabled = false;
+            Settings.Default.UseTesseract = false;
+            Settings.Default.Save();
+            CouldNotFindTessTxtBlk.Visibility = Visibility.Visible;
+        }
     }
     #endregion Methods
 }
