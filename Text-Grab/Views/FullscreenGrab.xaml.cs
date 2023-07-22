@@ -44,7 +44,7 @@ public partial class FullscreenGrab : Window
     {
         InitializeComponent();
         App.SetTheme();
-        if (Settings.Default.UseTesseract)
+        if (Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe())
             TesseractTextBlock.Visibility = Visibility.Visible;
     }
 
@@ -288,7 +288,7 @@ public partial class FullscreenGrab : Window
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
 
-        bool usingTesseract = Settings.Default.UseTesseract;
+        bool usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
         if (usingTesseract)
             possibleOCRLanguages = await TesseractHelper.TesseractLanguages();
 
