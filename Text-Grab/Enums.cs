@@ -21,6 +21,13 @@ public enum CurrentCase
     Unknown = 3
 }
 
+public enum OpenContentKind
+{
+    Image = 0,
+    TextFile = 1,
+    Directory = 2,
+}
+
 public enum OcrEngineKind
 {
     Windows = 0,

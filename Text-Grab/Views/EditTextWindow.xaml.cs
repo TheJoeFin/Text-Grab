@@ -52,7 +52,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public bool LaunchedFromNotification = false;
     CancellationTokenSource? cancellationTokenForDirOCR;
     private string historyId = string.Empty;
-    private List<string> imageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
 
@@ -173,7 +172,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (files is null)
             return;
 
-        List<string> imageFiles = files.Where(x => imageExtensions.Contains(Path.GetExtension(x).ToLower())).ToList();
+        List<string> imageFiles = files.Where(x => IoUtilities.ImageExtensions.Contains(Path.GetExtension(x).ToLower())).ToList();
 
         if (imageFiles.Count == 0)
         {
@@ -297,41 +296,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Text = PassedTextControl.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
     }
 
-    internal async void OpenThisPath(string pathOfFileToOpen, bool isMultipleFiles = false)
+    internal async void OpenPath(string pathOfFileToOpen, bool isMultipleFiles = false)
     {
         OpenedFilePath = pathOfFileToOpen;
 
-        StringBuilder stringBuilder = new();
+        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles);
 
-        if (isMultipleFiles)
-        {
-            stringBuilder.AppendLine(pathOfFileToOpen);
-        }
+        if (KindOpened == OpenContentKind.TextFile 
+            && !isMultipleFiles 
+            && !string.IsNullOrWhiteSpace(TextContent))
+            UiTitleBar.Title = $"Edit Text | {Path.GetFileName(OpenedFilePath)}";
 
-        if (imageExtensions.Contains(Path.GetExtension(OpenedFilePath).ToLower()))
-        {
-            try
-            {
-                stringBuilder.Append(await OcrUtilities.OcrAbsoluteFilePathAsync(OpenedFilePath));
-            }
-            catch (Exception)
-            {
-                System.Windows.MessageBox.Show($"Failed to read {OpenedFilePath}");
-            }
-        }
-        else
-        {
-            // Continue with along trying to open a text file.
-            await TryToOpenTextFile(pathOfFileToOpen, isMultipleFiles, stringBuilder);
-        }
-
-        if (isMultipleFiles)
-        {
-            stringBuilder.Append(Environment.NewLine);
-            stringBuilder.Append(Environment.NewLine);
-        }
-
-        PassedTextControl.AppendText(stringBuilder.ToString());
+        PassedTextControl.AppendText(TextContent);
     }
 
     private static string ListFilesFoldersInDirectory(string chosenFolderPath)
@@ -733,14 +709,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 // Check for a file (a directory will return false).
                 if (File.Exists(fileNames[0]))
-                    OpenThisPath(fileNames[0], false);
+                    OpenPath(fileNames[0], false);
             }
             else if (fileNames?.Length > 1)
             {
                 foreach (string possibleFilePath in fileNames)
                 {
                     if (File.Exists(possibleFilePath))
-                        OpenThisPath(possibleFilePath, true);
+                        OpenPath(possibleFilePath, true);
                 }
             }
         }
@@ -1228,7 +1204,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (result is bool isTrueResult
             && File.Exists(dlg.FileName))
         {
-            OpenThisPath(dlg.FileName);
+            OpenPath(dlg.FileName);
         }
     }
 
@@ -1343,7 +1319,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     if (!storageItem.IsOfType(StorageItemTypes.File))
                         continue;
                     IStorageFile storageFile = (IStorageFile)storageItem;
-                    if (!imageExtensions.Contains(storageFile.FileType))
+                    if (!IoUtilities.ImageExtensions.Contains(storageFile.FileType))
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
@@ -1511,7 +1487,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             File.WriteAllText(dialog.FileName, fileText);
             OpenedFilePath = dialog.FileName;
-            Title = $"Edit Text | {OpenedFilePath.Split('\\').LastOrDefault()}";
+            UiTitleBar.Title = $"Edit Text | {OpenedFilePath.Split('\\').LastOrDefault()}";
         }
     }
 
@@ -1532,7 +1508,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 File.WriteAllText(dialog.FileName, fileText);
                 OpenedFilePath = dialog.FileName;
-                Title = $"Edit Text | {OpenedFilePath.Split('\\').LastOrDefault()}";
+                UiTitleBar.Title = $"Edit Text | {OpenedFilePath.Split('\\').LastOrDefault()}";
             }
         }
         else
@@ -1818,25 +1794,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.Text = workingString;
         else
             PassedTextControl.SelectedText = workingString;
-    }
-
-    private async Task TryToOpenTextFile(string pathOfFileToOpen, bool isMultipleFiles, StringBuilder stringBuilder)
-    {
-        if (!isMultipleFiles && string.IsNullOrWhiteSpace(PassedTextControl.Text))
-            Title = $"Edit Text | {Path.GetFileName(OpenedFilePath)}";
-
-        try
-        {
-            using StreamReader sr = File.OpenText(pathOfFileToOpen);
-
-            string s = await sr.ReadToEndAsync();
-
-            stringBuilder.Append(s);
-        }
-        catch (System.Exception ex)
-        {
-            System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
-        }
     }
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)

@@ -101,7 +101,7 @@ public partial class App : System.Windows.Application
         Accent.Apply(teal);
     }
 
-    public void WatchTheme()
+    public static void WatchTheme()
     {
         if (Registry.CurrentUser.OpenSubKey(SystemThemeUtility.themeKeyPath) is not RegistryKey key)
             return;
@@ -127,6 +127,16 @@ public partial class App : System.Windows.Application
     {
         string currentArgument = args[0];
 
+        bool isQuiet = false;
+
+        foreach (string arg in args)
+            if (arg == "--windowless")
+            {
+                isQuiet = true;
+                Settings.Default.FirstRun = false;
+                Settings.Default.Save();
+            }
+
         if (currentArgument.Contains("ToastActivated"))
         {
             Debug.WriteLine("Launched from toast");
@@ -147,7 +157,7 @@ public partial class App : System.Windows.Application
             return true;
         }
 
-        bool openedFile = TryToOpenFile(currentArgument);
+        bool openedFile = await TryToOpenFile(currentArgument, isQuiet);
         if (openedFile)
             return true;
 
@@ -187,14 +197,26 @@ public partial class App : System.Windows.Application
         Settings.Default.Save();
     }
 
-    private static bool TryToOpenFile(string possiblePath)
+    private static async Task<bool> TryToOpenFile(string possiblePath, bool isQuiet)
     {
         if (!File.Exists(possiblePath))
             return false;
 
-        EditTextWindow manipulateTextWindow = new();
-        manipulateTextWindow.OpenThisPath(possiblePath);
-        manipulateTextWindow.Show();
+
+        if (isQuiet)
+        {
+            (string pathContent, _) = await IoUtilities.GetContentFromPath(possiblePath);
+            OutputUtilities.HandleTextFromOcr(
+                pathContent,
+                false,
+                false);
+        }
+        else
+        {
+            EditTextWindow manipulateTextWindow = new();
+            manipulateTextWindow.OpenPath(possiblePath);
+            manipulateTextWindow.Show();
+        }
         return true;
     }
 

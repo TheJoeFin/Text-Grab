@@ -6,7 +6,7 @@ namespace Text_Grab.Utilities;
 
 public class OutputUtilities
 {
-    public static void HandleTextFromOcr(string grabbedText, bool isSingleLine, bool isTable, TextBox? destinationTextBox)
+    public static void HandleTextFromOcr(string grabbedText, bool isSingleLine, bool isTable, TextBox? destinationTextBox = null)
     {
         if (isSingleLine && !isTable)
             grabbedText = grabbedText.MakeStringSingleLine();
@@ -28,5 +28,6 @@ public class OutputUtilities
         if (Settings.Default.ShowToast)
             NotificationUtilities.ShowToast(grabbedText);
 
+        WindowUtilities.ShouldShutDown();
     }
 }

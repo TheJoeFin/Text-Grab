@@ -130,6 +130,7 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <ui:TitleBar
+            x:Name="UiTitleBar"
             Title="Edit Text"
             Height="32"
             Padding="8,2"
