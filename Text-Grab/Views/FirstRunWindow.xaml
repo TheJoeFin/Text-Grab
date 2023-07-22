@@ -44,7 +44,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <ui:TitleBar
-            Title="Edit Text"
+            Title="About Text Grab"
             Height="32"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />

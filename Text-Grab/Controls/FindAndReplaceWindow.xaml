@@ -54,7 +54,7 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
-            Title="Edit Text"
+            Title="Find and Replace"
             Height="32"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />

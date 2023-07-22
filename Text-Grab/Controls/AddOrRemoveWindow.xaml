@@ -39,7 +39,7 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
-            Title="Edit Text"
+            Title="Add, Remove, or Limit"
             Height="32"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
