@@ -12,6 +12,7 @@
     Background="Transparent"
     BorderBrush="{StaticResource Teal}"
     BorderThickness="3"
+    Topmost="True"
     WindowStyle="None"
     mc:Ignorable="d">
     <Grid />
