@@ -230,7 +230,7 @@ December	12	Winter";
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
-        Language englishLanguage = new("en-US");
+        Language englishLanguage = new("eng");
         OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
 
         if (tessoutput.RawOutput == "Cannot find tesseract.exe")
