@@ -1370,7 +1370,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         HistoryService hs = Singleton<HistoryService>.Instance;
 
         if (hs.HasAnyFullscreenHistory())
-            AddThisText(await OcrUtilities.GetTextFromPreviousFullscreenRegion());
+            await OcrUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
     }
 
     private async void RateAndReview_Click(object sender, RoutedEventArgs e)

@@ -223,32 +223,6 @@ public partial class FullscreenGrab : Window
         posTop = Canvas.GetTop(selectBorder) + (absPosPoint.Y / dpi.PixelsPerDip);
     }
 
-    private void HandleTextFromOcr(string grabbedText)
-    {
-        if (SingleLineMenuItem.IsChecked is true && TableToggleButton.IsChecked is false)
-            grabbedText = grabbedText.MakeStringSingleLine();
-
-        textFromOCR = grabbedText;
-
-        if (!Settings.Default.NeverAutoUseClipboard
-            && destinationTextBox is null)
-            try { Clipboard.SetDataObject(grabbedText, true); } catch { }
-
-        if (Settings.Default.ShowToast
-            && destinationTextBox is null)
-            NotificationUtilities.ShowToast(grabbedText);
-
-        if (destinationTextBox is not null)
-        {
-            // Do it this way instead of append text because it inserts the text at the cursor
-            // Then puts the cursor at the end of the newly added text
-            // AppendText() just adds the text to the end no matter what.
-            destinationTextBox.SelectedText = grabbedText;
-            destinationTextBox.Select(destinationTextBox.SelectionStart + grabbedText.Length, 0);
-            destinationTextBox.Focus();
-        }
-    }
-
     private void LanguagesComboBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.MiddleButton == MouseButtonState.Pressed)
@@ -592,7 +566,11 @@ public partial class FullscreenGrab : Window
                 destinationTextBox = etw.PassedTextControl;
             }
 
-            HandleTextFromOcr(grabbedText);
+            OutputUtilities.HandleTextFromOcr(
+                grabbedText,
+                SingleLineMenuItem.IsChecked is true,
+                TableToggleButton.IsChecked is true,
+                destinationTextBox);
             WindowUtilities.CloseAllFullscreenGrabs();
         }
         else

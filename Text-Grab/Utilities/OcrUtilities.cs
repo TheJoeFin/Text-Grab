@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Controls;
@@ -155,6 +156,10 @@ public static class OcrUtilities
     public async static Task<OcrResult> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, Language language)
     {
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(language);
+
+        if (ocrEngine is null)
+            ocrEngine = OcrEngine.TryCreateFromLanguage(LanguageUtilities.GetCurrentInputLanguage());
+
         return await ocrEngine.RecognizeAsync(scaledBitmap);
     }
 
@@ -173,16 +178,35 @@ public static class OcrUtilities
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
 
-    public async static Task<string> GetTextFromPreviousFullscreenRegion()
+    public async static Task GetTextFromPreviousFullscreenRegion(TextBox? destinationTextBox = null)
     {
         HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();
 
         if (lastFsg is null)
-            return string.Empty;
+            return;
 
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
 
-        return await GetTextFromAbsoluteRectAsync(scaledRect, lastFsg.OcrLanguage);
+        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect);
+        previousGrab.Show();
+
+        string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, lastFsg.OcrLanguage);
+
+        HistoryInfo newPrevRegionHistory = new()
+        {
+            ID = Guid.NewGuid().ToString(),
+            CaptureDateTime = DateTimeOffset.Now,
+            ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
+            TextContent = grabbedText,
+            PositionRect = lastFsg.PositionRect,
+            LanguageTag = lastFsg.OcrLanguage.LanguageTag,
+            IsTable = lastFsg.IsTable,
+            SourceMode = TextGrabMode.Fullscreen,
+            DpiScaleFactor = lastFsg.DpiScaleFactor,
+        };
+        Singleton<HistoryService>.Instance.SaveToHistory(newPrevRegionHistory);
+
+        OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, destinationTextBox);
     }
 
     public async static Task<List<OcrOutput>> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, Language language)

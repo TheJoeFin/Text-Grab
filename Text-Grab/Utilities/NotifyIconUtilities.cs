@@ -32,8 +32,10 @@ public static class NotifyIconUtilities
         editLastItem.Click += (s, e) => { Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame(); };
         ToolStripMenuItem? quickSimpleLookupItem = new("&Quick Simple Lookup");
         quickSimpleLookupItem.Click += (s, e) => { QuickSimpleLookup qsl = new(); qsl.Show(); };
-        ToolStripMenuItem? fullscreenGrabItem = new("&Fullscreen Grab");
-        fullscreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(); };
+        ToolStripMenuItem? previousGrabRegion = new("&Grab Previous Region");
+        previousGrabRegion.Click += async (s, e) => { await OcrUtilities.GetTextFromPreviousFullscreenRegion(); };
+        ToolStripMenuItem? fullScreenGrabItem = new("&Fullscreen Grab");
+        fullScreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(); };
         ToolStripMenuItem? grabFrameItem = new("&Grab Frame");
         grabFrameItem.Click += (s, e) => { GrabFrame gf = new(); gf.Show(); };
         ToolStripMenuItem? editTextWindowItem = new("&Edit Text Window");
@@ -44,7 +46,8 @@ public static class NotifyIconUtilities
 
         contextMenu.Items.AddRange(
             new ToolStripMenuItem[] {
-                fullscreenGrabItem,
+                fullScreenGrabItem,
+                previousGrabRegion,
                 grabFrameItem,
                 editTextWindowItem,
                 quickSimpleLookupItem,

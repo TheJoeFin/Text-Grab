@@ -168,6 +168,12 @@ public class HistoryService
 
         HistoryWithImage.Add(infoFromFullscreenGrab);
 
+        if (CachedBitmap is not null)
+        {
+            NativeMethods.DeleteObject(CachedBitmap.GetHbitmap());
+            CachedBitmap = null;
+        }
+
         saveTimer.Stop();
         saveTimer.Start();
     }
