@@ -45,7 +45,11 @@ public partial class FullscreenGrab : Window
         InitializeComponent();
         App.SetTheme();
         if (Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe())
+        {
             TesseractTextBlock.Visibility = Visibility.Visible;
+            TableMenuItem.Visibility = Visibility.Collapsed;
+            TableToggleButton.Visibility = Visibility.Collapsed;
+        }
     }
 
     #endregion Constructors
@@ -121,6 +125,9 @@ public partial class FullscreenGrab : Window
                 FreezeUnfreeze(FreezeMenuItem.IsChecked);
                 break;
             case Key.T:
+                if (Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe())
+                    return;
+
                 if (isActive is null)
                     TableToggleButton.IsChecked = !TableToggleButton.IsChecked;
                 else
@@ -520,12 +527,15 @@ public partial class FullscreenGrab : Window
 
         bool isSmallClick = (regionScaled.Width < 3 || regionScaled.Height < 3);
 
+        bool isSingleLine = SingleLineMenuItem is null ? false : SingleLineMenuItem.IsChecked;
+        bool isTable = TableMenuItem is null ? false : TableMenuItem.IsChecked;
+
         if (isSmallClick)
         {
             BackgroundBrush.Opacity = 0;
             grabbedText = await OcrUtilities.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
-        else if (TableToggleButton.IsChecked is true)
+        else if (isTable)
             grabbedText = await OcrUtilities.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
             grabbedText = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
@@ -568,8 +578,8 @@ public partial class FullscreenGrab : Window
 
             OutputUtilities.HandleTextFromOcr(
                 grabbedText,
-                SingleLineMenuItem.IsChecked is true,
-                TableToggleButton.IsChecked is true,
+                isSingleLine,
+                isTable,
                 destinationTextBox);
             WindowUtilities.CloseAllFullscreenGrabs();
         }

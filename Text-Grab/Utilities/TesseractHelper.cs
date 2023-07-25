@@ -31,7 +31,19 @@ public static class TesseractHelper
 
     public static bool CanLocateTesseractExe()
     {
-        return !string.IsNullOrEmpty(GetTesseractPath());
+        string tesseractPath = string.Empty;
+        try
+        {
+            tesseractPath = GetTesseractPath();
+        }
+        catch (Exception)
+        {
+            tesseractPath = string.Empty;
+#if DEBUG
+            throw;
+#endif
+        }
+        return !string.IsNullOrEmpty(tesseractPath);
     }
 
     private static string GetTesseractPath()
@@ -179,7 +191,7 @@ public static class TesseractHelper
         string[] tempList = result.StandardOutput.Split(Environment.NewLine);
 
         foreach (string item in tempList)
-            if (item.Length < 8 && !string.IsNullOrWhiteSpace(item))
+            if (item.Length < 8 && !string.IsNullOrWhiteSpace(item) && item != "osd")
                 languageStrings.Add(item);
 
         return languageStrings;
