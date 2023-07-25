@@ -725,6 +725,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         string saveLookupFilePath = $"C:\\{cacheFilename}";
         if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
         {
+            // TODO Fix this to allow Packaged apps to save to a cache
             string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
             saveLookupFilePath = $"{exePath}\\{cacheFilename}";
         }

@@ -565,7 +565,9 @@ public partial class FullscreenGrab : Window
                 SourceMode = TextGrabMode.Fullscreen,
             };
 
-            Singleton<HistoryService>.Instance.SaveToHistory(fsgHistoryItem);
+            // TODO Fix this to allow Packaged apps to save to a cache
+            if (!ImplementAppOptions.IsPackaged())
+                Singleton<HistoryService>.Instance.SaveToHistory(fsgHistoryItem);
         }
 
         if (!string.IsNullOrWhiteSpace(grabbedText))
