@@ -332,15 +332,8 @@ public partial class GrabFrame : Window
         int numberOfLines = wordLines.Count;
         double wordHeight = wordBorder.Height / numberOfLines;
 
-        DeleteThisWordBorder(wordBorder);
+        DeleteThisWordBorder(wordBorder, false);
         UndoRedo.StartTransaction();
-        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
-            new GrabFrameOperationArgs()
-            {
-                RemovingWordBorders = new() { wordBorder },
-                WordBorders = wordBorders,
-                GrabFrameCanvas = RectanglesCanvas
-            });
 
         int lineIterator = 0;
         foreach (string line in wordLines)
@@ -384,12 +377,15 @@ public partial class GrabFrame : Window
         UndoRedo.EndTransaction();
     }
 
-    public void DeleteThisWordBorder(WordBorder wordBorder)
+    public void DeleteThisWordBorder(WordBorder wordBorder, bool startEndTransaction = true)
     {
         ShouldSaveOnClose = true;
         wordBorders.Remove(wordBorder);
         RectanglesCanvas.Children.Remove(wordBorder);
-        UndoRedo.StartTransaction();
+
+        if (startEndTransaction)
+            UndoRedo.StartTransaction();
+
         List<WordBorder> deletedWordBorder = new() { wordBorder };
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
             new GrabFrameOperationArgs()
@@ -399,7 +395,9 @@ public partial class GrabFrame : Window
                 GrabFrameCanvas = RectanglesCanvas
             });
 
-        UndoRedo.EndTransaction();
+        if (startEndTransaction)
+            UndoRedo.EndTransaction();
+
         reSearchTimer.Start();
     }
 
@@ -919,6 +917,15 @@ public partial class GrabFrame : Window
 
         if (string.IsNullOrWhiteSpace(searchWord))
             searchWord = SearchBox.Text;
+        UndoRedo.StartTransaction();
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = new(wordBorders),
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+        });
 
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
@@ -983,10 +990,26 @@ public partial class GrabFrame : Window
                 MatchingBackground = backgroundBrush,
             };
 
+            if (CurrentLanguage.IsRightToLeft())
+            {
+                StringBuilder sb = new(ocrText);
+                sb.ReverseWordsForRightToLeft();
+                sb.RemoveTrailingNewlines();
+                wordBorderBox.Word = sb.ToString();
+            }
+
             if (IsOcrValid)
             {
                 wordBorders.Add(wordBorderBox);
                 _ = RectanglesCanvas.Children.Add(wordBorderBox);
+
+            UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+    new GrabFrameOperationArgs()
+                {
+                    WordBorder = wordBorderBox,
+                    WordBorders = wordBorders,
+                    GrabFrameCanvas = RectanglesCanvas
+            });
             }
 
             lineNumber++;
@@ -1004,6 +1027,7 @@ public partial class GrabFrame : Window
 
         bmp?.Dispose();
         reSearchTimer.Start();
+        UndoRedo.EndTransaction();
     }
 
     private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1447,6 +1471,7 @@ public partial class GrabFrame : Window
 
         if (pickedLang != null)
         {
+            currentLanguage = pickedLang;
             Settings.Default.LastUsedLang = pickedLang.LanguageTag;
             Settings.Default.Save();
         }
