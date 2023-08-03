@@ -243,7 +243,7 @@ December	12	Winter";
     [WpfFact]
     public async Task GetTessLanguages()
     {
-        string expected = "eng,equ,osd";
+        string expected = "eng,equ";
         List<string> actualStrings = await TesseractHelper.TesseractLangsAsStrings();
         string joinedString = string.Join(',', actualStrings.ToArray());
 
@@ -256,8 +256,7 @@ December	12	Winter";
         List<Language> expectedList = new()
         {
             new Language("eng"),
-            new Language("equ"),
-            new Language("osd")
+            new Language("equ")
         };
 
         List<Language> actualList = await TesseractHelper.TesseractLanguages();
