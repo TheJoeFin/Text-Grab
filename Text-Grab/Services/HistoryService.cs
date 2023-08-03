@@ -4,11 +4,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -218,16 +215,10 @@ public class HistoryService
 
     #region Private Methods
 
-    private static void AddText(FileStream fs, string value)
-    {
-        byte[] info = new UTF8Encoding(true).GetBytes(value);
-        fs.Write(info, 0, info.Length);
-    }
-
     private static async Task<List<HistoryInfo>> LoadHistory(string fileName)
     {
         string historyFilePath = $"{historyDirectory}\\{fileName}.json";
-        
+
         if (!File.Exists(historyFilePath))
             return new List<HistoryInfo>();
 
@@ -261,14 +252,7 @@ public class HistoryService
 
         try
         {
-            if (!Directory.Exists(historyDirectory))
-                Directory.CreateDirectory(historyDirectory);
-
-            if (File.Exists(historyFilePath))
-                File.Delete(historyFilePath);
-
-            using FileStream fs = File.Create(historyFilePath);
-            AddText(fs, historyAsJson);
+            FileUtilities.SaveTextFile(historyAsJson, $"{fileName}.json", FileStorageKind.WithHistory);
         }
         catch (Exception ex)
         {

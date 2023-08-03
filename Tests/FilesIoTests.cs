@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Text_Grab;
 using Text_Grab.Utilities;
 
 namespace Tests;
@@ -13,12 +14,22 @@ public class FilesIoTests
     private const string fontSamplePath = @".\Images\font_sample.png";
 
     [WpfFact]
-    public async Task ShouldBeAbleToSaveImage()
+    public async Task CanSaveImagesWithHistory()
     {
         Bitmap fontSampleBitmap = new Bitmap(FileUtilities.GetPathToLocalFile(fontSamplePath));
 
-        bool couldSave = await FileUtilities.SaveImageFile(fontSampleBitmap, "newTest.png", Text_Grab.FileStorageKind.WithHistory);
+        bool couldSave = await FileUtilities.SaveImageFile(fontSampleBitmap, "newTest.png", FileStorageKind.WithHistory);
 
+        Assert.True(couldSave);
+    }
+
+    [WpfFact]
+    public async Task CanSaveTextFilesWithExe()
+    {
+        string textContent = "abcdef";
+        string fileName = "testAbc.txt";
+
+        bool couldSave = await FileUtilities.SaveTextFile(textContent, fileName, FileStorageKind.WithExe);
         Assert.True(couldSave);
     }
 }
