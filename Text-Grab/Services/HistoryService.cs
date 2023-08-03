@@ -122,15 +122,15 @@ public class HistoryService
         {
             historyInfo.ID = Guid.NewGuid().ToString();
 
-            if (!Directory.Exists(historyDirectory))
-                Directory.CreateDirectory(historyDirectory);
-
-            string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
-
             if (historyInfo.ImageContent is not null)
-                historyInfo.ImageContent.Save(imgPath);
+            {
+                if (!Directory.Exists(historyDirectory))
+                    Directory.CreateDirectory(historyDirectory);
+                string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
 
-            historyInfo.ImagePath = imgPath;
+                FileUtilities.SaveImageFile(historyInfo.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
+                historyInfo.ImagePath = imgPath;
+            }
         }
         else
         {

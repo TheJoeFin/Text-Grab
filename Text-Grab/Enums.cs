@@ -21,6 +21,13 @@ public enum CurrentCase
     Unknown = 3
 }
 
+public enum FileStorageKind
+{
+    Absolute = 0,
+    WithExe = 1,
+    WithHistory = 2,
+}
+
 public enum OpenContentKind
 {
     Image = 0,
