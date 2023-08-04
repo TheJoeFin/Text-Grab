@@ -722,18 +722,6 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (!string.IsNullOrWhiteSpace(SearchBox.Text))
             SearchBox.Clear();
 
-        string saveLookupFilePath = $"C:\\{cacheFilename}";
-        if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
-        {
-            // TODO Fix this to allow Packaged apps to save to a cache
-            string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-            saveLookupFilePath = $"{exePath}\\{cacheFilename}";
-        }
-        else
-        {
-            saveLookupFilePath = Settings.Default.LookupFileLocation;
-        }
-
         StringBuilder csvContents = new();
 
         if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave)
@@ -744,7 +732,16 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            await File.WriteAllTextAsync(saveLookupFilePath, csvContents.ToString());
+            if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
+            {
+                await FileUtilities.SaveTextFile(csvContents.ToString(), cacheFilename, FileStorageKind.WithExe);
+            }
+            else
+            {
+                string absolutePath = Path.Combine(Settings.Default.LookupFileLocation, cacheFilename);
+                await FileUtilities.SaveTextFile(csvContents.ToString(), absolutePath, FileStorageKind.Absolute);
+            }
+
             SaveBTN.Visibility = Visibility.Collapsed;
         }
         catch (Exception ex)
