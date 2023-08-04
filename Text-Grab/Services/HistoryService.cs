@@ -159,7 +159,7 @@ public class HistoryService
         string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
 
         if (infoFromFullscreenGrab.ImageContent is not null)
-            infoFromFullscreenGrab.ImageContent.Save(imgPath);
+            FileUtilities.SaveImageFile(infoFromFullscreenGrab.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
 
         infoFromFullscreenGrab.ImagePath = imgPath;
 
