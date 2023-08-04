@@ -86,53 +86,11 @@ public class FileUtilities
 
     #region Private Methods
 
-    private static async Task<bool> SaveTextFilePackaged(string textContent, string filename, FileStorageKind storageKind)
-    {
-        StorageFolder storageFolder = await GetStorageFolderPackaged(filename, storageKind);
-    }
-
-    private static async Task<bool> SaveTextFileUnpackaged(string textContent, string filename, FileStorageKind storageKind)
-    {
-        string folderPath = GetFolderPathUnpackaged(filename, storageKind);
-        string filePath = Path.Combine(folderPath, filename);
-
-        if (string.IsNullOrEmpty(folderPath))
-            return false;
-
-        if (!Directory.Exists(folderPath))
-            Directory.CreateDirectory(folderPath);
-
-        if (File.Exists(filePath))
-            File.Delete(filePath);
-
-        using FileStream fs = File.Create(filePath);
-        AddText(fs, textContent);
-        return true;
-    }
-
-    public static void AddText(FileStream fs, string value)
+    private static void AddText(FileStream fs, string value)
     {
         byte[] info = new UTF8Encoding(true).GetBytes(value);
         fs.Write(info, 0, info.Length);
     }
-
-    private static async Task<StorageFolder> GetStorageFolderPackaged(string fileName, FileStorageKind storageKind)
-    {
-        switch (storageKind)
-        {
-            case FileStorageKind.Absolute:
-                return await StorageFolder.GetFolderFromPathAsync(fileName);
-            case FileStorageKind.WithExe:
-                return ApplicationData.Current.LocalFolder;
-            case FileStorageKind.WithHistory:
-                return await ApplicationData.Current.LocalFolder.CreateFolderAsync("history", CreationCollisionOption.OpenIfExists);
-            default:
-                break;
-        }
-
-        return ApplicationData.Current.LocalCacheFolder;
-    }
-
 
     private static string GetFolderPathUnpackaged(string filename, FileStorageKind storageKind)
     {
@@ -153,7 +111,42 @@ public class FileUtilities
 
         return $"c:\\";
     }
-    
+
+    private static async Task<StorageFolder> GetStorageFolderPackaged(string fileName, FileStorageKind storageKind)
+    {
+        switch (storageKind)
+        {
+            case FileStorageKind.Absolute:
+                return await StorageFolder.GetFolderFromPathAsync(fileName);
+            case FileStorageKind.WithExe:
+                return ApplicationData.Current.LocalFolder;
+            case FileStorageKind.WithHistory:
+                return await ApplicationData.Current.LocalFolder.CreateFolderAsync("history", CreationCollisionOption.OpenIfExists);
+            default:
+                break;
+        }
+
+        return ApplicationData.Current.LocalCacheFolder;
+    }
+
+    private static async Task<bool> SaveImageFileUnpackaged(Bitmap image, string filename, FileStorageKind storageKind)
+    {
+        string folderPath = GetFolderPathUnpackaged(filename, storageKind);
+        string filePath = Path.Combine(folderPath, filename);
+
+        if (string.IsNullOrEmpty(folderPath))
+            return false;
+
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+
+        image.Save(filePath);
+        return true;
+    }
+
     private static async Task<bool> SaveImagePackaged(Bitmap image, string filename, FileStorageKind storageKind)
     {
         try
@@ -170,17 +163,17 @@ public class FileUtilities
         }
     }
 
-    private static bool SaveHistoryImageUnpackaged(Bitmap image, string filename)
+    private static async Task<bool> SaveTextFilePackaged(string textContent, string filename, FileStorageKind storageKind)
     {
-        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-        string historyDirectory = $"{exePath}\\history";
-
         try
         {
-            if (!Directory.Exists(historyDirectory))
-                Directory.CreateDirectory(historyDirectory);
-            string imgPath = $"{historyDirectory}\\{filename}";
-            image.Save(imgPath);
+            StorageFolder storageFolder = await GetStorageFolderPackaged(filename, storageKind);
+            StorageFile textFile = await storageFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
+            using IRandomAccessStream randomAccessStream = await textFile.OpenAsync(FileAccessMode.ReadWrite);
+            DataWriter dataWriter = new(randomAccessStream);
+            dataWriter.WriteString(textContent);
+            await dataWriter.StoreAsync();
+
             return true;
         }
         catch
@@ -189,22 +182,23 @@ public class FileUtilities
         }
     }
 
-    private static async Task<bool> SaveImageFileUnpackaged(Bitmap image, string filename, FileStorageKind storageKind)
+    private static async Task<bool> SaveTextFileUnpackaged(string textContent, string filename, FileStorageKind storageKind)
     {
-        switch (storageKind)
-        {
-            case FileStorageKind.Absolute:
-                break;
-            case FileStorageKind.WithExe:
-                break;
-            case FileStorageKind.WithHistory:
-                return SaveHistoryImageUnpackaged(image, filename);
-            default:
-                break;
-        }
+        string folderPath = GetFolderPathUnpackaged(filename, storageKind);
+        string filePath = Path.Combine(folderPath, filename);
 
-        return false;
+        if (string.IsNullOrEmpty(folderPath))
+            return false;
+
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+
+        using FileStream fs = File.Create(filePath);
+        AddText(fs, textContent);
+        return true;
     }
-
     #endregion Private Methods
 }
