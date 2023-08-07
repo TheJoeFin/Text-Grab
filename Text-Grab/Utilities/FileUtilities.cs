@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
@@ -64,6 +62,77 @@ public class FileUtilities
             dirPath = "";
 
         return Path.Combine(dirPath, imageRelativePath);
+    }
+
+    public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return GetImageFilePackaged(fileName, storageKind);
+
+        return GetImageFileUnpackaged(fileName, storageKind);
+    }
+
+    private static async Task<Bitmap?> GetImageFileUnpackaged(string fileName, FileStorageKind storageKind)
+    {
+        string folderPath = GetFolderPathUnpackaged(fileName, storageKind);
+        string filePath = Path.Combine(folderPath, fileName);
+
+        if (!File.Exists(filePath))
+            return null;
+
+        return new Bitmap(filePath);
+    }
+
+    private async static Task<Bitmap?> GetImageFilePackaged(string fileName, FileStorageKind storageKind)
+    {
+        StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
+
+        try
+        {
+            StorageFile file = await folder.GetFileAsync(fileName);
+            using Stream stream = await file.OpenStreamForReadAsync();
+            return new Bitmap(stream);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return GetTextFilePackaged(fileName, storageKind);
+
+        return GetTextFileUnpackaged(fileName, storageKind);
+    }
+
+    private async static Task<string> GetTextFilePackaged(string fileName, FileStorageKind storageKind)
+    {
+        StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
+
+        try
+        {
+            StorageFile file = await folder.GetFileAsync(fileName);
+            using Stream stream = await file.OpenStreamForReadAsync();
+            StreamReader streamReader = new(stream);
+            return streamReader.ReadToEnd();
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static async Task<string> GetTextFileUnpackaged(string fileName, FileStorageKind storageKind)
+    {
+        string folderPath = GetFolderPathUnpackaged(fileName, storageKind);
+        string filePath = Path.Combine(folderPath, fileName);
+
+        if (!File.Exists(filePath))
+            return string.Empty;
+
+        return await File.ReadAllTextAsync(filePath);
     }
 
     public static Task<bool> SaveImageFile(Bitmap image, string filename, FileStorageKind storageKind)

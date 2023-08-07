@@ -117,16 +117,13 @@ public class HistoryService
 
         if (string.IsNullOrEmpty(historyInfo.ID))
         {
-            historyInfo.ID = Guid.NewGuid().ToString();
-
             if (historyInfo.ImageContent is not null)
             {
                 if (!Directory.Exists(historyDirectory))
                     Directory.CreateDirectory(historyDirectory);
-                string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
 
                 FileUtilities.SaveImageFile(historyInfo.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
-                historyInfo.ImagePath = imgPath;
+                historyInfo.ImagePath = $"{imgRandomName}.bmp";
             }
         }
         else
@@ -156,12 +153,10 @@ public class HistoryService
         if (!Directory.Exists(historyDirectory))
             Directory.CreateDirectory(historyDirectory);
 
-        string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
-
         if (infoFromFullscreenGrab.ImageContent is not null)
             FileUtilities.SaveImageFile(infoFromFullscreenGrab.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
 
-        infoFromFullscreenGrab.ImagePath = imgPath;
+        infoFromFullscreenGrab.ImagePath = $"{imgRandomName}.bmp";
 
         HistoryWithImage.Add(infoFromFullscreenGrab);
 
@@ -217,12 +212,7 @@ public class HistoryService
 
     private static async Task<List<HistoryInfo>> LoadHistory(string fileName)
     {
-        string historyFilePath = $"{historyDirectory}\\{fileName}.json";
-
-        if (!File.Exists(historyFilePath))
-            return new List<HistoryInfo>();
-
-        string rawText = await File.ReadAllTextAsync(historyFilePath);
+        string rawText = await FileUtilities.GetTextFileAsync($"{fileName}.json",FileStorageKind.WithHistory);
 
         if (string.IsNullOrWhiteSpace(rawText)) return new List<HistoryInfo>();
 
@@ -236,8 +226,6 @@ public class HistoryService
 
     private static void WriteHistoryFiles(List<HistoryInfo> history, string fileName, int maxNumberToSave)
     {
-        string historyFilePath = $"{historyDirectory}\\{fileName}.json";
-
         JsonSerializerOptions options = new()
         {
             AllowTrailingCommas = true,

@@ -52,7 +52,7 @@ public partial class GrabFrame : Window
     private Language? currentLanguage;
     private TextBox? destinationTextBox;
     private ImageSource? frameContentImageSource;
-    private string historyId = string.Empty;
+    private HistoryInfo? historyItem;
     private bool IsDragOver = false;
     private bool isDrawing = false;
     private bool isLanguageBoxLoaded = false;
@@ -88,25 +88,38 @@ public partial class GrabFrame : Window
         StandardInitialize();
 
         ShouldSaveOnClose = false;
-        FrameText = historyInfo.TextContent;
-        historyId = historyInfo.ID;
-        currentLanguage = historyInfo.OcrLanguage;
+        historyItem = historyInfo;
+    }
 
-        if (!File.Exists(historyInfo.ImagePath))
+    private async Task LoadContentFromHistory()
+    {
+        if (historyItem is null)
+            return;
+
+        FrameText = historyItem.TextContent;
+        currentLanguage = historyItem.OcrLanguage;
+
+        string imageName = Path.GetFileName(historyItem.ImagePath);
+
+        System.Drawing.Bitmap? bgBitmap = await FileUtilities
+            .GetImageFileAsync(
+                imageName,
+                FileStorageKind.WithHistory);
+
+        if (bgBitmap is null)
         {
             Close();
             return;
         }
-            
-        System.Drawing.Bitmap bgBitmap = new System.Drawing.Bitmap(historyInfo.ImagePath);
+
         frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
 
         List<WordBorderInfo>? wbInfoList = null;
 
-        if (!string.IsNullOrWhiteSpace(historyInfo.WordBorderInfoJson))
-            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(historyInfo.WordBorderInfoJson);
+        if (!string.IsNullOrWhiteSpace(historyItem.WordBorderInfoJson))
+            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(historyItem.WordBorderInfoJson);
 
         if (wbInfoList is not null && wbInfoList.Count > 0)
         {
@@ -117,7 +130,7 @@ public partial class GrabFrame : Window
 
                 if (wb.IsBarcode)
                     wb.SetAsBarcode();
-            
+
                 wordBorders.Add(wb);
                 _ = RectanglesCanvas.Children.Add(wb);
             }
@@ -128,14 +141,14 @@ public partial class GrabFrame : Window
             ShouldSaveOnClose = true;
         }
 
-        if (historyInfo.PositionRect != Rect.Empty)
+        if (historyItem.PositionRect != Rect.Empty)
         {
-            this.Left = historyInfo.PositionRect.Left;
-            this.Top = historyInfo.PositionRect.Top;
-            this.Height = historyInfo.PositionRect.Height;
-            this.Width = historyInfo.PositionRect.Width;
+            this.Left = historyItem.PositionRect.Left;
+            this.Top = historyItem.PositionRect.Top;
+            this.Height = historyItem.PositionRect.Height;
+            this.Width = historyItem.PositionRect.Width;
 
-            if (historyInfo.SourceMode == TextGrabMode.Fullscreen)
+            if (historyItem.SourceMode == TextGrabMode.Fullscreen)
             {
                 int borderThickness = 2;
                 int titleBarHeight = 32;
@@ -145,7 +158,7 @@ public partial class GrabFrame : Window
             }
         }
 
-        TableToggleButton.IsChecked = historyInfo.IsTable;
+        TableToggleButton.IsChecked = historyItem.IsTable;
 
         UpdateFrameText();
     }
@@ -266,9 +279,13 @@ public partial class GrabFrame : Window
             Y = this.Top
         };
 
+        string id = Guid.NewGuid().ToString();
+        if (historyItem is not null)
+            id = historyItem.ID;
+
         HistoryInfo historyInfo = new()
         {
-            ID = historyId,
+            ID = id,
             LanguageTag = CurrentLanguage.LanguageTag,
             CaptureDateTime = DateTimeOffset.UtcNow,
             TextContent = FrameText,
@@ -363,7 +380,7 @@ public partial class GrabFrame : Window
         reSearchTimer.Start();
     }
 
-    public void GrabFrame_Loaded(object sender, RoutedEventArgs e)
+    public async void GrabFrame_Loaded(object sender, RoutedEventArgs e)
     {
         this.PreviewMouseWheel += HandlePreviewMouseWheel;
         this.PreviewKeyDown += Window_PreviewKeyDown;
@@ -374,6 +391,9 @@ public partial class GrabFrame : Window
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
 
         CheckBottomRowButtonsVis();
+
+        if (historyItem is not null)
+            await LoadContentFromHistory();
     }
 
     public void GrabFrame_Unloaded(object sender, RoutedEventArgs e)
@@ -2158,7 +2178,7 @@ new GrabFrameOperationArgs()
         Topmost = true;
         GrabFrameImage.Opacity = 0;
         frameContentImageSource = null;
-        historyId = string.Empty;
+        historyItem = null;
         RectanglesBorder.Background.Opacity = 0.05;
         FreezeToggleButton.IsChecked = false;
         FreezeToggleButton.Visibility = Visibility.Visible;
