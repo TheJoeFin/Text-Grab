@@ -91,15 +91,12 @@ public partial class GrabFrame : Window
         historyItem = historyInfo;
     }
 
-    private async Task LoadContentFromHistory()
+    private async Task LoadContentFromHistory(HistoryInfo history)
     {
-        if (historyItem is null)
-            return;
+        FrameText = history.TextContent;
+        currentLanguage = history.OcrLanguage;
 
-        FrameText = historyItem.TextContent;
-        currentLanguage = historyItem.OcrLanguage;
-
-        string imageName = Path.GetFileName(historyItem.ImagePath);
+        string imageName = Path.GetFileName(history.ImagePath);
 
         System.Drawing.Bitmap? bgBitmap = await FileUtilities
             .GetImageFileAsync(
@@ -118,8 +115,8 @@ public partial class GrabFrame : Window
 
         List<WordBorderInfo>? wbInfoList = null;
 
-        if (!string.IsNullOrWhiteSpace(historyItem.WordBorderInfoJson))
-            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(historyItem.WordBorderInfoJson);
+        if (!string.IsNullOrWhiteSpace(history.WordBorderInfoJson))
+            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson);
 
         if (wbInfoList is not null && wbInfoList.Count > 0)
         {
@@ -141,14 +138,14 @@ public partial class GrabFrame : Window
             ShouldSaveOnClose = true;
         }
 
-        if (historyItem.PositionRect != Rect.Empty)
+        if (history.PositionRect != Rect.Empty)
         {
-            this.Left = historyItem.PositionRect.Left;
-            this.Top = historyItem.PositionRect.Top;
-            this.Height = historyItem.PositionRect.Height;
-            this.Width = historyItem.PositionRect.Width;
+            this.Left = history.PositionRect.Left;
+            this.Top = history.PositionRect.Top;
+            this.Height = history.PositionRect.Height;
+            this.Width = history.PositionRect.Width;
 
-            if (historyItem.SourceMode == TextGrabMode.Fullscreen)
+            if (history.SourceMode == TextGrabMode.Fullscreen)
             {
                 int borderThickness = 2;
                 int titleBarHeight = 32;
@@ -158,7 +155,7 @@ public partial class GrabFrame : Window
             }
         }
 
-        TableToggleButton.IsChecked = historyItem.IsTable;
+        TableToggleButton.IsChecked = history.IsTable;
 
         UpdateFrameText();
     }
@@ -279,7 +276,7 @@ public partial class GrabFrame : Window
             Y = this.Top
         };
 
-        string id = Guid.NewGuid().ToString();
+        string id = string.Empty;
         if (historyItem is not null)
             id = historyItem.ID;
 
@@ -393,7 +390,7 @@ public partial class GrabFrame : Window
         CheckBottomRowButtonsVis();
 
         if (historyItem is not null)
-            await LoadContentFromHistory();
+            await LoadContentFromHistory(historyItem);
     }
 
     public void GrabFrame_Unloaded(object sender, RoutedEventArgs e)

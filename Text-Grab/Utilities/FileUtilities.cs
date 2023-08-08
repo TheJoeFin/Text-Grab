@@ -14,6 +14,14 @@ public class FileUtilities
 {
     #region Public Methods
 
+    public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return GetImageFilePackaged(fileName, storageKind);
+
+        return GetImageFileUnpackaged(fileName, storageKind);
+    }
+
     /// <summary>
     /// Get the Filter string for all supported image types.
     /// To be used in the FileDialog class Filter Property.
@@ -63,13 +71,43 @@ public class FileUtilities
 
         return Path.Combine(dirPath, imageRelativePath);
     }
-
-    public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
+    public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
     {
         if (ImplementAppOptions.IsPackaged())
-            return GetImageFilePackaged(fileName, storageKind);
+            return GetTextFilePackaged(fileName, storageKind);
 
-        return GetImageFileUnpackaged(fileName, storageKind);
+        return GetTextFileUnpackaged(fileName, storageKind);
+    }
+
+    public static Task<bool> SaveImageFile(Bitmap image, string filename, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return SaveImagePackaged(image, filename, storageKind);
+
+        return SaveImageFileUnpackaged(image, filename, storageKind);
+    }
+
+    public static Task<bool> SaveTextFile(string textContent, string filename, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return SaveTextFilePackaged(textContent, filename, storageKind);
+
+        return SaveTextFileUnpackaged(textContent, filename, storageKind);
+    }
+
+    private async static Task<Bitmap?> GetImageFilePackaged(string fileName, FileStorageKind storageKind)
+    {
+        StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
+
+        try
+        {
+            StorageFile file = await folder.GetFileAsync(fileName);
+            return new Bitmap(file.Path);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static async Task<Bitmap?> GetImageFileUnpackaged(string fileName, FileStorageKind storageKind)
@@ -82,31 +120,6 @@ public class FileUtilities
 
         return new Bitmap(filePath);
     }
-
-    private async static Task<Bitmap?> GetImageFilePackaged(string fileName, FileStorageKind storageKind)
-    {
-        StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
-
-        try
-        {
-            StorageFile file = await folder.GetFileAsync(fileName);
-            using Stream stream = await file.OpenStreamForReadAsync();
-            return new Bitmap(stream);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
-    {
-        if (ImplementAppOptions.IsPackaged())
-            return GetTextFilePackaged(fileName, storageKind);
-
-        return GetTextFileUnpackaged(fileName, storageKind);
-    }
-
     private async static Task<string> GetTextFilePackaged(string fileName, FileStorageKind storageKind)
     {
         StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
@@ -134,23 +147,6 @@ public class FileUtilities
 
         return await File.ReadAllTextAsync(filePath);
     }
-
-    public static Task<bool> SaveImageFile(Bitmap image, string filename, FileStorageKind storageKind)
-    {
-        if (ImplementAppOptions.IsPackaged())
-            return SaveImagePackaged(image, filename, storageKind);
-
-        return SaveImageFileUnpackaged(image, filename, storageKind);
-    }
-
-    public static Task<bool> SaveTextFile(string textContent, string filename, FileStorageKind storageKind)
-    {
-        if (ImplementAppOptions.IsPackaged())
-            return SaveTextFilePackaged(textContent, filename, storageKind);
-
-        return SaveTextFileUnpackaged(textContent, filename, storageKind);
-    }
-
     #endregion Public Methods
 
     #region Private Methods
@@ -222,8 +218,7 @@ public class FileUtilities
         {
             StorageFolder historyFolder = await GetStorageFolderPackaged(filename, storageKind);
             StorageFile imageFile = await historyFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
-            using IRandomAccessStream randomAccessStream = await imageFile.OpenAsync(FileAccessMode.ReadWrite);
-            image.Save(randomAccessStream.AsStream(), ImageFormat.Bmp);
+            image.Save(imageFile.Path, ImageFormat.Bmp);
             return true;
         }
         catch
