@@ -1,5 +1,6 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Win32;
+using Microsoft.Windows.Themes;
 using RegistryUtils;
 using System;
 using System.Collections.Generic;
@@ -69,24 +70,25 @@ public partial class App : System.Windows.Application
         if (!gotTheme)
             return;
 
+        ThemeService themeService = new();
         try
         {
             switch (currentAppTheme)
             {
                 case AppTheme.System:
                     if (SystemThemeUtility.IsLightTheme())
-                        Theme.Apply(ThemeType.Light, Wpf.Ui.Controls.WindowBackdropType.None);
+                        themeService.SetTheme(ApplicationTheme.Light);
                     else
-                        Theme.Apply(ThemeType.Dark, Wpf.Ui.Controls.WindowBackdropType.None);
+                        themeService.SetTheme(ApplicationTheme.Dark);
                     break;
                 case AppTheme.Dark:
-                    Theme.Apply(ThemeType.Dark, Wpf.Ui.Controls.WindowBackdropType.None);
+                    themeService.SetTheme(ApplicationTheme.Dark);
                     break;
                 case AppTheme.Light:
-                    Theme.Apply(ThemeType.Light, Wpf.Ui.Controls.WindowBackdropType.None);
+                    themeService.SetTheme(ApplicationTheme.Light);
                     break;
                 default:
-                    Theme.Apply(ThemeType.Dark, Wpf.Ui.Controls.WindowBackdropType.None);
+                    themeService.SetTheme(ApplicationTheme.Dark);
                     break;
             }
         }
@@ -98,7 +100,7 @@ public partial class App : System.Windows.Application
         }
 
         Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
-        Accent.Apply(teal);
+        ApplicationAccentColorManager.Apply(teal);
     }
 
     public static void WatchTheme()
