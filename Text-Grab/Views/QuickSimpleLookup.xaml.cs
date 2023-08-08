@@ -545,18 +545,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async Task ReadCsvFileIntoQuickSimpleLookup(string csvToOpenPath)
     {
-        try
-        {
-            using FileStream fs = new(csvToOpenPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using StreamReader sr = new(fs, Encoding.Default);
-            string cacheRAW = await sr.ReadToEndAsync();
+        string contentToParse = string.Empty;
 
-            ItemsDictionary.AddRange(ParseStringToRows(cacheRAW, true));
-        }
-        catch (Exception ex)
-        {
-            System.Windows.Forms.MessageBox.Show($"Failed to read csv file. {ex.Message}");
-        }
+        if (string.IsNullOrEmpty(csvToOpenPath))
+            contentToParse = await FileUtilities.GetTextFileAsync(cacheFilename, FileStorageKind.WithExe);
+        else
+            contentToParse = await FileUtilities.GetTextFileAsync(csvToOpenPath, FileStorageKind.Absolute);
+
+        if (string.IsNullOrWhiteSpace(contentToParse))
+            PopulateSampleData();
+
+        ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
 
         MainDataGrid.ItemsSource = null;
         MainDataGrid.ItemsSource = ItemsDictionary;
@@ -692,15 +691,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-        string cachePath = $"{exePath}\\{cacheFilename}";
-
-        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation)
-            && File.Exists(Settings.Default.LookupFileLocation))
-            cachePath = Settings.Default.LookupFileLocation;
-
-        if (File.Exists(cachePath))
-            await ReadCsvFileIntoQuickSimpleLookup(cachePath);
+        await ReadCsvFileIntoQuickSimpleLookup(Settings.Default.LookupFileLocation);
 
         if (Settings.Default.TryInsert && !IsFromETW)
             PasteToggleButton.IsChecked = true;
@@ -711,11 +702,6 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         Topmost = false;
         Activate();
         SearchBox.Focus();
-
-        if (MainDataGrid.Items.Count > 0)
-            MainDataGrid.SelectedIndex = 0;
-        else
-            PopulateSampleData();
     }
     private async Task WriteDataToCSV()
     {
@@ -733,14 +719,9 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         try
         {
             if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
-            {
                 await FileUtilities.SaveTextFile(csvContents.ToString(), cacheFilename, FileStorageKind.WithExe);
-            }
             else
-            {
-                string absolutePath = Path.Combine(Settings.Default.LookupFileLocation, cacheFilename);
-                await FileUtilities.SaveTextFile(csvContents.ToString(), absolutePath, FileStorageKind.Absolute);
-            }
+                await FileUtilities.SaveTextFile(csvContents.ToString(), Settings.Default.LookupFileLocation, FileStorageKind.Absolute);
 
             SaveBTN.Visibility = Visibility.Collapsed;
         }

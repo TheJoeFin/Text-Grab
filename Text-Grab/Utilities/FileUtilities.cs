@@ -254,7 +254,7 @@ public class FileUtilities
         if (string.IsNullOrEmpty(folderPath))
             return false;
 
-        if (!Directory.Exists(folderPath))
+        if (!Directory.Exists(folderPath) && storageKind != FileStorageKind.Absolute)
             Directory.CreateDirectory(folderPath);
 
         if (File.Exists(filePath))
