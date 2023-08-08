@@ -1,10 +1,27 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Storage.Streams;
 
 namespace Text_Grab.Utilities;
 
-internal class FileUtilities
+public class FileUtilities
 {
+    #region Public Methods
+
+    public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return GetImageFilePackaged(fileName, storageKind);
+
+        return GetImageFileUnpackaged(fileName, storageKind);
+    }
+
     /// <summary>
     /// Get the Filter string for all supported image types.
     /// To be used in the FileDialog class Filter Property.
@@ -42,4 +59,210 @@ internal class FileUtilities
         }
         return result;
     }
+
+    public static string GetPathToLocalFile(string imageRelativePath)
+    {
+        Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
+        string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
+        string? dirPath = Path.GetDirectoryName(codeBasePath);
+
+        if (dirPath is null)
+            dirPath = "";
+
+        return Path.Combine(dirPath, imageRelativePath);
+    }
+    public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return GetTextFilePackaged(fileName, storageKind);
+
+        return GetTextFileUnpackaged(fileName, storageKind);
+    }
+
+    public static Task<bool> SaveImageFile(Bitmap image, string filename, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return SaveImagePackaged(image, filename, storageKind);
+
+        return SaveImageFileUnpackaged(image, filename, storageKind);
+    }
+
+    public static Task<bool> SaveTextFile(string textContent, string filename, FileStorageKind storageKind)
+    {
+        if (ImplementAppOptions.IsPackaged())
+            return SaveTextFilePackaged(textContent, filename, storageKind);
+
+        return SaveTextFileUnpackaged(textContent, filename, storageKind);
+    }
+
+    private async static Task<Bitmap?> GetImageFilePackaged(string fileName, FileStorageKind storageKind)
+    {
+        StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
+
+        try
+        {
+            StorageFile file = await folder.GetFileAsync(fileName);
+            return new Bitmap(file.Path);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task<Bitmap?> GetImageFileUnpackaged(string fileName, FileStorageKind storageKind)
+    {
+        string folderPath = GetFolderPathUnpackaged(fileName, storageKind);
+        string filePath = Path.Combine(folderPath, fileName);
+
+        if (!File.Exists(filePath))
+            return null;
+
+        return new Bitmap(filePath);
+    }
+    private async static Task<string> GetTextFilePackaged(string fileName, FileStorageKind storageKind)
+    {
+        StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
+
+        try
+        {
+            StorageFile file = await folder.GetFileAsync(fileName);
+            using Stream stream = await file.OpenStreamForReadAsync();
+            StreamReader streamReader = new(stream);
+            return streamReader.ReadToEnd();
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static async Task<string> GetTextFileUnpackaged(string fileName, FileStorageKind storageKind)
+    {
+        string folderPath = GetFolderPathUnpackaged(fileName, storageKind);
+        string filePath = Path.Combine(folderPath, fileName);
+
+        if (!File.Exists(filePath))
+            return string.Empty;
+
+        return await File.ReadAllTextAsync(filePath);
+    }
+    #endregion Public Methods
+
+    #region Private Methods
+
+    private static void AddText(FileStream fs, string value)
+    {
+        byte[] info = new UTF8Encoding(true).GetBytes(value);
+        fs.Write(info, 0, info.Length);
+    }
+
+    private static string GetFolderPathUnpackaged(string filename, FileStorageKind storageKind)
+    {
+        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
+        string historyDirectory = $"{exePath}\\history";
+
+        switch (storageKind)
+        {
+            case FileStorageKind.Absolute:
+                return filename;
+            case FileStorageKind.WithExe:
+                return $"{exePath!}";
+            case FileStorageKind.WithHistory:
+                return $"{historyDirectory}";
+            default:
+                break;
+        }
+
+        return $"c:\\";
+    }
+
+    private static async Task<StorageFolder> GetStorageFolderPackaged(string fileName, FileStorageKind storageKind)
+    {
+        switch (storageKind)
+        {
+            case FileStorageKind.Absolute:
+                return await StorageFolder.GetFolderFromPathAsync(fileName);
+            case FileStorageKind.WithExe:
+                return ApplicationData.Current.LocalFolder;
+            case FileStorageKind.WithHistory:
+                return await ApplicationData.Current.LocalFolder.CreateFolderAsync("history", CreationCollisionOption.OpenIfExists);
+            default:
+                break;
+        }
+
+        return ApplicationData.Current.LocalCacheFolder;
+    }
+
+    private static async Task<bool> SaveImageFileUnpackaged(Bitmap image, string filename, FileStorageKind storageKind)
+    {
+        string folderPath = GetFolderPathUnpackaged(filename, storageKind);
+        string filePath = Path.Combine(folderPath, filename);
+
+        if (string.IsNullOrEmpty(folderPath))
+            return false;
+
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+
+        image.Save(filePath);
+        return true;
+    }
+
+    private static async Task<bool> SaveImagePackaged(Bitmap image, string filename, FileStorageKind storageKind)
+    {
+        try
+        {
+            StorageFolder historyFolder = await GetStorageFolderPackaged(filename, storageKind);
+            StorageFile imageFile = await historyFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
+            image.Save(imageFile.Path, ImageFormat.Bmp);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> SaveTextFilePackaged(string textContent, string filename, FileStorageKind storageKind)
+    {
+        try
+        {
+            StorageFolder storageFolder = await GetStorageFolderPackaged(filename, storageKind);
+            StorageFile textFile = await storageFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
+            using IRandomAccessStream randomAccessStream = await textFile.OpenAsync(FileAccessMode.ReadWrite);
+            DataWriter dataWriter = new(randomAccessStream);
+            dataWriter.WriteString(textContent);
+            await dataWriter.StoreAsync();
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> SaveTextFileUnpackaged(string textContent, string filename, FileStorageKind storageKind)
+    {
+        string folderPath = GetFolderPathUnpackaged(filename, storageKind);
+        string filePath = Path.Combine(folderPath, filename);
+
+        if (string.IsNullOrEmpty(folderPath))
+            return false;
+
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+
+        using FileStream fs = File.Create(filePath);
+        AddText(fs, textContent);
+        return true;
+    }
+    #endregion Private Methods
 }

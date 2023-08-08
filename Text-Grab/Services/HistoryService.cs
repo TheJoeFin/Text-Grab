@@ -4,11 +4,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -120,17 +117,13 @@ public class HistoryService
 
         if (string.IsNullOrEmpty(historyInfo.ID))
         {
+            if (historyInfo.ImageContent is null)
+                return;
+
             historyInfo.ID = Guid.NewGuid().ToString();
 
-            if (!Directory.Exists(historyDirectory))
-                Directory.CreateDirectory(historyDirectory);
-
-            string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
-
-            if (historyInfo.ImageContent is not null)
-                historyInfo.ImageContent.Save(imgPath);
-
-            historyInfo.ImagePath = imgPath;
+            FileUtilities.SaveImageFile(historyInfo.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
+            historyInfo.ImagePath = $"{imgRandomName}.bmp";
         }
         else
         {
@@ -159,12 +152,10 @@ public class HistoryService
         if (!Directory.Exists(historyDirectory))
             Directory.CreateDirectory(historyDirectory);
 
-        string imgPath = $"{historyDirectory}\\{imgRandomName}.bmp";
-
         if (infoFromFullscreenGrab.ImageContent is not null)
-            infoFromFullscreenGrab.ImageContent.Save(imgPath);
+            FileUtilities.SaveImageFile(infoFromFullscreenGrab.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
 
-        infoFromFullscreenGrab.ImagePath = imgPath;
+        infoFromFullscreenGrab.ImagePath = $"{imgRandomName}.bmp";
 
         HistoryWithImage.Add(infoFromFullscreenGrab);
 
@@ -218,20 +209,9 @@ public class HistoryService
 
     #region Private Methods
 
-    private static void AddText(FileStream fs, string value)
-    {
-        byte[] info = new UTF8Encoding(true).GetBytes(value);
-        fs.Write(info, 0, info.Length);
-    }
-
     private static async Task<List<HistoryInfo>> LoadHistory(string fileName)
     {
-        string historyFilePath = $"{historyDirectory}\\{fileName}.json";
-        
-        if (!File.Exists(historyFilePath))
-            return new List<HistoryInfo>();
-
-        string rawText = await File.ReadAllTextAsync(historyFilePath);
+        string rawText = await FileUtilities.GetTextFileAsync($"{fileName}.json",FileStorageKind.WithHistory);
 
         if (string.IsNullOrWhiteSpace(rawText)) return new List<HistoryInfo>();
 
@@ -245,8 +225,6 @@ public class HistoryService
 
     private static void WriteHistoryFiles(List<HistoryInfo> history, string fileName, int maxNumberToSave)
     {
-        string historyFilePath = $"{historyDirectory}\\{fileName}.json";
-
         JsonSerializerOptions options = new()
         {
             AllowTrailingCommas = true,
@@ -261,14 +239,7 @@ public class HistoryService
 
         try
         {
-            if (!Directory.Exists(historyDirectory))
-                Directory.CreateDirectory(historyDirectory);
-
-            if (File.Exists(historyFilePath))
-                File.Delete(historyFilePath);
-
-            using FileStream fs = File.Create(historyFilePath);
-            AddText(fs, historyAsJson);
+            FileUtilities.SaveTextFile(historyAsJson, $"{fileName}.json", FileStorageKind.WithHistory);
         }
         catch (Exception ex)
         {

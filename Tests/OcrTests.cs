@@ -53,20 +53,20 @@ October	10	Fall
 November	11	Fall
 December	12	Winter";
 
-    [Fact]
+    [WpfFact]
     public async Task OcrFontSampleImage()
     {
         // Given
         string testImagePath = fontSamplePath;
 
         // When
-        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(fontSampleResult, ocrTextResult);
     }
 
-    [Fact]
+    [WpfFact]
     public async Task OcrFontTestImage()
     {
         // Given
@@ -75,7 +75,7 @@ December	12	Winter";
 
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -90,7 +90,7 @@ December	12	Winter";
 
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         Language englishLanguage = new("en-US");
-        Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
+        Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
         OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
@@ -125,7 +125,7 @@ December	12	Winter";
         string testImagePath = @".\Images\QrCodeTestImage.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(getPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -147,7 +147,7 @@ December	12	Winter";
         string testImagePath = @".\Images\Table-Test-2.png";
         Uri uri = new Uri(testImagePath, UriKind.Relative);
         Language englishLanguage = new("en-US");
-        Bitmap testBitmap = new(getPathToLocalFile(testImagePath));
+        Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
         OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
 
@@ -179,7 +179,7 @@ December	12	Winter";
         int intialLinesToSkip = 12;
 
         // Given
-        string hocrFilePath = getPathToLocalFile(@"TextFiles\font_sample.hocr");
+        string hocrFilePath = FileUtilities.GetPathToLocalFile(@"TextFiles\font_sample.hocr");
         string[] hocrFileContentsArray = await File.ReadAllLinesAsync(hocrFilePath);
 
         // combine string array into one string
@@ -192,7 +192,7 @@ December	12	Winter";
         string testImagePath = fontSamplePath;
         // need to scale to get the test to match the output
         // Bitmap scaledBMP = ImageMethods
-        Uri fileURI = new(getPathToLocalFile(testImagePath), UriKind.Absolute);
+        Uri fileURI = new(FileUtilities.GetPathToLocalFile(testImagePath), UriKind.Absolute);
         BitmapImage bmpImg = new(fileURI);
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
@@ -221,7 +221,7 @@ December	12	Winter";
         string testImagePath = fontSamplePath;
         // need to scale to get the test to match the output
         // Bitmap scaledBMP = ImageMethods
-        Uri fileURI = new(getPathToLocalFile(testImagePath), UriKind.Absolute);
+        Uri fileURI = new(FileUtilities.GetPathToLocalFile(testImagePath), UriKind.Absolute);
         BitmapImage bmpImg = new(fileURI);
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
@@ -243,7 +243,7 @@ December	12	Winter";
     [WpfFact]
     public async Task GetTessLanguages()
     {
-        string expected = "eng,equ,osd";
+        string expected = "eng,equ";
         List<string> actualStrings = await TesseractHelper.TesseractLangsAsStrings();
         string joinedString = string.Join(',', actualStrings.ToArray());
 
@@ -256,8 +256,7 @@ December	12	Winter";
         List<Language> expectedList = new()
         {
             new Language("eng"),
-            new Language("equ"),
-            new Language("osd")
+            new Language("equ")
         };
 
         List<Language> actualList = await TesseractHelper.TesseractLanguages();
@@ -266,17 +265,5 @@ December	12	Winter";
         string actualAbbreviatedName = string.Join(',', actualList.Select(l => l.AbbreviatedName).ToArray());
 
         Assert.Equal(expectedAbbreviatedName, actualAbbreviatedName);
-    }
-
-    private string getPathToLocalFile(string imageRelativePath)
-    {
-        Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
-        string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-        string? dirPath = Path.GetDirectoryName(codeBasePath);
-
-        if (dirPath is null)
-            dirPath = "";
-
-        return Path.Combine(dirPath, imageRelativePath);
     }
 }
