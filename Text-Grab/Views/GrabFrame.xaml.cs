@@ -244,44 +244,6 @@ public partial class GrabFrame : Window
 
     public static bool CheckKey(VirtualKeyCodes code) => (GetKeyState(code) & 0xFF00) == 0xFF00;
 
-    /// <summary>
-    /// Get the Filter string for all supported image types.
-    /// To be used in the FileDialog class Filter Property.
-    /// </summary>
-    /// <returns></returns>
-    /// From StackOverFlow https://stackoverflow.com/a/69318375/7438031
-    /// Author https://stackoverflow.com/users/9610801/paul-nakitare
-    /// Accessed on 1/6/2023
-    /// Modified by Joseph Finney
-    public static string GetImageFilter()
-    {
-        string imageExtensions = string.Empty;
-        string separator = "";
-        ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-        Dictionary<string, string> imageFilters = new Dictionary<string, string>();
-        foreach (ImageCodecInfo codec in codecs)
-        {
-            if (codec.FilenameExtension is not string extension)
-                continue;
-
-            imageExtensions = $"{imageExtensions}{separator}{extension.ToLower()}";
-            separator = ";";
-            imageFilters.Add($"{codec.FormatDescription} files ({extension.ToLower()})", extension.ToLower());
-        }
-        string result = string.Empty;
-        separator = "";
-        //foreach (KeyValuePair<string, string> filter in imageFilters)
-        //{
-        //    result += $"{separator}{filter.Key}|{filter.Value}";
-        //    separator = "|";
-        //}
-        if (!string.IsNullOrEmpty(imageExtensions))
-        {
-            result += $"{separator}Image files|{imageExtensions}";
-        }
-        return result;
-    }
-
     public HistoryInfo AsHistoryItem()
     {
         System.Drawing.Bitmap? bitmap = null;
@@ -332,15 +294,8 @@ public partial class GrabFrame : Window
         int numberOfLines = wordLines.Count;
         double wordHeight = wordBorder.Height / numberOfLines;
 
-        DeleteThisWordBorder(wordBorder);
+        DeleteThisWordBorder(wordBorder, false);
         UndoRedo.StartTransaction();
-        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
-            new GrabFrameOperationArgs()
-            {
-                RemovingWordBorders = new() { wordBorder },
-                WordBorders = wordBorders,
-                GrabFrameCanvas = RectanglesCanvas
-            });
 
         int lineIterator = 0;
         foreach (string line in wordLines)
@@ -384,12 +339,15 @@ public partial class GrabFrame : Window
         UndoRedo.EndTransaction();
     }
 
-    public void DeleteThisWordBorder(WordBorder wordBorder)
+    public void DeleteThisWordBorder(WordBorder wordBorder, bool startEndTransaction = true)
     {
         ShouldSaveOnClose = true;
         wordBorders.Remove(wordBorder);
         RectanglesCanvas.Children.Remove(wordBorder);
-        UndoRedo.StartTransaction();
+
+        if (startEndTransaction)
+            UndoRedo.StartTransaction();
+
         List<WordBorder> deletedWordBorder = new() { wordBorder };
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
             new GrabFrameOperationArgs()
@@ -399,7 +357,9 @@ public partial class GrabFrame : Window
                 GrabFrameCanvas = RectanglesCanvas
             });
 
-        UndoRedo.EndTransaction();
+        if (startEndTransaction)
+            UndoRedo.EndTransaction();
+
         reSearchTimer.Start();
     }
 
@@ -983,10 +943,26 @@ public partial class GrabFrame : Window
                 MatchingBackground = backgroundBrush,
             };
 
+            if (CurrentLanguage.IsRightToLeft())
+            {
+                StringBuilder sb = new(ocrText);
+                sb.ReverseWordsForRightToLeft();
+                sb.RemoveTrailingNewlines();
+                wordBorderBox.Word = sb.ToString();
+            }
+
             if (IsOcrValid)
             {
                 wordBorders.Add(wordBorderBox);
                 _ = RectanglesCanvas.Children.Add(wordBorderBox);
+
+                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+        new GrabFrameOperationArgs()
+                    {
+                        WordBorder = wordBorderBox,
+                        WordBorders = wordBorders,
+                        GrabFrameCanvas = RectanglesCanvas
+                });
             }
 
             lineNumber++;
@@ -1447,6 +1423,7 @@ public partial class GrabFrame : Window
 
         if (pickedLang != null)
         {
+            currentLanguage = pickedLang;
             Settings.Default.LastUsedLang = pickedLang.LanguageTag;
             Settings.Default.Save();
         }
@@ -1606,7 +1583,7 @@ public partial class GrabFrame : Window
         Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
 
         // Set filter for file extension and default file extension
-        dlg.Filter = GetImageFilter();
+        dlg.Filter = FileUtilities.GetImageFilter();
 
         bool? result = dlg.ShowDialog();
 
@@ -1821,6 +1798,17 @@ public partial class GrabFrame : Window
     private async void RefreshBTN_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         reDrawTimer.Stop();
+
+        UndoRedo.StartTransaction();
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+new GrabFrameOperationArgs()
+        {
+            RemovingWordBorders = new(wordBorders),
+            WordBorders = wordBorders,
+            GrabFrameCanvas = RectanglesCanvas
+        });
+
         ResetGrabFrame();
 
         await Task.Delay(200);
@@ -1833,6 +1821,8 @@ public partial class GrabFrame : Window
 
         if (SearchBox.Text is string searchText)
             await DrawRectanglesAroundWords(searchText);
+
+        UndoRedo.EndTransaction();
     }
 
     private void RemoveTableLines()
@@ -1917,6 +1907,7 @@ public partial class GrabFrame : Window
     private void ResetGrabFrame()
     {
         SetRefreshOrOcrFrameBtnVis();
+
 
         IsOcrValid = false;
         ocrResultOfWindow = null;
@@ -2141,9 +2132,18 @@ public partial class GrabFrame : Window
         wb.Height = diffs.Y / dpi.DpiScaleY + 12;
         wb.Left = minPoint.X / (dpi.DpiScaleX) - 6;
         wb.Top = minPoint.Y / (dpi.DpiScaleY) - 6;
+        wb.OwnerGrabFrame = this;
         wb.SetAsBarcode();
         wordBorders.Add(wb);
         _ = RectanglesCanvas.Children.Add(wb);
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+        new GrabFrameOperationArgs()
+        {
+            WordBorder = wb,
+            WordBorders = wordBorders,
+            GrabFrameCanvas = RectanglesCanvas
+        });
     }
 
     private void UndoExecuted(object sender, ExecutedRoutedEventArgs e)

@@ -126,6 +126,10 @@
                             IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}" />
                         <Separator />
                         <MenuItem
+                            Command="{x:Static local:GrabFrame.PasteCommand}"
+                            Header="Paste Image"
+                            InputGestureText="Ctrl + Shift + V" />
+                        <MenuItem
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image..."
                             InputGestureText="Ctrl + O" />
