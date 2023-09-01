@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shell;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
@@ -29,13 +26,13 @@ public static class ImageMethods
         int height = Math.Max(image.Height + 16, minH + 16);
 
         // Create a compatible bitmap
-        Bitmap dest = new(width, height, image.PixelFormat);
-        using Graphics gd = Graphics.FromImage(dest);
+        Bitmap destination = new(width, height, image.PixelFormat);
+        using Graphics gd = Graphics.FromImage(destination);
 
         gd.Clear(image.GetPixel(0, 0));
         gd.DrawImageUnscaled(image, 8, 8);
 
-        return dest;
+        return destination;
     }
 
     public static Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
@@ -59,18 +56,18 @@ public static class ImageMethods
 
         bitmap.Save(wrapper, ImageFormat.Bmp);
         wrapper.Position = 0;
-        BitmapImage bitmapimage = new();
-        bitmapimage.BeginInit();
-        bitmapimage.StreamSource = wrapper;
-        bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
-        bitmapimage.EndInit();
-        bitmapimage.StreamSource = null;
-        bitmapimage.Freeze();
+        BitmapImage bitmapImage = new();
+        bitmapImage.BeginInit();
+        bitmapImage.StreamSource = wrapper;
+        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+        bitmapImage.EndInit();
+        bitmapImage.StreamSource = null;
+        bitmapImage.Freeze();
 
         memory.Flush();
         wrapper.Flush();
 
-        return bitmapimage;
+        return bitmapImage;
     }
 
     public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region)
@@ -100,23 +97,13 @@ public static class ImageMethods
         {
             Rect imageRect = grabFrame.GetImageContentRect();
 
-            if (false) // (imageRect.IsGood())
-            {
-                windowHeight = (int)imageRect.Height;
-                windowWidth = (int)imageRect.Width;
-                thisCorrectedLeft = (int)imageRect.X;
-                thisCorrectedTop = (int)imageRect.Y;
-            }
-            else
-            {
-                int borderThickness = 2;
-                int titleBarHeight = 32;
-                int bottomBarHeight = 42;
-                thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
-                thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
-                windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
-                windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
-            }
+            int borderThickness = 2;
+            int titleBarHeight = 32;
+            int bottomBarHeight = 42;
+            thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
+            thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
+            windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
+            windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
         }
 
         Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -139,22 +126,22 @@ public static class ImageMethods
 
         passedBitmap.Save(wrapper, ImageFormat.Bmp);
         wrapper.Position = 0;
-        BitmapImage bitmapimage = new();
-        bitmapimage.BeginInit();
-        bitmapimage.StreamSource = wrapper;
-        bitmapimage.CacheOption = BitmapCacheOption.None;
-        bitmapimage.EndInit();
-        bitmapimage.Freeze();
+        BitmapImage bitmapImage = new();
+        bitmapImage.BeginInit();
+        bitmapImage.StreamSource = wrapper;
+        bitmapImage.CacheOption = BitmapCacheOption.None;
+        bitmapImage.EndInit();
+        bitmapImage.Freeze();
 
         wrapper.Flush();
 
-        TransformedBitmap tbmpImg = new();
-        tbmpImg.BeginInit();
-        tbmpImg.Source = bitmapimage;
-        tbmpImg.Transform = new ScaleTransform(scale, scale);
-        tbmpImg.EndInit();
-        tbmpImg.Freeze();
-        return BitmapSourceToBitmap(tbmpImg);
+        TransformedBitmap transformedBitmap = new();
+        transformedBitmap.BeginInit();
+        transformedBitmap.Source = bitmapImage;
+        transformedBitmap.Transform = new ScaleTransform(scale, scale);
+        transformedBitmap.EndInit();
+        transformedBitmap.Freeze();
+        return BitmapSourceToBitmap(transformedBitmap);
 
     }
 
