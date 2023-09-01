@@ -18,9 +18,6 @@ public class HistoryService
 {
     #region Fields
 
-    private static readonly string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-    private static readonly string historyDirectory = $"{exePath}\\history";
-
     private static readonly int maxHistoryTextOnly = 100;
     private static readonly int maxHistoryWithImages = 10;
     private List<HistoryInfo> HistoryTextOnly = new();
@@ -54,12 +51,10 @@ public class HistoryService
 
     public void DeleteHistory()
     {
-        if (!Directory.Exists(historyDirectory))
-            return;
-
         HistoryWithImage.Clear();
         HistoryTextOnly.Clear();
-        Directory.Delete(historyDirectory, true);
+
+        FileUtilities.TryDeleteHistoryDirectory();
     }
 
     public List<HistoryInfo> GetEditWindows()
@@ -144,16 +139,12 @@ public class HistoryService
 
     public void SaveToHistory(HistoryInfo infoFromFullscreenGrab)
     {
-        if (!Settings.Default.UseHistory)
+        if (!Settings.Default.UseHistory || infoFromFullscreenGrab.ImageContent is null)
             return;
 
         string imgRandomName = Guid.NewGuid().ToString();
 
-        if (!Directory.Exists(historyDirectory))
-            Directory.CreateDirectory(historyDirectory);
-
-        if (infoFromFullscreenGrab.ImageContent is not null)
-            FileUtilities.SaveImageFile(infoFromFullscreenGrab.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
+        FileUtilities.SaveImageFile(infoFromFullscreenGrab.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
 
         infoFromFullscreenGrab.ImagePath = $"{imgRandomName}.bmp";
 

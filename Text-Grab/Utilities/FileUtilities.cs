@@ -264,5 +264,29 @@ public class FileUtilities
         AddText(fs, textContent);
         return true;
     }
+
+    public async static void TryDeleteHistoryDirectory()
+    {
+        FileStorageKind historyFolderKind = FileStorageKind.WithHistory;
+        if (ImplementAppOptions.IsPackaged())
+        {
+            StorageFolder historyFolder = await GetStorageFolderPackaged("", historyFolderKind);
+
+            try
+            {
+                await historyFolder.DeleteAsync();
+            }
+            catch { }
+            return;
+        }
+
+        string historyDirectory = GetFolderPathUnpackaged("", historyFolderKind);
+
+        try
+        {
+            Directory.Delete(historyDirectory, true);
+        }
+        catch { }
+    }
     #endregion Private Methods
 }

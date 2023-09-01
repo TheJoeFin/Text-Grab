@@ -30,11 +30,12 @@ public partial class FullscreenGrab : Window
     private bool isSelecting = false;
     private bool isShiftDown = false;
     private Border selectBorder = new Border();
-    double selectLeft;
-    double selectTop;
+    private double selectLeft;
+    private double selectTop;
     private System.Windows.Point shiftPoint = new System.Windows.Point();
-    double xShiftDelta;
-    double yShiftDelta;
+    private double xShiftDelta;
+    private double yShiftDelta;
+    private HistoryInfo? historyInfo;
 
     #endregion Fields
 
@@ -552,7 +553,7 @@ public partial class FullscreenGrab : Window
                 Height = selectBorder.Height,
             };
 
-            HistoryInfo fsgHistoryItem = new()
+            historyInfo = new()
             {
                 ID = Guid.NewGuid().ToString(),
                 DpiScaleFactor = m.M11,
@@ -564,8 +565,6 @@ public partial class FullscreenGrab : Window
                 ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
                 SourceMode = TextGrabMode.Fullscreen,
             };
-
-            Singleton<HistoryService>.Instance.SaveToHistory(fsgHistoryItem);
         }
 
         if (!string.IsNullOrWhiteSpace(grabbedText))
@@ -606,6 +605,12 @@ public partial class FullscreenGrab : Window
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.S, isActive);
+    }
+
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (historyInfo is not null)
+            Singleton<HistoryService>.Instance.SaveToHistory(historyInfo);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)

@@ -8,6 +8,7 @@
     Title="Text Grab"
     Width="800"
     Height="450"
+    Closing="Window_Closing"
     AllowsTransparency="True"
     Background="Transparent"
     Loaded="Window_Loaded"
