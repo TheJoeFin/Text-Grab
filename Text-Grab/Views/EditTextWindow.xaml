@@ -20,6 +20,7 @@
     Initialized="Window_Initialized"
     Loaded="Window_Loaded"
     PreviewKeyDown="EditTextWindow_PreviewKeyDown"
+    ResizeMode="CanResizeWithGrip"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">
@@ -133,6 +134,7 @@
             x:Name="UiTitleBar"
             Title="Edit Text"
             Height="32"
+            Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
         <Menu

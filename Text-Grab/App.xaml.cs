@@ -16,9 +16,9 @@ using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Extensions;
-using Wpf.Ui.Services;
 
 namespace Text_Grab;
 

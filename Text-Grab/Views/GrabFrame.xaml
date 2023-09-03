@@ -270,6 +270,7 @@
                     Grid.ColumnSpan="3"
                     Width="200"
                     Height="32"
+                    Margin="2,2,2,0"
                     Padding="8,2"
                     HorizontalAlignment="Right"
                     Background="{DynamicResource ApplicationBackgroundBrush}"
