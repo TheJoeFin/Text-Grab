@@ -26,6 +26,7 @@
             x:Name="UiTitleBar"
             Title="QR Code"
             Height="32"
+            Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
         <StackPanel
