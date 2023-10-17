@@ -358,9 +358,9 @@
                                 EXPERIMENTAL 🧪 Use Tesseract, when possible.
                             </TextBlock>
                         </ui:ToggleSwitch>
-                        <ui:Hyperlink Margin="48,0,0,0" Click="MoreInfoHyperlink_Click">
+                        <ui:HyperlinkButton Margin="48,0,0,0" Click="MoreInfoHyperlink_Click">
                             More information
-                        </ui:Hyperlink>
+                        </ui:HyperlinkButton>
                         <TextBlock
                             x:Name="CouldNotFindTessTxtBlk"
                             Margin="48,0,0,0"
