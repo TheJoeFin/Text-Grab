@@ -175,7 +175,7 @@
                 <MenuItem
                     x:Name="CloseMenuItem"
                     Click="CloseMenuItem_Click"
-                    Header="_Exit"
+                    Header="Close"
                     InputGestureText="Alt + F4" />
             </MenuItem>
             <MenuItem Header="_Edit">

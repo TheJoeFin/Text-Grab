@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Media.Streaming.Adaptive;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
@@ -71,6 +72,18 @@ public class FileUtilities
 
         return Path.Combine(dirPath, imageRelativePath);
     }
+
+    public async static Task<string> GetPathToHistory()
+    {
+        if (ImplementAppOptions.IsPackaged())
+        {
+            StorageFolder historyFolder = await GetStorageFolderPackaged("", FileStorageKind.WithHistory);
+            return historyFolder.Path;
+        }
+
+        return GetFolderPathUnpackaged("", FileStorageKind.WithHistory);
+    }
+
     public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
     {
         if (ImplementAppOptions.IsPackaged())
@@ -122,10 +135,13 @@ public class FileUtilities
     }
     private async static Task<string> GetTextFilePackaged(string fileName, FileStorageKind storageKind)
     {
-        StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
-
         try
         {
+            StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
+
+            if (storageKind == FileStorageKind.Absolute)
+                fileName = Path.GetFileName(fileName);
+
             StorageFile file = await folder.GetFileAsync(fileName);
             using Stream stream = await file.OpenStreamForReadAsync();
             StreamReader streamReader = new(stream);
@@ -182,11 +198,15 @@ public class FileUtilities
         switch (storageKind)
         {
             case FileStorageKind.Absolute:
-                return await StorageFolder.GetFolderFromPathAsync(fileName);
+                string? dirPath = Path.GetDirectoryName(fileName);
+                StorageFolder absoluteFolder = await StorageFolder.GetFolderFromPathAsync(dirPath);
+                return absoluteFolder;
             case FileStorageKind.WithExe:
                 return ApplicationData.Current.LocalFolder;
             case FileStorageKind.WithHistory:
-                return await ApplicationData.Current.LocalFolder.CreateFolderAsync("history", CreationCollisionOption.OpenIfExists);
+                ApplicationData currentAppData = ApplicationData.Current;
+                StorageFolder storageFolder = await currentAppData.LocalFolder.CreateFolderAsync("history", CreationCollisionOption.OpenIfExists);
+                return storageFolder;
             default:
                 break;
         }
@@ -232,6 +252,10 @@ public class FileUtilities
         try
         {
             StorageFolder storageFolder = await GetStorageFolderPackaged(filename, storageKind);
+
+            if (storageKind == FileStorageKind.Absolute)
+                filename = Path.GetFileName(filename);
+
             StorageFile textFile = await storageFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
             using IRandomAccessStream randomAccessStream = await textFile.OpenAsync(FileAccessMode.ReadWrite);
             DataWriter dataWriter = new(randomAccessStream);
