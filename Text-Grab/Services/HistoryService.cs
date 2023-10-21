@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Humanizer;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -6,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -100,6 +103,40 @@ public class HistoryService
     {
         HistoryTextOnly = await LoadHistory(nameof(HistoryTextOnly));
         HistoryWithImage = await LoadHistory(nameof(HistoryWithImage));
+    }
+
+    public async Task PopulateMenuItemWithRecentGrabs(MenuItem recentGrabsMenuItem)
+    {
+        List<HistoryInfo> grabsHistory = GetRecentGrabs();
+        grabsHistory = grabsHistory.OrderByDescending(x => x.CaptureDateTime).ToList();
+
+        recentGrabsMenuItem.Items.Clear();
+
+        if (grabsHistory.Count < 1)
+        {
+            recentGrabsMenuItem.IsEnabled = false;
+            return;
+        }
+
+        string historyBasePath = await FileUtilities.GetPathToHistory();
+
+        foreach (HistoryInfo history in grabsHistory)
+        {
+            string imageFullPath = Path.Combine(historyBasePath, history.ImagePath);
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(imageFullPath))
+                continue;
+
+            MenuItem menuItem = new();
+            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            {
+                GrabFrame grabFrame = new(history);
+                try { grabFrame.Show(); }
+                catch { menuItem.IsEnabled = false; }
+            };
+
+            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
+            recentGrabsMenuItem.Items.Add(menuItem);
+        }
     }
 
     public void SaveToHistory(GrabFrame grabFrameToSave)

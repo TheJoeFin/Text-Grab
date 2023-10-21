@@ -970,40 +970,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private async Task LoadRecentGrabsHistory()
-    {
-        List<HistoryInfo> grabsHistory = Singleton<HistoryService>.Instance.GetRecentGrabs();
-        grabsHistory = grabsHistory.OrderByDescending(x => x.CaptureDateTime).ToList();
-
-        OpenRecentGrabsMenuItem.Items.Clear();
-
-        if (grabsHistory.Count < 1)
-        {
-            OpenRecentGrabsMenuItem.IsEnabled = false;
-            return;
-        }
-
-        string historyBasePath = await FileUtilities.GetPathToHistory();
-
-        foreach (HistoryInfo history in grabsHistory)
-        {
-            string imageFullPath = Path.Combine(historyBasePath, history.ImagePath);
-            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(imageFullPath))
-                continue;
-
-            MenuItem menuItem = new();
-            menuItem.Click += (object sender, RoutedEventArgs args) =>
-            {
-                GrabFrame grabFrame = new(history);
-                try { grabFrame.Show(); }
-                catch { menuItem.IsEnabled = false; }
-            };
-
-            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
-            OpenRecentGrabsMenuItem.Items.Add(menuItem);
-        }
-    }
-
     private void LoadRecentTextHistory()
     {
         List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
@@ -1072,7 +1038,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         LoadRecentTextHistory();
-        await LoadRecentGrabsHistory();
+        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)

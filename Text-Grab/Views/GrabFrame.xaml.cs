@@ -1476,41 +1476,7 @@ public partial class GrabFrame : Window
 
     private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
-        await LoadRecentGrabsHistory();
-    }
-
-    private async Task LoadRecentGrabsHistory()
-    {
-        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetRecentGrabs();
-        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
-
-        OpenRecentGrabsMenuItem.Items.Clear();
-
-        if (grabsHistories.Count < 1)
-        {
-            OpenRecentGrabsMenuItem.IsEnabled = false;
-            return;
-        }
-
-        string historyBasePath = await FileUtilities.GetPathToHistory();
-
-        foreach (HistoryInfo history in grabsHistories)
-        {
-            string imageFullPath = Path.Combine(historyBasePath, history.ImagePath);
-            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(imageFullPath))
-                continue;
-
-            MenuItem menuItem = new();
-            menuItem.Click += (object sender, RoutedEventArgs args) =>
-            {
-                GrabFrame grabFrame = new(history);
-                try { grabFrame.Show(); }
-                catch { menuItem.IsEnabled = false; }
-            };
-
-            menuItem.Header = $"{history.CaptureDateTime.Humanize()} | {history.TextContent.MakeStringSingleLine().Truncate(20)}";
-            OpenRecentGrabsMenuItem.Items.Add(menuItem);
-        }
+        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
     }
 
     private void MergeWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
