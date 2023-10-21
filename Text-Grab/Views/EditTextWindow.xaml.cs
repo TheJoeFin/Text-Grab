@@ -970,7 +970,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private void LoadRecentGrabsHistory()
+    private async Task LoadRecentGrabsHistory()
     {
         List<HistoryInfo> grabsHistory = Singleton<HistoryService>.Instance.GetRecentGrabs();
         grabsHistory = grabsHistory.OrderByDescending(x => x.CaptureDateTime).ToList();
@@ -983,9 +983,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
+        string historyBasePath = await FileUtilities.GetPathToHistory();
+
         foreach (HistoryInfo history in grabsHistory)
         {
-            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
+            string imageFullPath = Path.Combine(historyBasePath, history.ImagePath);
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(imageFullPath))
                 continue;
 
             MenuItem menuItem = new();
@@ -1066,10 +1069,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         window.Show();
     }
 
-    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         LoadRecentTextHistory();
-        LoadRecentGrabsHistory();
+        await LoadRecentGrabsHistory();
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)

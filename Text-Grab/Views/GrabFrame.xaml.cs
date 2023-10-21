@@ -1474,7 +1474,12 @@ public partial class GrabFrame : Window
         isLanguageBoxLoaded = true;
     }
 
-    private void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        await LoadRecentGrabsHistory();
+    }
+
+    private async Task LoadRecentGrabsHistory()
     {
         List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetRecentGrabs();
         grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
@@ -1487,9 +1492,12 @@ public partial class GrabFrame : Window
             return;
         }
 
+        string historyBasePath = await FileUtilities.GetPathToHistory();
+
         foreach (HistoryInfo history in grabsHistories)
         {
-            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(history.ImagePath))
+            string imageFullPath = Path.Combine(historyBasePath, history.ImagePath);
+            if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(imageFullPath))
                 continue;
 
             MenuItem menuItem = new();

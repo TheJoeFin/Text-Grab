@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Media.Streaming.Adaptive;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
@@ -71,6 +72,18 @@ public class FileUtilities
 
         return Path.Combine(dirPath, imageRelativePath);
     }
+
+    public async static Task<string> GetPathToHistory()
+    {
+        if (ImplementAppOptions.IsPackaged())
+        {
+            StorageFolder historyFolder = await GetStorageFolderPackaged("", FileStorageKind.WithHistory);
+            return historyFolder.Path;
+        }
+
+        return GetFolderPathUnpackaged("", FileStorageKind.WithHistory);
+    }
+
     public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
     {
         if (ImplementAppOptions.IsPackaged())
