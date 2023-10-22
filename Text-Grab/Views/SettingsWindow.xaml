@@ -436,6 +436,19 @@
                                 <TextBlock Style="{StaticResource TextBodyNormal}">
                                     Tesseract is known for having the best OCR capabilities. While the Windows OCR is convenient and fast, it has not been updated in years and Microsoft has no plans to update it.<LineBreak />
                                     Feel free to try Tesseract and hopefully it will work well for you. Ideally Text Grab can bring together the convenience with the power of Tesseract.</TextBlock>
+
+                                <TextBlock
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource TextHeader}"
+                                    Text="Adding more language support" />
+                                <TextBlock IsEnabled="True" Style="{StaticResource TextBodyNormal}">
+                                    The default OCR Models installed by UB Mannheim are the 'fast' models which are not as accurate. Other more accurate models can be downloaded from the tessdata GitHub repository here:<LineBreak />
+                                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
+                                    <LineBreak />
+                                    After downloading language files, place them in the "tessdata" folder in the installed locatin of Tesserac:<LineBreak />
+                                    <Hyperlink NavigateUri="C:\Program Files\Tesseract-OCR" RequestNavigate="Hyperlink_RequestNavigate">C:\Program Files\Tesseract-OCR</Hyperlink>
+                                </TextBlock>
+
                                 <TextBlock HorizontalAlignment="Right">
                                     <Hyperlink Click="TessInfoCloseHypBtn_Click">Done</Hyperlink>
                                 </TextBlock>
