@@ -60,6 +60,7 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto" />
+                                <ColumnDefinition Width="auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="auto" />
                             </Grid.ColumnDefinitions>
@@ -69,9 +70,19 @@
                                 Style="{StaticResource TextBodyNormal}"
                                 Text="Version 4.1.4" />
 
+                            <ui:HyperlinkButton
+                                x:Name="OpenExeFolderButton"
+                                Grid.Column="1"
+                                Margin="12,0,0,0"
+                                VerticalAlignment="Bottom"
+                                Click="OpenExeFolderButton_Click"
+                                Visibility="Collapsed">
+                                <TextBlock Text="Open EXE Containing Folder" />
+                            </ui:HyperlinkButton>
+
                             <controls:CollapsibleButton
                                 x:Name="AboutBTN"
-                                Grid.Column="2"
+                                Grid.Column="3"
                                 Margin="0"
                                 ButtonText="About Text Grab"
                                 Click="AboutBTN_Click"
@@ -400,6 +411,24 @@
                                     UB Mannheim maintains an installer for Windows:<LineBreak />
                                     <Hyperlink NavigateUri="https://github.com/UB-Mannheim/tesseract/wiki" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/UB-Mannheim/tesseract/wiki/</Hyperlink>
                                 </TextBlock>
+                                <TextBlock
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource TextHeader}"
+                                    Text="Install via WinGet" />
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button
+                                        x:Name="WinGetCodeCopyButton"
+                                        Width="40"
+                                        Click="WinGetCodeCopyButton_Click"
+                                        Style="{StaticResource SymbolButton}">
+                                        <ui:SymbolIcon Symbol="Copy24" />
+                                    </Button>
+                                    <TextBox x:Name="WinGetInstallTextBox" FontFamily="Cascadia Code">
+                                        winget install -e --id UB-Mannheim.TesseractOCR
+                                    </TextBox>
+                                </StackPanel>
+
                                 <TextBlock
                                     Margin="0,12,0,0"
                                     Style="{StaticResource TextHeader}"

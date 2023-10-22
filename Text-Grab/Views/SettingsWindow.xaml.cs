@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -29,6 +30,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
     {
         InitializeComponent();
         App.SetTheme();
+
+        if (!ImplementAppOptions.IsPackaged())
+            OpenExeFolderButton.Visibility = Visibility.Visible;
     }
 
     #endregion Constructors
@@ -192,6 +196,17 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             TessMoreInfoBorder.Visibility = Visibility.Collapsed;
         else
             TessMoreInfoBorder.Visibility = Visibility.Visible;
+    }
+
+    private void OpenExeFolderButton_Click(object sender, RoutedEventArgs ev)
+    {
+        if (Path.GetDirectoryName(System.AppContext.BaseDirectory) is not string exePath)
+            return;
+
+        Uri source = new(exePath, UriKind.Absolute);
+        System.Windows.Navigation.RequestNavigateEventArgs e = new(source, "https://github.com/TheJoeFin/Text-Grab/issues");
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
     }
 
     private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -442,6 +457,11 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             CouldNotFindTessTxtBlk.Visibility = Visibility.Visible;
         }
     }
+    private void WinGetCodeCopyButton_Click(object sender, RoutedEventArgs e)
+    {
+        Clipboard.SetText(WinGetInstallTextBox.Text);
+    }
+
     #endregion Methods
 }
 
