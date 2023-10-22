@@ -85,7 +85,7 @@ public static class OcrUtilities
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
-    public static async Task<string> GetRegionsTextAsync(Window passedWindow, Rectangle selectedRegion, Language language)
+    public static async Task<string> GetRegionsTextAsync(Window passedWindow, Rectangle selectedRegion, Language language, string languageTag = "")
     {
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
@@ -95,7 +95,7 @@ public static class OcrUtilities
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
-        return GetStringFromOcrOutputs( await GetTextFromImageAsync(bmp, language));
+        return GetStringFromOcrOutputs( await GetTextFromImageAsync(bmp, language, languageTag));
     }
 
     public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, Language language)
@@ -254,13 +254,13 @@ public static class OcrUtilities
         throw new NotImplementedException();
     }
 
-    public async static Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language)
+    public async static Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language, string tessTag = "")
     {
         List<OcrOutput> outputs = new();
 
         if (Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe())
         {
-            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, language);
+            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, language, tessTag);
             outputs.Add(tesseractOutput);
 
             if (Settings.Default.TryToReadBarcodes)
