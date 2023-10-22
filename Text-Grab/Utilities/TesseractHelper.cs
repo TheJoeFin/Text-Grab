@@ -11,7 +11,7 @@ using Text_Grab.Models;
 using CliWrap;
 using System.Text;
 using CliWrap.Buffered;
-using Windows.Globalization;
+using Text_Grab.Interfaces;
 
 namespace Text_Grab.Utilities;
 
@@ -65,7 +65,7 @@ public static class TesseractHelper
         return string.Empty;
     }
 
-    public static async Task<string> GetTextFromImagePathAsync(string imagePath, Language language)
+    public static async Task<string> GetTextFromImagePathAsync(string imagePath, Windows.Globalization.Language language, string tessTag)
     {
         string tesseractPath = GetTesseractPath();
 
@@ -73,7 +73,7 @@ public static class TesseractHelper
             return "Cannot find tesseract.exe";
 
         // probably not needed, but if the Windows languages get passed it, it should still work
-        string languageString = language.DisplayName != "" ? language.DisplayName : language.AbbreviatedName.ToLower();
+        string languageString = tessTag;
 
         BufferedCommandResult result = await Cli.Wrap(tesseractPath)
             .WithValidation(CommandResultValidation.None)
@@ -88,7 +88,7 @@ public static class TesseractHelper
         return result.StandardOutput;
     }
 
-    public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, Language language)
+    public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, Windows.Globalization.Language language, string tessTag = "")
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
 
@@ -97,7 +97,7 @@ public static class TesseractHelper
             Engine = OcrEngineKind.Tesseract,
             Kind = OcrOutputKind.Paragraph,
             SourceBitmap = bmp,
-            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language)
+            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language, tessTag)
         };
         ocrOutput.CleanOutput();
 
@@ -191,21 +191,54 @@ public static class TesseractHelper
         string[] tempList = result.StandardOutput.Split(Environment.NewLine);
 
         foreach (string item in tempList)
-            if (item.Length < 8 && !string.IsNullOrWhiteSpace(item) && item != "osd")
+            if (item.Length < 30 && !string.IsNullOrWhiteSpace(item) && item != "osd")
                 languageStrings.Add(item);
 
         return languageStrings;
     }
 
-    public async static Task<List<Language>> TesseractLanguages()
+    public async static Task<List<ILanguage>> TesseractLanguages()
     {
         List<string> languageStrings = await TesseractLangsAsStrings();
-        List<Language> tesseractLanguages = new();
+        List<ILanguage> tesseractLanguages = new();
 
         foreach (string language in languageStrings)
-            tesseractLanguages.Add(new Language(language));
+            tesseractLanguages.Add(new TessLang(language));
 
         return tesseractLanguages;
+    }
+}
+
+public class TessLang : ILanguage
+{
+    private string _tessLangTag;
+
+    public string AbbreviatedName => _tessLangTag;
+
+    public string CurrentInputMethodLanguageTag => string.Empty;
+
+    public string DisplayName => _tessLangTag;
+
+    public Windows.Globalization.LanguageLayoutDirection LayoutDirection
+    {
+        get
+        {
+            if (_tessLangTag.Contains("vert"))
+                return Windows.Globalization.LanguageLayoutDirection.TtbRtl;
+
+            return Windows.Globalization.LanguageLayoutDirection.Rtl;
+        }
+    }
+
+    public string NativeName => string.Empty;
+
+    public string Script => string.Empty;
+
+    public string LanguageTag => _tessLangTag;
+
+    public TessLang(string tessLangTag)
+    {
+        _tessLangTag = tessLangTag;
     }
 }
 
