@@ -445,9 +445,24 @@
                                     The default OCR Models installed by UB Mannheim are the 'fast' models which are not as accurate. Other more accurate models can be downloaded from the tessdata GitHub repository here:<LineBreak />
                                     <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
                                     <LineBreak />
-                                    After downloading language files, place them in the "tessdata" folder in the installed locatin of Tesserac:<LineBreak />
+                                    After downloading language files, place them in the "tessdata" folder in the installed location of Tesseract:<LineBreak />
                                     <Hyperlink NavigateUri="C:\Program Files\Tesseract-OCR" RequestNavigate="Hyperlink_RequestNavigate">C:\Program Files\Tesseract-OCR</Hyperlink>
                                 </TextBlock>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button
+                                        x:Name="OpenPathButton"
+                                        Margin="4,0"
+                                        Click="OpenPathButton_Click"
+                                        Style="{StaticResource SymbolButton}">
+                                        <StackPanel Margin="4,0" Orientation="Horizontal">
+                                            <TextBlock Text="Open Folder" />
+                                            <ui:SymbolIcon Symbol="FolderOpen24" />
+                                        </StackPanel>
+                                    </Button>
+                                    <TextBox x:Name="TesseractPathTextBox" FontFamily="Cascadia Code">
+                                        basic Path
+                                    </TextBox>
+                                </StackPanel>
 
                                 <TextBlock HorizontalAlignment="Right">
                                     <Hyperlink Click="TessInfoCloseHypBtn_Click">Done</Hyperlink>
