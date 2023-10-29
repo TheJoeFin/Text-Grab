@@ -12,6 +12,7 @@ using CliWrap;
 using System.Text;
 using CliWrap.Buffered;
 using Text_Grab.Interfaces;
+using Text_Grab.Properties;
 
 namespace Text_Grab.Utilities;
 
@@ -48,19 +49,33 @@ public static class TesseractHelper
 
     private static string GetTesseractPath()
     {
+        if (!string.IsNullOrWhiteSpace(Settings.Default.TesseractPath)
+            && File.Exists(Settings.Default.TesseractPath))
+            return Settings.Default.TesseractPath;
+
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
         string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
 
         if (File.Exists(tesExePath))
+        {
+            Settings.Default.TesseractPath = tesExePath;
+            Settings.Default.Save();
             return tesExePath;
-
-        tesExePath = programsPath;
+        }
 
         if (File.Exists(programsPath))
+        {
+            Settings.Default.TesseractPath = programsPath;
+            Settings.Default.Save();
             return programsPath;
+        }
 
         if (File.Exists(basicPath))
+        {
+            Settings.Default.TesseractPath = basicPath;
+            Settings.Default.Save();
             return basicPath;
+        }
 
         return string.Empty;
     }

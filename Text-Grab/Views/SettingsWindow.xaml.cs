@@ -204,7 +204,23 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             return;
 
         Uri source = new(exePath, UriKind.Absolute);
-        System.Windows.Navigation.RequestNavigateEventArgs e = new(source, "https://github.com/TheJoeFin/Text-Grab/issues");
+        System.Windows.Navigation.RequestNavigateEventArgs e = new(source, exePath);
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
+
+    private void OpenPathButton_Click(object sender, RoutedEventArgs ev)
+    {
+        if (TesseractPathTextBox.Text is not string pathTextBox || !File.Exists(TesseractPathTextBox.Text))
+            return;
+
+        string? tesseractExePath = Path.GetDirectoryName(pathTextBox);
+
+        if (tesseractExePath is null)
+            return;
+
+        Uri source = new(tesseractExePath, UriKind.Absolute);
+        System.Windows.Navigation.RequestNavigateEventArgs e = new(source, tesseractExePath);
         Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
         e.Handled = true;
     }
@@ -312,6 +328,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         if (!string.IsNullOrEmpty(SecondsTextBox.Text))
             Settings.Default.InsertDelay = InsertDelaySeconds;
+
+        if (File.Exists(TesseractPathTextBox.Text))
+            Settings.Default.TesseractPath = TesseractPathTextBox.Text;
 
         Settings.Default.Save();
 
@@ -447,6 +466,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         if (TesseractHelper.CanLocateTesseractExe())
         {
             UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
+            TesseractPathTextBox.Text = Settings.Default.TesseractPath;
         }
         else
         {
@@ -461,7 +481,6 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
     {
         Clipboard.SetText(WinGetInstallTextBox.Text);
     }
-
     #endregion Methods
 }
 
