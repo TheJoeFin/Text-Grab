@@ -40,12 +40,17 @@
             Orientation="Horizontal">
             <local:CollapsibleButton
                 x:Name="SaveButton"
-                ButtonText="Save as file..."
+                ButtonText="PNG..."
                 Click="SaveButton_Click"
                 SymbolText="" />
             <local:CollapsibleButton
+                x:Name="SvgButton"
+                ButtonText="Svg..."
+                Click="SvgButton_Click"
+                SymbolText="" />
+            <local:CollapsibleButton
                 x:Name="CopyButton"
-                ButtonText="Copy to clipboard"
+                ButtonText="Copy PNG to clipboard"
                 Click="CopyButton_Click"
                 SymbolText="" />
         </StackPanel>
