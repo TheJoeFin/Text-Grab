@@ -38,6 +38,11 @@ namespace Text_Grab.Controls
             SetQrCodeToText(textOfCode);
         }
 
+        private void TextDebounceTimer_Tick(object? sender, EventArgs e)
+        {
+            SetQrCodeToText(TextOfCode);
+        }
+
         private void SetQrCodeToText(string textOfCode)
         {
             TextOfCode = textOfCode;
