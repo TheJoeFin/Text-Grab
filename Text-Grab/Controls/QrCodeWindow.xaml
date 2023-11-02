@@ -19,6 +19,7 @@
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -29,8 +30,12 @@
             Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-        <StackPanel
+        <TextBox
+            x:Name="QrCodeTextBox"
             Grid.Row="1"
+            TextChanged="QrCodeTextBox_TextChanged" />
+        <StackPanel
+            Grid.Row="2"
             HorizontalAlignment="Center"
             Orientation="Horizontal">
             <local:CollapsibleButton
@@ -46,7 +51,7 @@
         </StackPanel>
         <TextBlock
             x:Name="LengthErrorTextBlock"
-            Grid.Row="2"
+            Grid.Row="3"
             Padding="20,4"
             HorizontalAlignment="Center"
             d:Visibility="Visible"
@@ -58,7 +63,7 @@
         </TextBlock>
         <Image
             Name="CodeImage"
-            Grid.Row="3"
+            Grid.Row="4"
             Margin="0"
             MouseLeftButtonDown="CodeImage_MouseLeftButtonDown" />
     </Grid>

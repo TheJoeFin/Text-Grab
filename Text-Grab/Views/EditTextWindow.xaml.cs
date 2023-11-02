@@ -1021,16 +1021,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         string text = GetSelectedTextOrAllText();
 
-        bool lengthError = false;
-        int maxCharLength = 2953;
-        if (text.Length > maxCharLength)
-        {
-            text = text.Substring(0, maxCharLength);
-            lengthError = true;
-        }
-        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
-
-        QrCodeWindow window = new(qrBitmap, text, lengthError);
+        QrCodeWindow window = new(text);
         window.CenterOverThisWindow(this);
         window.Show();
     }
