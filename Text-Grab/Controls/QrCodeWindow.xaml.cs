@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
+using static ZXing.Rendering.SvgRenderer;
 // using static System.Net.Mime.MediaTypeNames;
 
 namespace Text_Grab.Controls
@@ -37,11 +38,6 @@ namespace Text_Grab.Controls
             SetQrCodeToText(textOfCode);
         }
 
-        private void TextDebounceTimer_Tick(object? sender, EventArgs e)
-        {
-            SetQrCodeToText(TextOfCode);
-        }
-
         private void SetQrCodeToText(string textOfCode)
         {
             TextOfCode = textOfCode;
@@ -62,13 +58,17 @@ namespace Text_Grab.Controls
             int maxLength = 50;
             UiTitleBar.Title = $"QR Code: {TextOfCode.Truncate(30)}";
             int trimLength = TextOfCode.Length < maxLength ? TextOfCode.Length : maxLength;
-            qrCodeFileName = $"QR-{TextOfCode.Substring(0, trimLength).ReplaceReservedCharacters()}.png";
-            tempPath = Path.Combine(Path.GetTempPath(), qrCodeFileName);
+            qrCodeFileName = $"QR-{TextOfCode.Substring(0, trimLength).ReplaceReservedCharacters()}";
+            tempPath = Path.Combine(Path.GetTempPath(), qrCodeFileName + ".png");
 
             QrBitmap.Save(tempPath, ImageFormat.Png);
             hBitmap = QrBitmap.GetHbitmap();
         }
 
+        private void TextDebounceTimer_Tick(object? sender, EventArgs e)
+        {
+            SetQrCodeToText(TextOfCode);
+        }
         #endregion Constructors
 
         #region Properties
@@ -115,26 +115,6 @@ namespace Text_Grab.Controls
             }
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (QrBitmap is null)
-                return;
-
-            SaveFileDialog dialog = new()
-            {
-                FileName = qrCodeFileName,
-                Filter = "Image | *.png",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-                RestoreDirectory = true,
-            };
-
-            if (dialog.ShowDialog() is not true)
-                return;
-
-            QrBitmap.Save(dialog.FileName);
-        }
-        #endregion Methods
-
         private void QrCodeTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             if (!IsLoaded)
@@ -147,5 +127,49 @@ namespace Text_Grab.Controls
             TextOfCode = QrCodeTextBox.Text;
             textDebounceTimer.Start();
         }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (QrBitmap is null)
+                return;
+
+            SaveFileDialog dialog = new()
+            {
+                FileName = qrCodeFileName + ".png",
+                Filter = "Image | *.png",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                RestoreDirectory = true,
+            };
+
+            if (dialog.ShowDialog() is not true)
+                return;
+
+            QrBitmap.Save(dialog.FileName);
+        }
+
+        private async void SvgButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (QrBitmap is null)
+                return;
+
+            SaveFileDialog dialog = new()
+            {
+                FileName = qrCodeFileName + ".svg",
+                Filter = "SVG | *.svg",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                RestoreDirectory = true,
+            };
+
+            if (dialog.ShowDialog() is not true)
+                return;
+
+            SvgImage svgImage = BarcodeUtilities.GetSvgQrCodeForText(TextOfCode);
+
+            if (string.IsNullOrWhiteSpace(svgImage.Content))
+                return;
+
+            await FileUtilities.SaveTextFile(svgImage.Content, dialog.FileName, FileStorageKind.Absolute);
+        }
+        #endregion Methods
     }
 }

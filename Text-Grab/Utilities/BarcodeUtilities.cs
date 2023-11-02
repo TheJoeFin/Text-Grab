@@ -79,7 +79,7 @@ public static class BarcodeUtilities
         };
         encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
         barcodeWriter.Options = encodingOptions;
-
+        
         SvgImage svg = barcodeWriter.Write(text);
 
         return svg;
