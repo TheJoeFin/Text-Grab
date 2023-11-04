@@ -16,9 +16,7 @@ jobs:
         with:
           dotnet-version: "6.0.x"
 
-      - run: dotnet restore ${{ env.PROJECT_PATH }}
-
-      - run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+      - run: dotnet build ${{ env.PROJECT_PATH }} -c Release
 
       - run: dotnet test ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --verbosity normal
 
