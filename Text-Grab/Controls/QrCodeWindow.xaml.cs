@@ -5,10 +5,12 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
+using ZXing.QrCode.Internal;
 using static ZXing.Rendering.SvgRenderer;
 // using static System.Net.Mime.MediaTypeNames;
 
@@ -25,6 +27,7 @@ namespace Text_Grab.Controls
         private string qrCodeFileName = string.Empty;
         private string tempPath = string.Empty;
         private DispatcherTimer textDebounceTimer = new();
+        private ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.L;
         #endregion Fields
 
         #region Constructors
@@ -36,33 +39,6 @@ namespace Text_Grab.Controls
             textDebounceTimer.Interval = new(0, 0, 0, 0, 200);
             textDebounceTimer.Tick += TextDebounceTimer_Tick;
             SetQrCodeToText(textOfCode);
-        }
-
-        private void SetQrCodeToText(string textOfCode)
-        {
-            TextOfCode = textOfCode;
-            bool showError = false;
-            int maxCharLength = 2953;
-            if (TextOfCode.Length > maxCharLength)
-            {
-                TextOfCode = TextOfCode.Substring(0, maxCharLength);
-                showError = true;
-            }
-            QrBitmap = BarcodeUtilities.GetQrCodeForText(TextOfCode);
-            CodeImage.ToolTip = textOfCode;
-            CodeImage.Source = ImageMethods.BitmapToImageSource(QrBitmap);
-
-            if (showError)
-                LengthErrorTextBlock.Visibility = Visibility.Visible;
-
-            int maxLength = 50;
-            UiTitleBar.Title = $"QR Code: {TextOfCode.Truncate(30)}";
-            int trimLength = TextOfCode.Length < maxLength ? TextOfCode.Length : maxLength;
-            qrCodeFileName = $"QR-{TextOfCode.Substring(0, trimLength).ReplaceReservedCharacters()}";
-            tempPath = Path.Combine(Path.GetTempPath(), qrCodeFileName + ".png");
-
-            QrBitmap.Save(tempPath, ImageFormat.Png);
-            hBitmap = QrBitmap.GetHbitmap();
         }
 
         private void TextDebounceTimer_Tick(object? sender, EventArgs e)
@@ -103,6 +79,25 @@ namespace Text_Grab.Controls
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
             Clipboard.SetData(DataFormats.Bitmap, QrBitmap);
+        }
+
+        private void ErrorCorrectionComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (sender is not ComboBox comboBox 
+                || comboBox.SelectedItem is not ComboBoxItem selectedItem
+                || selectedItem.Tag is not string tagLevel)
+                return;
+
+            errorCorrectionLevel = tagLevel switch
+            {
+                "L" => ErrorCorrectionLevel.L,
+                "M" => ErrorCorrectionLevel.M,
+                "Q" => ErrorCorrectionLevel.Q,
+                "H" => ErrorCorrectionLevel.H,
+                _ => ErrorCorrectionLevel.L
+            };
+
+            SetQrCodeToText();
         }
 
         private void FluentWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -147,6 +142,37 @@ namespace Text_Grab.Controls
             QrBitmap.Save(dialog.FileName);
         }
 
+        private void SetQrCodeToText(string textOfCode = "")
+        {
+            if (!string.IsNullOrEmpty(textOfCode))
+               TextOfCode = textOfCode;
+
+            if (string.IsNullOrEmpty(TextOfCode))
+                return;
+
+            bool showError = false;
+            int maxCharLength = 2953;
+            if (TextOfCode.Length > maxCharLength)
+            {
+                TextOfCode = TextOfCode.Substring(0, maxCharLength);
+                showError = true;
+            }
+            QrBitmap = BarcodeUtilities.GetQrCodeForText(TextOfCode, errorCorrectionLevel);
+            CodeImage.ToolTip = textOfCode;
+            CodeImage.Source = ImageMethods.BitmapToImageSource(QrBitmap);
+
+            if (showError)
+                LengthErrorTextBlock.Visibility = Visibility.Visible;
+
+            int maxLength = 50;
+            UiTitleBar.Title = $"QR Code: {TextOfCode.Truncate(30)}";
+            int trimLength = TextOfCode.Length < maxLength ? TextOfCode.Length : maxLength;
+            qrCodeFileName = $"QR-{TextOfCode.Substring(0, trimLength).ReplaceReservedCharacters()}";
+            tempPath = Path.Combine(Path.GetTempPath(), qrCodeFileName + ".png");
+
+            QrBitmap.Save(tempPath, ImageFormat.Png);
+            hBitmap = QrBitmap.GetHbitmap();
+        }
         private async void SvgButton_Click(object sender, RoutedEventArgs e)
         {
             if (QrBitmap is null)
@@ -163,7 +189,7 @@ namespace Text_Grab.Controls
             if (dialog.ShowDialog() is not true)
                 return;
 
-            SvgImage svgImage = BarcodeUtilities.GetSvgQrCodeForText(TextOfCode);
+            SvgImage svgImage = BarcodeUtilities.GetSvgQrCodeForText(TextOfCode, errorCorrectionLevel);
 
             if (string.IsNullOrWhiteSpace(svgImage.Content))
                 return;

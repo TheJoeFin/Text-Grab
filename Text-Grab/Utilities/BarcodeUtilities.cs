@@ -37,7 +37,7 @@ public static class BarcodeUtilities
         };
     }
 
-    public static Bitmap GetQrCodeForText(string text)
+    public static Bitmap GetQrCodeForText(string text, ErrorCorrectionLevel correctionLevel)
     {
         BitmapRenderer bitmapRenderer = new();
         bitmapRenderer.Foreground = System.Drawing.Color.Black;
@@ -55,7 +55,7 @@ public static class BarcodeUtilities
             Height = 500,
             Margin = 5,
         };
-        encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+        encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, correctionLevel);
         barcodeWriter.Options = encodingOptions;
 
         Bitmap bitmap = barcodeWriter.Write(text);
@@ -63,7 +63,7 @@ public static class BarcodeUtilities
         return bitmap;
     }
 
-    public static SvgImage GetSvgQrCodeForText(string text)
+    public static SvgImage GetSvgQrCodeForText(string text, ErrorCorrectionLevel correctionLevel)
     {
         BarcodeWriterSvg barcodeWriter = new()
         {
@@ -77,7 +77,7 @@ public static class BarcodeUtilities
             Height = 500,
             Margin = 5,
         };
-        encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+        encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, correctionLevel);
         barcodeWriter.Options = encodingOptions;
         
         SvgImage svg = barcodeWriter.Write(text);
