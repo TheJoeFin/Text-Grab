@@ -4,7 +4,7 @@ on:
     branches: [dev]
 
 env:
-  PROJECT_PATH: "Text-Grab/TextGrab.csproj"
+  PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
 
 jobs:
   build:
