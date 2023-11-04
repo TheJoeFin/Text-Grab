@@ -455,8 +455,8 @@
                                         Click="OpenPathButton_Click"
                                         Style="{StaticResource SymbolButton}">
                                         <StackPanel Margin="4,0" Orientation="Horizontal">
+                                            <ui:SymbolIcon Margin="0,0,6,0" Symbol="OpenFolder24" />
                                             <TextBlock Text="Open Folder" />
-                                            <ui:SymbolIcon Symbol="FolderOpen24" />
                                         </StackPanel>
                                     </Button>
                                     <TextBox x:Name="TesseractPathTextBox" FontFamily="Cascadia Code">
