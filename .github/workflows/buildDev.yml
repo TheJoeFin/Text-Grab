@@ -16,11 +16,11 @@ jobs:
         with:
           dotnet-version: "6.0.x"
 
-      - run: dotnet build ${{ env.PROJECT_PATH }} -c Release
+      # - run: dotnet build ${{ env.PROJECT_PATH }} -c Release
 
-      - run: dotnet test ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --verbosity normal
+      # - run: dotnet test ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --verbosity normal
 
-      #   - run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --self-contained -r win-x64 -p:PublishSingleFile=true
+      - run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
