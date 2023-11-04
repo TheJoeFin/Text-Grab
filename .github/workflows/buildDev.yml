@@ -1,0 +1,26 @@
+name: "Build Text Grab"
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  PROJECT_PATH: "TextGrab/TextGrab.csproj"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "6.0.x"
+
+      - run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+
+      - run: dotnet test ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --verbosity normal
+
+      - run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --self-contained -r win-x64 -p:PublishSingleFile=true
