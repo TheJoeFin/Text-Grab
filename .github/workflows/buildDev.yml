@@ -1,8 +1,7 @@
 name: "Build Text Grab"
 on:
   push:
-    tags:
-      - "v*"
+    branches: [dev]
 
 env:
   PROJECT_PATH: "TextGrab/TextGrab.csproj"
