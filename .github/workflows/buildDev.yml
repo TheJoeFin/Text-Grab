@@ -26,4 +26,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: Text-Grab
-          path: D:/a/Text-Grab/Text-Grab/Text-Grab/bin/Release/net6.0/win-x64/publish
+          path: Text-Grab/bin/Release/net6.0/win-x64/publish/*.exe
