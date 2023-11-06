@@ -345,6 +345,17 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         Close();
     }
 
+    private void TesseractPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox pathTextbox || pathTextbox.Text is not string pathText)
+            return;
+
+        if (File.Exists(pathText))
+            UseTesseractCheckBox.IsEnabled = true;
+        else
+            UseTesseractCheckBox.IsEnabled = false;
+    }
+
     private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
     {
         TessMoreInfoBorder.Visibility = Visibility.Collapsed;

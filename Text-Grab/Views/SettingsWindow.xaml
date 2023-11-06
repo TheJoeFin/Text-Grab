@@ -414,8 +414,7 @@
                                 <TextBlock
                                     Margin="0,12,0,0"
                                     Style="{StaticResource TextHeader}"
-                                    Text="Install via WinGet" />
-
+                                    Text="Install via WinGet." />
                                 <StackPanel Orientation="Horizontal">
                                     <Button
                                         x:Name="WinGetCodeCopyButton"
@@ -428,6 +427,7 @@
                                         winget install -e --id UB-Mannheim.TesseractOCR
                                     </TextBox>
                                 </StackPanel>
+                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Restart Text Grab after installing Tesseract for Tesseract.exe path to be automatically set." />
 
                                 <TextBlock
                                     Margin="0,12,0,0"
@@ -446,7 +446,7 @@
                                     <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
                                     <LineBreak />
                                     After downloading language files, place them in the "tessdata" folder in the installed location of Tesseract:<LineBreak />
-                                    <Hyperlink NavigateUri="C:\Program Files\Tesseract-OCR" RequestNavigate="Hyperlink_RequestNavigate">C:\Program Files\Tesseract-OCR</Hyperlink>
+                                    <!--<Hyperlink NavigateUri="C:\Program Files\Tesseract-OCR" RequestNavigate="Hyperlink_RequestNavigate">C:\Program Files\Tesseract-OCR</Hyperlink>-->
                                 </TextBlock>
                                 <StackPanel Orientation="Horizontal">
                                     <Button
@@ -459,8 +459,11 @@
                                             <TextBlock Text="Open Folder" />
                                         </StackPanel>
                                     </Button>
-                                    <TextBox x:Name="TesseractPathTextBox" FontFamily="Cascadia Code">
-                                        basic Path
+                                    <TextBox
+                                        x:Name="TesseractPathTextBox"
+                                        FontFamily="Cascadia Code"
+                                        TextChanged="TesseractPathTextBox_TextChanged">
+                                        Enter path to tesseract.exe here. ex: c:/tess/tesseract.exe
                                     </TextBox>
                                 </StackPanel>
 
