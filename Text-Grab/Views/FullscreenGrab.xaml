@@ -119,6 +119,8 @@
             d:Visibility="Visible"
             Background="{DynamicResource ApplicationBackgroundBrush}"
             CornerRadius="8"
+            MouseEnter="RegionClickCanvas_MouseEnter"
+            MouseLeave="RegionClickCanvas_MouseLeave"
             Visibility="Collapsed">
             <Border.Effect>
                 <DropShadowEffect

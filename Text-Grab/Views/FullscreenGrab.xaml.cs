@@ -625,9 +625,7 @@ public partial class FullscreenGrab : Window
         else
         {
             BackgroundBrush.Opacity = .2;
-
-            if (IsMouseOver)
-                TopButtonsStackPanel.Visibility = Visibility.Visible;
+            TopButtonsStackPanel.Visibility = Visibility.Visible;
         }
     }
 
