@@ -1,0 +1,33 @@
+name: "Build Text Grab"
+on:
+  push:
+    # branches: [dev]
+
+env:
+  PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "6.0.x"
+
+      # - run: dotnet build ${{ env.PROJECT_PATH }} -c Release
+
+      # - run: dotnet test ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --verbosity normal
+
+      - run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Text-Grab
+          path: Text-Grab/Text-Grab/Text-Grab/bin/Release/net6.0-windows10.0.20348.0/win-x64/publish/*.exe
+          #     Text-Grab\Text-Grab\Text-Grab\bin\Release\net6.0-windows10.0.20348.0\win-x64\publish\
+          #     Text-Grab\Text-Grab\bin\Release\net6.0-windows10.0.20348.0\win-x64\publish\Text-Grab.exe
+
+          # "C:\Users\josep\source\repos\TheJoeFin\Text-Grab\Text-Grab\bin\Release\net6.0-windows10.0.20348.0\win-x64\publish\Text-Grab.exe"
