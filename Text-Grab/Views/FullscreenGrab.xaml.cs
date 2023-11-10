@@ -191,7 +191,9 @@ public partial class FullscreenGrab : Window
             RegionClickCanvas.ContextMenu.IsOpen = false;
             await Task.Delay(150);
             SetImageToBackground();
-            TopButtonsStackPanel.Visibility = Visibility.Visible;
+
+            if (IsMouseOver)
+                TopButtonsStackPanel.Visibility = Visibility.Visible;
         }
         else
         {
@@ -434,6 +436,16 @@ public partial class FullscreenGrab : Window
         EditLastGrabMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
     }
 
+    private void RegionClickCanvas_MouseLeave(object sender, MouseEventArgs e)
+    {
+        TopButtonsStackPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void RegionClickCanvas_MouseEnter(object sender, MouseEventArgs e)
+    {
+        TopButtonsStackPanel.Visibility = Visibility.Visible;
+    }
+
     private void RegionClickCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.RightButton == MouseButtonState.Pressed)
@@ -613,7 +625,9 @@ public partial class FullscreenGrab : Window
         else
         {
             BackgroundBrush.Opacity = .2;
-            TopButtonsStackPanel.Visibility = Visibility.Visible;
+
+            if (IsMouseOver)
+                TopButtonsStackPanel.Visibility = Visibility.Visible;
         }
     }
 
@@ -656,7 +670,8 @@ public partial class FullscreenGrab : Window
         if (Settings.Default.FsgSendEtwToggle)
             SendToEditTextToggleButton.IsChecked = true;
 
-        TopButtonsStackPanel.Visibility = Visibility.Visible;
+        if (IsMouseOver)
+            TopButtonsStackPanel.Visibility = Visibility.Visible;
 
 #if DEBUG
         Topmost = false;

@@ -44,6 +44,8 @@
             ContextMenuOpening="RegionClickCanvas_ContextMenuOpening"
             Cursor="Cross"
             MouseDown="RegionClickCanvas_MouseDown"
+            MouseEnter="RegionClickCanvas_MouseEnter"
+            MouseLeave="RegionClickCanvas_MouseLeave"
             MouseMove="RegionClickCanvas_MouseMove"
             MouseUp="RegionClickCanvas_MouseUp">
             <Canvas.Clip>
