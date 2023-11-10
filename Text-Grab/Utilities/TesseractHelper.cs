@@ -232,7 +232,7 @@ public class TessLang : ILanguage
 
     public string CurrentInputMethodLanguageTag => string.Empty;
 
-    public string DisplayName => _tessLangTag;
+    public string DisplayName => $"{_tessLangTag} with Tesseract";
 
     public Windows.Globalization.LanguageLayoutDirection LayoutDirection
     {

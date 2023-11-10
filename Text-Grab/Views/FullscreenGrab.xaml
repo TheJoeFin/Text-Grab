@@ -8,9 +8,9 @@
     Title="Text Grab"
     Width="800"
     Height="450"
-    Closing="Window_Closing"
     AllowsTransparency="True"
     Background="Transparent"
+    Closing="Window_Closing"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
     Topmost="False"
@@ -146,11 +146,11 @@
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock
-                                HorizontalAlignment="Center"
+                                HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 FontFamily="Segoe UI"
                                 Style="{StaticResource SymbolTextStyle}"
-                                Text="{Binding LanguageTag}" />
+                                Text="{Binding DisplayName}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>

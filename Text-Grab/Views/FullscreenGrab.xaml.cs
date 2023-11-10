@@ -48,12 +48,6 @@ public partial class FullscreenGrab : Window
         InitializeComponent();
         App.SetTheme();
         usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
-        if (usingTesseract)
-        {
-            TesseractTextBlock.Visibility = Visibility.Visible;
-            TableMenuItem.Visibility = Visibility.Collapsed;
-            TableToggleButton.Visibility = Visibility.Collapsed;
-        }
     }
 
     #endregion Constructors
@@ -250,14 +244,20 @@ public partial class FullscreenGrab : Window
 
         if (languageCmbBox.SelectedItem is TessLang tessLang)
         {
-            Settings.Default.LastUsedLang = tessLang.LanguageTag;
+            Settings.Default.LastUsedLang = tessLang.DisplayName;
             Settings.Default.Save();
+
+            TableMenuItem.Visibility = Visibility.Collapsed;
+            TableToggleButton.Visibility = Visibility.Collapsed;
         }
 
         if (languageCmbBox.SelectedItem is Language pickedLang)
         {
             Settings.Default.LastUsedLang = pickedLang.LanguageTag;
             Settings.Default.Save();
+
+            TableMenuItem.Visibility = Visibility.Visible;
+            TableToggleButton.Visibility = Visibility.Visible;
         }
 
         int selection = languageCmbBox.SelectedIndex;
@@ -303,49 +303,48 @@ public partial class FullscreenGrab : Window
 
         int count = 0;
 
+        bool haveSetLastLang = false;
+        string lastTextLang = Settings.Default.LastUsedLang;
         if (usingTesseract)
         {
             List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
-            string firstLang = Settings.Default.LastUsedLang;
 
             foreach (ILanguage language in tesseractLanguages)
             {
                 LanguagesComboBox.Items.Add(language);
 
-                if (language.DisplayName == firstLang)
+                if (!haveSetLastLang && language.DisplayName == lastTextLang)
+                {
                     LanguagesComboBox.SelectedIndex = count;
+                    haveSetLastLang = true;
 
+                    TableMenuItem.Visibility = Visibility.Collapsed;
+                    TableToggleButton.Visibility = Visibility.Collapsed;
+                }
 
                 count++;
             }
             if (LanguagesComboBox.SelectedIndex == -1)
                 LanguagesComboBox.SelectedIndex = 0;
         }
-        else
+
+        IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
+
+        Language firstLang = LanguageUtilities.GetOCRLanguage();
+
+        foreach (Language language in possibleOCRLanguages)
         {
-            IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
+            LanguagesComboBox.Items.Add(language);
 
-            Language firstLang = LanguageUtilities.GetOCRLanguage();
-
-            foreach (Language language in possibleOCRLanguages)
+            if (!haveSetLastLang &&
+                (language.AbbreviatedName.ToLower() == firstLang?.AbbreviatedName.ToLower()
+                || language.LanguageTag.ToLower() == firstLang?.LanguageTag.ToLower()))
             {
-                LanguagesComboBox.Items.Add(language);
-
-                if (!usingTesseract)
-                {
-                    if (language.LanguageTag == firstLang?.LanguageTag
-                        || language.AbbreviatedName.ToLower() == firstLang?.DisplayName)
-                        LanguagesComboBox.SelectedIndex = count;
-                }
-                else
-                {
-                    if (language.DisplayName == firstLang?.AbbreviatedName.ToLower()
-                        || language.DisplayName == firstLang?.DisplayName.ToLower())
-                        LanguagesComboBox.SelectedIndex = count;
-                }
-
-                count++;
+                LanguagesComboBox.SelectedIndex = count;
+                haveSetLastLang = true;
             }
+
+            count++;
         }
 
         isComboBoxReady = true;
@@ -552,7 +551,7 @@ public partial class FullscreenGrab : Window
 
         string tessTag = string.Empty;
 
-        if (usingTesseract && LanguagesComboBox.SelectedItem is TessLang tessLang)
+        if (LanguagesComboBox.SelectedItem is TessLang tessLang)
             tessTag = tessLang.LanguageTag;
 
         bool isSmallClick = (regionScaled.Width < 3 || regionScaled.Height < 3);
