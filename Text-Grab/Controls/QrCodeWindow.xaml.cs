@@ -35,6 +35,8 @@ namespace Text_Grab.Controls
         public QrCodeWindow(string textOfCode)
         {
             InitializeComponent();
+
+            textOfCode = textOfCode.MakeStringSingleLine();
             QrCodeTextBox.Text = textOfCode;
             textDebounceTimer.Interval = new(0, 0, 0, 0, 200);
             textDebounceTimer.Tick += TextDebounceTimer_Tick;
@@ -149,8 +151,6 @@ namespace Text_Grab.Controls
 
             if (string.IsNullOrEmpty(TextOfCode))
                 return;
-
-            TextOfCode = TextOfCode.MakeStringSingleLine();
 
             bool showError = false;
             int maxCharLength = 2953;
