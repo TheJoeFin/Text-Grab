@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -36,6 +37,7 @@ public partial class FullscreenGrab : Window
     private double xShiftDelta;
     private double yShiftDelta;
     private HistoryInfo? historyInfo;
+    bool usingTesseract;
 
     #endregion Fields
 
@@ -45,12 +47,7 @@ public partial class FullscreenGrab : Window
     {
         InitializeComponent();
         App.SetTheme();
-        if (Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe())
-        {
-            TesseractTextBlock.Visibility = Visibility.Visible;
-            TableMenuItem.Visibility = Visibility.Collapsed;
-            TableToggleButton.Visibility = Visibility.Collapsed;
-        }
+        usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
     }
 
     #endregion Constructors
@@ -126,7 +123,7 @@ public partial class FullscreenGrab : Window
                 FreezeUnfreeze(FreezeMenuItem.IsChecked);
                 break;
             case Key.T:
-                if (Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe())
+                if (usingTesseract)
                     return;
 
                 if (isActive is null)
@@ -245,12 +242,22 @@ public partial class FullscreenGrab : Window
         if (sender is not ComboBox languageCmbBox || !isComboBoxReady)
             return;
 
-        Language? pickedLang = languageCmbBox.SelectedItem as Language;
+        if (languageCmbBox.SelectedItem is TessLang tessLang)
+        {
+            Settings.Default.LastUsedLang = tessLang.DisplayName;
+            Settings.Default.Save();
 
-        if (pickedLang != null)
+            TableMenuItem.Visibility = Visibility.Collapsed;
+            TableToggleButton.Visibility = Visibility.Collapsed;
+        }
+
+        if (languageCmbBox.SelectedItem is Language pickedLang)
         {
             Settings.Default.LastUsedLang = pickedLang.LanguageTag;
             Settings.Default.Save();
+
+            TableMenuItem.Visibility = Visibility.Visible;
+            TableToggleButton.Visibility = Visibility.Visible;
         }
 
         int selection = languageCmbBox.SelectedIndex;
@@ -294,31 +301,47 @@ public partial class FullscreenGrab : Window
         if (LanguagesComboBox.Items.Count > 0)
             return;
 
+        int count = 0;
+
+        bool haveSetLastLang = false;
+        string lastTextLang = Settings.Default.LastUsedLang;
+        if (usingTesseract)
+        {
+            List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
+
+            foreach (ILanguage language in tesseractLanguages)
+            {
+                LanguagesComboBox.Items.Add(language);
+
+                if (!haveSetLastLang && language.DisplayName == lastTextLang)
+                {
+                    LanguagesComboBox.SelectedIndex = count;
+                    haveSetLastLang = true;
+
+                    TableMenuItem.Visibility = Visibility.Collapsed;
+                    TableToggleButton.Visibility = Visibility.Collapsed;
+                }
+
+                count++;
+            }
+            if (LanguagesComboBox.SelectedIndex == -1)
+                LanguagesComboBox.SelectedIndex = 0;
+        }
+
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
 
-        bool usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
-        if (usingTesseract)
-            possibleOCRLanguages = await TesseractHelper.TesseractLanguages();
-
         Language firstLang = LanguageUtilities.GetOCRLanguage();
-
-        int count = 0;
 
         foreach (Language language in possibleOCRLanguages)
         {
             LanguagesComboBox.Items.Add(language);
 
-            if (!usingTesseract)
+            if (!haveSetLastLang &&
+                (language.AbbreviatedName.ToLower() == firstLang?.AbbreviatedName.ToLower()
+                || language.LanguageTag.ToLower() == firstLang?.LanguageTag.ToLower()))
             {
-                if (language.LanguageTag == firstLang?.LanguageTag
-                    || language.AbbreviatedName.ToLower() == firstLang?.DisplayName)
-                    LanguagesComboBox.SelectedIndex = count;
-            }
-            else
-            {
-                if (language.DisplayName == firstLang?.AbbreviatedName.ToLower()
-                    || language.DisplayName == firstLang?.DisplayName.ToLower())
-                    LanguagesComboBox.SelectedIndex = count;
+                LanguagesComboBox.SelectedIndex = count;
+                haveSetLastLang = true;
             }
 
             count++;
@@ -526,6 +549,11 @@ public partial class FullscreenGrab : Window
         if (selectedOcrLang is null)
             selectedOcrLang = LanguageUtilities.GetOCRLanguage();
 
+        string tessTag = string.Empty;
+
+        if (LanguagesComboBox.SelectedItem is TessLang tessLang)
+            tessTag = tessLang.LanguageTag;
+
         bool isSmallClick = (regionScaled.Width < 3 || regionScaled.Height < 3);
 
         bool isSingleLine = SingleLineMenuItem is null ? false : SingleLineMenuItem.IsChecked;
@@ -539,7 +567,7 @@ public partial class FullscreenGrab : Window
         else if (isTable)
             grabbedText = await OcrUtilities.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
-            grabbedText = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
+            grabbedText = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang, tessTag);
 
         if (Settings.Default.UseHistory && !isSmallClick)
         {
@@ -629,6 +657,10 @@ public partial class FullscreenGrab : Window
             SendToEditTextToggleButton.IsChecked = true;
 
         TopButtonsStackPanel.Visibility = Visibility.Visible;
+
+#if DEBUG
+        Topmost = false;
+#endif
 
         LoadOcrLanguages();
     }
