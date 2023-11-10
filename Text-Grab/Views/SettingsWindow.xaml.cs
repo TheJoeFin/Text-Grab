@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -29,6 +30,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
     {
         InitializeComponent();
         App.SetTheme();
+
+        if (!ImplementAppOptions.IsPackaged())
+            OpenExeFolderButton.Visibility = Visibility.Visible;
     }
 
     #endregion Constructors
@@ -194,6 +198,33 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             TessMoreInfoBorder.Visibility = Visibility.Visible;
     }
 
+    private void OpenExeFolderButton_Click(object sender, RoutedEventArgs ev)
+    {
+        if (Path.GetDirectoryName(System.AppContext.BaseDirectory) is not string exePath)
+            return;
+
+        Uri source = new(exePath, UriKind.Absolute);
+        System.Windows.Navigation.RequestNavigateEventArgs e = new(source, exePath);
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
+
+    private void OpenPathButton_Click(object sender, RoutedEventArgs ev)
+    {
+        if (TesseractPathTextBox.Text is not string pathTextBox || !File.Exists(TesseractPathTextBox.Text))
+            return;
+
+        string? tesseractExePath = Path.GetDirectoryName(pathTextBox);
+
+        if (tesseractExePath is null)
+            return;
+
+        Uri source = new(tesseractExePath, UriKind.Absolute);
+        System.Windows.Navigation.RequestNavigateEventArgs e = new(source, tesseractExePath);
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
+
     private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to reset all settings to default?", "Reset Settings to Default", MessageBoxButton.YesNo);
@@ -298,6 +329,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         if (!string.IsNullOrEmpty(SecondsTextBox.Text))
             Settings.Default.InsertDelay = InsertDelaySeconds;
 
+        if (File.Exists(TesseractPathTextBox.Text))
+            Settings.Default.TesseractPath = TesseractPathTextBox.Text;
+
         Settings.Default.Save();
 
         App app = (App)App.Current;
@@ -309,6 +343,17 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         App.SetTheme();
 
         Close();
+    }
+
+    private void TesseractPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox pathTextbox || pathTextbox.Text is not string pathText)
+            return;
+
+        if (File.Exists(pathText))
+            UseTesseractCheckBox.IsEnabled = true;
+        else
+            UseTesseractCheckBox.IsEnabled = false;
     }
 
     private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
@@ -432,6 +477,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         if (TesseractHelper.CanLocateTesseractExe())
         {
             UseTesseractCheckBox.IsChecked = Settings.Default.UseTesseract;
+            TesseractPathTextBox.Text = Settings.Default.TesseractPath;
         }
         else
         {
@@ -441,6 +487,10 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             Settings.Default.Save();
             CouldNotFindTessTxtBlk.Visibility = Visibility.Visible;
         }
+    }
+    private void WinGetCodeCopyButton_Click(object sender, RoutedEventArgs e)
+    {
+        Clipboard.SetText(WinGetInstallTextBox.Text);
     }
     #endregion Methods
 }
