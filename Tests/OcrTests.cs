@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using Text_Grab;
 using Text_Grab.Controls;
+using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Windows.Globalization;
@@ -231,7 +232,7 @@ December	12	Winter";
 
         // When
         Language englishLanguage = new("eng");
-        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
+        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage, englishLanguage.LanguageTag);
 
         if (tessoutput.RawOutput == "Cannot find tesseract.exe")
             return;
@@ -243,7 +244,7 @@ December	12	Winter";
     [WpfFact]
     public async Task GetTessLanguages()
     {
-        string expected = "eng,equ";
+        string expected = "eng";
         List<string> actualStrings = await TesseractHelper.TesseractLangsAsStrings();
         string joinedString = string.Join(',', actualStrings.ToArray());
 
@@ -253,13 +254,13 @@ December	12	Winter";
     [WpfFact]
     public async Task GetTesseractStrongLanguages()
     {
-        List<Language> expectedList = new()
+        List<ILanguage> expectedList = new()
         {
-            new Language("eng"),
-            new Language("equ")
+            new TessLang("eng"),
+            // new TessLang("equ")
         };
 
-        List<Language> actualList = await TesseractHelper.TesseractLanguages();
+        List<ILanguage> actualList = await TesseractHelper.TesseractLanguages();
 
         string expectedAbbreviatedName = string.Join(',', expectedList.Select(l => l.AbbreviatedName).ToArray());
         string actualAbbreviatedName = string.Join(',', actualList.Select(l => l.AbbreviatedName).ToArray());

@@ -659,9 +659,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         int keyNumberPressed = (int)e.Key - 35;
 
-        if (keyNumberPressed < 0
-            || keyNumberPressed >= bottomBarButtons.Count
-            || keyNumberPressed > 9)
+        // D1 is 35
+        // ...
+        // D9 is 43
+        // D0 is 34
+
+        if (keyNumberPressed < -1
+            || keyNumberPressed > 8)
+            return;
+
+        // since D9 is next to D0 it makes sense
+        // to call buttons next to each other as well
+        if (keyNumberPressed == -1)
+            keyNumberPressed += 10;
+
+        if (bottomBarButtons.Count <= keyNumberPressed)
             return;
 
         if (bottomBarButtons[keyNumberPressed] is not CollapsibleButton correspondingButton)
@@ -1021,16 +1033,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         string text = GetSelectedTextOrAllText();
 
-        bool lengthError = false;
-        int maxCharLength = 2953;
-        if (text.Length > maxCharLength)
-        {
-            text = text.Substring(0, maxCharLength);
-            lengthError = true;
-        }
-        Bitmap qrBitmap = BarcodeUtilities.GetQrCodeForText(text);
-
-        QrCodeWindow window = new(qrBitmap, text, lengthError);
+        QrCodeWindow window = new(text);
         window.CenterOverThisWindow(this);
         window.Show();
     }

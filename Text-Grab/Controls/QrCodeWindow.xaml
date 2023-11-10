@@ -8,7 +8,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab QR Code"
     Width="400"
-    Height="550"
+    Height="600"
     Closing="FluentWindow_Closing"
     mc:Ignorable="d">
     <Window.Resources>
@@ -16,6 +16,8 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
@@ -29,24 +31,54 @@
             Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-        <StackPanel
+        <TextBox
+            x:Name="QrCodeTextBox"
             Grid.Row="1"
-            HorizontalAlignment="Center"
-            Orientation="Horizontal">
+            Margin="12,0"
+            TextChanged="QrCodeTextBox_TextChanged" />
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
             <local:CollapsibleButton
                 x:Name="SaveButton"
-                ButtonText="Save as file..."
+                Margin="12,0,0,0"
+                ButtonText="PNG..."
                 Click="SaveButton_Click"
                 SymbolText="" />
             <local:CollapsibleButton
+                x:Name="SvgButton"
+                ButtonText="Svg..."
+                Click="SvgButton_Click"
+                SymbolText="" />
+            <local:CollapsibleButton
                 x:Name="CopyButton"
-                ButtonText="Copy to clipboard"
+                ButtonText="Copy PNG to clipboard"
                 Click="CopyButton_Click"
                 SymbolText="" />
         </StackPanel>
+        <StackPanel
+            Grid.Row="3"
+            Height="36"
+            Orientation="Horizontal">
+            <TextBlock
+                Margin="12,0"
+                VerticalAlignment="Center"
+                Text="Error Correction Level" />
+            <ComboBox
+                x:Name="ErrorCorrectionComboBox"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                SelectionChanged="ErrorCorrectionComboBox_SelectionChanged">
+                <ComboBoxItem
+                    Content="Low, up to 7%"
+                    IsSelected="True"
+                    Tag="L" />
+                <ComboBoxItem Content="Medium, up to 15%" Tag="M" />
+                <ComboBoxItem Content="Quality, up to 25%" Tag="Q" />
+                <ComboBoxItem Content="High, up to 30%" Tag="H" />
+            </ComboBox>
+        </StackPanel>
         <TextBlock
             x:Name="LengthErrorTextBlock"
-            Grid.Row="2"
+            Grid.Row="4"
             Padding="20,4"
             HorizontalAlignment="Center"
             d:Visibility="Visible"
@@ -58,7 +90,7 @@
         </TextBlock>
         <Image
             Name="CodeImage"
-            Grid.Row="3"
+            Grid.Row="5"
             Margin="0"
             MouseLeftButtonDown="CodeImage_MouseLeftButtonDown" />
     </Grid>
