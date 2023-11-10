@@ -150,6 +150,8 @@ namespace Text_Grab.Controls
             if (string.IsNullOrEmpty(TextOfCode))
                 return;
 
+            TextOfCode = TextOfCode.MakeStringSingleLine();
+
             bool showError = false;
             int maxCharLength = 2953;
             if (TextOfCode.Length > maxCharLength)
