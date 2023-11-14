@@ -18,7 +18,7 @@ jobs:
 
       # - run: dotnet build ${{ env.PROJECT_PATH }} -c Release
 
-      # - run: dotnet test ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --verbosity normal
+      - run: dotnet test ${{ env.PROJECT_PATH }} --verbosity normal
 
       - run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -o publish
 
