@@ -10,24 +10,23 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: "6.0.x"
-
-      # - run: dotnet build ${{ env.PROJECT_PATH }} -c Release
-
-      # - run: dotnet test ${{ env.PROJECT_PATH }} -c Release --no-build --no-restore --verbosity normal
-
-      - run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -o publish
+          dotnet-version: "8.0.x"
+      - name: Install dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_PATH }}
+      - name: Test
+        run: dotnet test ${{ env.PROJECT_PATH }}
+      
+      - name: Build for release and Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -o publish
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Text-Grab
-          path: .publish/*.exe
-          #     Text-Grab\Text-Grab\Text-Grab\bin\Release\net6.0-windows10.0.20348.0\win-x64\publish\
-          #     Text-Grab\Text-Grab\bin\Release\net6.0-windows10.0.20348.0\win-x64\publish\Text-Grab.exe
-
-          # "C:\Users\josep\source\repos\TheJoeFin\Text-Grab\Text-Grab\bin\Release\net6.0-windows10.0.20348.0\win-x64\publish\Text-Grab.exe"
+          path: .\publish\*.exe
