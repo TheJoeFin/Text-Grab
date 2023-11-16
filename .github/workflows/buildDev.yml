@@ -5,6 +5,7 @@ on:
 
 env:
   PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
+  TEST_PATH: "Tests/Tests.csproj"
 
 jobs:
   build:
@@ -20,8 +21,8 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }}
       - name: Test
-        run: dotnet test ${{ env.PROJECT_PATH }}
-      
+        run: dotnet test ${{ env.TEST_PATH }}
+
       - name: Build for release and Publish
         run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -o publish
 
