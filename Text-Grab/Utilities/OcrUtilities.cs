@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Controls;
+using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -331,7 +332,14 @@ public static class OcrUtilities
     public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath)
     {
         Uri fileURI = new(absolutePath, UriKind.Absolute);
-        BitmapImage droppedImage = new(fileURI);
+        FileInfo fileInfo = new(fileURI.LocalPath);
+        RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(absolutePath);
+        BitmapImage droppedImage = new();
+        droppedImage.BeginInit();
+        droppedImage.UriSource = fileURI;
+        ImageMethods.RotateImage(droppedImage, rotateFlipType);
+        droppedImage.CacheOption = BitmapCacheOption.None;
+        droppedImage.EndInit();
         droppedImage.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
         Language language = LanguageUtilities.GetOCRLanguage();
