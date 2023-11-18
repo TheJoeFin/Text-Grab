@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab"
     Width="800"
     Height="450"
@@ -134,13 +135,6 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Orientation="Horizontal">
-                <TextBlock
-                    x:Name="TesseractTextBlock"
-                    Margin="4,1,4,0"
-                    VerticalAlignment="Center"
-                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                    Text="Tesseract"
-                    Visibility="Collapsed" />
                 <ComboBox
                     x:Name="LanguagesComboBox"
                     Margin="0"
@@ -167,7 +161,7 @@
                     IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(F) Freeze what is on screens">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <ui:SymbolIcon Symbol="Pause24" />
                 </ToggleButton>
                 <ToggleButton
                     x:Name="SingleLineToggleButton"
@@ -179,7 +173,7 @@
                     IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(S) Make result a single line">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <ui:SymbolIcon Symbol="SubtractSquare24" />
                 </ToggleButton>
                 <ToggleButton
                     x:Name="TableToggleButton"
@@ -190,7 +184,7 @@
                     IsChecked="{Binding IsChecked, ElementName=TableMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(T) OCR text as a table">
-                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
+                    <ui:SymbolIcon Symbol="Table24" />
                 </ToggleButton>
 
                 <ToggleButton
@@ -203,7 +197,7 @@
                     IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(G) Place a Grab Frame">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <ui:SymbolIcon Symbol="PanelBottom20" />
                 </ToggleButton>
                 <ToggleButton
                     x:Name="SendToEditTextToggleButton"
@@ -215,7 +209,7 @@
                     IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(E) Send to an Edit Text Window">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <ui:SymbolIcon Symbol="Window24" />
                 </ToggleButton>
                 <Button
                     x:Name="SettingsButton"
@@ -225,7 +219,7 @@
                     Click="SettingsMenuItem_Click"
                     Style="{StaticResource SymbolButton}"
                     ToolTip="Settings">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <ui:SymbolIcon Symbol="Settings24" />
                 </Button>
                 <Button
                     x:Name="CancelButton"
@@ -235,7 +229,7 @@
                     Click="CancelMenuItem_Click"
                     Style="{StaticResource SymbolButton}"
                     ToolTip="(Esc) Cancel">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <ui:SymbolIcon Symbol="Dismiss24" />
                 </Button>
             </StackPanel>
         </Border>
