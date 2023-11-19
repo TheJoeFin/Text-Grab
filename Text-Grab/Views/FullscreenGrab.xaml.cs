@@ -298,12 +298,13 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    private async void LoadOcrLanguages()
+    private static async Task LoadOcrLanguages(ComboBox languagesComboBox, bool usingTesseract, List<FrameworkElement>? tesseractIncompatibleElements = null)
     {
-        if (LanguagesComboBox.Items.Count > 0)
+        if (languagesComboBox.Items.Count > 0)
             return;
 
         int count = 0;
+        // TODO Find a way to combine with the ETW language drop down
 
         bool haveSetLastLang = false;
         string lastTextLang = Settings.Default.LastUsedLang;
@@ -313,21 +314,22 @@ public partial class FullscreenGrab : Window
 
             foreach (ILanguage language in tesseractLanguages)
             {
-                LanguagesComboBox.Items.Add(language);
+                languagesComboBox.Items.Add(language);
 
                 if (!haveSetLastLang && language.DisplayName == lastTextLang)
                 {
-                    LanguagesComboBox.SelectedIndex = count;
+                    languagesComboBox.SelectedIndex = count;
                     haveSetLastLang = true;
 
-                    TableMenuItem.Visibility = Visibility.Collapsed;
-                    TableToggleButton.Visibility = Visibility.Collapsed;
+                    if (tesseractIncompatibleElements is not null)
+                        foreach (var element in tesseractIncompatibleElements)
+                            element.Visibility = Visibility.Collapsed;
                 }
 
                 count++;
             }
-            if (LanguagesComboBox.SelectedIndex == -1)
-                LanguagesComboBox.SelectedIndex = 0;
+            if (languagesComboBox.SelectedIndex == -1)
+                languagesComboBox.SelectedIndex = 0;
         }
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
@@ -336,20 +338,18 @@ public partial class FullscreenGrab : Window
 
         foreach (Language language in possibleOCRLanguages)
         {
-            LanguagesComboBox.Items.Add(language);
+            languagesComboBox.Items.Add(language);
 
             if (!haveSetLastLang &&
-                (language.AbbreviatedName.ToLower() == firstLang?.AbbreviatedName.ToLower()
-                || language.LanguageTag.ToLower() == firstLang?.LanguageTag.ToLower()))
+                (language.AbbreviatedName.Equals(firstLang?.AbbreviatedName.ToLower(), StringComparison.CurrentCultureIgnoreCase)
+                || language.LanguageTag.Equals(firstLang?.LanguageTag.ToLower(), StringComparison.CurrentCultureIgnoreCase)))
             {
-                LanguagesComboBox.SelectedIndex = count;
+                languagesComboBox.SelectedIndex = count;
                 haveSetLastLang = true;
             }
 
             count++;
         }
-
-        isComboBoxReady = true;
     }
 
     private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
@@ -653,7 +653,7 @@ public partial class FullscreenGrab : Window
             Singleton<HistoryService>.Instance.SaveToHistory(historyInfo);
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Maximized;
         FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
@@ -674,8 +674,12 @@ public partial class FullscreenGrab : Window
 #if DEBUG
         Topmost = false;
 #endif
-
-        LoadOcrLanguages();
+        List<FrameworkElement> tesseractIncompatibleFrameworkElements = new()
+        {
+            TableMenuItem, TableToggleButton
+        };
+        await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
+        isComboBoxReady = true;
     }
 
     private void Window_Unloaded(object sender, RoutedEventArgs e)

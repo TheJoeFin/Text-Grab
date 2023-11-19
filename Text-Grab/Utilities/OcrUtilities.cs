@@ -329,7 +329,7 @@ public static class OcrUtilities
         return text.ToString();
     }
 
-    public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath)
+    public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath, Language? language = null, string tesseractLanguageTag = "")
     {
         Uri fileURI = new(absolutePath, UriKind.Absolute);
         FileInfo fileInfo = new(fileURI.LocalPath);
@@ -342,8 +342,9 @@ public static class OcrUtilities
         droppedImage.EndInit();
         droppedImage.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-        Language language = LanguageUtilities.GetOCRLanguage();
-        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
+        if (language is null)
+            language = LanguageUtilities.GetCurrentInputLanguage();
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language, tesseractLanguageTag));
     }
 
     public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, Language OcrLang)
