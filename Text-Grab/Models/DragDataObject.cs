@@ -22,10 +22,7 @@ public static class DragDataObject
 
     public static void SetDragImage(this IDataObject dataObject, IntPtr hBitmap, int width, int height)
     {
-        if (dataObject == null)
-        {
-            throw new ArgumentNullException(nameof(dataObject));
-        }
+        ArgumentNullException.ThrowIfNull(dataObject);
 
         IDragSourceHelper dragDropHelper = (IDragSourceHelper)new DragDropHelper();
         ShDragImage dragImage = new ShDragImage
@@ -37,14 +34,14 @@ public static class DragDataObject
     }
 
     [DllImport("shell32", CharSet = CharSet.Unicode)]
-    private static extern int SHCreateItemFromParsingName(string path, IBindCtx pbc, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, out IShellItem ppv);
+    private static extern int SHCreateItemFromParsingName(string path, IBindCtx? pbc, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, out IShellItem ppv);
 
     [Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IShellItem
     {
         [PreserveSig]
-        int BindToHandler(IBindCtx pbc, [MarshalAs(UnmanagedType.LPStruct)] Guid bhid, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
+        int BindToHandler(IBindCtx? pbc, [MarshalAs(UnmanagedType.LPStruct)] Guid bhid, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
 
         // more methods available, but we don't need them
     }
