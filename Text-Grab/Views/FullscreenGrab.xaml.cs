@@ -98,6 +98,8 @@ public partial class FullscreenGrab : Window
 
                 if (NewGrabFrameToggleButton.IsChecked is true)
                     SelectSingleToggleButton(NewGrabFrameToggleButton);
+                else
+                    SelectSingleToggleButton();
                 break;
             case Key.S:
                 if (isActive is null)
@@ -107,6 +109,8 @@ public partial class FullscreenGrab : Window
 
                 if (SingleLineToggleButton.IsChecked is true)
                     SelectSingleToggleButton(SingleLineToggleButton);
+                else
+                    SelectSingleToggleButton();
 
                 bool isSingleLineChecked = false;
                 if (SingleLineToggleButton.IsChecked is true)
@@ -142,6 +146,14 @@ public partial class FullscreenGrab : Window
 
                 if (StandardModeToggleButton.IsChecked is true)
                     SelectSingleToggleButton(StandardModeToggleButton);
+                else
+                    SelectSingleToggleButton();
+
+                bool isNormalChecked = false;
+                if (StandardModeToggleButton.IsChecked is true)
+                    isNormalChecked = true;
+                Settings.Default.FSGMakeSingleLineToggle = !isNormalChecked;
+                Settings.Default.Save();
                 break;
             case Key.T:
                 if (TableToggleButton.Visibility == Visibility.Collapsed)
@@ -154,6 +166,8 @@ public partial class FullscreenGrab : Window
 
                 if (TableToggleButton.IsChecked is true)
                     SelectSingleToggleButton(TableToggleButton);
+                else
+                    SelectSingleToggleButton();
                 break;
             case Key.D1:
             case Key.D2:
@@ -671,6 +685,15 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.S, isActive);
         SelectSingleToggleButton(sender);
+
+        if (isActive)
+        {
+            bool isSingleLineChecked = false;
+            if (SingleLineToggleButton.IsChecked is true)
+                isSingleLineChecked = true;
+            Settings.Default.FSGMakeSingleLineToggle = isSingleLineChecked;
+            Settings.Default.Save();
+        }
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -689,24 +712,27 @@ public partial class FullscreenGrab : Window
         SetImageToBackground();
 
         if (Settings.Default.FSGMakeSingleLineToggle)
-            SingleLineMenuItem.IsChecked = true;
+        {
+            SingleLineToggleButton.IsChecked = true;
+            SelectSingleToggleButton(SingleLineToggleButton);
+        }
 
         if (Settings.Default.FsgSendEtwToggle)
             SendToEditTextToggleButton.IsChecked = true;
 
-        if (IsMouseOver)
-            TopButtonsStackPanel.Visibility = Visibility.Visible;
-
-
 #if DEBUG
         Topmost = false;
 #endif
+
         List<FrameworkElement> tesseractIncompatibleFrameworkElements = new()
         {
             TableMenuItem, TableToggleButton
         };
         await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
         isComboBoxReady = true;
+
+        if (IsMouseOver)
+            TopButtonsStackPanel.Visibility = Visibility.Visible;
     }
 
     private void Window_Unloaded(object sender, RoutedEventArgs e)
@@ -749,9 +775,19 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.N, isActive); 
         SelectSingleToggleButton(sender);
+
+        if (isActive)
+        {
+            bool isStandardChecked = false;
+            if (StandardModeToggleButton.IsChecked is true)
+                isStandardChecked = true;
+
+            Settings.Default.FSGMakeSingleLineToggle = !isStandardChecked;
+            Settings.Default.Save();
+        }
     }
 
-    private void SelectSingleToggleButton(object? sender)
+    private void SelectSingleToggleButton(object? sender = null)
     {
         if (sender is not ToggleButton clickedToggleButton)
         {

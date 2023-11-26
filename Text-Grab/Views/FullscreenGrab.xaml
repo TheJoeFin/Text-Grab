@@ -14,6 +14,7 @@
     Closing="Window_Closing"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
+    ShowInTaskbar="False"
     Topmost="False"
     Unloaded="Window_Unloaded"
     WindowStyle="None"
@@ -135,13 +136,6 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Orientation="Horizontal">
-                <TextBlock
-                    x:Name="TesseractTextBlock"
-                    Margin="4,1,4,0"
-                    VerticalAlignment="Center"
-                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                    Text="Tesseract"
-                    Visibility="Collapsed" />
                 <ComboBox
                     x:Name="LanguagesComboBox"
                     Margin="0"
@@ -171,26 +165,27 @@
                     <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
                 </ToggleButton>
                 <Border
-                    Margin="2,-2"
-                    Background="{DynamicResource ApplicationBackgroundColor}"
+                    x:Name="ModeButtonsBorder"
+                    Margin="2,0"
                     BorderBrush="{StaticResource Teal}"
                     BorderThickness="2"
-                    CornerRadius="6">
+                    CornerRadius="5">
                     <StackPanel Orientation="Horizontal">
                         <ToggleButton
                             x:Name="StandardModeToggleButton"
-                            Width="34"
-                            Height="34"
+                            Width="30"
+                            Height="30"
                             Margin="0"
                             Click="StandardModeToggleButton_Click"
+                            IsChecked="True"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(N) Normal Multi-line OCR Mode">
                             <wpfui:SymbolIcon Symbol="TextAlignLeft24" />
                         </ToggleButton>
                         <ToggleButton
                             x:Name="SingleLineToggleButton"
-                            Width="34"
-                            Height="34"
+                            Width="30"
+                            Height="30"
                             Margin="0"
                             d:IsChecked="True"
                             Click="SingleLineMenuItem_Click"
@@ -201,8 +196,8 @@
                         </ToggleButton>
                         <ToggleButton
                             x:Name="TableToggleButton"
-                            Width="34"
-                            Height="34"
+                            Width="30"
+                            Height="30"
                             Margin="0"
                             d:IsChecked="True"
                             Click="TableToggleButton_Click"
@@ -211,11 +206,10 @@
                             ToolTip="(T) OCR text as a table">
                             <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                         </ToggleButton>
-
                         <ToggleButton
                             x:Name="NewGrabFrameToggleButton"
-                            Width="34"
-                            Height="34"
+                            Width="30"
+                            Height="30"
                             Margin="0"
                             d:IsChecked="True"
                             Click="NewGrabFrameMenuItem_Click"
@@ -224,7 +218,6 @@
                             ToolTip="(G) Place a Grab Frame">
                             <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
                         </ToggleButton>
-
                     </StackPanel>
                 </Border>
                 <ToggleButton
