@@ -606,6 +606,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             try
             {
                 text = await dataPackageView.GetTextAsync();
+                text += Environment.NewLine;
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
             catch (System.Exception ex)
