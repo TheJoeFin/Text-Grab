@@ -9,7 +9,7 @@ namespace Text_Grab.Utilities;
 // Answer by: https://stackoverflow.com/users/314028/chris-taylor
 // Read on 11/18/2021
 
-public static class HotKeyManager
+public static partial class HotKeyManager
 {
     public static event EventHandler<HotKeyEventArgs>? HotKeyPressed;
 
@@ -90,11 +90,13 @@ public static class HotKeyManager
         private const int WM_HOTKEY = 0x312;
     }
 
-    [DllImport("user32", SetLastError = true)]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+    [LibraryImport("user32", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
-    [DllImport("user32", SetLastError = true)]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    [LibraryImport("user32", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool UnregisterHotKey(IntPtr hWnd, int id);
 
     private static int _id = 0;
 }

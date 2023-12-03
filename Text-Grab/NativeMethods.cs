@@ -1,18 +1,18 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal static class NativeMethods
+internal static partial class NativeMethods
 {
     // See http://msdn.microsoft.com/en-us/library/ms649021%28v=vs.85%29.aspx
     public const int WM_CLIPBOARDUPDATE = 0x031D;
     public static IntPtr HWND_MESSAGE = new IntPtr(-3);
 
     // See http://msdn.microsoft.com/en-us/library/ms632599%28VS.85%29.aspx#message_only
-    [DllImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool AddClipboardFormatListener(IntPtr hwnd);
+    public static partial bool AddClipboardFormatListener(IntPtr hwnd);
 
-    [DllImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool DeleteObject(IntPtr hObject);
+    internal static partial bool DeleteObject(IntPtr hObject);
 }
