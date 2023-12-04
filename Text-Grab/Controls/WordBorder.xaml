@@ -142,7 +142,7 @@
                         GotFocus="EditWordTextBox_GotFocus"
                         MouseDown="EditWordTextBox_MouseDown"
                         Style="{StaticResource TransparentTextBox}"
-                        Text="{Binding Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Text="{Binding ElementName=WordBorderControl, Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         TextChanged="EditWordTextBox_TextChanged"
                         Visibility="Visible" />
                 </Viewbox>
