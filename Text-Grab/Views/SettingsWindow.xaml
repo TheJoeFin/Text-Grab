@@ -210,13 +210,13 @@
                                         <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
                                     </TextBlock>
                                 </ui:ToggleSwitch>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
+                                <StackPanel
+                                    x:Name="ShortcutsStackPanel"
+                                    Margin="24,8,20,0"
+                                    Orientation="Vertical">
                                     <TextBox
                                         x:Name="FullScreenHotkeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
+                                        Grid.Column="0"
                                         HorizontalContentAlignment="Center"
                                         VerticalContentAlignment="Center"
                                         Background="White"
@@ -225,14 +225,12 @@
                                         Foreground="Black"
                                         Style="{StaticResource TextBoxStyle1}"
                                         Text="F"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="new Full Screen Grab" />
-                                </StackPanel>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
+                                        TextChanged="HotkeyTextBox_TextChanged"
+                                        Visibility="Collapsed" />
+                                    <controls:ShortcutControl
+                                        Grid.Column="1"
+                                        Recording="ShortcutControl_Recording"
+                                        ShortcutName="Full Screen Grab" />
                                     <TextBox
                                         x:Name="GrabFrameHotkeyTextBox"
                                         Width="30"
@@ -246,14 +244,13 @@
                                         Foreground="Black"
                                         Style="{StaticResource TextBoxStyle1}"
                                         Text="G"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="new Grab Frame" />
-                                </StackPanel>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
+                                        TextChanged="HotkeyTextBox_TextChanged"
+                                        Visibility="Collapsed" />
+                                    <controls:ShortcutControl
+                                        Grid.Row="1"
+                                        Grid.Column="1"
+                                        Recording="ShortcutControl_Recording"
+                                        ShortcutName="Grab Frame" />
                                     <TextBox
                                         x:Name="EditTextHotKeyTextBox"
                                         Width="30"
@@ -267,14 +264,13 @@
                                         Foreground="Black"
                                         Style="{StaticResource TextBoxStyle1}"
                                         Text="E"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="new Edit Text Window" />
-                                </StackPanel>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
+                                        TextChanged="HotkeyTextBox_TextChanged"
+                                        Visibility="Collapsed" />
+                                    <controls:ShortcutControl
+                                        Grid.Row="2"
+                                        Grid.Column="1"
+                                        Recording="ShortcutControl_Recording"
+                                        ShortcutName="Edit Text Window" />
                                     <TextBox
                                         x:Name="LookupHotKeyTextBox"
                                         Width="30"
@@ -288,11 +284,13 @@
                                         Foreground="Black"
                                         Style="{StaticResource TextBoxStyle1}"
                                         Text="Q"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="Launch Quick Simple Lookup" />
+                                        TextChanged="HotkeyTextBox_TextChanged"
+                                        Visibility="Collapsed" />
+                                    <controls:ShortcutControl
+                                        Grid.Row="3"
+                                        Grid.Column="1"
+                                        Recording="ShortcutControl_Recording"
+                                        ShortcutName="Quick Simple Lookup" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>

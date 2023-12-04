@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -493,5 +494,17 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         Clipboard.SetText(WinGetInstallTextBox.Text);
     }
     #endregion Methods
+
+    private void ShortcutControl_Recording(object sender, RoutedEventArgs e)
+    {
+        if (App.Current is App app)
+            NotifyIconUtilities.UnregisterHotkeys(app);
+
+        foreach (var child in ShortcutsStackPanel.Children)
+            if (child is ShortcutControl shortcutControl
+                && sender is ShortcutControl senderShortcut
+                && shortcutControl != senderShortcut)
+                shortcutControl.StopRecording(sender);
+    }
 }
 
