@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Linq;
+using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls;
 
@@ -37,13 +38,13 @@ public partial class ShortcutControl : UserControl
     public static readonly DependencyProperty ShortcutNameProperty =
         DependencyProperty.Register("ShortcutName", typeof(string), typeof(ShortcutControl), new PropertyMetadata("shortcutName"));
 
-
-
     bool isRecording = false;
 
     string previousSequence = string.Empty;
-    bool HasModifier = false;
-    bool hasLetter = false;
+    public bool HasModifier { get; set; } = false;
+    public bool HasLetter { get; set; } = false;
+
+    public ShortcutKeySet KeySet { get; set; } = new();
 
     // public delegate RoutedEvent? RecordingStarted();
 
@@ -68,31 +69,45 @@ public partial class ShortcutControl : UserControl
 
         HashSet<Key> justLetterKeys = RemoveModifierKeys(downKeys);
 
-        hasLetter = justLetterKeys.Count != 0;
+        HasLetter = justLetterKeys.Count != 0;
         HasModifier = containsWin || containsShift || containsCtrl || containsAlt;
 
-        if (hasLetter)
+        HashSet<KeyModifiers> modifierKeys = new();
+
+        if (HasLetter)
             KeyKey.Visibility = Visibility.Visible;
         else
             KeyKey.Visibility = Visibility.Collapsed;
 
         if (containsWin)
+        {
             WinKey.Visibility = Visibility.Visible;
+            modifierKeys.Add(KeyModifiers.Windows);
+        }
         else
             WinKey.Visibility = Visibility.Collapsed;
 
         if (containsShift)
+        {
             ShiftKey.Visibility = Visibility.Visible;
+            modifierKeys.Add(KeyModifiers.Shift);
+        }
         else
             ShiftKey.Visibility = Visibility.Collapsed;
 
         if (containsCtrl)
+        {
             CtrlKey.Visibility = Visibility.Visible;
+            modifierKeys.Add(KeyModifiers.Control);
+        }
         else
             CtrlKey.Visibility = Visibility.Collapsed;
 
         if (containsAlt)
+        {
             AltKey.Visibility = Visibility.Visible;
+            modifierKeys.Add(KeyModifiers.Alt);
+        }
         else
             AltKey.Visibility = Visibility.Collapsed;
 
@@ -101,6 +116,9 @@ public partial class ShortcutControl : UserControl
             keyStrings.Add(key.ToString());
 
         string currentSequence = string.Join('+', keyStrings);
+
+        if (HasLetter && HasModifier)
+            KeySet = new(modifierKeys, justLetterKeys.FirstOrDefault());
 
         if (string.IsNullOrEmpty(currentSequence) || currentSequence.Equals(previousSequence))
             return;
@@ -174,5 +192,88 @@ public partial class ShortcutControl : UserControl
     {
         RecordingToggleButton.IsChecked = false;
         isRecording = false;
+    }
+}
+
+public class ShortcutKeySet : IEquatable<ShortcutKeySet>
+{
+    public HashSet<KeyModifiers> Modifiers { get; set; } = new();
+    public Key NonModifierKey { get; set; } = Key.None;
+
+    public ShortcutKeySet(HashSet<KeyModifiers> modifiers, Key key)
+    {
+        this.Modifiers = modifiers;
+        this.NonModifierKey = key;
+    }
+
+    public ShortcutKeySet()
+    {
+        
+    }
+
+    public ShortcutKeySet(string shortcutsAsString)
+    {
+        HashSet<KeyModifiers> validModifiersToCheck = new()
+        {
+            KeyModifiers.Windows,
+            KeyModifiers.Shift,
+            KeyModifiers.Control,
+            KeyModifiers.Alt,
+        };
+
+        foreach (KeyModifiers modifier in validModifiersToCheck)
+            if (shortcutsAsString.Contains(modifier.ToString(), StringComparison.CurrentCultureIgnoreCase))
+                Modifiers.Add(modifier);
+        
+        var splitUpString = shortcutsAsString.Split('+');
+        string? keyString = splitUpString.LastOrDefault();
+
+        if (Enum.TryParse(keyString, out Key parsedKey))
+            NonModifierKey = parsedKey;
+    }
+
+    public override string ToString()
+    {
+        List<string> keyStrings = new();
+
+        foreach (var key in Modifiers)
+            keyStrings.Add(key.ToString());
+
+        keyStrings.Add(NonModifierKey.ToString());
+
+        return string.Join('+', keyStrings);
+    }
+
+    public bool Equals(HotKeyEventArgs e)
+    {
+        if (!Enum.TryParse(e.Key.ToString(), out Key pressedKey))
+            return false;
+
+        if (pressedKey != NonModifierKey)
+            return false;
+
+        if (e.Modifiers != Modifiers.Aggregate((x,y) => x | y))
+            return false;
+
+        return true;
+    }
+
+    public bool Equals(ShortcutKeySet? other)
+    {
+        if (other is null) 
+            return false;
+
+        if (string.Equals(other.ToString(), ToString(), StringComparison.InvariantCultureIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+
+        return Equals(obj as ShortcutKeySet);
     }
 }

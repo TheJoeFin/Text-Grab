@@ -228,7 +228,7 @@
                                         TextChanged="HotkeyTextBox_TextChanged"
                                         Visibility="Collapsed" />
                                     <controls:ShortcutControl
-                                        Grid.Column="1"
+                                        x:Name="FsgShortcutControl"
                                         Recording="ShortcutControl_Recording"
                                         ShortcutName="Full Screen Grab" />
                                     <TextBox
@@ -247,8 +247,7 @@
                                         TextChanged="HotkeyTextBox_TextChanged"
                                         Visibility="Collapsed" />
                                     <controls:ShortcutControl
-                                        Grid.Row="1"
-                                        Grid.Column="1"
+                                        x:Name="GfShortcutControl"
                                         Recording="ShortcutControl_Recording"
                                         ShortcutName="Grab Frame" />
                                     <TextBox
@@ -267,8 +266,7 @@
                                         TextChanged="HotkeyTextBox_TextChanged"
                                         Visibility="Collapsed" />
                                     <controls:ShortcutControl
-                                        Grid.Row="2"
-                                        Grid.Column="1"
+                                        x:Name="EtwShortcutControl"
                                         Recording="ShortcutControl_Recording"
                                         ShortcutName="Edit Text Window" />
                                     <TextBox
@@ -287,8 +285,7 @@
                                         TextChanged="HotkeyTextBox_TextChanged"
                                         Visibility="Collapsed" />
                                     <controls:ShortcutControl
-                                        Grid.Row="3"
-                                        Grid.Column="1"
+                                        x:Name="QslShortcutControl"
                                         Recording="ShortcutControl_Recording"
                                         ShortcutName="Quick Simple Lookup" />
                                 </StackPanel>

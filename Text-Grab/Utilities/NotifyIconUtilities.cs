@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
+using Text_Grab.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Views;
@@ -81,15 +83,35 @@ public static class NotifyIconUtilities
 
         List<Keys?> keysList = new()
         {
-            fullscreenKey,
+           fullscreenKey,
             grabFrameKey,
             editWindowKey,
             LookupKey
         };
+        HashSet<KeyModifiers> modifiers = new()
+        {
+            KeyModifiers.Windows,
+            KeyModifiers.Shift,
+            KeyModifiers.Control,
+        };
+        ShortcutKeySet fsgKeySet = new(modifiers, System.Windows.Input.Key.F);
+        ShortcutKeySet gfKeySet = new(modifiers, System.Windows.Input.Key.G);
+        ShortcutKeySet qslKeySet = new(modifiers, System.Windows.Input.Key.Q);
+        ShortcutKeySet etwKeySet = new(modifiers, System.Windows.Input.Key.E);
 
-        foreach (Keys? key in keysList)
-            if (key is not null)
-                app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(key.Value, KeyModifiers.Windows | KeyModifiers.Shift));
+        if (HotKeyManager.RegisterHotKey(fsgKeySet) is int fsgId)
+            app.HotKeyIds.Add(fsgId);
+        if (HotKeyManager.RegisterHotKey(gfKeySet) is int gfId)
+            app.HotKeyIds.Add(gfId);
+        if (HotKeyManager.RegisterHotKey(qslKeySet) is int qslId)
+            app.HotKeyIds.Add(qslId);
+        if (HotKeyManager.RegisterHotKey(etwKeySet) is int etwId)
+            app.HotKeyIds.Add(etwId);
+
+
+        //foreach (Keys? key in keysList)
+        //    if (key is not null)
+        //        app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(key.Value, modifiers.Aggregate((x, y) => x | y)));
 
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
