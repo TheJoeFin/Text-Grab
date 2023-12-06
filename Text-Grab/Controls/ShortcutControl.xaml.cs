@@ -44,7 +44,41 @@ public partial class ShortcutControl : UserControl
     public bool HasModifier { get; set; } = false;
     public bool HasLetter { get; set; } = false;
 
-    public ShortcutKeySet KeySet { get; set; } = new();
+    private ShortcutKeySet _keySet = new();
+
+    public ShortcutKeySet KeySet {
+        get
+        {
+            return _keySet;
+        }
+        set
+        {
+            _keySet = value;
+
+            if (_keySet.Modifiers.Contains(KeyModifiers.Windows))
+                WinKey.Visibility = Visibility.Visible;
+            else
+                WinKey.Visibility = Visibility.Collapsed;
+
+            if (_keySet.Modifiers.Contains(KeyModifiers.Shift))
+                ShiftKey.Visibility = Visibility.Visible;
+            else
+                ShiftKey.Visibility = Visibility.Collapsed;
+
+            if (_keySet.Modifiers.Contains(KeyModifiers.Control))
+                CtrlKey.Visibility = Visibility.Visible;
+            else
+                CtrlKey.Visibility = Visibility.Collapsed;
+
+            if (_keySet.Modifiers.Contains(KeyModifiers.Alt))
+                AltKey.Visibility = Visibility.Visible;
+            else
+
+                AltKey.Visibility = Visibility.Collapsed;
+
+            KeyLetterTextBlock.Text = _keySet.NonModifierKey.ToString();
+        }
+    }
 
     // public delegate RoutedEvent? RecordingStarted();
 

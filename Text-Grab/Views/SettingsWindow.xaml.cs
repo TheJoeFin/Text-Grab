@@ -302,22 +302,10 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         if (HotKeysAllDifferent())
         {
-            KeyConverter keyConverter = new();
-            Key? fullScreenKey = (Key?)keyConverter.ConvertFrom(FullScreenHotkeyTextBox.Text.ToUpper());
-            if (fullScreenKey is not null)
-                Settings.Default.FullscreenGrabHotKey = FullScreenHotkeyTextBox.Text.ToUpper();
-
-            Key? grabFrameKey = (Key?)keyConverter.ConvertFrom(GrabFrameHotkeyTextBox.Text.ToUpper());
-            if (grabFrameKey is not null)
-                Settings.Default.GrabFrameHotkey = GrabFrameHotkeyTextBox.Text.ToUpper();
-
-            Key? editWindowKey = (Key?)keyConverter.ConvertFrom(EditTextHotKeyTextBox.Text.ToUpper());
-            if (editWindowKey is not null)
-                Settings.Default.EditWindowHotKey = EditTextHotKeyTextBox.Text.ToUpper();
-
-            Key? lookupKey = (Key?)keyConverter.ConvertFrom(LookupHotKeyTextBox.Text.ToUpper());
-            if (lookupKey is not null)
-                Settings.Default.LookupHotKey = LookupHotKeyTextBox.Text.ToUpper();
+            Settings.Default.FullscreenGrabHotKey = FsgShortcutControl.KeySet.ToString();
+            Settings.Default.GrabFrameHotkey = GfShortcutControl.KeySet.ToString();
+            Settings.Default.LookupHotKey = QslShortcutControl.KeySet.ToString();
+            Settings.Default.EditWindowHotKey = EtwShortcutControl.KeySet.ToString();
         }
         else
         {
@@ -470,10 +458,10 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
                 break;
         }
 
-        FullScreenHotkeyTextBox.Text = Settings.Default.FullscreenGrabHotKey;
-        GrabFrameHotkeyTextBox.Text = Settings.Default.GrabFrameHotkey;
-        EditTextHotKeyTextBox.Text = Settings.Default.EditWindowHotKey;
-        LookupHotKeyTextBox.Text = Settings.Default.LookupHotKey;
+        FsgShortcutControl.KeySet = new(Settings.Default.FullscreenGrabHotKey);
+        GfShortcutControl.KeySet = new(Settings.Default.GrabFrameHotkey);
+        EtwShortcutControl.KeySet = new(Settings.Default.EditWindowHotKey);
+        QslShortcutControl.KeySet = new(Settings.Default.LookupHotKey);
 
         if (TesseractHelper.CanLocateTesseractExe())
         {

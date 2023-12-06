@@ -75,29 +75,10 @@ public static class NotifyIconUtilities
 
     public static void RegisterHotKeys(App app)
     {
-        KeysConverter keysConverter = new();
-        Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
-        Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
-        Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
-        Keys? LookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
-
-        List<Keys?> keysList = new()
-        {
-           fullscreenKey,
-            grabFrameKey,
-            editWindowKey,
-            LookupKey
-        };
-        HashSet<KeyModifiers> modifiers = new()
-        {
-            KeyModifiers.Windows,
-            KeyModifiers.Shift,
-            KeyModifiers.Control,
-        };
-        ShortcutKeySet fsgKeySet = new(modifiers, System.Windows.Input.Key.F);
-        ShortcutKeySet gfKeySet = new(modifiers, System.Windows.Input.Key.G);
-        ShortcutKeySet qslKeySet = new(modifiers, System.Windows.Input.Key.Q);
-        ShortcutKeySet etwKeySet = new(modifiers, System.Windows.Input.Key.E);
+        ShortcutKeySet fsgKeySet = new(Settings.Default.FullscreenGrabHotKey);
+        ShortcutKeySet gfKeySet = new(Settings.Default.GrabFrameHotkey);
+        ShortcutKeySet qslKeySet = new(Settings.Default.LookupHotKey);
+        ShortcutKeySet etwKeySet = new(Settings.Default.EditWindowHotKey);
 
         if (HotKeyManager.RegisterHotKey(fsgKeySet) is int fsgId)
             app.HotKeyIds.Add(fsgId);
@@ -107,11 +88,6 @@ public static class NotifyIconUtilities
             app.HotKeyIds.Add(qslId);
         if (HotKeyManager.RegisterHotKey(etwKeySet) is int etwId)
             app.HotKeyIds.Add(etwId);
-
-
-        //foreach (Keys? key in keysList)
-        //    if (key is not null)
-        //        app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(key.Value, modifiers.Aggregate((x, y) => x | y)));
 
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
@@ -137,13 +113,12 @@ public static class NotifyIconUtilities
         if (!Settings.Default.GlobalHotkeysEnabled)
             return;
 
-        KeysConverter keysConverter = new();
-        Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
-        Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
-        Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
-        Keys? lookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
+        ShortcutKeySet fsgKeySet = new(Settings.Default.FullscreenGrabHotKey);
+        ShortcutKeySet gfKeySet = new(Settings.Default.GrabFrameHotkey);
+        ShortcutKeySet qslKeySet = new(Settings.Default.LookupHotKey);
+        ShortcutKeySet etwKeySet = new(Settings.Default.EditWindowHotKey);
 
-        if (editWindowKey is not null && e.Key == editWindowKey.Value)
+        if (etwKeySet.Equals(e))
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
@@ -152,14 +127,14 @@ public static class NotifyIconUtilities
                 etw.Activate();
             }));
         }
-        else if (fullscreenKey is not null && e.Key == fullscreenKey.Value)
+        else if (fsgKeySet.Equals(e))
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 WindowUtilities.LaunchFullScreenGrab();
             }));
         }
-        else if (grabFrameKey is not null && e.Key == grabFrameKey.Value)
+        else if (gfKeySet.Equals(e))
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
@@ -167,7 +142,7 @@ public static class NotifyIconUtilities
                 gf.Show();
             }));
         }
-        else if (lookupKey is not null && e.Key == lookupKey)
+        else if (qslKeySet.Equals(e))
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
