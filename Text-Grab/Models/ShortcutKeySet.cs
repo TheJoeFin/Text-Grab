@@ -11,11 +11,11 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
     public HashSet<KeyModifiers> Modifiers { get; set; } = new();
     public Key NonModifierKey { get; set; } = Key.None;
 
-    public ShortcutKeySet(HashSet<KeyModifiers> modifiers, Key key)
-    {
-        Modifiers = modifiers;
-        NonModifierKey = key;
-    }
+    public bool IsEnabled { get; set; } = false;
+
+    public string Name { get; set; } = "EmptyName";
+
+    public ShortcutKeyActions Action { get; set; } = ShortcutKeyActions.None;
 
     public ShortcutKeySet()
     {
@@ -36,23 +36,21 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
             if (shortcutsAsString.Contains(modifier.ToString(), StringComparison.CurrentCultureIgnoreCase))
                 Modifiers.Add(modifier);
 
-        var splitUpString = shortcutsAsString.Split('+');
+        if (!shortcutsAsString.Contains('-'))
+            return;
+
+        var enabledSplitKeys = shortcutsAsString.Split('-');
+
+        bool parsedEnabledSuccessfully = bool.TryParse(enabledSplitKeys[0], out bool parsedEnabled);
+
+        if (!parsedEnabledSuccessfully || enabledSplitKeys.Length < 2)
+            return;
+
+        var splitUpString = enabledSplitKeys[1].Split('+');
         string? keyString = splitUpString.LastOrDefault();
 
         if (Enum.TryParse(keyString, out Key parsedKey))
             NonModifierKey = parsedKey;
-    }
-
-    public override string ToString()
-    {
-        List<string> keyStrings = new();
-
-        foreach (var key in Modifiers)
-            keyStrings.Add(key.ToString());
-
-        keyStrings.Add(NonModifierKey.ToString());
-
-        return string.Join('+', keyStrings);
     }
 
     public bool Equals(HotKeyEventArgs e)
@@ -74,7 +72,7 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
         if (other is null)
             return false;
 
-        if (string.Equals(other.ToString(), ToString(), StringComparison.InvariantCultureIgnoreCase))
+        if (GetHashCode() == other.GetHashCode())
             return true;
 
         return false;
@@ -95,7 +93,56 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
             int hash = 17;
             hash = hash * 23 + Modifiers.GetHashCode();
             hash = hash * 23 + NonModifierKey.GetHashCode();
+            hash = hash * 23 + IsEnabled.GetHashCode();
             return hash;
         }
     }
+
+    public static List<ShortcutKeySet> DefaultShortcutKeySets { get; set; } = new()
+    {
+        new()
+        {
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
+            NonModifierKey = Key.F,
+            IsEnabled = true,
+            Name = "Fullscreen Grab",
+            Action = ShortcutKeyActions.Fullscreen
+        },
+        new()
+        {
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
+            NonModifierKey = Key.G,
+            IsEnabled = true,
+            Name = "Grab Frame",
+            Action = ShortcutKeyActions.GrabFrame
+        },
+        new()
+        {
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
+            NonModifierKey = Key.Q,
+            IsEnabled = true,
+            Name = "Quick Simple Lookup",
+            Action = ShortcutKeyActions.Lookup
+        },
+        new()
+        {
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
+            NonModifierKey = Key.E,
+            IsEnabled = true,
+            Name = "Edit Text Window",
+            Action = ShortcutKeyActions.EditWindow
+        },
+    };
+}
+
+public enum ShortcutKeyActions
+{
+    None = 0,
+    Settings = 1,
+    Fullscreen = 2,
+    GrabFrame = 3,
+    Lookup = 4,
+    EditWindow = 5,
+    PreviousRegionGrab = 6,
+    PreviousEditWindow = 7,
 }

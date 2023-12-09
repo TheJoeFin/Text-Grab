@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Linq;
+using Text_Grab.Models;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls;
@@ -14,19 +15,14 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class ShortcutControl : UserControl
 {
-    // Register a custom routed event using the Bubble routing strategy.
-    public static readonly RoutedEvent RecordingStarted = EventManager.RegisterRoutedEvent(
-        name: "Recording",
-        routingStrategy: RoutingStrategy.Bubble,
-        handlerType: typeof(RoutedEventHandler),
-        ownerType: typeof(ShortcutControl));
-
-    // Provide CLR accessors for adding and removing an event handler.
-    public event RoutedEventHandler Recording
+    public bool IsShortcutEnabled
     {
-        add { AddHandler(RecordingStarted, value); }
-        remove { RemoveHandler(RecordingStarted, value); }
+        get { return (bool)GetValue(IsShortcutEnabledProperty); }
+        set { SetValue(IsShortcutEnabledProperty, value); }
     }
+
+    public static readonly DependencyProperty IsShortcutEnabledProperty =
+        DependencyProperty.Register("IsShortcutEnabled", typeof(bool), typeof(ShortcutControl), new PropertyMetadata(false));
 
     public string ShortcutName
     {
@@ -34,7 +30,6 @@ public partial class ShortcutControl : UserControl
         set { SetValue(ShortcutNameProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for ShortcutName.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty ShortcutNameProperty =
         DependencyProperty.Register("ShortcutName", typeof(string), typeof(ShortcutControl), new PropertyMetadata("shortcutName"));
 
@@ -46,13 +41,17 @@ public partial class ShortcutControl : UserControl
 
     private ShortcutKeySet _keySet = new();
 
-    public ShortcutKeySet KeySet {
+    public ShortcutKeySet KeySet
+    {
         get
         {
             return _keySet;
         }
         set
         {
+            if (value == _keySet)
+                return;
+
             _keySet = value;
 
             if (_keySet.Modifiers.Contains(KeyModifiers.Windows))
@@ -73,14 +72,19 @@ public partial class ShortcutControl : UserControl
             if (_keySet.Modifiers.Contains(KeyModifiers.Alt))
                 AltKey.Visibility = Visibility.Visible;
             else
-
                 AltKey.Visibility = Visibility.Collapsed;
 
+            IsShortcutEnabled = _keySet.IsEnabled;
+
+            ShortcutName = _keySet.Name;
+
             KeyLetterTextBlock.Text = _keySet.NonModifierKey.ToString();
+            KeySetChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    // public delegate RoutedEvent? RecordingStarted();
+    public event EventHandler? KeySetChanged;
+    public event EventHandler? RecordingStarted;
 
     public ShortcutControl()
     {
@@ -152,7 +156,10 @@ public partial class ShortcutControl : UserControl
         string currentSequence = string.Join('+', keyStrings);
 
         if (HasLetter && HasModifier)
-            KeySet = new(modifierKeys, justLetterKeys.FirstOrDefault());
+        {
+            KeySet.Modifiers = modifierKeys;
+            KeySet.NonModifierKey = justLetterKeys.FirstOrDefault();
+        }
 
         if (string.IsNullOrEmpty(currentSequence) || currentSequence.Equals(previousSequence))
             return;
@@ -162,6 +169,11 @@ public partial class ShortcutControl : UserControl
     }
 
     private void ShortcutControl_PreviewKeyUp(object sender, KeyEventArgs e)
+    {
+        CheckForErrors();
+    }
+
+    private void CheckForErrors()
     {
 
     }
@@ -181,7 +193,6 @@ public partial class ShortcutControl : UserControl
 
         filteredKeys.Remove(Key.LeftAlt);
         filteredKeys.Remove(Key.RightAlt);
-
 
         return filteredKeys;
     }
@@ -218,7 +229,7 @@ public partial class ShortcutControl : UserControl
         isRecording = recordingToggleButton.IsChecked ?? false;
 
         if (isRecording)
-            RaiseEvent(new RoutedEventArgs(RecordingStarted, this));
+            RecordingStarted?.Invoke(this, e);
 
     }
 
@@ -227,87 +238,9 @@ public partial class ShortcutControl : UserControl
         RecordingToggleButton.IsChecked = false;
         isRecording = false;
     }
-}
 
-public class ShortcutKeySet : IEquatable<ShortcutKeySet>
-{
-    public HashSet<KeyModifiers> Modifiers { get; set; } = new();
-    public Key NonModifierKey { get; set; } = Key.None;
-
-    public ShortcutKeySet(HashSet<KeyModifiers> modifiers, Key key)
+    private void IsEnabledToggleSwitch_Click(object sender, RoutedEventArgs e)
     {
-        this.Modifiers = modifiers;
-        this.NonModifierKey = key;
-    }
-
-    public ShortcutKeySet()
-    {
-        
-    }
-
-    public ShortcutKeySet(string shortcutsAsString)
-    {
-        HashSet<KeyModifiers> validModifiersToCheck = new()
-        {
-            KeyModifiers.Windows,
-            KeyModifiers.Shift,
-            KeyModifiers.Control,
-            KeyModifiers.Alt,
-        };
-
-        foreach (KeyModifiers modifier in validModifiersToCheck)
-            if (shortcutsAsString.Contains(modifier.ToString(), StringComparison.CurrentCultureIgnoreCase))
-                Modifiers.Add(modifier);
-        
-        var splitUpString = shortcutsAsString.Split('+');
-        string? keyString = splitUpString.LastOrDefault();
-
-        if (Enum.TryParse(keyString, out Key parsedKey))
-            NonModifierKey = parsedKey;
-    }
-
-    public override string ToString()
-    {
-        List<string> keyStrings = new();
-
-        foreach (var key in Modifiers)
-            keyStrings.Add(key.ToString());
-
-        keyStrings.Add(NonModifierKey.ToString());
-
-        return string.Join('+', keyStrings);
-    }
-
-    public bool Equals(HotKeyEventArgs e)
-    {
-        if (!Enum.TryParse(e.Key.ToString(), out Key pressedKey))
-            return false;
-
-        if (pressedKey != NonModifierKey)
-            return false;
-
-        if (e.Modifiers != Modifiers.Aggregate((x,y) => x | y))
-            return false;
-
-        return true;
-    }
-
-    public bool Equals(ShortcutKeySet? other)
-    {
-        if (other is null) 
-            return false;
-
-        if (string.Equals(other.ToString(), ToString(), StringComparison.InvariantCultureIgnoreCase))
-            return true;
-
-        return false;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (obj is null)
-            return false;
-
-        return Equals(obj as ShortcutKeySet);
+        _keySet.IsEnabled = IsShortcutEnabled;
     }
 }

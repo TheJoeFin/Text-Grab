@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using System.Windows.Input;
-using Text_Grab.Controls;
+using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 

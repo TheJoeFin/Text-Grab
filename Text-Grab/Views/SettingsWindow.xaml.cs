@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -6,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -88,101 +90,49 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private bool HotKeysAllDifferent()
     {
-        if (EditTextHotKeyTextBox is null
-            || FullScreenHotkeyTextBox is null
-            || GrabFrameHotkeyTextBox is null
-            || LookupHotKeyTextBox is null)
+        if (EtwShortcutControl is null
+            || FsgShortcutControl is null
+            || GfShortcutControl is null
+            || QslShortcutControl is null)
             return false;
-
-        string gfKey = GrabFrameHotkeyTextBox.Text.Trim().ToUpper();
-        string fsgKey = FullScreenHotkeyTextBox.Text.Trim().ToUpper();
-        string etwKey = EditTextHotKeyTextBox.Text.Trim().ToUpper();
-        string qslKey = LookupHotKeyTextBox.Text.Trim().ToUpper();
 
         bool anyMatchingKeys = false;
 
-        if (!string.IsNullOrEmpty(gfKey))
+        HashSet<ShortcutControl> shortcuts = new()
         {
-            if (gfKey == fsgKey
-                || gfKey == etwKey
-                || gfKey == qslKey)
-            {
-                GrabFrameHotkeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
-            }
-            else
-                GrabFrameHotkeyTextBox.BorderBrush = GoodBrush;
-        }
+            EtwShortcutControl,
+            FsgShortcutControl,
+            GfShortcutControl,
+            QslShortcutControl
+        };
 
-        if (!string.IsNullOrEmpty(fsgKey))
+        foreach (ShortcutControl shortcut in shortcuts)
         {
-            if (fsgKey == gfKey
-                || fsgKey == etwKey
-                || fsgKey == qslKey)
-            {
-                FullScreenHotkeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
-            }
-            else
-                FullScreenHotkeyTextBox.BorderBrush = GoodBrush;
-        }
+            ShortcutKeySet keySet = shortcut.KeySet;
+            bool isThisShortcutGood = true;
 
-        if (!string.IsNullOrEmpty(etwKey))
-        {
-            if (etwKey == gfKey
-                || etwKey == fsgKey
-                || etwKey == qslKey)
+            foreach (ShortcutControl shortcut2 in shortcuts)
             {
-                EditTextHotKeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
-            }
-            else
-                EditTextHotKeyTextBox.BorderBrush = GoodBrush;
-        }
+                if (shortcut == shortcut2)
+                    continue;
 
-        if (!string.IsNullOrEmpty(qslKey))
-        {
-            if (qslKey == gfKey
-                || qslKey == fsgKey
-                || qslKey == etwKey)
-            {
-                LookupHotKeyTextBox.BorderBrush = BadBrush;
-                anyMatchingKeys = true;
+                if (keySet.Equals(shortcut2.KeySet))
+                {
+                    shortcut.BorderBrush = BadBrush;
+                    shortcut2.BorderBrush = BadBrush;
+                    anyMatchingKeys = true;
+                    isThisShortcutGood = false;
+                }
             }
-            else
-                LookupHotKeyTextBox.BorderBrush = GoodBrush;
+
+            if (isThisShortcutGood)
+                shortcut.BorderBrush = GoodBrush;
         }
 
         if (anyMatchingKeys)
             return false;
 
         return true;
-    }
-
-    private void HotkeyTextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (sender is not TextBox hotKeyTextBox
-            || hotKeyTextBox.Text is null
-            || !IsLoaded)
-            return;
-
-        if (string.IsNullOrEmpty(hotKeyTextBox.Text))
-        {
-            hotKeyTextBox.BorderBrush = GoodBrush;
-            return;
-        }
-
-        hotKeyTextBox.Text = hotKeyTextBox.Text[0].ToString();
-
-        KeyConverter keyConverter = new();
-        Key? convertedKey = (Key?)keyConverter.ConvertFrom(hotKeyTextBox.Text.ToUpper());
-        if (convertedKey is not null && HotKeysAllDifferent())
-        {
-            hotKeyTextBox.BorderBrush = GoodBrush;
-            return;
-        }
-
-        hotKeyTextBox.BorderBrush = BadBrush;
     }
 
     private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -302,17 +252,14 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         if (HotKeysAllDifferent())
         {
-            Settings.Default.FullscreenGrabHotKey = FsgShortcutControl.KeySet.ToString();
-            Settings.Default.GrabFrameHotkey = GfShortcutControl.KeySet.ToString();
-            Settings.Default.LookupHotKey = QslShortcutControl.KeySet.ToString();
-            Settings.Default.EditWindowHotKey = EtwShortcutControl.KeySet.ToString();
-        }
-        else
-        {
-            Settings.Default.FullscreenGrabHotKey = "F";
-            Settings.Default.GrabFrameHotkey = "G";
-            Settings.Default.EditWindowHotKey = "E";
-            Settings.Default.LookupHotKey = "Q";
+            List<ShortcutKeySet> shortcutKeys = new()
+            {
+                FsgShortcutControl.KeySet,
+                GfShortcutControl.KeySet,
+                QslShortcutControl.KeySet,
+                EtwShortcutControl.KeySet
+            };
+            ShortcutKeysUtilities.SaveShortcutKeySetSettings(shortcutKeys);
         }
 
         if (!string.IsNullOrEmpty(SecondsTextBox.Text))
@@ -332,6 +279,23 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         App.SetTheme();
 
         Close();
+    }
+
+    private void ShortcutControl_Recording(object sender, EventArgs e)
+    {
+        if (App.Current is App app)
+            NotifyIconUtilities.UnregisterHotkeys(app);
+
+        foreach (var child in ShortcutsStackPanel.Children)
+            if (child is ShortcutControl shortcutControl
+                && sender is ShortcutControl senderShortcut
+                && shortcutControl != senderShortcut)
+                shortcutControl.StopRecording(sender);
+    }
+
+    private void ShortcutControl_KeySetChanged(object sender, EventArgs e)
+    {
+        HotKeysAllDifferent();
     }
 
     private void TesseractPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -458,10 +422,36 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
                 break;
         }
 
-        FsgShortcutControl.KeySet = new(Settings.Default.FullscreenGrabHotKey);
-        GfShortcutControl.KeySet = new(Settings.Default.GrabFrameHotkey);
-        EtwShortcutControl.KeySet = new(Settings.Default.EditWindowHotKey);
-        QslShortcutControl.KeySet = new(Settings.Default.LookupHotKey);
+        IEnumerable<ShortcutKeySet> shortcutKeySets = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
+
+        foreach (ShortcutKeySet keySet in shortcutKeySets)
+        {
+            switch (keySet.Action)
+            {
+                case ShortcutKeyActions.None:
+                    break;
+                case ShortcutKeyActions.Settings:
+                    break;
+                case ShortcutKeyActions.Fullscreen:
+                    FsgShortcutControl.KeySet = keySet;
+                    break;
+                case ShortcutKeyActions.GrabFrame:
+                    GfShortcutControl.KeySet = keySet;
+                    break;
+                case ShortcutKeyActions.Lookup:
+                    QslShortcutControl.KeySet = keySet;
+                    break;
+                case ShortcutKeyActions.EditWindow:
+                    EtwShortcutControl.KeySet = keySet;
+                    break;
+                case ShortcutKeyActions.PreviousRegionGrab:
+                    break;
+                case ShortcutKeyActions.PreviousEditWindow:
+                    break;
+                default:
+                    break;
+            }
+        }
 
         if (TesseractHelper.CanLocateTesseractExe())
         {
@@ -482,17 +472,5 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         Clipboard.SetText(WinGetInstallTextBox.Text);
     }
     #endregion Methods
-
-    private void ShortcutControl_Recording(object sender, RoutedEventArgs e)
-    {
-        if (App.Current is App app)
-            NotifyIconUtilities.UnregisterHotkeys(app);
-
-        foreach (var child in ShortcutsStackPanel.Children)
-            if (child is ShortcutControl shortcutControl
-                && sender is ShortcutControl senderShortcut
-                && shortcutControl != senderShortcut)
-                shortcutControl.StopRecording(sender);
-    }
 }
 

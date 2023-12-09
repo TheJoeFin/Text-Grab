@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Views;
@@ -75,19 +75,11 @@ public static class NotifyIconUtilities
 
     public static void RegisterHotKeys(App app)
     {
-        ShortcutKeySet fsgKeySet = new(Settings.Default.FullscreenGrabHotKey);
-        ShortcutKeySet gfKeySet = new(Settings.Default.GrabFrameHotkey);
-        ShortcutKeySet qslKeySet = new(Settings.Default.LookupHotKey);
-        ShortcutKeySet etwKeySet = new(Settings.Default.EditWindowHotKey);
+        IEnumerable<ShortcutKeySet> shortcuts = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
 
-        if (HotKeyManager.RegisterHotKey(fsgKeySet) is int fsgId)
-            app.HotKeyIds.Add(fsgId);
-        if (HotKeyManager.RegisterHotKey(gfKeySet) is int gfId)
-            app.HotKeyIds.Add(gfId);
-        if (HotKeyManager.RegisterHotKey(qslKeySet) is int qslId)
-            app.HotKeyIds.Add(qslId);
-        if (HotKeyManager.RegisterHotKey(etwKeySet) is int etwId)
-            app.HotKeyIds.Add(etwId);
+        foreach (ShortcutKeySet keySet in shortcuts)
+            if (keySet.IsEnabled && HotKeyManager.RegisterHotKey(keySet) is int id)
+                app.HotKeyIds.Add(id);
 
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
@@ -113,42 +105,53 @@ public static class NotifyIconUtilities
         if (!Settings.Default.GlobalHotkeysEnabled)
             return;
 
-        ShortcutKeySet fsgKeySet = new(Settings.Default.FullscreenGrabHotKey);
-        ShortcutKeySet gfKeySet = new(Settings.Default.GrabFrameHotkey);
-        ShortcutKeySet qslKeySet = new(Settings.Default.LookupHotKey);
-        ShortcutKeySet etwKeySet = new(Settings.Default.EditWindowHotKey);
+        IEnumerable<ShortcutKeySet> shortcuts = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
 
-        if (etwKeySet.Equals(e))
+        ShortcutKeyActions pressedAction = ShortcutKeyActions.None;
+        foreach (ShortcutKeySet keySet in shortcuts)
+            if (keySet.Equals(e))
+                pressedAction = keySet.Action;
+
+        switch (pressedAction)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                EditTextWindow etw = new();
-                etw.Show();
-                etw.Activate();
-            }));
-        }
-        else if (fsgKeySet.Equals(e))
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                WindowUtilities.LaunchFullScreenGrab();
-            }));
-        }
-        else if (gfKeySet.Equals(e))
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                GrabFrame gf = new();
-                gf.Show();
-            }));
-        }
-        else if (qslKeySet.Equals(e))
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                QuickSimpleLookup qsl = new();
-                qsl.Show();
-            }));
+            case ShortcutKeyActions.None:
+                break;
+            case ShortcutKeyActions.Settings:
+                break;
+            case ShortcutKeyActions.Fullscreen:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    WindowUtilities.LaunchFullScreenGrab();
+                }));
+                break;
+            case ShortcutKeyActions.GrabFrame:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    GrabFrame gf = new();
+                    gf.Show();
+                }));
+                break;
+            case ShortcutKeyActions.Lookup:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    QuickSimpleLookup qsl = new();
+                    qsl.Show();
+                }));
+                break;
+            case ShortcutKeyActions.EditWindow:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    EditTextWindow etw = new();
+                    etw.Show();
+                    etw.Activate();
+                }));
+                break;
+            case ShortcutKeyActions.PreviousRegionGrab:
+                break;
+            case ShortcutKeyActions.PreviousEditWindow:
+                break;
+            default:
+                break;
         }
     }
 }

@@ -14,9 +14,9 @@
     MinHeight="300"
     d:Background="Black"
     d:Height="2000"
-    Background="{DynamicResource ApplicationBackgroundBrush}"
+    Background="{ui:ThemeResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -194,7 +194,7 @@
                         <Border
                             Margin="0,16,0,0"
                             Padding="20,10"
-                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
                             CornerRadius="6">
                             <StackPanel>
                                 <ui:ToggleSwitch Name="RunInBackgroundChkBx" Margin="0,12,0,0">
@@ -214,79 +214,26 @@
                                     x:Name="ShortcutsStackPanel"
                                     Margin="24,8,20,0"
                                     Orientation="Vertical">
-                                    <TextBox
-                                        x:Name="FullScreenHotkeyTextBox"
-                                        Grid.Column="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="F"
-                                        TextChanged="HotkeyTextBox_TextChanged"
-                                        Visibility="Collapsed" />
                                     <controls:ShortcutControl
                                         x:Name="FsgShortcutControl"
-                                        Recording="ShortcutControl_Recording"
+                                        IsShortcutEnabled="True"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Full Screen Grab" />
-                                    <TextBox
-                                        x:Name="GrabFrameHotkeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="G"
-                                        TextChanged="HotkeyTextBox_TextChanged"
-                                        Visibility="Collapsed" />
                                     <controls:ShortcutControl
                                         x:Name="GfShortcutControl"
-                                        Recording="ShortcutControl_Recording"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Grab Frame" />
-                                    <TextBox
-                                        x:Name="EditTextHotKeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="E"
-                                        TextChanged="HotkeyTextBox_TextChanged"
-                                        Visibility="Collapsed" />
                                     <controls:ShortcutControl
                                         x:Name="EtwShortcutControl"
-                                        Recording="ShortcutControl_Recording"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Edit Text Window" />
-                                    <TextBox
-                                        x:Name="LookupHotKeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="Q"
-                                        TextChanged="HotkeyTextBox_TextChanged"
-                                        Visibility="Collapsed" />
                                     <controls:ShortcutControl
                                         x:Name="QslShortcutControl"
-                                        Recording="ShortcutControl_Recording"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Quick Simple Lookup" />
                                 </StackPanel>
                             </StackPanel>
@@ -361,7 +308,7 @@
 
                         <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
                             <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
-                                EXPERIMENTAL 🧪 Use Tesseract, when possible.
+                                Use Tesseract, when possible.
                             </TextBlock>
                         </ui:ToggleSwitch>
                         <ui:HyperlinkButton Margin="48,0,0,0" Click="MoreInfoHyperlink_Click">
@@ -378,7 +325,7 @@
                             Margin="0,16,0,0"
                             Padding="20,10"
                             d:Visibility="Visible"
-                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
                             CornerRadius="6"
                             Visibility="Collapsed">
                             <StackPanel>
