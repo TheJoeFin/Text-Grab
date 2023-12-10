@@ -240,6 +240,11 @@
                                         KeySetChanged="ShortcutControl_KeySetChanged"
                                         RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Grab Last Region" />
+                                    <controls:ShortcutControl
+                                        x:Name="LetwShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Grab Last Region" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>

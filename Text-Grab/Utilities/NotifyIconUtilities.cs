@@ -153,6 +153,13 @@ public static class NotifyIconUtilities
                 }));
                 break;
             case ShortcutKeyActions.PreviousEditWindow:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    EditTextWindow etw = new();
+                    etw.OpenMostRecentTextHistoryItem();
+                    etw.Show();
+                    etw.Activate();
+                }));
                 break;
             default:
                 break;

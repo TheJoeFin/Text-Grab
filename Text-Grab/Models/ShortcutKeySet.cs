@@ -137,8 +137,16 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
             Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
             NonModifierKey = Key.L,
             IsEnabled = false,
-            Name = "Copy Last Selection",
+            Name = "Copy Last Region Selection",
             Action = ShortcutKeyActions.PreviousRegionGrab
+        },
+        new()
+        {
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift, KeyModifiers.Control},
+            NonModifierKey = Key.E,
+            IsEnabled = false,
+            Name = "Open Last Edit Text Window",
+            Action = ShortcutKeyActions.PreviousEditWindow
         },
     };
 }

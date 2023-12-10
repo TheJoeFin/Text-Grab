@@ -276,6 +276,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         cancellationTokenForDirOCR = null;
     }
 
+    public void OpenMostRecentTextHistoryItem()
+    {
+        PassedTextControl.Text = Singleton<HistoryService>.Instance.GetLastTextHistory();
+    }
+
     public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
         PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);

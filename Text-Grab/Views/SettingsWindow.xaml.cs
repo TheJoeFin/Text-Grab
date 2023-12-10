@@ -442,6 +442,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
                     GlrShortcutControl.KeySet = keySet;
                     break;
                 case ShortcutKeyActions.PreviousEditWindow:
+                    LetwShortcutControl.KeySet = keySet;
                     break;
                 default:
                     break;

@@ -35,7 +35,6 @@
                         Grid.Column="0"
                         Margin="8,0,20,0"
                         d:Text="ShortcutName"
-                        FontSize="18"
                         Style="{StaticResource TextBodyNormal}"
                         Text="{Binding ElementName=ShortcutUserControl, Path=ShortcutName, Mode=TwoWay}" />
                 </ui:ToggleSwitch>
