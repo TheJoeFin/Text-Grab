@@ -76,6 +76,11 @@ public partial class ShortcutControl : UserControl
 
             IsShortcutEnabled = _keySet.IsEnabled;
 
+            if (IsShortcutEnabled)
+                ButtonsPanel.Visibility = Visibility.Visible;
+            else
+                ButtonsPanel.Visibility = Visibility.Collapsed;
+
             ShortcutName = _keySet.Name;
 
             KeyLetterTextBlock.Text = _keySet.NonModifierKey.ToString();
@@ -242,5 +247,10 @@ public partial class ShortcutControl : UserControl
     private void IsEnabledToggleSwitch_Click(object sender, RoutedEventArgs e)
     {
         _keySet.IsEnabled = IsShortcutEnabled;
+
+        if (IsShortcutEnabled)
+            ButtonsPanel.Visibility = Visibility.Visible;
+        else
+            ButtonsPanel.Visibility = Visibility.Collapsed;
     }
 }

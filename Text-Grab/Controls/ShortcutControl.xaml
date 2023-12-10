@@ -10,7 +10,7 @@
     Margin="0,0,0,4"
     HorizontalAlignment="Left"
     d:DataContext="{d:DesignInstance Type=local:ShortcutControl}"
-    d:DesignHeight="80"
+    d:DesignHeight="86"
     d:DesignWidth="400"
     BorderThickness="3"
     PreviewKeyDown="ShortcutControl_PreviewKeyDown"
@@ -25,26 +25,26 @@
         Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
         CornerRadius="4">
         <StackPanel HorizontalAlignment="Left" Orientation="Vertical">
-
-            <StackPanel
-                Margin="0,0,0,8"
-                HorizontalAlignment="Left"
-                Orientation="Horizontal">
+            <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                 <ui:ToggleSwitch
                     x:Name="IsEnabledToggleSwitch"
                     Click="IsEnabledToggleSwitch_Click"
-                    IsChecked="{Binding Path=IsShortcutEnabled, ElementName=ShortcutUserControl, Mode=TwoWay}" />
-                <Grid HorizontalAlignment="Stretch" />
-                <TextBlock
-                    x:Name="ShortcutNameBlock"
-                    Grid.Column="0"
-                    Margin="8,0,20,0"
-                    d:Text="ShortcutName"
-                    FontSize="18"
-                    Style="{StaticResource TextBodyNormal}"
-                    Text="{Binding ElementName=ShortcutUserControl, Path=ShortcutName, Mode=TwoWay}" />
+                    IsChecked="{Binding Path=IsShortcutEnabled, ElementName=ShortcutUserControl, Mode=TwoWay}">
+                    <TextBlock
+                        x:Name="ShortcutNameBlock"
+                        Grid.Column="0"
+                        Margin="8,0,20,0"
+                        d:Text="ShortcutName"
+                        FontSize="18"
+                        Style="{StaticResource TextBodyNormal}"
+                        Text="{Binding ElementName=ShortcutUserControl, Path=ShortcutName, Mode=TwoWay}" />
+                </ui:ToggleSwitch>
             </StackPanel>
-            <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+            <StackPanel
+                x:Name="ButtonsPanel"
+                Margin="0,8,0,0"
+                HorizontalAlignment="Left"
+                Orientation="Horizontal">
                 <ToggleButton x:Name="RecordingToggleButton" Click="RecordingToggleButton_Click">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Record24" />
