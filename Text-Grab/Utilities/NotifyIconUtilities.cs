@@ -161,6 +161,12 @@ public static class NotifyIconUtilities
                     etw.Activate();
                 }));
                 break;
+            case ShortcutKeyActions.PreviousGrabFrame:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
+                }));
+                break;
             default:
                 break;
         }

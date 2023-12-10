@@ -100,6 +100,12 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
 
     public static List<ShortcutKeySet> DefaultShortcutKeySets { get; set; } = new()
     {
+        // When adding a new shortcut:
+        // 1. Add it to the list below
+        // 2. Add it to the Settings Window Loaded method
+        // .\Text-Grab\Views\SettingsWindow.xaml.cs
+        // 3. Add the action to the NotifyIconUtilities HotKeyManager_HotKeyPressed method
+
         new()
         {
             Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
@@ -134,8 +140,8 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
         },
         new()
         {
-            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
-            NonModifierKey = Key.L,
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift, KeyModifiers.Control},
+            NonModifierKey = Key.F,
             IsEnabled = false,
             Name = "Copy Last Region Selection",
             Action = ShortcutKeyActions.PreviousRegionGrab
@@ -147,6 +153,14 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
             IsEnabled = false,
             Name = "Open Last Edit Text Window",
             Action = ShortcutKeyActions.PreviousEditWindow
+        },
+        new()
+        {
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift, KeyModifiers.Control},
+            NonModifierKey = Key.G,
+            IsEnabled = false,
+            Name = "Edit last Grab Frame",
+            Action = ShortcutKeyActions.PreviousGrabFrame
         },
     };
 }
@@ -161,4 +175,5 @@ public enum ShortcutKeyActions
     EditWindow = 5,
     PreviousRegionGrab = 6,
     PreviousEditWindow = 7,
+    PreviousGrabFrame = 8,
 }

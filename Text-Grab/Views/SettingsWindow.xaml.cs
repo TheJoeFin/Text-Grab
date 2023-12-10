@@ -444,6 +444,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
                 case ShortcutKeyActions.PreviousEditWindow:
                     LetwShortcutControl.KeySet = keySet;
                     break;
+                case ShortcutKeyActions.PreviousGrabFrame:
+                    LgfShortcutControl.KeySet = keySet;
+                    break;
                 default:
                     break;
             }

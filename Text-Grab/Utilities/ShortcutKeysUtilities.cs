@@ -10,11 +10,6 @@ internal class ShortcutKeysUtilities
 {
     public static void SaveShortcutKeySetSettings(IEnumerable<ShortcutKeySet> shortcutKeySets)
     {
-        // serialize the list of custom bottom bar items to json
-        JsonSerializerOptions options = new JsonSerializerOptions()
-        {
-            
-        };
         string json = JsonSerializer.Serialize(shortcutKeySets);
 
         // save the json string to the settings

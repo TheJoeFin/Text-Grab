@@ -221,30 +221,35 @@
                                         RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Full Screen Grab" />
                                     <controls:ShortcutControl
+                                        x:Name="GlrShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Grab Last Region" />
+                                    <controls:ShortcutControl
                                         x:Name="GfShortcutControl"
                                         KeySetChanged="ShortcutControl_KeySetChanged"
                                         RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Grab Frame" />
+                                    <controls:ShortcutControl
+                                        x:Name="LgfShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Open Last Grab Frame" />
                                     <controls:ShortcutControl
                                         x:Name="EtwShortcutControl"
                                         KeySetChanged="ShortcutControl_KeySetChanged"
                                         RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Edit Text Window" />
                                     <controls:ShortcutControl
+                                        x:Name="LetwShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Last Edit Text Window" />
+                                    <controls:ShortcutControl
                                         x:Name="QslShortcutControl"
                                         KeySetChanged="ShortcutControl_KeySetChanged"
                                         RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Quick Simple Lookup" />
-                                    <controls:ShortcutControl
-                                        x:Name="GlrShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Grab Last Region" />
-                                    <controls:ShortcutControl
-                                        x:Name="LetwShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Grab Last Region" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>
