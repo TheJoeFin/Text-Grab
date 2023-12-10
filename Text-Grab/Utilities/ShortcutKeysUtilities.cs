@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -27,8 +28,10 @@ internal class ShortcutKeysUtilities
     {
         string json = Settings.Default.ShortcutKeySets;
 
+        List<ShortcutKeySet> defaultKeys = ShortcutKeySet.DefaultShortcutKeySets;
+
         if (string.IsNullOrWhiteSpace(json))
-            return ShortcutKeySet.DefaultShortcutKeySets;
+            return defaultKeys;
 
         // create a list of custom bottom bar items
         List<ShortcutKeySet>? shortcutKeySets = new();
@@ -38,8 +41,9 @@ internal class ShortcutKeysUtilities
 
         // return the list of custom bottom bar items
         if (shortcutKeySets is null || shortcutKeySets.Count == 0)
-            return ShortcutKeySet.DefaultShortcutKeySets;
+            return defaultKeys;
 
-        return shortcutKeySets;
+        var actionsList = shortcutKeySets.Select(x => x.Action).ToList();
+        return shortcutKeySets.Concat(defaultKeys.Where(x => !actionsList.Contains(x.Action)).ToList()).ToList();
     }
 }

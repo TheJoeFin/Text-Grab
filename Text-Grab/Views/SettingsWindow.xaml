@@ -235,6 +235,11 @@
                                         KeySetChanged="ShortcutControl_KeySetChanged"
                                         RecordingStarted="ShortcutControl_Recording"
                                         ShortcutName="Quick Simple Lookup" />
+                                    <controls:ShortcutControl
+                                        x:Name="GlrShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Grab Last Region" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>

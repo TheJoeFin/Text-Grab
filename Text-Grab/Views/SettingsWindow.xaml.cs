@@ -90,21 +90,16 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private bool HotKeysAllDifferent()
     {
-        if (EtwShortcutControl is null
-            || FsgShortcutControl is null
-            || GfShortcutControl is null
-            || QslShortcutControl is null)
-            return false;
-
         bool anyMatchingKeys = false;
 
-        HashSet<ShortcutControl> shortcuts = new()
-        {
-            EtwShortcutControl,
-            FsgShortcutControl,
-            GfShortcutControl,
-            QslShortcutControl
-        };
+        HashSet<ShortcutControl> shortcuts = new();
+
+        foreach (var child in ShortcutsStackPanel.Children)
+            if (child is ShortcutControl shortcutControl)
+                shortcuts.Add(shortcutControl);
+
+        if (shortcuts.Count == 0)
+            return false;
 
         foreach (ShortcutControl shortcut in shortcuts)
         {
@@ -252,13 +247,12 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         if (HotKeysAllDifferent())
         {
-            List<ShortcutKeySet> shortcutKeys = new()
-            {
-                FsgShortcutControl.KeySet,
-                GfShortcutControl.KeySet,
-                QslShortcutControl.KeySet,
-                EtwShortcutControl.KeySet
-            };
+            List<ShortcutKeySet> shortcutKeys = new();
+
+            foreach (var child in ShortcutsStackPanel.Children)
+                if (child is ShortcutControl control)
+                    shortcutKeys.Add(control.KeySet);
+
             ShortcutKeysUtilities.SaveShortcutKeySetSettings(shortcutKeys);
         }
 
@@ -445,6 +439,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
                     EtwShortcutControl.KeySet = keySet;
                     break;
                 case ShortcutKeyActions.PreviousRegionGrab:
+                    GlrShortcutControl.KeySet = keySet;
                     break;
                 case ShortcutKeyActions.PreviousEditWindow:
                     break;
