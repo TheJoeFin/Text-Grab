@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Input;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Models;
 
+[DebuggerDisplay("{Name} : enabled {IsEnabled} modifiers {Modifiers} non-modifiers {NonModifierKey}")]
 public class ShortcutKeySet : IEquatable<ShortcutKeySet>
 {
     public HashSet<KeyModifiers> Modifiers { get; set; } = new();
@@ -51,6 +53,17 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
 
         if (Enum.TryParse(keyString, out Key parsedKey))
             NonModifierKey = parsedKey;
+    }
+
+    public bool AreKeysEqual(ShortcutKeySet otherKeySet)
+    {
+        if (NonModifierKey != otherKeySet.NonModifierKey)
+            return false;
+
+        if (!Modifiers.SequenceEqual(otherKeySet.Modifiers))
+            return false;
+
+        return true;
     }
 
     public bool Equals(HotKeyEventArgs e)

@@ -10,7 +10,7 @@
     Margin="0,0,0,4"
     HorizontalAlignment="Left"
     d:DataContext="{d:DesignInstance Type=local:ShortcutControl}"
-    d:DesignHeight="86"
+    d:DesignHeight="100"
     d:DesignWidth="400"
     BorderThickness="3"
     PreviewKeyDown="ShortcutControl_PreviewKeyDown"
@@ -134,7 +134,11 @@
                         Text="X" />
                 </Border>
             </StackPanel>
-
+            <TextBlock
+                x:Name="ErrorText"
+                Margin="8,0,20,0"
+                d:Text="This is error message text"
+                Style="{StaticResource TextBodyNormal}" />
 
         </StackPanel>
     </Border>

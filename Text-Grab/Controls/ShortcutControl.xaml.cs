@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 
@@ -15,6 +17,12 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class ShortcutControl : UserControl
 {
+    private Brush BadBrush = new SolidColorBrush(Colors.Red);
+    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
+
+    private bool HasErrorWithKeySet { get; set; } = false;
+    public bool HasConflictingError { get; set; } = false;
+
     public bool IsShortcutEnabled
     {
         get { return (bool)GetValue(IsShortcutEnabledProperty); }
@@ -96,6 +104,23 @@ public partial class ShortcutControl : UserControl
         InitializeComponent();
     }
 
+    public void GoIntoErrorMode(string errorMessage = "")
+    {
+        this.BorderBrush = BadBrush;
+
+        if (!string.IsNullOrEmpty(errorMessage))
+            ErrorText.Text = errorMessage;
+
+        ErrorText.Visibility = Visibility.Visible;
+    }
+
+    public void GoIntoNormalMode()
+    {
+        ErrorText.Visibility = Visibility.Collapsed;
+        ErrorText.Text = string.Empty;
+        this.BorderBrush = GoodBrush;
+    }
+
     private void ShortcutControl_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (!isRecording)
@@ -162,25 +187,44 @@ public partial class ShortcutControl : UserControl
 
         if (HasLetter && HasModifier)
         {
-            KeySet.Modifiers = modifierKeys;
-            KeySet.NonModifierKey = justLetterKeys.FirstOrDefault();
+            HasErrorWithKeySet = false;
+            ShortcutKeySet newKeySet = new ShortcutKeySet()
+            {
+                Modifiers = modifierKeys,
+                NonModifierKey = justLetterKeys.FirstOrDefault(),
+                IsEnabled = IsShortcutEnabled,
+                Name = _keySet.Name,
+                Action = _keySet.Action,
+            };
+            KeySet = newKeySet;
+        }
+        else
+        {
+            HasErrorWithKeySet = true;
+            ErrorText.Text = "Need to have at least one modifier and one non-modifier key";
         }
 
         if (string.IsNullOrEmpty(currentSequence) || currentSequence.Equals(previousSequence))
             return;
 
-        KeyLetterTextBlock.Text = string.Join('+', justLetterKeys);
+        KeyLetterTextBlock.Text = justLetterKeys.FirstOrDefault().ToString();
         previousSequence = currentSequence;
     }
 
     private void ShortcutControl_PreviewKeyUp(object sender, KeyEventArgs e)
     {
+        if (!isRecording)
+            return;
+
         CheckForErrors();
     }
 
-    private void CheckForErrors()
+    public void CheckForErrors()
     {
-
+        if (HasErrorWithKeySet || HasConflictingError)
+            GoIntoErrorMode();
+        else
+            GoIntoNormalMode();
     }
 
     private static HashSet<Key> RemoveModifierKeys(HashSet<Key> downKeys)

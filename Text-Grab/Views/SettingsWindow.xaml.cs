@@ -111,17 +111,20 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
                 if (shortcut == shortcut2)
                     continue;
 
-                if (keySet.Equals(shortcut2.KeySet))
+                if (keySet.AreKeysEqual(shortcut2.KeySet) && (shortcut.KeySet.IsEnabled && keySet.IsEnabled))
                 {
-                    shortcut.BorderBrush = BadBrush;
-                    shortcut2.BorderBrush = BadBrush;
+                    shortcut.HasConflictingError = true;
+                    shortcut2.HasConflictingError = true;
+                    shortcut2.GoIntoErrorMode("Cannot have two shortcuts that are the same");
                     anyMatchingKeys = true;
                     isThisShortcutGood = false;
                 }
             }
 
             if (isThisShortcutGood)
-                shortcut.BorderBrush = GoodBrush;
+                shortcut.HasConflictingError = false;
+
+            shortcut.CheckForErrors();
         }
 
         if (anyMatchingKeys)
@@ -188,23 +191,23 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         if (ShowToastCheckBox.IsChecked is bool showToast)
             Settings.Default.ShowToast = showToast;
         if (SystemThemeRdBtn.IsChecked is true)
-            Settings.Default.AppTheme = "System";
+            Settings.Default.AppTheme = AppTheme.System.ToString();
         else if (LightThemeRdBtn.IsChecked is true)
-            Settings.Default.AppTheme = "Light";
+            Settings.Default.AppTheme = AppTheme.Light.ToString();
         else if (DarkThemeRdBtn.IsChecked is true)
-            Settings.Default.AppTheme = "Dark";
+            Settings.Default.AppTheme = AppTheme.Dark.ToString();
 
         if (ShowToastCheckBox.IsChecked != null)
             Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
 
         if (FullScreenRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = "Fullscreen";
+            Settings.Default.DefaultLaunch = TextGrabMode.Fullscreen.ToString();
         else if (GrabFrameRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = "GrabFrame";
+            Settings.Default.DefaultLaunch = TextGrabMode.GrabFrame.ToString();
         else if (EditTextRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = "EditText";
+            Settings.Default.DefaultLaunch = TextGrabMode.EditText.ToString();
         else if (QuickLookupRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = "QuickLookup";
+            Settings.Default.DefaultLaunch = TextGrabMode.QuickLookup.ToString();
 
         if (ErrorCorrectBox.IsChecked is bool errorCorrect)
             Settings.Default.CorrectErrors = errorCorrect;
@@ -320,13 +323,13 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             {
                 InsertDelaySeconds = parsedText;
                 DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
-                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Transparent);
+                numberInputBox.BorderBrush = GoodBrush;
             }
             else
             {
                 InsertDelaySeconds = 3;
                 DelayTimeErrorSeconds.Visibility = Visibility.Visible;
-                numberInputBox.BorderBrush = new SolidColorBrush(Colors.Red);
+                numberInputBox.BorderBrush = BadBrush;
             }
         }
     }
