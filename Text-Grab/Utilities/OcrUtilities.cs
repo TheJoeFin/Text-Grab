@@ -179,6 +179,37 @@ public static class OcrUtilities
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
 
+    public async static void GetCopyTextFromPreviousRegion()
+    {
+        HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();
+
+        if (lastFsg is null)
+            return;
+
+        Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+
+        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect);
+        previousGrab.Show();
+
+        string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, lastFsg.OcrLanguage);
+
+        HistoryInfo newPrevRegionHistory = new()
+        {
+            ID = Guid.NewGuid().ToString(),
+            CaptureDateTime = DateTimeOffset.Now,
+            ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
+            TextContent = grabbedText,
+            PositionRect = lastFsg.PositionRect,
+            LanguageTag = lastFsg.OcrLanguage.LanguageTag,
+            IsTable = lastFsg.IsTable,
+            SourceMode = TextGrabMode.Fullscreen,
+            DpiScaleFactor = lastFsg.DpiScaleFactor,
+        };
+        Singleton<HistoryService>.Instance.SaveToHistory(newPrevRegionHistory);
+
+        OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, null);
+    }
+
     public async static Task GetTextFromPreviousFullscreenRegion(TextBox? destinationTextBox = null)
     {
         HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();

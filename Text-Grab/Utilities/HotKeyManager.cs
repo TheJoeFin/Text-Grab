@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using System.Windows.Input;
+using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 
@@ -12,6 +15,14 @@ namespace Text_Grab.Utilities;
 public static partial class HotKeyManager
 {
     public static event EventHandler<HotKeyEventArgs>? HotKeyPressed;
+
+    public static int? RegisterHotKey(ShortcutKeySet keySet)
+    {
+        if (Enum.TryParse(keySet.NonModifierKey.ToString(), out Keys winFormsKeys))
+            return RegisterHotKey(winFormsKeys, keySet.Modifiers.Aggregate((x, y) => x | y));
+        else
+            return null;
+    }
 
     public static int RegisterHotKey(Keys key, KeyModifiers modifiers)
     {

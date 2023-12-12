@@ -13,7 +13,17 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
 {
     #region Fields
 
-    private string _buttonText = "Button Text";
+    public string ButtonText
+    {
+        get { return (string)GetValue(ButtonTextProperty); }
+        set { SetValue(ButtonTextProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for ButtonText.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty ButtonTextProperty =
+        DependencyProperty.Register("ButtonText", typeof(string), typeof(CollapsibleButton), new PropertyMetadata("ButtonText"));
+
+
 
     private string _symbolText = "";
     private bool isSymbol = false;
@@ -37,19 +47,6 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
     #endregion Events
 
     #region Properties
-
-    public string ButtonText
-    {
-        get { return _buttonText; }
-        set
-        {
-            if (_buttonText != value)
-            {
-                _buttonText = value;
-                OnPropertyChanged();
-            }
-        }
-    }
 
     public bool CanChangeStyle { get; set; } = true;
 
