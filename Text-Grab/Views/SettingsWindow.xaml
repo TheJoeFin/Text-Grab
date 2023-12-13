@@ -14,9 +14,9 @@
     MinHeight="300"
     d:Background="Black"
     d:Height="2000"
-    Background="{DynamicResource ApplicationBackgroundBrush}"
+    Background="{ui:ThemeResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -194,7 +194,7 @@
                         <Border
                             Margin="0,16,0,0"
                             Padding="20,10"
-                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
                             CornerRadius="6">
                             <StackPanel>
                                 <ui:ToggleSwitch Name="RunInBackgroundChkBx" Margin="0,12,0,0">
@@ -210,89 +210,46 @@
                                         <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
                                     </TextBlock>
                                 </ui:ToggleSwitch>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
-                                    <TextBox
-                                        x:Name="FullScreenHotkeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="F"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="new Full Screen Grab" />
-                                </StackPanel>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
-                                    <TextBox
-                                        x:Name="GrabFrameHotkeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="G"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="new Grab Frame" />
-                                </StackPanel>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
-                                    <TextBox
-                                        x:Name="EditTextHotKeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="E"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="new Edit Text Window" />
-                                </StackPanel>
-                                <StackPanel Margin="24,8,20,0" Orientation="Horizontal">
-                                    <controls:ShortcutControl />
-                                    <TextBox
-                                        x:Name="LookupHotKeyTextBox"
-                                        Width="30"
-                                        Margin="-2,-1,0,0"
-                                        Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center"
-                                        Background="White"
-                                        CharacterCasing="Upper"
-                                        FontWeight="Medium"
-                                        Foreground="Black"
-                                        Style="{StaticResource TextBoxStyle1}"
-                                        Text="Q"
-                                        TextChanged="HotkeyTextBox_TextChanged" />
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="Launch Quick Simple Lookup" />
+                                <StackPanel
+                                    x:Name="ShortcutsStackPanel"
+                                    Margin="24,8,20,0"
+                                    Orientation="Vertical">
+                                    <controls:ShortcutControl
+                                        x:Name="FsgShortcutControl"
+                                        IsShortcutEnabled="True"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Full Screen Grab" />
+                                    <controls:ShortcutControl
+                                        x:Name="GlrShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Grab Last Region" />
+                                    <controls:ShortcutControl
+                                        x:Name="GfShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Grab Frame" />
+                                    <controls:ShortcutControl
+                                        x:Name="LgfShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Open Last Grab Frame" />
+                                    <controls:ShortcutControl
+                                        x:Name="EtwShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Edit Text Window" />
+                                    <controls:ShortcutControl
+                                        x:Name="LetwShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Last Edit Text Window" />
+                                    <controls:ShortcutControl
+                                        x:Name="QslShortcutControl"
+                                        KeySetChanged="ShortcutControl_KeySetChanged"
+                                        RecordingStarted="ShortcutControl_Recording"
+                                        ShortcutName="Quick Simple Lookup" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -366,7 +323,7 @@
 
                         <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
                             <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
-                                EXPERIMENTAL 🧪 Use Tesseract, when possible.
+                                Use Tesseract, when possible.
                             </TextBlock>
                         </ui:ToggleSwitch>
                         <ui:HyperlinkButton Margin="48,0,0,0" Click="MoreInfoHyperlink_Click">
@@ -383,7 +340,7 @@
                             Margin="0,16,0,0"
                             Padding="20,10"
                             d:Visibility="Visible"
-                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
                             CornerRadius="6"
                             Visibility="Collapsed">
                             <StackPanel>

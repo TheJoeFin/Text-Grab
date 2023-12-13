@@ -15,6 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using Text_Grab.Controls;
+using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -22,6 +23,7 @@ using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Globalization;
+using Windows.Media.Ocr;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using MessageBox = System.Windows.MessageBox;
@@ -180,18 +182,43 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
+        Language selectedLanguage = LanguageUtilities.GetOCRLanguage();
+        string tesseractLanguageTag = string.Empty;
+
+        if (LanguageMenuItem.Items.Count > 0)
+        {
+            foreach (MenuItem languageSubItem in LanguageMenuItem.Items)
+            {
+                if (languageSubItem.IsChecked)
+                {
+                    if (languageSubItem.Tag is Language language)
+                        selectedLanguage = language;
+                    else if (languageSubItem.Tag is TessLang tesseractLanguage)
+                        tesseractLanguageTag = tesseractLanguage.LanguageTag;
+                }
+            }
+        }
+
         if (options.OutputHeader)
         {
             PassedTextControl.AppendText(folderPath);
             PassedTextControl.AppendText(Environment.NewLine);
             PassedTextControl.AppendText($"{imageFiles.Count} images found");
-            PassedTextControl.AppendText(Environment.NewLine);
 
-            if (Settings.Default.UseTesseract)
+            if (!string.IsNullOrEmpty(tesseractLanguageTag))
             {
-                PassedTextControl.AppendText("Using Tesseract restricts parallel processing. ");
+                PassedTextControl.AppendText(Environment.NewLine);
+                PassedTextControl.AppendText($"Using {tesseractLanguageTag} from Tesseract.");
+                PassedTextControl.AppendText(Environment.NewLine);
+                PassedTextControl.AppendText("Tesseract can only run single threaded,");
                 PassedTextControl.AppendText(Environment.NewLine);
                 PassedTextControl.AppendText("May be slower if processing many images");
+                PassedTextControl.AppendText(Environment.NewLine);
+            }
+            else
+            {
+                PassedTextControl.AppendText(Environment.NewLine);
+                PassedTextControl.AppendText($"Using {selectedLanguage.DisplayName} from Windows.");
                 PassedTextControl.AppendText(Environment.NewLine);
             }
 
@@ -214,7 +241,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            await OcrAllImagesInParallel(options, ocrFileResults);
+            await OcrAllImagesInParallel(options, ocrFileResults, selectedLanguage, tesseractLanguageTag);
 
             if (options.OutputFooter)
             {
@@ -247,6 +274,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         GC.Collect();
         cancellationTokenForDirOCR = null;
+    }
+
+    public void OpenMostRecentTextHistoryItem()
+    {
+        PassedTextControl.Text = Singleton<HistoryService>.Instance.GetLastTextHistory();
     }
 
     public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
@@ -324,14 +356,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return listOfNames.ToString();
     }
 
-    private static async Task<string> OcrFile(string path, Language? selectedLanguage, OcrDirectoryOptions options)
+    private static async Task<string> OcrFile(string path, Language? selectedLanguage, string tesseractLanguageTag, OcrDirectoryOptions options)
     {
         StringBuilder returnString = new();
         if (options.OutputFileNames)
             returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path);
+            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path, selectedLanguage, tesseractLanguageTag);
 
             if (!string.IsNullOrWhiteSpace(ocrText))
             {
@@ -579,6 +611,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             try
             {
                 text = await dataPackageView.GetTextAsync();
+                text += Environment.NewLine;
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
             catch (System.Exception ex)
@@ -1126,15 +1159,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         newEtwWithText.Show();
     }
 
-    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults)
+    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults, Language selectedLanguage, string tesseractLanguageTag)
     {
         if (cancellationTokenForDirOCR is null)
             return;
 
-        Language? selectedLanguage = LanguageUtilities.GetOCRLanguage();
         int degreesOfParallel = 6;
 
-        if (Settings.Default.UseTesseract)
+        if (!string.IsNullOrEmpty(tesseractLanguageTag))
             degreesOfParallel = 1;
 
         ParallelOptions parallelOptions = new()
@@ -1147,7 +1179,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, options);
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, tesseractLanguageTag, options);
 
             // to get the TextBox to update whenever OCR Finishes:
             if (!options.WriteTxtFiles)
@@ -1898,5 +1930,89 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
+
+    private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        LoadLanguageMenuItems(LanguageMenuItem);
+    }
+
+    private async void LoadLanguageMenuItems(MenuItem captureMenuItem)
+    {
+        if (captureMenuItem.Items.Count > 0)
+            return;
+
+        // TODO Find a way to combine with the FSG language drop down
+
+        bool haveSetLastLang = false;
+        string lastTextLang = Settings.Default.LastUsedLang;
+        bool usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+
+        if (usingTesseract)
+        {
+            List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
+
+            foreach (ILanguage language in tesseractLanguages)
+            {
+                MenuItem languageMenuItem = new()
+                {
+                    Header = language.DisplayName,
+                    Tag = language,
+                    IsCheckable = true,
+                };
+                languageMenuItem.Click += LanguageMenuItem_Click;
+
+                captureMenuItem.Items.Add(languageMenuItem);
+
+                if (!haveSetLastLang && language.DisplayName == lastTextLang)
+                {
+                    languageMenuItem.IsChecked = true;
+                    haveSetLastLang = true;
+                }
+            }
+        }
+
+        IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
+
+        Language firstLang = LanguageUtilities.GetOCRLanguage();
+
+        foreach (Language language in possibleOCRLanguages)
+        {
+            MenuItem languageMenuItem = new()
+            {
+                Header = language.DisplayName,
+                Tag = language,
+                IsCheckable = true,
+            };
+            languageMenuItem.Click += LanguageMenuItem_Click;
+
+            captureMenuItem.Items.Add(languageMenuItem);
+
+            if (!haveSetLastLang &&
+                (language.AbbreviatedName.Equals(firstLang?.AbbreviatedName.ToLower(), StringComparison.CurrentCultureIgnoreCase)
+                || language.LanguageTag.Equals(firstLang?.LanguageTag.ToLower(), StringComparison.CurrentCultureIgnoreCase)))
+            {
+                languageMenuItem.IsChecked = true;
+                haveSetLastLang = true;
+            }
+        }
+        if (!haveSetLastLang && captureMenuItem.Items[0] is MenuItem firstMenuItem)
+        {
+            firstMenuItem.IsChecked = true;
+        }
+    }
+
+    private void LanguageMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
+            return;
+
+        foreach (MenuItem menuItem in LanguageMenuItem.Items)
+        {
+            menuItem.IsChecked = false; 
+        }
+
+        clickedMenuItem.IsChecked = true;
+    }
     #endregion Methods
+
 }

@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="CollapsibleButtonUserControl"
     Height="30"
     MaxWidth="300"
     Margin="5,10"
@@ -32,7 +33,7 @@
             Margin="0,0,12,0"
             VerticalAlignment="Center"
             d:Text="Design Text"
-            Text="{Binding Path=ButtonText, Mode=OneWay}" />
+            Text="{Binding ElementName=CollapsibleButtonUserControl, Path=ButtonText}" />
     </Grid>
     <Button.ContextMenu>
         <ContextMenu>
@@ -40,7 +41,7 @@
                 Name="ChangeButtonLayout"
                 Click="ChangeButtonLayout_Click"
                 Header="Change Style"
-                IsEnabled="{Binding Path=CanChangeStyle, Mode=OneWay}" />
+                IsEnabled="{Binding ElementName=CollapsibleButtonUserControl, Path=CanChangeStyle}" />
         </ContextMenu>
     </Button.ContextMenu>
 </Button>

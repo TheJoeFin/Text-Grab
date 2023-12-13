@@ -174,7 +174,8 @@ December	12	Winter";
         Assert.Equal(expectedResult, stringBuilder.ToString());
     }
 
-    // [WpfFact]
+    
+    [WpfFact(Skip ="since the hocr is not being used from Tesseract it will not be tested for now")]
     public async Task TesseractHocr()
     {
         int intialLinesToSkip = 12;

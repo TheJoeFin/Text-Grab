@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Controls;
+using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -178,6 +179,37 @@ public static class OcrUtilities
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
 
+    public async static void GetCopyTextFromPreviousRegion()
+    {
+        HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();
+
+        if (lastFsg is null)
+            return;
+
+        Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+
+        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect);
+        previousGrab.Show();
+
+        string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, lastFsg.OcrLanguage);
+
+        HistoryInfo newPrevRegionHistory = new()
+        {
+            ID = Guid.NewGuid().ToString(),
+            CaptureDateTime = DateTimeOffset.Now,
+            ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
+            TextContent = grabbedText,
+            PositionRect = lastFsg.PositionRect,
+            LanguageTag = lastFsg.OcrLanguage.LanguageTag,
+            IsTable = lastFsg.IsTable,
+            SourceMode = TextGrabMode.Fullscreen,
+            DpiScaleFactor = lastFsg.DpiScaleFactor,
+        };
+        Singleton<HistoryService>.Instance.SaveToHistory(newPrevRegionHistory);
+
+        OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, null);
+    }
+
     public async static Task GetTextFromPreviousFullscreenRegion(TextBox? destinationTextBox = null)
     {
         HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();
@@ -328,14 +360,22 @@ public static class OcrUtilities
         return text.ToString();
     }
 
-    public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath)
+    public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath, Language? language = null, string tesseractLanguageTag = "")
     {
         Uri fileURI = new(absolutePath, UriKind.Absolute);
-        BitmapImage droppedImage = new(fileURI);
+        FileInfo fileInfo = new(fileURI.LocalPath);
+        RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(absolutePath);
+        BitmapImage droppedImage = new();
+        droppedImage.BeginInit();
+        droppedImage.UriSource = fileURI;
+        ImageMethods.RotateImage(droppedImage, rotateFlipType);
+        droppedImage.CacheOption = BitmapCacheOption.None;
+        droppedImage.EndInit();
         droppedImage.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-        Language language = LanguageUtilities.GetOCRLanguage();
-        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
+        if (language is null)
+            language = LanguageUtilities.GetCurrentInputLanguage();
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language, tesseractLanguageTag));
     }
 
     public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, Language OcrLang)

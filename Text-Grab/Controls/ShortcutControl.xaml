@@ -5,59 +5,141 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Name="ShortcutUserControl"
+    Margin="0,0,0,4"
+    HorizontalAlignment="Left"
     d:DataContext="{d:DesignInstance Type=local:ShortcutControl}"
-    d:DesignHeight="50"
-    d:DesignWidth="200"
+    d:DesignHeight="100"
+    d:DesignWidth="400"
+    BorderThickness="3"
+    PreviewKeyDown="ShortcutControl_PreviewKeyDown"
+    PreviewKeyUp="ShortcutControl_PreviewKeyUp"
     mc:Ignorable="d">
     <UserControl.Resources>
         <BitmapImage x:Key="WinSymIcon" UriSource="/Text-Grab;component/Images/WinSym.png" />
     </UserControl.Resources>
-    <StackPanel Orientation="Horizontal">
-        <Border
-            Width="24"
-            Height="24"
-            Background="White"
-            CornerRadius="5">
-            <Image
-                x:Name="WinSymImage"
-                Width="10"
-                Height="10"
-                Source="{StaticResource WinSymIcon}"
-                Stretch="Uniform" />
-        </Border>
-        <Border
-            Width="70"
-            Height="24"
-            Margin="8,0,8,0"
-            Padding="6,0,0,1"
-            Background="White"
-            CornerRadius="5">
-            <TextBlock
+    <Border
+        Padding="10,8"
+        HorizontalAlignment="Left"
+        Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
+        CornerRadius="4">
+        <StackPanel HorizontalAlignment="Left" Orientation="Vertical">
+            <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                <ui:ToggleSwitch
+                    x:Name="IsEnabledToggleSwitch"
+                    Click="IsEnabledToggleSwitch_Click"
+                    IsChecked="{Binding Path=IsShortcutEnabled, ElementName=ShortcutUserControl, Mode=TwoWay}">
+                    <TextBlock
+                        x:Name="ShortcutNameBlock"
+                        Grid.Column="0"
+                        Margin="8,0,20,0"
+                        d:Text="ShortcutName"
+                        Style="{StaticResource TextBodyNormal}"
+                        Text="{Binding ElementName=ShortcutUserControl, Path=ShortcutName, Mode=TwoWay}" />
+                </ui:ToggleSwitch>
+            </StackPanel>
+            <StackPanel
+                x:Name="ButtonsPanel"
+                Margin="0,8,0,0"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                FontSize="16"
-                FontWeight="Medium"
-                Foreground="Black"
-                Text="Shift" />
-        </Border>
-        <Border
-            Width="24"
-            Height="24"
-            Background="White"
-            CornerRadius="5"
-            Visibility="Collapsed">
-            <TextBox
-                x:Name="ShorcutKey"
-                Width="20"
-                Height="20"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                HorizontalContentAlignment="Center"
-                VerticalContentAlignment="Center"
-                BorderThickness="0"
-                FontWeight="Medium"
-                Foreground="Black"
-                Text="X" />
-        </Border>
-    </StackPanel>
+                Orientation="Horizontal">
+                <ToggleButton x:Name="RecordingToggleButton" Click="RecordingToggleButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Record24" />
+                        <TextBlock
+                            Margin="6,0,0,0"
+                            VerticalAlignment="Center"
+                            Text="Record" />
+                    </StackPanel>
+                </ToggleButton>
+                <Border
+                    x:Name="WinKey"
+                    Width="24"
+                    Height="24"
+                    Margin="4,0"
+                    Background="White"
+                    CornerRadius="5">
+                    <Image
+                        x:Name="WinSymImage"
+                        Width="10"
+                        Height="10"
+                        Source="{StaticResource WinSymIcon}"
+                        Stretch="Uniform" />
+                </Border>
+                <Border
+                    x:Name="CtrlKey"
+                    Width="46"
+                    Height="24"
+                    Margin="4,0"
+                    Padding="6,0,0,1"
+                    Background="White"
+                    CornerRadius="5">
+                    <TextBlock
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Medium"
+                        Foreground="Black"
+                        Text="Ctrl" />
+                </Border>
+                <Border
+                    x:Name="ShiftKey"
+                    Width="70"
+                    Height="24"
+                    Margin="4,0"
+                    Padding="6,0,0,1"
+                    Background="White"
+                    CornerRadius="5">
+                    <TextBlock
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Medium"
+                        Foreground="Black"
+                        Text="Shift" />
+                </Border>
+                <Border
+                    x:Name="AltKey"
+                    Width="46"
+                    Height="24"
+                    Margin="4,0"
+                    Padding="6,0,0,1"
+                    Background="White"
+                    CornerRadius="5">
+                    <TextBlock
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Medium"
+                        Foreground="Black"
+                        Text="Alt" />
+                </Border>
+                <Border
+                    x:Name="KeyKey"
+                    Height="24"
+                    MinWidth="24"
+                    Margin="4,0"
+                    Padding="4,0"
+                    Background="White"
+                    CornerRadius="5"
+                    Visibility="Visible">
+                    <TextBlock
+                        x:Name="KeyLetterTextBlock"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Medium"
+                        Foreground="Black"
+                        Text="X" />
+                </Border>
+            </StackPanel>
+            <TextBlock
+                x:Name="ErrorText"
+                Margin="8,0,20,0"
+                d:Text="This is error message text"
+                Style="{StaticResource TextBodyNormal}" />
+
+        </StackPanel>
+    </Border>
 </UserControl>

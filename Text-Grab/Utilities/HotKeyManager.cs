@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using System.Windows.Input;
+using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 
@@ -9,9 +12,17 @@ namespace Text_Grab.Utilities;
 // Answer by: https://stackoverflow.com/users/314028/chris-taylor
 // Read on 11/18/2021
 
-public static class HotKeyManager
+public static partial class HotKeyManager
 {
     public static event EventHandler<HotKeyEventArgs>? HotKeyPressed;
+
+    public static int? RegisterHotKey(ShortcutKeySet keySet)
+    {
+        if (Enum.TryParse(keySet.NonModifierKey.ToString(), out Keys winFormsKeys))
+            return RegisterHotKey(winFormsKeys, keySet.Modifiers.Aggregate((x, y) => x | y));
+        else
+            return null;
+    }
 
     public static int RegisterHotKey(Keys key, KeyModifiers modifiers)
     {
@@ -90,11 +101,13 @@ public static class HotKeyManager
         private const int WM_HOTKEY = 0x312;
     }
 
-    [DllImport("user32", SetLastError = true)]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+    [LibraryImport("user32", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
-    [DllImport("user32", SetLastError = true)]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    [LibraryImport("user32", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool UnregisterHotKey(IntPtr hWnd, int id);
 
     private static int _id = 0;
 }

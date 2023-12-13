@@ -92,26 +92,42 @@ public partial class FullscreenGrab : Window
             //     break;
             case Key.G:
                 if (isActive is null)
-                    NewGrabFrameMenuItem.IsChecked = !NewGrabFrameMenuItem.IsChecked;
+                    NewGrabFrameToggleButton.IsChecked = !NewGrabFrameToggleButton.IsChecked;
                 else
-                    NewGrabFrameMenuItem.IsChecked = isActive.Value;
+                    NewGrabFrameToggleButton.IsChecked = isActive.Value;
+
+                if (NewGrabFrameToggleButton.IsChecked is true)
+                    SelectSingleToggleButton(NewGrabFrameToggleButton);
+                else
+                    SelectSingleToggleButton();
                 break;
             case Key.S:
                 if (isActive is null)
-                    SingleLineMenuItem.IsChecked = !SingleLineMenuItem.IsChecked;
+                    SingleLineToggleButton.IsChecked = !SingleLineToggleButton.IsChecked;
                 else
-                    SingleLineMenuItem.IsChecked = isActive.Value;
+                    SingleLineToggleButton.IsChecked = isActive.Value;
 
-                Settings.Default.FSGMakeSingleLineToggle = SingleLineMenuItem.IsChecked;
+                if (SingleLineToggleButton.IsChecked is true)
+                    SelectSingleToggleButton(SingleLineToggleButton);
+                else
+                    SelectSingleToggleButton();
+
+                bool isSingleLineChecked = false;
+                if (SingleLineToggleButton.IsChecked is true)
+                    isSingleLineChecked = true;
+                Settings.Default.FSGMakeSingleLineToggle = isSingleLineChecked;
                 Settings.Default.Save();
                 break;
             case Key.E:
                 if (isActive is null)
-                    SendToEtwMenuItem.IsChecked = !SendToEtwMenuItem.IsChecked;
+                    SendToEditTextToggleButton.IsChecked = !SendToEditTextToggleButton.IsChecked;
                 else
-                    SendToEtwMenuItem.IsChecked = isActive.Value;
+                    SendToEditTextToggleButton.IsChecked = isActive.Value;
 
-                Settings.Default.FsgSendEtwToggle = SendToEtwMenuItem.IsChecked;
+                bool isSendToEditChecked = false;
+                if (SendToEditTextToggleButton.IsChecked is true)
+                    isSendToEditChecked = true;
+                Settings.Default.FsgSendEtwToggle = isSendToEditChecked;
                 Settings.Default.Save();
                 break;
             case Key.F:
@@ -122,14 +138,36 @@ public partial class FullscreenGrab : Window
 
                 FreezeUnfreeze(FreezeMenuItem.IsChecked);
                 break;
+            case Key.N:
+                if (isActive is null)
+                    StandardModeToggleButton.IsChecked = !StandardModeToggleButton.IsChecked;
+                else
+                    StandardModeToggleButton.IsChecked = isActive.Value;
+
+                if (StandardModeToggleButton.IsChecked is true)
+                    SelectSingleToggleButton(StandardModeToggleButton);
+                else
+                    SelectSingleToggleButton();
+
+                bool isNormalChecked = false;
+                if (StandardModeToggleButton.IsChecked is true)
+                    isNormalChecked = true;
+                Settings.Default.FSGMakeSingleLineToggle = !isNormalChecked;
+                Settings.Default.Save();
+                break;
             case Key.T:
-                if (usingTesseract)
+                if (TableToggleButton.Visibility == Visibility.Collapsed)
                     return;
 
                 if (isActive is null)
                     TableToggleButton.IsChecked = !TableToggleButton.IsChecked;
                 else
                     TableToggleButton.IsChecked = isActive.Value;
+
+                if (TableToggleButton.IsChecked is true)
+                    SelectSingleToggleButton(TableToggleButton);
+                else
+                    SelectSingleToggleButton();
                 break;
             case Key.D1:
             case Key.D2:
@@ -298,12 +336,13 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    private async void LoadOcrLanguages()
+    private static async Task LoadOcrLanguages(ComboBox languagesComboBox, bool usingTesseract, List<FrameworkElement>? tesseractIncompatibleElements = null)
     {
-        if (LanguagesComboBox.Items.Count > 0)
+        if (languagesComboBox.Items.Count > 0)
             return;
 
         int count = 0;
+        // TODO Find a way to combine with the ETW language drop down
 
         bool haveSetLastLang = false;
         string lastTextLang = Settings.Default.LastUsedLang;
@@ -313,21 +352,22 @@ public partial class FullscreenGrab : Window
 
             foreach (ILanguage language in tesseractLanguages)
             {
-                LanguagesComboBox.Items.Add(language);
+                languagesComboBox.Items.Add(language);
 
                 if (!haveSetLastLang && language.DisplayName == lastTextLang)
                 {
-                    LanguagesComboBox.SelectedIndex = count;
+                    languagesComboBox.SelectedIndex = count;
                     haveSetLastLang = true;
 
-                    TableMenuItem.Visibility = Visibility.Collapsed;
-                    TableToggleButton.Visibility = Visibility.Collapsed;
+                    if (tesseractIncompatibleElements is not null)
+                        foreach (var element in tesseractIncompatibleElements)
+                            element.Visibility = Visibility.Collapsed;
                 }
 
                 count++;
             }
-            if (LanguagesComboBox.SelectedIndex == -1)
-                LanguagesComboBox.SelectedIndex = 0;
+            if (languagesComboBox.SelectedIndex == -1)
+                languagesComboBox.SelectedIndex = 0;
         }
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
@@ -336,20 +376,18 @@ public partial class FullscreenGrab : Window
 
         foreach (Language language in possibleOCRLanguages)
         {
-            LanguagesComboBox.Items.Add(language);
+            languagesComboBox.Items.Add(language);
 
             if (!haveSetLastLang &&
-                (language.AbbreviatedName.ToLower() == firstLang?.AbbreviatedName.ToLower()
-                || language.LanguageTag.ToLower() == firstLang?.LanguageTag.ToLower()))
+                (language.AbbreviatedName.Equals(firstLang?.AbbreviatedName.ToLower(), StringComparison.CurrentCultureIgnoreCase)
+                || language.LanguageTag.Equals(firstLang?.LanguageTag.ToLower(), StringComparison.CurrentCultureIgnoreCase)))
             {
-                LanguagesComboBox.SelectedIndex = count;
+                languagesComboBox.SelectedIndex = count;
                 haveSetLastLang = true;
             }
 
             count++;
         }
-
-        isComboBoxReady = true;
     }
 
     private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
@@ -362,6 +400,7 @@ public partial class FullscreenGrab : Window
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.G, isActive);
+        SelectSingleToggleButton(sender);
     }
 
     private void PanSelection(System.Windows.Point movingPoint)
@@ -645,6 +684,16 @@ public partial class FullscreenGrab : Window
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.S, isActive);
+        SelectSingleToggleButton(sender);
+
+        if (isActive)
+        {
+            bool isSingleLineChecked = false;
+            if (SingleLineToggleButton.IsChecked is true)
+                isSingleLineChecked = true;
+            Settings.Default.FSGMakeSingleLineToggle = isSingleLineChecked;
+            Settings.Default.Save();
+        }
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -653,7 +702,7 @@ public partial class FullscreenGrab : Window
             Singleton<HistoryService>.Instance.SaveToHistory(historyInfo);
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Maximized;
         FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
@@ -663,19 +712,27 @@ public partial class FullscreenGrab : Window
         SetImageToBackground();
 
         if (Settings.Default.FSGMakeSingleLineToggle)
-            SingleLineMenuItem.IsChecked = true;
+        {
+            SingleLineToggleButton.IsChecked = true;
+            SelectSingleToggleButton(SingleLineToggleButton);
+        }
 
         if (Settings.Default.FsgSendEtwToggle)
             SendToEditTextToggleButton.IsChecked = true;
-
-        if (IsMouseOver)
-            TopButtonsStackPanel.Visibility = Visibility.Visible;
 
 #if DEBUG
         Topmost = false;
 #endif
 
-        LoadOcrLanguages();
+        List<FrameworkElement> tesseractIncompatibleFrameworkElements = new()
+        {
+            TableMenuItem, TableToggleButton
+        };
+        await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
+        isComboBoxReady = true;
+
+        if (IsMouseOver)
+            TopButtonsStackPanel.Visibility = Visibility.Visible;
     }
 
     private void Window_Unloaded(object sender, RoutedEventArgs e)
@@ -711,6 +768,51 @@ public partial class FullscreenGrab : Window
 
         this.KeyDown -= FullscreenGrab_KeyDown;
         this.KeyUp -= FullscreenGrab_KeyUp;
+    }
+
+    private void StandardModeToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        bool isActive = CheckIfCheckingOrUnchecking(sender);
+        WindowUtilities.FullscreenKeyDown(Key.N, isActive); 
+        SelectSingleToggleButton(sender);
+
+        if (isActive)
+        {
+            bool isStandardChecked = false;
+            if (StandardModeToggleButton.IsChecked is true)
+                isStandardChecked = true;
+
+            Settings.Default.FSGMakeSingleLineToggle = !isStandardChecked;
+            Settings.Default.Save();
+        }
+    }
+
+    private void SelectSingleToggleButton(object? sender = null)
+    {
+        if (sender is not ToggleButton clickedToggleButton)
+        {
+            if (StandardModeToggleButton.IsChecked is false
+                && SingleLineToggleButton.IsChecked is false
+                && TableToggleButton.IsChecked is false
+                && NewGrabFrameToggleButton.IsChecked is false)
+                StandardModeToggleButton.IsChecked = true;
+
+            return;
+        }
+
+        StandardModeToggleButton.IsChecked = false;
+        SingleLineToggleButton.IsChecked = false;
+        TableToggleButton.IsChecked = false;
+        NewGrabFrameToggleButton.IsChecked = false;
+
+        clickedToggleButton.IsChecked = true;
+    }
+
+    private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        bool isActive = CheckIfCheckingOrUnchecking(sender);
+        WindowUtilities.FullscreenKeyDown(Key.T, isActive);
+        SelectSingleToggleButton(sender);
     }
     #endregion Methods
 }

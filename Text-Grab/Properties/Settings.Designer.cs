@@ -12,7 +12,7 @@ namespace Text_Grab.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.7.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.9.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -265,7 +265,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("F")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string FullscreenGrabHotKey {
             get {
                 return ((string)(this["FullscreenGrabHotKey"]));
@@ -277,7 +277,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("G")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string GrabFrameHotkey {
             get {
                 return ((string)(this["GrabFrameHotkey"]));
@@ -289,7 +289,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("E")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string EditWindowHotKey {
             get {
                 return ((string)(this["EditWindowHotKey"]));
@@ -361,7 +361,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Q")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string LookupHotKey {
             get {
                 return ((string)(this["LookupHotKey"]));
@@ -512,6 +512,18 @@ namespace Text_Grab.Properties {
             }
             set {
                 this["TesseractPath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ShortcutKeySets {
+            get {
+                return ((string)(this["ShortcutKeySets"]));
+            }
+            set {
+                this["ShortcutKeySets"] = value;
             }
         }
     }
