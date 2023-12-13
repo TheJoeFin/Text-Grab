@@ -265,7 +265,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("F")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string FullscreenGrabHotKey {
             get {
                 return ((string)(this["FullscreenGrabHotKey"]));
@@ -277,7 +277,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("G")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string GrabFrameHotkey {
             get {
                 return ((string)(this["GrabFrameHotkey"]));
@@ -289,7 +289,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("E")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string EditWindowHotKey {
             get {
                 return ((string)(this["EditWindowHotKey"]));
@@ -361,7 +361,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Q")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string LookupHotKey {
             get {
                 return ((string)(this["LookupHotKey"]));

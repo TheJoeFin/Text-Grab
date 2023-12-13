@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Windows.Input;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 
@@ -26,7 +28,7 @@ internal class ShortcutKeysUtilities
         List<ShortcutKeySet> defaultKeys = ShortcutKeySet.DefaultShortcutKeySets;
 
         if (string.IsNullOrWhiteSpace(json))
-            return defaultKeys;
+            return ParseFromPreviousAndDefaultsSettings();
 
         // create a list of custom bottom bar items
         List<ShortcutKeySet>? shortcutKeySets = new();
@@ -40,5 +42,73 @@ internal class ShortcutKeysUtilities
 
         var actionsList = shortcutKeySets.Select(x => x.Action).ToList();
         return shortcutKeySets.Concat(defaultKeys.Where(x => !actionsList.Contains(x.Action)).ToList()).ToList();
+    }
+
+    public static IEnumerable<ShortcutKeySet> ParseFromPreviousAndDefaultsSettings()
+    {
+        string fsgKey = Settings.Default.FullscreenGrabHotKey;
+
+        if (string.IsNullOrWhiteSpace(fsgKey))
+            return ShortcutKeySet.DefaultShortcutKeySets;
+
+        string gfKey = Settings.Default.GrabFrameHotkey;
+        string etwKey = Settings.Default.EditWindowHotKey;
+        string qslKey = Settings.Default.LookupHotKey;
+
+        List<ShortcutKeySet> priorAndDefaultSettings = new();
+
+        List<ShortcutKeyActions> standardActions = new()
+        {
+            ShortcutKeyActions.Fullscreen,
+            ShortcutKeyActions.GrabFrame,
+            ShortcutKeyActions.EditWindow,
+            ShortcutKeyActions.Lookup,
+        };
+
+        foreach (ShortcutKeyActions action in standardActions)
+        {
+            string name = string.Empty;
+            bool couldParse = false;
+            Key parsedKey = Key.None;
+
+            switch (action)
+            {
+                case ShortcutKeyActions.Fullscreen:
+                    name = "Fullscreen Grab";
+                    couldParse = Enum.TryParse(fsgKey, out parsedKey);
+                    break;
+                case ShortcutKeyActions.GrabFrame:
+                    name = "Grab Frame";
+                    couldParse = Enum.TryParse(gfKey, out parsedKey);
+                    break;
+                case ShortcutKeyActions.EditWindow:
+                    name = "Edit Text Window";
+                    couldParse = Enum.TryParse(etwKey, out parsedKey);
+                    break;
+                case ShortcutKeyActions.Lookup:
+                    name = "Quick Simple Lookup";
+                    couldParse = Enum.TryParse(qslKey, out parsedKey);
+                    break;
+            }
+
+            if (!couldParse)
+                continue;
+
+            ShortcutKeySet newKeySet = new()
+            {
+                NonModifierKey = parsedKey,
+                Modifiers = new HashSet<KeyModifiers>() { KeyModifiers.Shift, KeyModifiers.Windows },
+                IsEnabled = true,
+                Name = name,
+                Action = action
+            };
+
+            priorAndDefaultSettings.Add(newKeySet);
+        }
+
+        return priorAndDefaultSettings
+            .Concat(ShortcutKeySet.DefaultShortcutKeySets
+                .Where(x => !standardActions
+                    .Contains(x.Action)).ToList()).ToList();
     }
 }
