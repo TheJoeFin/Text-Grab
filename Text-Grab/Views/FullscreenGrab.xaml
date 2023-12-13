@@ -64,7 +64,7 @@
                 <SolidColorBrush
                     x:Name="BackgroundBrush"
                     Opacity="0"
-                    Color="{DynamicResource ApplicationBackgroundColor}" />
+                    Color="{wpfui:ThemeResource ApplicationBackgroundColor}" />
             </Canvas.Background>
             <Canvas.ContextMenu>
                 <ContextMenu>
@@ -139,7 +139,7 @@
                 <ComboBox
                     x:Name="LanguagesComboBox"
                     Margin="0"
-                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Foreground="{wpfui:ThemeResource TextFillColorPrimaryBrush}"
                     PreviewMouseDown="LanguagesComboBox_PreviewMouseDown"
                     SelectionChanged="LanguagesComboBox_SelectionChanged">
                     <ComboBox.ItemTemplate>
@@ -162,7 +162,7 @@
                     IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(F) Freeze what is on screens">
-                    <ui:SymbolIcon Symbol="Pause24" />
+                    <wpfui:SymbolIcon Symbol="Pause24" />
                 </ToggleButton>
                 <Border
                     x:Name="ModeButtonsBorder"
@@ -192,7 +192,7 @@
                             IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(S) Make result a single line">
-                            <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                            <wpfui:SymbolIcon Symbol="SubtractSquare24" />
                         </ToggleButton>
                         <ToggleButton
                             x:Name="TableToggleButton"
@@ -204,7 +204,7 @@
                             IsChecked="{Binding IsChecked, ElementName=TableMenuItem, Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) OCR text as a table">
-                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
+                            <wpfui:SymbolIcon Symbol="Table24" />
                         </ToggleButton>
                         <ToggleButton
                             x:Name="NewGrabFrameToggleButton"
@@ -216,7 +216,7 @@
                             IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(G) Place a Grab Frame">
-                            <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                            <wpfui:SymbolIcon Symbol="PanelBottom20" />
                         </ToggleButton>
                     </StackPanel>
                 </Border>
@@ -230,7 +230,7 @@
                     IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(E) Send to an Edit Text Window">
-                    <ui:SymbolIcon Symbol="Window24" />
+                    <wpfui:SymbolIcon Symbol="Window24" />
                 </ToggleButton>
                 <Button
                     x:Name="SettingsButton"
@@ -240,7 +240,7 @@
                     Click="SettingsMenuItem_Click"
                     Style="{StaticResource SymbolButton}"
                     ToolTip="Settings">
-                    <ui:SymbolIcon Symbol="Settings24" />
+                    <wpfui:SymbolIcon Symbol="Settings24" />
                 </Button>
                 <Button
                     x:Name="CancelButton"
@@ -250,7 +250,7 @@
                     Click="CancelMenuItem_Click"
                     Style="{StaticResource SymbolButton}"
                     ToolTip="(Esc) Cancel">
-                    <ui:SymbolIcon Symbol="Dismiss24" />
+                    <wpfui:SymbolIcon Symbol="Dismiss24" />
                 </Button>
             </StackPanel>
         </Border>
