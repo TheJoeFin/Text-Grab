@@ -280,9 +280,6 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ShortcutControl_Recording(object sender, EventArgs e)
     {
-        if (App.Current is App app)
-            NotifyIconUtilities.UnregisterHotkeys(app);
-
         foreach (var child in ShortcutsStackPanel.Children)
             if (child is ShortcutControl shortcutControl
                 && sender is ShortcutControl senderShortcut
@@ -336,6 +333,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Closed(object? sender, EventArgs e)
     {
+        if (App.Current is App app)
+            NotifyIconUtilities.RegisterHotKeys(app);
+
         WindowUtilities.ShouldShutDown();
     }
 
@@ -454,6 +454,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
                     break;
             }
         }
+
+        if (App.Current is App app)
+            NotifyIconUtilities.UnregisterHotkeys(app);
 
         if (TesseractHelper.CanLocateTesseractExe())
         {
