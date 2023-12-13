@@ -25,7 +25,7 @@
     DragLeave="GrabFrameWindow_DragLeave"
     DragOver="GrabFrameWindow_DragOver"
     Drop="GrabFrameWindow_Drop"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
     Initialized="GrabFrameWindow_Initialized"
     Loaded="GrabFrame_Loaded"
     LocationChanged="Window_LocationChanged"
@@ -80,7 +80,7 @@
             ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
     <Border
-        BorderBrush="{DynamicResource ApplicationBackgroundBrush}"
+        BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
         BorderThickness="2"
         ClipToBounds="True">
         <Grid ClipToBounds="False">
@@ -93,7 +93,7 @@
                 Grid.Row="0"
                 Grid.RowSpan="3"
                 VerticalAlignment="Top"
-                Background="{DynamicResource ApplicationBackgroundBrush}">
+                Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -239,7 +239,7 @@
                     Grid.Column="0"
                     Grid.ColumnSpan="3"
                     HorizontalAlignment="Center"
-                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    Background="{ui:ThemeResource ApplicationBackgroundBrush}"
                     ClipToBounds="True"
                     Orientation="Horizontal">
                     <Image
@@ -273,7 +273,7 @@
                     Margin="2,2,2,0"
                     Padding="8,2"
                     HorizontalAlignment="Right"
-                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    Background="{ui:ThemeResource ApplicationBackgroundBrush}"
                     WindowChrome.IsHitTestVisibleInChrome="True" />
                 <StackPanel
                     Grid.Column="2"
@@ -388,7 +388,7 @@
                     </Grid>
                 </Viewbox>
             </Border>
-            <Border Grid.Row="2" Background="{DynamicResource ApplicationBackgroundBrush}">
+            <Border Grid.Row="2" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid
                     Height="30"
                     Margin="6"
@@ -437,7 +437,7 @@
                         Padding="4"
                         VerticalContentAlignment="Center"
                         Content="Search For Text..."
-                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                         IsHitTestVisible="False"
                         Opacity="0.5"
                         Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
@@ -462,7 +462,7 @@
                         VerticalAlignment="Center"
                         d:Visibility="Visible"
                         ClipToBounds="True"
-                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                         Visibility="Collapsed">
                         <MenuItem>
                             <MenuItem.Header>
@@ -485,7 +485,8 @@
                         x:Name="LanguagesComboBox"
                         Grid.Column="3"
                         MinWidth="60"
-                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        Padding="8,0"
+                        Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                         PreviewMouseDown="LanguagesComboBox_MouseDown"
                         SelectionChanged="LanguagesComboBox_SelectionChanged">
                         <ComboBox.ItemTemplate>
@@ -532,9 +533,7 @@
                             Click="FreezeToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(F) Freeze the content within Grab Frame">
-                            <TextBlock FontFamily="Segoe MDL2 Assets">
-                                
-                            </TextBlock>
+                            <ui:SymbolIcon Symbol="Pause24" />
                         </ToggleButton>
 
                         <ToggleButton
@@ -545,9 +544,7 @@
                             Click="TableToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) Analyze content as tables">
-                            <TextBlock FontFamily="Segoe MDL2 Assets">
-                                
-                            </TextBlock>
+                            <ui:SymbolIcon Symbol="Table24" />
                         </ToggleButton>
 
                         <ToggleButton
@@ -574,9 +571,7 @@
                             IsChecked="False"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(E) Edit individual words in Grab Frame">
-                            <TextBlock FontFamily="Segoe MDL2 Assets">
-                                
-                            </TextBlock>
+                            <ui:SymbolIcon Symbol="Window24" />
                         </ToggleButton>
 
                         <controls:CollapsibleButton

@@ -138,7 +138,9 @@
                 Orientation="Horizontal">
                 <ComboBox
                     x:Name="LanguagesComboBox"
+                    Height="34"
                     Margin="0"
+                    Padding="8,0"
                     Foreground="{wpfui:ThemeResource TextFillColorPrimaryBrush}"
                     PreviewMouseDown="LanguagesComboBox_PreviewMouseDown"
                     SelectionChanged="LanguagesComboBox_SelectionChanged">
