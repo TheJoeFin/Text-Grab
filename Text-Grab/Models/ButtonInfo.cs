@@ -119,6 +119,14 @@ public class ButtonInfo
             IsSymbol = true,
             SymbolIcon = SymbolRegular.Search24
         },
+        new()
+        {
+            ButtonText = "Edit Bottom Bar",
+            SymbolText = "",
+            ClickEvent = "EditBottomBarMenuItem_Click",
+            IsSymbol = true,
+            SymbolIcon = SymbolRegular.CalendarEdit24
+        },
     };
 
     public static List<ButtonInfo> AllButtons { get; set; } = new()
@@ -420,7 +428,19 @@ public class ButtonInfo
             SymbolText = "",
             Command = "MakeQrCodeCmd",
             SymbolIcon = SymbolRegular.QrCode24
-        }
+        },
+        new()
+        {
+            ButtonText = "Edit Bottom Bar",
+            ClickEvent = "EditBottomBarMenuItem_Click",
+            SymbolIcon = SymbolRegular.CalendarEdit24
+        },
+        new()
+        {
+            ButtonText = "Settings",
+            ClickEvent = "SettingsMenuItem_Click",
+            SymbolIcon = SymbolRegular.Settings24
+        },
     };
 }
 
