@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Text_Grab.Controls;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab.Models;
 
@@ -12,6 +13,8 @@ public class ButtonInfo
     public string Command { get; set; } = "";
     public string ClickEvent { get; set; } = "";
     public bool IsSymbol { get; set; } = false;
+
+    public SymbolRegular SymbolIcon { get; set; } = SymbolRegular.Diamond24;
 
     public ButtonInfo()
     {
@@ -37,7 +40,7 @@ public class ButtonInfo
         return hash;
     }
 
-    // a constructor which takes a collapisble button
+    // a constructor which takes a collapsible button
     public ButtonInfo(CollapsibleButton button)
     {
         if (button.CustomButton is not null)
@@ -52,7 +55,6 @@ public class ButtonInfo
         else
         {
             ButtonText = button.ButtonText;
-            SymbolText = button.SymbolText;
             Background = button.Background.ToString();
             IsSymbol = button.IsSymbol;
         }
@@ -76,40 +78,46 @@ public class ButtonInfo
             ButtonText = "Copy and Close",
             SymbolText = "",
             Background = "#CC7000",
-            ClickEvent = "CopyCloseBTN_Click"
+            ClickEvent = "CopyCloseBTN_Click",
+            SymbolIcon = SymbolRegular.Copy24
         },
         new()
         {
             ButtonText = "Save to File...",
             SymbolText = "",
-            ClickEvent = "SaveBTN_Click"
+            ClickEvent = "SaveBTN_Click",
+            SymbolIcon = SymbolRegular.Save24
         },
         new()
         {
             ButtonText = "Make Single Line",
             SymbolText = "",
-            Command = "SingleLineCmd"
+            Command = "SingleLineCmd",
+            SymbolIcon = SymbolRegular.SubtractSquare24
         },
         new()
         {
             ButtonText = "New Fullscreen Grab",
             SymbolText = "",
             ClickEvent = "NewFullscreen_Click",
-            IsSymbol = true
+            IsSymbol = true,
+            SymbolIcon = SymbolRegular.SlideAdd24
         },
         new()
         {
             ButtonText = "Open Grab Frame",
             SymbolText = "",
             ClickEvent = "OpenGrabFrame_Click",
-            IsSymbol = true
+            IsSymbol = true,
+            SymbolIcon = SymbolRegular.PanelBottom20
         },
         new()
         {
             ButtonText = "Find and Replace",
             SymbolText = "",
             ClickEvent = "SearchButton_Click",
-            IsSymbol = true
+            IsSymbol = true,
+            SymbolIcon = SymbolRegular.Search24
         },
     };
 
@@ -121,7 +129,8 @@ public class ButtonInfo
             ButtonText = "Copy and Close",
             SymbolText = "",
             Background = "#CC7000",
-            ClickEvent = "CopyCloseBTN_Click"
+            ClickEvent = "CopyCloseBTN_Click",
+            SymbolIcon = SymbolRegular.Copy24
         },
         new()
         {
@@ -129,21 +138,24 @@ public class ButtonInfo
             ButtonText = "Close and Insert",
             SymbolText = "",
             Background = "#CC7000",
-            ClickEvent = "CopyClosePasteBTN_Click"
+            ClickEvent = "CopyClosePasteBTN_Click",
+            SymbolIcon = SymbolRegular.ClipboardTaskAdd24
         },
         new()
         {
             OrderNumber = 1.2,
             ButtonText = "Save to File...",
             SymbolText = "",
-            ClickEvent = "SaveBTN_Click"
+            ClickEvent = "SaveBTN_Click",
+            SymbolIcon = SymbolRegular.DocumentSave24
         },
         new()
         {
             OrderNumber = 1.3,
             ButtonText = "Make Single Line",
             SymbolText = "",
-            Command = "SingleLineCmd"
+            Command = "SingleLineCmd",
+            SymbolIcon = SymbolRegular.SubtractSquare24
         },
         new()
         {
@@ -151,6 +163,7 @@ public class ButtonInfo
             ButtonText = "New Fullscreen Grab",
             SymbolText = "",
             ClickEvent = "NewFullscreen_Click",
+            SymbolIcon = SymbolRegular.SlideAdd24
         },
         new()
         {
@@ -158,6 +171,7 @@ public class ButtonInfo
             ButtonText = "Fullscreen Grab With Delay",
             SymbolText = "",
             ClickEvent = "FSGDelayMenuItem_Click",
+            SymbolIcon = SymbolRegular.Timer324
         },
         new()
         {
@@ -165,6 +179,7 @@ public class ButtonInfo
             ButtonText = "Open Grab Frame",
             SymbolText = "",
             ClickEvent = "OpenGrabFrame_Click",
+            SymbolIcon = SymbolRegular.PanelBottom20
         },
         new()
         {
@@ -172,209 +187,239 @@ public class ButtonInfo
             ButtonText = "Find and Replace",
             SymbolText = "",
             ClickEvent = "SearchButton_Click",
+            SymbolIcon = SymbolRegular.Search24
         },
         new()
         {
             OrderNumber = 2.1,
             ButtonText = "Open Settings",
             SymbolText = "",
-            ClickEvent = "SettingsMenuItem_Click"
+            ClickEvent = "SettingsMenuItem_Click",
+            SymbolIcon = SymbolRegular.Settings24
         },
         new()
         {
             OrderNumber = 2.2,
             ButtonText = "Open File...",
             SymbolText = "",
-            ClickEvent = "OpenFileMenuItem_Click"
+            ClickEvent = "OpenFileMenuItem_Click",
+            SymbolIcon = SymbolRegular.DocumentArrowRight24
         },
         new()
         {
             OrderNumber = 2.3,
             ButtonText = "OCR Paste",
             SymbolText = "",
-            Command = "PasteCommand"
+            Command = "PasteCommand",
+            SymbolIcon = SymbolRegular.ClipboardImage24
         },
         new()
         {
             OrderNumber = 2.4,
             ButtonText = "Launch URL",
             SymbolText = "",
-            Command = "LaunchCmd"
+            Command = "LaunchCmd",
+            SymbolIcon = SymbolRegular.Globe24
         },
         new()
         {
             OrderNumber = 3.1,
             ButtonText = "Trim Each Line",
             SymbolText = "",
-            ClickEvent = "TrimEachLineMenuItem_Click"
+            ClickEvent = "TrimEachLineMenuItem_Click",
+            SymbolIcon = SymbolRegular.TextCollapse24
         },
         new()
         {
             OrderNumber = 3.2,
             ButtonText = "Try to make Numbers",
             SymbolText = "",
-            ClickEvent = "TryToNumberMenuItem_Click"
+            ClickEvent = "TryToNumberMenuItem_Click",
+            SymbolIcon = SymbolRegular.NumberRow24
         },
         new()
         {
             OrderNumber = 3.3,
             ButtonText = "Try to make Letters",
             SymbolText = "",
-            ClickEvent = "TryToAlphaMenuItem_Click"
+            ClickEvent = "TryToAlphaMenuItem_Click",
+            SymbolIcon = SymbolRegular.TextT24
         },
         new()
         {
             OrderNumber = 3.4,
             ButtonText = "Toggle Case",
             SymbolText = "",
-            Command = "ToggleCaseCmd"
+            Command = "ToggleCaseCmd",
+            SymbolIcon = SymbolRegular.TextChangeCase24
         },
         new()
         {
             OrderNumber = 3.5,
             ButtonText = "Remove Duplicate Lines",
             SymbolText = "",
-            ClickEvent = "RemoveDuplicateLines_Click"
+            ClickEvent = "RemoveDuplicateLines_Click",
+            SymbolIcon = SymbolRegular.MultiselectLtr24
         },
         new()
         {
             OrderNumber = 3.6,
             ButtonText = "Replace Reserved Characters",
             SymbolText = "",
-            Command = "ReplaceReservedCmd"
+            Command = "ReplaceReservedCmd",
+            SymbolIcon = SymbolRegular.RoadCone24
         },
         new()
         {
             OrderNumber = 3.7,
             ButtonText = "Unstack Text (Select Top Row)",
             SymbolText = "",
-            Command = "UnstackCmd"
+            Command = "UnstackCmd",
+            SymbolIcon = SymbolRegular.TableStackAbove24
         },
         new()
         {
             OrderNumber = 3.8,
             ButtonText = "Unstack Text (Select First Column)",
             SymbolText = "",
-            Command = "UnstackGroupCmd"
+            Command = "UnstackGroupCmd",
+            SymbolIcon = SymbolRegular.TableStackLeft24
         },
         new()
         {
             OrderNumber = 3.9,
             ButtonText = "Add or Remove at...",
             SymbolText = "",
-            ClickEvent = "AddRemoveAtMenuItem_Click"
+            ClickEvent = "AddRemoveAtMenuItem_Click",
+            SymbolIcon = SymbolRegular.ArrowSwap24
         },
         new()
         {
             OrderNumber = 4.1,
             ButtonText = "Select Word",
             SymbolText = "",
-            ClickEvent = "SelectWordMenuItem_Click"
+            ClickEvent = "SelectWordMenuItem_Click",
+            SymbolIcon = SymbolRegular.Highlight24
         },
         new()
         {
             OrderNumber = 4.2,
             ButtonText = "Select Line",
             SymbolText = "",
-            ClickEvent = "SelectLineMenuItem_Click"
+            ClickEvent = "SelectLineMenuItem_Click",
+            SymbolIcon = SymbolRegular.ArrowFit20
         },
         new()
         {
             OrderNumber = 4.3,
             ButtonText = "Move Line Up",
             SymbolText = "",
-            ClickEvent = "MoveLineUpMenuItem_Click"
+            ClickEvent = "MoveLineUpMenuItem_Click",
+            SymbolIcon = SymbolRegular.ArrowUpload24
         },
         new()
         {
             OrderNumber = 4.4,
             ButtonText = "Move Line Down",
             SymbolText = "",
-            ClickEvent = "MoveLineDownMenuItem_Click"
+            ClickEvent = "MoveLineDownMenuItem_Click",
+            SymbolIcon = SymbolRegular.ArrowDownload24
         },
         new()
         {
             OrderNumber = 4.5,
             ButtonText = "Split on Selection",
             SymbolText = "",
-            Command = "SplitOnSelectionCmd"
+            Command = "SplitOnSelectionCmd",
+            SymbolIcon = SymbolRegular.TextWrap24
         },
         new()
         {
             OrderNumber = 4.6,
             ButtonText = "Isolate Selection",
             SymbolText = "",
-            Command = "IsolateSelectionCmd"
+            Command = "IsolateSelectionCmd",
+            SymbolIcon = SymbolRegular.ShapeExclude24
         },
         new()
         {
             OrderNumber = 4.7,
             ButtonText = "Delete All of Selection",
             SymbolText = "",
-            Command = "DeleteAllSelectionCmd"
+            Command = "DeleteAllSelectionCmd",
+            SymbolIcon = SymbolRegular.Delete24
         },
         new()
         {
             OrderNumber = 4.8,
             ButtonText = "Delete All of Pattern",
             SymbolText = "",
-            Command = "DeleteAllSelectionPatternCmd"
+            Command = "DeleteAllSelectionPatternCmd",
+            SymbolIcon = SymbolRegular.DeleteLines20
         },
         new()
         {
             OrderNumber = 4.9,
             ButtonText = "Insert on Every Line",
             SymbolText = "",
-            Command = "InsertSelectionOnEveryLineCmd"
+            Command = "InsertSelectionOnEveryLineCmd",
+            SymbolIcon = SymbolRegular.TextIndentIncreaseLtr24
         },
         new()
         {
             OrderNumber = 5.1,
             ButtonText = "New Quick Simple Lookup",
             SymbolText = "",
-            ClickEvent = "LaunchQuickSimpleLookup"
+            ClickEvent = "LaunchQuickSimpleLookup",
+            SymbolIcon = SymbolRegular.SlideSearch24
         },
         new()
         {
             OrderNumber = 5.2,
             ButtonText = "List Files and Folders...",
             SymbolText = "",
-            ClickEvent = "ListFilesMenuItem_Click"
+            ClickEvent = "ListFilesMenuItem_Click",
+            SymbolIcon = SymbolRegular.DocumentBulletListMultiple24
         },
         new()
         {
             OrderNumber = 5.3,
             ButtonText = "Extract Text from Images...",
             SymbolText = "",
-            ClickEvent = "ReadFolderOfImages_Click"
+            ClickEvent = "ReadFolderOfImages_Click",
+            SymbolIcon = SymbolRegular.ImageMultiple24
         },
         new()
         {
             OrderNumber = 5.4,
             ButtonText = "Extract Text from Images to txt Files...",
             SymbolText = "",
-            ClickEvent = "ReadFolderOfImagesWriteTxtFiles_Click"
+            ClickEvent = "ReadFolderOfImagesWriteTxtFiles_Click",
+            SymbolIcon = SymbolRegular.TabDesktopImage24
         },
         new()
         {
             OrderNumber = 5.5,
             ButtonText = "New Window",
             SymbolText = "",
-            ClickEvent = "NewWindow_Clicked"
+            ClickEvent = "NewWindow_Clicked",
+            SymbolIcon = SymbolRegular.WindowNew24
         },
         new()
         {
             OrderNumber = 5.6,
             ButtonText = "New Window from Selection",
             SymbolText = "",
-            ClickEvent = "NewWindowWithText_Clicked"
+            ClickEvent = "NewWindowWithText_Clicked",
+            SymbolIcon = SymbolRegular.WindowLocationTarget20
         },
         new()
         {
             OrderNumber = 5.7,
             ButtonText = "Make QR Code",
             SymbolText = "",
-            Command = "MakeQrCodeCmd"
+            Command = "MakeQrCodeCmd",
+            SymbolIcon = SymbolRegular.QrCode24
         }
     };
 }
