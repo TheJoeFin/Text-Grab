@@ -9,12 +9,12 @@ using System.Windows.Media;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab.Utilities;
 
 public class CustomBottomBarUtilities
 {
-    // this method takes a json string and returns a list of CustomButton using system.text.json
     public static List<ButtonInfo> GetCustomBottomBarItemsSetting()
     {
         string json = Settings.Default.BottomButtonsJson;
@@ -22,15 +22,23 @@ public class CustomBottomBarUtilities
         if (string.IsNullOrWhiteSpace(json))
             return ButtonInfo.DefaultButtonList;
 
-        // create a list of custom bottom bar items
         List<ButtonInfo>? customBottomBarItems = new();
 
-        // deserialize the json string into a list of custom bottom bar items
         customBottomBarItems = JsonSerializer.Deserialize<List<ButtonInfo>>(json);
 
-        // return the list of custom bottom bar items
-        if (customBottomBarItems is null)
+        if (customBottomBarItems is null || customBottomBarItems.Count == 0)
             return ButtonInfo.DefaultButtonList;
+
+        // check to see if the first element is using the default symbol, Diamond24, which is unused by any button
+        if (customBottomBarItems.First().SymbolIcon == SymbolRegular.Diamond24)
+        {
+            // Migrate to the new SymbolRegular instead of the old symbols.
+            Dictionary<string, SymbolRegular> buttonDictionary = ButtonInfo.AllButtons.ToDictionary(button => button.ButtonText, button => button.SymbolIcon);
+
+            foreach (ButtonInfo buttonInfo in customBottomBarItems)
+                buttonInfo.SymbolIcon = buttonDictionary[buttonInfo.ButtonText];
+        }
+
 
         return customBottomBarItems;
     }
