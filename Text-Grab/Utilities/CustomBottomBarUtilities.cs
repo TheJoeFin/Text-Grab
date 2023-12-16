@@ -70,10 +70,10 @@ public class CustomBottomBarUtilities
             CollapsibleButton button = new()
             {
                 ButtonText = buttonItem.ButtonText,
-                SymbolText = buttonItem.SymbolText,
                 IsSymbol = buttonItem.IsSymbol,
                 CustomButton = buttonItem,
-                ToolTip = buttonItem.ButtonText
+                ToolTip = buttonItem.ButtonText,
+                ButtonSymbol = buttonItem.SymbolIcon
             };
 
             if (buttonItem.Background != "Transparent"

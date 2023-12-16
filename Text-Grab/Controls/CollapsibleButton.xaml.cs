@@ -3,13 +3,14 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Models;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls;
 
 /// <summary>
 /// Interaction logic for CollapsibleButton.xaml
 /// </summary>
-public partial class CollapsibleButton : Button, INotifyPropertyChanged
+public partial class CollapsibleButton : System.Windows.Controls.Button, INotifyPropertyChanged
 {
     #region Fields
 
@@ -19,13 +20,10 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
         set { SetValue(ButtonTextProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for ButtonText.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty ButtonTextProperty =
         DependencyProperty.Register("ButtonText", typeof(string), typeof(CollapsibleButton), new PropertyMetadata("ButtonText"));
 
 
-
-    private string _symbolText = "";
     private bool isSymbol = false;
 
     #endregion Fields
@@ -61,18 +59,15 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
             ChangeButtonLayout_Click();
         }
     }
-    public string SymbolText
+
+    public SymbolRegular ButtonSymbol
     {
-        get { return _symbolText; }
-        set
-        {
-            if (_symbolText != value)
-            {
-                _symbolText = value;
-                OnPropertyChanged();
-            }
-        }
+        get { return (SymbolRegular)GetValue(ButtonSymbolProperty); }
+        set { SetValue(ButtonSymbolProperty, value); }
     }
+
+    public static readonly DependencyProperty ButtonSymbolProperty =
+        DependencyProperty.Register("ButtonSymbol", typeof(SymbolRegular), typeof(CollapsibleButton), new PropertyMetadata(SymbolRegular.Diamond24));
 
     #endregion Properties
 

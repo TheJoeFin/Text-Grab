@@ -69,26 +69,26 @@
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
                     Background="DarkGreen"
+                    ButtonSymbol="Add24"
                     ButtonText="Add Item"
                     Click="AddItemBtn_Click"
                     Foreground="White"
-                    SymbolText=""
                     Visibility="Collapsed" />
                 <controls:CollapsibleButton
                     x:Name="NewFullscreen"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
+                    ButtonSymbol="SlideAdd24"
                     ButtonText="New Fullscreen Grab"
                     Click="NewFullscreen_Click"
                     IsSymbol="True"
-                    SymbolText=""
                     ToolTip="New Fullscreen Grab (Ctrl + F)" />
                 <controls:CollapsibleButton
                     x:Name="SaveBTN"
+                    ButtonSymbol="Save24"
                     ButtonText="Save Lookup Data"
                     Click="SaveBTN_Click"
                     IsSymbol="True"
-                    SymbolText=""
                     ToolTip="Save Lookup Data"
                     Visibility="Collapsed" />
                 <ToggleButton
@@ -102,9 +102,7 @@
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(Ctrl + I) Insert the value when it is copied"
                     Unchecked="PasteToggleButton_Checked">
-                    <TextBlock Margin="4" FontFamily="Segoe MDL2 Assets">
-                        
-                    </TextBlock>
+                    <ui:SymbolIcon Symbol="ClipboardPaste24" />
                 </ToggleButton>
                 <ToggleButton
                     x:Name="EditWindowToggleButton"
@@ -117,9 +115,8 @@
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(Ctrl + E) Send value to Edit Text Window"
                     Unchecked="EditWindowToggleButton_Checked">
-                    <TextBlock Margin="4" FontFamily="Segoe MDL2 Assets">
-                        
-                    </TextBlock>
+                    <ui:SymbolIcon Symbol="Window24" />
+
                 </ToggleButton>
                 <Menu
                     Grid.Column="1"
@@ -164,10 +161,10 @@
                     x:Name="EnterButton"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
+                    ButtonSymbol="ArrowRight24"
                     ButtonText="Enter"
                     Click="EnterButton_Click"
                     IsSymbol="True"
-                    SymbolText=""
                     ToolTip="Go (Enter)">
                     <controls:CollapsibleButton.ContextMenu>
                         <ContextMenu>

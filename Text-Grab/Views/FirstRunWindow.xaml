@@ -398,24 +398,23 @@
                     Joe</TextBlock>
 
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-
                     <controls:CollapsibleButton
                         x:Name="SettingsButton"
-                        Width="100"
+                        Width="110"
                         Background="DimGray"
+                        ButtonSymbol="Settings24"
                         ButtonText="Settings"
                         CanChangeStyle="False"
-                        Click="SettingsButton_Click"
-                        SymbolText="" />
+                        Click="SettingsButton_Click" />
 
                     <controls:CollapsibleButton
                         x:Name="OkayButton"
-                        Width="100"
+                        Width="110"
                         Margin="20"
+                        ButtonSymbol="Checkmark24"
                         ButtonText="Okay"
                         CanChangeStyle="False"
-                        Click="OkayButton_Click"
-                        SymbolText="" />
+                        Click="OkayButton_Click" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

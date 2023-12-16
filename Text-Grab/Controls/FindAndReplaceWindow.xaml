@@ -12,7 +12,7 @@
     MinWidth="400"
     MinHeight="300"
     Closed="Window_Closed"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
     KeyUp="Window_KeyUp"
     Loaded="FindAndReplacedLoaded"
     mc:Ignorable="d">
@@ -45,7 +45,7 @@
     <Window.Resources>
         <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
     </Window.Resources>
-    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
@@ -98,9 +98,9 @@
                 Width="130"
                 Margin="0,6,6,0"
                 Padding="4"
+                ButtonSymbol="Search24"
                 ButtonText="Find"
-                Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}"
-                SymbolText="" />
+                Command="{x:Static local:FindAndReplaceWindow.TextSearchCmd}" />
 
             <TextBox
                 x:Name="ReplaceTextBox"
@@ -117,9 +117,9 @@
                 Width="130"
                 Margin="0,6,6,0"
                 Padding="4"
+                ButtonSymbol="ArrowRepeat124"
                 ButtonText="Replace"
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
-                SymbolText=""
                 Visibility="Visible" />
 
             <StackPanel
@@ -149,9 +149,9 @@
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
                     Background="Red"
+                    ButtonSymbol="DeleteLines20"
                     ButtonText="Delete All"
-                    Command="{x:Static local:FindAndReplaceWindow.DeleteAllCmd}"
-                    SymbolText="" />
+                    Command="{x:Static local:FindAndReplaceWindow.DeleteAllCmd}" />
 
                 <local:CollapsibleButton
                     x:Name="ReplaceAllButton"
@@ -161,9 +161,9 @@
                     Height="30"
                     Margin="0,0,6,0"
                     Padding="4"
+                    ButtonSymbol="ArrowRepeatAll24"
                     ButtonText="Replace All"
-                    Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}"
-                    SymbolText="" />
+                    Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}" />
             </StackPanel>
             <StackPanel
                 x:Name="EvenMoreOptionsHozStack"
@@ -190,18 +190,18 @@
                     Width="140"
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
+                    ButtonSymbol="LightbulbFilament24"
                     ButtonText="Extract Regex"
-                    Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}"
-                    SymbolText="" />
+                    Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}" />
 
                 <local:CollapsibleButton
                     x:Name="MatchesToEditWindow"
                     Width="130"
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
+                    ButtonSymbol="WindowEdit20"
                     ButtonText="Edit Matches"
-                    Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}"
-                    SymbolText="" />
+                    Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}" />
             </StackPanel>
 
         </Grid>
@@ -214,12 +214,12 @@
             Foreground="{StaticResource Teal}"
             Text="Matches" />
 
-        <Border Grid.Row="3" Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}">
+        <Border Grid.Row="3" Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
             <ListView
                 x:Name="ResultsListView"
                 Grid.Row="2"
                 Background="Transparent"
-                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                 ScrollViewer.CanContentScroll="True"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                 SelectionChanged="ResultsListView_SelectionChanged"

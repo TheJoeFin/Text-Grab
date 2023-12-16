@@ -447,11 +447,11 @@
                         Margin="0,0,6,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
+                        ButtonSymbol="Dismiss24"
                         CanChangeStyle="False"
                         Click="ClearBTN_Click"
                         Foreground="LightGray"
                         IsSymbol="True"
-                        SymbolText=""
                         Visibility="Collapsed" />
 
                     <Menu
@@ -511,17 +511,17 @@
                             Width="30"
                             Height="30"
                             Margin="0"
+                            ButtonSymbol="ArrowClockwise24"
                             ButtonText="Re-OCR Frame"
                             Click="RefreshBTN_Click"
                             IsSymbol="True"
-                            SymbolText=""
                             ToolTip="Re-OCR Frame (Ctrl + R)" />
                         <controls:CollapsibleButton
                             x:Name="OcrFrameBTN"
                             Margin="0"
+                            ButtonSymbol="ScanText24"
                             ButtonText="OCR Frame"
                             Click="RefreshBTN_Click"
-                            SymbolText=""
                             ToolTip="OCR Frame (Ctrl + R)"
                             Visibility="Collapsed" />
 
@@ -577,10 +577,10 @@
                         <controls:CollapsibleButton
                             x:Name="SettingsBTN"
                             Margin="6,0,0,0"
+                            ButtonSymbol="Settings24"
                             ButtonText="Settings"
                             Click="SettingsBTN_Click"
                             IsSymbol="True"
-                            SymbolText=""
                             ToolTip="Open Text Grab Settings"
                             Visibility="Collapsed" />
                     </StackPanel>
@@ -590,9 +590,9 @@
                         Grid.Column="5"
                         Width="110"
                         Margin="0"
+                        ButtonSymbol="Copy24"
                         ButtonText="Grab"
                         Click="GrabBTN_Click"
-                        SymbolText=""
                         ToolTip="Grab text in the Grab Frame" />
                 </Grid>
             </Border>
