@@ -17,7 +17,6 @@
                 <ResourceDictionary Source="/Styles/ButtonStyles.xaml" />
                 <ResourceDictionary Source="/Styles/TextBoxStyles.xaml" />
                 <ResourceDictionary Source="/Styles/GridViewStyles.xaml" />
-                <ResourceDictionary Source="/Styles/ComboBoxStyles.xaml" />
                 <ResourceDictionary Source="/Styles/DataGridStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <ControlTemplate x:Key="MenuItemTemplate1" TargetType="{x:Type MenuItem}">

@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-static class OSInterop
+static partial class OSInterop
 {
-    [DllImport("user32.dll")]
-    public static extern int GetSystemMetrics(int smIndex);
+    [LibraryImport("user32.dll")]
+    public static partial int GetSystemMetrics(int smIndex);
     public const int SM_CMONITORS = 80;
 
-    [DllImport("user32.dll")]
-    public static extern bool SystemParametersInfo(int nAction, int nParam, ref RECT rc, int nUpdate);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SystemParametersInfo(int nAction, int nParam, ref RECT rc, int nUpdate);
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     public static extern bool GetMonitorInfo(HandleRef hmonitor, [In, Out] MONITORINFOEX info);
@@ -16,8 +17,9 @@ static class OSInterop
     [DllImport("user32.dll")]
     public static extern IntPtr MonitorFromWindow(HandleRef handle, int flags);
 
-    [DllImport("user32.dll")]
-    public static extern bool ClipCursor(ref RECT lpRect);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ClipCursor(ref RECT lpRect);
 
     [DllImport("user32.dll")]
     public static extern bool ClipCursor([In()] IntPtr lpRect);
@@ -54,31 +56,37 @@ static class OSInterop
     public const int WM_KEYDOWN = 0x0100;
     public const int WM_KEYUP = 0x0101;
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
-    internal static extern bool FreeLibrary(IntPtr hModule);
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool FreeLibrary(IntPtr hModule);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall, SetLastError = true)]
-    internal static extern bool UnhookWindowsHookEx(IntPtr idHook);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool UnhookWindowsHookEx(IntPtr idHook);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-    internal static extern IntPtr LoadLibrary(string lpFileName);
+    [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial IntPtr LoadLibrary(string lpFileName);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall, SetLastError = true)]
-    internal static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, int dwThreadId);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
+    internal static partial IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, int dwThreadId);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall, SetLastError = true)]
-    internal static extern IntPtr CallNextHookEx(IntPtr idHook, int nCode, IntPtr wParam, IntPtr lParam);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
+    internal static partial IntPtr CallNextHookEx(IntPtr idHook, int nCode, IntPtr wParam, IntPtr lParam);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall, SetLastError = true)]
-    internal static extern short GetAsyncKeyState(int vKey);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
+    internal static partial short GetAsyncKeyState(int vKey);
 
     public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 
-    [DllImport("user32.dll")]
-    public static extern short GetAsyncKeyState(System.Windows.Forms.Keys vKey);
+    [LibraryImport("user32.dll")]
+    public static partial short GetAsyncKeyState(System.Windows.Forms.Keys vKey);
 
-    [DllImport("user32.dll")]
-    public static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+    [LibraryImport("user32.dll")]
+    public static partial uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct INPUT

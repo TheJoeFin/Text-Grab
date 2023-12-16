@@ -89,6 +89,16 @@ public class HistoryService
         return true;
     }
 
+    public string GetLastTextHistory()
+    {
+        HistoryInfo? lastHistoryItem = HistoryTextOnly.LastOrDefault();
+
+        if (lastHistoryItem is not HistoryInfo historyInfo)
+            return string.Empty;
+
+        return historyInfo.TextContent;
+    }
+
     public List<HistoryInfo> GetRecentGrabs()
     {
         return HistoryWithImage;

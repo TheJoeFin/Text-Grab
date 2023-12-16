@@ -22,6 +22,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -2017,7 +2018,12 @@ new GrabFrameOperationArgs()
         {
             ResetGrabFrame();
             await Task.Delay(300);
-            BitmapImage droppedImage = new(fileURI);
+            BitmapImage droppedImage = new();
+            droppedImage.BeginInit();
+            droppedImage.UriSource = fileURI;
+            System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
+            ImageMethods.RotateImage(droppedImage, rotateFlipType);
+            droppedImage.EndInit();
             frameContentImageSource = droppedImage;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Views;
@@ -73,23 +75,11 @@ public static class NotifyIconUtilities
 
     public static void RegisterHotKeys(App app)
     {
-        KeysConverter keysConverter = new();
-        Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
-        Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
-        Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
-        Keys? LookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
+        IEnumerable<ShortcutKeySet> shortcuts = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
 
-        List<Keys?> keysList = new()
-        {
-            fullscreenKey,
-            grabFrameKey,
-            editWindowKey,
-            LookupKey
-        };
-
-        foreach (Keys? key in keysList)
-            if (key is not null)
-                app.HotKeyIds.Add(HotKeyManager.RegisterHotKey(key.Value, KeyModifiers.Windows | KeyModifiers.Shift));
+        foreach (ShortcutKeySet keySet in shortcuts)
+            if (keySet.IsEnabled && HotKeyManager.RegisterHotKey(keySet) is int id)
+                app.HotKeyIds.Add(id);
 
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
@@ -115,43 +105,70 @@ public static class NotifyIconUtilities
         if (!Settings.Default.GlobalHotkeysEnabled)
             return;
 
-        KeysConverter keysConverter = new();
-        Keys? fullscreenKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.FullscreenGrabHotKey);
-        Keys? grabFrameKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.GrabFrameHotkey);
-        Keys? editWindowKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.EditWindowHotKey);
-        Keys? lookupKey = (Keys?)keysConverter.ConvertFrom(Settings.Default.LookupHotKey);
+        IEnumerable<ShortcutKeySet> shortcuts = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
 
-        if (editWindowKey is not null && e.Key == editWindowKey.Value)
+        ShortcutKeyActions pressedAction = ShortcutKeyActions.None;
+        foreach (ShortcutKeySet keySet in shortcuts)
+            if (keySet.Equals(e))
+                pressedAction = keySet.Action;
+
+        switch (pressedAction)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                EditTextWindow etw = new();
-                etw.Show();
-                etw.Activate();
-            }));
-        }
-        else if (fullscreenKey is not null && e.Key == fullscreenKey.Value)
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                WindowUtilities.LaunchFullScreenGrab();
-            }));
-        }
-        else if (grabFrameKey is not null && e.Key == grabFrameKey.Value)
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                GrabFrame gf = new();
-                gf.Show();
-            }));
-        }
-        else if (lookupKey is not null && e.Key == lookupKey)
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                QuickSimpleLookup qsl = new();
-                qsl.Show();
-            }));
+            case ShortcutKeyActions.None:
+                break;
+            case ShortcutKeyActions.Settings:
+                break;
+            case ShortcutKeyActions.Fullscreen:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    WindowUtilities.LaunchFullScreenGrab();
+                }));
+                break;
+            case ShortcutKeyActions.GrabFrame:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    GrabFrame gf = new();
+                    gf.Show();
+                }));
+                break;
+            case ShortcutKeyActions.Lookup:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    QuickSimpleLookup qsl = new();
+                    qsl.Show();
+                }));
+                break;
+            case ShortcutKeyActions.EditWindow:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    EditTextWindow etw = new();
+                    etw.Show();
+                    etw.Activate();
+                }));
+                break;
+            case ShortcutKeyActions.PreviousRegionGrab:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    OcrUtilities.GetCopyTextFromPreviousRegion();
+                }));
+                break;
+            case ShortcutKeyActions.PreviousEditWindow:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    EditTextWindow etw = new();
+                    etw.OpenMostRecentTextHistoryItem();
+                    etw.Show();
+                    etw.Activate();
+                }));
+                break;
+            case ShortcutKeyActions.PreviousGrabFrame:
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
+                }));
+                break;
+            default:
+                break;
         }
     }
 }

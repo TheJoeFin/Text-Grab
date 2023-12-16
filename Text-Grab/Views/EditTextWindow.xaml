@@ -314,7 +314,10 @@
                     Click="FontMenuItem_Click"
                     Header="_Font..." />
             </MenuItem>
-            <MenuItem Header="_Capture">
+            <MenuItem
+                x:Name="CaptureMenuItem"
+                Header="_Capture"
+                SubmenuOpened="CaptureMenuItem_SubmenuOpened">
                 <MenuItem
                     x:Name="FullScreenGrabMenuItem"
                     Click="FullScreenGrabMenuItem_Click"
@@ -354,6 +357,7 @@
                     x:Name="ReadFolderOfImages"
                     Click="ReadFolderOfImages_Click"
                     Header="_Extract Text from Images in Folder..." />
+                <MenuItem x:Name="LanguageMenuItem" Header="Using OCR Language..." />
                 <MenuItem
                     x:Name="RecursiveFoldersCheck"
                     Header="Scan all folders recursively"

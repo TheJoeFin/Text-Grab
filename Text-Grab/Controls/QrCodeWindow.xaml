@@ -40,19 +40,19 @@
             <local:CollapsibleButton
                 x:Name="SaveButton"
                 Margin="12,0,0,0"
+                ButtonSymbol="Save24"
                 ButtonText="PNG..."
-                Click="SaveButton_Click"
-                SymbolText="" />
+                Click="SaveButton_Click" />
             <local:CollapsibleButton
                 x:Name="SvgButton"
+                ButtonSymbol="Save24"
                 ButtonText="Svg..."
-                Click="SvgButton_Click"
-                SymbolText="" />
+                Click="SvgButton_Click" />
             <local:CollapsibleButton
                 x:Name="CopyButton"
+                ButtonSymbol="ImageCopy24"
                 ButtonText="Copy PNG to clipboard"
-                Click="CopyButton_Click"
-                SymbolText="" />
+                Click="CopyButton_Click" />
         </StackPanel>
         <StackPanel
             Grid.Row="3"

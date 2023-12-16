@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab"
     Width="800"
     Height="450"
@@ -13,6 +14,7 @@
     Closing="Window_Closing"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
+    ShowInTaskbar="False"
     Topmost="False"
     Unloaded="Window_Unloaded"
     WindowStyle="None"
@@ -62,7 +64,7 @@
                 <SolidColorBrush
                     x:Name="BackgroundBrush"
                     Opacity="0"
-                    Color="{DynamicResource ApplicationBackgroundColor}" />
+                    Color="{wpfui:ThemeResource ApplicationBackgroundColor}" />
             </Canvas.Background>
             <Canvas.ContextMenu>
                 <ContextMenu>
@@ -73,7 +75,7 @@
                         IsCheckable="True" />
                     <MenuItem
                         Name="TableMenuItem"
-                        Click="SingleLineMenuItem_Click"
+                        Click="TableToggleButton_Click"
                         Header="OCR text as a table"
                         IsCheckable="True" />
                     <MenuItem
@@ -115,7 +117,7 @@
             Padding="8"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
-            d:Background="White"
+            d:Background="Gray"
             d:Visibility="Visible"
             Background="{DynamicResource ApplicationBackgroundBrush}"
             CornerRadius="8"
@@ -134,17 +136,12 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Orientation="Horizontal">
-                <TextBlock
-                    x:Name="TesseractTextBlock"
-                    Margin="4,1,4,0"
-                    VerticalAlignment="Center"
-                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                    Text="Tesseract"
-                    Visibility="Collapsed" />
                 <ComboBox
                     x:Name="LanguagesComboBox"
+                    Height="34"
                     Margin="0"
-                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Padding="8,0"
+                    Foreground="{wpfui:ThemeResource TextFillColorPrimaryBrush}"
                     PreviewMouseDown="LanguagesComboBox_PreviewMouseDown"
                     SelectionChanged="LanguagesComboBox_SelectionChanged">
                     <ComboBox.ItemTemplate>
@@ -167,44 +164,64 @@
                     IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(F) Freeze what is on screens">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <wpfui:SymbolIcon Symbol="Pause24" />
                 </ToggleButton>
-                <ToggleButton
-                    x:Name="SingleLineToggleButton"
-                    Width="34"
-                    Height="34"
+                <Border
+                    x:Name="ModeButtonsBorder"
                     Margin="2,0"
-                    d:IsChecked="True"
-                    Click="SingleLineMenuItem_Click"
-                    IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
-                    Style="{StaticResource ToggleSymbolButton}"
-                    ToolTip="(S) Make result a single line">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
-                </ToggleButton>
-                <ToggleButton
-                    x:Name="TableToggleButton"
-                    Width="34"
-                    Height="34"
-                    Margin="2,0"
-                    d:IsChecked="True"
-                    IsChecked="{Binding IsChecked, ElementName=TableMenuItem, Mode=TwoWay}"
-                    Style="{StaticResource ToggleSymbolButton}"
-                    ToolTip="(T) OCR text as a table">
-                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
-                </ToggleButton>
-
-                <ToggleButton
-                    x:Name="NewGrabFrameToggleButton"
-                    Width="34"
-                    Height="34"
-                    Margin="2,0"
-                    d:IsChecked="True"
-                    Click="NewGrabFrameMenuItem_Click"
-                    IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
-                    Style="{StaticResource ToggleSymbolButton}"
-                    ToolTip="(G) Place a Grab Frame">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
-                </ToggleButton>
+                    BorderBrush="{StaticResource Teal}"
+                    BorderThickness="2"
+                    CornerRadius="5">
+                    <StackPanel Orientation="Horizontal">
+                        <ToggleButton
+                            x:Name="StandardModeToggleButton"
+                            Width="30"
+                            Height="30"
+                            Margin="0"
+                            Click="StandardModeToggleButton_Click"
+                            IsChecked="True"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="(N) Normal Multi-line OCR Mode">
+                            <wpfui:SymbolIcon Symbol="TextAlignLeft24" />
+                        </ToggleButton>
+                        <ToggleButton
+                            x:Name="SingleLineToggleButton"
+                            Width="30"
+                            Height="30"
+                            Margin="0"
+                            d:IsChecked="True"
+                            Click="SingleLineMenuItem_Click"
+                            IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="(S) Make result a single line">
+                            <wpfui:SymbolIcon Symbol="SubtractSquare24" />
+                        </ToggleButton>
+                        <ToggleButton
+                            x:Name="TableToggleButton"
+                            Width="30"
+                            Height="30"
+                            Margin="0"
+                            d:IsChecked="True"
+                            Click="TableToggleButton_Click"
+                            IsChecked="{Binding IsChecked, ElementName=TableMenuItem, Mode=TwoWay}"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="(T) OCR text as a table">
+                            <wpfui:SymbolIcon Symbol="Table24" />
+                        </ToggleButton>
+                        <ToggleButton
+                            x:Name="NewGrabFrameToggleButton"
+                            Width="30"
+                            Height="30"
+                            Margin="0"
+                            d:IsChecked="True"
+                            Click="NewGrabFrameMenuItem_Click"
+                            IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="(G) Place a Grab Frame">
+                            <wpfui:SymbolIcon Symbol="PanelBottom20" />
+                        </ToggleButton>
+                    </StackPanel>
+                </Border>
                 <ToggleButton
                     x:Name="SendToEditTextToggleButton"
                     Width="34"
@@ -215,7 +232,7 @@
                     IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(E) Send to an Edit Text Window">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <wpfui:SymbolIcon Symbol="Window24" />
                 </ToggleButton>
                 <Button
                     x:Name="SettingsButton"
@@ -225,7 +242,7 @@
                     Click="SettingsMenuItem_Click"
                     Style="{StaticResource SymbolButton}"
                     ToolTip="Settings">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <wpfui:SymbolIcon Symbol="Settings24" />
                 </Button>
                 <Button
                     x:Name="CancelButton"
@@ -235,7 +252,7 @@
                     Click="CancelMenuItem_Click"
                     Style="{StaticResource SymbolButton}"
                     ToolTip="(Esc) Cancel">
-                    <TextBlock Style="{StaticResource SymbolTextStyle}" Text="" />
+                    <wpfui:SymbolIcon Symbol="Dismiss24" />
                 </Button>
             </StackPanel>
         </Border>

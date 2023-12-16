@@ -16,10 +16,11 @@
     <Window.Resources>
         <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
 
-        <Style x:Key="headerStyle" TargetType="{x:Type GridViewColumnHeader}">
-            <Setter Property="Visibility" Value="Visible" />
+        <!--<Style x:Key="headerStyle" TargetType="{x:Type GridViewColumnHeader}">
             <Setter Property="Height" Value="30" />
-        </Style>
+            <Setter Property="Foreground" Value="AliceBlue" />
+            <Setter Property="FontSize" Value="24" />
+        </Style>-->
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -47,56 +48,65 @@
             FontSize="16"
             Text="Is Icon" />
 
-        <ListView
-            x:Name="LeftListBox"
+        <Border
             Grid.Row="1"
             Margin="8,24,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
-            d:ItemsSource="{d:SampleData ItemCount=5}"
-            Background="{StaticResource DarkControlBackground}"
-            ItemContainerStyle="{StaticResource GridViewListItem}"
-            ItemsSource="{Binding ButtonsInLeftList}"
-            ScrollViewer.VerticalScrollBarVisibility="Visible">
-            <ListView.View>
-                <GridView ColumnHeaderContainerStyle="{StaticResource headerStyle}">
-                    <GridViewColumn Width="40">
-                        <GridViewColumnHeader Content="Icon" />
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    Grid.Column="0"
-                                    Margin="0,0,8,0"
-                                    FontFamily="Segoe MDL2 Assets"
-                                    Style="{StaticResource TextBodyNormal}"
-                                    Text="{Binding SymbolText}" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Width="72" Header="Icon Mode">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <ui:ToggleSwitch
-                                    Grid.Column="2"
-                                    HorizontalAlignment="Center"
-                                    IsChecked="{Binding IsSymbol}" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Width="252" Header="Button Text">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    Grid.Column="1"
-                                    Margin="0,0,8,0"
-                                    Style="{StaticResource TextBodyNormal}"
-                                    Text="{Binding ButtonText}" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+            Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
+            CornerRadius="8">
+            <ListView
+                x:Name="LeftListBox"
+                d:ItemsSource="{d:SampleData ItemCount=5}"
+                ItemContainerStyle="{StaticResource GridViewListItem}"
+                ItemsSource="{Binding ButtonsInLeftList}"
+                ScrollViewer.VerticalScrollBarVisibility="Visible">
+                <ListView.View>
+                    <!--  ColumnHeaderContainerStyle="{StaticResource headerStyle}"  -->
+                    <GridView>
+                        <GridViewColumn Width="46">
+                            <GridViewColumnHeader Content="Icon" />
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Viewbox Height="32">
+                                        <ui:SymbolIcon
+                                            Grid.Column="0"
+                                            Margin="0,0,8,0"
+                                            d:Symbol="Diamond24"
+                                            FontSize="24"
+                                            Symbol="{Binding Path=SymbolIcon, Mode=TwoWay}" />
+                                    </Viewbox>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="72" Header="Icon Mode">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ui:ToggleSwitch
+                                        Grid.Column="2"
+                                        Height="32"
+                                        HorizontalAlignment="Center"
+                                        IsChecked="{Binding IsSymbol}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="252" Header="Button Text">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="0,4,8,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="16"
+                                        Style="{StaticResource TextBodyNormal}"
+                                        Text="{Binding ButtonText}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Border>
         <StackPanel
             Grid.Row="1"
             Grid.Column="1"
@@ -105,14 +115,14 @@
             Orientation="Vertical">
             <local:CollapsibleButton
                 x:Name="MoveRightButton"
+                ButtonSymbol="CaretRight24"
                 ButtonText="Add"
-                Click="MoveRightButton_Click"
-                SymbolText="" />
+                Click="MoveRightButton_Click" />
             <local:CollapsibleButton
                 x:Name="MoveLeftButton"
+                ButtonSymbol="CaretLeft24"
                 ButtonText="Remove"
-                Click="MoveLeftButton_Click"
-                SymbolText="" />
+                Click="MoveLeftButton_Click" />
         </StackPanel>
         <Grid Grid.Row="1" Grid.Column="2">
             <Grid.RowDefinitions>
@@ -124,70 +134,77 @@
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                 <local:CollapsibleButton
                     x:Name="MoveUpButton"
+                    ButtonSymbol="CaretUp24"
                     ButtonText="Move Up"
-                    Click="MoveUpButton_Click"
-                    SymbolText="" />
+                    Click="MoveUpButton_Click" />
                 <local:CollapsibleButton
                     x:Name="MoveDownButton"
+                    ButtonSymbol="CaretDown24"
                     ButtonText="Move Down"
-                    Click="MoveDownButton_Click"
-                    SymbolText="" />
+                    Click="MoveDownButton_Click" />
             </StackPanel>
             <TextBlock
                 Grid.Row="1"
-                Padding="0,0,308,0"
+                Padding="0,0,300,0"
                 HorizontalAlignment="Right"
                 FontSize="16"
                 Text="Is Icon" />
-            <ListView
-                x:Name="RightListBox"
+            <Border
                 Grid.Row="2"
                 Margin="8"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
-                d:ItemsSource="{d:SampleData ItemCount=1}"
-                Background="{StaticResource DarkControlBackground}"
-                ItemContainerStyle="{StaticResource GridViewListItem}"
-                ItemsSource="{Binding ButtonsInRightList}"
-                ScrollViewer.VerticalScrollBarVisibility="Visible">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Width="40" Header="Icon">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock
-                                        Grid.Column="0"
-                                        Margin="0,0,8,0"
-                                        FontFamily="Segoe MDL2 Assets"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="{Binding SymbolText}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Width="72" Header="Icon Mode">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ui:ToggleSwitch
-                                        Grid.Column="2"
-                                        HorizontalAlignment="Center"
-                                        IsChecked="{Binding IsSymbol}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Width="252" Header="Button Text">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock
-                                        Grid.Column="1"
-                                        Margin="0,0,8,0"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="{Binding ButtonText}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
+                Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                CornerRadius="8">
+                <ListView
+                    x:Name="RightListBox"
+                    d:ItemsSource="{d:SampleData ItemCount=1}"
+                    ItemContainerStyle="{StaticResource GridViewListItem}"
+                    ItemsSource="{Binding ButtonsInRightList}"
+                    ScrollViewer.VerticalScrollBarVisibility="Visible">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="46" Header="Icon">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Viewbox Height="32">
+                                            <ui:SymbolIcon
+                                                Grid.Column="0"
+                                                Margin="0,0,8,0"
+                                                d:Symbol="Diamond24"
+                                                FontSize="24"
+                                                Symbol="{Binding Path=SymbolIcon, Mode=TwoWay}" />
+                                        </Viewbox>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="72" Header="Icon Mode">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ui:ToggleSwitch
+                                            Grid.Column="2"
+                                            Height="32"
+                                            HorizontalAlignment="Center"
+                                            IsChecked="{Binding IsSymbol}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="252" Header="Button Text">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            Margin="0,4,8,0"
+                                            FontSize="16"
+                                            Style="{StaticResource TextBodyNormal}"
+                                            Text="{Binding ButtonText}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Border>
 
             <StackPanel
                 Grid.Row="3"
@@ -223,15 +240,15 @@
             Orientation="Horizontal">
             <local:CollapsibleButton
                 x:Name="CloseBTN"
+                ButtonSymbol="Dismiss24"
                 ButtonText="Cancel"
-                Click="CloseBTN_Click"
-                SymbolText="" />
+                Click="CloseBTN_Click" />
             <local:CollapsibleButton
                 x:Name="SaveBTN"
                 Background="DarkGreen"
+                ButtonSymbol="Save24"
                 ButtonText="Save and Close"
-                Click="SaveBTN_Click"
-                SymbolText="" />
+                Click="SaveBTN_Click" />
         </StackPanel>
     </Grid>
 </ui:FluentWindow>

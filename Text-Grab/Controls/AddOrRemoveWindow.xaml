@@ -171,18 +171,18 @@
                 Grid.Row="7"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"
+                ButtonSymbol="ArrowClockwise24"
                 ButtonText="Apply"
                 Command="{x:Static local:AddOrRemoveWindow.ApplyCmd}"
-                IsSymbol="True"
-                SymbolText="" />
+                IsSymbol="True" />
             <local:CollapsibleButton
                 x:Name="DoneButton"
                 Grid.Row="7"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"
+                ButtonSymbol="Checkmark24"
                 ButtonText="Done"
-                Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}"
-                SymbolText="" />
+                Command="{x:Static local:AddOrRemoveWindow.AddRemoveCmd}" />
         </StackPanel>
     </Grid>
 </ui:FluentWindow>

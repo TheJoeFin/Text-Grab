@@ -3,19 +3,27 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Models;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls;
 
 /// <summary>
 /// Interaction logic for CollapsibleButton.xaml
 /// </summary>
-public partial class CollapsibleButton : Button, INotifyPropertyChanged
+public partial class CollapsibleButton : System.Windows.Controls.Button, INotifyPropertyChanged
 {
     #region Fields
 
-    private string _buttonText = "Button Text";
+    public string ButtonText
+    {
+        get { return (string)GetValue(ButtonTextProperty); }
+        set { SetValue(ButtonTextProperty, value); }
+    }
 
-    private string _symbolText = "";
+    public static readonly DependencyProperty ButtonTextProperty =
+        DependencyProperty.Register("ButtonText", typeof(string), typeof(CollapsibleButton), new PropertyMetadata("ButtonText"));
+
+
     private bool isSymbol = false;
 
     #endregion Fields
@@ -38,19 +46,6 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
 
     #region Properties
 
-    public string ButtonText
-    {
-        get { return _buttonText; }
-        set
-        {
-            if (_buttonText != value)
-            {
-                _buttonText = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
     public bool CanChangeStyle { get; set; } = true;
 
     public ButtonInfo? CustomButton { get; set; }
@@ -64,18 +59,15 @@ public partial class CollapsibleButton : Button, INotifyPropertyChanged
             ChangeButtonLayout_Click();
         }
     }
-    public string SymbolText
+
+    public SymbolRegular ButtonSymbol
     {
-        get { return _symbolText; }
-        set
-        {
-            if (_symbolText != value)
-            {
-                _symbolText = value;
-                OnPropertyChanged();
-            }
-        }
+        get { return (SymbolRegular)GetValue(ButtonSymbolProperty); }
+        set { SetValue(ButtonSymbolProperty, value); }
     }
+
+    public static readonly DependencyProperty ButtonSymbolProperty =
+        DependencyProperty.Register("ButtonSymbol", typeof(SymbolRegular), typeof(CollapsibleButton), new PropertyMetadata(SymbolRegular.Diamond24));
 
     #endregion Properties
 
