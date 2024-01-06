@@ -585,7 +585,7 @@ public partial class FullscreenGrab : Window
             (int)(selectBorder.Width * m.M11),
             (int)(selectBorder.Height * m.M22));
 
-        string grabbedText = string.Empty;
+        textFromOCR = string.Empty;
 
         if (NewGrabFrameMenuItem.IsChecked is true)
         {
@@ -613,12 +613,12 @@ public partial class FullscreenGrab : Window
         if (isSmallClick)
         {
             BackgroundBrush.Opacity = 0;
-            grabbedText = await OcrUtilities.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
+            textFromOCR = await OcrUtilities.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
         else if (isTable)
-            grabbedText = await OcrUtilities.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
+            textFromOCR = await OcrUtilities.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
-            grabbedText = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang, tessTag);
+            textFromOCR = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang, tessTag);
 
         if (Settings.Default.UseHistory && !isSmallClick)
         {
@@ -640,13 +640,13 @@ public partial class FullscreenGrab : Window
                 CaptureDateTime = DateTimeOffset.Now,
                 PositionRect = historyRect,
                 IsTable = TableToggleButton.IsChecked!.Value,
-                TextContent = grabbedText,
+                TextContent = textFromOCR,
                 ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
                 SourceMode = TextGrabMode.Fullscreen,
             };
         }
 
-        if (!string.IsNullOrWhiteSpace(grabbedText))
+        if (!string.IsNullOrWhiteSpace(textFromOCR))
         {
             if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
             {
@@ -655,7 +655,7 @@ public partial class FullscreenGrab : Window
             }
 
             OutputUtilities.HandleTextFromOcr(
-                grabbedText,
+                textFromOCR,
                 isSingleLine,
                 isTable,
                 destinationTextBox);
