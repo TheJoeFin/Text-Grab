@@ -98,7 +98,7 @@ public static class TesseractHelper
                 .Add("-l")
                 .Add(languageString)
             )
-            .ExecuteBufferedAsync();
+            .ExecuteBufferedAsync(Encoding.UTF8);
 
         return result.StandardOutput;
     }
