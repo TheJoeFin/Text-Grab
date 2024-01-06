@@ -68,7 +68,7 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 Style="{StaticResource TextBodyNormal}"
-                                Text="Version 4.3.0" />
+                                Text="Version 4.3.1" />
 
                             <ui:HyperlinkButton
                                 x:Name="OpenExeFolderButton"
