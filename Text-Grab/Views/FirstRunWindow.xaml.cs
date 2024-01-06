@@ -30,9 +30,9 @@ public partial class FirstRunWindow : FluentWindow
 
     private void BackgroundCheckBox_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        if (sender is ToggleSwitch toggleSwitch && toggleSwitch.IsChecked is not null)
         {
-            Settings.Default.RunInTheBackground = (bool)checkBox.IsChecked;
+            Settings.Default.RunInTheBackground = (bool)toggleSwitch.IsChecked;
             ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
             Settings.Default.Save();
         }
@@ -101,9 +101,9 @@ public partial class FirstRunWindow : FluentWindow
 
     private void NotificationsCheckBox_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        if (sender is ToggleSwitch toggleSwitch && toggleSwitch.IsChecked is not null)
         {
-            Settings.Default.ShowToast = (bool)checkBox.IsChecked;
+            Settings.Default.ShowToast = (bool)toggleSwitch.IsChecked;
             Settings.Default.Save();
         }
     }
@@ -159,9 +159,9 @@ public partial class FirstRunWindow : FluentWindow
 
     private async void StartupCheckbox_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender is CheckBox checkBox && checkBox.IsChecked is not null)
+        if (sender is ToggleSwitch toggleSwitch && toggleSwitch.IsChecked is not null)
         {
-            Settings.Default.StartupOnLogin = (bool)checkBox.IsChecked;
+            Settings.Default.StartupOnLogin = (bool)toggleSwitch.IsChecked;
             await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
             Settings.Default.Save();
         }
