@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
-using System.Security.Permissions;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,26 +26,26 @@ public static class WindowUtilities
 
     public static void SetWindowPosition(Window passedWindow)
     {
-        string storedPostionString = "";
+        string storedPositionString = "";
 
         if (passedWindow is EditTextWindow)
-            storedPostionString = Properties.Settings.Default.EditTextWindowSizeAndPosition;
+            storedPositionString = Settings.Default.EditTextWindowSizeAndPosition;
 
         if (passedWindow is GrabFrame)
-            storedPostionString = Properties.Settings.Default.GrabFrameWindowSizeAndPosition;
+            storedPositionString = Settings.Default.GrabFrameWindowSizeAndPosition;
 
-        List<string> storedPostion = new(storedPostionString.Split(','));
+        List<string> storedPosition = new(storedPositionString.Split(','));
 
         bool isStoredRectWithinScreen = false;
 
-        if (storedPostion != null
-            && storedPostion.Count == 4)
+        if (storedPosition != null
+            && storedPosition.Count == 4)
         {
             bool couldParseAll = false;
-            couldParseAll = double.TryParse(storedPostion[0], out double parsedX);
-            couldParseAll = double.TryParse(storedPostion[1], out double parsedY);
-            couldParseAll = double.TryParse(storedPostion[2], out double parsedWid);
-            couldParseAll = double.TryParse(storedPostion[3], out double parsedHei);
+            couldParseAll = double.TryParse(storedPosition[0], out double parsedX);
+            couldParseAll = double.TryParse(storedPosition[1], out double parsedY);
+            couldParseAll = double.TryParse(storedPosition[2], out double parsedWid);
+            couldParseAll = double.TryParse(storedPosition[3], out double parsedHei);
             Rect storedSize = new((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
             IEnumerable<Screen> allScreens = Screen.AllScreens;
             WindowCollection allWindows = Application.Current.Windows;
@@ -83,8 +79,8 @@ public static class WindowUtilities
         int numberOfScreens = allScreens.Count();
 
         foreach (Window window in allWindows)
-            if (window is FullscreenGrab)
-                allFullscreenGrab.Add((FullscreenGrab)window);
+            if (window is FullscreenGrab grab)
+                allFullscreenGrab.Add(grab);
 
         int numberOfFullscreenGrabWindowsToCreate = numberOfScreens - allFullscreenGrab.Count;
 
@@ -95,34 +91,30 @@ public static class WindowUtilities
 
         int count = 0;
 
+        double sideLength = 40;
+
         foreach (Screen screen in allScreens)
         {
-            FullscreenGrab fullscreenGrab = allFullscreenGrab[count];
-            fullscreenGrab.WindowStartupLocation = WindowStartupLocation.Manual;
-            fullscreenGrab.Width = 400;
-            fullscreenGrab.Height = 200;
-            fullscreenGrab.DestinationTextBox = destinationTextBox;
-            fullscreenGrab.WindowState = WindowState.Normal;
+            FullscreenGrab fullScreenGrab = allFullscreenGrab[count];
+            fullScreenGrab.WindowStartupLocation = WindowStartupLocation.Manual;
+            fullScreenGrab.Width = sideLength;
+            fullScreenGrab.Height = sideLength;
+            fullScreenGrab.DestinationTextBox = destinationTextBox;
+            fullScreenGrab.WindowState = WindowState.Normal;
 
-            System.Windows.Point screenCenterPoint = screen.GetCenterPoint();
-            System.Windows.Point windowCenterPoint = fullscreenGrab.GetWindowCenter();
+            Point screenCenterPoint = screen.GetCenterPoint();
 
-            double virtualScreenTop = SystemParameters.VirtualScreenTop;
-            double virtualScreenLeft = SystemParameters.VirtualScreenLeft;
-            double virtualScreenWidth = SystemParameters.VirtualScreenWidth;
-            double virtualScreenHeight = SystemParameters.VirtualScreenHeight;
+            fullScreenGrab.Left = screenCenterPoint.X - (sideLength / 2);
+            fullScreenGrab.Top = screenCenterPoint.Y - (sideLength / 2);
 
-            fullscreenGrab.Left = screenCenterPoint.X - windowCenterPoint.X;
-            fullscreenGrab.Top = screenCenterPoint.Y - windowCenterPoint.Y;
-
-            fullscreenGrab.Show();
-            fullscreenGrab.Activate();
+            fullScreenGrab.Show();
+            fullScreenGrab.Activate();
 
             count++;
         }
     }
 
-    public static System.Windows.Point GetCenterPoint(this Screen screen)
+    public static Point GetCenterPoint(this Screen screen)
     {
         double x = screen.WpfBounds.Left + (screen.WpfBounds.Width / 2);
         double y = screen.WpfBounds.Top + (screen.WpfBounds.Height / 2);
@@ -164,7 +156,7 @@ public static class WindowUtilities
 
                 if (fsg.DestinationTextBox is not null)
                 {
-                    // TODO 3.0 Find out how to re normaize an ETW when FSG had it minimzed 
+                    // TODO 3.0 Find out how to re normalize an ETW when FSG had it minimized 
                     isFromEditWindow = true;
                     // if (fsg.EditWindow.WindowState == WindowState.Minimized)
                     //     fsg.EditWindow.WindowState = WindowState.Normal;
@@ -201,7 +193,7 @@ public static class WindowUtilities
     {
         await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
 
-        List<INPUT> inputs = new List<INPUT>();
+        List<INPUT> inputs = new();
         // make sure keys are up.
         TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LCONTROL);
         TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RCONTROL);
@@ -264,7 +256,7 @@ public static class WindowUtilities
         }
 
         // No Window Found, open a new one
-        T newWindow = new T();
+        T newWindow = new();
         newWindow.Show();
         return newWindow;
     }
