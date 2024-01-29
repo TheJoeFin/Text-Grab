@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:pages="clr-namespace:Text_Grab.Pages"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab Settings"
     Width="660"
@@ -44,7 +45,55 @@
             Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-        <Border Grid.Row="1">
+        <ui:NavigationView
+            x:Name="SettingsNavView"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            PaneDisplayMode="LeftFluent">
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem
+                    Content="General"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:GeneralSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Home24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Langs"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:LanguageSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="LocalLanguage24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Keys"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:KeysSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="DesktopKeyboard24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Tess"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:TesseractSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Globe24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Danger"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:DangerSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Warning24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+        </ui:NavigationView>
+        <Border Grid.Row="1" Visibility="Collapsed">
             <ScrollViewer
                 x:Name="SettingsScrollView"
                 HorizontalScrollBarVisibility="Disabled"

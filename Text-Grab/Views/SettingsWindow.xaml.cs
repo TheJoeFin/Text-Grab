@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
 using Text_Grab.Models;
+using Text_Grab.Pages;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -341,6 +342,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        SettingsNavView.Navigate(typeof(GeneralSettings));
         AppTheme appTheme = Enum.Parse<AppTheme>(Settings.Default.AppTheme, true);
         switch (appTheme)
         {
