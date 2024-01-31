@@ -17,6 +17,7 @@ I am the author of the [PowerToy Text Extractor](https://learn.microsoft.com/en-
 ### Community
 
 - [scoop](https://scoop.sh/) — `scoop install text-grab`
+- [choco](https://community.chocolatey.org) - `choco install text-grab`
 
 ## How to Build
 Get the code:
