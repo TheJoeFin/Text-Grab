@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.IO;
 using Text_Grab.Properties;
-using WpfScreenHelper;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Pages;

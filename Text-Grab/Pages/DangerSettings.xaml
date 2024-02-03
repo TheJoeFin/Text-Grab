@@ -15,7 +15,6 @@
     <StackPanel Margin="20,12,40,40" Orientation="Vertical">
         <TextBlock Style="{StaticResource TextHeader}" Text="Dangerous Options" />
 
-
         <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
             Reset All settings to default settings.
         </TextBlock>
@@ -27,7 +26,10 @@
             ButtonText="Reset All Settings"
             Click="ResetSettingsButton_Click" />
 
-
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Delete all history items.
+        </TextBlock>
+        <!--  Add how many history items exist to be deleted  -->
         <controls:CollapsibleButton
             x:Name="ClearHistoryButton"
             HorizontalAlignment="Left"
