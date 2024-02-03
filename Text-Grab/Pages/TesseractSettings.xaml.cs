@@ -24,5 +24,35 @@ namespace Text_Grab.Pages
         {
             InitializeComponent();
         }
+
+        private void TessInfoCloseHypBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void TesseractPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
+
+        private void OpenPathButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void WinGetCodeCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void MoreInfoHyperlink_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+
+        }
     }
 }

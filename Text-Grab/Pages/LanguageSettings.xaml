@@ -10,7 +10,9 @@
     d:DesignWidth="800"
     mc:Ignorable="d">
 
-    <Grid>
-        <TextBlock Style="{StaticResource TextBodyNormal}" Text="Languages Settings page" />
-    </Grid>
+    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource TextHeader}" Text="Language Settings" />
+        <TextBlock Style="{StaticResource TextHeader}" Text="Windows Installed Languages" />
+        <TextBlock Style="{StaticResource TextHeader}" Text="Tesseract Languages" />
+    </StackPanel>
 </Page>

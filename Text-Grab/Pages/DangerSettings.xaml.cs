@@ -24,5 +24,15 @@ namespace Text_Grab.Pages
         {
             InitializeComponent();
         }
+
+        private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

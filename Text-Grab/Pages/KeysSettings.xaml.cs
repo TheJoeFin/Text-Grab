@@ -24,5 +24,15 @@ namespace Text_Grab.Pages
         {
             InitializeComponent();
         }
+
+        private void ShortcutControl_Recording(object sender, EventArgs e)
+        {
+
+        }
+
+        private void ShortcutControl_KeySetChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

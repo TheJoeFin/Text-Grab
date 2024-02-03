@@ -13,124 +13,120 @@
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <Grid>
-        <ScrollViewer Background="Transparent">
-            <StackPanel Margin="20,24" Orientation="Vertical">
+    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource TextHeader}" Text="General Settings" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <!--  Version Text  -->
+            <TextBlock
+                VerticalAlignment="Center"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Version 4.3.1" />
 
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="auto" />
-                    </Grid.ColumnDefinitions>
-                    <!--  Version Text  -->
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        Style="{StaticResource TextBodyNormal}"
-                        Text="Version 4.3.1" />
+            <ui:HyperlinkButton
+                x:Name="OpenExeFolderButton"
+                Grid.Column="1"
+                Margin="12,0,0,0"
+                VerticalAlignment="Bottom"
+                Click="OpenExeFolderButton_Click"
+                Visibility="Collapsed">
+                <TextBlock Text="Open EXE Containing Folder" />
+            </ui:HyperlinkButton>
 
-                    <ui:HyperlinkButton
-                        x:Name="OpenExeFolderButton"
-                        Grid.Column="1"
-                        Margin="12,0,0,0"
-                        VerticalAlignment="Bottom"
-                        Click="OpenExeFolderButton_Click"
-                        Visibility="Collapsed">
-                        <TextBlock Text="Open EXE Containing Folder" />
-                    </ui:HyperlinkButton>
+            <controls:CollapsibleButton
+                x:Name="AboutBTN"
+                Grid.Column="3"
+                Margin="0"
+                ButtonSymbol="Info24"
+                ButtonText="About Text Grab"
+                Click="AboutBTN_Click" />
+        </Grid>
 
-                    <controls:CollapsibleButton
-                        x:Name="AboutBTN"
-                        Grid.Column="3"
-                        Margin="0"
-                        ButtonSymbol="Info24"
-                        ButtonText="About Text Grab"
-                        Click="AboutBTN_Click" />
-                </Grid>
+        <!--  Theme  -->
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Text Grab Theme" />
+        <RadioButton
+            x:Name="SystemThemeRdBtn"
+            VerticalContentAlignment="Center"
+            GroupName="ThemeGroup">
+            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
+                System
+            </TextBlock>
+        </RadioButton>
+        <RadioButton
+            x:Name="LightThemeRdBtn"
+            VerticalContentAlignment="Center"
+            GroupName="ThemeGroup">
+            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
+                Light
+            </TextBlock>
+        </RadioButton>
+        <RadioButton
+            x:Name="DarkThemeRdBtn"
+            VerticalContentAlignment="Center"
+            GroupName="ThemeGroup">
+            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
+                Dark
+            </TextBlock>
+        </RadioButton>
 
-                <!--  Theme  -->
-                <TextBlock
-                    Margin="0,16,0,4"
-                    FontSize="16"
-                    Style="{StaticResource TextHeader}"
-                    Text="Text Grab Theme" />
-                <RadioButton
-                    x:Name="SystemThemeRdBtn"
-                    VerticalContentAlignment="Center"
-                    GroupName="ThemeGroup">
-                    <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                        System
-                    </TextBlock>
-                </RadioButton>
-                <RadioButton
-                    x:Name="LightThemeRdBtn"
-                    VerticalContentAlignment="Center"
-                    GroupName="ThemeGroup">
-                    <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                        Light
-                    </TextBlock>
-                </RadioButton>
-                <RadioButton
-                    x:Name="DarkThemeRdBtn"
-                    VerticalContentAlignment="Center"
-                    GroupName="ThemeGroup">
-                    <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                        Dark
-                    </TextBlock>
-                </RadioButton>
+        <!--  Show Toast on success  -->
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Show Toast" />
+        <ui:ToggleSwitch Name="ShowToastCheckBox">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Show Toast when text is copied. Opens window to display and edit text.
+            </TextBlock>
+        </ui:ToggleSwitch>
 
-                <!--  Show Toast on success  -->
-                <TextBlock
-                    Margin="0,16,0,4"
-                    FontSize="16"
-                    Style="{StaticResource TextHeader}"
-                    Text="Show Toast" />
-                <ui:ToggleSwitch Name="ShowToastCheckBox">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Show Toast when text is copied. Opens window to display and edit text.
-                    </TextBlock>
-                </ui:ToggleSwitch>
-
-                <!--  default launch  -->
-                <TextBlock
-                    Margin="0,16,0,4"
-                    FontSize="16"
-                    Style="{StaticResource TextHeader}"
-                    Text="Default Launch Window" />
-                <RadioButton
-                    x:Name="FullScreenRDBTN"
-                    VerticalContentAlignment="Center"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                        Full Screen
-                    </TextBlock>
-                </RadioButton>
-                <RadioButton
-                    x:Name="GrabFrameRDBTN"
-                    VerticalContentAlignment="Center"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                        Grab Frame
-                    </TextBlock>
-                </RadioButton>
-                <RadioButton
-                    x:Name="EditTextRDBTN"
-                    VerticalContentAlignment="Center"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                        Edit Text Window
-                    </TextBlock>
-                </RadioButton>
-                <RadioButton
-                    x:Name="QuickLookupRDBTN"
-                    VerticalContentAlignment="Center"
-                    GroupName="DefaultLaunch">
-                    <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                        Quick Simple Lookup
-                    </TextBlock>
-                </RadioButton>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+        <!--  default launch  -->
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Default Launch Window" />
+        <RadioButton
+            x:Name="FullScreenRDBTN"
+            VerticalContentAlignment="Center"
+            GroupName="DefaultLaunch">
+            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
+                Full Screen
+            </TextBlock>
+        </RadioButton>
+        <RadioButton
+            x:Name="GrabFrameRDBTN"
+            VerticalContentAlignment="Center"
+            GroupName="DefaultLaunch">
+            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
+                Grab Frame
+            </TextBlock>
+        </RadioButton>
+        <RadioButton
+            x:Name="EditTextRDBTN"
+            VerticalContentAlignment="Center"
+            GroupName="DefaultLaunch">
+            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
+                Edit Text Window
+            </TextBlock>
+        </RadioButton>
+        <RadioButton
+            x:Name="QuickLookupRDBTN"
+            VerticalContentAlignment="Center"
+            GroupName="DefaultLaunch">
+            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
+                Quick Simple Lookup
+            </TextBlock>
+        </RadioButton>
+    </StackPanel>
 </Page>
