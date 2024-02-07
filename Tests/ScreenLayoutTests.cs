@@ -13,16 +13,34 @@ public class ScreenLayoutTests
     private static Rect display2 = new(3440, -1163, 2400, 3760);
     private static Rect display3 = new(-1920, 387, 1920, 1030);
 
+    /*
+    Param	Display 1	Display 6	Display 5
+    X	0	1920	3840
+    Y	0	-460	-468
+    Width	1920	1920	3840
+    Height	1152	1032	2040
+     */
+    private static Rect display4 = new(0, 0, 1920, 1152);
+    private static Rect display5 = new(3840, -468, 3840, 2040);
+    private static Rect display6 = new(1920, -460, 1920, 1032);
+
+
     [Fact]
     public void ShouldFindCenterOfEachRect()
     {
         Point center1 = display1.CenterPoint();
         Point center2 = display2.CenterPoint();
         Point center3 = display3.CenterPoint();
+        Point center4 = display4.CenterPoint();
+        Point center5 = display5.CenterPoint();
+        Point center6 = display6.CenterPoint();
 
         Assert.True(display1.Contains(center1));
         Assert.True(display2.Contains(center2));
         Assert.True(display3.Contains(center3));
+        Assert.True(display4.Contains(center4));
+        Assert.True(display5.Contains(center5));
+        Assert.True(display6.Contains(center6));
 
         Assert.False(display1.Contains(center3));
         Assert.False(display1.Contains(center2));
@@ -32,6 +50,16 @@ public class ScreenLayoutTests
 
         Assert.False(display3.Contains(center1));
         Assert.False(display3.Contains(center2));
+
+
+        Assert.False(display4.Contains(center5));
+        Assert.False(display4.Contains(center6));
+
+        Assert.False(display5.Contains(center4));
+        Assert.False(display5.Contains(center6));
+
+        Assert.False(display6.Contains(center4));
+        Assert.False(display6.Contains(center5));
     }
 
     [Fact]
@@ -76,5 +104,34 @@ public class ScreenLayoutTests
         Assert.True(display3.Contains(smallRect3));
         Assert.False(display1.Contains(smallRect3));
         Assert.False(display2.Contains(smallRect3));
+    }
+
+    [Fact]
+    public void SmallRectanglesContained456()
+    {
+        int sideLength = 40;
+
+        double smallLeft4 = display4.CenterPoint().X - (sideLength / 2);
+        double smallTop4 = display4.CenterPoint().Y - (sideLength / 2);
+        Rect smallRect4 = new(smallLeft4, smallTop4, sideLength, sideLength);
+        Assert.True(display4.Contains(smallRect4));
+        Assert.False(display5.Contains(smallRect4));
+        Assert.False(display6.Contains(smallRect4));
+
+        double smallLeft5 = display5.CenterPoint().X - (sideLength / 2);
+        double smallTop5 = display5.CenterPoint().Y - (sideLength / 2);
+        Rect smallRect5 = new(smallLeft5, smallTop5, sideLength, sideLength);
+        
+        Assert.True(display5.Contains(smallRect5));
+        Assert.False(display4.Contains(smallRect5));
+        Assert.False(display6.Contains(smallRect5));
+
+        double smallLeft6 = display6.CenterPoint().X - (sideLength / 2);
+        double smallTop6 = display6.CenterPoint().Y - (sideLength / 2);
+        Rect smallRect6 = new(smallLeft6, smallTop6, sideLength, sideLength);
+
+        Assert.True(display6.Contains(smallRect6));
+        Assert.False(display4.Contains(smallRect6));
+        Assert.False(display5.Contains(smallRect6));
     }
 }
