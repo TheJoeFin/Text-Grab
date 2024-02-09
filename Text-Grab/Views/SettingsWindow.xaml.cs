@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -13,6 +12,7 @@ using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
+using WpfScreenHelper;
 
 namespace Text_Grab;
 
@@ -23,8 +23,8 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 {
     #region Fields
 
-    private Brush BadBrush = new SolidColorBrush(Colors.Red);
-    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
+    private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
+    private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
 
     #endregion Fields
 
@@ -54,22 +54,11 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
         RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
-        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
         //CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        // GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
 
-        foreach (Window window in allWindows)
-        {
-            if (window is FirstRunWindow firstRunWindowOpen)
-            {
-                firstRunWindowOpen.Activate();
-                return;
-            }
-        }
-
-        FirstRunWindow frw = new();
-        frw.Show();
+        WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
     }
 
     private void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
@@ -93,7 +82,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         HashSet<ShortcutControl> shortcuts = new();
 
-        foreach (var child in ShortcutsStackPanel.Children)
+        foreach (UIElement child in ShortcutsStackPanel.Children)
             if (child is ShortcutControl shortcutControl)
                 shortcuts.Add(shortcutControl);
 
@@ -249,9 +238,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         if (HotKeysAllDifferent())
         {
-            List<ShortcutKeySet> shortcutKeys = new();
+            List<ShortcutKeySet> shortcutKeys = [];
 
-            foreach (var child in ShortcutsStackPanel.Children)
+            foreach (UIElement child in ShortcutsStackPanel.Children)
                 if (child is ShortcutControl control)
                     shortcutKeys.Add(control.KeySet);
 
@@ -279,7 +268,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ShortcutControl_Recording(object sender, EventArgs e)
     {
-        foreach (var child in ShortcutsStackPanel.Children)
+        foreach (UIElement child in ShortcutsStackPanel.Children)
             if (child is ShortcutControl shortcutControl
                 && sender is ShortcutControl senderShortcut
                 && shortcutControl != senderShortcut)
@@ -342,13 +331,13 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
     {
         SettingsNavView.Navigate(typeof(GeneralSettings));
 
+        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
+        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
 
+        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
         // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
         ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
         NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
-        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
-        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
-        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
         //CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
         HistorySwitch.IsChecked = Settings.Default.UseHistory;
