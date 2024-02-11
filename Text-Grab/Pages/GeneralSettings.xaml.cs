@@ -82,6 +82,8 @@ public partial class GeneralSettings : Page
 
         ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
+        ReadBarcodesBarcode.IsChecked = DefaultSettings.TryToReadBarcodes;
+        HistorySwitch.IsChecked = DefaultSettings.UseHistory;
     }
 
     private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
@@ -129,5 +131,25 @@ public partial class GeneralSettings : Page
     {
         DefaultSettings.AppTheme = AppTheme.Dark.ToString();
         App.SetTheme();
+    }
+
+    private void ReadBarcodesBarcode_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.TryToReadBarcodes = true;
+    }
+
+    private void ReadBarcodesBarcode_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.TryToReadBarcodes = false;
+    }
+
+    private void HistorySwitch_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.UseHistory = true;
+    }
+
+    private void HistorySwitch_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.UseHistory = false;
     }
 }

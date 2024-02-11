@@ -87,12 +87,15 @@
             Margin="0,16,0,4"
             FontSize="16"
             Style="{StaticResource TextHeader}"
-            Text="Show Toast" />
+            Text="Show Notification" />
         <ui:ToggleSwitch Name="ShowToastCheckBox">
             <TextBlock Style="{StaticResource TextBodyNormal}">
-                Show Toast when text is copied. Opens window to display and edit text.
+                Show Notification when text is copied.
             </TextBlock>
         </ui:ToggleSwitch>
+        <TextBlock Margin="0,4,0,0" Style="{StaticResource TextBodyNormal}">
+            Clicking the notification opens the copied text into a new Edit Text Window to display and edit text.
+        </TextBlock>
 
         <!--  default launch  -->
         <TextBlock
@@ -146,11 +149,43 @@
             Text="Run in the background" />
         <ui:ToggleSwitch
             Name="RunInBackgroundChkBx"
-            Margin="0,12,0,0"
             Checked="RunInBackgroundChkBx_Checked"
             Unchecked="RunInBackgroundChkBx_Checked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
                 Run Text Grab in the background and enable hotkeys
+            </TextBlock>
+        </ui:ToggleSwitch>
+
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Read barcodes and QR Codes" />
+        <ui:ToggleSwitch
+            Name="ReadBarcodesBarcode"
+            Checked="ReadBarcodesBarcode_Checked"
+            IsChecked="True"
+            Unchecked="ReadBarcodesBarcode_Unchecked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Try to read barcodes
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            (Disabling may speed up results)
+        </TextBlock>
+
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="History" />
+        <ui:ToggleSwitch
+            Name="HistorySwitch"
+            Checked="HistorySwitch_Checked"
+            IsChecked="True"
+            Unchecked="HistorySwitch_Unchecked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Keep recent history of Grabs and Edit Text Windows
             </TextBlock>
         </ui:ToggleSwitch>
     </StackPanel>

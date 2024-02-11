@@ -1,5 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using Text_Grab.Properties;
+using Text_Grab.Services;
+using Text_Grab.Utilities;
 
 namespace Text_Grab.Pages;
 
@@ -15,11 +18,23 @@ public partial class DangerSettings : Page
 
     private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
     {
+        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to reset all settings to default and delete all history?", "Reset Settings to Default", MessageBoxButton.YesNo);
 
+        if (areYouSure != MessageBoxResult.Yes)
+            return;
+
+        Settings.Default.Reset();
+        Singleton<HistoryService>.Instance.DeleteHistory();
+        App.Current.Shutdown();
     }
 
     private void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
     {
+        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to delete all history?", "Reset Settings to Default", MessageBoxButton.YesNo);
 
+        if (areYouSure != MessageBoxResult.Yes)
+            return;
+
+        Singleton<HistoryService>.Instance.DeleteHistory();
     }
 }
