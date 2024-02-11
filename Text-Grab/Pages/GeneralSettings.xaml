@@ -24,9 +24,10 @@
             </Grid.ColumnDefinitions>
             <!--  Version Text  -->
             <TextBlock
+                x:Name="VersionTextblock"
                 VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
-                Text="Version 4.3.1" />
+                Text="Version 4.4.x" />
 
             <ui:HyperlinkButton
                 x:Name="OpenExeFolderButton"
@@ -56,6 +57,7 @@
         <RadioButton
             x:Name="SystemThemeRdBtn"
             VerticalContentAlignment="Center"
+            Checked="SystemThemeRdBtn_Checked"
             GroupName="ThemeGroup">
             <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
                 System
@@ -64,6 +66,7 @@
         <RadioButton
             x:Name="LightThemeRdBtn"
             VerticalContentAlignment="Center"
+            Checked="LightThemeRdBtn_Checked"
             GroupName="ThemeGroup">
             <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
                 Light
@@ -72,6 +75,7 @@
         <RadioButton
             x:Name="DarkThemeRdBtn"
             VerticalContentAlignment="Center"
+            Checked="DarkThemeRdBtn_Checked"
             GroupName="ThemeGroup">
             <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
                 Dark
@@ -99,6 +103,7 @@
         <RadioButton
             x:Name="FullScreenRDBTN"
             VerticalContentAlignment="Center"
+            Checked="FullScreenRDBTN_Checked"
             GroupName="DefaultLaunch">
             <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
                 Full Screen
@@ -107,6 +112,7 @@
         <RadioButton
             x:Name="GrabFrameRDBTN"
             VerticalContentAlignment="Center"
+            Checked="GrabFrameRDBTN_Checked"
             GroupName="DefaultLaunch">
             <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
                 Grab Frame
@@ -115,6 +121,7 @@
         <RadioButton
             x:Name="EditTextRDBTN"
             VerticalContentAlignment="Center"
+            Checked="EditTextRDBTN_Checked"
             GroupName="DefaultLaunch">
             <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
                 Edit Text Window
@@ -123,10 +130,28 @@
         <RadioButton
             x:Name="QuickLookupRDBTN"
             VerticalContentAlignment="Center"
+            Checked="QuickLookupRDBTN_Checked"
             GroupName="DefaultLaunch">
             <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
                 Quick Simple Lookup
             </TextBlock>
         </RadioButton>
+
+
+        <!--  Run in the background  -->
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Run in the background" />
+        <ui:ToggleSwitch
+            Name="RunInBackgroundChkBx"
+            Margin="0,12,0,0"
+            Checked="RunInBackgroundChkBx_Checked"
+            Unchecked="RunInBackgroundChkBx_Checked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Run Text Grab in the background and enable hotkeys
+            </TextBlock>
+        </ui:ToggleSwitch>
     </StackPanel>
 </Page>

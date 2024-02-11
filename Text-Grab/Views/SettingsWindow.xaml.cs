@@ -321,6 +321,8 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Closed(object? sender, EventArgs e)
     {
+        Settings.Default.Save();
+
         if (App.Current is App app)
             NotifyIconUtilities.RegisterHotKeys(app);
 

@@ -15,9 +15,8 @@
     MinHeight="300"
     d:Background="Black"
     d:Height="600"
-    Background="{ui:ThemeResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
-    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -48,6 +47,7 @@
         <ui:NavigationView
             x:Name="SettingsNavView"
             Grid.Row="1"
+            Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
             IsBackButtonVisible="Collapsed"
             PaneDisplayMode="LeftFluent">
             <ui:NavigationView.MenuItems>

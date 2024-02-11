@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Wpf.Ui.Controls;
 
 namespace Text_Grab.Pages;
 
@@ -13,6 +14,8 @@ namespace Text_Grab.Pages;
 /// </summary>
 public partial class GeneralSettings : Page
 {
+    private Settings DefaultSettings = Settings.Default;
+
     public GeneralSettings()
     {
         InitializeComponent();
@@ -24,7 +27,7 @@ public partial class GeneralSettings : Page
 
     private void OpenExeFolderButton_Click(object sender, RoutedEventArgs args)
     {
-        if (Path.GetDirectoryName(System.AppContext.BaseDirectory) is not string exePath)
+        if (Path.GetDirectoryName(AppContext.BaseDirectory) is not string exePath)
             return;
 
         Uri source = new(exePath, UriKind.Absolute);
@@ -35,22 +38,12 @@ public partial class GeneralSettings : Page
 
     private void AboutBTN_Click(object sender, RoutedEventArgs e)
     {
-        //ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
-        //ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
-        //NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
-        //RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
-        //TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
-        //GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
-        //ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
-        //CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
-
-
         WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
-        AppTheme appTheme = Enum.Parse<AppTheme>(Settings.Default.AppTheme, true);
+        AppTheme appTheme = Enum.Parse<AppTheme>(DefaultSettings.AppTheme, true);
         switch (appTheme)
         {
             case AppTheme.System:
@@ -66,5 +59,75 @@ public partial class GeneralSettings : Page
                 SystemThemeRdBtn.IsChecked = true;
                 break;
         }
+
+        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
+        switch (defaultLaunchSetting)
+        {
+            case TextGrabMode.Fullscreen:
+                FullScreenRDBTN.IsChecked = true;
+                break;
+            case TextGrabMode.GrabFrame:
+                GrabFrameRDBTN.IsChecked = true;
+                break;
+            case TextGrabMode.EditText:
+                EditTextRDBTN.IsChecked = true;
+                break;
+            case TextGrabMode.QuickLookup:
+                QuickLookupRDBTN.IsChecked = true;
+                break;
+            default:
+                FullScreenRDBTN.IsChecked = true;
+                break;
+        }
+
+        ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
+        RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
+    }
+
+    private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.DefaultLaunch = TextGrabMode.Fullscreen.ToString();
+    }
+
+    private void GrabFrameRDBTN_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.DefaultLaunch = TextGrabMode.GrabFrame.ToString();
+    }
+
+    private void EditTextRDBTN_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.DefaultLaunch = TextGrabMode.EditText.ToString();
+    }
+
+    private void QuickLookupRDBTN_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.DefaultLaunch = TextGrabMode.QuickLookup.ToString();
+    }
+
+    private void RunInBackgroundChkBx_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleSwitch runInBackgroundSwitch)
+            return;
+
+        DefaultSettings.RunInTheBackground = runInBackgroundSwitch.IsChecked is true;
+        ImplementAppOptions.ImplementBackgroundOption(DefaultSettings.RunInTheBackground);
+    }
+
+    private void SystemThemeRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.AppTheme = AppTheme.System.ToString();
+        App.SetTheme();
+    }
+
+    private void LightThemeRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.AppTheme = AppTheme.Light.ToString();
+        App.SetTheme();
+    }
+
+    private void DarkThemeRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.AppTheme = AppTheme.Dark.ToString();
+        App.SetTheme();
     }
 }
