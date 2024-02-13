@@ -5,21 +5,76 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="LanguageSettings"
-    Loaded="Page_Loaded"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    Loaded="Page_Loaded"
     mc:Ignorable="d">
 
     <StackPanel Margin="20,12,40,40" Orientation="Vertical">
         <TextBlock Style="{StaticResource TextHeader}" Text="Language Settings" />
-        <TextBlock Style="{StaticResource TextHeader}" Text="Windows Installed Languages" />
+        <TextBlock
+            Margin="0,12,0,6"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Windows Installed Languages" />
         <!--  auto pull and parse which Windows Languages are installed  -->
+        <ui:HyperlinkButton
+            Click="HyperlinkButton_Click"
+            Content="How to install OCR languages with PowerShell"
+            NavigateUri="https://learn.microsoft.com/en-us/windows/powertoys/text-extractor#how-to-query-for-ocr-language-packs" />
         <!--  Show the commands to execute to add other languages  -->
+        <ListView
+            x:Name="WindowsLanguagesListView"
+            MaxWidth="600"
+            HorizontalAlignment="Left">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <TextBlock Margin="4,2" Text="{Binding DisplayName}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
         <!--  Link to the documentation  -->
-        <TextBlock Style="{StaticResource TextHeader}" Text="Tesseract Languages" />
+        <TextBlock
+            Margin="0,12,0,6"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Tesseract Languages" />
         <!--  auto pull and parse which Tesseract Languages are installed  -->
         <!--  if Tesseract wasn't found, don't show these options  -->
         <!--  Link to the GitHub Repo to download other languages  -->
+        <ListView
+            x:Name="TesseractLanguagesListView"
+            MaxWidth="600"
+            HorizontalAlignment="Left">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <TextBlock Margin="4,2" Text="{Binding DisplayName}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <StackPanel Orientation="Horizontal">
+            <ComboBox
+                x:Name="AllLanguagesComboBox"
+                Width="300"
+                IsEditable="True"
+                IsTextSearchCaseSensitive="False"
+                IsTextSearchEnabled="True">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button
+                Margin="12,0,0,0"
+                Click="Button_Click"
+                Content="Download" />
+        </StackPanel>
     </StackPanel>
 </Page>

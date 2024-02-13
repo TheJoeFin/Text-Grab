@@ -74,7 +74,7 @@ December	12	Winter";
         string testImagePath = fontTestPath;
         string expectedResult = fontTestResult;
 
-        Uri uri = new Uri(testImagePath, UriKind.Relative);
+        Uri uri = new(testImagePath, UriKind.Relative);
         // When
         string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
@@ -89,11 +89,11 @@ December	12	Winter";
         string expectedResult = tableTestResult;
 
 
-        Uri uri = new Uri(testImagePath, UriKind.Relative);
-        Language englishLanguage = new("en-US");
+        Uri uri = new(testImagePath, UriKind.Relative);
+        Language EnglishLanguage = new("en-US");
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, EnglishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
@@ -124,7 +124,7 @@ December	12	Winter";
         string expectedResult = "This is a test of the QR Code system";
 
         string testImagePath = @".\Images\QrCodeTestImage.png";
-        Uri uri = new Uri(testImagePath, UriKind.Relative);
+        Uri uri = new(testImagePath, UriKind.Relative);
         // When
         string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
@@ -146,11 +146,11 @@ December	12	Winter";
 400	Dog";
 
         string testImagePath = @".\Images\Table-Test-2.png";
-        Uri uri = new Uri(testImagePath, UriKind.Relative);
-        Language englishLanguage = new("en-US");
+        Uri uri = new(testImagePath, UriKind.Relative);
+        Language EnglishLanguage = new("en-US");
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, englishLanguage);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, EnglishLanguage);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
@@ -268,5 +268,22 @@ December	12	Winter";
         string actualAbbreviatedName = string.Join(',', actualList.Select(l => l.AbbreviatedName).ToArray());
 
         Assert.Equal(expectedAbbreviatedName, actualAbbreviatedName);
+    }
+
+    [WpfFact]
+    public async Task GetTesseractGitHubLanguage()
+    {
+        TesseractGitHubFileDownloader fileDownloader = new();
+
+        int length = fileDownloader.tesseractTrainedDataFileNames.Length;
+        string languageFileDataName = fileDownloader.tesseractTrainedDataFileNames[new Random().Next(length)];
+        string tempFilePath = Path.Combine(Path.GetTempPath(), languageFileDataName);
+
+        await fileDownloader.DownloadFileAsync(languageFileDataName, tempFilePath);
+
+        Assert.True(File.Exists(tempFilePath));
+        Assert.True(new FileInfo(tempFilePath).Length > 0);
+
+        File.Delete(tempFilePath);
     }
 }
