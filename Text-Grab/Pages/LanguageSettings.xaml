@@ -74,7 +74,11 @@
             <Button
                 Margin="12,0,0,0"
                 Click="Button_Click"
-                Content="Download" />
+                Content="Install" />
         </StackPanel>
+        <TextBlock
+            x:Name="ErrorsAndOutputText"
+            FontFamily="Cascadia Code"
+            Style="{StaticResource TextBodyNormal}" />
     </StackPanel>
 </Page>

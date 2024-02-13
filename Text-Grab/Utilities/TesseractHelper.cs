@@ -270,11 +270,11 @@ public class TesseractGitHubFileDownloader
         _client.DefaultRequestHeaders.Add("User-Agent", "Text Grab settings language downloader");
     }
 
-    public async Task DownloadFileAsync(string filePath, string localPath)
+    public async Task DownloadFileAsync(string filenameToDownload, string localDestination)
     {
         // Construct the URL to the raw content of the file in the GitHub repository
         // https://github.com/tesseract-ocr/tessdata
-        string fileUrl = $"https://raw.githubusercontent.com/tesseract-ocr/tessdata/main/{filePath}";
+        string fileUrl = $"https://raw.githubusercontent.com/tesseract-ocr/tessdata/main/{filenameToDownload}";
 
         try
         {
@@ -286,8 +286,7 @@ public class TesseractGitHubFileDownloader
             byte[] fileContents = await response.Content.ReadAsByteArrayAsync();
 
             // Write the content to a file on the local file system
-            File.Create(localPath);
-            await File.WriteAllBytesAsync(localPath, fileContents);
+            await File.WriteAllBytesAsync(localDestination, fileContents);
             Console.WriteLine("File downloaded successfully.");
         }
         catch (Exception ex)

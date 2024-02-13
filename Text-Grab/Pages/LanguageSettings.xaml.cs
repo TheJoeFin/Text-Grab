@@ -1,7 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using CliWrap.Buffered;
+using CliWrap;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -70,14 +75,56 @@ public partial class LanguageSettings : Page
         string pickedLanguageFile = AllLanguagesComboBox.Text;
         string tesseractPath = Path.GetDirectoryName(Settings.Default.TesseractPath) ?? "c:\\";
         string tesseractFilePath = $"{tesseractPath}\\tessdata\\{pickedLanguageFile}";
+        string tempFilePath = Path.Combine(Path.GetTempPath(), pickedLanguageFile);
 
         TesseractGitHubFileDownloader fileDownloader = new();
-        await fileDownloader.DownloadFileAsync(pickedLanguageFile, tesseractFilePath);
+        await fileDownloader.DownloadFileAsync(pickedLanguageFile, tempFilePath);
+        await CopyFileWithElevatedPermissions(tempFilePath, tesseractFilePath);
         await LoadTesseractContent();
     }
 
     private void HyperlinkButton_Click(object sender, RoutedEventArgs e)
     {
 
+    }
+
+    public async Task CopyFileWithElevatedPermissions(string sourcePath, string destinationPath)
+    {
+        string arguments = $"/c copy \"{sourcePath}\" \"{destinationPath}\"";
+        ProcessStartInfo startInfo = new()
+        {
+            UseShellExecute = true,
+            WorkingDirectory = Environment.CurrentDirectory,
+            FileName = "cmd.exe",
+            Verb = "runas",
+            Arguments = arguments,
+            WindowStyle = ProcessWindowStyle.Hidden
+        };
+
+        // cannot redirect when UseShellExecute is true
+        // cannot trigger UAC when UseShellExecute is false 🤷
+        //startInfo.RedirectStandardError = true;
+        //startInfo.RedirectStandardOutput = true;
+
+
+        try
+        {
+            Process? process = Process.Start(startInfo);
+            // string errors = process?.StandardError.ReadToEnd();
+            // string output = process?.StandardOutput.ReadToEnd();
+            await process?.WaitForExitAsync();
+
+            // if (!string.IsNullOrEmpty(errors))
+            //     ErrorsAndOutputText.Text += Environment.NewLine + errors;
+            // 
+            // if (!string.IsNullOrEmpty(output))
+            //     ErrorsAndOutputText.Text += Environment.NewLine + output;
+        }
+        catch (Exception ex)
+        {
+            // The user refused the elevation.
+            // Handle this situation as you prefer.
+            MessageBox.Show(ex.Message);
+        }
     }
 }
