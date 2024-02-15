@@ -1955,7 +1955,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 MenuItem languageMenuItem = new()
                 {
-                    Header = language.DisplayName,
+                    Header = language.CultureDisplayName,
                     Tag = language,
                     IsCheckable = true,
                 };
@@ -1963,7 +1963,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
                 captureMenuItem.Items.Add(languageMenuItem);
 
-                if (!haveSetLastLang && language.DisplayName == lastTextLang)
+                if (!haveSetLastLang && language.CultureDisplayName == lastTextLang)
                 {
                     languageMenuItem.IsChecked = true;
                     haveSetLastLang = true;

@@ -1,12 +1,8 @@
-﻿using CliWrap.Buffered;
-using CliWrap;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,7 +32,10 @@ public partial class LanguageSettings : Page
         LoadWindowsLanguages();
 
         if (usingTesseract)
+        {
+            TesseractLanguagesStackPanel.Visibility = Visibility.Visible;
             await LoadTesseractContent();
+        }
     }
 
     private void LoadWindowsLanguages()
@@ -51,19 +50,27 @@ public partial class LanguageSettings : Page
     {
         TesseractLanguagesListView.Items.Clear();
         List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
-        foreach (ILanguage iLang in tesseractLanguages)
-            TesseractLanguagesListView.Items.Add(iLang);
+        foreach (TessLang tessLang in tesseractLanguages.Cast<TessLang>())
+        {
+            string fileName = $"{tessLang.LanguageTag}.traineddata".PadRight(26);
+            TesseractLanguagesListView.Items.Add($"{fileName}\t{tessLang.CultureDisplayName}");
+        }
 
         AllLanguagesComboBox.Items.Clear();
         foreach (string textName in TesseractGitHubFileDownloader.tesseractTrainedDataFileNames)
         {
             bool isInstalled = false;
+            string tesseractTag = textName.Split('.').First();
             foreach (ILanguage iLang2 in tesseractLanguages)
-                if (iLang2.LanguageTag == textName.Split('.').First())
+                if (iLang2.LanguageTag == tesseractTag)
                     isInstalled = true;
 
             if (!isInstalled)
-                AllLanguagesComboBox.Items.Add(textName);
+            {
+                TessLang tessLang = new(tesseractTag);
+                string paddedTextName = textName.PadRight(26);
+                AllLanguagesComboBox.Items.Add($"{paddedTextName}\t{tessLang.CultureDisplayName}");
+            }
         }
     }
 
@@ -72,7 +79,10 @@ public partial class LanguageSettings : Page
         if (string.IsNullOrEmpty(AllLanguagesComboBox.Text))
             return;
 
-        string pickedLanguageFile = AllLanguagesComboBox.Text;
+        string? pickedLanguageFile = AllLanguagesComboBox.Text.Split('\t', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(pickedLanguageFile))
+            return;
+
         string tesseractPath = Path.GetDirectoryName(Settings.Default.TesseractPath) ?? "c:\\";
         string tesseractFilePath = $"{tesseractPath}\\tessdata\\{pickedLanguageFile}";
         string tempFilePath = Path.Combine(Path.GetTempPath(), pickedLanguageFile);
@@ -81,6 +91,7 @@ public partial class LanguageSettings : Page
         await fileDownloader.DownloadFileAsync(pickedLanguageFile, tempFilePath);
         await CopyFileWithElevatedPermissions(tempFilePath, tesseractFilePath);
         await LoadTesseractContent();
+        File.Delete(tempFilePath);
     }
 
     private void HyperlinkButton_Click(object sender, RoutedEventArgs e)
@@ -126,5 +137,16 @@ public partial class LanguageSettings : Page
             // Handle this situation as you prefer.
             MessageBox.Show(ex.Message);
         }
+    }
+
+    private void OpenPathButton_Click(object sender, RoutedEventArgs e)
+    {
+        string tesseractPath = Path.GetDirectoryName(Settings.Default.TesseractPath) ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(tesseractPath))
+            return;
+
+        string tesseractFilePath = $"{tesseractPath}\\tessdata\\";
+
+        Process.Start("explorer.exe", tesseractFilePath);
     }
 }

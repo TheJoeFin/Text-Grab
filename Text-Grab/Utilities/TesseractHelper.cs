@@ -1,27 +1,25 @@
-﻿using System;
+﻿using CliWrap;
+using CliWrap.Buffered;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Text_Grab.Models;
-using CliWrap;
-using System.Text;
-using CliWrap.Buffered;
 using Text_Grab.Interfaces;
+using Text_Grab.Models;
 using Text_Grab.Properties;
-using System.Net.Http;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Text_Grab.Utilities;
 
 // Install Tesseract for Windows from UB-Mannheim
 // https://github.com/UB-Mannheim/tesseract/wiki
 
-// Docs about commandline usage
+// Docs about command line usage
 // https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html 
 
 // This was developed using Tesseract v5 in 2022
@@ -82,7 +80,7 @@ public static class TesseractHelper
         return string.Empty;
     }
 
-    public static async Task<string> GetTextFromImagePathAsync(string imagePath, Windows.Globalization.Language language, string tessTag)
+    public static async Task<string> GetTextFromImagePathAsync(string imagePath, string tessTag)
     {
         string tesseractPath = GetTesseractPath();
 
@@ -108,13 +106,15 @@ public static class TesseractHelper
     public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, Windows.Globalization.Language language, string tessTag = "")
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
+        if (string.IsNullOrWhiteSpace(tessTag))
+            tessTag = language.LanguageTag;
 
-        OcrOutput ocrOutput = new OcrOutput()
+        OcrOutput ocrOutput = new()
         {
             Engine = OcrEngineKind.Tesseract,
             Kind = OcrOutputKind.Paragraph,
             SourceBitmap = bmp,
-            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language, tessTag)
+            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), tessTag)
         };
         ocrOutput.CleanOutput();
 
@@ -181,7 +181,7 @@ public static class TesseractHelper
         return $"{exePath}\\tempImage.png";
     }
 
-    public async static Task<List<string>> TesseractLangsAsStrings()
+    public async static Task<List<string>> TesseractLanguagesAsStrings()
     {
         List<string> languageStrings = new();
 
@@ -216,46 +216,13 @@ public static class TesseractHelper
 
     public async static Task<List<ILanguage>> TesseractLanguages()
     {
-        List<string> languageStrings = await TesseractLangsAsStrings();
+        List<string> languageStrings = await TesseractLanguagesAsStrings();
         List<ILanguage> tesseractLanguages = new();
 
         foreach (string language in languageStrings)
             tesseractLanguages.Add(new TessLang(language));
 
         return tesseractLanguages;
-    }
-}
-
-public class TessLang : ILanguage
-{
-    private string _tessLangTag;
-
-    public string AbbreviatedName => _tessLangTag;
-
-    public string CurrentInputMethodLanguageTag => string.Empty;
-
-    public string DisplayName => $"{_tessLangTag} with Tesseract";
-
-    public Windows.Globalization.LanguageLayoutDirection LayoutDirection
-    {
-        get
-        {
-            if (_tessLangTag.Contains("vert"))
-                return Windows.Globalization.LanguageLayoutDirection.TtbRtl;
-
-            return Windows.Globalization.LanguageLayoutDirection.Rtl;
-        }
-    }
-
-    public string NativeName => string.Empty;
-
-    public string Script => string.Empty;
-
-    public string LanguageTag => _tessLangTag;
-
-    public TessLang(string tessLangTag)
-    {
-        _tessLangTag = tessLangTag;
     }
 }
 
@@ -439,19 +406,21 @@ public class TessOcrLine
 
 public static class HocrReader
 {
+    private static readonly string[] separator = ["<span class='ocr_line'", "</span>"];
+
     public static List<TessOcrLine> ReadLines(string hocrText)
     {
         // Create a list to hold the OcrLine objects
-        var lines = new List<TessOcrLine>();
+        List<TessOcrLine> lines = new();
 
         // Split the hOCR text into lines
-        var hocrLines = hocrText.Split(new string[] { "<span class='ocr_line'", "</span>" }, StringSplitOptions.RemoveEmptyEntries);
+        string[] hocrLines = hocrText.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 
         // Iterate through the lines
-        foreach (var hocrLineText in hocrLines)
+        foreach (string hocrLineText in hocrLines)
         {
             // Extract the line information
-            var line = ReadLine(hocrLineText);
+            TessOcrLine line = ReadLine(hocrLineText);
 
             // Add the line to the list
             lines.Add(line);
@@ -466,11 +435,11 @@ public static class HocrReader
         TessOcrLine line = new();
 
         // Extract the text of the line from the hOCR text
-        var textMatch = Regex.Match(hocrLineText, "<span class='ocr_line'[^>]*>(.*?)</span>");
+        Match textMatch = Regex.Match(hocrLineText, "<span class='ocr_line'[^>]*>(.*?)</span>");
         line.Text = textMatch.Groups[1].Value;
 
         // Extract the bounding box coordinates from the hOCR text
-        var bboxMatch = Regex.Match(hocrLineText, "bbox (\\d+) (\\d+) (\\d+) (\\d+)");
+        Match bboxMatch = Regex.Match(hocrLineText, "bbox (\\d+) (\\d+) (\\d+) (\\d+)");
         line.X = int.Parse(bboxMatch.Groups[1].Value);
         line.Y = int.Parse(bboxMatch.Groups[2].Value);
         line.Width = int.Parse(bboxMatch.Groups[3].Value);

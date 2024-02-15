@@ -14,15 +14,15 @@ namespace Tests;
 
 public class OcrTests
 {
-        private const string fontSamplePath = @".\Images\font_sample.png";
-        private const string fontSampleResult = @"Times-Roman
+    private const string fontSamplePath = @".\Images\font_sample.png";
+    private const string fontSampleResult = @"Times-Roman
 Helvetica
 Courier
 Palatino-Roman
 Helvetica-Narrow
 Bookman-Demi";
 
-        private const string fontSampleResultForTesseract = @"Times-Roman
+    private const string fontSampleResultForTesseract = @"Times-Roman
 Helvetica
 Courier
 Palatino-Roman
@@ -174,8 +174,8 @@ December	12	Winter";
         Assert.Equal(expectedResult, stringBuilder.ToString());
     }
 
-    
-    [WpfFact(Skip ="since the hocr is not being used from Tesseract it will not be tested for now")]
+
+    [WpfFact(Skip = "since the hocr is not being used from Tesseract it will not be tested for now")]
     public async Task TesseractHocr()
     {
         int intialLinesToSkip = 12;
@@ -246,7 +246,7 @@ December	12	Winter";
     public async Task GetTessLanguages()
     {
         string expected = "eng,spa";
-        List<string> actualStrings = await TesseractHelper.TesseractLangsAsStrings();
+        List<string> actualStrings = await TesseractHelper.TesseractLanguagesAsStrings();
         string joinedString = string.Join(',', actualStrings.ToArray());
 
         Assert.Equal(expected, joinedString);
@@ -275,8 +275,8 @@ December	12	Winter";
     {
         TesseractGitHubFileDownloader fileDownloader = new();
 
-        int length = fileDownloader.tesseractTrainedDataFileNames.Length;
-        string languageFileDataName = fileDownloader.tesseractTrainedDataFileNames[new Random().Next(length)];
+        int length = TesseractGitHubFileDownloader.tesseractTrainedDataFileNames.Length;
+        string languageFileDataName = TesseractGitHubFileDownloader.tesseractTrainedDataFileNames[new Random().Next(length)];
         string tempFilePath = Path.Combine(Path.GetTempPath(), languageFileDataName);
 
         await fileDownloader.DownloadFileAsync(languageFileDataName, tempFilePath);
