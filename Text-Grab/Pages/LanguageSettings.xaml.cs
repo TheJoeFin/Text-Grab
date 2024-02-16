@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Interfaces;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Globalization;
