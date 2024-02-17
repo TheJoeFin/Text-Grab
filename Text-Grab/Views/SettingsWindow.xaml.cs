@@ -4,14 +4,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
 using Text_Grab.Models;
+using Text_Grab.Pages;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
+using WpfScreenHelper;
 
 namespace Text_Grab;
 
@@ -22,8 +23,8 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 {
     #region Fields
 
-    private Brush BadBrush = new SolidColorBrush(Colors.Red);
-    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
+    private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
+    private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
 
     #endregion Fields
 
@@ -34,8 +35,6 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         InitializeComponent();
         App.SetTheme();
 
-        if (!ImplementAppOptions.IsPackaged())
-            OpenExeFolderButton.Visibility = Visibility.Visible;
     }
 
     #endregion Constructors
@@ -50,27 +49,16 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void AboutBTN_Click(object sender, RoutedEventArgs e)
     {
-        ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+        //ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
         ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
         NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
         RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
         TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
-        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
-        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
+        //CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
+        // GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
 
-        foreach (Window window in allWindows)
-        {
-            if (window is FirstRunWindow firstRunWindowOpen)
-            {
-                firstRunWindowOpen.Activate();
-                return;
-            }
-        }
-
-        FirstRunWindow frw = new();
-        frw.Show();
+        WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
     }
 
     private void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
@@ -94,7 +82,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         HashSet<ShortcutControl> shortcuts = new();
 
-        foreach (var child in ShortcutsStackPanel.Children)
+        foreach (UIElement child in ShortcutsStackPanel.Children)
             if (child is ShortcutControl shortcutControl)
                 shortcuts.Add(shortcutControl);
 
@@ -188,47 +176,47 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
-        if (ShowToastCheckBox.IsChecked is bool showToast)
-            Settings.Default.ShowToast = showToast;
-        if (SystemThemeRdBtn.IsChecked is true)
-            Settings.Default.AppTheme = AppTheme.System.ToString();
-        else if (LightThemeRdBtn.IsChecked is true)
-            Settings.Default.AppTheme = AppTheme.Light.ToString();
-        else if (DarkThemeRdBtn.IsChecked is true)
-            Settings.Default.AppTheme = AppTheme.Dark.ToString();
+        //if (ShowToastCheckBox.IsChecked is bool showToast)
+        //    Settings.Default.ShowToast = showToast;
+        //if (SystemThemeRdBtn.IsChecked is true)
+        //    Settings.Default.AppTheme = AppTheme.System.ToString();
+        //else if (LightThemeRdBtn.IsChecked is true)
+        //    Settings.Default.AppTheme = AppTheme.Light.ToString();
+        //else if (DarkThemeRdBtn.IsChecked is true)
+        //    Settings.Default.AppTheme = AppTheme.Dark.ToString();
 
-        if (ShowToastCheckBox.IsChecked != null)
-            Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
+        //if (ShowToastCheckBox.IsChecked != null)
+        //    Settings.Default.ShowToast = (bool)ShowToastCheckBox.IsChecked;
 
-        if (FullScreenRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = TextGrabMode.Fullscreen.ToString();
-        else if (GrabFrameRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = TextGrabMode.GrabFrame.ToString();
-        else if (EditTextRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = TextGrabMode.EditText.ToString();
-        else if (QuickLookupRDBTN.IsChecked is true)
-            Settings.Default.DefaultLaunch = TextGrabMode.QuickLookup.ToString();
+        //if (FullScreenRDBTN.IsChecked is true)
+        //    Settings.Default.DefaultLaunch = TextGrabMode.Fullscreen.ToString();
+        //else if (GrabFrameRDBTN.IsChecked is true)
+        //    Settings.Default.DefaultLaunch = TextGrabMode.GrabFrame.ToString();
+        //else if (EditTextRDBTN.IsChecked is true)
+        //    Settings.Default.DefaultLaunch = TextGrabMode.EditText.ToString();
+        //else if (QuickLookupRDBTN.IsChecked is true)
+        //    Settings.Default.DefaultLaunch = TextGrabMode.QuickLookup.ToString();
 
-        if (ErrorCorrectBox.IsChecked is bool errorCorrect)
-            Settings.Default.CorrectErrors = errorCorrect;
+        //if (ErrorCorrectBox.IsChecked is bool errorCorrect)
+        //    Settings.Default.CorrectErrors = errorCorrect;
 
-        if (NeverUseClipboardChkBx.IsChecked is bool neverClipboard)
-            Settings.Default.NeverAutoUseClipboard = neverClipboard;
+        //if (NeverUseClipboardChkBx.IsChecked is bool neverClipboard)
+        //    Settings.Default.NeverAutoUseClipboard = neverClipboard;
 
-        if (RunInBackgroundChkBx.IsChecked is bool runInBackground)
-        {
-            Settings.Default.RunInTheBackground = runInBackground;
-            ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
-        }
+        //if (RunInBackgroundChkBx.IsChecked is bool runInBackground)
+        //{
+        //    Settings.Default.RunInTheBackground = runInBackground;
+        //    ImplementAppOptions.ImplementBackgroundOption(Settings.Default.RunInTheBackground);
+        //}
 
         if (TryInsertCheckbox.IsChecked is bool tryInsert)
             Settings.Default.TryInsert = tryInsert;
 
-        if (StartupOnLoginCheckBox.IsChecked is bool startupOnLogin)
-        {
-            Settings.Default.StartupOnLogin = startupOnLogin;
-            await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
-        }
+        //if (StartupOnLoginCheckBox.IsChecked is bool startupOnLogin)
+        //{
+        //    Settings.Default.StartupOnLogin = startupOnLogin;
+        //    await ImplementAppOptions.ImplementStartupOption(Settings.Default.StartupOnLogin);
+        //}
 
         if (GlobalHotkeysCheckbox.IsChecked is bool globalHotKeys)
             Settings.Default.GlobalHotkeysEnabled = globalHotKeys;
@@ -242,17 +230,17 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         if (ReadBarcodesBarcode.IsChecked is not null)
             Settings.Default.TryToReadBarcodes = (bool)ReadBarcodesBarcode.IsChecked;
 
-        if (CorrectToLatin.IsChecked is not null)
-            Settings.Default.CorrectToLatin = (bool)CorrectToLatin.IsChecked;
+        //if (CorrectToLatin.IsChecked is not null)
+        //    Settings.Default.CorrectToLatin = (bool)CorrectToLatin.IsChecked;
 
         if (HistorySwitch.IsChecked is not null)
             Settings.Default.UseHistory = (bool)HistorySwitch.IsChecked;
 
         if (HotKeysAllDifferent())
         {
-            List<ShortcutKeySet> shortcutKeys = new();
+            List<ShortcutKeySet> shortcutKeys = [];
 
-            foreach (var child in ShortcutsStackPanel.Children)
+            foreach (UIElement child in ShortcutsStackPanel.Children)
                 if (child is ShortcutControl control)
                     shortcutKeys.Add(control.KeySet);
 
@@ -280,7 +268,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ShortcutControl_Recording(object sender, EventArgs e)
     {
-        foreach (var child in ShortcutsStackPanel.Children)
+        foreach (UIElement child in ShortcutsStackPanel.Children)
             if (child is ShortcutControl shortcutControl
                 && sender is ShortcutControl senderShortcut
                 && shortcutControl != senderShortcut)
@@ -333,6 +321,8 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Closed(object? sender, EventArgs e)
     {
+        Settings.Default.Save();
+
         if (App.Current is App app)
             NotifyIconUtilities.RegisterHotKeys(app);
 
@@ -341,31 +331,17 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        AppTheme appTheme = Enum.Parse<AppTheme>(Settings.Default.AppTheme, true);
-        switch (appTheme)
-        {
-            case AppTheme.System:
-                SystemThemeRdBtn.IsChecked = true;
-                break;
-            case AppTheme.Dark:
-                DarkThemeRdBtn.IsChecked = true;
-                break;
-            case AppTheme.Light:
-                LightThemeRdBtn.IsChecked = true;
-                break;
-            default:
-                SystemThemeRdBtn.IsChecked = true;
-                break;
-        }
+        SettingsNavView.Navigate(typeof(GeneralSettings));
 
-        ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
+        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
+        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
+
+        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
+        // ShowToastCheckBox.IsChecked = Settings.Default.ShowToast;
         ErrorCorrectBox.IsChecked = Settings.Default.CorrectErrors;
         NeverUseClipboardChkBx.IsChecked = Settings.Default.NeverAutoUseClipboard;
-        RunInBackgroundChkBx.IsChecked = Settings.Default.RunInTheBackground;
-        TryInsertCheckbox.IsChecked = Settings.Default.TryInsert;
-        GlobalHotkeysCheckbox.IsChecked = Settings.Default.GlobalHotkeysEnabled;
         ReadBarcodesBarcode.IsChecked = Settings.Default.TryToReadBarcodes;
-        CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
+        //CorrectToLatin.IsChecked = Settings.Default.CorrectToLatin;
         HistorySwitch.IsChecked = Settings.Default.UseHistory;
 
         InsertDelaySeconds = Settings.Default.InsertDelay;
@@ -399,25 +375,25 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
-        switch (defaultLaunchSetting)
-        {
-            case TextGrabMode.Fullscreen:
-                FullScreenRDBTN.IsChecked = true;
-                break;
-            case TextGrabMode.GrabFrame:
-                GrabFrameRDBTN.IsChecked = true;
-                break;
-            case TextGrabMode.EditText:
-                EditTextRDBTN.IsChecked = true;
-                break;
-            case TextGrabMode.QuickLookup:
-                QuickLookupRDBTN.IsChecked = true;
-                break;
-            default:
-                FullScreenRDBTN.IsChecked = true;
-                break;
-        }
+        //TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
+        //switch (defaultLaunchSetting)
+        //{
+        //    case TextGrabMode.Fullscreen:
+        //        FullScreenRDBTN.IsChecked = true;
+        //        break;
+        //    case TextGrabMode.GrabFrame:
+        //        GrabFrameRDBTN.IsChecked = true;
+        //        break;
+        //    case TextGrabMode.EditText:
+        //        EditTextRDBTN.IsChecked = true;
+        //        break;
+        //    case TextGrabMode.QuickLookup:
+        //        QuickLookupRDBTN.IsChecked = true;
+        //        break;
+        //    default:
+        //        FullScreenRDBTN.IsChecked = true;
+        //        break;
+        //}
 
         IEnumerable<ShortcutKeySet> shortcutKeySets = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
 
@@ -469,7 +445,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             UseTesseractCheckBox.IsEnabled = false;
             Settings.Default.UseTesseract = false;
             Settings.Default.Save();
-            CouldNotFindTessTxtBlk.Visibility = Visibility.Visible;
+            //CouldNotFindTessTxtBlk.Visibility = Visibility.Visible;
         }
     }
     private void WinGetCodeCopyButton_Click(object sender, RoutedEventArgs e)

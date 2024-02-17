@@ -1,0 +1,41 @@
+﻿<Page
+    x:Class="Text_Grab.Pages.DangerSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="DangerSettings"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+
+    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource TextHeader}" Text="Dangerous Options" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Reset All settings to default settings.
+        </TextBlock>
+        <controls:CollapsibleButton
+            x:Name="ResetSettingsButton"
+            HorizontalAlignment="Left"
+            Background="DarkRed"
+            ButtonSymbol="ArrowCounterclockwise24"
+            ButtonText="Reset All Settings"
+            Click="ResetSettingsButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Delete all history items.
+        </TextBlock>
+        <!--  Add how many history items exist to be deleted  -->
+        <controls:CollapsibleButton
+            x:Name="ClearHistoryButton"
+            HorizontalAlignment="Left"
+            Background="DarkRed"
+            ButtonSymbol="Delete24"
+            ButtonText="Clear History"
+            Click="ClearHistoryButton_Click" />
+    </StackPanel>
+</Page>

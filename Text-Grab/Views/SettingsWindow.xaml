@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:pages="clr-namespace:Text_Grab.Pages"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab Settings"
     Width="660"
@@ -13,10 +14,9 @@
     MinWidth="200"
     MinHeight="300"
     d:Background="Black"
-    d:Height="3000"
-    Background="{ui:ThemeResource ApplicationBackgroundBrush}"
+    d:Height="600"
     Closed="Window_Closed"
-    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -44,7 +44,56 @@
             Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-        <Border Grid.Row="1">
+        <ui:NavigationView
+            x:Name="SettingsNavView"
+            Grid.Row="1"
+            Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+            IsBackButtonVisible="Collapsed"
+            PaneDisplayMode="LeftFluent">
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem
+                    Content="General"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:GeneralSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Home24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Langs"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:LanguageSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="LocalLanguage24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Keys"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:KeysSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="DesktopKeyboard24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Tess"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:TesseractSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Globe24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Danger"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:DangerSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Warning24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+        </ui:NavigationView>
+        <Border Grid.Row="1" Visibility="Collapsed">
             <ScrollViewer
                 x:Name="SettingsScrollView"
                 HorizontalScrollBarVisibility="Disabled"
@@ -57,119 +106,6 @@
                     </Grid.RowDefinitions>
                     <StackPanel Orientation="Vertical">
 
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="auto" />
-                            </Grid.ColumnDefinitions>
-                            <!--  Version Text  -->
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                Style="{StaticResource TextBodyNormal}"
-                                Text="Version 4.3.1" />
-
-                            <ui:HyperlinkButton
-                                x:Name="OpenExeFolderButton"
-                                Grid.Column="1"
-                                Margin="12,0,0,0"
-                                VerticalAlignment="Bottom"
-                                Click="OpenExeFolderButton_Click"
-                                Visibility="Collapsed">
-                                <TextBlock Text="Open EXE Containing Folder" />
-                            </ui:HyperlinkButton>
-
-                            <controls:CollapsibleButton
-                                x:Name="AboutBTN"
-                                Grid.Column="3"
-                                Margin="0"
-                                ButtonSymbol="Info24"
-                                ButtonText="About Text Grab"
-                                Click="AboutBTN_Click" />
-                        </Grid>
-
-                        <!--  Theme  -->
-                        <TextBlock
-                            Margin="0,16,0,4"
-                            FontSize="16"
-                            Style="{StaticResource TextHeader}"
-                            Text="Text Grab Theme" />
-                        <RadioButton
-                            x:Name="SystemThemeRdBtn"
-                            VerticalContentAlignment="Center"
-                            GroupName="ThemeGroup">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                System
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="LightThemeRdBtn"
-                            VerticalContentAlignment="Center"
-                            GroupName="ThemeGroup">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Light
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="DarkThemeRdBtn"
-                            VerticalContentAlignment="Center"
-                            GroupName="ThemeGroup">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Dark
-                            </TextBlock>
-                        </RadioButton>
-
-                        <!--  Show Toast on success  -->
-                        <TextBlock
-                            Margin="0,16,0,4"
-                            FontSize="16"
-                            Style="{StaticResource TextHeader}"
-                            Text="Show Toast" />
-                        <ui:ToggleSwitch Name="ShowToastCheckBox">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Show Toast when text is copied. Opens window to display and edit text.
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-
-                        <!--  default launch  -->
-                        <TextBlock
-                            Margin="0,16,0,4"
-                            FontSize="16"
-                            Style="{StaticResource TextHeader}"
-                            Text="Default Launch Window" />
-                        <RadioButton
-                            x:Name="FullScreenRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Full Screen
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="GrabFrameRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Grab Frame
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="EditTextRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Edit Text Window
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="QuickLookupRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Quick Simple Lookup
-                            </TextBlock>
-                        </RadioButton>
 
                         <!--  Pick Language  -->
 

@@ -17,8 +17,8 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class ShortcutControl : UserControl
 {
-    private Brush BadBrush = new SolidColorBrush(Colors.Red);
-    private Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
+    private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
+    private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
 
     private bool HasErrorWithKeySet { get; set; } = false;
     public bool HasConflictingError { get; set; } = false;
@@ -51,10 +51,7 @@ public partial class ShortcutControl : UserControl
 
     public ShortcutKeySet KeySet
     {
-        get
-        {
-            return _keySet;
-        }
+        get => _keySet;
         set
         {
             if (value == _keySet)
@@ -106,7 +103,7 @@ public partial class ShortcutControl : UserControl
 
     public void GoIntoErrorMode(string errorMessage = "")
     {
-        this.BorderBrush = BadBrush;
+        BorderBrush = BadBrush;
 
         if (!string.IsNullOrEmpty(errorMessage))
             ErrorText.Text = errorMessage;
@@ -118,7 +115,7 @@ public partial class ShortcutControl : UserControl
     {
         ErrorText.Visibility = Visibility.Collapsed;
         ErrorText.Text = string.Empty;
-        this.BorderBrush = GoodBrush;
+        BorderBrush = GoodBrush;
     }
 
     private void ShortcutControl_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -140,7 +137,7 @@ public partial class ShortcutControl : UserControl
         HasLetter = justLetterKeys.Count != 0;
         HasModifier = containsWin || containsShift || containsCtrl || containsAlt;
 
-        HashSet<KeyModifiers> modifierKeys = new();
+        HashSet<KeyModifiers> modifierKeys = [];
 
         if (HasLetter)
             KeyKey.Visibility = Visibility.Visible;
@@ -188,7 +185,7 @@ public partial class ShortcutControl : UserControl
         if (HasLetter && HasModifier)
         {
             HasErrorWithKeySet = false;
-            ShortcutKeySet newKeySet = new ShortcutKeySet()
+            ShortcutKeySet newKeySet = new()
             {
                 Modifiers = modifierKeys,
                 NonModifierKey = justLetterKeys.FirstOrDefault(),
@@ -256,13 +253,13 @@ public partial class ShortcutControl : UserControl
 
     public static HashSet<Key> GetDownKeys()
     {
-        var keyboardState = new byte[256];
+        byte[] keyboardState = new byte[256];
         NativeMethods.GetKeyboardState(keyboardState);
 
         HashSet<Key> downKeys = [];
-        for (var index = 0; index < DistinctVirtualKeys.Length; index++)
+        for (int index = 0; index < DistinctVirtualKeys.Length; index++)
         {
-            var virtualKey = DistinctVirtualKeys[index];
+            byte virtualKey = DistinctVirtualKeys[index];
             if ((keyboardState[virtualKey] & 0x80) != 0)
                 downKeys.Add(KeyInterop.KeyFromVirtualKey(virtualKey));
         }
@@ -279,7 +276,6 @@ public partial class ShortcutControl : UserControl
 
         if (isRecording)
             RecordingStarted?.Invoke(this, e);
-
     }
 
     public void StopRecording(object sender)
@@ -296,5 +292,7 @@ public partial class ShortcutControl : UserControl
             ButtonsPanel.Visibility = Visibility.Visible;
         else
             ButtonsPanel.Visibility = Visibility.Collapsed;
+
+        KeySetChanged?.Invoke(this, EventArgs.Empty);
     }
 }
