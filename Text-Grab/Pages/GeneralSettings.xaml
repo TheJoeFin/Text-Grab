@@ -48,6 +48,13 @@
                 Click="AboutBTN_Click" />
         </Grid>
 
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            What do you want to see here? Submit an issue on GitHub
+        </TextBlock>
+        <ui:HyperlinkButton NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues">
+            https://github.com/TheJoeFin/Text-Grab/issues
+        </ui:HyperlinkButton>
+
         <!--  Theme  -->
         <TextBlock
             Margin="0,16,0,4"
@@ -88,7 +95,10 @@
             FontSize="16"
             Style="{StaticResource TextHeader}"
             Text="Show Notification" />
-        <ui:ToggleSwitch Name="ShowToastCheckBox">
+        <ui:ToggleSwitch
+            Name="ShowToastCheckBox"
+            Checked="ShowToastCheckBox_Checked"
+            Unchecked="ShowToastCheckBox_Unchecked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
                 Show Notification when text is copied.
             </TextBlock>
@@ -140,7 +150,6 @@
             </TextBlock>
         </RadioButton>
 
-
         <!--  Run in the background  -->
         <TextBlock
             Margin="0,16,0,4"
@@ -153,6 +162,17 @@
             Unchecked="RunInBackgroundChkBx_Checked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
                 Run Text Grab in the background and enable hotkeys
+            </TextBlock>
+        </ui:ToggleSwitch>
+
+        <!--  Startup on login  -->
+        <ui:ToggleSwitch
+            Name="StartupOnLoginCheckBox"
+            Margin="0,12,0,0"
+            Checked="StartupOnLoginCheckBox_Checked"
+            Unchecked="StartupOnLoginCheckBox_Unchecked">
+            <TextBlock x:Name="StartupTextBlock" Style="{StaticResource TextBodyNormal}">
+                Auto start Text Grab when you login
             </TextBlock>
         </ui:ToggleSwitch>
 
@@ -211,6 +231,46 @@
                 Never automatically add text to the clipboard
             </TextBlock>
         </ui:ToggleSwitch>
+
+        <StackPanel>
+            <ui:ToggleSwitch
+                Name="TryInsertCheckbox"
+                Margin="0,12,0,0"
+                Checked="TryInsertCheckbox_Checked"
+                Unchecked="TryInsertCheckbox_Unchecked">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Try to Insert text in text fields after Fullscreen Grab after:
+                </TextBlock>
+            </ui:ToggleSwitch>
+            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                <TextBox
+                    x:Name="SecondsTextBox"
+                    Width="40"
+                    Height="26"
+                    Margin="48,0,0,0"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Background="White"
+                    FontWeight="Medium"
+                    Foreground="Black"
+                    Style="{StaticResource TextBoxStyle1}"
+                    Text="0.5"
+                    TextChanged="ValidateTextIsNumber" />
+                <TextBlock
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="Seconds" />
+                <TextBlock
+                    x:Name="DelayTimeErrorSeconds"
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="⚠ Pick a number between 0 and 10"
+                    Visibility="Collapsed" />
+            </StackPanel>
+        </StackPanel>
 
         <TextBlock
             Margin="0,16,0,4"

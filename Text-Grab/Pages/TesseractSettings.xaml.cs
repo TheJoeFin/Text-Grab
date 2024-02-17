@@ -15,7 +15,7 @@ namespace Text_Grab.Pages;
 /// </summary>
 public partial class TesseractSettings : Page
 {
-    private Settings DefaultSettings = Settings.Default;
+    private readonly Settings DefaultSettings = Settings.Default;
 
     public TesseractSettings()
     {
