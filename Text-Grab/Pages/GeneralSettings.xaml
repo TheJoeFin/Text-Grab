@@ -178,6 +178,44 @@
             Margin="0,16,0,4"
             FontSize="16"
             Style="{StaticResource TextHeader}"
+            Text="Correct Common Errors" />
+        <ui:ToggleSwitch
+            Name="ErrorCorrectBox"
+            Checked="ErrorCorrectBox_Checked"
+            Unchecked="ErrorCorrectBox_Unchecked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Correct common confusions between numbers and letters
+            </TextBlock>
+        </ui:ToggleSwitch>
+
+        <ui:ToggleSwitch
+            Name="CorrectToLatin"
+            Margin="0,16,0,4"
+            Checked="CorrectToLatin_Checked"
+            Unchecked="CorrectToLatin_Unchecked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Correct misidentifications between Greek and Cyrillic to Latin letters
+            </TextBlock>
+        </ui:ToggleSwitch>
+
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Clipboard Options" />
+        <ui:ToggleSwitch
+            Name="NeverUseClipboardChkBx"
+            Checked="NeverUseClipboardChkBx_Checked"
+            Unchecked="NeverUseClipboardChkBx_Unchecked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Never automatically add text to the clipboard
+            </TextBlock>
+        </ui:ToggleSwitch>
+
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
             Text="History" />
         <ui:ToggleSwitch
             Name="HistorySwitch"

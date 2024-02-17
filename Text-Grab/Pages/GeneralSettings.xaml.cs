@@ -84,6 +84,9 @@ public partial class GeneralSettings : Page
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
         ReadBarcodesBarcode.IsChecked = DefaultSettings.TryToReadBarcodes;
         HistorySwitch.IsChecked = DefaultSettings.UseHistory;
+        ErrorCorrectBox.IsChecked = DefaultSettings.CorrectErrors;
+        CorrectToLatin.IsChecked = DefaultSettings.CorrectToLatin;
+        NeverUseClipboardChkBx.IsChecked = DefaultSettings.NeverAutoUseClipboard;
     }
 
     private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
@@ -151,5 +154,35 @@ public partial class GeneralSettings : Page
     private void HistorySwitch_Unchecked(object sender, RoutedEventArgs e)
     {
         DefaultSettings.UseHistory = false;
+    }
+
+    private void ErrorCorrectBox_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.CorrectErrors = true;
+    }
+
+    private void ErrorCorrectBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.CorrectErrors = false;
+    }
+
+    private void CorrectToLatin_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.CorrectToLatin = true;
+    }
+
+    private void CorrectToLatin_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.CorrectToLatin = false;
+    }
+
+    private void NeverUseClipboardChkBx_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.NeverAutoUseClipboard = true;
+    }
+
+    private void NeverUseClipboardChkBx_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.NeverAutoUseClipboard = false;
     }
 }
