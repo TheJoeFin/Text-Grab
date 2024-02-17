@@ -33,7 +33,7 @@
             <Setter Property="TextAlignment" Value="Center" />
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
@@ -47,7 +47,6 @@
         <ui:NavigationView
             x:Name="SettingsNavView"
             Grid.Row="1"
-            Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}"
             IsBackButtonVisible="Collapsed"
             PaneDisplayMode="LeftFluent">
             <ui:NavigationView.MenuItems>
