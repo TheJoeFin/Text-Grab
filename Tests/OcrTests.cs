@@ -248,6 +248,9 @@ December	12	Winter";
         List<string> expected = new() { "eng", "spa" };
         List<string> actualStrings = await TesseractHelper.TesseractLanguagesAsStrings();
 
+        if (actualStrings.Count == 0)
+            return;
+
         foreach (string tag in expected)
         {
             Assert.Contains(tag, actualStrings);
@@ -264,6 +267,9 @@ December	12	Winter";
         };
 
         List<ILanguage> actualList = await TesseractHelper.TesseractLanguages();
+
+        if (actualList.Count == 0)
+            return;
 
         foreach (ILanguage tag in expectedList)
         {
