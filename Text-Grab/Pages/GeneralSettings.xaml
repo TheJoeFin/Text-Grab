@@ -48,12 +48,31 @@
                 Click="AboutBTN_Click" />
         </Grid>
 
-        <TextBlock Style="{StaticResource TextBodyNormal}">
-            What do you want to see here? Submit an issue on GitHub
-        </TextBlock>
-        <ui:HyperlinkButton NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues">
-            https://github.com/TheJoeFin/Text-Grab/issues
-        </ui:HyperlinkButton>
+        <Border
+            Margin="0,20"
+            Padding="20,12,20,20"
+            Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}"
+            CornerRadius="8">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Style="{StaticResource TextHeader}" Text="Hello there!" />
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Thank you for using Text Grab!
+                    Building this application is very much a labor of love. I am always happy to hear from users to better understand how you use the app and what you would like to see in the future.<LineBreak />
+                    Feel free to open an issue on GitHub if you have a bug or feature request. Email me directly for questions or just to say hi.<LineBreak />
+                    Happy Text Grabbing!</TextBlock>
+                <TextBlock
+                    Margin="0,12"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="- Joe" />
+                <ui:HyperlinkButton NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues">
+                    🌐 https://github.com/TheJoeFin/Text-Grab/issues
+                </ui:HyperlinkButton>
+                <ui:HyperlinkButton NavigateUri="mailto:joe@JoeFinApps.com">
+                    📧 joe@JoeFinApps.com
+                </ui:HyperlinkButton>
+            </StackPanel>
+        </Border>
 
         <!--  Theme  -->
         <TextBlock
