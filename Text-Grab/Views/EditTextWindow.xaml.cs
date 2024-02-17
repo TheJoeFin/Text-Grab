@@ -568,6 +568,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             e.CanExecute = false;
     }
 
+    private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        LoadLanguageMenuItems(LanguageMenuItem);
+    }
+
     private void CheckForGrabFrameOrLaunch()
     {
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
@@ -963,6 +968,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         cancellationTokenForDirOCR?.Cancel();
     }
 
+    private void LanguageMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
+            return;
+
+        foreach (MenuItem menuItem in LanguageMenuItem.Items)
+        {
+            menuItem.IsChecked = false;
+        }
+
+        clickedMenuItem.IsChecked = true;
+    }
+
     private void LaunchFindAndReplace()
     {
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
@@ -1024,6 +1042,71 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private async void LoadLanguageMenuItems(MenuItem captureMenuItem)
+    {
+        if (captureMenuItem.Items.Count > 0)
+            return;
+
+        // TODO Find a way to combine with the FSG language drop down
+
+        bool haveSetLastLang = false;
+        string lastTextLang = Settings.Default.LastUsedLang;
+        bool usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+
+        if (usingTesseract)
+        {
+            List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
+
+            foreach (TessLang language in tesseractLanguages.Cast<TessLang>())
+            {
+                MenuItem languageMenuItem = new()
+                {
+                    Header = language.DisplayName,
+                    Tag = language,
+                    IsCheckable = true,
+                };
+                languageMenuItem.Click += LanguageMenuItem_Click;
+
+                captureMenuItem.Items.Add(languageMenuItem);
+
+                if (!haveSetLastLang && language.CultureDisplayName == lastTextLang)
+                {
+                    languageMenuItem.IsChecked = true;
+                    haveSetLastLang = true;
+                }
+            }
+        }
+
+        IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
+
+        Language firstLang = LanguageUtilities.GetOCRLanguage();
+
+        foreach (Language language in possibleOCRLanguages)
+        {
+            MenuItem languageMenuItem = new()
+            {
+                Header = language.DisplayName,
+                Tag = language,
+                IsCheckable = true,
+            };
+            languageMenuItem.Click += LanguageMenuItem_Click;
+
+            captureMenuItem.Items.Add(languageMenuItem);
+
+            if (!haveSetLastLang &&
+                (language.AbbreviatedName.Equals(firstLang?.AbbreviatedName.ToLower(), StringComparison.CurrentCultureIgnoreCase)
+                || language.LanguageTag.Equals(firstLang?.LanguageTag.ToLower(), StringComparison.CurrentCultureIgnoreCase)))
+            {
+                languageMenuItem.IsChecked = true;
+                haveSetLastLang = true;
+            }
+        }
+        if (!haveSetLastLang && captureMenuItem.Items[0] is MenuItem firstMenuItem)
+        {
+            firstMenuItem.IsChecked = true;
+        }
+    }
+
     private void LoadRecentTextHistory()
     {
         List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
@@ -1078,6 +1161,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         QrCodeWindow window = new(text);
         window.CenterOverThisWindow(this);
         window.Show();
+    }
+
+    private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem marginsMenuItem)
+            return;
+
+        Settings.Default.EtwUseMargins = marginsMenuItem.IsChecked;
+        SetMargins(MarginsMenuItem.IsChecked);
     }
 
     private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
@@ -1451,6 +1543,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.Text = PassedTextControl.Text.ReplaceReservedCharacters();
     }
 
+    private void RestorePositionMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem restoreMenuItem)
+            return;
+
+        Settings.Default.RestoreEtwPositions = restoreMenuItem.IsChecked;
+    }
+
+    private void RestoreThisPosition_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.SetWindowPosition(this);
+    }
+
     private void RestoreWindowSettings()
     {
         if (Settings.Default.EditWindowStartFullscreen
@@ -1608,6 +1713,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (Settings.Default.IsFontUnderline) tdc.Add(TextDecorations.Underline);
         if (Settings.Default.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
         PassedTextControl.TextDecorations = tdc;
+    }
+
+    private void SetMargins(bool AreThereMargins)
+    {
+
+        if (AreThereMargins)
+        {
+            if (PassedTextControl.ActualWidth < 400)
+                PassedTextControl.Padding = new Thickness(10, 0, 10, 0);
+            else if (PassedTextControl.ActualWidth < 1000)
+                PassedTextControl.Padding = new Thickness(50, 0, 50, 0);
+            else if (PassedTextControl.ActualWidth < 1400)
+                PassedTextControl.Padding = new Thickness(100, 0, 100, 0);
+            else
+                PassedTextControl.Padding = new Thickness(160, 0, 160, 0);
+        }
+        else
+            PassedTextControl.Padding = new Thickness(0);
     }
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1880,8 +2003,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void Window_Closed(object? sender, EventArgs e)
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
-        Properties.Settings.Default.EditTextWindowSizeAndPosition = windowSizeAndPosition;
-        Properties.Settings.Default.Save();
+        Settings.Default.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+        Settings.Default.Save();
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
 
@@ -1948,128 +2071,5 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
-
-    private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        LoadLanguageMenuItems(LanguageMenuItem);
-    }
-
-    private async void LoadLanguageMenuItems(MenuItem captureMenuItem)
-    {
-        if (captureMenuItem.Items.Count > 0)
-            return;
-
-        // TODO Find a way to combine with the FSG language drop down
-
-        bool haveSetLastLang = false;
-        string lastTextLang = Settings.Default.LastUsedLang;
-        bool usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
-
-        if (usingTesseract)
-        {
-            List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
-
-            foreach (TessLang language in tesseractLanguages.Cast<TessLang>())
-            {
-                MenuItem languageMenuItem = new()
-                {
-                    Header = language.DisplayName,
-                    Tag = language,
-                    IsCheckable = true,
-                };
-                languageMenuItem.Click += LanguageMenuItem_Click;
-
-                captureMenuItem.Items.Add(languageMenuItem);
-
-                if (!haveSetLastLang && language.CultureDisplayName == lastTextLang)
-                {
-                    languageMenuItem.IsChecked = true;
-                    haveSetLastLang = true;
-                }
-            }
-        }
-
-        IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
-
-        Language firstLang = LanguageUtilities.GetOCRLanguage();
-
-        foreach (Language language in possibleOCRLanguages)
-        {
-            MenuItem languageMenuItem = new()
-            {
-                Header = language.DisplayName,
-                Tag = language,
-                IsCheckable = true,
-            };
-            languageMenuItem.Click += LanguageMenuItem_Click;
-
-            captureMenuItem.Items.Add(languageMenuItem);
-
-            if (!haveSetLastLang &&
-                (language.AbbreviatedName.Equals(firstLang?.AbbreviatedName.ToLower(), StringComparison.CurrentCultureIgnoreCase)
-                || language.LanguageTag.Equals(firstLang?.LanguageTag.ToLower(), StringComparison.CurrentCultureIgnoreCase)))
-            {
-                languageMenuItem.IsChecked = true;
-                haveSetLastLang = true;
-            }
-        }
-        if (!haveSetLastLang && captureMenuItem.Items[0] is MenuItem firstMenuItem)
-        {
-            firstMenuItem.IsChecked = true;
-        }
-    }
-
-    private void LanguageMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
-            return;
-
-        foreach (MenuItem menuItem in LanguageMenuItem.Items)
-        {
-            menuItem.IsChecked = false;
-        }
-
-        clickedMenuItem.IsChecked = true;
-    }
     #endregion Methods
-
-    private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem marginsMenuItem)
-            return;
-
-        Settings.Default.EtwUseMargins = marginsMenuItem.IsChecked;
-        SetMargins(MarginsMenuItem.IsChecked);
-    }
-
-    private void SetMargins(bool AreThereMargins)
-    {
-        
-        if (AreThereMargins)
-        {
-            if (Width < 200)
-                PassedTextControl.Padding = new Thickness(10,0,10,0);
-            else if (Width < 800)
-                PassedTextControl.Padding = new Thickness(50,0,50,0);
-            else if (Width < 1200)
-                PassedTextControl.Padding = new Thickness(100,0,100,0);
-            else
-                PassedTextControl.Padding = new Thickness(160,0,160,0);
-        }
-        else
-            PassedTextControl.Padding = new Thickness(0);
-    }
-
-    private void RestorePositionMenuItem_Checked(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem restoreMenuItem)
-            return;
-
-        Settings.Default.RestoreEtwPositions = restoreMenuItem.IsChecked;
-    }
-
-    private void RestoreThisPosition_Click(object sender, RoutedEventArgs e)
-    {
-        WindowUtilities.SetWindowPosition(this);
-    }
 }
