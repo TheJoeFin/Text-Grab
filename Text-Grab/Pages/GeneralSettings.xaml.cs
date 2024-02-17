@@ -3,8 +3,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
+using Windows.ApplicationModel;
 using Wpf.Ui.Controls;
 
 namespace Text_Grab.Pages;
@@ -14,7 +16,15 @@ namespace Text_Grab.Pages;
 /// </summary>
 public partial class GeneralSettings : Page
 {
-    private Settings DefaultSettings = Settings.Default;
+    #region Fields
+
+    private readonly Settings DefaultSettings = Settings.Default;
+    private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
+    private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
+    private double InsertDelaySeconds = 1.5;
+
+    #endregion Fields
+
 
     public GeneralSettings()
     {
@@ -41,7 +51,7 @@ public partial class GeneralSettings : Page
         WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
     }
 
-    private void Page_Loaded(object sender, RoutedEventArgs e)
+    private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         AppTheme appTheme = Enum.Parse<AppTheme>(DefaultSettings.AppTheme, true);
         switch (appTheme)
@@ -80,6 +90,33 @@ public partial class GeneralSettings : Page
                 break;
         }
 
+        if (ImplementAppOptions.IsPackaged())
+        {
+            StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
+
+            switch (startupTask.State)
+            {
+                case StartupTaskState.Disabled:
+                    // Task is disabled but can be enabled.
+                    StartupOnLoginCheckBox.IsChecked = false;
+                    break;
+                case StartupTaskState.DisabledByUser:
+                    // Task is disabled and user must enable it manually.
+                    StartupOnLoginCheckBox.IsChecked = false;
+                    StartupOnLoginCheckBox.IsEnabled = false;
+
+                    StartupTextBlock.Text += "\nDisabled in Task Manager";
+                    break;
+                case StartupTaskState.Enabled:
+                    StartupOnLoginCheckBox.IsChecked = true;
+                    break;
+            }
+        }
+        else
+        {
+            StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
+        }
+
         ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
         ReadBarcodesBarcode.IsChecked = DefaultSettings.TryToReadBarcodes;
@@ -87,6 +124,33 @@ public partial class GeneralSettings : Page
         ErrorCorrectBox.IsChecked = DefaultSettings.CorrectErrors;
         CorrectToLatin.IsChecked = DefaultSettings.CorrectToLatin;
         NeverUseClipboardChkBx.IsChecked = DefaultSettings.NeverAutoUseClipboard;
+        TryInsertCheckbox.IsChecked = DefaultSettings.TryInsert;
+        InsertDelaySeconds = DefaultSettings.InsertDelay;
+        SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
+    {
+        if (!IsLoaded)
+            return;
+
+        if (sender is System.Windows.Controls.TextBox numberInputBox)
+        {
+            bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
+            if (wasAbleToConvert && parsedText > 0 && parsedText < 10)
+            {
+                InsertDelaySeconds = parsedText;
+                DefaultSettings.InsertDelay = InsertDelaySeconds;
+                DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
+                numberInputBox.BorderBrush = GoodBrush;
+            }
+            else
+            {
+                InsertDelaySeconds = 3;
+                DelayTimeErrorSeconds.Visibility = Visibility.Visible;
+                numberInputBox.BorderBrush = BadBrush;
+            }
+        }
     }
 
     private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
@@ -184,5 +248,37 @@ public partial class GeneralSettings : Page
     private void NeverUseClipboardChkBx_Unchecked(object sender, RoutedEventArgs e)
     {
         DefaultSettings.NeverAutoUseClipboard = false;
+    }
+
+    private async void StartupOnLoginCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.StartupOnLogin = true;
+        await ImplementAppOptions.ImplementStartupOption(true);
+    }
+
+    private async void StartupOnLoginCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.StartupOnLogin = false;
+        await ImplementAppOptions.ImplementStartupOption(false);
+    }
+
+    private void TryInsertCheckbox_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.TryInsert = true;
+    }
+
+    private void TryInsertCheckbox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.TryInsert = false;
+    }
+
+    private void ShowToastCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.ShowToast = true;
+    }
+
+    private void ShowToastCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.ShowToast = false;
     }
 }
