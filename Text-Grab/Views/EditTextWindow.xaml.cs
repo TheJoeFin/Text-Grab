@@ -1486,6 +1486,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             BottomBar.Visibility = Visibility.Collapsed;
         }
 
+        if (Settings.Default.EtwUseMargins)
+        {
+            MarginsMenuItem.IsChecked = true;
+            SetMargins(true);
+        }
+
         SetBottomBarButtons();
     }
 
@@ -2032,6 +2038,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is not MenuItem marginsMenuItem)
             return;
 
+        Settings.Default.EtwUseMargins = marginsMenuItem.IsChecked;
         SetMargins(MarginsMenuItem.IsChecked);
     }
 
