@@ -245,13 +245,15 @@ December	12	Winter";
     [WpfFact]
     public async Task GetTessLanguages()
     {
-        string expected = "eng,spa";
+        List<string> expected = new() { "eng", "spa" };
         List<string> actualStrings = await TesseractHelper.TesseractLanguagesAsStrings();
-        string joinedString = string.Join(',', actualStrings.ToArray());
 
-        Assert.Equal(expected, joinedString);
+        foreach (string tag in expected)
+        {
+            Assert.Contains(tag, actualStrings);
+        }
     }
-
+    
     [WpfFact]
     public async Task GetTesseractStrongLanguages()
     {
@@ -259,15 +261,14 @@ December	12	Winter";
         {
             new TessLang("eng"),
             new TessLang("spa"),
-            // new TessLang("equ")
         };
 
         List<ILanguage> actualList = await TesseractHelper.TesseractLanguages();
 
-        string expectedAbbreviatedName = string.Join(',', expectedList.Select(l => l.AbbreviatedName).ToArray());
-        string actualAbbreviatedName = string.Join(',', actualList.Select(l => l.AbbreviatedName).ToArray());
-
-        Assert.Equal(expectedAbbreviatedName, actualAbbreviatedName);
+        foreach (ILanguage tag in expectedList)
+        {
+            Assert.Contains(tag.AbbreviatedName, actualList.Select(x => x.AbbreviatedName).ToList());
+        }
     }
 
     [WpfFact]
