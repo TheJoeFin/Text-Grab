@@ -21,6 +21,7 @@
     Loaded="Window_Loaded"
     PreviewKeyDown="EditTextWindow_PreviewKeyDown"
     ResizeMode="CanResizeWithGrip"
+    WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">
@@ -409,6 +410,16 @@
                     Header="Open _Fullscreen on Launch"
                     IsCheckable="True"
                     IsChecked="False" />
+                <MenuItem
+                    x:Name="RestorePositionMenuItem"
+                    Checked="RestorePositionMenuItem_Checked"
+                    Header="Set postion based on previous Edit Text Window"
+                    IsCheckable="True"
+                    Unchecked="RestorePositionMenuItem_Checked" />
+                <MenuItem
+                    x:Name="RestoreThisPosition"
+                    Click="RestoreThisPosition_Click"
+                    Header="_Restore this windows's position" />
                 <Separator />
                 <MenuItem
                     x:Name="NewWindowMenuItem"

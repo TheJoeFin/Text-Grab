@@ -1468,6 +1468,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             Topmost = true;
         }
 
+        RestorePositionMenuItem.IsChecked = Settings.Default.RestoreEtwPositions;
+
+        if (Settings.Default.RestoreEtwPositions)
+            WindowUtilities.SetWindowPosition(this);
+
         if (!Settings.Default.EditWindowIsWordWrapOn)
         {
             WrapTextMenuItem.IsChecked = false;
@@ -1900,7 +1905,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void Window_Initialized(object sender, EventArgs e)
     {
         PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
-        WindowUtilities.SetWindowPosition(this);
         SetFontFromSettings();
     }
 
@@ -2022,4 +2026,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
     #endregion Methods
 
+    private void RestorePositionMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem restoreMenuItem)
+            return;
+
+        Settings.Default.RestoreEtwPositions = restoreMenuItem.IsChecked;
+    }
+
+    private void RestoreThisPosition_Click(object sender, RoutedEventArgs e)
+    {
+        WindowUtilities.SetWindowPosition(this);
+    }
 }
