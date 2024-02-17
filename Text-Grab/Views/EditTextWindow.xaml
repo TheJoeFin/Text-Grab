@@ -304,6 +304,12 @@
             </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
+                    x:Name="MarginsMenuItem"
+                    Checked="MarginsMenuItem_Checked"
+                    Header="_Use Margins"
+                    IsCheckable="True"
+                    Unchecked="MarginsMenuItem_Checked" />
+                <MenuItem
                     x:Name="WrapTextMenuItem"
                     Checked="WrapTextCHBOX_Checked"
                     Header="_Wrap Text"

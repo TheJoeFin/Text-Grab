@@ -538,5 +538,17 @@ namespace Text_Grab.Properties {
                 this["RestoreEtwPositions"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EtwUseMargins {
+            get {
+                return ((bool)(this["EtwUseMargins"]));
+            }
+            set {
+                this["EtwUseMargins"] = value;
+            }
+        }
     }
 }

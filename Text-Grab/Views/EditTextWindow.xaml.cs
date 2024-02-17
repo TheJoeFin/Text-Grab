@@ -1259,6 +1259,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void PassedTextControl_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         UpdateLineAndColumnText();
+        SetMargins(MarginsMenuItem.IsChecked is true);
     }
 
     private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
@@ -2025,6 +2026,32 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         clickedMenuItem.IsChecked = true;
     }
     #endregion Methods
+
+    private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem marginsMenuItem)
+            return;
+
+        SetMargins(MarginsMenuItem.IsChecked);
+    }
+
+    private void SetMargins(bool AreThereMargins)
+    {
+        
+        if (AreThereMargins)
+        {
+            if (Width < 200)
+                PassedTextControl.Padding = new Thickness(10,0,10,0);
+            else if (Width < 800)
+                PassedTextControl.Padding = new Thickness(50,0,50,0);
+            else if (Width < 1200)
+                PassedTextControl.Padding = new Thickness(100,0,100,0);
+            else
+                PassedTextControl.Padding = new Thickness(160,0,160,0);
+        }
+        else
+            PassedTextControl.Padding = new Thickness(0);
+    }
 
     private void RestorePositionMenuItem_Checked(object sender, RoutedEventArgs e)
     {
