@@ -60,22 +60,15 @@ public partial class LanguageSettings : Page
         AllLanguagesComboBox.Items.Clear();
         foreach (string textName in TesseractGitHubFileDownloader.tesseractTrainedDataFileNames)
         {
-            bool isInstalled = false;
             string tesseractTag = textName.Split('.').First();
-            foreach (ILanguage iLang2 in tesseractLanguages)
-                if (iLang2.LanguageTag == tesseractTag)
-                    isInstalled = true;
 
-            if (!isInstalled)
-            {
-                TessLang tessLang = new(tesseractTag);
-                string paddedTextName = textName.PadRight(26);
-                AllLanguagesComboBox.Items.Add($"{paddedTextName}\t{tessLang.CultureDisplayName}");
-            }
+            TessLang tessLang = new(tesseractTag);
+            string paddedTextName = textName.PadRight(26);
+            AllLanguagesComboBox.Items.Add($"{paddedTextName}\t{tessLang.CultureDisplayName}");
         }
     }
 
-    private async void Button_Click(object sender, RoutedEventArgs e)
+    private async void InstallButton_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(AllLanguagesComboBox.Text))
             return;

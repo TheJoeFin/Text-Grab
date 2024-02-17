@@ -72,7 +72,12 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-            <StackPanel Orientation="Horizontal">
+
+            <TextBlock
+                Margin="0,20,0,0"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Download and install languages from Tesseract GitHub" />
+            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                 <ComboBox
                     x:Name="AllLanguagesComboBox"
                     Width="300"
@@ -85,7 +90,7 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <Button Margin="12,0,0,0" Click="Button_Click">
+                <Button Margin="12,0,0,0" Click="InstallButton_Click">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Shield24" />
                         <TextBlock Margin="6,0,0,0" Text="Install" />
