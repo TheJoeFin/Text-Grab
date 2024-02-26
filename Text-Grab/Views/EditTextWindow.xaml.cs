@@ -1172,6 +1172,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Select(replaceCaret, 0);
     }
 
+    private void DuplicateSelectedLine(object sender, ExecutedRoutedEventArgs e)
+    {
+        int replaceCaret = PassedTextControl.CaretIndex;
+        int selectionLength = PassedTextControl.SelectionLength;
+        SelectLine();
+        string lineText = PassedTextControl.SelectedText;
+        PassedTextControl.SelectedText = lineText + Environment.NewLine + lineText;
+        PassedTextControl.Select(replaceCaret + (Environment.NewLine.Length + lineText.Length), selectionLength);
+    }
+
     private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem marginsMenuItem)
@@ -1820,6 +1830,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RoutedCommand AddedLineAbove = new();
         _ = AddedLineAbove.InputGestures.Add(new KeyGesture(Key.Enter, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(AddedLineAbove, AddedLineAboveCommand));
+
+        RoutedCommand duplicateLine = new();
+        _ = duplicateLine.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(duplicateLine, DuplicateSelectedLine));
     }
 
     private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
