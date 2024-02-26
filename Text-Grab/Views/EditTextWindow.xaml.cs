@@ -1163,6 +1163,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         window.Show();
     }
 
+    private void AddedLineAboveCommand(object sender, ExecutedRoutedEventArgs e)
+    {
+        int replaceCaret = PassedTextControl.CaretIndex + Environment.NewLine.Length;
+        int lineIndex = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
+        int lineStart = PassedTextControl.GetCharacterIndexFromLineIndex(lineIndex);
+        PassedTextControl.Text = PassedTextControl.Text.Insert(lineStart, Environment.NewLine);
+        PassedTextControl.Select(replaceCaret, 0);
+    }
+
     private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem marginsMenuItem)
@@ -1807,6 +1816,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RoutedCommand EscapeKeyed = new();
         _ = EscapeKeyed.InputGestures.Add(new KeyGesture(Key.Escape));
         _ = CommandBindings.Add(new CommandBinding(EscapeKeyed, KeyedEscape));
+
+        RoutedCommand AddedLineAbove = new();
+        _ = AddedLineAbove.InputGestures.Add(new KeyGesture(Key.Enter, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(AddedLineAbove, AddedLineAboveCommand));
     }
 
     private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
