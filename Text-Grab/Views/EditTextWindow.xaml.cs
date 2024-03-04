@@ -1166,10 +1166,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void AddedLineAboveCommand(object sender, ExecutedRoutedEventArgs e)
     {
         int replaceCaret = PassedTextControl.CaretIndex + Environment.NewLine.Length;
-        int lineIndex = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
-        int lineStart = PassedTextControl.GetCharacterIndexFromLineIndex(lineIndex);
-        PassedTextControl.Text = PassedTextControl.Text.Insert(lineStart, Environment.NewLine);
-        PassedTextControl.Select(replaceCaret, 0);
+        int selectionLength = PassedTextControl.SelectionLength;
+
+        SelectLine();
+        string lineText = PassedTextControl.SelectedText;
+        PassedTextControl.SelectedText = $"{Environment.NewLine}{lineText}";
+        PassedTextControl.Select(replaceCaret, selectionLength);
     }
 
     private void DuplicateSelectedLine(object sender, ExecutedRoutedEventArgs e)
