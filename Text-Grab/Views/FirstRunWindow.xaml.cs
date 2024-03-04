@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -110,7 +109,9 @@ public partial class FirstRunWindow : FluentWindow
 
     private void OkayButton_Click(object sender, RoutedEventArgs e)
     {
-        if (System.Windows.Application.Current.Windows.Count == 1)
+        int windowsCount = Application.Current.Windows.Count;
+
+        if (windowsCount == 2 || windowsCount == 1)
         {
             TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
             switch (defaultLaunchSetting)
@@ -132,7 +133,7 @@ public partial class FirstRunWindow : FluentWindow
             }
         }
 
-        this.Close();
+        Close();
     }
     private void RadioButton_Checked(object sender, RoutedEventArgs e)
     {
