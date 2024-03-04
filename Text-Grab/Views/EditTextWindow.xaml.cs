@@ -1178,8 +1178,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int selectionLength = PassedTextControl.SelectionLength;
         SelectLine();
         string lineText = PassedTextControl.SelectedText;
-        PassedTextControl.SelectedText = lineText + Environment.NewLine + lineText;
-        PassedTextControl.Select(replaceCaret + (Environment.NewLine.Length + lineText.Length), selectionLength);
+        bool lineEndsInNewLine = lineText.EndsWithNewline();
+        PassedTextControl.SelectedText = $"{ lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{ lineText}";
+        int length = lineText.Length;
+        if (!lineEndsInNewLine)
+            length += Environment.NewLine.Length;
+
+        PassedTextControl.Select(replaceCaret + length, selectionLength);
     }
 
     private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)

@@ -741,4 +741,9 @@ public static class StringMethods
 
         return newLineIndex;
     }
+
+    public static bool EndsWithNewline(this string s)
+    {
+        return Regex.IsMatch(s, @"\n$");
+    }
 }
