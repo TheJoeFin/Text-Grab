@@ -1,0 +1,119 @@
+﻿<Page
+    x:Class="Text_Grab.Pages.TesseractSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="TesseractSettings"
+    d:DesignHeight="1450"
+    d:DesignWidth="800"
+    Loaded="Page_Loaded"
+    mc:Ignorable="d">
+
+    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource TextHeader}" Text="Tesseract Settings" />
+        <ui:ToggleSwitch
+            Name="UseTesseractCheckBox"
+            Margin="0,12,0,8"
+            Checked="UseTesseractCheckBox_Checked"
+            Unchecked="UseTesseractCheckBox_Checked">
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                Enable Tesseract within Text Grab
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            When enabled, you will be able to select Tesseract lanuages from the language picker where it is supported in Text Grab: Fullscreen Grab mode and the processing of files from the Edit Text Window or the commandline.
+        </TextBlock>
+        <TextBlock
+            x:Name="CouldNotFindTessTxtBlk"
+            Margin="48,0,0,0"
+            Style="{StaticResource TextBodyNormal}"
+            Text="⚠️ Could not locate Tesseract.exe"
+            Visibility="Collapsed" />
+
+        <TextBlock
+            Margin="0,20,0,0"
+            Style="{StaticResource TextHeader}"
+            Text="What is Tesseract?" />
+        <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
+            Tesseract is an optical character recognition engine for various operating systems. It is free software, released under the Apache License. Originally developed by Hewlett-Packard as proprietary software in the 1980s, it was released as open source in 2005 and development has been sponsored by Google since 2006.<LineBreak /><Hyperlink NavigateUri="https://en.wikipedia.org/wiki/Tesseract_(software)" RequestNavigate="Hyperlink_RequestNavigate">
+                More: https://en.wikipedia.org/wiki/Tesseract_(software)
+            </Hyperlink>
+        </TextBlock>
+        <TextBlock
+            Margin="0,12,0,0"
+            Style="{StaticResource TextHeader}"
+            Text="How does Text Grab use Tesseract?" />
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            Text Grab will capture the image then pass it to the Tesseract EXE. Then Tesseract returns the result of the OCR to Text Grab and error occurs according to user settings.<LineBreak />
+            Does not use Tesseract: Table Recogintion and the Grab Frame.</TextBlock>
+        <TextBlock
+            Margin="0,12,0,0"
+            Style="{StaticResource TextHeader}"
+            Text="How do I get Tesseract?" />
+        <TextBlock IsEnabled="True" Style="{StaticResource TextBodyNormal}">
+            The source repository is on GitHub:<LineBreak />
+            <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tesseract</Hyperlink>
+            <LineBreak />
+            UB Mannheim maintains an installer for Windows:<LineBreak />
+            <Hyperlink NavigateUri="https://github.com/UB-Mannheim/tesseract/wiki" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/UB-Mannheim/tesseract/wiki/</Hyperlink>
+        </TextBlock>
+        <TextBlock
+            Margin="0,12,0,0"
+            Style="{StaticResource TextHeader}"
+            Text="Install via WinGet." />
+        <StackPanel Orientation="Horizontal">
+            <Button
+                x:Name="WinGetCodeCopyButton"
+                Width="40"
+                Click="WinGetCodeCopyButton_Click"
+                Style="{StaticResource SymbolButton}">
+                <ui:SymbolIcon Symbol="Copy24" />
+            </Button>
+            <TextBox x:Name="WinGetInstallTextBox" FontFamily="Cascadia Code">
+                winget install -e --id UB-Mannheim.TesseractOCR
+            </TextBox>
+        </StackPanel>
+        <TextBlock Style="{StaticResource TextBodyNormal}" Text="Restart Text Grab after installing Tesseract for Tesseract.exe path to be automatically set." />
+
+        <TextBlock
+            Margin="0,12,0,0"
+            Style="{StaticResource TextHeader}"
+            Text="Why should I use Tesseract?" />
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            Tesseract is known for having the best OCR capabilities. While the Windows OCR is convenient and fast, it has not been updated in years and Microsoft has no plans to update it.<LineBreak />
+            Feel free to try Tesseract and hopefully it will work well for you. Ideally Text Grab can bring together the convenience with the power of Tesseract.</TextBlock>
+
+        <TextBlock
+            Margin="0,12,0,0"
+            Style="{StaticResource TextHeader}"
+            Text="Adding more language support" />
+        <TextBlock IsEnabled="True" Style="{StaticResource TextBodyNormal}">
+            The default OCR Models installed by UB Mannheim are the 'fast' models which are not as accurate. Other more accurate models can be downloaded from the tessdata GitHub repository here:<LineBreak />
+            <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
+            <LineBreak />
+            After downloading language files, place them in the "tessdata" folder in the installed location of Tesseract:<LineBreak />
+            <!--<Hyperlink NavigateUri="C:\Program Files\Tesseract-OCR" RequestNavigate="Hyperlink_RequestNavigate">C:\Program Files\Tesseract-OCR</Hyperlink>-->
+        </TextBlock>
+        <StackPanel Orientation="Horizontal">
+            <Button
+                x:Name="OpenPathButton"
+                Margin="4,0"
+                Click="OpenPathButton_Click"
+                Style="{StaticResource SymbolButton}">
+                <StackPanel Margin="4,0" Orientation="Horizontal">
+                    <ui:SymbolIcon Margin="0,0,6,0" Symbol="OpenFolder24" />
+                    <TextBlock Text="Open Folder" />
+                </StackPanel>
+            </Button>
+            <TextBox
+                x:Name="TesseractPathTextBox"
+                FontFamily="Cascadia Code"
+                TextChanged="TesseractPathTextBox_TextChanged">
+                Enter path to tesseract.exe here. ex: c:/tess/tesseract.exe
+            </TextBox>
+        </StackPanel>
+    </StackPanel>
+</Page>

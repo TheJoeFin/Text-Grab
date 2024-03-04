@@ -10,7 +10,7 @@ public interface ILanguage
 
     public string CurrentInputMethodLanguageTag { get; }
 
-    public string DisplayName { get; }
+    public string CultureDisplayName { get; }
 
     public string LanguageTag { get; }
 

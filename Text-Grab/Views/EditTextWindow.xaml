@@ -8,8 +8,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Edit Text"
-    Width="680"
-    Height="450"
+    Width="800"
+    Height="500"
     MinWidth="200"
     MinHeight="200"
     Activated="Window_Activated"
@@ -21,6 +21,7 @@
     Loaded="Window_Loaded"
     PreviewKeyDown="EditTextWindow_PreviewKeyDown"
     ResizeMode="CanResizeWithGrip"
+    WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.Resources>
         <Style x:Key="SimpleBTN" TargetType="Button">
@@ -303,6 +304,12 @@
             </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
+                    x:Name="MarginsMenuItem"
+                    Checked="MarginsMenuItem_Checked"
+                    Header="_Use Margins"
+                    IsCheckable="True"
+                    Unchecked="MarginsMenuItem_Checked" />
+                <MenuItem
                     x:Name="WrapTextMenuItem"
                     Checked="WrapTextCHBOX_Checked"
                     Header="_Wrap Text"
@@ -409,6 +416,16 @@
                     Header="Open _Fullscreen on Launch"
                     IsCheckable="True"
                     IsChecked="False" />
+                <MenuItem
+                    x:Name="RestorePositionMenuItem"
+                    Checked="RestorePositionMenuItem_Checked"
+                    Header="Set postion based on previous Edit Text Window"
+                    IsCheckable="True"
+                    Unchecked="RestorePositionMenuItem_Checked" />
+                <MenuItem
+                    x:Name="RestoreThisPosition"
+                    Click="RestoreThisPosition_Click"
+                    Header="_Restore this windows's position" />
                 <Separator />
                 <MenuItem
                     x:Name="NewWindowMenuItem"

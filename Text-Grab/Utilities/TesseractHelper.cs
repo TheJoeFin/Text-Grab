@@ -1,17 +1,17 @@
-﻿using System;
+﻿using CliWrap;
+using CliWrap.Buffered;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Text_Grab.Models;
-using CliWrap;
-using System.Text;
-using CliWrap.Buffered;
 using Text_Grab.Interfaces;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 
 namespace Text_Grab.Utilities;
@@ -19,7 +19,7 @@ namespace Text_Grab.Utilities;
 // Install Tesseract for Windows from UB-Mannheim
 // https://github.com/UB-Mannheim/tesseract/wiki
 
-// Docs about commandline usage
+// Docs about command line usage
 // https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html 
 
 // This was developed using Tesseract v5 in 2022
@@ -80,7 +80,7 @@ public static class TesseractHelper
         return string.Empty;
     }
 
-    public static async Task<string> GetTextFromImagePathAsync(string imagePath, Windows.Globalization.Language language, string tessTag)
+    public static async Task<string> GetTextFromImagePathAsync(string imagePath, string tessTag)
     {
         string tesseractPath = GetTesseractPath();
 
@@ -106,13 +106,15 @@ public static class TesseractHelper
     public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, Windows.Globalization.Language language, string tessTag = "")
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
+        if (string.IsNullOrWhiteSpace(tessTag))
+            tessTag = language.LanguageTag;
 
-        OcrOutput ocrOutput = new OcrOutput()
+        OcrOutput ocrOutput = new()
         {
             Engine = OcrEngineKind.Tesseract,
             Kind = OcrOutputKind.Paragraph,
             SourceBitmap = bmp,
-            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language, tessTag)
+            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), tessTag)
         };
         ocrOutput.CleanOutput();
 
@@ -179,7 +181,7 @@ public static class TesseractHelper
         return $"{exePath}\\tempImage.png";
     }
 
-    public async static Task<List<string>> TesseractLangsAsStrings()
+    public async static Task<List<string>> TesseractLanguagesAsStrings()
     {
         List<string> languageStrings = new();
 
@@ -214,7 +216,7 @@ public static class TesseractHelper
 
     public async static Task<List<ILanguage>> TesseractLanguages()
     {
-        List<string> languageStrings = await TesseractLangsAsStrings();
+        List<string> languageStrings = await TesseractLanguagesAsStrings();
         List<ILanguage> tesseractLanguages = new();
 
         foreach (string language in languageStrings)
@@ -224,37 +226,173 @@ public static class TesseractHelper
     }
 }
 
-public class TessLang : ILanguage
+public class TesseractGitHubFileDownloader
 {
-    private string _tessLangTag;
+    private readonly HttpClient _client;
 
-    public string AbbreviatedName => _tessLangTag;
-
-    public string CurrentInputMethodLanguageTag => string.Empty;
-
-    public string DisplayName => $"{_tessLangTag} with Tesseract";
-
-    public Windows.Globalization.LanguageLayoutDirection LayoutDirection
+    public TesseractGitHubFileDownloader()
     {
-        get
-        {
-            if (_tessLangTag.Contains("vert"))
-                return Windows.Globalization.LanguageLayoutDirection.TtbRtl;
+        _client = new HttpClient();
+        // It's a good practice to set a user-agent when making requests
+        _client.DefaultRequestHeaders.Add("User-Agent", "Text Grab settings language downloader");
+    }
 
-            return Windows.Globalization.LanguageLayoutDirection.Rtl;
+    public async Task DownloadFileAsync(string filenameToDownload, string localDestination)
+    {
+        // Construct the URL to the raw content of the file in the GitHub repository
+        // https://github.com/tesseract-ocr/tessdata
+        string fileUrl = $"https://raw.githubusercontent.com/tesseract-ocr/tessdata/main/{filenameToDownload}";
+
+        try
+        {
+            // Send a GET request to the specified URL
+            HttpResponseMessage response = await _client.GetAsync(fileUrl);
+            response.EnsureSuccessStatusCode();
+
+            // Read the response content
+            byte[] fileContents = await response.Content.ReadAsByteArrayAsync();
+
+            // Write the content to a file on the local file system
+            await File.WriteAllBytesAsync(localDestination, fileContents);
+            Console.WriteLine("File downloaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
         }
     }
 
-    public string NativeName => string.Empty;
-
-    public string Script => string.Empty;
-
-    public string LanguageTag => _tessLangTag;
-
-    public TessLang(string tessLangTag)
-    {
-        _tessLangTag = tessLangTag;
-    }
+    public static readonly string[] tesseractTrainedDataFileNames = [
+        "afr.traineddata",
+        "amh.traineddata",
+        "ara.traineddata",
+        "asm.traineddata",
+        "aze.traineddata",
+        "aze_cyrl.traineddata",
+        "bel.traineddata",
+        "ben.traineddata",
+        "bod.traineddata",
+        "bos.traineddata",
+        "bre.traineddata",
+        "bul.traineddata",
+        "cat.traineddata",
+        "ceb.traineddata",
+        "ces.traineddata",
+        "chi_sim.traineddata",
+        "chi_sim_vert.traineddata",
+        "chi_tra.traineddata",
+        "chi_tra_vert.traineddata",
+        "chr.traineddata",
+        "cos.traineddata",
+        "cym.traineddata",
+        "dan.traineddata",
+        "dan_frak.traineddata",
+        "deu.traineddata",
+        "deu_frak.traineddata",
+        "div.traineddata",
+        "dzo.traineddata",
+        "ell.traineddata",
+        "eng.traineddata",
+        "enm.traineddata",
+        "epo.traineddata",
+        "equ.traineddata",
+        "est.traineddata",
+        "eus.traineddata",
+        "fao.traineddata",
+        "fas.traineddata",
+        "fil.traineddata",
+        "fin.traineddata",
+        "fra.traineddata",
+        "frk.traineddata",
+        "frm.traineddata",
+        "fry.traineddata",
+        "gla.traineddata",
+        "gle.traineddata",
+        "glg.traineddata",
+        "grc.traineddata",
+        "guj.traineddata",
+        "hat.traineddata",
+        "heb.traineddata",
+        "hin.traineddata",
+        "hrv.traineddata",
+        "hun.traineddata",
+        "hye.traineddata",
+        "iku.traineddata",
+        "ind.traineddata",
+        "isl.traineddata",
+        "ita.traineddata",
+        "ita_old.traineddata",
+        "jav.traineddata",
+        "jpn.traineddata",
+        "jpn_vert.traineddata",
+        "kan.traineddata",
+        "kat.traineddata",
+        "kat_old.traineddata",
+        "kaz.traineddata",
+        "khm.traineddata",
+        "kir.traineddata",
+        "kmr.traineddata",
+        "kor.traineddata",
+        "kor_vert.traineddata",
+        "lao.traineddata",
+        "lat.traineddata",
+        "lav.traineddata",
+        "lit.traineddata",
+        "ltz.traineddata",
+        "mal.traineddata",
+        "mar.traineddata",
+        "mkd.traineddata",
+        "mlt.traineddata",
+        "mon.traineddata",
+        "mri.traineddata",
+        "msa.traineddata",
+        "mya.traineddata",
+        "nep.traineddata",
+        "nld.traineddata",
+        "nor.traineddata",
+        "oci.traineddata",
+        "ori.traineddata",
+        "osd.traineddata",
+        "pan.traineddata",
+        "pol.traineddata",
+        "por.traineddata",
+        "pus.traineddata",
+        "que.traineddata",
+        "ron.traineddata",
+        "rus.traineddata",
+        "san.traineddata",
+        "sin.traineddata",
+        "slk.traineddata",
+        "slk_frak.traineddata",
+        "slv.traineddata",
+        "snd.traineddata",
+        "spa.traineddata",
+        "spa_old.traineddata",
+        "sqi.traineddata",
+        "srp.traineddata",
+        "srp_latn.traineddata",
+        "sun.traineddata",
+        "swa.traineddata",
+        "swe.traineddata",
+        "syr.traineddata",
+        "tam.traineddata",
+        "tat.traineddata",
+        "tel.traineddata",
+        "tgk.traineddata",
+        "tgl.traineddata",
+        "tha.traineddata",
+        "tir.traineddata",
+        "ton.traineddata",
+        "tur.traineddata",
+        "uig.traineddata",
+        "ukr.traineddata",
+        "urd.traineddata",
+        "uzb.traineddata",
+        "uzb_cyrl.traineddata",
+        "vie.traineddata",
+        "yid.traineddata",
+        "yor.traineddata",
+    ];
 }
 
 public class TessOcrLine
@@ -268,19 +406,21 @@ public class TessOcrLine
 
 public static class HocrReader
 {
+    private static readonly string[] separator = ["<span class='ocr_line'", "</span>"];
+
     public static List<TessOcrLine> ReadLines(string hocrText)
     {
         // Create a list to hold the OcrLine objects
-        var lines = new List<TessOcrLine>();
+        List<TessOcrLine> lines = new();
 
         // Split the hOCR text into lines
-        var hocrLines = hocrText.Split(new string[] { "<span class='ocr_line'", "</span>" }, StringSplitOptions.RemoveEmptyEntries);
+        string[] hocrLines = hocrText.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 
         // Iterate through the lines
-        foreach (var hocrLineText in hocrLines)
+        foreach (string hocrLineText in hocrLines)
         {
             // Extract the line information
-            var line = ReadLine(hocrLineText);
+            TessOcrLine line = ReadLine(hocrLineText);
 
             // Add the line to the list
             lines.Add(line);
@@ -295,11 +435,11 @@ public static class HocrReader
         TessOcrLine line = new();
 
         // Extract the text of the line from the hOCR text
-        var textMatch = Regex.Match(hocrLineText, "<span class='ocr_line'[^>]*>(.*?)</span>");
+        Match textMatch = Regex.Match(hocrLineText, "<span class='ocr_line'[^>]*>(.*?)</span>");
         line.Text = textMatch.Groups[1].Value;
 
         // Extract the bounding box coordinates from the hOCR text
-        var bboxMatch = Regex.Match(hocrLineText, "bbox (\\d+) (\\d+) (\\d+) (\\d+)");
+        Match bboxMatch = Regex.Match(hocrLineText, "bbox (\\d+) (\\d+) (\\d+) (\\d+)");
         line.X = int.Parse(bboxMatch.Groups[1].Value);
         line.Y = int.Parse(bboxMatch.Groups[2].Value);
         line.Width = int.Parse(bboxMatch.Groups[3].Value);
