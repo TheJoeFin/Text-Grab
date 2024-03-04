@@ -41,6 +41,7 @@
         </StackPanel>
         <StackPanel
             x:Name="TesseractLanguagesStackPanel"
+            d:Visibility="Visible"
             Orientation="Vertical"
             Visibility="Collapsed">
             <TextBlock
@@ -73,10 +74,10 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <TextBlock
-                Margin="0,20,0,0"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Download and install languages from Tesseract GitHub" />
+            <TextBlock Margin="0,20,0,0" Style="{StaticResource TextBodyNormal}">
+                Download and install languages from Tesseract GitHub<LineBreak />
+                <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
+            </TextBlock>
             <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                 <ComboBox
                     x:Name="AllLanguagesComboBox"
