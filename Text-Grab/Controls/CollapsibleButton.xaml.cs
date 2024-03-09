@@ -7,17 +7,14 @@ using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls;
 
-/// <summary>
-/// Interaction logic for CollapsibleButton.xaml
-/// </summary>
 public partial class CollapsibleButton : System.Windows.Controls.Button, INotifyPropertyChanged
 {
     #region Fields
 
     public string ButtonText
     {
-        get { return (string)GetValue(ButtonTextProperty); }
-        set { SetValue(ButtonTextProperty, value); }
+        get => (string)GetValue(ButtonTextProperty);
+        set => SetValue(ButtonTextProperty, value);
     }
 
     public static readonly DependencyProperty ButtonTextProperty =
@@ -52,7 +49,7 @@ public partial class CollapsibleButton : System.Windows.Controls.Button, INotify
 
     public bool IsSymbol
     {
-        get { return isSymbol; }
+        get => isSymbol;
         set
         {
             isSymbol = value;
@@ -62,8 +59,8 @@ public partial class CollapsibleButton : System.Windows.Controls.Button, INotify
 
     public SymbolRegular ButtonSymbol
     {
-        get { return (SymbolRegular)GetValue(ButtonSymbolProperty); }
-        set { SetValue(ButtonSymbolProperty, value); }
+        get => (SymbolRegular)GetValue(ButtonSymbolProperty);
+        set => SetValue(ButtonSymbolProperty, value);
     }
 
     public static readonly DependencyProperty ButtonSymbolProperty =
@@ -81,17 +78,15 @@ public partial class CollapsibleButton : System.Windows.Controls.Button, INotify
         if (!isSymbol)
         {
             // change to a normal button
-            Style? tealButtonStyle = this.FindResource("TealColor") as Style;
-            if (tealButtonStyle != null)
-                this.Style = tealButtonStyle;
+            if (FindResource("TealColor") is Style tealButtonStyle)
+                Style = tealButtonStyle;
             ButtonTextBlock.Visibility = Visibility.Visible; ;
         }
         else
         {
             // change to a symbol button
-            Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
-            if (SymbolButtonStyle != null)
-                this.Style = SymbolButtonStyle;
+            if (FindResource("SymbolButton") is Style SymbolButtonStyle)
+                Style = SymbolButtonStyle;
             ButtonTextBlock.Visibility = Visibility.Collapsed;
         }
     }
@@ -101,9 +96,8 @@ public partial class CollapsibleButton : System.Windows.Controls.Button, INotify
         if (isSymbol)
         {
             // change to a symbol button
-            Style? SymbolButtonStyle = this.FindResource("SymbolButton") as Style;
-            if (SymbolButtonStyle != null)
-                this.Style = SymbolButtonStyle;
+            if (FindResource("SymbolButton") is Style SymbolButtonStyle)
+                Style = SymbolButtonStyle;
             ButtonTextBlock.Visibility = Visibility.Collapsed;
         }
     }

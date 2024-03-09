@@ -284,7 +284,7 @@ public partial class FullscreenGrab : Window
 
         if (languageCmbBox.SelectedItem is TessLang tessLang)
         {
-            Settings.Default.LastUsedLang = tessLang.DisplayName;
+            Settings.Default.LastUsedLang = tessLang.CultureDisplayName;
             Settings.Default.Save();
 
             TableMenuItem.Visibility = Visibility.Collapsed;
@@ -354,7 +354,7 @@ public partial class FullscreenGrab : Window
             {
                 languagesComboBox.Items.Add(language);
 
-                if (!haveSetLastLang && language.DisplayName == lastTextLang)
+                if (!haveSetLastLang && language.CultureDisplayName == lastTextLang)
                 {
                     languagesComboBox.SelectedIndex = count;
                     haveSetLastLang = true;

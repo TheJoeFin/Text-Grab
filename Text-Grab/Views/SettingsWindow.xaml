@@ -6,17 +6,17 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:pages="clr-namespace:Text_Grab.Pages"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab Settings"
     Width="660"
-    Height="600"
+    Height="800"
     MinWidth="200"
     MinHeight="300"
     d:Background="Black"
-    d:Height="3000"
-    Background="{ui:ThemeResource ApplicationBackgroundBrush}"
+    d:Height="600"
     Closed="Window_Closed"
-    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Loaded="Window_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
@@ -33,7 +33,7 @@
             <Setter Property="TextAlignment" Value="Center" />
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
@@ -44,427 +44,53 @@
             Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-        <Border Grid.Row="1">
-            <ScrollViewer
-                x:Name="SettingsScrollView"
-                HorizontalScrollBarVisibility="Disabled"
-                VerticalScrollBarVisibility="Auto">
-                <Grid Margin="26,8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="auto" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Orientation="Vertical">
-
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="auto" />
-                            </Grid.ColumnDefinitions>
-                            <!--  Version Text  -->
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                Style="{StaticResource TextBodyNormal}"
-                                Text="Version 4.3.1" />
-
-                            <ui:HyperlinkButton
-                                x:Name="OpenExeFolderButton"
-                                Grid.Column="1"
-                                Margin="12,0,0,0"
-                                VerticalAlignment="Bottom"
-                                Click="OpenExeFolderButton_Click"
-                                Visibility="Collapsed">
-                                <TextBlock Text="Open EXE Containing Folder" />
-                            </ui:HyperlinkButton>
-
-                            <controls:CollapsibleButton
-                                x:Name="AboutBTN"
-                                Grid.Column="3"
-                                Margin="0"
-                                ButtonSymbol="Info24"
-                                ButtonText="About Text Grab"
-                                Click="AboutBTN_Click" />
-                        </Grid>
-
-                        <!--  Theme  -->
-                        <TextBlock
-                            Margin="0,16,0,4"
-                            FontSize="16"
-                            Style="{StaticResource TextHeader}"
-                            Text="Text Grab Theme" />
-                        <RadioButton
-                            x:Name="SystemThemeRdBtn"
-                            VerticalContentAlignment="Center"
-                            GroupName="ThemeGroup">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                System
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="LightThemeRdBtn"
-                            VerticalContentAlignment="Center"
-                            GroupName="ThemeGroup">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Light
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="DarkThemeRdBtn"
-                            VerticalContentAlignment="Center"
-                            GroupName="ThemeGroup">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Dark
-                            </TextBlock>
-                        </RadioButton>
-
-                        <!--  Show Toast on success  -->
-                        <TextBlock
-                            Margin="0,16,0,4"
-                            FontSize="16"
-                            Style="{StaticResource TextHeader}"
-                            Text="Show Toast" />
-                        <ui:ToggleSwitch Name="ShowToastCheckBox">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Show Toast when text is copied. Opens window to display and edit text.
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-
-                        <!--  default launch  -->
-                        <TextBlock
-                            Margin="0,16,0,4"
-                            FontSize="16"
-                            Style="{StaticResource TextHeader}"
-                            Text="Default Launch Window" />
-                        <RadioButton
-                            x:Name="FullScreenRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Full Screen
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="GrabFrameRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Grab Frame
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="EditTextRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Edit Text Window
-                            </TextBlock>
-                        </RadioButton>
-                        <RadioButton
-                            x:Name="QuickLookupRDBTN"
-                            VerticalContentAlignment="Center"
-                            GroupName="DefaultLaunch">
-                            <TextBlock Margin="0,-10,0,0" Style="{StaticResource TextBodyNormal}">
-                                Quick Simple Lookup
-                            </TextBlock>
-                        </RadioButton>
-
-                        <!--  Pick Language  -->
-
-                        <!--    -->
-                        <ui:ToggleSwitch Name="ErrorCorrectBox" Margin="0,12,0,0">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Correct common confusions between numbers and letters
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-
-                        <ui:ToggleSwitch Name="CorrectToLatin" Margin="0,12,0,0">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Correct misidentifications between Greek and Cyrillic to Latin letters
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-
-                        <ui:ToggleSwitch Name="NeverUseClipboardChkBx" Margin="0,12,0,0">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Never automatically add text to the clipboard
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-                        <Border
-                            Margin="0,16,0,0"
-                            Padding="20,10"
-                            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
-                            CornerRadius="6">
-                            <StackPanel>
-                                <ui:ToggleSwitch Name="RunInBackgroundChkBx" Margin="0,12,0,0">
-                                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                                        Run Text Grab in the background and enable hotkeys
-                                    </TextBlock>
-                                </ui:ToggleSwitch>
-                                <TextBlock Margin="24,0,0,0" Style="{StaticResource TextBodyNormal}">
-                                    <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run>
-                                </TextBlock>
-                                <ui:ToggleSwitch x:Name="GlobalHotkeysCheckbox" Margin="0,12,0,0">
-                                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                                        <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
-                                    </TextBlock>
-                                </ui:ToggleSwitch>
-                                <StackPanel
-                                    x:Name="ShortcutsStackPanel"
-                                    Margin="24,8,20,0"
-                                    Orientation="Vertical">
-                                    <controls:ShortcutControl
-                                        x:Name="FsgShortcutControl"
-                                        IsShortcutEnabled="True"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Full Screen Grab" />
-                                    <controls:ShortcutControl
-                                        x:Name="GlrShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Grab Last Region" />
-                                    <controls:ShortcutControl
-                                        x:Name="GfShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Grab Frame" />
-                                    <controls:ShortcutControl
-                                        x:Name="LgfShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Open Last Grab Frame" />
-                                    <controls:ShortcutControl
-                                        x:Name="EtwShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Edit Text Window" />
-                                    <controls:ShortcutControl
-                                        x:Name="LetwShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Last Edit Text Window" />
-                                    <controls:ShortcutControl
-                                        x:Name="QslShortcutControl"
-                                        KeySetChanged="ShortcutControl_KeySetChanged"
-                                        RecordingStarted="ShortcutControl_Recording"
-                                        ShortcutName="Quick Simple Lookup" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                        <ui:ToggleSwitch Name="StartupOnLoginCheckBox" Margin="0,12,0,0">
-                            <TextBlock x:Name="StartupTextBlock" Style="{StaticResource TextBodyNormal}">
-                                Auto start Text Grab when you login
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-
-                        <StackPanel>
-                            <ui:ToggleSwitch Name="TryInsertCheckbox" Margin="0,12,0,0">
-                                <TextBlock Style="{StaticResource TextBodyNormal}">
-                                    Try to Insert text in text fields after Fullscreen Grab after:
-                                </TextBlock>
-                            </ui:ToggleSwitch>
-                            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
-                                <TextBox
-                                    x:Name="SecondsTextBox"
-                                    Width="40"
-                                    Height="26"
-                                    Margin="48,0,0,0"
-                                    HorizontalAlignment="Left"
-                                    HorizontalContentAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    Background="White"
-                                    FontWeight="Medium"
-                                    Foreground="Black"
-                                    Style="{StaticResource TextBoxStyle1}"
-                                    Text="0.5"
-                                    TextChanged="ValidateTextIsNumber" />
-                                <TextBlock
-                                    Margin="4,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Style="{StaticResource TextBodyNormal}"
-                                    Text="Seconds" />
-                                <TextBlock
-                                    x:Name="DelayTimeErrorSeconds"
-                                    Margin="12,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Style="{StaticResource TextBodyNormal}"
-                                    Text="⚠ Pick a number between 0 and 10"
-                                    Visibility="Collapsed" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <ui:ToggleSwitch
-                            Name="ReadBarcodesBarcode"
-                            Margin="0,12,0,0"
-                            IsChecked="True">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Try to read barcodes (Disabling may speed up results)
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-
-                        <ui:ToggleSwitch
-                            Name="HistorySwitch"
-                            Margin="0,20,0,0"
-                            IsChecked="True">
-                            <TextBlock Style="{StaticResource TextBodyNormal}">
-                                Keep recent history of Grabs and Edit Text Windows
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-
-                        <controls:CollapsibleButton
-                            x:Name="ClearHistoryButton"
-                            HorizontalAlignment="Left"
-                            Background="DarkRed"
-                            ButtonSymbol="Delete24"
-                            ButtonText="Clear History"
-                            Click="ClearHistoryButton_Click" />
-
-                        <ui:ToggleSwitch Name="UseTesseractCheckBox" Margin="0,12,0,0">
-                            <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
-                                Use Tesseract, when possible.
-                            </TextBlock>
-                        </ui:ToggleSwitch>
-                        <ui:HyperlinkButton Margin="48,0,0,0" Click="MoreInfoHyperlink_Click">
-                            More information
-                        </ui:HyperlinkButton>
-                        <TextBlock
-                            x:Name="CouldNotFindTessTxtBlk"
-                            Margin="48,0,0,0"
-                            Style="{StaticResource TextBodyNormal}"
-                            Text="⚠️ Could not locate Tesseract.exe"
-                            Visibility="Collapsed" />
-                        <Border
-                            x:Name="TessMoreInfoBorder"
-                            Margin="0,16,0,0"
-                            Padding="20,10"
-                            d:Visibility="Visible"
-                            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
-                            CornerRadius="6"
-                            Visibility="Collapsed">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource TextHeader}" Text="What is Tesseract?" />
-                                <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
-                                    Tesseract is an optical character recognition engine for various operating systems. It is free software, released under the Apache License. Originally developed by Hewlett-Packard as proprietary software in the 1980s, it was released as open source in 2005 and development has been sponsored by Google since 2006.<LineBreak /><Hyperlink NavigateUri="https://en.wikipedia.org/wiki/Tesseract_(software)" RequestNavigate="Hyperlink_RequestNavigate">
-                                        More: https://en.wikipedia.org/wiki/Tesseract_(software)
-                                    </Hyperlink>
-                                </TextBlock>
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    Style="{StaticResource TextHeader}"
-                                    Text="How does Text Grab use Tesseract?" />
-                                <TextBlock Style="{StaticResource TextBodyNormal}">
-                                    Text Grab will capture the image then pass it to the Tesseract EXE. Then Tesseract returns the result of the OCR to Text Grab and error occurs according to user settings.<LineBreak />
-                                    Does not use Tesseract: Table Recogintion and the Grab Frame.</TextBlock>
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    Style="{StaticResource TextHeader}"
-                                    Text="How do I get Tesseract?" />
-                                <TextBlock IsEnabled="True" Style="{StaticResource TextBodyNormal}">
-                                    The source repository is on GitHub:<LineBreak />
-                                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tesseract</Hyperlink>
-                                    <LineBreak />
-                                    UB Mannheim maintains an installer for Windows:<LineBreak />
-                                    <Hyperlink NavigateUri="https://github.com/UB-Mannheim/tesseract/wiki" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/UB-Mannheim/tesseract/wiki/</Hyperlink>
-                                </TextBlock>
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    Style="{StaticResource TextHeader}"
-                                    Text="Install via WinGet." />
-                                <StackPanel Orientation="Horizontal">
-                                    <Button
-                                        x:Name="WinGetCodeCopyButton"
-                                        Width="40"
-                                        Click="WinGetCodeCopyButton_Click"
-                                        Style="{StaticResource SymbolButton}">
-                                        <ui:SymbolIcon Symbol="Copy24" />
-                                    </Button>
-                                    <TextBox x:Name="WinGetInstallTextBox" FontFamily="Cascadia Code">
-                                        winget install -e --id UB-Mannheim.TesseractOCR
-                                    </TextBox>
-                                </StackPanel>
-                                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Restart Text Grab after installing Tesseract for Tesseract.exe path to be automatically set." />
-
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    Style="{StaticResource TextHeader}"
-                                    Text="Why should I use Tesseract?" />
-                                <TextBlock Style="{StaticResource TextBodyNormal}">
-                                    Tesseract is known for having the best OCR capabilities. While the Windows OCR is convenient and fast, it has not been updated in years and Microsoft has no plans to update it.<LineBreak />
-                                    Feel free to try Tesseract and hopefully it will work well for you. Ideally Text Grab can bring together the convenience with the power of Tesseract.</TextBlock>
-
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    Style="{StaticResource TextHeader}"
-                                    Text="Adding more language support" />
-                                <TextBlock IsEnabled="True" Style="{StaticResource TextBodyNormal}">
-                                    The default OCR Models installed by UB Mannheim are the 'fast' models which are not as accurate. Other more accurate models can be downloaded from the tessdata GitHub repository here:<LineBreak />
-                                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
-                                    <LineBreak />
-                                    After downloading language files, place them in the "tessdata" folder in the installed location of Tesseract:<LineBreak />
-                                    <!--<Hyperlink NavigateUri="C:\Program Files\Tesseract-OCR" RequestNavigate="Hyperlink_RequestNavigate">C:\Program Files\Tesseract-OCR</Hyperlink>-->
-                                </TextBlock>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button
-                                        x:Name="OpenPathButton"
-                                        Margin="4,0"
-                                        Click="OpenPathButton_Click"
-                                        Style="{StaticResource SymbolButton}">
-                                        <StackPanel Margin="4,0" Orientation="Horizontal">
-                                            <ui:SymbolIcon Margin="0,0,6,0" Symbol="OpenFolder24" />
-                                            <TextBlock Text="Open Folder" />
-                                        </StackPanel>
-                                    </Button>
-                                    <TextBox
-                                        x:Name="TesseractPathTextBox"
-                                        FontFamily="Cascadia Code"
-                                        TextChanged="TesseractPathTextBox_TextChanged">
-                                        Enter path to tesseract.exe here. ex: c:/tess/tesseract.exe
-                                    </TextBox>
-                                </StackPanel>
-
-                                <TextBlock HorizontalAlignment="Right">
-                                    <Hyperlink Click="TessInfoCloseHypBtn_Click">Done</Hyperlink>
-                                </TextBlock>
-                            </StackPanel>
-                        </Border>
-
-                        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-                            Reset All settings to default settings.
-                        </TextBlock>
-                        <controls:CollapsibleButton
-                            x:Name="ResetSettingsButton"
-                            HorizontalAlignment="Left"
-                            Background="DarkRed"
-                            ButtonSymbol="ArrowCounterclockwise24"
-                            ButtonText="Reset All Settings"
-                            Click="ResetSettingsButton_Click" />
-                    </StackPanel>
-                    <StackPanel
-                        Grid.Row="1"
-                        Margin="0,40,0,0"
-                        Orientation="Horizontal">
-                        <controls:CollapsibleButton
-                            x:Name="CloseBTN"
-                            ButtonSymbol="Dismiss24"
-                            ButtonText="Cancel"
-                            Click="CloseBTN_Click" />
-                        <controls:CollapsibleButton
-                            x:Name="SaveBTN"
-                            Background="DarkGreen"
-                            ButtonSymbol="Save24"
-                            ButtonText="Save and Close"
-                            Click="SaveBTN_Click" />
-                    </StackPanel>
-                    <TextBlock Grid.Row="2" Style="{StaticResource TextBodyNormal}">
-                        What do you want to see here? Submit an issue on GitHub<LineBreak />
-                        <Hyperlink NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues" RequestNavigate="Hyperlink_RequestNavigate">
-                            https://github.com/TheJoeFin/Text-Grab/issues
-                        </Hyperlink>
-                    </TextBlock>
-                </Grid>
-            </ScrollViewer>
-        </Border>
+        <ui:NavigationView
+            x:Name="SettingsNavView"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            PaneDisplayMode="LeftFluent">
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem
+                    Content="General"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:GeneralSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Home24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Langs"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:LanguageSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="LocalLanguage24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Keys"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:KeysSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="DesktopKeyboard24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Tess"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:TesseractSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Globe24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    Content="Danger"
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:DangerSettings}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Warning24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+        </ui:NavigationView>
     </Grid>
 </ui:FluentWindow>
