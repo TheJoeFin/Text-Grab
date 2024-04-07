@@ -1,3 +1,18 @@
+<p align="center">
+  <img width="128" align="center" src="images/TealSelect.png">
+</p>
+<h1 align="center">
+  Text Grab
+</h1>
+<p align="center">
+  Copy any text you can see.
+</p>
+<p align="center">
+  <a href="https://www.microsoft.com/en-us/p/text-grab/9mznkqj7sl0b?cid=TextGrabGitHub" target="_blank">
+    <img src="images/storeBadge.png" width="200" alt="Store link" />
+  </a>
+</p>
+
 # Text-Grab
 ![All Modes In Light Mode](images/All-Modes-Light.png)
 
