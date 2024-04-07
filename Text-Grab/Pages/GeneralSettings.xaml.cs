@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
 using Wpf.Ui.Controls;
@@ -22,14 +23,15 @@ public partial class GeneralSettings : Page
     private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
     private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
     private double InsertDelaySeconds = 1.5;
+    private SettingsService settings = Singleton<SettingsService>.Instance;
 
     #endregion Fields
-
 
     public GeneralSettings()
     {
         InitializeComponent();
 
+        TestToggle.IsChecked = settings.TestSetting;
 
         if (!ImplementAppOptions.IsPackaged())
             OpenExeFolderButton.Visibility = Visibility.Visible;
@@ -280,5 +282,13 @@ public partial class GeneralSettings : Page
     private void ShowToastCheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
         DefaultSettings.ShowToast = false;
+    }
+
+    private void TestToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleSwitch toggleSwitch)
+            return;
+
+        settings.TestSetting = toggleSwitch.IsChecked is true;
     }
 }
