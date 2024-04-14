@@ -11,6 +11,8 @@ namespace Text_Grab.Pages;
 /// </summary>
 public partial class DangerSettings : Page
 {
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
     public DangerSettings()
     {
         InitializeComponent();
@@ -23,7 +25,7 @@ public partial class DangerSettings : Page
         if (areYouSure != MessageBoxResult.Yes)
             return;
 
-        Settings.Default.Reset();
+        DefaultSettings.Reset();
         Singleton<HistoryService>.Instance.DeleteHistory();
         App.Current.Shutdown();
     }

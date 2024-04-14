@@ -22,11 +22,12 @@ namespace Text_Grab.Pages;
 public partial class LanguageSettings : Page
 {
     private bool usingTesseract;
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     public LanguageSettings()
     {
         InitializeComponent();
-        usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+        usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
@@ -78,7 +79,7 @@ public partial class LanguageSettings : Page
         if (string.IsNullOrWhiteSpace(pickedLanguageFile))
             return;
 
-        string tesseractPath = Path.GetDirectoryName(Settings.Default.TesseractPath) ?? "c:\\";
+        string tesseractPath = Path.GetDirectoryName(DefaultSettings.TesseractPath) ?? "c:\\";
         string tesseractFilePath = $"{tesseractPath}\\tessdata\\{pickedLanguageFile}";
         string tempFilePath = Path.Combine(Path.GetTempPath(), pickedLanguageFile);
 
@@ -136,7 +137,7 @@ public partial class LanguageSettings : Page
 
     private void OpenPathButton_Click(object sender, RoutedEventArgs e)
     {
-        string tesseractPath = Path.GetDirectoryName(Settings.Default.TesseractPath) ?? string.Empty;
+        string tesseractPath = Path.GetDirectoryName(DefaultSettings.TesseractPath) ?? string.Empty;
         if (string.IsNullOrWhiteSpace(tesseractPath))
             return;
 

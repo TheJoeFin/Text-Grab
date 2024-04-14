@@ -14,7 +14,7 @@ namespace Text_Grab.Pages;
 /// </summary>
 public partial class KeysSettings : Page
 {
-    private Settings DefaultSettings = Settings.Default;
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     public KeysSettings()
     {
