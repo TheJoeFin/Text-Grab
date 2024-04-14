@@ -29,10 +29,10 @@ public static class WindowUtilities
         string storedPositionString = "";
 
         if (passedWindow is EditTextWindow)
-            storedPositionString = Settings.Default.EditTextWindowSizeAndPosition;
+            storedPositionString = AppUtilities.TextGrabSettings.EditTextWindowSizeAndPosition;
 
         if (passedWindow is GrabFrame)
-            storedPositionString = Settings.Default.GrabFrameWindowSizeAndPosition;
+            storedPositionString =  AppUtilities.TextGrabSettings.GrabFrameWindowSizeAndPosition;
 
         List<string> storedPosition = new(storedPositionString.Split(','));
 
@@ -166,7 +166,7 @@ public static class WindowUtilities
             }
         }
 
-        if (Settings.Default.TryInsert
+        if (AppUtilities.TextGrabSettings.TryInsert
             && !string.IsNullOrWhiteSpace(stringFromOCR)
             && !isFromEditWindow)
         {
@@ -191,7 +191,7 @@ public static class WindowUtilities
 
     internal static async Task TryInsertString(string stringToInsert)
     {
-        await Task.Delay(TimeSpan.FromSeconds(Settings.Default.InsertDelay));
+        await Task.Delay(TimeSpan.FromSeconds(AppUtilities.TextGrabSettings.InsertDelay));
 
         List<INPUT> inputs = new();
         // make sure keys are up.
@@ -267,7 +267,7 @@ public static class WindowUtilities
 
         bool shouldShutDown = false;
 
-        if (Settings.Default.RunInTheBackground)
+        if (AppUtilities.TextGrabSettings.RunInTheBackground)
         {
             if (App.Current is App app)
             {

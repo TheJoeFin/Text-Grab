@@ -102,7 +102,7 @@ public static class NotifyIconUtilities
 
     static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
     {
-        if (!Settings.Default.GlobalHotkeysEnabled)
+        if (!AppUtilities.TextGrabSettings.GlobalHotkeysEnabled)
             return;
 
         IEnumerable<ShortcutKeySet> shortcuts = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();

@@ -18,20 +18,19 @@ public partial class GeneralSettings : Page
 {
     #region Fields
 
-    private readonly Settings DefaultSettings = Settings.Default;
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
     private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
     private double InsertDelaySeconds = 1.5;
+    private bool settingsSet = false;
 
     #endregion Fields
-
 
     public GeneralSettings()
     {
         InitializeComponent();
 
-
-        if (!ImplementAppOptions.IsPackaged())
+        if (!AppUtilities.IsPackaged())
             OpenExeFolderButton.Visibility = Visibility.Visible;
     }
 
@@ -90,7 +89,7 @@ public partial class GeneralSettings : Page
                 break;
         }
 
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
 
@@ -114,10 +113,11 @@ public partial class GeneralSettings : Page
         }
         else
         {
-            StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
+            StartupOnLoginCheckBox.IsChecked = DefaultSettings.StartupOnLogin;
         }
 
         ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
+
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
         ReadBarcodesBarcode.IsChecked = DefaultSettings.TryToReadBarcodes;
         HistorySwitch.IsChecked = DefaultSettings.UseHistory;
@@ -127,11 +127,13 @@ public partial class GeneralSettings : Page
         TryInsertCheckbox.IsChecked = DefaultSettings.TryInsert;
         InsertDelaySeconds = DefaultSettings.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
+
+        settingsSet = true;
     }
 
     private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
     {
-        if (!IsLoaded)
+        if (!settingsSet)
             return;
 
         if (sender is System.Windows.Controls.TextBox numberInputBox)
@@ -155,26 +157,41 @@ public partial class GeneralSettings : Page
 
     private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.DefaultLaunch = TextGrabMode.Fullscreen.ToString();
     }
 
     private void GrabFrameRDBTN_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.DefaultLaunch = TextGrabMode.GrabFrame.ToString();
     }
 
     private void EditTextRDBTN_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.DefaultLaunch = TextGrabMode.EditText.ToString();
     }
 
     private void QuickLookupRDBTN_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.DefaultLaunch = TextGrabMode.QuickLookup.ToString();
     }
 
     private void RunInBackgroundChkBx_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         if (sender is not ToggleSwitch runInBackgroundSwitch)
             return;
 
@@ -184,101 +201,158 @@ public partial class GeneralSettings : Page
 
     private void SystemThemeRdBtn_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.AppTheme = AppTheme.System.ToString();
         App.SetTheme();
     }
 
     private void LightThemeRdBtn_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.AppTheme = AppTheme.Light.ToString();
         App.SetTheme();
     }
 
     private void DarkThemeRdBtn_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.AppTheme = AppTheme.Dark.ToString();
         App.SetTheme();
     }
 
     private void ReadBarcodesBarcode_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.TryToReadBarcodes = true;
     }
 
     private void ReadBarcodesBarcode_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.TryToReadBarcodes = false;
     }
 
     private void HistorySwitch_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+        
         DefaultSettings.UseHistory = true;
     }
 
     private void HistorySwitch_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.UseHistory = false;
     }
 
     private void ErrorCorrectBox_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.CorrectErrors = true;
     }
 
     private void ErrorCorrectBox_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.CorrectErrors = false;
     }
 
     private void CorrectToLatin_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.CorrectToLatin = true;
     }
 
     private void CorrectToLatin_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.CorrectToLatin = false;
     }
 
     private void NeverUseClipboardChkBx_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.NeverAutoUseClipboard = true;
     }
 
     private void NeverUseClipboardChkBx_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.NeverAutoUseClipboard = false;
     }
 
     private async void StartupOnLoginCheckBox_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+        
         DefaultSettings.StartupOnLogin = true;
         await ImplementAppOptions.ImplementStartupOption(true);
     }
 
     private async void StartupOnLoginCheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.StartupOnLogin = false;
         await ImplementAppOptions.ImplementStartupOption(false);
     }
 
     private void TryInsertCheckbox_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.TryInsert = true;
     }
 
     private void TryInsertCheckbox_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.TryInsert = false;
     }
 
     private void ShowToastCheckBox_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.ShowToast = true;
     }
 
     private void ShowToastCheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.ShowToast = false;
     }
 }

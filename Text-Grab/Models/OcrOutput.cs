@@ -17,7 +17,7 @@ public record OcrOutput
 
     public void CleanOutput()
     {
-        if (Settings.Default is not Settings userSettings
+        if (AppUtilities.TextGrabSettings is not Settings userSettings
             || Kind == OcrOutputKind.Barcode)
             return;
 

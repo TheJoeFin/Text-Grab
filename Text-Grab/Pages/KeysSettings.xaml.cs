@@ -14,7 +14,8 @@ namespace Text_Grab.Pages;
 /// </summary>
 public partial class KeysSettings : Page
 {
-    private Settings DefaultSettings = Settings.Default;
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private bool settingsSet = false;
 
     public KeysSettings()
     {
@@ -23,6 +24,9 @@ public partial class KeysSettings : Page
 
     private void ShortcutControl_Recording(object sender, EventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         foreach (UIElement child in ShortcutsStackPanel.Children)
             if (child is ShortcutControl shortcutControl
                 && sender is ShortcutControl senderShortcut
@@ -32,6 +36,9 @@ public partial class KeysSettings : Page
 
     private void ShortcutControl_KeySetChanged(object sender, EventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         if (HotKeysAllDifferent())
         {
             List<ShortcutKeySet> shortcutKeys = [];
@@ -133,10 +140,15 @@ public partial class KeysSettings : Page
                     break;
             }
         }
+
+        settingsSet = true;
     }
 
     private void RunInBackgroundChkBx_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.RunInTheBackground = true;
         ImplementAppOptions.ImplementBackgroundOption(DefaultSettings.RunInTheBackground);
         DefaultSettings.Save();
@@ -144,6 +156,9 @@ public partial class KeysSettings : Page
 
     private void RunInBackgroundChkBx_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.RunInTheBackground = false;
         ImplementAppOptions.ImplementBackgroundOption(DefaultSettings.RunInTheBackground);
         GlobalHotkeysCheckbox.IsChecked = false;
@@ -152,11 +167,17 @@ public partial class KeysSettings : Page
 
     private void GlobalHotkeysCheckbox_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.GlobalHotkeysEnabled = true;
     }
 
     private void GlobalHotkeysCheckbox_Unchecked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         DefaultSettings.GlobalHotkeysEnabled = false;
     }
 }

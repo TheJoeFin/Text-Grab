@@ -33,23 +33,9 @@ internal class ImplementAppOptions
         }
     }
 
-    internal static bool IsPackaged()
-    {
-        try
-        {
-            // If we have a package ID then we are running in a packaged context
-            var dummy = Package.Current.Id;
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
     private static async void RemoveFromStartup()
     {
-        if (IsPackaged())
+        if (AppUtilities.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
             startupTask.Disable();
@@ -68,7 +54,7 @@ internal class ImplementAppOptions
 
     private static async Task SetForStartup()
     {
-        if (IsPackaged())
+        if (AppUtilities.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
             StartupTaskState newState = await startupTask.RequestEnableAsync();

@@ -17,7 +17,7 @@ public class CustomBottomBarUtilities
 {
     public static List<ButtonInfo> GetCustomBottomBarItemsSetting()
     {
-        string json = Settings.Default.BottomButtonsJson;
+        string json = AppUtilities.TextGrabSettings.BottomButtonsJson;
 
         if (string.IsNullOrWhiteSpace(json))
             return ButtonInfo.DefaultButtonList;
@@ -60,10 +60,10 @@ public class CustomBottomBarUtilities
         string json = JsonSerializer.Serialize(bottomBarButtons);
 
         // save the json string to the settings
-        Settings.Default.BottomButtonsJson = json;
+        AppUtilities.TextGrabSettings.BottomButtonsJson = json;
 
         // save the settings
-        Settings.Default.Save();
+        AppUtilities.TextGrabSettings.Save();
     }
 
     public static List<CollapsibleButton> GetBottomBarButtons(EditTextWindow editTextWindow)
