@@ -1,4 +1,6 @@
-﻿using Windows.ApplicationModel;
+﻿using Text_Grab.Properties;
+using Text_Grab.Services;
+using Windows.ApplicationModel;
 
 namespace Text_Grab.Utilities;
 internal class AppUtilities
@@ -16,4 +18,6 @@ internal class AppUtilities
             return false;
         }
     }
+
+    internal static Settings TextGrabSettings => Singleton<SettingsService>.Instance.ClassicSettings;
 }

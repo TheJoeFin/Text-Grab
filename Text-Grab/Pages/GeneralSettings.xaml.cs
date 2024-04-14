@@ -19,11 +19,10 @@ public partial class GeneralSettings : Page
 {
     #region Fields
 
-    private readonly Settings DefaultSettings = Settings.Default;
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
     private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
     private double InsertDelaySeconds = 1.5;
-    private SettingsService settings = Singleton<SettingsService>.Instance;
 
     #endregion Fields
 
@@ -117,8 +116,7 @@ public partial class GeneralSettings : Page
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        // ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
-        ShowToastCheckBox.IsChecked = settings.GetSetting<bool>(nameof(DefaultSettings.ShowToast));
+        ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
 
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
         ReadBarcodesBarcode.IsChecked = DefaultSettings.TryToReadBarcodes;
@@ -276,15 +274,11 @@ public partial class GeneralSettings : Page
 
     private void ShowToastCheckBox_Checked(object sender, RoutedEventArgs e)
     {
-        //DefaultSettings.ShowToast = true;
-        string nameOfToast = nameof(DefaultSettings.ShowToast);
-        Singleton<SettingsService>.Instance.SaveSetting(nameOfToast, true);
+        DefaultSettings.ShowToast = true;
     }
 
     private void ShowToastCheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
-        //DefaultSettings.ShowToast = false;
-        string nameOfToast = nameof(DefaultSettings.ShowToast);
-        Singleton<SettingsService>.Instance.SaveSetting(nameOfToast, false);
+        DefaultSettings.ShowToast = false;
     }
 }
