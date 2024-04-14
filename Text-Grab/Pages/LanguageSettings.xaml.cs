@@ -24,6 +24,7 @@ public partial class LanguageSettings : Page
     private bool usingTesseract;
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
+
     public LanguageSettings()
     {
         InitializeComponent();

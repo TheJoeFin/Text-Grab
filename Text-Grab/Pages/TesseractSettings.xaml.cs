@@ -16,6 +16,8 @@ namespace Text_Grab.Pages;
 public partial class TesseractSettings : Page
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private bool settingsSet = false;
+
 
     public TesseractSettings()
     {
@@ -24,6 +26,9 @@ public partial class TesseractSettings : Page
 
     private void TesseractPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         if (sender is not System.Windows.Controls.TextBox pathTextbox || pathTextbox.Text is not string pathText)
             return;
 
@@ -31,6 +36,8 @@ public partial class TesseractSettings : Page
             UseTesseractCheckBox.IsEnabled = true;
         else
             UseTesseractCheckBox.IsEnabled = false;
+
+        DefaultSettings.TesseractPath = pathText;
     }
 
     private void OpenPathButton_Click(object sender, RoutedEventArgs args)
@@ -62,6 +69,9 @@ public partial class TesseractSettings : Page
 
     private void UseTesseractCheckBox_Checked(object sender, RoutedEventArgs e)
     {
+        if (!settingsSet)
+            return;
+
         if (sender is not ToggleSwitch useTesseractSwitch)
             return;
 
@@ -80,5 +90,7 @@ public partial class TesseractSettings : Page
         UseTesseractCheckBox.IsChecked = false;
         UseTesseractCheckBox.IsEnabled = false;
         DefaultSettings.UseTesseract = false;
+
+        settingsSet = true;
     }
 }
