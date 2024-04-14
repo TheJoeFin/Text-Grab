@@ -26,6 +26,7 @@ public class HistoryService
     private List<HistoryInfo> HistoryTextOnly = new();
     private List<HistoryInfo> HistoryWithImage = new();
     private DispatcherTimer saveTimer = new();
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     #endregion Fields
 
     #region Constructors
@@ -151,7 +152,7 @@ public class HistoryService
 
     public void SaveToHistory(GrabFrame grabFrameToSave)
     {
-        if (!Settings.Default.UseHistory)
+        if (!DefaultSettings.UseHistory)
             return;
 
         HistoryInfo historyInfo = grabFrameToSave.AsHistoryItem();
@@ -186,7 +187,7 @@ public class HistoryService
 
     public void SaveToHistory(HistoryInfo infoFromFullscreenGrab)
     {
-        if (!Settings.Default.UseHistory || infoFromFullscreenGrab.ImageContent is null)
+        if (!DefaultSettings.UseHistory || infoFromFullscreenGrab.ImageContent is null)
             return;
 
         string imgRandomName = Guid.NewGuid().ToString();
@@ -209,7 +210,7 @@ public class HistoryService
 
     public void SaveToHistory(EditTextWindow etwToSave)
     {
-        if (!Settings.Default.UseHistory)
+        if (!DefaultSettings.UseHistory)
             return;
 
         HistoryInfo historyInfo = etwToSave.AsHistoryItem();

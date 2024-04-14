@@ -113,7 +113,7 @@ public partial class GeneralSettings : Page
         }
         else
         {
-            StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
+            StartupOnLoginCheckBox.IsChecked = DefaultSettings.StartupOnLogin;
         }
 
         ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;

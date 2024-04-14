@@ -21,11 +21,11 @@ public static class LanguageUtilities
     {
         Language selectedLanguage = GetCurrentInputLanguage();
 
-        if (!string.IsNullOrEmpty(Settings.Default.LastUsedLang))
+        if (!string.IsNullOrEmpty(AppUtilities.TextGrabSettings.LastUsedLang))
         {
             try
             {
-                selectedLanguage = new(Settings.Default.LastUsedLang);
+                selectedLanguage = new(AppUtilities.TextGrabSettings.LastUsedLang);
             }
             catch
             {

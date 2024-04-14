@@ -361,7 +361,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         try { Clipboard.SetDataObject(Word, true); } catch { }
 
-        if (Settings.Default.ShowToast
+        if (AppUtilities.TextGrabSettings.ShowToast
             && !IsFromEditWindow)
             NotificationUtilities.ShowToast(Word);
 
