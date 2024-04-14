@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
 using System.Diagnostics;
@@ -18,11 +19,27 @@ internal class SettingsService : IDisposable
 
     public SettingsService()
     {
-        if (AppUtilities.IsPackaged())
-            _localSettings = ApplicationData.Current.LocalSettings;
+        if (!AppUtilities.IsPackaged())
+            return;
 
+        _localSettings = ApplicationData.Current.LocalSettings;
+
+        if (ClassicSettings.FirstRun && _localSettings.Values.Count > 0)
+            MigrateLocalSettingsToClassic();
+
+        // copy settings from classic to local settings
+        // so that when app updates they can be copied forward
         ClassicSettings.PropertyChanged -= ClassicSettings_PropertyChanged;
         ClassicSettings.PropertyChanged += ClassicSettings_PropertyChanged;
+    }
+
+    private void MigrateLocalSettingsToClassic()
+    {
+        if (_localSettings is null)
+            return;
+
+        foreach (KeyValuePair<string, object> localSetting in _localSettings.Values)
+            ClassicSettings[localSetting.Key] = localSetting.Value;
     }
 
     private void ClassicSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
