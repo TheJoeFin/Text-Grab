@@ -30,6 +30,9 @@ public static class TesseractHelper
     private const string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
     private const string basicPath = @"C:\Program Files\Tesseract-OCR\tesseract.exe";
 
+    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
+
     public static bool CanLocateTesseractExe()
     {
         string tesseractPath = string.Empty;
@@ -49,31 +52,31 @@ public static class TesseractHelper
 
     private static string GetTesseractPath()
     {
-        if (!string.IsNullOrWhiteSpace(Settings.Default.TesseractPath)
-            && File.Exists(Settings.Default.TesseractPath))
-            return Settings.Default.TesseractPath;
+        if (!string.IsNullOrWhiteSpace(DefaultSettings.TesseractPath)
+            && File.Exists(DefaultSettings.TesseractPath))
+            return DefaultSettings.TesseractPath;
 
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
         string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
 
         if (File.Exists(tesExePath))
         {
-            Settings.Default.TesseractPath = tesExePath;
-            Settings.Default.Save();
+            DefaultSettings.TesseractPath = tesExePath;
+            DefaultSettings.Save();
             return tesExePath;
         }
 
         if (File.Exists(programsPath))
         {
-            Settings.Default.TesseractPath = programsPath;
-            Settings.Default.Save();
+            DefaultSettings.TesseractPath = programsPath;
+            DefaultSettings.Save();
             return programsPath;
         }
 
         if (File.Exists(basicPath))
         {
-            Settings.Default.TesseractPath = basicPath;
-            Settings.Default.Save();
+            DefaultSettings.TesseractPath = basicPath;
+            DefaultSettings.Save();
             return basicPath;
         }
 

@@ -17,7 +17,7 @@ public class FileUtilities
 
     public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
     {
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
             return GetImageFilePackaged(fileName, storageKind);
 
         return GetImageFileUnpackaged(fileName, storageKind);
@@ -75,7 +75,7 @@ public class FileUtilities
 
     public async static Task<string> GetPathToHistory()
     {
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
         {
             StorageFolder historyFolder = await GetStorageFolderPackaged("", FileStorageKind.WithHistory);
             return historyFolder.Path;
@@ -86,7 +86,7 @@ public class FileUtilities
 
     public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
     {
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
             return GetTextFilePackaged(fileName, storageKind);
 
         return GetTextFileUnpackaged(fileName, storageKind);
@@ -94,7 +94,7 @@ public class FileUtilities
 
     public static Task<bool> SaveImageFile(Bitmap image, string filename, FileStorageKind storageKind)
     {
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
             return SaveImagePackaged(image, filename, storageKind);
 
         return SaveImageFileUnpackaged(image, filename, storageKind);
@@ -102,7 +102,7 @@ public class FileUtilities
 
     public static Task<bool> SaveTextFile(string textContent, string filename, FileStorageKind storageKind)
     {
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
             return SaveTextFilePackaged(textContent, filename, storageKind);
 
         return SaveTextFileUnpackaged(textContent, filename, storageKind);
@@ -294,7 +294,7 @@ public class FileUtilities
     public async static void TryDeleteHistoryDirectory()
     {
         FileStorageKind historyFolderKind = FileStorageKind.WithHistory;
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
         {
             StorageFolder historyFolder = await GetStorageFolderPackaged("", historyFolderKind);
 

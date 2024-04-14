@@ -1,6 +1,5 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Win32;
-using Microsoft.Windows.Themes;
 using RegistryUtils;
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,6 @@ using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
-using Wpf.Ui.Extensions;
 
 namespace Text_Grab;
 
@@ -27,6 +25,12 @@ namespace Text_Grab;
 /// </summary>
 public partial class App : System.Windows.Application
 {
+    #region Fields
+
+    readonly static Settings _defaultSettings = AppUtilities.TextGrabSettings;
+
+    #endregion Fields
+
     #region Properties
 
     public List<int> HotKeyIds { get; set; } = new();
@@ -38,7 +42,7 @@ public partial class App : System.Windows.Application
 
     public static void DefaultLaunch()
     {
-        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(Settings.Default.DefaultLaunch, true);
+        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(_defaultSettings.DefaultLaunch, true);
 
         switch (defaultLaunchSetting)
         {
@@ -65,7 +69,7 @@ public partial class App : System.Windows.Application
     }
     public static void SetTheme(object? sender = null, EventArgs? e = null)
     {
-        bool gotTheme = Enum.TryParse<AppTheme>(Settings.Default.AppTheme.ToString(), true, out AppTheme currentAppTheme);
+        bool gotTheme = Enum.TryParse(_defaultSettings.AppTheme.ToString(), true, out AppTheme currentAppTheme);
 
         if (!gotTheme)
             return;
@@ -135,8 +139,8 @@ public partial class App : System.Windows.Application
             if (arg == "--windowless")
             {
                 isQuiet = true;
-                Settings.Default.FirstRun = false;
-                Settings.Default.Save();
+                _defaultSettings.FirstRun = false;
+                _defaultSettings.Save();
             }
 
         if (currentArgument.Contains("ToastActivated"))
@@ -151,7 +155,7 @@ public partial class App : System.Windows.Application
             return true;
         }
 
-        bool isStandardMode = Enum.TryParse<TextGrabMode>(currentArgument, true, out TextGrabMode launchMode);
+        bool isStandardMode = Enum.TryParse(currentArgument, true, out TextGrabMode launchMode);
 
         if (isStandardMode)
         {
@@ -195,8 +199,8 @@ public partial class App : System.Windows.Application
         FirstRunWindow frw = new();
         frw.Show();
 
-        Settings.Default.FirstRun = false;
-        Settings.Default.Save();
+        _defaultSettings.FirstRun = false;
+        _defaultSettings.Save();
     }
 
     private static async Task<bool> TryToOpenFile(string possiblePath, bool isQuiet)
@@ -253,14 +257,14 @@ public partial class App : System.Windows.Application
         if (handledArgument)
         {
             // arguments were passed, so don't show firstRun dialog
-            Settings.Default.FirstRun = false;
-            Settings.Default.Save();
+            _defaultSettings.FirstRun = false;
+            _defaultSettings.Save();
             return;
         }
 
-        if (Settings.Default.FirstRun)
+        if (_defaultSettings.FirstRun)
         {
-            Settings.Default.CorrectToLatin = LanguageUtilities.IsCurrentLanguageLatinBased();
+            _defaultSettings.CorrectToLatin = LanguageUtilities.IsCurrentLanguageLatinBased();
             ShowAndSetFirstRun();
             return;
         }
@@ -277,11 +281,11 @@ public partial class App : System.Windows.Application
 
     private bool HandleNotifyIcon()
     {
-        if (Settings.Default.RunInTheBackground && NumberOfRunningInstances < 2)
+        if (_defaultSettings.RunInTheBackground && NumberOfRunningInstances < 2)
         {
             NotifyIconUtilities.SetupNotifyIcon();
 
-            if (Settings.Default.StartupOnLogin)
+            if (_defaultSettings.StartupOnLogin)
                 return true;
         }
 
@@ -295,11 +299,11 @@ public partial class App : System.Windows.Application
             return;
 
         // Need to dispatch to UI thread if performing UI operations
-        Dispatcher.BeginInvoke((Action)(() =>
+        Dispatcher.BeginInvoke(() =>
         {
             EditTextWindow mtw = new(argsInvoked);
             mtw.Show();
-        }));
+        });
     }
     #endregion Methods
 }

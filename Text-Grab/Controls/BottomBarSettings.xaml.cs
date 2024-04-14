@@ -12,6 +12,8 @@ namespace Text_Grab.Controls;
 
 public partial class BottomBarSettings : FluentWindow
 {
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
     #region Constructors
 
     public BottomBarSettings()
@@ -30,8 +32,8 @@ public partial class BottomBarSettings : FluentWindow
         ButtonsInLeftList = new(allBtns);
         LeftListBox.ItemsSource = ButtonsInLeftList;
 
-        ShowCursorTextCheckBox.IsChecked = Settings.Default.ShowCursorText;
-        ShowScrollbarCheckBox.IsChecked = Settings.Default.ScrollBottomBar;
+        ShowCursorTextCheckBox.IsChecked = DefaultSettings.ShowCursorText;
+        ShowScrollbarCheckBox.IsChecked = DefaultSettings.ScrollBottomBar;
     }
 
     #endregion Constructors
@@ -115,9 +117,9 @@ public partial class BottomBarSettings : FluentWindow
     }
     private void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
-        Settings.Default.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
-        Settings.Default.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
-        Settings.Default.Save();
+        DefaultSettings.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
+        DefaultSettings.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
+        DefaultSettings.Save();
 
         CustomBottomBarUtilities.SaveCustomBottomBarItemsSetting(ButtonsInRightList.ToList());
         if (Owner is EditTextWindow etw)

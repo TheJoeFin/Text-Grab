@@ -30,6 +30,7 @@ namespace Text_Grab.Utilities;
 
 public static class OcrUtilities
 {
+    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     public static void GetTextFromOcrLine(this OcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
@@ -45,7 +46,7 @@ public static class OcrUtilities
         {
             text.AppendLine(ocrLine.Text);
 
-            if (Settings.Default.CorrectErrors)
+            if (DefaultSettings.CorrectErrors)
                 text.TryFixEveryWordLetterNumberErrors();
         }
         else
@@ -61,7 +62,7 @@ public static class OcrUtilities
 
                 bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordString);
 
-                if (Settings.Default.CorrectErrors)
+                if (DefaultSettings.CorrectErrors)
                     wordString = wordString.TryFixNumberLetterErrors();
 
                 if (isFirstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
@@ -74,7 +75,7 @@ public static class OcrUtilities
             }
         }
 
-        if (Settings.Default.CorrectToLatin)
+        if (DefaultSettings.CorrectToLatin)
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
@@ -251,7 +252,7 @@ public static class OcrUtilities
 
         outputs.Add(paragraphsOutput);
 
-        if (Settings.Default.TryToReadBarcodes)
+        if (DefaultSettings.TryToReadBarcodes)
         {
             Bitmap bitmap = ImageMethods.GetBitmapFromIRandomAccessStream(randomAccessStream);
             OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(bitmap);
@@ -290,14 +291,14 @@ public static class OcrUtilities
     {
         List<OcrOutput> outputs = new();
 
-        if (Settings.Default.UseTesseract 
+        if (DefaultSettings.UseTesseract 
             && TesseractHelper.CanLocateTesseractExe() 
             && !string.IsNullOrEmpty(tessTag))
         {
             OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, language, tessTag);
             outputs.Add(tesseractOutput);
 
-            if (Settings.Default.TryToReadBarcodes)
+            if (DefaultSettings.TryToReadBarcodes)
             {
                 OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(bitmap);
                 outputs.Add(barcodeResult);
@@ -312,7 +313,7 @@ public static class OcrUtilities
         OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
         outputs.Add(paragraphsOutput);
 
-        if (Settings.Default.TryToReadBarcodes)
+        if (DefaultSettings.TryToReadBarcodes)
         {
             OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(scaledBitmap);
             outputs.Add(barcodeResult);

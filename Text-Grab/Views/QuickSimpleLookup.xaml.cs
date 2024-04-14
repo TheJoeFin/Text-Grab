@@ -30,6 +30,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private LookupItem? lastSelection;
     private int rowCount = 0;
     private string valueUnderEdit = string.Empty;
+    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
     #endregion Fields
 
     #region Constructors
@@ -316,10 +318,10 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         dlg.FileName = "QuickSimpleLookupDataFile.csv";
         dlg.OverwritePrompt = false;
 
-        if (!string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
+        if (!string.IsNullOrEmpty(DefaultSettings.LookupFileLocation))
         {
-            dlg.InitialDirectory = Settings.Default.LookupFileLocation;
-            dlg.FileName = Path.GetFileName(Settings.Default.LookupFileLocation);
+            dlg.InitialDirectory = DefaultSettings.LookupFileLocation;
+            dlg.FileName = Path.GetFileName(DefaultSettings.LookupFileLocation);
         }
 
         var result = dlg.ShowDialog();
@@ -327,8 +329,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (result is false)
             return;
 
-        Settings.Default.LookupFileLocation = dlg.FileName;
-        Settings.Default.Save();
+        DefaultSettings.LookupFileLocation = dlg.FileName;
+        DefaultSettings.Save();
 
         if (File.Exists(dlg.FileName))
         {
@@ -691,9 +693,9 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        await ReadCsvFileIntoQuickSimpleLookup(Settings.Default.LookupFileLocation);
+        await ReadCsvFileIntoQuickSimpleLookup(DefaultSettings.LookupFileLocation);
 
-        if (Settings.Default.TryInsert && !IsFromETW)
+        if (DefaultSettings.TryInsert && !IsFromETW)
             PasteToggleButton.IsChecked = true;
 
         if (IsFromETW)
@@ -718,10 +720,10 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            if (string.IsNullOrEmpty(Settings.Default.LookupFileLocation))
+            if (string.IsNullOrEmpty(DefaultSettings.LookupFileLocation))
                 await FileUtilities.SaveTextFile(csvContents.ToString(), cacheFilename, FileStorageKind.WithExe);
             else
-                await FileUtilities.SaveTextFile(csvContents.ToString(), Settings.Default.LookupFileLocation, FileStorageKind.Absolute);
+                await FileUtilities.SaveTextFile(csvContents.ToString(), DefaultSettings.LookupFileLocation, FileStorageKind.Absolute);
 
             SaveBTN.Visibility = Visibility.Collapsed;
         }

@@ -15,15 +15,15 @@ internal class ShortcutKeysUtilities
         string json = JsonSerializer.Serialize(shortcutKeySets);
 
         // save the json string to the settings
-        Settings.Default.ShortcutKeySets = json;
+        AppUtilities.TextGrabSettings.ShortcutKeySets = json;
 
         // save the settings
-        Settings.Default.Save();
+        AppUtilities.TextGrabSettings.Save();
     }
 
     public static IEnumerable<ShortcutKeySet> GetShortcutKeySetsFromSettings()
     {
-        string json = Settings.Default.ShortcutKeySets;
+        string json = AppUtilities.TextGrabSettings.ShortcutKeySets;
 
         List<ShortcutKeySet> defaultKeys = ShortcutKeySet.DefaultShortcutKeySets;
 
@@ -46,14 +46,14 @@ internal class ShortcutKeysUtilities
 
     public static IEnumerable<ShortcutKeySet> ParseFromPreviousAndDefaultsSettings()
     {
-        string fsgKey = Settings.Default.FullscreenGrabHotKey;
+        string fsgKey = AppUtilities.TextGrabSettings.FullscreenGrabHotKey;
 
         if (string.IsNullOrWhiteSpace(fsgKey))
             return ShortcutKeySet.DefaultShortcutKeySets;
 
-        string gfKey = Settings.Default.GrabFrameHotkey;
-        string etwKey = Settings.Default.EditWindowHotKey;
-        string qslKey = Settings.Default.LookupHotKey;
+        string gfKey = AppUtilities.TextGrabSettings.GrabFrameHotkey;
+        string etwKey = AppUtilities.TextGrabSettings.EditWindowHotKey;
+        string qslKey = AppUtilities.TextGrabSettings.LookupHotKey;
 
         List<ShortcutKeySet> priorAndDefaultSettings = new();
 
