@@ -73,6 +73,8 @@ public partial class GrabFrame : Window
     private bool wasAltHeld = false;
     private double windowFrameImageScale = 1;
     private ObservableCollection<WordBorder> wordBorders = new();
+    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
     #endregion Fields
 
     #region Constructors
@@ -642,10 +644,10 @@ public partial class GrabFrame : Window
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
         string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), CurrentLanguage);
 
-        if (Settings.Default.CorrectErrors)
+        if (DefaultSettings.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
 
-        if (Settings.Default.CorrectToLatin)
+        if (DefaultSettings.CorrectToLatin)
             ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
 
         if (frameContentImageSource is BitmapImage bmpImg)
@@ -942,10 +944,10 @@ public partial class GrabFrame : Window
 
             string ocrText = lineText.ToString();
 
-            if (Settings.Default.CorrectErrors)
+            if (DefaultSettings.CorrectErrors)
                 ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
 
-            if (Settings.Default.CorrectToLatin)
+            if (DefaultSettings.CorrectToLatin)
                 ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
 
             WordBorder wordBorderBox = new()
@@ -988,7 +990,7 @@ public partial class GrabFrame : Window
 
         SetRotationBasedOnOcrResult();
 
-        if (Settings.Default.TryToReadBarcodes)
+        if (DefaultSettings.TryToReadBarcodes)
             TryToReadBarcodes(dpi);
 
         if (IsWordEditMode)
@@ -1197,8 +1199,8 @@ public partial class GrabFrame : Window
 
     private void GetGrabFrameUserSettings()
     {
-        AutoOcrCheckBox.IsChecked = Settings.Default.GrabFrameAutoOcr;
-        AlwaysUpdateEtwCheckBox.IsChecked = Settings.Default.GrabFrameUpdateEtw;
+        AutoOcrCheckBox.IsChecked = DefaultSettings.GrabFrameAutoOcr;
+        AlwaysUpdateEtwCheckBox.IsChecked = DefaultSettings.GrabFrameUpdateEtw;
     }
 
     private void GrabBTN_Click(object sender, RoutedEventArgs e)
@@ -1218,10 +1220,10 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (!Settings.Default.NeverAutoUseClipboard)
+        if (!DefaultSettings.NeverAutoUseClipboard)
             try { Clipboard.SetDataObject(FrameText, true); } catch { }
 
-        if (Settings.Default.ShowToast)
+        if (DefaultSettings.ShowToast)
             NotificationUtilities.ShowToast(FrameText);
     }
 
@@ -1427,8 +1429,8 @@ public partial class GrabFrame : Window
     {
         if (e.MiddleButton == MouseButtonState.Pressed)
         {
-            Settings.Default.LastUsedLang = String.Empty;
-            Settings.Default.Save();
+            DefaultSettings.LastUsedLang = String.Empty;
+            DefaultSettings.Save();
         }
     }
 
@@ -1442,8 +1444,8 @@ public partial class GrabFrame : Window
         if (pickedLang != null)
         {
             currentLanguage = pickedLang;
-            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
-            Settings.Default.Save();
+            DefaultSettings.LastUsedLang = pickedLang.LanguageTag;
+            DefaultSettings.Save();
         }
 
         ResetGrabFrame();
@@ -1950,10 +1952,10 @@ new GrabFrameOperationArgs()
     private void SetGrabFrameUserSettings()
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
-        Settings.Default.GrabFrameWindowSizeAndPosition = windowSizeAndPosition;
-        Settings.Default.GrabFrameAutoOcr = AutoOcrCheckBox.IsChecked;
-        Settings.Default.GrabFrameUpdateEtw = AlwaysUpdateEtwCheckBox.IsChecked;
-        Settings.Default.Save();
+        DefaultSettings.GrabFrameWindowSizeAndPosition = windowSizeAndPosition;
+        DefaultSettings.GrabFrameAutoOcr = AutoOcrCheckBox.IsChecked;
+        DefaultSettings.GrabFrameUpdateEtw = AlwaysUpdateEtwCheckBox.IsChecked;
+        DefaultSettings.Save();
     }
     private void SetRefreshOrOcrFrameBtnVis()
     {

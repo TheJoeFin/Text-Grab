@@ -57,6 +57,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private WindowState? prevWindowState;
     private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
+
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
     #endregion Fields
 
     #region Constructors
@@ -290,12 +293,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         List<CollapsibleButton> buttons = CustomBottomBarUtilities.GetBottomBarButtons(this);
 
-        if (Settings.Default.ScrollBottomBar)
+        if (DefaultSettings.ScrollBottomBar)
             BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
         else
             BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
 
-        if (Settings.Default.ShowCursorText)
+        if (DefaultSettings.ShowCursorText)
             BottomBarText.Visibility = Visibility.Visible;
         else
             BottomBarText.Visibility = Visibility.Collapsed;
@@ -517,7 +520,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else
             Topmost = false;
 
-        Settings.Default.EditWindowIsOnTop = Topmost;
+        DefaultSettings.EditWindowIsOnTop = Topmost;
     }
 
     private void CanLaunchUriExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -810,13 +813,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         Debug.WriteLine(fd.Font);
 
-        Settings.Default.FontFamilySetting = fd.Font.Name;
-        Settings.Default.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
-        Settings.Default.IsFontBold = fd.Font.Bold;
-        Settings.Default.IsFontItalic = fd.Font.Italic;
-        Settings.Default.IsFontUnderline = fd.Font.Underline;
-        Settings.Default.IsFontStrikeout = fd.Font.Strikeout;
-        Settings.Default.Save();
+        DefaultSettings.FontFamilySetting = fd.Font.Name;
+        DefaultSettings.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
+        DefaultSettings.IsFontBold = fd.Font.Bold;
+        DefaultSettings.IsFontItalic = fd.Font.Italic;
+        DefaultSettings.IsFontUnderline = fd.Font.Underline;
+        DefaultSettings.IsFontStrikeout = fd.Font.Strikeout;
+        DefaultSettings.Save();
 
         SetFontFromSettings();
     }
@@ -874,12 +877,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is MenuItem bbMi && bbMi.IsChecked)
         {
             BottomBar.Visibility = Visibility.Collapsed;
-            Settings.Default.EditWindowBottomBarIsHidden = true;
+            DefaultSettings.EditWindowBottomBarIsHidden = true;
         }
         else
         {
             BottomBar.Visibility = Visibility.Visible;
-            Settings.Default.EditWindowBottomBarIsHidden = false;
+            DefaultSettings.EditWindowBottomBarIsHidden = false;
         }
     }
 
@@ -1000,8 +1003,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void LaunchFullscreenOnLoad_Click(object sender, RoutedEventArgs e)
     {
-        Settings.Default.EditWindowStartFullscreen = LaunchFullscreenOnLoad.IsChecked;
-        Settings.Default.Save();
+        DefaultSettings.EditWindowStartFullscreen = LaunchFullscreenOnLoad.IsChecked;
+        DefaultSettings.Save();
     }
 
     private void LaunchQuickSimpleLookup(object sender, RoutedEventArgs e)
@@ -1050,8 +1053,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // TODO Find a way to combine with the FSG language drop down
 
         bool haveSetLastLang = false;
-        string lastTextLang = Settings.Default.LastUsedLang;
-        bool usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+        string lastTextLang = DefaultSettings.LastUsedLang;
+        bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
 
         if (usingTesseract)
         {
@@ -1194,7 +1197,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is not MenuItem marginsMenuItem)
             return;
 
-        Settings.Default.EtwUseMargins = marginsMenuItem.IsChecked;
+        DefaultSettings.EtwUseMargins = marginsMenuItem.IsChecked;
         SetMargins(MarginsMenuItem.IsChecked);
     }
 
@@ -1382,7 +1385,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void PassedTextControl_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (Settings.Default.EditWindowStartFullscreen && prevWindowState is not null)
+        if (DefaultSettings.EditWindowStartFullscreen && prevWindowState is not null)
         {
             this.WindowState = prevWindowState.Value;
             prevWindowState = null;
@@ -1574,7 +1577,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is not MenuItem restoreMenuItem)
             return;
 
-        Settings.Default.RestoreEtwPositions = restoreMenuItem.IsChecked;
+        DefaultSettings.RestoreEtwPositions = restoreMenuItem.IsChecked;
     }
 
     private void RestoreThisPosition_Click(object sender, RoutedEventArgs e)
@@ -1584,7 +1587,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void RestoreWindowSettings()
     {
-        if (Settings.Default.EditWindowStartFullscreen
+        if (DefaultSettings.EditWindowStartFullscreen
                     && string.IsNullOrWhiteSpace(OpenedFilePath)
                     && !LaunchedFromNotification)
         {
@@ -1594,30 +1597,30 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             WindowState = WindowState.Minimized;
         }
 
-        if (Settings.Default.EditWindowIsOnTop)
+        if (DefaultSettings.EditWindowIsOnTop)
         {
             AlwaysOnTop.IsChecked = true;
             Topmost = true;
         }
 
-        RestorePositionMenuItem.IsChecked = Settings.Default.RestoreEtwPositions;
+        RestorePositionMenuItem.IsChecked = DefaultSettings.RestoreEtwPositions;
 
-        if (Settings.Default.RestoreEtwPositions)
+        if (DefaultSettings.RestoreEtwPositions)
             WindowUtilities.SetWindowPosition(this);
 
-        if (!Settings.Default.EditWindowIsWordWrapOn)
+        if (!DefaultSettings.EditWindowIsWordWrapOn)
         {
             WrapTextMenuItem.IsChecked = false;
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
         }
 
-        if (Settings.Default.EditWindowBottomBarIsHidden)
+        if (DefaultSettings.EditWindowBottomBarIsHidden)
         {
             HideBottomBarMenuItem.IsChecked = true;
             BottomBar.Visibility = Visibility.Collapsed;
         }
 
-        if (Settings.Default.EtwUseMargins)
+        if (DefaultSettings.EtwUseMargins)
         {
             MarginsMenuItem.IsChecked = true;
             SetMargins(true);
@@ -1728,16 +1731,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SetFontFromSettings()
     {
-        PassedTextControl.FontFamily = new System.Windows.Media.FontFamily(Settings.Default.FontFamilySetting);
-        PassedTextControl.FontSize = Settings.Default.FontSizeSetting;
-        if (Settings.Default.IsFontBold)
+        PassedTextControl.FontFamily = new System.Windows.Media.FontFamily(DefaultSettings.FontFamilySetting);
+        PassedTextControl.FontSize = DefaultSettings.FontSizeSetting;
+        if (DefaultSettings.IsFontBold)
             PassedTextControl.FontWeight = FontWeights.Bold;
-        if (Settings.Default.IsFontItalic)
+        if (DefaultSettings.IsFontItalic)
             PassedTextControl.FontStyle = FontStyles.Italic;
 
         TextDecorationCollection tdc = new();
-        if (Settings.Default.IsFontUnderline) tdc.Add(TextDecorations.Underline);
-        if (Settings.Default.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
+        if (DefaultSettings.IsFontUnderline) tdc.Add(TextDecorations.Underline);
+        if (DefaultSettings.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
         PassedTextControl.TextDecorations = tdc;
     }
 
@@ -2037,8 +2040,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void Window_Closed(object? sender, EventArgs e)
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
-        Settings.Default.EditTextWindowSizeAndPosition = windowSizeAndPosition;
-        Settings.Default.Save();
+        DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+        DefaultSettings.Save();
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
 
@@ -2103,7 +2106,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
 
-        Settings.Default.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
+        DefaultSettings.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
     }
     #endregion Methods
 }

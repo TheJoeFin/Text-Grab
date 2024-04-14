@@ -38,6 +38,7 @@ public partial class FullscreenGrab : Window
     private double yShiftDelta;
     private HistoryInfo? historyInfo;
     bool usingTesseract;
+    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     #endregion Fields
 
@@ -47,7 +48,7 @@ public partial class FullscreenGrab : Window
     {
         InitializeComponent();
         App.SetTheme();
-        usingTesseract = Settings.Default.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+        usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
     }
 
     #endregion Constructors
@@ -115,8 +116,8 @@ public partial class FullscreenGrab : Window
                 bool isSingleLineChecked = false;
                 if (SingleLineToggleButton.IsChecked is true)
                     isSingleLineChecked = true;
-                Settings.Default.FSGMakeSingleLineToggle = isSingleLineChecked;
-                Settings.Default.Save();
+                DefaultSettings.FSGMakeSingleLineToggle = isSingleLineChecked;
+                DefaultSettings.Save();
                 break;
             case Key.E:
                 if (isActive is null)
@@ -127,8 +128,8 @@ public partial class FullscreenGrab : Window
                 bool isSendToEditChecked = false;
                 if (SendToEditTextToggleButton.IsChecked is true)
                     isSendToEditChecked = true;
-                Settings.Default.FsgSendEtwToggle = isSendToEditChecked;
-                Settings.Default.Save();
+                DefaultSettings.FsgSendEtwToggle = isSendToEditChecked;
+                DefaultSettings.Save();
                 break;
             case Key.F:
                 if (isActive is null)
@@ -152,8 +153,8 @@ public partial class FullscreenGrab : Window
                 bool isNormalChecked = false;
                 if (StandardModeToggleButton.IsChecked is true)
                     isNormalChecked = true;
-                Settings.Default.FSGMakeSingleLineToggle = !isNormalChecked;
-                Settings.Default.Save();
+                DefaultSettings.FSGMakeSingleLineToggle = !isNormalChecked;
+                DefaultSettings.Save();
                 break;
             case Key.T:
                 if (TableToggleButton.Visibility == Visibility.Collapsed)
@@ -272,8 +273,8 @@ public partial class FullscreenGrab : Window
     {
         if (e.MiddleButton == MouseButtonState.Pressed)
         {
-            Settings.Default.LastUsedLang = String.Empty;
-            Settings.Default.Save();
+            DefaultSettings.LastUsedLang = String.Empty;
+            DefaultSettings.Save();
         }
     }
 
@@ -284,8 +285,8 @@ public partial class FullscreenGrab : Window
 
         if (languageCmbBox.SelectedItem is TessLang tessLang)
         {
-            Settings.Default.LastUsedLang = tessLang.CultureDisplayName;
-            Settings.Default.Save();
+            DefaultSettings.LastUsedLang = tessLang.CultureDisplayName;
+            DefaultSettings.Save();
 
             TableMenuItem.Visibility = Visibility.Collapsed;
             TableToggleButton.Visibility = Visibility.Collapsed;
@@ -293,8 +294,8 @@ public partial class FullscreenGrab : Window
 
         if (languageCmbBox.SelectedItem is Language pickedLang)
         {
-            Settings.Default.LastUsedLang = pickedLang.LanguageTag;
-            Settings.Default.Save();
+            DefaultSettings.LastUsedLang = pickedLang.LanguageTag;
+            DefaultSettings.Save();
 
             TableMenuItem.Visibility = Visibility.Visible;
             TableToggleButton.Visibility = Visibility.Visible;
@@ -345,7 +346,7 @@ public partial class FullscreenGrab : Window
         // TODO Find a way to combine with the ETW language drop down
 
         bool haveSetLastLang = false;
-        string lastTextLang = Settings.Default.LastUsedLang;
+        string lastTextLang = DefaultSettings.LastUsedLang;
         if (usingTesseract)
         {
             List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
@@ -620,7 +621,7 @@ public partial class FullscreenGrab : Window
         else
             textFromOCR = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang, tessTag);
 
-        if (Settings.Default.UseHistory && !isSmallClick)
+        if (DefaultSettings.UseHistory && !isSmallClick)
         {
             GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
 
@@ -691,8 +692,8 @@ public partial class FullscreenGrab : Window
             bool isSingleLineChecked = false;
             if (SingleLineToggleButton.IsChecked is true)
                 isSingleLineChecked = true;
-            Settings.Default.FSGMakeSingleLineToggle = isSingleLineChecked;
-            Settings.Default.Save();
+            DefaultSettings.FSGMakeSingleLineToggle = isSingleLineChecked;
+            DefaultSettings.Save();
         }
     }
 
@@ -711,13 +712,13 @@ public partial class FullscreenGrab : Window
 
         SetImageToBackground();
 
-        if (Settings.Default.FSGMakeSingleLineToggle)
+        if (DefaultSettings.FSGMakeSingleLineToggle)
         {
             SingleLineToggleButton.IsChecked = true;
             SelectSingleToggleButton(SingleLineToggleButton);
         }
 
-        if (Settings.Default.FsgSendEtwToggle)
+        if (DefaultSettings.FsgSendEtwToggle)
             SendToEditTextToggleButton.IsChecked = true;
 
 #if DEBUG
@@ -782,8 +783,8 @@ public partial class FullscreenGrab : Window
             if (StandardModeToggleButton.IsChecked is true)
                 isStandardChecked = true;
 
-            Settings.Default.FSGMakeSingleLineToggle = !isStandardChecked;
-            Settings.Default.Save();
+            DefaultSettings.FSGMakeSingleLineToggle = !isStandardChecked;
+            DefaultSettings.Save();
         }
     }
 
