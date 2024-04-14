@@ -1,66 +1,65 @@
-﻿using Text_Grab.Helpers;
+﻿using System;
+using System.Diagnostics;
+using Text_Grab.Utilities;
 using Windows.Storage;
 
 namespace Text_Grab.Services;
+
 internal class SettingsService
 {
-    private ApplicationDataContainer _localSettings = ApplicationData.Current.LocalSettings;
+    private ApplicationDataContainer? _localSettings;
     // relevant discussion https://github.com/microsoft/WindowsAppSDK/discussions/1478
+
+    private Properties.Settings _classicSettings = Properties.Settings.Default;
+
     public SettingsService()
     {
-        if (!_localSettings.Values.ContainsKey("IsFirstRun"))
-        {
-            _localSettings.Values["IsFirstRun"] = true;
-        }
+        if (AppUtilities.IsPackaged())
+            _localSettings = ApplicationData.Current.LocalSettings;
     }
 
-    private bool? testSetting;
-
-    public bool TestSetting
+    public T GetSetting<T>(string name)
     {
-        get
+        // if running as packaged try to get from local settings
+        if (_localSettings is not null)
         {
-            testSetting ??= _localSettings.ReadAsync<bool>(nameof(TestSetting)).Result;
-            testSetting ??= false;
+            try
+            {
+                _localSettings.Values.TryGetValue(name, out object? obj);
 
-            return testSetting.Value;
+                if (obj is not null) // not saved into local settings, get default from classic settings
+                    return (T)Convert.ChangeType(obj, typeof(T));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to Get setting from ApplicationDataContainer {ex.Message}");
+
+#if DEBUG
+                throw;
+#endif
+            }
         }
-        set
-        {
-            testSetting = value;
-            _localSettings.SaveAsync(nameof(TestSetting), value);
-        }
+
+        return _classicSettings[name] is T value ? value : default;
     }
 
-    private double? testDoubleSetting;
-    public double? TestDoubleSetting
+    public void SaveSetting<T>(string name, T value)
     {
-        get
+        if (_localSettings is not null)
         {
-            testDoubleSetting ??= _localSettings.ReadAsync<double>(nameof(TestDoubleSetting)).Result;
-            testDoubleSetting ??= 2;
-            return testDoubleSetting;
+            try
+            {
+                _localSettings.Values[name] = value;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to Save setting from ApplicationDataContainer {ex.Message}");
+#if DEBUG
+                throw;
+#endif
+            }
         }
-        set
-        {
-            testDoubleSetting = value;
-            _localSettings.SaveAsync(nameof(TestDoubleSetting), value);
-        }
-    }
-
-    private string? testStringSetting;
-    public string? TestStringSetting
-    {
-        get
-        {
-            testStringSetting ??= _localSettings.ReadAsync<string>(nameof(TestStringSetting)).Result;
-            testStringSetting ??= "Hello, World!";
-            return testStringSetting;
-        }
-        set
-        {
-            testStringSetting = value;
-            _localSettings.SaveAsync(nameof(TestStringSetting), value);
-        }
+        else
+            _classicSettings[name] = value;
     }
 }

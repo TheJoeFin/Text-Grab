@@ -48,11 +48,6 @@
                 Click="AboutBTN_Click" />
         </Grid>
 
-        <ui:ToggleSwitch
-            Name="TestToggle"
-            Checked="TestToggle_Checked"
-            Content="Setting to test new settings object" />
-
         <Border
             Margin="0,20"
             Padding="20,12,20,20"

@@ -31,9 +31,7 @@ public partial class GeneralSettings : Page
     {
         InitializeComponent();
 
-        TestToggle.IsChecked = settings.TestSetting;
-
-        if (!ImplementAppOptions.IsPackaged())
+        if (!AppUtilities.IsPackaged())
             OpenExeFolderButton.Visibility = Visibility.Visible;
     }
 
@@ -92,7 +90,7 @@ public partial class GeneralSettings : Page
                 break;
         }
 
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
 
@@ -119,7 +117,9 @@ public partial class GeneralSettings : Page
             StartupOnLoginCheckBox.IsChecked = Settings.Default.StartupOnLogin;
         }
 
-        ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
+        // ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
+        ShowToastCheckBox.IsChecked = settings.GetSetting<bool>(nameof(DefaultSettings.ShowToast));
+
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
         ReadBarcodesBarcode.IsChecked = DefaultSettings.TryToReadBarcodes;
         HistorySwitch.IsChecked = DefaultSettings.UseHistory;
@@ -276,19 +276,15 @@ public partial class GeneralSettings : Page
 
     private void ShowToastCheckBox_Checked(object sender, RoutedEventArgs e)
     {
-        DefaultSettings.ShowToast = true;
+        //DefaultSettings.ShowToast = true;
+        string nameOfToast = nameof(DefaultSettings.ShowToast);
+        Singleton<SettingsService>.Instance.SaveSetting(nameOfToast, true);
     }
 
     private void ShowToastCheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
-        DefaultSettings.ShowToast = false;
-    }
-
-    private void TestToggle_Checked(object sender, RoutedEventArgs e)
-    {
-        if (sender is not ToggleSwitch toggleSwitch)
-            return;
-
-        settings.TestSetting = toggleSwitch.IsChecked is true;
+        //DefaultSettings.ShowToast = false;
+        string nameOfToast = nameof(DefaultSettings.ShowToast);
+        Singleton<SettingsService>.Instance.SaveSetting(nameOfToast, false);
     }
 }

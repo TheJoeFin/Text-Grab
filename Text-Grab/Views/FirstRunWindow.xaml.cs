@@ -59,7 +59,7 @@ public partial class FirstRunWindow : FluentWindow
                 break;
         }
 
-        if (ImplementAppOptions.IsPackaged())
+        if (AppUtilities.IsPackaged())
         {
             StartupTask startupTask = await StartupTask.GetAsync("StartTextGrab");
 
