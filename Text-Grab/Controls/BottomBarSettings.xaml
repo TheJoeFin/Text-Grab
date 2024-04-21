@@ -55,7 +55,7 @@
             VerticalAlignment="Top"
             Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
             CornerRadius="8">
-            <ListView
+            <ui:ListView
                 x:Name="LeftListBox"
                 d:ItemsSource="{d:SampleData ItemCount=5}"
                 ItemContainerStyle="{StaticResource GridViewListItem}"
@@ -105,7 +105,7 @@
                         </GridViewColumn>
                     </GridView>
                 </ListView.View>
-            </ListView>
+            </ui:ListView>
         </Border>
         <StackPanel
             Grid.Row="1"
@@ -156,7 +156,7 @@
                 VerticalAlignment="Top"
                 Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 CornerRadius="8">
-                <ListView
+                <ui:ListView
                     x:Name="RightListBox"
                     d:ItemsSource="{d:SampleData ItemCount=1}"
                     ItemContainerStyle="{StaticResource GridViewListItem}"
@@ -203,7 +203,7 @@
                             </GridViewColumn>
                         </GridView>
                     </ListView.View>
-                </ListView>
+                </ui:ListView>
             </Border>
 
             <StackPanel

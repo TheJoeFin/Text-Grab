@@ -26,7 +26,7 @@
                 Content="How to install OCR languages with PowerShell"
                 NavigateUri="https://learn.microsoft.com/en-us/windows/powertoys/text-extractor#how-to-query-for-ocr-language-packs" />
             <!--  Show the commands to execute to add other languages  -->
-            <ListView
+            <ui:ListView
                 x:Name="WindowsLanguagesListView"
                 MaxWidth="600"
                 HorizontalAlignment="Left">
@@ -37,7 +37,7 @@
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
-            </ListView>
+            </ui:ListView>
         </StackPanel>
         <StackPanel
             x:Name="TesseractLanguagesStackPanel"
@@ -61,7 +61,7 @@
                     <TextBlock Text="Open Tesseract Language Data Folder" />
                 </StackPanel>
             </ui:HyperlinkButton>
-            <ListView
+            <ui:ListView
                 x:Name="TesseractLanguagesListView"
                 MaxWidth="600"
                 HorizontalAlignment="Left">
@@ -72,7 +72,7 @@
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
-            </ListView>
+            </ui:ListView>
 
             <TextBlock Margin="0,20,0,0" Style="{StaticResource TextBodyNormal}">
                 Download and install languages from Tesseract GitHub<LineBreak />

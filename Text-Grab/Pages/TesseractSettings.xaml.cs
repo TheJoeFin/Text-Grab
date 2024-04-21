@@ -38,6 +38,7 @@ public partial class TesseractSettings : Page
             UseTesseractCheckBox.IsEnabled = false;
 
         DefaultSettings.TesseractPath = pathText;
+        DefaultSettings.Save();
     }
 
     private void OpenPathButton_Click(object sender, RoutedEventArgs args)
@@ -76,6 +77,7 @@ public partial class TesseractSettings : Page
             return;
 
         DefaultSettings.UseTesseract = useTesseractSwitch.IsChecked is true;
+        DefaultSettings.Save();
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -84,6 +86,7 @@ public partial class TesseractSettings : Page
         {
             UseTesseractCheckBox.IsChecked = DefaultSettings.UseTesseract;
             TesseractPathTextBox.Text = DefaultSettings.TesseractPath;
+            settingsSet = true;
             return;
         }
 

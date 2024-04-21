@@ -181,7 +181,7 @@
                     VerticalAlignment="Center"
                     VerticalContentAlignment="Center">
                     <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Search With Regex
+                        Use Regex
                     </TextBlock>
                 </ui:ToggleSwitch>
 
@@ -215,15 +215,14 @@
             Text="Matches" />
 
         <Border Grid.Row="3" Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
-            <ListView
+            <ui:ListView
                 x:Name="ResultsListView"
                 Grid.Row="2"
                 Background="Transparent"
                 Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                 ScrollViewer.CanContentScroll="True"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                SelectionChanged="ResultsListView_SelectionChanged"
-                Style="{DynamicResource ListViewDarkStyle}">
+                SelectionChanged="ResultsListView_SelectionChanged">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid>
@@ -265,7 +264,7 @@
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
-            </ListView>
+            </ui:ListView>
         </Border>
     </Grid>
 </ui:FluentWindow>
