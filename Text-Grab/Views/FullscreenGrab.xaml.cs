@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dapplo.Windows.User32;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -70,7 +71,7 @@ public partial class FullscreenGrab : Window
 
     public bool IsFreeze { get; set; } = false;
     public string? textFromOCR { get; set; }
-    private System.Windows.Forms.Screen? currentScreen { get; set; }
+    private DisplayInfo? currentScreen { get; set; }
 
     #endregion Properties
 
@@ -510,11 +511,14 @@ public partial class FullscreenGrab : Window
         Canvas.SetLeft(selectBorder, clickedPoint.X);
         Canvas.SetTop(selectBorder, clickedPoint.Y);
 
-        var screens = System.Windows.Forms.Screen.AllScreens;
-        System.Drawing.Point formsPoint = new((int)clickedPoint.X, (int)clickedPoint.Y);
-        foreach (var scr in screens)
-            if (scr.Bounds.Contains(formsPoint))
+        DisplayInfo[] screens = DisplayInfo.AllDisplayInfos;
+        System.Windows.Point formsPoint = new((int)clickedPoint.X, (int)clickedPoint.Y);
+        foreach (DisplayInfo scr in screens)
+        {
+            Rect bound = scr.Bounds;
+            if (bound.Contains(formsPoint))
                 currentScreen = scr;
+        }
     }
 
     private void RegionClickCanvas_MouseMove(object sender, MouseEventArgs e)
