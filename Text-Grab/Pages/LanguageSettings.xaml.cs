@@ -21,24 +21,26 @@ namespace Text_Grab.Pages;
 /// </summary>
 public partial class LanguageSettings : Page
 {
-    private bool usingTesseract;
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
 
     public LanguageSettings()
     {
         InitializeComponent();
-        usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         LoadWindowsLanguages();
 
-        if (usingTesseract)
+        if (DefaultSettings.UseTesseract)
         {
             TesseractLanguagesStackPanel.Visibility = Visibility.Visible;
             await LoadTesseractContent();
+        }
+        else
+        {
+            TesseractLanguagesStackPanel.Visibility = Visibility.Collapsed;
         }
     }
 
