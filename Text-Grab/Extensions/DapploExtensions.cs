@@ -19,6 +19,9 @@ public static class DapploExtensions
         Rect displayRect = displayInfo.Bounds;
         NativeMethods.GetScaleFactorForMonitor(displayInfo.MonitorHandle, out uint scaleFactor);
         double scaleFraction = scaleFactor / 100.0;
+
+        // TODO: Discover, should you scale the X and Y or just the height and width??
+
         Rect scaledBounds = new(
             displayRect.X / scaleFraction,
             displayRect.Y / scaleFraction,
