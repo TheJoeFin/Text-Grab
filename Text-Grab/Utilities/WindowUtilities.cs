@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Text_Grab.Extensions;
 using Text_Grab.Views;
 using static OSInterop;
 
@@ -103,11 +104,7 @@ public static class WindowUtilities
             fullScreenGrab.DestinationTextBox = destinationTextBox;
             fullScreenGrab.WindowState = WindowState.Normal;
 
-            Rect screenRect = screen.Bounds;            
-            NativeMethods.GetScaleFactorForMonitor(screen.MonitorHandle, out uint scaleFactor);
-            double scaleFraction = scaleFactor / 100.0;
-            Point rawCenter = screenRect.CenterPoint();
-            Point screenCenterPoint = new(rawCenter.X / scaleFraction, rawCenter.Y / scaleFraction);
+            Point screenCenterPoint = screen.ScaledCenterPoint();
 
             fullScreenGrab.Left = screenCenterPoint.X - (sideLength / 2);
             fullScreenGrab.Top = screenCenterPoint.Y - (sideLength / 2);
