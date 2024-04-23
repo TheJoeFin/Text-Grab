@@ -104,7 +104,10 @@ public static class WindowUtilities
             fullScreenGrab.WindowState = WindowState.Normal;
 
             Rect screenRect = screen.Bounds;            
-            Point screenCenterPoint = screenRect.CenterPoint();
+            NativeMethods.GetScaleFactorForMonitor(screen.MonitorHandle, out uint scaleFactor);
+            double scaleFraction = scaleFactor / 100.0;
+            Point rawCenter = screenRect.CenterPoint();
+            Point screenCenterPoint = new(rawCenter.X / scaleFraction, rawCenter.Y / scaleFraction);
 
             fullScreenGrab.Left = screenCenterPoint.X - (sideLength / 2);
             fullScreenGrab.Top = screenCenterPoint.Y - (sideLength / 2);

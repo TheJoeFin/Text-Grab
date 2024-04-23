@@ -19,4 +19,7 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetKeyboardState(byte[] keyState);
+
+    [LibraryImport("shcore.dll")]
+    public static partial void GetScaleFactorForMonitor(IntPtr hMon, out uint pScale);
 }
