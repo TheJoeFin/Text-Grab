@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using Dapplo.Windows.User32;
+using System.Windows;
 using Text_Grab;
+using Windows.Networking.NetworkOperators;
 
 namespace Tests;
 public class ScreenLayoutTests
@@ -133,5 +135,27 @@ public class ScreenLayoutTests
         Assert.True(display6.Contains(smallRect6));
         Assert.False(display4.Contains(smallRect6));
         Assert.False(display5.Contains(smallRect6));
+    }
+
+
+    [Fact]
+    public void CompareDapploToWinForms()
+    {
+        var dapploDisplays = Dapplo.Windows.User32.DisplayInfo.AllDisplayInfos;
+
+        var winFormsDisplays = System.Windows.Forms.Screen.AllScreens;
+
+        Assert.Equal(dapploDisplays.Length, winFormsDisplays.Length);
+
+        for (int i = 0; i < dapploDisplays.Length; i++)
+        {
+            Rect dapploRect = dapploDisplays[i].Bounds;
+            Rect winFormsRect = winFormsDisplays[i].Bounds.AsRect();
+
+            var dapploCenterPoint = dapploRect.CenterPoint();
+            var winFormsCenterPoint = winFormsRect.CenterPoint();
+
+            Assert.Equal(dapploCenterPoint, winFormsCenterPoint);
+        }
     }
 }
