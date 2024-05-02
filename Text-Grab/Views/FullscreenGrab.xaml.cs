@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Extensions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -25,16 +26,16 @@ public partial class FullscreenGrab : Window
 {
     #region Fields
 
-    private System.Windows.Point clickedPoint = new System.Windows.Point();
+    private System.Windows.Point clickedPoint = new();
     private TextBox? destinationTextBox;
     private DpiScale? dpiScale;
     private bool isComboBoxReady = false;
     private bool isSelecting = false;
     private bool isShiftDown = false;
-    private Border selectBorder = new Border();
+    private Border selectBorder = new();
     private double selectLeft;
     private double selectTop;
-    private System.Windows.Point shiftPoint = new System.Windows.Point();
+    private System.Windows.Point shiftPoint = new();
     private double xShiftDelta;
     private double yShiftDelta;
     private HistoryInfo? historyInfo;
@@ -70,8 +71,8 @@ public partial class FullscreenGrab : Window
     }
 
     public bool IsFreeze { get; set; } = false;
-    public string? textFromOCR { get; set; }
-    private DisplayInfo? currentScreen { get; set; }
+    public string? TextFromOCR { get; set; }
+    private DisplayInfo? CurrentScreen { get; set; }
 
     #endregion Properties
 
@@ -264,7 +265,6 @@ public partial class FullscreenGrab : Window
     {
         System.Windows.Point absPosPoint = this.GetAbsolutePosition();
         dpi = VisualTreeHelper.GetDpi(this);
-        int firstScreenBPP = System.Windows.Forms.Screen.AllScreens[0].BitsPerPixel;
 
         posLeft = Canvas.GetLeft(selectBorder) + (absPosPoint.X / dpi.PixelsPerDip);
         posTop = Canvas.GetTop(selectBorder) + (absPosPoint.Y / dpi.PixelsPerDip);
@@ -362,7 +362,7 @@ public partial class FullscreenGrab : Window
                     haveSetLastLang = true;
 
                     if (tesseractIncompatibleElements is not null)
-                        foreach (var element in tesseractIncompatibleElements)
+                        foreach (FrameworkElement element in tesseractIncompatibleElements)
                             element.Visibility = Visibility.Collapsed;
                 }
 
@@ -421,12 +421,12 @@ public partial class FullscreenGrab : Window
         double leftValue = selectLeft + xShiftDelta;
         double topValue = selectTop + yShiftDelta;
 
-        if (currentScreen is not null && dpiScale is not null)
+        if (CurrentScreen is not null && dpiScale is not null)
         {
-            double currentScreenLeft = currentScreen.Bounds.Left; // Should always be 0
-            double currentScreenRight = currentScreen.Bounds.Right / dpiScale.Value.DpiScaleX;
-            double currentScreenTop = currentScreen.Bounds.Top; // Should always be 0
-            double currentScreenBottom = currentScreen.Bounds.Bottom / dpiScale.Value.DpiScaleY;
+            double currentScreenLeft = CurrentScreen.Bounds.Left; // Should always be 0
+            double currentScreenRight = CurrentScreen.Bounds.Right / dpiScale.Value.DpiScaleX;
+            double currentScreenTop = CurrentScreen.Bounds.Top; // Should always be 0
+            double currentScreenBottom = CurrentScreen.Bounds.Bottom / dpiScale.Value.DpiScaleY;
 
             leftValue = Math.Clamp(leftValue, currentScreenLeft, (currentScreenRight - selectBorder.Width));
             topValue = Math.Clamp(topValue, currentScreenTop, (currentScreenBottom - selectBorder.Height));
@@ -445,9 +445,7 @@ public partial class FullscreenGrab : Window
         // Then place it where the user just drew the region
         // Add space around the window to account for Titlebar
         // bottom bar and width of GrabFrame
-        DpiScale dpi;
-        double posLeft, posTop;
-        GetDpiAdjustedRegionOfSelectBorder(out dpi, out posLeft, out posTop);
+        GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
 
         GrabFrame grabFrame = new()
         {
@@ -515,9 +513,9 @@ public partial class FullscreenGrab : Window
         System.Windows.Point formsPoint = new((int)clickedPoint.X, (int)clickedPoint.Y);
         foreach (DisplayInfo scr in screens)
         {
-            Rect bound = scr.Bounds;
+            Rect bound = scr.ScaledBounds();
             if (bound.Contains(formsPoint))
-                currentScreen = scr;
+                CurrentScreen = scr;
         }
     }
 
@@ -536,13 +534,13 @@ public partial class FullscreenGrab : Window
 
         isShiftDown = false;
 
-        var left = Math.Min(clickedPoint.X, movingPoint.X);
-        var top = Math.Min(clickedPoint.Y, movingPoint.Y);
+        double left = Math.Min(clickedPoint.X, movingPoint.X);
+        double top = Math.Min(clickedPoint.Y, movingPoint.Y);
 
         selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         selectBorder.Width = Math.Max(clickedPoint.X, movingPoint.X) - left;
-        selectBorder.Height = selectBorder.Height + 2;
-        selectBorder.Width = selectBorder.Width + 2;
+        selectBorder.Height += 2;
+        selectBorder.Width += 2;
 
         clippingGeometry.Rect = new Rect(
             new System.Windows.Point(left, top),
@@ -557,7 +555,7 @@ public partial class FullscreenGrab : Window
             return;
 
         isSelecting = false;
-        currentScreen = null;
+        CurrentScreen = null;
         CursorClipper.UnClipCursor();
         RegionClickCanvas.ReleaseMouseCapture();
         clippingGeometry.Rect = new Rect(
@@ -572,25 +570,16 @@ public partial class FullscreenGrab : Window
         movingPoint.X = Math.Round(movingPoint.X);
         movingPoint.Y = Math.Round(movingPoint.Y);
 
-        double correctedLeft = Left;
-        double correctedTop = Top;
-
-        if (correctedLeft < 0)
-            correctedLeft = 0;
-
-        if (correctedTop < 0)
-            correctedTop = 0;
-
         double xDimScaled = Canvas.GetLeft(selectBorder) * m.M11;
         double yDimScaled = Canvas.GetTop(selectBorder) * m.M22;
 
-        Rectangle regionScaled = new Rectangle(
+        Rectangle regionScaled = new(
             (int)xDimScaled,
             (int)yDimScaled,
             (int)(selectBorder.Width * m.M11),
             (int)(selectBorder.Height * m.M22));
 
-        textFromOCR = string.Empty;
+        TextFromOCR = string.Empty;
 
         if (NewGrabFrameMenuItem.IsChecked is true)
         {
@@ -600,9 +589,7 @@ public partial class FullscreenGrab : Window
 
         try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
 
-        Language? selectedOcrLang = LanguagesComboBox.SelectedItem as Language;
-
-        if (selectedOcrLang is null)
+        if (LanguagesComboBox.SelectedItem is not Language selectedOcrLang)
             selectedOcrLang = LanguageUtilities.GetOCRLanguage();
 
         string tessTag = string.Empty;
@@ -612,22 +599,22 @@ public partial class FullscreenGrab : Window
 
         bool isSmallClick = (regionScaled.Width < 3 || regionScaled.Height < 3);
 
-        bool isSingleLine = SingleLineMenuItem is null ? false : SingleLineMenuItem.IsChecked;
-        bool isTable = TableMenuItem is null ? false : TableMenuItem.IsChecked;
+        bool isSingleLine = SingleLineMenuItem is not null && SingleLineMenuItem.IsChecked;
+        bool isTable = TableMenuItem is not null && TableMenuItem.IsChecked;
 
         if (isSmallClick)
         {
             BackgroundBrush.Opacity = 0;
-            textFromOCR = await OcrUtilities.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
+            TextFromOCR = await OcrUtilities.GetClickedWordAsync(this, new System.Windows.Point(xDimScaled, yDimScaled), selectedOcrLang);
         }
         else if (isTable)
-            textFromOCR = await OcrUtilities.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
+            TextFromOCR = await OcrUtilities.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
-            textFromOCR = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang, tessTag);
+            TextFromOCR = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang, tessTag);
 
         if (DefaultSettings.UseHistory && !isSmallClick)
         {
-            GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
+            GetDpiAdjustedRegionOfSelectBorder(out _, out double posLeft, out double posTop);
 
             Rect historyRect = new()
             {
@@ -645,13 +632,13 @@ public partial class FullscreenGrab : Window
                 CaptureDateTime = DateTimeOffset.Now,
                 PositionRect = historyRect,
                 IsTable = TableToggleButton.IsChecked!.Value,
-                TextContent = textFromOCR,
+                TextContent = TextFromOCR,
                 ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
                 SourceMode = TextGrabMode.Fullscreen,
             };
         }
 
-        if (!string.IsNullOrWhiteSpace(textFromOCR))
+        if (!string.IsNullOrWhiteSpace(TextFromOCR))
         {
             if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
             {
@@ -660,7 +647,7 @@ public partial class FullscreenGrab : Window
             }
 
             OutputUtilities.HandleTextFromOcr(
-                textFromOCR,
+                TextFromOCR,
                 isSingleLine,
                 isTable,
                 destinationTextBox);
@@ -711,8 +698,8 @@ public partial class FullscreenGrab : Window
     {
         WindowState = WindowState.Maximized;
         FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
-        this.KeyDown += FullscreenGrab_KeyDown;
-        this.KeyUp += FullscreenGrab_KeyUp;
+        KeyDown += FullscreenGrab_KeyDown;
+        KeyUp += FullscreenGrab_KeyUp;
 
         SetImageToBackground();
 
@@ -729,10 +716,10 @@ public partial class FullscreenGrab : Window
         Topmost = false;
 #endif
 
-        List<FrameworkElement> tesseractIncompatibleFrameworkElements = new()
-        {
+        List<FrameworkElement> tesseractIncompatibleFrameworkElements =
+        [
             TableMenuItem, TableToggleButton
-        };
+        ];
         await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
         isComboBoxReady = true;
 
@@ -744,12 +731,12 @@ public partial class FullscreenGrab : Window
     {
         BackgroundImage.Source = null;
         BackgroundImage.UpdateLayout();
-        currentScreen = null;
+        CurrentScreen = null;
         dpiScale = null;
-        textFromOCR = null;
+        TextFromOCR = null;
 
-        this.Loaded -= Window_Loaded;
-        this.Unloaded -= Window_Unloaded;
+        Loaded -= Window_Loaded;
+        Unloaded -= Window_Unloaded;
 
         RegionClickCanvas.MouseDown -= RegionClickCanvas_MouseDown;
         RegionClickCanvas.MouseMove -= RegionClickCanvas_MouseMove;
@@ -771,14 +758,14 @@ public partial class FullscreenGrab : Window
         SettingsButton.Click -= SettingsMenuItem_Click;
         CancelButton.Click -= CancelMenuItem_Click;
 
-        this.KeyDown -= FullscreenGrab_KeyDown;
-        this.KeyUp -= FullscreenGrab_KeyUp;
+        KeyDown -= FullscreenGrab_KeyDown;
+        KeyUp -= FullscreenGrab_KeyUp;
     }
 
     private void StandardModeToggleButton_Click(object sender, RoutedEventArgs e)
     {
         bool isActive = CheckIfCheckingOrUnchecking(sender);
-        WindowUtilities.FullscreenKeyDown(Key.N, isActive); 
+        WindowUtilities.FullscreenKeyDown(Key.N, isActive);
         SelectSingleToggleButton(sender);
 
         if (isActive)

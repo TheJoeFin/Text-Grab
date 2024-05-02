@@ -154,8 +154,8 @@ public static class WindowUtilities
         {
             if (window is FullscreenGrab fsg)
             {
-                if (!string.IsNullOrWhiteSpace(fsg.textFromOCR))
-                    stringFromOCR = fsg.textFromOCR;
+                if (!string.IsNullOrWhiteSpace(fsg.TextFromOCR))
+                    stringFromOCR = fsg.TextFromOCR;
 
                 if (fsg.DestinationTextBox is not null)
                 {

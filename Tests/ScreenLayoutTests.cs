@@ -1,7 +1,6 @@
 ﻿using Dapplo.Windows.User32;
 using System.Windows;
 using Text_Grab;
-using Windows.Networking.NetworkOperators;
 
 namespace Tests;
 public class ScreenLayoutTests
@@ -94,7 +93,7 @@ public class ScreenLayoutTests
         double smallLeft2 = display2.CenterPoint().X - (sideLength / 2);
         double smallTop2 = display2.CenterPoint().Y - (sideLength / 2);
         Rect smallRect2 = new(smallLeft2, smallTop2, sideLength, sideLength);
-        
+
         Assert.True(display2.Contains(smallRect2));
         Assert.False(display1.Contains(smallRect2));
         Assert.False(display3.Contains(smallRect2));
@@ -123,7 +122,7 @@ public class ScreenLayoutTests
         double smallLeft5 = display5.CenterPoint().X - (sideLength / 2);
         double smallTop5 = display5.CenterPoint().Y - (sideLength / 2);
         Rect smallRect5 = new(smallLeft5, smallTop5, sideLength, sideLength);
-        
+
         Assert.True(display5.Contains(smallRect5));
         Assert.False(display4.Contains(smallRect5));
         Assert.False(display6.Contains(smallRect5));
@@ -141,9 +140,9 @@ public class ScreenLayoutTests
     [Fact]
     public void CompareDapploToWinForms()
     {
-        var dapploDisplays = Dapplo.Windows.User32.DisplayInfo.AllDisplayInfos;
+        DisplayInfo[] dapploDisplays = Dapplo.Windows.User32.DisplayInfo.AllDisplayInfos;
 
-        var winFormsDisplays = System.Windows.Forms.Screen.AllScreens;
+        System.Windows.Forms.Screen[] winFormsDisplays = System.Windows.Forms.Screen.AllScreens;
 
         Assert.Equal(dapploDisplays.Length, winFormsDisplays.Length);
 
@@ -152,8 +151,8 @@ public class ScreenLayoutTests
             Rect dapploRect = dapploDisplays[i].Bounds;
             Rect winFormsRect = winFormsDisplays[i].Bounds.AsRect();
 
-            var dapploCenterPoint = dapploRect.CenterPoint();
-            var winFormsCenterPoint = winFormsRect.CenterPoint();
+            Point dapploCenterPoint = dapploRect.CenterPoint();
+            Point winFormsCenterPoint = winFormsRect.CenterPoint();
 
             Assert.Equal(dapploCenterPoint, winFormsCenterPoint);
         }
