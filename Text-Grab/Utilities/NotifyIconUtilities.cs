@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Windows.Controls;
-using System.Windows.Forms;
-using System.Windows.Media.Imaging;
+using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Services;
 using Text_Grab.Views;
-using Wpf.Ui.Tray;
 
 namespace Text_Grab.Utilities;
 
@@ -20,76 +17,11 @@ public static class NotifyIconUtilities
         {
             return;
         }
-
-        NotifyIconService icon = new()
-        {
-            TooltipText = "Text Grab",
-            Icon = new BitmapImage(new Uri("/TealSelect.ico", UriKind.Relative))
-        };
-
-        ContextMenu? contextMenu = new();
-
-        MenuItem? settingsItem = new();
-        settingsItem.Header = "Settings";
-        settingsItem.Click += (s, e) => { SettingsWindow sw = new(); sw.Show(); };
-
-        MenuItem? editLastItem = new();
-        editLastItem.Header = "Edit Last Grab";
-        editLastItem.Click += (s, e) => { Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame(); };
-
-        MenuItem? quickSimpleLookupItem = new();
-        quickSimpleLookupItem.Header = "Quick Simple Lookup";
-        quickSimpleLookupItem.Click += (s, e) => { QuickSimpleLookup qsl = new(); qsl.Show(); };
-
-        MenuItem? previousGrabRegion = new();
-        previousGrabRegion.Header = "Grab Previous Region";
-        previousGrabRegion.Click += async (s, e) => { await OcrUtilities.GetTextFromPreviousFullscreenRegion(); };
-
-        MenuItem? fullScreenGrabItem = new();
-        fullScreenGrabItem.Header = "Fullscreen Grab";
-        fullScreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(); };
-
-        MenuItem? grabFrameItem = new();
-        grabFrameItem.Header = "Grab Frame";
-        grabFrameItem.Click += (s, e) => { GrabFrame gf = new(); gf.Show(); };
-
-        MenuItem? editTextWindowItem = new();
-        editTextWindowItem.Header = "Edit Text Window";
-        editTextWindowItem.Click += (s, e) => { EditTextWindow etw = new(); etw.Show(); };
-
-        MenuItem? exitItem = new();
-        exitItem.Header = "Close";
-        exitItem.Click += (s, e) => { System.Windows.Application.Current.Shutdown(); };
-
-        MenuItem[] menuItems =
-        [
-            fullScreenGrabItem,
-            previousGrabRegion,
-            grabFrameItem,
-            editTextWindowItem,
-            quickSimpleLookupItem,
-            editLastItem,
-            settingsItem,
-            exitItem
-        ];
-
-        foreach (MenuItem item in menuItems)
-            contextMenu.Items.Add(item);
-
-        icon.ContextMenu = contextMenu;
-        
-
-        // icon. += (s, e) =>
-        // {
-        //     if (e.Button == MouseButtons.Left)
-        //         App.DefaultLaunch();
-        // };
-
-
         RegisterHotKeys(app);
 
-        // icon.SetParentWindow(app);
-        // bool success = icon.Register();
+        NotifyIconWindow notifyIconWindow = new();
+        notifyIconWindow.Hide();
+        notifyIconWindow.Show();
     }
 
     public static void RegisterHotKeys(App app)
