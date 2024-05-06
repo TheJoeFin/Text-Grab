@@ -82,7 +82,7 @@
                         Click="Exit_Click"
                         Header="Close Text Grab">
                         <MenuItem.Icon>
-                            <wpfui:SymbolIcon Symbol="Power24" />
+                            <wpfui:SymbolIcon Symbol="Dismiss24" />
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>
