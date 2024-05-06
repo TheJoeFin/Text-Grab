@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Text_Grab.Controls;
@@ -9,7 +10,7 @@ namespace Text_Grab.Controls;
 /// </summary>
 public partial class PreviousGrabWindow : Window
 {
-    public PreviousGrabWindow(Rect rect)
+    public PreviousGrabWindow(Rect rect, bool showSuccess = false)
     {
         InitializeComponent();
 
@@ -19,6 +20,13 @@ public partial class PreviousGrabWindow : Window
         Height = rect.Height + (2 * borderThickness);
         Left = rect.Left - borderThickness;
         Top = rect.Top - borderThickness;
+
+        if (showSuccess)
+        {
+            SuccessViewbox.Visibility = Visibility.Visible;
+        }
+
+
 
         DispatcherTimer timer = new DispatcherTimer();
         timer.Interval = TimeSpan.FromMilliseconds(500);

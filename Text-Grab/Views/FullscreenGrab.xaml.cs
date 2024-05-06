@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -654,6 +655,13 @@ public partial class FullscreenGrab : Window
                 EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
                 destinationTextBox = etw.PassedTextControl;
             }
+            Rect selectBorderRect = new(
+                Canvas.GetLeft(selectBorder),
+                Canvas.GetTop(selectBorder),
+                selectBorder.Width,
+                selectBorder.Height);
+            PreviousGrabWindow previousGrab = new(selectBorderRect, true);
+            previousGrab.Show();
 
             OutputUtilities.HandleTextFromOcr(
                 textFromOCR,
