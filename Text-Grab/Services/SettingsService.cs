@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Diagnostics;
 using Text_Grab.Utilities;
 using Windows.Storage;
@@ -36,7 +37,18 @@ internal class SettingsService : IDisposable
             return;
 
         foreach (KeyValuePair<string, object> localSetting in _localSettings.Values)
-            ClassicSettings[localSetting.Key] = localSetting.Value;
+        {
+            try { ClassicSettings[localSetting.Key] = localSetting.Value; }
+            catch (SettingsPropertyNotFoundException ex) { Debug.WriteLine($"Failed to migrate {localSetting.Key} of value {localSetting.Value}"); } // continue, just skip the setting
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to migrate setting {localSetting.Key} from ApplicationDataContainer {ex.Message}");
+#if DEBUG
+                throw;
+#endif
+            }
+            
+        }
     }
 
     private void ClassicSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
