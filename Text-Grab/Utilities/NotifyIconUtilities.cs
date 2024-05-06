@@ -19,9 +19,7 @@ public static class NotifyIconUtilities
         }
         RegisterHotKeys(app);
 
-        NotifyIconWindow notifyIconWindow = new();
-        notifyIconWindow.Hide();
-        notifyIconWindow.Show();
+        app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
     }
 
     public static void RegisterHotKeys(App app)

@@ -7,9 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -35,7 +35,7 @@ public partial class App : System.Windows.Application
 
     public List<int> HotKeyIds { get; set; } = new();
     public int NumberOfRunningInstances { get; set; } = 0;
-    public NotifyIcon? TextGrabIcon { get; set; }
+    public NotifyIconWindow? TextGrabIcon { get; set; }
     #endregion Properties
 
     #region Methods
@@ -228,7 +228,7 @@ public partial class App : System.Windows.Application
 
     private void appExit(object sender, ExitEventArgs e)
     {
-        TextGrabIcon?.Dispose();
+        TextGrabIcon?.Close();
         Singleton<HistoryService>.Instance.WriteHistory();
     }
 
