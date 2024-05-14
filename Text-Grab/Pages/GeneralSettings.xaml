@@ -27,7 +27,7 @@
                 x:Name="VersionTextblock"
                 VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
-                Text="Version 4.4.1" />
+                Text="Version 4.4.2" />
 
             <ui:HyperlinkButton
                 x:Name="OpenExeFolderButton"
