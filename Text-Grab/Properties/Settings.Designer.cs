@@ -562,5 +562,17 @@ namespace Text_Grab.Properties {
                 this["CloseFrameOnGrab"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Resize")]
+        public string GrabFrameScrollBehavior {
+            get {
+                return ((string)(this["GrabFrameScrollBehavior"]));
+            }
+            set {
+                this["GrabFrameScrollBehavior"] = value;
+            }
+        }
     }
 }

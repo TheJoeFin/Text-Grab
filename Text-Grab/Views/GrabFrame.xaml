@@ -223,18 +223,19 @@
                     <MenuItem Header="View">
                         <ui:MenuItem
                             x:Name="NoScrollBehaviorMenuItem"
-                            Header="Scroll does nothing"
                             Click="ScrollBehaviorMenuItem_Click"
+                            Header="Scroll does nothing"
                             IsCheckable="True"
-                            Tag="Nothing" />
+                            Tag="None" />
                         <MenuItem
                             x:Name="ResizeScrollMenuItem"
+                            Click="ScrollBehaviorMenuItem_Click"
                             Header="Scroll resizes Grab Frame"
-                            Click=""
                             IsCheckable="True"
                             Tag="Resize" />
                         <MenuItem
                             x:Name="ZoomScrollMenuItem"
+                            Click="ScrollBehaviorMenuItem_Click"
                             Header="Scroll Zooms Grab Frame"
                             IsCheckable="True"
                             Tag="Zoom" />

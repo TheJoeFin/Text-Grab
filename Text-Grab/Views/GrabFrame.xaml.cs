@@ -72,6 +72,7 @@ public partial class GrabFrame : Window
     private double windowFrameImageScale = 1;
     private ObservableCollection<WordBorder> wordBorders = new();
     private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private ScrollBehavior scrollBehavior = ScrollBehavior.Resize;
 
     #endregion Fields
 
@@ -1205,6 +1206,8 @@ public partial class GrabFrame : Window
         AutoOcrCheckBox.IsChecked = DefaultSettings.GrabFrameAutoOcr;
         AlwaysUpdateEtwCheckBox.IsChecked = DefaultSettings.GrabFrameUpdateEtw;
         CloseOnGrabMenuItem.IsChecked = DefaultSettings.CloseFrameOnGrab;
+        _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
+        SetScrollBehaviorMenuItems();
     }
 
     private void GrabBTN_Click(object sender, RoutedEventArgs e)
@@ -1363,7 +1366,7 @@ public partial class GrabFrame : Window
         // Source: StackOverflow, read on Sep. 10, 2021
         // https://stackoverflow.com/a/53698638/7438031
 
-        if (WindowState == WindowState.Maximized)
+        if (WindowState == WindowState.Maximized || scrollBehavior == ScrollBehavior.None)
             return;
 
         e.Handled = true;
@@ -2301,7 +2304,35 @@ new GrabFrameOperationArgs()
 
     private void ScrollBehaviorMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (sender is not MenuItem menuItem || !Enum.TryParse(menuItem.Tag.ToString(), out scrollBehavior))
+            return;
 
+        DefaultSettings.GrabFrameScrollBehavior = scrollBehavior.ToString();
+        SetScrollBehaviorMenuItems();
+    }
+
+    private void SetScrollBehaviorMenuItems()
+    {
+        switch (scrollBehavior)
+        {
+            case ScrollBehavior.None:
+                NoScrollBehaviorMenuItem.IsChecked = true;
+                ResizeScrollMenuItem.IsChecked = false;
+                ZoomScrollMenuItem.IsChecked = false;
+                break;
+            case ScrollBehavior.Resize:
+                NoScrollBehaviorMenuItem.IsChecked = false;
+                ResizeScrollMenuItem.IsChecked = true;
+                ZoomScrollMenuItem.IsChecked = false;
+                break;
+            case ScrollBehavior.Zoom:
+                NoScrollBehaviorMenuItem.IsChecked = false;
+                ResizeScrollMenuItem.IsChecked = false;
+                ZoomScrollMenuItem.IsChecked = true;
+                break;
+            default:
+                break;
+        }
     }
 
     #endregion Methods
