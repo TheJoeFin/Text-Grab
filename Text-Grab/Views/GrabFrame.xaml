@@ -69,6 +69,10 @@
             CanExecute="CanChangeWordBorderExecute"
             Command="{x:Static local:GrabFrame.MergeWordsCommand}"
             Executed="MergeWordBordersExecuted" />
+        <CommandBinding
+            CanExecute="CanExecuteGrab"
+            Command="{x:Static local:GrabFrame.GrabCommand}"
+            Executed="GrabExecuted" />
 
     </Window.CommandBindings>
 
@@ -220,14 +224,25 @@
                         <ui:MenuItem
                             x:Name="NoScrollBehaviorMenuItem"
                             Header="Scroll does nothing"
-                            IsCheckable="True" />
+                            Click="ScrollBehaviorMenuItem_Click"
+                            IsCheckable="True"
+                            Tag="Nothing" />
                         <MenuItem
                             x:Name="ResizeScrollMenuItem"
                             Header="Scroll resizes Grab Frame"
-                            IsCheckable="True" />
+                            Click=""
+                            IsCheckable="True"
+                            Tag="Resize" />
                         <MenuItem
                             x:Name="ZoomScrollMenuItem"
                             Header="Scroll Zooms Grab Frame"
+                            IsCheckable="True"
+                            Tag="Zoom" />
+                        <Separator />
+                        <MenuItem
+                            x:Name="CloseOnGrabMenuItem"
+                            Click="CloseOnGrabMenuItem_Click"
+                            Header="Close Frame on Grab"
                             IsCheckable="True" />
                     </MenuItem>
                     <MenuItem Header="_Help">
@@ -606,7 +621,7 @@
                         Margin="0"
                         ButtonSymbol="Copy24"
                         ButtonText="Grab"
-                        Click="GrabBTN_Click"
+                        Command="{x:Static local:GrabFrame.GrabCommand}"
                         ToolTip="Grab text in the Grab Frame" />
                 </Grid>
             </Border>

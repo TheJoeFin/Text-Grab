@@ -550,5 +550,17 @@ namespace Text_Grab.Properties {
                 this["EtwUseMargins"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool CloseFrameOnGrab {
+            get {
+                return ((bool)(this["CloseFrameOnGrab"]));
+            }
+            set {
+                this["CloseFrameOnGrab"] = value;
+            }
+        }
     }
 }
