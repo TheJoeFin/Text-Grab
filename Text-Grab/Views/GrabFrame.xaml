@@ -216,6 +216,20 @@
                             InputGestureText="Del" />
                         <Separator />
                     </MenuItem>
+                    <MenuItem Header="View">
+                        <ui:MenuItem
+                            x:Name="NoScrollBehaviorMenuItem"
+                            Header="Scroll does nothing"
+                            IsCheckable="True" />
+                        <MenuItem
+                            x:Name="ResizeScrollMenuItem"
+                            Header="Scroll resizes Grab Frame"
+                            IsCheckable="True" />
+                        <MenuItem
+                            x:Name="ZoomScrollMenuItem"
+                            Header="Scroll Zooms Grab Frame"
+                            IsCheckable="True" />
+                    </MenuItem>
                     <MenuItem Header="_Help">
                         <MenuItem
                             x:Name="ContactMenuItem"
