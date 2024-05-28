@@ -73,7 +73,10 @@
             CanExecute="CanExecuteGrab"
             Command="{x:Static local:GrabFrame.GrabCommand}"
             Executed="GrabExecuted" />
-
+        <CommandBinding
+            CanExecute="CanExecuteGrab"
+            Command="{x:Static local:GrabFrame.GrabTrimCommand}"
+            Executed="GrabTrimExecuted" />
     </Window.CommandBindings>
 
     <WindowChrome.WindowChrome>
@@ -138,6 +141,17 @@
                             Header="Open Image..."
                             InputGestureText="Ctrl + O" />
                         <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
+                        <Separator />
+                        <MenuItem
+                            Name="GrabMenuItem"
+                            Command="{x:Static local:GrabFrame.GrabCommand}"
+                            Header="_Grab"
+                            InputGestureText="Ctrl + G" />
+                        <MenuItem
+                            Name="GrabTrimSingleMenuItem"
+                            Command="{x:Static local:GrabFrame.GrabTrimCommand}"
+                            Header="Grab text as Single Line"
+                            InputGestureText="Ctrl + Shift + G" />
                         <Separator />
                         <MenuItem
                             Name="SettingsMenuItem"
@@ -274,11 +288,21 @@
                     Orientation="Horizontal">
                     <Image
                         x:Name="WindowIcon"
-                        Width="22"
-                        Height="22"
+                        Width="20"
+                        Height="20"
                         Margin="4,2,4,4"
                         Source="{StaticResource TextGrabIcon}"
-                        Stretch="UniformToFill" />
+                        Stretch="UniformToFill">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Opacity" Value="0.6" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
                     <TextBlock
                         Margin="4,-4,0,0"
                         HorizontalAlignment="Center"
@@ -289,7 +313,7 @@
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
-                                        <Setter Property="Foreground" Value="{DynamicResource WindowTitleBarInactiveText}" />
+                                        <Setter Property="Opacity" Value="0.6" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

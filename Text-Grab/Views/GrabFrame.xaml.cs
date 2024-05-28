@@ -46,6 +46,7 @@ public partial class GrabFrame : Window
     public static RoutedCommand RedoCommand = new();
     public static RoutedCommand UndoCommand = new();
     public static RoutedCommand GrabCommand = new();
+    public static RoutedCommand GrabTrimCommand = new();
     private ResultTable? AnalyzedResultTable;
     private Point clickedPoint;
     private Language? currentLanguage;
@@ -197,10 +198,6 @@ public partial class GrabFrame : Window
 
         reSearchTimer.Interval = new(0, 0, 0, 0, 300);
         reSearchTimer.Tick += ReSearchTimer_Tick;
-
-        RoutedCommand newCmd = new();
-        _ = newCmd.InputGestures.Add(new KeyGesture(Key.Escape));
-        _ = CommandBindings.Add(new CommandBinding(newCmd, Escape_Keyed));
 
         _ = UndoRedo.HasUndoOperations();
         _ = UndoRedo.HasRedoOperations();
@@ -387,12 +384,18 @@ public partial class GrabFrame : Window
         PreviewKeyDown += Window_PreviewKeyDown;
         PreviewKeyUp += Window_PreviewKeyUp;
 
+        RoutedCommand escapeCmd = new();
+        _ = escapeCmd.InputGestures.Add(new KeyGesture(Key.Escape));
+        _ = CommandBindings.Add(new CommandBinding(escapeCmd, Escape_Keyed));
+
         RoutedCommand pasteCommand = new();
         _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
 
         _ = GrabCommand.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
-        _ = CommandBindings.Add(new CommandBinding(GrabCommand, GrabExecuted));
+        // _ = CommandBindings.Add(new CommandBinding(GrabCommand, GrabExecuted));
+
+        _ = GrabTrimCommand.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Control));
 
         CheckBottomRowButtonsVis();
 
@@ -441,7 +444,6 @@ public partial class GrabFrame : Window
         EditToggleButton.Click -= EditToggleButton_Click;
         SettingsBTN.Click -= SettingsBTN_Click;
         EditTextToggleButton.Click -= EditTextBTN_Click;
-        GrabBTN.Click -= GrabBTN_Click;
     }
 
     public void MergeSelectedWordBorders()
@@ -1208,11 +1210,6 @@ public partial class GrabFrame : Window
         CloseOnGrabMenuItem.IsChecked = DefaultSettings.CloseFrameOnGrab;
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
         SetScrollBehaviorMenuItems();
-    }
-
-    private void GrabBTN_Click(object sender, RoutedEventArgs e)
-    {
-
     }
 
     private void GrabFrameWindow_Activated(object? sender, EventArgs e)
@@ -2301,6 +2298,38 @@ new GrabFrameOperationArgs()
         if (CloseOnGrabMenuItem.IsChecked)
             Close();
     }
+
+    private void GrabTrimExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(FrameText))
+            return;
+
+        string trimmedSingleLineFrameText = FrameText.MakeStringSingleLine();
+
+        if (destinationTextBox is not null)
+        {
+            if (AlwaysUpdateEtwCheckBox.IsChecked is false)
+                destinationTextBox.SelectedText = trimmedSingleLineFrameText;
+
+            destinationTextBox.Select(destinationTextBox.SelectionStart + destinationTextBox.SelectionLength, 0);
+            destinationTextBox.AppendText(Environment.NewLine);
+            UpdateFrameText();
+
+            if (CloseOnGrabMenuItem.IsChecked)
+                Close();
+            return;
+        }
+
+        if (!DefaultSettings.NeverAutoUseClipboard)
+            try { Clipboard.SetDataObject(trimmedSingleLineFrameText, true); } catch { }
+
+        if (DefaultSettings.ShowToast)
+            NotificationUtilities.ShowToast(trimmedSingleLineFrameText);
+
+        if (CloseOnGrabMenuItem.IsChecked)
+            Close();
+    }
+
 
     private void ScrollBehaviorMenuItem_Click(object sender, RoutedEventArgs e)
     {
