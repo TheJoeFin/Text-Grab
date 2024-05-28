@@ -1183,17 +1183,17 @@ public partial class GrabFrame : Window
         System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
         System.Drawing.Color pxColorLeftBottom = bmp.GetPixel(pxLeft, pxBottom);
 
-        List<System.Windows.Media.Color> MediaColorList = new()
-        {
+        List<Color> MediaColorList =
+        [
             ColorHelper.MediaColorFromDrawingColor(pxColorLeftTop),
             ColorHelper.MediaColorFromDrawingColor(pxColorRightTop),
             ColorHelper.MediaColorFromDrawingColor(pxColorRightBottom),
             ColorHelper.MediaColorFromDrawingColor(pxColorLeftBottom),
-        };
+        ];
 
-        System.Windows.Media.Color? MostCommonColor = MediaColorList.GroupBy(c => c)
-                                                                    .OrderBy(g => g.Count())
-                                                                    .LastOrDefault()?.Key;
+        Color? MostCommonColor = MediaColorList.GroupBy(c => c)
+                                               .OrderBy(g => g.Count())
+                                               .LastOrDefault()?.Key;
 
         backgroundBrush = ColorHelper.SolidColorBrushFromDrawingColor(pxColorLeftTop);
 
@@ -1378,15 +1378,12 @@ public partial class GrabFrame : Window
         e.Handled = true;
         double aspectRatio = (Height - 66) / (Width - 4);
 
-        bool isShiftDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
-        bool isCtrlDown = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
-
         if (e.Delta > 0)
         {
             Width += 100;
             Left -= 50;
 
-            if (!isShiftDown)
+            if (!KeyboardExtensions.IsShiftDown())
             {
                 Height += 100 * aspectRatio;
                 Top -= 50 * aspectRatio;
@@ -1399,7 +1396,7 @@ public partial class GrabFrame : Window
                 Width -= 100;
                 Left += 50;
 
-                if (!isShiftDown)
+                if (!KeyboardExtensions.IsShiftDown())
                 {
                     Height -= 100 * aspectRatio;
                     Top += 50 * aspectRatio;
