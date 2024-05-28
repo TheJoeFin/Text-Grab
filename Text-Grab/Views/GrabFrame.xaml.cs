@@ -1363,8 +1363,17 @@ public partial class GrabFrame : Window
         // Source: StackOverflow, read on Sep. 10, 2021
         // https://stackoverflow.com/a/53698638/7438031
 
-        if (WindowState == WindowState.Maximized || scrollBehavior == ScrollBehavior.None)
+        if (WindowState == WindowState.Maximized 
+            || scrollBehavior == ScrollBehavior.None)
             return;
+
+        if (scrollBehavior == ScrollBehavior.Zoom)
+        {
+            if (!IsFreezeMode)
+                FreezeGrabFrame();
+
+            return;
+        }
 
         e.Handled = true;
         double aspectRatio = (Height - 66) / (Width - 4);
@@ -1619,6 +1628,18 @@ public partial class GrabFrame : Window
             return;
         }
 
+        if (scrollBehavior == ScrollBehavior.Zoom)
+        {
+            if (e.MiddleButton == MouseButtonState.Pressed)
+            {
+                MainZoomBorder.Reset();
+                return;
+            }
+
+            if (!KeyboardExtensions.IsShiftDown() && !KeyboardExtensions.IsCtrlDown())
+                return;
+        }
+
         isSelecting = true;
         clickedPoint = e.GetPosition(RectanglesCanvas);
         RectanglesCanvas.CaptureMouse();
@@ -1660,6 +1681,14 @@ public partial class GrabFrame : Window
 
         if (!isSelecting && !isMiddleDown && movingWordBordersDictionary.Count == 0)
             return;
+
+        if (scrollBehavior == ScrollBehavior.Zoom
+            && !KeyboardExtensions.IsShiftDown()
+            && !KeyboardExtensions.IsCtrlDown())
+        {
+            isSelecting = false;
+            return;
+        }
 
         Point movingPoint = e.GetPosition(RectanglesCanvas);
 
@@ -1705,7 +1734,7 @@ public partial class GrabFrame : Window
         CursorClipper.UnClipCursor();
         RectanglesCanvas.ReleaseMouseCapture();
 
-        if (e.ChangedButton == MouseButton.Middle)
+        if (e.ChangedButton == MouseButton.Middle && scrollBehavior != ScrollBehavior.Zoom)
         {
             isMiddleDown = false;
             FreezeGrabFrame();
@@ -1887,7 +1916,7 @@ new GrabFrameOperationArgs()
     {
         SetRefreshOrOcrFrameBtnVis();
 
-
+        MainZoomBorder.Reset();
         IsOcrValid = false;
         ocrResultOfWindow = null;
         frameContentImageSource = null;
@@ -2348,16 +2377,19 @@ new GrabFrameOperationArgs()
                 NoScrollBehaviorMenuItem.IsChecked = true;
                 ResizeScrollMenuItem.IsChecked = false;
                 ZoomScrollMenuItem.IsChecked = false;
+                MainZoomBorder.CanZoom = false;
                 break;
             case ScrollBehavior.Resize:
                 NoScrollBehaviorMenuItem.IsChecked = false;
                 ResizeScrollMenuItem.IsChecked = true;
                 ZoomScrollMenuItem.IsChecked = false;
+                MainZoomBorder.CanZoom = false;
                 break;
             case ScrollBehavior.Zoom:
                 NoScrollBehaviorMenuItem.IsChecked = false;
                 ResizeScrollMenuItem.IsChecked = false;
                 ZoomScrollMenuItem.IsChecked = true;
+                MainZoomBorder.CanZoom = true;
                 break;
             default:
                 break;

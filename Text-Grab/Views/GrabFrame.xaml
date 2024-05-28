@@ -373,74 +373,76 @@
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
-                <Viewbox Name="CanvasViewBox">
-                    <Grid>
-                        <Image
-                            x:Name="GrabFrameImage"
-                            Grid.Row="1"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Opacity="0"
-                            Stretch="Uniform" />
-                        <Canvas
-                            x:Name="RectanglesCanvas"
-                            Margin="-4,-2,0,0"
-                            Background="Transparent"
-                            Focusable="True"
-                            IsHitTestVisible="True"
-                            MouseDown="RectanglesCanvas_MouseDown"
-                            MouseMove="RectanglesCanvas_MouseMove"
-                            MouseUp="RectanglesCanvas_MouseUp">
-                            <Canvas.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem
-                                        Command="{x:Static local:GrabFrame.PasteCommand}"
-                                        Header="Paste Image"
-                                        InputGestureText="Ctrl + Shift + V" />
-                                    <MenuItem
-                                        Click="OpenImageMenuItem_Click"
-                                        Header="Open Image..."
-                                        InputGestureText="Ctrl + O" />
-                                    <Separator />
-                                    <MenuItem
-                                        x:Name="CopyText"
-                                        Click="CopyText_Click"
-                                        Header="Copy Text" />
-                                    <Separator />
-                                    <MenuItem
-                                        x:Name="AspectRationMI"
-                                        Checked="AspectRationMI_Checked"
-                                        Header="Maintain Aspect Ratio"
-                                        IsCheckable="True"
-                                        IsChecked="True"
-                                        Unchecked="AspectRationMI_Checked" />
-                                    <MenuItem
-                                        x:Name="FreezeMI"
-                                        Click="FreezeMI_Click"
-                                        Header="Toggle Freeze"
-                                        InputGestureText="F" />
-                                    <Separator />
-                                    <MenuItem
-                                        x:Name="TryToNumberMenuItem"
-                                        Click="TryToNumberMenuItem_Click"
-                                        Header="Try To Make _Numbers" />
-                                    <MenuItem
-                                        x:Name="TryToAlphaMenuItem"
-                                        Click="TryToAlphaMenuItem_Click"
-                                        Header="Try To Make _Letters" />
-                                    <MenuItem
-                                        Command="{x:Static local:GrabFrame.MergeWordsCommand}"
-                                        Header="Merge Word Borders"
-                                        InputGestureText="Ctrl + M" />
-                                    <MenuItem
-                                        Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
-                                        Header="_Delete selected words"
-                                        InputGestureText="Del" />
-                                </ContextMenu>
-                            </Canvas.ContextMenu>
-                        </Canvas>
-                    </Grid>
-                </Viewbox>
+                <controls:ZoomBorder x:Name="MainZoomBorder">
+                    <Viewbox Name="CanvasViewBox">
+                        <Grid>
+                            <Image
+                                x:Name="GrabFrameImage"
+                                Grid.Row="1"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Opacity="0"
+                                Stretch="Uniform" />
+                            <Canvas
+                                x:Name="RectanglesCanvas"
+                                Margin="-4,-2,0,0"
+                                Background="Transparent"
+                                Focusable="True"
+                                IsHitTestVisible="True"
+                                MouseDown="RectanglesCanvas_MouseDown"
+                                MouseMove="RectanglesCanvas_MouseMove"
+                                MouseUp="RectanglesCanvas_MouseUp">
+                                <Canvas.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem
+                                            Command="{x:Static local:GrabFrame.PasteCommand}"
+                                            Header="Paste Image"
+                                            InputGestureText="Ctrl + Shift + V" />
+                                        <MenuItem
+                                            Click="OpenImageMenuItem_Click"
+                                            Header="Open Image..."
+                                            InputGestureText="Ctrl + O" />
+                                        <Separator />
+                                        <MenuItem
+                                            x:Name="CopyText"
+                                            Click="CopyText_Click"
+                                            Header="Copy Text" />
+                                        <Separator />
+                                        <MenuItem
+                                            x:Name="AspectRationMI"
+                                            Checked="AspectRationMI_Checked"
+                                            Header="Maintain Aspect Ratio"
+                                            IsCheckable="True"
+                                            IsChecked="True"
+                                            Unchecked="AspectRationMI_Checked" />
+                                        <MenuItem
+                                            x:Name="FreezeMI"
+                                            Click="FreezeMI_Click"
+                                            Header="Toggle Freeze"
+                                            InputGestureText="F" />
+                                        <Separator />
+                                        <MenuItem
+                                            x:Name="TryToNumberMenuItem"
+                                            Click="TryToNumberMenuItem_Click"
+                                            Header="Try To Make _Numbers" />
+                                        <MenuItem
+                                            x:Name="TryToAlphaMenuItem"
+                                            Click="TryToAlphaMenuItem_Click"
+                                            Header="Try To Make _Letters" />
+                                        <MenuItem
+                                            Command="{x:Static local:GrabFrame.MergeWordsCommand}"
+                                            Header="Merge Word Borders"
+                                            InputGestureText="Ctrl + M" />
+                                        <MenuItem
+                                            Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
+                                            Header="_Delete selected words"
+                                            InputGestureText="Del" />
+                                    </ContextMenu>
+                                </Canvas.ContextMenu>
+                            </Canvas>
+                        </Grid>
+                    </Viewbox>
+                </controls:ZoomBorder>
             </Border>
             <Border Grid.Row="2" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid
