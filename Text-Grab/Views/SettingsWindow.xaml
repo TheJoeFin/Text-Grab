@@ -10,7 +10,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab Settings"
     Width="660"
-    Height="800"
+    Height="700"
     MinWidth="200"
     MinHeight="300"
     d:Background="Black"
