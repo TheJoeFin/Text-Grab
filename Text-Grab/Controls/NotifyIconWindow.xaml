@@ -11,14 +11,20 @@
     Width="0"
     Height="0"
     Activated="Window_Activated"
-    Background="Black"
+    Background="Transparent"
     IsHitTestVisible="False"
+    Left="-50"
     Opacity="0"
     ShowInTaskbar="False"
+    ToolTip="Text Grab"
+    Top="-50"
     WindowStyle="ToolWindow"
     mc:Ignorable="d">
     <Grid>
-        <WpfUiIcon:NotifyIcon Icon="/Images/TealSelect40.png" LeftClick="NotifyIcon_LeftClick">
+        <WpfUiIcon:NotifyIcon
+            Icon="/Images/TealSelect40.png"
+            LeftClick="NotifyIcon_LeftClick"
+            ToolTip="Text Grab">
             <WpfUiIcon:NotifyIcon.Menu>
                 <ContextMenu>
                     <MenuItem
@@ -29,6 +35,7 @@
                             <wpfui:SymbolIcon Symbol="Settings24" />
                         </MenuItem.Icon>
                     </MenuItem>
+                    <Separator />
                     <MenuItem
                         x:Name="LastGrabMenuItem"
                         Click="LastGrabMenuItem_Click"
@@ -53,6 +60,7 @@
                             <wpfui:SymbolIcon Symbol="History24" />
                         </MenuItem.Icon>
                     </MenuItem>
+                    <Separator />
                     <MenuItem
                         x:Name="FullscreenGrabMenuItem"
                         Click="FullscreenGrabMenuItem_Click"
@@ -77,6 +85,7 @@
                             <wpfui:SymbolIcon Symbol="WindowEdit20" />
                         </MenuItem.Icon>
                     </MenuItem>
+                    <Separator />
                     <MenuItem
                         x:Name="CloseMenuItem"
                         Click="Exit_Click"
