@@ -339,6 +339,14 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         OwnerGrabFrame?.UndoableWordChange(this, oldWord, true);
     }
 
+    private void MakeSingleLineMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string oldWord = Word;
+        Word = Word.MakeStringSingleLine();
+
+        OwnerGrabFrame?.UndoableWordChange(this, oldWord, true);
+    }
+
     private void WordBorder_MouseEnter(object sender, RoutedEventArgs e)
     {
         if (OwnerGrabFrame?.isCtrlDown is true)
@@ -351,6 +359,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         MoveResizeBorder.Visibility = Visibility.Collapsed;
     }
+
     private void WordBorderControl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (EditWordTextBox.Visibility == Visibility.Collapsed)

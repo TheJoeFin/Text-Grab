@@ -69,7 +69,14 @@
             CanExecute="CanChangeWordBorderExecute"
             Command="{x:Static local:GrabFrame.MergeWordsCommand}"
             Executed="MergeWordBordersExecuted" />
-
+        <CommandBinding
+            CanExecute="CanExecuteGrab"
+            Command="{x:Static local:GrabFrame.GrabCommand}"
+            Executed="GrabExecuted" />
+        <CommandBinding
+            CanExecute="CanExecuteGrab"
+            Command="{x:Static local:GrabFrame.GrabTrimCommand}"
+            Executed="GrabTrimExecuted" />
     </Window.CommandBindings>
 
     <WindowChrome.WindowChrome>
@@ -134,6 +141,17 @@
                             Header="Open Image..."
                             InputGestureText="Ctrl + O" />
                         <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
+                        <Separator />
+                        <MenuItem
+                            Name="GrabMenuItem"
+                            Command="{x:Static local:GrabFrame.GrabCommand}"
+                            Header="_Grab"
+                            InputGestureText="Ctrl + G" />
+                        <MenuItem
+                            Name="GrabTrimSingleMenuItem"
+                            Command="{x:Static local:GrabFrame.GrabTrimCommand}"
+                            Header="Grab text as Single Line"
+                            InputGestureText="Ctrl + Shift + G" />
                         <Separator />
                         <MenuItem
                             Name="SettingsMenuItem"
@@ -216,6 +234,32 @@
                             InputGestureText="Del" />
                         <Separator />
                     </MenuItem>
+                    <MenuItem Header="View">
+                        <ui:MenuItem
+                            x:Name="NoScrollBehaviorMenuItem"
+                            Click="ScrollBehaviorMenuItem_Click"
+                            Header="Scroll does nothing"
+                            IsCheckable="True"
+                            Tag="None" />
+                        <MenuItem
+                            x:Name="ResizeScrollMenuItem"
+                            Click="ScrollBehaviorMenuItem_Click"
+                            Header="Scroll resizes Grab Frame"
+                            IsCheckable="True"
+                            Tag="Resize" />
+                        <MenuItem
+                            x:Name="ZoomScrollMenuItem"
+                            Click="ScrollBehaviorMenuItem_Click"
+                            Header="Scroll Zooms Grab Frame (preview)"
+                            IsCheckable="True"
+                            Tag="Zoom" />
+                        <Separator />
+                        <MenuItem
+                            x:Name="CloseOnGrabMenuItem"
+                            Click="CloseOnGrabMenuItem_Click"
+                            Header="Close Frame on Grab"
+                            IsCheckable="True" />
+                    </MenuItem>
                     <MenuItem Header="_Help">
                         <MenuItem
                             x:Name="ContactMenuItem"
@@ -244,11 +288,21 @@
                     Orientation="Horizontal">
                     <Image
                         x:Name="WindowIcon"
-                        Width="22"
-                        Height="22"
+                        Width="20"
+                        Height="20"
                         Margin="4,2,4,4"
                         Source="{StaticResource TextGrabIcon}"
-                        Stretch="UniformToFill" />
+                        Stretch="UniformToFill">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Opacity" Value="0.6" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
                     <TextBlock
                         Margin="4,-4,0,0"
                         HorizontalAlignment="Center"
@@ -259,7 +313,7 @@
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
-                                        <Setter Property="Foreground" Value="{DynamicResource WindowTitleBarInactiveText}" />
+                                        <Setter Property="Opacity" Value="0.6" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -319,74 +373,76 @@
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
-                <Viewbox Name="CanvasViewBox">
-                    <Grid>
-                        <Image
-                            x:Name="GrabFrameImage"
-                            Grid.Row="1"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Opacity="0"
-                            Stretch="Uniform" />
-                        <Canvas
-                            x:Name="RectanglesCanvas"
-                            Margin="-4,-2,0,0"
-                            Background="Transparent"
-                            Focusable="True"
-                            IsHitTestVisible="True"
-                            MouseDown="RectanglesCanvas_MouseDown"
-                            MouseMove="RectanglesCanvas_MouseMove"
-                            MouseUp="RectanglesCanvas_MouseUp">
-                            <Canvas.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem
-                                        Command="{x:Static local:GrabFrame.PasteCommand}"
-                                        Header="Paste Image"
-                                        InputGestureText="Ctrl + Shift + V" />
-                                    <MenuItem
-                                        Click="OpenImageMenuItem_Click"
-                                        Header="Open Image..."
-                                        InputGestureText="Ctrl + O" />
-                                    <Separator />
-                                    <MenuItem
-                                        x:Name="CopyText"
-                                        Click="CopyText_Click"
-                                        Header="Copy Text" />
-                                    <Separator />
-                                    <MenuItem
-                                        x:Name="AspectRationMI"
-                                        Checked="AspectRationMI_Checked"
-                                        Header="Maintain Aspect Ratio"
-                                        IsCheckable="True"
-                                        IsChecked="True"
-                                        Unchecked="AspectRationMI_Checked" />
-                                    <MenuItem
-                                        x:Name="FreezeMI"
-                                        Click="FreezeMI_Click"
-                                        Header="Toggle Freeze"
-                                        InputGestureText="F" />
-                                    <Separator />
-                                    <MenuItem
-                                        x:Name="TryToNumberMenuItem"
-                                        Click="TryToNumberMenuItem_Click"
-                                        Header="Try To Make _Numbers" />
-                                    <MenuItem
-                                        x:Name="TryToAlphaMenuItem"
-                                        Click="TryToAlphaMenuItem_Click"
-                                        Header="Try To Make _Letters" />
-                                    <MenuItem
-                                        Command="{x:Static local:GrabFrame.MergeWordsCommand}"
-                                        Header="Merge Word Borders"
-                                        InputGestureText="Ctrl + M" />
-                                    <MenuItem
-                                        Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
-                                        Header="_Delete selected words"
-                                        InputGestureText="Del" />
-                                </ContextMenu>
-                            </Canvas.ContextMenu>
-                        </Canvas>
-                    </Grid>
-                </Viewbox>
+                <controls:ZoomBorder x:Name="MainZoomBorder">
+                    <Viewbox Name="CanvasViewBox">
+                        <Grid>
+                            <Image
+                                x:Name="GrabFrameImage"
+                                Grid.Row="1"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Opacity="0"
+                                Stretch="Uniform" />
+                            <Canvas
+                                x:Name="RectanglesCanvas"
+                                Margin="-4,-2,0,0"
+                                Background="Transparent"
+                                Focusable="True"
+                                IsHitTestVisible="True"
+                                MouseDown="RectanglesCanvas_MouseDown"
+                                MouseMove="RectanglesCanvas_MouseMove"
+                                MouseUp="RectanglesCanvas_MouseUp">
+                                <Canvas.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem
+                                            Command="{x:Static local:GrabFrame.PasteCommand}"
+                                            Header="Paste Image"
+                                            InputGestureText="Ctrl + Shift + V" />
+                                        <MenuItem
+                                            Click="OpenImageMenuItem_Click"
+                                            Header="Open Image..."
+                                            InputGestureText="Ctrl + O" />
+                                        <Separator />
+                                        <MenuItem
+                                            x:Name="CopyText"
+                                            Click="CopyText_Click"
+                                            Header="Copy Text" />
+                                        <Separator />
+                                        <MenuItem
+                                            x:Name="AspectRationMI"
+                                            Checked="AspectRationMI_Checked"
+                                            Header="Maintain Aspect Ratio"
+                                            IsCheckable="True"
+                                            IsChecked="True"
+                                            Unchecked="AspectRationMI_Checked" />
+                                        <MenuItem
+                                            x:Name="FreezeMI"
+                                            Click="FreezeMI_Click"
+                                            Header="Toggle Freeze"
+                                            InputGestureText="F" />
+                                        <Separator />
+                                        <MenuItem
+                                            x:Name="TryToNumberMenuItem"
+                                            Click="TryToNumberMenuItem_Click"
+                                            Header="Try To Make _Numbers" />
+                                        <MenuItem
+                                            x:Name="TryToAlphaMenuItem"
+                                            Click="TryToAlphaMenuItem_Click"
+                                            Header="Try To Make _Letters" />
+                                        <MenuItem
+                                            Command="{x:Static local:GrabFrame.MergeWordsCommand}"
+                                            Header="Merge Word Borders"
+                                            InputGestureText="Ctrl + M" />
+                                        <MenuItem
+                                            Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
+                                            Header="_Delete selected words"
+                                            InputGestureText="Del" />
+                                    </ContextMenu>
+                                </Canvas.ContextMenu>
+                            </Canvas>
+                        </Grid>
+                    </Viewbox>
+                </controls:ZoomBorder>
             </Border>
             <Border Grid.Row="2" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid
@@ -592,7 +648,7 @@
                         Margin="0"
                         ButtonSymbol="Copy24"
                         ButtonText="Grab"
-                        Click="GrabBTN_Click"
+                        Command="{x:Static local:GrabFrame.GrabCommand}"
                         ToolTip="Grab text in the Grab Frame" />
                 </Grid>
             </Border>
