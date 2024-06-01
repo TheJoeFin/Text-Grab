@@ -27,7 +27,7 @@
                 x:Name="VersionTextblock"
                 VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
-                Text="Version 4.X.X WPFUI Tray" />
+                Text="Version 4.5-beta1" />
 
             <ui:HyperlinkButton
                 x:Name="OpenExeFolderButton"

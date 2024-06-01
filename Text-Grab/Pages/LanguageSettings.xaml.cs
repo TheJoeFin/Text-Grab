@@ -122,7 +122,8 @@ public partial class LanguageSettings : Page
             Process? process = Process.Start(startInfo);
             // string errors = process?.StandardError.ReadToEnd();
             // string output = process?.StandardOutput.ReadToEnd();
-            await process?.WaitForExitAsync();
+            if (process is not null)
+                await process.WaitForExitAsync();
 
             // if (!string.IsNullOrEmpty(errors))
             //     ErrorsAndOutputText.Text += Environment.NewLine + errors;

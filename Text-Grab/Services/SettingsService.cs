@@ -39,7 +39,7 @@ internal class SettingsService : IDisposable
         foreach (KeyValuePair<string, object> localSetting in _localSettings.Values)
         {
             try { ClassicSettings[localSetting.Key] = localSetting.Value; }
-            catch (SettingsPropertyNotFoundException ex) { Debug.WriteLine($"Failed to migrate {localSetting.Key} of value {localSetting.Value}"); } // continue, just skip the setting
+            catch (SettingsPropertyNotFoundException ex) { Debug.WriteLine($"Failed to migrate {localSetting.Key} of value {localSetting.Value}, exception message: {ex.Message}"); } // continue, just skip the setting
             catch (Exception ex)
             {
                 Debug.WriteLine($"Failed to migrate setting {localSetting.Key} from ApplicationDataContainer {ex.Message}");
