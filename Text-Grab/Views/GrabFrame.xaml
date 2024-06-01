@@ -250,7 +250,7 @@
                         <MenuItem
                             x:Name="ZoomScrollMenuItem"
                             Click="ScrollBehaviorMenuItem_Click"
-                            Header="Scroll Zooms Grab Frame"
+                            Header="Scroll Zooms Grab Frame (preview)"
                             IsCheckable="True"
                             Tag="Zoom" />
                         <Separator />
