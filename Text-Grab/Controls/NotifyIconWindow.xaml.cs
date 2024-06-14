@@ -29,6 +29,7 @@ public partial class NotifyIconWindow : Window
     private void Window_Activated(object sender, System.EventArgs e)
     {
         Hide();
+        NotifyIcon.Visibility = Visibility.Visible;
     }
 
     private void EditWindowMenuItem_Click(object sender, RoutedEventArgs e)
@@ -64,5 +65,11 @@ public partial class NotifyIconWindow : Window
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
     {
         SettingsWindow sw = new(); sw.Show();
+    }
+
+    private void NotifyIcon_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (!NotifyIcon.IsVisible)
+            NotifyIcon.Visibility = Visibility.Visible;
     }
 }

@@ -15,14 +15,16 @@
     IsHitTestVisible="False"
     Left="-50"
     Opacity="0"
-    ShowInTaskbar="False"
+    ShowInTaskbar="True"
     ToolTip="Text Grab"
     Top="-50"
     WindowStyle="ToolWindow"
     mc:Ignorable="d">
     <Grid>
         <WpfUiIcon:NotifyIcon
+            x:Name="NotifyIcon"
             Icon="/Images/TealSelect40.png"
+            IsVisibleChanged="NotifyIcon_IsVisibleChanged"
             LeftClick="NotifyIcon_LeftClick"
             ToolTip="Text Grab">
             <WpfUiIcon:NotifyIcon.Menu>
