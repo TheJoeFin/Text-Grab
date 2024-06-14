@@ -35,7 +35,7 @@
             IsEnabled="{Binding IsChecked, ElementName=RunInBackgroundChkBx, Mode=OneWay}"
             Unchecked="GlobalHotkeysCheckbox_Unchecked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
-                <Run FontWeight="Bold">Global hotkeys (clear text to disable hotkey):</Run>
+                <Run FontWeight="Bold">Global hotkeys</Run>
             </TextBlock>
         </ui:ToggleSwitch>
         <StackPanel

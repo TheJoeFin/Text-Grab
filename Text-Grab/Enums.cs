@@ -77,3 +77,10 @@ public enum VirtualKeyCodes : short
     RightButton = 0x02,
     MiddleButton = 0x04
 }
+
+public enum ScrollBehavior
+{
+    None = 0,
+    Resize = 1,
+    Zoom = 2,
+}

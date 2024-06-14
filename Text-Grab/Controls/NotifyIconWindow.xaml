@@ -1,0 +1,103 @@
+﻿<Window
+    x:Class="Text_Grab.Controls.NotifyIconWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:WpfUiIcon="http://schemas.lepo.co/wpfui/2022/xaml/tray"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="NotifyIconWindow"
+    Width="0"
+    Height="0"
+    Activated="Window_Activated"
+    Background="Transparent"
+    IsHitTestVisible="False"
+    Left="-50"
+    Opacity="0"
+    ShowInTaskbar="True"
+    ToolTip="Text Grab"
+    Top="-50"
+    WindowStyle="ToolWindow"
+    mc:Ignorable="d">
+    <Grid>
+        <WpfUiIcon:NotifyIcon
+            x:Name="NotifyIcon"
+            Icon="/Images/TealSelect40.png"
+            IsVisibleChanged="NotifyIcon_IsVisibleChanged"
+            LeftClick="NotifyIcon_LeftClick"
+            ToolTip="Text Grab">
+            <WpfUiIcon:NotifyIcon.Menu>
+                <ContextMenu>
+                    <MenuItem
+                        x:Name="SettingsMenuItem"
+                        Click="SettingsMenuItem_Click"
+                        Header="Settings">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="Settings24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+                        x:Name="LastGrabMenuItem"
+                        Click="LastGrabMenuItem_Click"
+                        Header="Edit Last Grab">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="ImageEdit24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="LookupMenuItem"
+                        Click="LookupMenuItem_Click"
+                        Header="Quick Simple Lookup">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="TextBulletListSquareSearch20" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="PreviousRegionMenuItem"
+                        Click="PreviousRegionMenuItem_Click"
+                        Header="Grab Previous Region">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="History24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+                        x:Name="FullscreenGrabMenuItem"
+                        Click="FullscreenGrabMenuItem_Click"
+                        Header="Fullscreen Grab">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="SlideAdd24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="GrabFrameMenuItem"
+                        Click="GrabFrameMenuItem_Click"
+                        Header="Grab Frame">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="PanelBottom20" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="EditWindowMenuItem"
+                        Click="EditWindowMenuItem_Click"
+                        Header="Edit Text Window">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="WindowEdit20" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+                        x:Name="CloseMenuItem"
+                        Click="Exit_Click"
+                        Header="Close Text Grab">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="Dismiss24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </WpfUiIcon:NotifyIcon.Menu>
+        </WpfUiIcon:NotifyIcon>
+    </Grid>
+</Window>

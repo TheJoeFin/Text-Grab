@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
+using Text_Grab.Controls;
 using Text_Grab.Models;
-using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Views;
 
@@ -20,57 +17,9 @@ public static class NotifyIconUtilities
         {
             return;
         }
-
-        NotifyIcon icon = new();
-        icon.Text = "Text Grab";
-        icon.Icon = new Icon(System.Windows.Application.GetResourceStream(new Uri("/TealSelect.ico", UriKind.Relative)).Stream);
-        icon.Visible = true;
-
-        ContextMenuStrip? contextMenu = new();
-
-        ToolStripMenuItem? settingsItem = new("&Settings");
-        settingsItem.Click += (s, e) => { SettingsWindow sw = new(); sw.Show(); };
-        ToolStripMenuItem? editLastItem = new("&Edit Last Grab");
-        editLastItem.Click += (s, e) => { Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame(); };
-        ToolStripMenuItem? quickSimpleLookupItem = new("&Quick Simple Lookup");
-        quickSimpleLookupItem.Click += (s, e) => { QuickSimpleLookup qsl = new(); qsl.Show(); };
-        ToolStripMenuItem? previousGrabRegion = new("&Grab Previous Region");
-        previousGrabRegion.Click += async (s, e) => { await OcrUtilities.GetTextFromPreviousFullscreenRegion(); };
-        ToolStripMenuItem? fullScreenGrabItem = new("&Fullscreen Grab");
-        fullScreenGrabItem.Click += (s, e) => { WindowUtilities.LaunchFullScreenGrab(); };
-        ToolStripMenuItem? grabFrameItem = new("&Grab Frame");
-        grabFrameItem.Click += (s, e) => { GrabFrame gf = new(); gf.Show(); };
-        ToolStripMenuItem? editTextWindowItem = new("&Edit Text Window");
-        editTextWindowItem.Click += (s, e) => { EditTextWindow etw = new(); etw.Show(); };
-
-        ToolStripMenuItem? exitItem = new("&Close");
-        exitItem.Click += (s, e) => { System.Windows.Application.Current.Shutdown(); };
-
-        contextMenu.Items.AddRange(
-            new ToolStripMenuItem[] {
-                fullScreenGrabItem,
-                previousGrabRegion,
-                grabFrameItem,
-                editTextWindowItem,
-                quickSimpleLookupItem,
-                editLastItem,
-                settingsItem,
-                exitItem
-            }
-        );
-        icon.ContextMenuStrip = contextMenu;
-
-        icon.MouseClick += (s, e) =>
-        {
-            if (e.Button == MouseButtons.Left)
-                App.DefaultLaunch();
-        };
-
-        icon.Disposed += trayIcon_Disposed;
-
         RegisterHotKeys(app);
 
-        app.TextGrabIcon = icon;
+        app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
     }
 
     public static void RegisterHotKeys(App app)

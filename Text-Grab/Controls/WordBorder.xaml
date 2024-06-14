@@ -83,6 +83,11 @@
                 HorizontalAlignment="Left"
                 Click="TryToAlphaMenuItem_Click"
                 Header="Try To Make _Letters" />
+            <MenuItem
+                x:Name="MakeSingleLineMenuItem"
+                HorizontalAlignment="Left"
+                Click="MakeSingleLineMenuItem_Click"
+                Header="Make Text _Single Line" />
             <Separator />
             <MenuItem
                 x:Name="MergeWordBordersMenuItem"

@@ -197,6 +197,7 @@ public partial class GeneralSettings : Page
 
         DefaultSettings.RunInTheBackground = runInBackgroundSwitch.IsChecked is true;
         ImplementAppOptions.ImplementBackgroundOption(DefaultSettings.RunInTheBackground);
+        DefaultSettings.Save();
     }
 
     private void SystemThemeRdBtn_Checked(object sender, RoutedEventArgs e)
