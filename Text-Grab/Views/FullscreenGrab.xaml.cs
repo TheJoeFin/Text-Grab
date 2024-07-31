@@ -232,8 +232,8 @@ public partial class FullscreenGrab : Window
             RegionClickCanvas.ContextMenu.IsOpen = false;
             await Task.Delay(150);
             SetImageToBackground();
-
-            if (IsMouseOver)
+            
+            if (this.IsMouseInWindow())
                 TopButtonsStackPanel.Visibility = Visibility.Visible;
         }
         else
