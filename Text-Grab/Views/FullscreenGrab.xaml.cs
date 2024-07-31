@@ -425,16 +425,8 @@ public partial class FullscreenGrab : Window
         {
             double currentScreenLeft = 0;
             double currentScreenTop = 0;
-            double currentScreenRight = CurrentScreen.Bounds.Right / dpiScale.Value.DpiScaleX;
-            double currentScreenBottom = CurrentScreen.Bounds.Bottom / dpiScale.Value.DpiScaleY;
-
-            // If it is a secondary screen, recalculate the coordinates
-            if (CurrentScreen.Bounds.Left != 0 || CurrentScreen.Bounds.Top != 0)
-            {
-                currentScreenRight = (CurrentScreen.Bounds.Right + CurrentScreen.Bounds.Width) / dpiScale.Value.DpiScaleX;
-                currentScreenBottom = (CurrentScreen.Bounds.Bottom + CurrentScreen.Bounds.Height) / dpiScale.Value.DpiScaleY;
-            }
-
+            double currentScreenRight = CurrentScreen.Bounds.Width / dpiScale.Value.DpiScaleX;
+            double currentScreenBottom = CurrentScreen.Bounds.Height / dpiScale.Value.DpiScaleY;
 
             leftValue = Math.Clamp(leftValue, currentScreenLeft, (currentScreenRight - selectBorder.Width));
             topValue = Math.Clamp(topValue, currentScreenTop, (currentScreenBottom - selectBorder.Height));
