@@ -288,17 +288,28 @@ public static class WindowUtilities
         if (shouldShutDown)
             Application.Current.Shutdown();
     }
+    
+    public static bool GetMousePosition(out Point mousePosition)
+    {
+        if (GetCursorPos(out POINT point))
+        {
+            mousePosition = new Point(point.X, point.Y);
+            return true;
+        }
+        mousePosition = default;
+        return false;
+    }
 
     public static bool IsMouseInWindow(this Window window)
     {
-        GetCursorPos(out POINT mousePosition);
+        GetMousePosition(out Point mousePosition);
 
         DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(window);
         Point absPosPoint = window.GetAbsolutePosition();
         Rect windowRect = new(absPosPoint.X, absPosPoint.Y,
             window.ActualWidth * dpi.DpiScaleX,
             window.ActualHeight * dpi.DpiScaleY);
-        return windowRect.Contains(new Point(mousePosition.X, mousePosition.Y));
+        return windowRect.Contains(mousePosition);
     }
 
     #region DLLImport

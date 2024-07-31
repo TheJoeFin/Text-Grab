@@ -423,10 +423,18 @@ public partial class FullscreenGrab : Window
 
         if (CurrentScreen is not null && dpiScale is not null)
         {
-            double currentScreenLeft = CurrentScreen.Bounds.Left; // Should always be 0
+            double currentScreenLeft = 0;
+            double currentScreenTop = 0;
             double currentScreenRight = CurrentScreen.Bounds.Right / dpiScale.Value.DpiScaleX;
-            double currentScreenTop = CurrentScreen.Bounds.Top; // Should always be 0
             double currentScreenBottom = CurrentScreen.Bounds.Bottom / dpiScale.Value.DpiScaleY;
+
+            // If it is a secondary screen, recalculate the coordinates
+            if (CurrentScreen.Bounds.Left != 0 || CurrentScreen.Bounds.Top != 0)
+            {
+                currentScreenRight = (CurrentScreen.Bounds.Right + CurrentScreen.Bounds.Width) / dpiScale.Value.DpiScaleX;
+                currentScreenBottom = (CurrentScreen.Bounds.Bottom + CurrentScreen.Bounds.Height) / dpiScale.Value.DpiScaleY;
+            }
+
 
             leftValue = Math.Clamp(leftValue, currentScreenLeft, (currentScreenRight - selectBorder.Width));
             topValue = Math.Clamp(topValue, currentScreenTop, (currentScreenBottom - selectBorder.Height));
@@ -509,13 +517,12 @@ public partial class FullscreenGrab : Window
         Canvas.SetLeft(selectBorder, clickedPoint.X);
         Canvas.SetTop(selectBorder, clickedPoint.Y);
 
-        DisplayInfo[] screens = DisplayInfo.AllDisplayInfos;
-        System.Windows.Point formsPoint = new((int)clickedPoint.X, (int)clickedPoint.Y);
-        foreach (DisplayInfo scr in screens)
+        WindowUtilities.GetMousePosition(out System.Windows.Point mousePoint);
+        foreach (DisplayInfo? screen in DisplayInfo.AllDisplayInfos)
         {
-            Rect bound = scr.ScaledBounds();
-            if (bound.Contains(formsPoint))
-                CurrentScreen = scr;
+            Rect bound = screen.ScaledBounds();
+            if (bound.Contains(mousePoint))
+                CurrentScreen = screen;
         }
     }
 
