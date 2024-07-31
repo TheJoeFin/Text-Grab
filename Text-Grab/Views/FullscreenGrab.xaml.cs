@@ -495,8 +495,8 @@ public partial class FullscreenGrab : Window
         RegionClickCanvas.CaptureMouse();
         CursorClipper.ClipCursor(this);
         clickedPoint = e.GetPosition(this);
-        selectBorder.Height = 1;
-        selectBorder.Width = 1;
+        selectBorder.Height = 2;
+        selectBorder.Width = 2;
 
         dpiScale = VisualTreeHelper.GetDpi(this);
 
