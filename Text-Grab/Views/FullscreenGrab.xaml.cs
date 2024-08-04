@@ -232,8 +232,8 @@ public partial class FullscreenGrab : Window
             RegionClickCanvas.ContextMenu.IsOpen = false;
             await Task.Delay(150);
             SetImageToBackground();
-
-            if (IsMouseOver)
+            
+            if (this.IsMouseInWindow())
                 TopButtonsStackPanel.Visibility = Visibility.Visible;
         }
         else
@@ -423,10 +423,10 @@ public partial class FullscreenGrab : Window
 
         if (CurrentScreen is not null && dpiScale is not null)
         {
-            double currentScreenLeft = CurrentScreen.Bounds.Left; // Should always be 0
-            double currentScreenRight = CurrentScreen.Bounds.Right / dpiScale.Value.DpiScaleX;
-            double currentScreenTop = CurrentScreen.Bounds.Top; // Should always be 0
-            double currentScreenBottom = CurrentScreen.Bounds.Bottom / dpiScale.Value.DpiScaleY;
+            double currentScreenLeft = 0;
+            double currentScreenTop = 0;
+            double currentScreenRight = CurrentScreen.Bounds.Width / dpiScale.Value.DpiScaleX;
+            double currentScreenBottom = CurrentScreen.Bounds.Height / dpiScale.Value.DpiScaleY;
 
             leftValue = Math.Clamp(leftValue, currentScreenLeft, (currentScreenRight - selectBorder.Width));
             topValue = Math.Clamp(topValue, currentScreenTop, (currentScreenBottom - selectBorder.Height));
@@ -495,8 +495,8 @@ public partial class FullscreenGrab : Window
         RegionClickCanvas.CaptureMouse();
         CursorClipper.ClipCursor(this);
         clickedPoint = e.GetPosition(this);
-        selectBorder.Height = 1;
-        selectBorder.Width = 1;
+        selectBorder.Height = 2;
+        selectBorder.Width = 2;
 
         dpiScale = VisualTreeHelper.GetDpi(this);
 
@@ -509,13 +509,12 @@ public partial class FullscreenGrab : Window
         Canvas.SetLeft(selectBorder, clickedPoint.X);
         Canvas.SetTop(selectBorder, clickedPoint.Y);
 
-        DisplayInfo[] screens = DisplayInfo.AllDisplayInfos;
-        System.Windows.Point formsPoint = new((int)clickedPoint.X, (int)clickedPoint.Y);
-        foreach (DisplayInfo scr in screens)
+        WindowUtilities.GetMousePosition(out System.Windows.Point mousePoint);
+        foreach (DisplayInfo? screen in DisplayInfo.AllDisplayInfos)
         {
-            Rect bound = scr.ScaledBounds();
-            if (bound.Contains(formsPoint))
-                CurrentScreen = scr;
+            Rect bound = screen.ScaledBounds();
+            if (bound.Contains(mousePoint))
+                CurrentScreen = screen;
         }
     }
 
