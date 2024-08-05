@@ -596,7 +596,7 @@ public partial class FullscreenGrab : Window
         if (LanguagesComboBox.SelectedItem is TessLang tessLang)
             tessTag = tessLang.LanguageTag;
 
-        bool isSmallClick = (regionScaled.Width < 3 || regionScaled.Height < 3);
+        bool isSmallClick = (selectBorder.Width < 3 || selectBorder.Height < 3);
 
         bool isSingleLine = SingleLineMenuItem is not null && SingleLineMenuItem.IsChecked;
         bool isTable = TableMenuItem is not null && TableMenuItem.IsChecked;
