@@ -1,7 +1,9 @@
 ﻿using Dapplo.Windows.User32;
+using Fasetto.Word;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,7 +33,7 @@ public static class WindowUtilities
             storedPositionString = AppUtilities.TextGrabSettings.EditTextWindowSizeAndPosition;
 
         if (passedWindow is GrabFrame)
-            storedPositionString =  AppUtilities.TextGrabSettings.GrabFrameWindowSizeAndPosition;
+            storedPositionString = AppUtilities.TextGrabSettings.GrabFrameWindowSizeAndPosition;
 
         List<string> storedPosition = new(storedPositionString.Split(','));
 
@@ -286,4 +288,35 @@ public static class WindowUtilities
         if (shouldShutDown)
             Application.Current.Shutdown();
     }
+    
+    public static bool GetMousePosition(out Point mousePosition)
+    {
+        if (GetCursorPos(out POINT point))
+        {
+            mousePosition = new Point(point.X, point.Y);
+            return true;
+        }
+        mousePosition = default;
+        return false;
+    }
+
+    public static bool IsMouseInWindow(this Window window)
+    {
+        GetMousePosition(out Point mousePosition);
+
+        DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(window);
+        Point absPosPoint = window.GetAbsolutePosition();
+        Rect windowRect = new(absPosPoint.X, absPosPoint.Y,
+            window.ActualWidth * dpi.DpiScaleX,
+            window.ActualHeight * dpi.DpiScaleY);
+        return windowRect.Contains(mousePosition);
+    }
+
+    #region DLLImport
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    static extern bool GetCursorPos(out POINT lpPoint);
+
+    #endregion
 }
