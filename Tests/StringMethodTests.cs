@@ -81,9 +81,9 @@ to throw off any easy check";
 
     [Theory]
     [InlineData("", "")]
-    [InlineData("Hello, world! 0123456789", "Hello, world! ol23h5678g")]
+    [InlineData("Hello, world! 0123456789", "Hello, world! olz3hSb7Bg")]
     [InlineData("Foo 4r b4r", "Foo hr bhr")]
-    [InlineData("B4zz 9zzl3", "Bhzz gzzl3")]
+    [InlineData("B4zz5 9zzl3", "BhzzS gzzl3")]
     [InlineData("abcdefghijklmnop", "abcdefghijklmnop")]
     public void TryFixToLetters_ReplacesDigitsWithLetters_AsExpected(string input, string expected)
     {
@@ -106,10 +106,10 @@ to throw off any easy check";
 
     [Theory]
     [InlineData("", "")]
-    [InlineData("Hello, world! 0123456789", "He110, w0r1d! 0123456789")]
-    [InlineData("Foo 4r b4r", "F00 4r b4r")]
-    [InlineData("B4zz 9zzl3", "B4zz 9zz13")]
-    [InlineData("abcdefghijklmnop", "ab0def9h1jk1mn0p")]
+    [InlineData("Hello, world! 0123456789", "4e110, w0r1d! 0123456789")]
+    [InlineData("Foo 4r b4r", "F00 4r 64r")]
+    [InlineData("B4zzS 9zzl3", "84225 92213")]
+    [InlineData("abcdefghijklmnopqrs", "a60def941jk1mn0pqr5")]
     public void TryFixToLetters_ReplacesLettersWithDigits_AsExpected(string input, string expected)
     {
         // Act

@@ -8,13 +8,15 @@ namespace Text_Grab.Utilities;
 
 public static class StringMethods
 {
-    public static readonly List<Char> specialCharList = new()
-    { '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')', '*', '+', '?', '=' };
+    public static readonly List<Char> specialCharList = [
+        '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')',
+        '*', '+', '?', '=' ];
 
-    public static readonly List<Char> ReservedChars = new()
-    { ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+', ',', '.', ';', '=', '[', ']', '!', '@' };
+    public static readonly List<Char> ReservedChars = [
+        ' ', '"', '*', '/', ':', '<', '>', '?', '\\', '|', '+',
+        ',', '.', ';', '=', '[', ']', '!', '@' ];
 
-    public static readonly Dictionary<char, char> greekCyrillicLatinMap = new()
+    public static readonly Dictionary<char, char> GreekCyrillicLatinMap = new()
     {
         // Similar Looking Greek characters
         {'Γ', 'r'}, {'Δ', 'A'}, {'Θ', 'O'}, {'Λ', 'A'}, {'Ξ', 'E'},
@@ -43,41 +45,42 @@ public static class StringMethods
         {'ø', 'e'},
     };
 
-    public static Dictionary<char, char> NumbersToLetters = new()
+    public static readonly Dictionary<char, char> NumbersToLetters = new()
     {
-        {'0', 'o'}, {'4', 'h'}, {'9', 'g'}, {'1', 'l'}
+        {'0', 'o'}, {'4', 'h'}, {'9', 'g'}, {'1', 'l'}, {'8', 'B'},
+        {'5', 'S'}, {'6', 'b'}, {'2', 'z' }
     };
 
-    public static Dictionary<char, char> LettersToNumbers = new()
+    public static readonly Dictionary<char, char> LettersToNumbers = new()
     {
         {'o', '0'}, {'O', '0'}, {'Q', '0'}, {'c', '0'}, {'C', '0'},
-        {'i', '1'}, {'I', '1'}, {'l', '1'}, {'g', '9'}
+        {'i', '1'}, {'I', '1'}, {'l', '1'}, {'g', '9'}, {'G', '9'},
+        {'h', '4'}, {'H', '4'}, {'s', '5'}, {'S', '5'}, {'B', '8'},
+        {'b', '6'}, {'z', '2'}, {'Z', '2'}
     };
 
     public static string ReplaceWithDictionary(this string str, Dictionary<char, char> dict)
     {
-        var sb = new StringBuilder();
+        StringBuilder sb = new();
 
         foreach (char c in str)
-        {
-            sb.Append(dict.ContainsKey(c) ? dict[c] : c);
-        }
+            sb.Append(dict.TryGetValue(c, out char value) ? value : c);
 
         return sb.ToString();
     }
 
     public static string ReplaceGreekOrCyrillicWithLatin(this string str)
     {
-        return str.ReplaceWithDictionary(greekCyrillicLatinMap);
+        return str.ReplaceWithDictionary(GreekCyrillicLatinMap);
     }
 
-    public static IEnumerable<int> AllIndexesOf(this string str, string searchstring)
+    public static IEnumerable<int> AllIndexesOf(this string str, string searchString)
     {
-        int minIndex = str.IndexOf(searchstring);
+        int minIndex = str.IndexOf(searchString);
         while (minIndex != -1)
         {
             yield return minIndex;
-            minIndex = str.IndexOf(searchstring, minIndex + searchstring.Length);
+            minIndex = str.IndexOf(searchString, minIndex + searchString.Length);
         }
     }
 
@@ -102,7 +105,7 @@ public static class StringMethods
 
         // Check if the cursor is at a space
         if (char.IsWhiteSpace(input[cursorPosition]))
-            cursorPosition = findNearestLetterIndex(input, cursorPosition);
+            cursorPosition = FindNearestLetterIndex(input, cursorPosition);
 
         // Find the start and end of the word by moving the cursor
         // backwards and forwards until we find a non-letter character.
@@ -132,7 +135,7 @@ public static class StringMethods
         return input.Substring(start, length);
     }
 
-    private static int findNearestLetterIndex(string input, int cursorPosition)
+    private static int FindNearestLetterIndex(string input, int cursorPosition)
     {
         Math.Clamp(cursorPosition, 0, input.Length - 1);
 
@@ -242,14 +245,14 @@ public static class StringMethods
     public static string TryFixEveryWordLetterNumberErrors(this string stringToFix)
     {
         string[] listOfWords = stringToFix.Split(' ');
-        List<string> fixedWords = new();
+        List<string> fixedWords = [];
 
         foreach (string word in listOfWords)
         {
             string newWord = word.TryFixNumberLetterErrors();
             fixedWords.Add(newWord);
         }
-        string joinedString = string.Join(' ', fixedWords.ToArray());
+        string joinedString = string.Join(' ', [.. fixedWords]);
         joinedString = joinedString.Replace("\t ", "\t");
         joinedString = joinedString.Replace("\r ", "\r");
         joinedString = joinedString.Replace("\n ", "\n");
@@ -276,7 +279,7 @@ public static class StringMethods
         if (workingString[0] == ' ')
             workingString.Remove(0, 1);
 
-        if (workingString[workingString.Length - 1] == ' ')
+        if (workingString[^1] == ' ')
             workingString.Remove(workingString.Length - 1, 1);
 
         return workingString.ToString();
@@ -344,8 +347,8 @@ public static class StringMethods
     public class CharRun
     {
         public CharType TypeOfChar { get; set; }
-        public Char Character { get; set; }
-        public int numberOfRun { get; set; }
+        public char Character { get; set; }
+        public int NumberOfRun { get; set; }
     }
 
     public static string ReplaceReservedCharacters(this string stringToClean)
@@ -353,7 +356,7 @@ public static class StringMethods
         StringBuilder sb = new();
         sb.Append(stringToClean);
 
-        foreach (Char reservedChar in ReservedChars)
+        foreach (char reservedChar in ReservedChars)
             sb.Replace(reservedChar, '-');
 
         return Regex.Replace(sb.ToString(), @"-+", "-");
@@ -382,13 +385,13 @@ public static class StringMethods
         foreach (char c in stringToExtract)
         {
             CharType thisCharType = CharType.Other;
-            if (Char.IsWhiteSpace(c))
+            if (char.IsWhiteSpace(c))
                 thisCharType = CharType.Space;
             else if (specialCharList.Contains(c))
                 thisCharType = CharType.Special;
-            else if (Char.IsLetter(c))
+            else if (char.IsLetter(c))
                 thisCharType = CharType.Letter;
-            else if (Char.IsNumber(c))
+            else if (char.IsNumber(c))
                 thisCharType = CharType.Number;
 
             if (thisCharType == charRunList.LastOrDefault()?.TypeOfChar)
@@ -396,11 +399,11 @@ public static class StringMethods
                 if (thisCharType == CharType.Other)
                 {
                     if (c == charRunList.Last().Character)
-                        charRunList.Last().numberOfRun++;
+                        charRunList.Last().NumberOfRun++;
                 }
                 else
                 {
-                    charRunList.Last().numberOfRun++;
+                    charRunList.Last().NumberOfRun++;
                 }
             }
             else
@@ -408,7 +411,7 @@ public static class StringMethods
                 CharRun newRun = new()
                 {
                     Character = c,
-                    numberOfRun = 1,
+                    NumberOfRun = 1,
                     TypeOfChar = thisCharType
                 };
                 charRunList.Add(newRun);
@@ -416,7 +419,6 @@ public static class StringMethods
         }
 
         StringBuilder sb = new();
-        // sb.Append("(");
 
         foreach (CharRun ct in charRunList)
         {
@@ -441,9 +443,9 @@ public static class StringMethods
                     break;
             }
 
-            if (ct.numberOfRun > 1)
+            if (ct.NumberOfRun > 1)
             {
-                sb.Append('{').Append(ct.numberOfRun).Append('}');
+                sb.Append('{').Append(ct.NumberOfRun).Append('}');
             }
         }
 
@@ -500,7 +502,7 @@ public static class StringMethods
             sb.Clear();
         }
 
-        possibleShortenedPatterns = possibleShortenedPatterns.OrderBy(p => p.Length).ToList();
+        possibleShortenedPatterns = [.. possibleShortenedPatterns.OrderBy(p => p.Length)];
 
         return possibleShortenedPatterns.First();
     }
@@ -574,14 +576,14 @@ public static class StringMethods
 
     public static string RemoveDuplicateLines(this string stringToDeduplicate)
     {
-        string[] splitString = stringToDeduplicate.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.TrimEntries);
-        List<string> uniqueLines = new();
+        string[] splitString = stringToDeduplicate.Split(new string[] { Environment.NewLine }, StringSplitOptions.TrimEntries);
+        List<string> uniqueLines = [];
 
         foreach (string originalLine in splitString)
             if (!uniqueLines.Contains(originalLine))
                 uniqueLines.Add(originalLine);
 
-        return string.Join(Environment.NewLine, uniqueLines.ToArray());
+        return string.Join(Environment.NewLine, [.. uniqueLines]);
     }
 
     public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)
@@ -592,7 +594,7 @@ public static class StringMethods
 
     public static string RemoveFromEachLine(this string stringToEdit, int numberOfChars, SpotInLine spotInLine)
     {
-        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+        string[] splitString = stringToEdit.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
         StringBuilder sb = new();
         foreach (string line in splitString)
@@ -607,10 +609,10 @@ public static class StringMethods
             switch (spotInLine)
             {
                 case SpotInLine.Beginning:
-                    sb.AppendLine(line.Substring(numberOfChars));
+                    sb.AppendLine(line[numberOfChars..]);
                     break;
                 case SpotInLine.End:
-                    sb.AppendLine(line.Substring(0, lineLength - numberOfChars));
+                    sb.AppendLine(line[..(lineLength - numberOfChars)]);
                     break;
                 default:
                     break;
@@ -661,7 +663,7 @@ public static class StringMethods
             }
 
             if (spotInLine== SpotInLine.Beginning)
-                returnStringBuilder.AppendLine(line.Substring(0, lineLimit));
+                returnStringBuilder.AppendLine(line[..lineLimit]);
             else
                 returnStringBuilder.AppendLine(line.Substring(line.Length - (lineLimit), lineLimit));
         }
@@ -689,7 +691,7 @@ public static class StringMethods
         int newLineIndex = GetNewLineIndexToLeft(ref mainString, index);
 
         if (newLineIndex < 1)
-            return mainString.Substring(0, index);
+            return mainString[..index];
 
         newLineIndex++;
 
@@ -709,13 +711,13 @@ public static class StringMethods
     {
         int newLineIndex = GetNewLineIndexToRight(ref mainString, index);
         if (newLineIndex < 1)
-            return mainString.Substring(index);
+            return mainString[index..];
 
         if (newLineIndex - index > numberOfCharacters)
             return string.Concat(mainString.AsSpan(index, numberOfCharacters), "...");
 
         if (newLineIndex == mainString.Length)
-            return mainString.Substring(index);
+            return mainString[index..];
 
         return string.Concat(mainString.AsSpan(index, newLineIndex - index), "...");
     }
