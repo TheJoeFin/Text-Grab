@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -190,28 +192,36 @@ public partial class FindAndReplaceWindow : FluentWindow
             e.CanExecute = false;
     }
 
-    private void DeleteAll_Executed(object sender, ExecutedRoutedEventArgs e)
+    private async void DeleteAll_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (Matches is null
             || Matches.Count < 1
             || textEditWindow is null)
             return;
 
-        var selection = ResultsListView.SelectedItems;
-        if (selection.Count < 2)
-            selection = ResultsListView.Items;
+        SetWindowToLoading();
 
-        for (int j = selection.Count - 1; j >= 0; j--)
+        IList selection = ResultsListView.SelectedItems;
+        StringBuilder stringBuilderOfText = new(textEditWindow.PassedTextControl.Text);
+
+        await Task.Run(() =>
         {
-            if (selection[j] is not FindResult selectedResult)
-                continue;
+            if (selection.Count < 2)
+                selection = ResultsListView.Items;
 
-            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
-            textEditWindow.PassedTextControl.SelectedText = string.Empty;
-        }
+            for (int j = selection.Count - 1; j >= 0; j--)
+            {
+                if (selection[j] is not FindResult selectedResult)
+                    continue;
 
-        textEditWindow.PassedTextControl.Select(0, 0);
+                stringBuilderOfText.Remove(selectedResult.Index, selectedResult.Length);
+            }
+        });
+
+        textEditWindow.PassedTextControl.Text = stringBuilderOfText.ToString();
+
         SearchForText();
+        ResetWindowLoading();
     }
 
     private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
@@ -314,27 +324,51 @@ public partial class FindAndReplaceWindow : FluentWindow
         SearchForText();
     }
 
-    private void ReplaceAll_Executed(object sender, ExecutedRoutedEventArgs e)
+    private async void ReplaceAll_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (Matches is null
             || Matches.Count < 1
             || textEditWindow is null)
             return;
 
-        var selection = ResultsListView.SelectedItems;
-        if (selection.Count < 2)
-            selection = ResultsListView.Items;
+        SetWindowToLoading();
 
-        for (int j = selection.Count - 1; j >= 0; j--)
+        StringBuilder stringBuilder = new(textEditWindow.PassedTextControl.Text);
+
+        IList selection = ResultsListView.SelectedItems;
+        string newText = ReplaceTextBox.Text;
+
+        await Task.Run(() =>
         {
-            if (selection[j] is not FindResult selectedResult)
-                continue;
+            if (selection.Count < 2)
+                selection = ResultsListView.Items;
 
-            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
-            textEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
-        }
+            for (int j = selection.Count - 1; j >= 0; j--)
+            {
+                if (selection[j] is not FindResult selectedResult)
+                    continue;
+
+                stringBuilder.Remove(selectedResult.Index, selectedResult.Length);
+                stringBuilder.Insert(selectedResult.Index, newText);
+            }
+        });
+
+        textEditWindow.PassedTextControl.Text = stringBuilder.ToString();
 
         SearchForText();
+        ResetWindowLoading();
+    }
+
+    private void ResetWindowLoading()
+    {
+        MainContentGrid.IsEnabled = true;
+        LoadingSpinner.Visibility = Visibility.Collapsed;
+    }
+
+    private void SetWindowToLoading()
+    {
+        MainContentGrid.IsEnabled = false;
+        LoadingSpinner.Visibility = Visibility.Visible;
     }
 
     private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
