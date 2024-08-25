@@ -60,7 +60,7 @@
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
 
-        <Grid Grid.Row="1">
+        <Grid x:Name="MainContentGrid" Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
@@ -266,5 +266,11 @@
                 </ListView.ItemTemplate>
             </ui:ListView>
         </Border>
+
+        <ui:ProgressRing
+            x:Name="LoadingSpinner"
+            Grid.Row="3"
+            IsIndeterminate="True"
+            Visibility="Collapsed" />
     </Grid>
 </ui:FluentWindow>

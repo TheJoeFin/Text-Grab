@@ -25,7 +25,7 @@ public static class StringBuilderExtensions
 
     public static void ReplaceGreekOrCyrillicWithLatin(this StringBuilder stringBuilder)
     {
-        stringBuilder.CharDictionaryReplace(StringMethods.greekCyrillicLatinMap);
+        stringBuilder.CharDictionaryReplace(StringMethods.GreekCyrillicLatinMap);
     }
 
     public static void TryFixToLetters(this StringBuilder stringBuilder)
