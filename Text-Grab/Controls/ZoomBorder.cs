@@ -138,6 +138,9 @@ public class ZoomBorder : Border
 
     private void Child_MouseMove(object sender, MouseEventArgs e)
     {
+        if (e.OriginalSource is TextBox)
+            return;
+
         if (child is null
             || GetScaleTransform(child) is not ScaleTransform st
             || st.ScaleX == 1.0
