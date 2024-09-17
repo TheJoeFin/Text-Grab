@@ -70,7 +70,7 @@
 		<PackageReference Include="Dapplo.Windows.User32" Version="1.0.28" />
 		<PackageReference Include="Humanizer.Core" Version="3.0.0-beta.54" />
 		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-		<PackageReference Include="System.Drawing.Common" Version="9.0.0-preview.7.24405.4" />
+		<PackageReference Include="System.Drawing.Common" Version="9.0.0-rc.1.24451.1" />
 		<PackageReference Include="WPF-UI" Version="4.0.0-rc.2" />
 		<PackageReference Include="WPF-UI.Tray" Version="4.0.0-rc.2" />
 		<PackageReference Include="ZXing.Net" Version="0.16.9" />
