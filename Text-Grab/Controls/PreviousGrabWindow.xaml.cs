@@ -20,7 +20,7 @@ public partial class PreviousGrabWindow : Window
         Left = rect.Left - borderThickness;
         Top = rect.Top - borderThickness;
 
-        DispatcherTimer timer = new DispatcherTimer();
+        DispatcherTimer timer = new();
         timer.Interval = TimeSpan.FromMilliseconds(500);
         timer.Tick += (s, e) => { timer.Stop(); Close(); };
         timer.Start();

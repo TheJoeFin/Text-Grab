@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -28,7 +27,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     public static RoutedCommand ReplaceAllCmd = new();
     public static RoutedCommand ReplaceOneCmd = new();
     public static RoutedCommand TextSearchCmd = new();
-    DispatcherTimer ChangeFindTextTimer = new();
+    private DispatcherTimer ChangeFindTextTimer = new();
     private MatchCollection? Matches;
     private string stringFromWindow = "";
     private EditTextWindow? textEditWindow;
@@ -171,11 +170,11 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         StringBuilder stringBuilder = new();
 
-        var selection = ResultsListView.SelectedItems;
+        IList selection = ResultsListView.SelectedItems;
         if (selection.Count < 2)
             selection = ResultsListView.Items;
 
-        foreach (var item in selection)
+        foreach (object? item in selection)
             if (item is FindResult findResult)
                 stringBuilder.AppendLine(findResult.Text);
 

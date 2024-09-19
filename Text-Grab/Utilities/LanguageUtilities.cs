@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
-using Text_Grab.Properties;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
 using Text_Grab.Models;
-using Text_Grab.Properties;
 
 namespace Text_Grab.Utilities;
 
@@ -40,7 +39,7 @@ internal class ShortcutKeysUtilities
         if (shortcutKeySets is null || shortcutKeySets.Count == 0)
             return defaultKeys;
 
-        var actionsList = shortcutKeySets.Select(x => x.Action).ToList();
+        List<ShortcutKeyActions> actionsList = shortcutKeySets.Select(x => x.Action).ToList();
         return shortcutKeySets.Concat(defaultKeys.Where(x => !actionsList.Contains(x.Action)).ToList()).ToList();
     }
 

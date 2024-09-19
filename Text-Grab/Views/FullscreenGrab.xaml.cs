@@ -39,8 +39,8 @@ public partial class FullscreenGrab : Window
     private double xShiftDelta;
     private double yShiftDelta;
     private HistoryInfo? historyInfo;
-    bool usingTesseract;
-    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private bool usingTesseract;
+    private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     #endregion Fields
 
@@ -232,7 +232,7 @@ public partial class FullscreenGrab : Window
             RegionClickCanvas.ContextMenu.IsOpen = false;
             await Task.Delay(150);
             SetImageToBackground();
-            
+
             if (this.IsMouseInWindow())
                 TopButtonsStackPanel.Visibility = Visibility.Visible;
         }

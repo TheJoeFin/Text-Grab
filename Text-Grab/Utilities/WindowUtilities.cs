@@ -242,7 +242,7 @@ public static class WindowUtilities
         // Most significant bit is set if key is down
         if ((GetAsyncKeyState((int)modifier) & 0x8000) != 0)
         {
-            var inputEvent = default(INPUT);
+            INPUT inputEvent = default(INPUT);
             inputEvent.Type = OSInterop.InputType.INPUT_KEYBOARD;
             inputEvent.U.Ki.WVk = modifier;
             inputEvent.U.Ki.DwFlags = KEYEVENTF.KEYUP;
@@ -299,7 +299,7 @@ public static class WindowUtilities
         if (shouldShutDown)
             Application.Current.Shutdown();
     }
-    
+
     public static bool GetMousePosition(out Point mousePosition)
     {
         if (GetCursorPos(out POINT point))
@@ -327,7 +327,7 @@ public static class WindowUtilities
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    static extern bool GetCursorPos(out POINT lpPoint);
+    private static extern bool GetCursorPos(out POINT lpPoint);
 
     #endregion
 }

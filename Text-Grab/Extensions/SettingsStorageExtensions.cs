@@ -58,7 +58,7 @@ public static class SettingsStorageExtensions
     {
         if (settings.Values.TryGetValue(key, out object? obj))
             return await Json.ToObjectAsync<T>((string)obj);
-        
+
         return default;
     }
 
@@ -68,7 +68,7 @@ public static class SettingsStorageExtensions
 
         if (string.IsNullOrEmpty(fileName))
             throw new ArgumentException("File name is null or empty. Specify a valid file name", nameof(fileName));
-        
+
         StorageFile storageFile = await folder.CreateFileAsync(fileName, options);
         await FileIO.WriteBytesAsync(storageFile, content);
         return storageFile;
@@ -92,7 +92,7 @@ public static class SettingsStorageExtensions
     {
         if (file == null)
             return null;
-        
+
         using IRandomAccessStream stream = await file.OpenReadAsync();
         using DataReader reader = new(stream.GetInputStreamAt(0));
         await reader.LoadAsync((uint)stream.Size);

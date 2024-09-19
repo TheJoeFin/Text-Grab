@@ -507,7 +507,7 @@ public static class StringMethods
         return possibleShortenedPatterns.First();
     }
 
-    static IEnumerable<string> Split(string str, int chunkSize)
+    private static IEnumerable<string> Split(string str, int chunkSize)
     {
         return Enumerable.Range(0, str.Length / chunkSize)
             .Select(i => str.Substring(i * chunkSize, chunkSize));
@@ -662,7 +662,7 @@ public static class StringMethods
                 continue;
             }
 
-            if (spotInLine== SpotInLine.Beginning)
+            if (spotInLine == SpotInLine.Beginning)
                 returnStringBuilder.AppendLine(line[..lineLimit]);
             else
                 returnStringBuilder.AppendLine(line.Substring(line.Length - (lineLimit), lineLimit));
@@ -683,7 +683,7 @@ public static class StringMethods
     {
         // Basic Latin characters are those with Unicode code points
         // in the range U+0000 to U+007F (inclusive)
-        return c >= '\u0000' && c <= '\u007F';
+        return c is >= '\u0000' and <= '\u007F';
     }
 
     public static string GetCharactersToLeftOfNewLine(ref string mainString, int index, int numberOfCharacters)

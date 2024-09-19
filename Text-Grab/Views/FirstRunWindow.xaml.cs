@@ -113,7 +113,7 @@ public partial class FirstRunWindow : FluentWindow
     {
         int windowsCount = Application.Current.Windows.Count;
 
-        if (windowsCount == 2 || windowsCount == 1)
+        if (windowsCount is 2 or 1)
         {
             TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
             switch (defaultLaunchSetting)

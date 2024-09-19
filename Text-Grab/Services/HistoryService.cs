@@ -250,11 +250,11 @@ public class HistoryService
 
     private static async Task<List<HistoryInfo>> LoadHistory(string fileName)
     {
-        string rawText = await FileUtilities.GetTextFileAsync($"{fileName}.json",FileStorageKind.WithHistory);
+        string rawText = await FileUtilities.GetTextFileAsync($"{fileName}.json", FileStorageKind.WithHistory);
 
         if (string.IsNullOrWhiteSpace(rawText)) return new List<HistoryInfo>();
 
-        var tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText);
+        List<HistoryInfo>? tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText);
 
         if (tempHistory is List<HistoryInfo> jsonList && jsonList.Count > 0)
             return tempHistory;

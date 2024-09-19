@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using Text_Grab.Properties;
 
 namespace Text_Grab.Utilities;
 

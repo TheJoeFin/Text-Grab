@@ -5,7 +5,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -72,7 +71,7 @@ public partial class GrabFrame : Window
     private bool wasAltHeld = false;
     private double windowFrameImageScale = 1;
     private ObservableCollection<WordBorder> wordBorders = new();
-    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private ScrollBehavior scrollBehavior = ScrollBehavior.Resize;
 
     #endregion Fields
@@ -1363,7 +1362,7 @@ public partial class GrabFrame : Window
         // Source: StackOverflow, read on Sep. 10, 2021
         // https://stackoverflow.com/a/53698638/7438031
 
-        if (WindowState == WindowState.Maximized 
+        if (WindowState == WindowState.Maximized
             || scrollBehavior == ScrollBehavior.None)
             return;
 

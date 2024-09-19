@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Text_Grab.UndoRedoOperations;
 
-class UndoRedo
+internal class UndoRedo
 {
     public const int UndoRedoTransactionCapacity = 100;
 
@@ -112,12 +111,12 @@ class UndoRedo
         if (UndoStack.Count == 0 || UndoStack.Last is null)
             return;
 
-        var operationNode = UndoStack.Last;
-        var currentTransactionId = operationNode.Value.TransactionId;
+        LinkedListNode<IUndoRedoOperation>? operationNode = UndoStack.Last;
+        uint currentTransactionId = operationNode.Value.TransactionId;
         while (operationNode != null && operationNode.Value.TransactionId == currentTransactionId)
         {
-            var prev = operationNode.Previous;
-            var operation = operationNode.Value;
+            LinkedListNode<IUndoRedoOperation>? prev = operationNode.Previous;
+            IUndoRedoOperation operation = operationNode.Value;
             operation.Undo();
 
             // Add operation into redo stack.
@@ -137,12 +136,12 @@ class UndoRedo
         if (RedoStack.Count == 0 || RedoStack.Last is null)
             return;
 
-        var operationNode = RedoStack.Last;
-        var currentTransactionId = operationNode.Value.TransactionId;
+        LinkedListNode<IUndoRedoOperation>? operationNode = RedoStack.Last;
+        uint currentTransactionId = operationNode.Value.TransactionId;
         while (operationNode != null && operationNode.Value.TransactionId == currentTransactionId)
         {
-            var prev = operationNode.Previous;
-            var operation = RedoStack.Last.Value;
+            LinkedListNode<IUndoRedoOperation>? prev = operationNode.Previous;
+            IUndoRedoOperation operation = RedoStack.Last.Value;
             operation.Redo();
 
             // Add operation into Undo Stack.

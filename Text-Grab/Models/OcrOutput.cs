@@ -2,7 +2,6 @@
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Globalization;
-using Windows.Media.Ocr;
 
 namespace Text_Grab.Models;
 

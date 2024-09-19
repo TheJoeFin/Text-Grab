@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,10 +39,8 @@ public partial class ShortcutControl : UserControl
 
     public static readonly DependencyProperty ShortcutNameProperty =
         DependencyProperty.Register("ShortcutName", typeof(string), typeof(ShortcutControl), new PropertyMetadata("shortcutName"));
-
-    bool isRecording = false;
-
-    string previousSequence = string.Empty;
+    private bool isRecording = false;
+    private string previousSequence = string.Empty;
     public bool HasModifier { get; set; } = false;
     public bool HasLetter { get; set; } = false;
 
