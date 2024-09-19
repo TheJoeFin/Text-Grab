@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Text_Grab;
-using System.Linq;
 using Text_Grab.Utilities;
 
 namespace Tests;
@@ -95,7 +94,7 @@ to throw off any easy check";
     }
 
     [Theory]
-    [InlineData("","")]
+    [InlineData("", "")]
     [InlineData("he11o there", "hello there")]
     [InlineData("my number is l23456789o", "my number is 1234567890")]
     public void TryFixNumOrLetters(string input, string expected)
