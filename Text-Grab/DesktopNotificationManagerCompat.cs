@@ -100,7 +100,7 @@ public class DesktopNotificationManagerCompat
     {
         // We register the EXE to start up when the notification is activated
         string regString = String.Format("SOFTWARE\\Classes\\CLSID\\{{{0}}}", typeof(T).GUID);
-        using (var key = Registry.CurrentUser.CreateSubKey(regString))
+        using (RegistryKey key = Registry.CurrentUser.CreateSubKey(regString))
         {
             // Include a flag so we know this was a toast activation and should wait for COM to process
             // We also wrap EXE path in quotes for extra security
@@ -111,7 +111,7 @@ public class DesktopNotificationManagerCompat
         {
             // For elevated apps, we need to ensure they'll activate in existing running process by adding
             // some values in local machine
-            using (var key = Registry.LocalMachine.CreateSubKey(regString))
+            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(regString))
             {
                 // Same as above, except also including AppId to link to our AppId entry below
                 key.SetValue("LocalServer32", '"' + exePath + '"' + " " + TOAST_ACTIVATED_LAUNCH_ARG);
@@ -120,7 +120,7 @@ public class DesktopNotificationManagerCompat
 
             // This tells COM to match any client, so Action Center will activate our elevated process.
             // More info: https://docs.microsoft.com/windows/win32/com/runas
-            using (var key = Registry.LocalMachine.CreateSubKey(String.Format("SOFTWARE\\Classes\\AppID\\{{{0}}}", typeof(T).GUID)))
+            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(String.Format("SOFTWARE\\Classes\\AppID\\{{{0}}}", typeof(T).GUID)))
             {
                 key.SetValue("RunAs", "Interactive User");
             }
@@ -135,7 +135,7 @@ public class DesktopNotificationManagerCompat
         where T : NotificationActivator, new()
     {
         // Big thanks to FrecherxDachs for figuring out the following code which works in .NET Core 3: https://github.com/FrecherxDachs/UwpNotificationNetCoreTest
-        var uuid = typeof(T).GUID;
+        Guid uuid = typeof(T).GUID;
         uint _cookie;
         CoRegisterClassObject(uuid, new NotificationActivatorClassFactory<T>(), CLSCTX_LOCAL_SERVER,
             REGCLS_MULTIPLEUSE, out _cookie);
@@ -160,7 +160,7 @@ public class DesktopNotificationManagerCompat
     private const int CLSCTX_LOCAL_SERVER = 4;
     private const int REGCLS_MULTIPLEUSE = 1;
     private const int S_OK = 0;
-    private static readonly Guid IUnknownGuid = new Guid("00000000-0000-0000-C000-000000000046");
+    private static readonly Guid IUnknownGuid = new("00000000-0000-0000-C000-000000000046");
 
     private class NotificationActivatorClassFactory<T> : IClassFactory where T : NotificationActivator, new()
     {
@@ -277,10 +277,10 @@ public class DesktopNotificationManagerCompat
     /// </summary>
     private class DesktopBridgeHelpers
     {
-        const long APPMODEL_ERROR_NO_PACKAGE = 15700L;
+        private const long APPMODEL_ERROR_NO_PACKAGE = 15700L;
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern int GetCurrentPackageFullName(ref int packageFullNameLength, StringBuilder packageFullName);
+        private static extern int GetCurrentPackageFullName(ref int packageFullNameLength, StringBuilder packageFullName);
 
         private static bool? _isRunningAsUwp;
         public static bool IsRunningAsUwp()
@@ -294,7 +294,7 @@ public class DesktopNotificationManagerCompat
                 else
                 {
                     int length = 0;
-                    StringBuilder sb = new StringBuilder(0);
+                    StringBuilder sb = new(0);
                     int result = GetCurrentPackageFullName(ref length, sb);
 
                     sb = new StringBuilder(length);
@@ -492,7 +492,7 @@ public class NotificationUserInput : IReadOnlyDictionary<string, string>
 
     public bool TryGetValue(string key, out string value)
     {
-        foreach (var item in _data)
+        foreach (NOTIFICATION_USER_INPUT_DATA item in _data)
         {
             if (item.Key == key)
             {

@@ -30,7 +30,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private LookupItem? lastSelection;
     private int rowCount = 0;
     private string valueUnderEdit = string.Empty;
-    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     #endregion Fields
 
@@ -57,12 +57,12 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private static LookupItem ParseStringToLookupItem(char splitChar, string row)
     {
         List<string> cells = row.Split(splitChar).ToList();
-        LookupItem newRow = new LookupItem();
+        LookupItem newRow = new();
         if (cells.FirstOrDefault() is String firstCell)
             newRow.shortValue = firstCell;
 
         newRow.longValue = "";
-        if (cells.Count > 1 && cells[1] is String)
+        if (cells.Count > 1 && cells[1] is not null)
             newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
         return newRow;
     }
@@ -186,9 +186,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private List<LookupItem> GetMainDataGridSelection()
     {
-        var selectedItems = MainDataGrid.SelectedItems as List<LookupItem>;
-
-        if (selectedItems is null || selectedItems.Count == 0)
+        if (MainDataGrid.SelectedItems is not List<LookupItem> selectedItems || selectedItems.Count == 0)
         {
             selectedItems = new List<LookupItem>();
             if (MainDataGrid.SelectedItem is not LookupItem selectedLookupItem)
@@ -236,7 +234,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (e.EditAction == DataGridEditAction.Cancel)
             return;
 
-        var child = VisualTreeHelper.GetChild(e.EditingElement, 0);
+        DependencyObject child = VisualTreeHelper.GetChild(e.EditingElement, 0);
         if (child is TextBox editedBox
             && valueUnderEdit != editedBox.Text)
         {
@@ -283,7 +281,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Create OpenFileDialog 
-        Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+        Microsoft.Win32.OpenFileDialog dlg = new();
 
         // Set filter for file extension and default file extension 
         dlg.DefaultExt = ".csv";
@@ -324,7 +322,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             dlg.FileName = Path.GetFileName(DefaultSettings.LookupFileLocation);
         }
 
-        var result = dlg.ShowDialog();
+        bool? result = dlg.ShowDialog();
 
         if (result is false)
             return;
@@ -399,7 +397,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
                     return;
 
-                if (Uri.TryCreate(lookupItem.longValue, UriKind.Absolute, out var uri))
+                if (Uri.TryCreate(lookupItem.longValue, UriKind.Absolute, out Uri? uri))
                 {
                     Process.Start(new ProcessStartInfo(lookupItem.longValue) { UseShellExecute = true });
                     this.Close();
@@ -567,7 +565,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private void RowDeleted()
     {
-        var currentItemSource = MainDataGrid.ItemsSource;
+        System.Collections.IEnumerable currentItemSource = MainDataGrid.ItemsSource;
         if (currentItemSource is not List<LookupItem> filteredLookupList)
             return;
 
@@ -652,14 +650,14 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         List<string> searchArray = SearchBox.Text.ToLower().Split().ToList();
         searchArray.Sort();
 
-        List<LookupItem> filteredList = new List<LookupItem>();
+        List<LookupItem> filteredList = new();
 
         foreach (LookupItem lItem in ItemsDictionary)
         {
             string lItemAsString = lItem.ToString().ToLower();
             bool matchAllSearchWords = true;
 
-            foreach (var searchWord in searchArray)
+            foreach (string searchWord in searchArray)
             {
                 if (!lItemAsString.Contains(searchWord))
                     matchAllSearchWords = false;

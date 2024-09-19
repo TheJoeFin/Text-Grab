@@ -79,7 +79,7 @@ public class ClipboardUtilities
         trimmedData = CleanTeamsBase64Image(trimmedData);
 
         // used some code from https://github.com/veler/DevToys
-        string base64 = trimmedData.Substring(trimmedData.IndexOf(',') + 1);
+        string base64 = trimmedData[(trimmedData.IndexOf(',') + 1)..];
         byte[] bytes = Convert.FromBase64String(base64);
 
         // cannot dispose of memoryStream or the BitmapImage is empty when the view trys to render
@@ -127,7 +127,7 @@ public class ClipboardUtilities
         return sb.ToString();
     }
 
-    static string base64ImageExtension(ref string base64String)
+    private static string base64ImageExtension(ref string base64String)
     {
         // Copied this portion of the code from https://github.com/veler/DevToys
         if (base64String!.StartsWith("data:image/png;base64,", StringComparison.OrdinalIgnoreCase))

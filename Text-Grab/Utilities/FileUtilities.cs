@@ -5,7 +5,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Media.Streaming.Adaptive;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
@@ -37,7 +36,7 @@ public class FileUtilities
         string imageExtensions = string.Empty;
         string separator = "";
         ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-        Dictionary<string, string> imageFilters = new Dictionary<string, string>();
+        Dictionary<string, string> imageFilters = new();
         foreach (ImageCodecInfo codec in codecs)
         {
             if (codec.FilenameExtension is not string extension)
@@ -73,7 +72,7 @@ public class FileUtilities
         return Path.Combine(dirPath, imageRelativePath);
     }
 
-    public async static Task<string> GetPathToHistory()
+    public static async Task<string> GetPathToHistory()
     {
         if (AppUtilities.IsPackaged())
         {
@@ -108,7 +107,7 @@ public class FileUtilities
         return SaveTextFileUnpackaged(textContent, filename, storageKind);
     }
 
-    private async static Task<Bitmap?> GetImageFilePackaged(string fileName, FileStorageKind storageKind)
+    private static async Task<Bitmap?> GetImageFilePackaged(string fileName, FileStorageKind storageKind)
     {
         StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
 
@@ -122,7 +121,7 @@ public class FileUtilities
             return null;
         }
     }
-    
+
 #pragma warning disable CS1998
     private static async Task<Bitmap?> GetImageFileUnpackaged(string fileName, FileStorageKind storageKind)
     {
@@ -134,7 +133,7 @@ public class FileUtilities
 
         return new Bitmap(filePath);
     }
-    private async static Task<string> GetTextFilePackaged(string fileName, FileStorageKind storageKind)
+    private static async Task<string> GetTextFilePackaged(string fileName, FileStorageKind storageKind)
     {
         try
         {
@@ -290,8 +289,8 @@ public class FileUtilities
         return true;
     }
 #pragma warning restore CS1998
-    
-    public async static void TryDeleteHistoryDirectory()
+
+    public static async void TryDeleteHistoryDirectory()
     {
         FileStorageKind historyFolderKind = FileStorageKind.WithHistory;
         if (AppUtilities.IsPackaged())

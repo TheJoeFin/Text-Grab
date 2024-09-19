@@ -50,7 +50,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
     public bool LaunchedFromNotification = false;
-    CancellationTokenSource? cancellationTokenForDirOCR;
+    private CancellationTokenSource? cancellationTokenForDirOCR;
     private string historyId = string.Empty;
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
@@ -718,8 +718,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // D9 is 43
         // D0 is 34
 
-        if (keyNumberPressed < -1
-            || keyNumberPressed > 8)
+        if (keyNumberPressed is < (-1)
+            or > 8)
             return;
 
         // since D9 is next to D0 it makes sense
@@ -894,8 +894,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int selectionPositionInLine = PassedTextControl.SelectionStart;
         for (int i = initialSelectionStart; i >= 0; i--)
         {
-            if (PassedTextControl.Text[i] == '\n'
-                || PassedTextControl.Text[i] == '\r')
+            if (PassedTextControl.Text[i] is '\n'
+                or '\r')
             {
                 selectionPositionInLine = initialSelectionStart - i - 1;
                 break;
@@ -1184,7 +1184,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SelectLine();
         string lineText = PassedTextControl.SelectedText;
         bool lineEndsInNewLine = lineText.EndsWithNewline();
-        PassedTextControl.SelectedText = $"{ lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{ lineText}";
+        PassedTextControl.SelectedText = $"{lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{lineText}";
         int length = lineText.Length;
         if (!lineEndsInNewLine)
             length += Environment.NewLine.Length;
@@ -2101,12 +2101,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (!IsLoaded)
             return;
 
-        if ((bool)WrapTextMenuItem.IsChecked)
+        if (WrapTextMenuItem.IsChecked)
             PassedTextControl.TextWrapping = TextWrapping.Wrap;
         else
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
 
-        DefaultSettings.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
+        DefaultSettings.EditWindowIsWordWrapOn = WrapTextMenuItem.IsChecked;
     }
     #endregion Methods
 }

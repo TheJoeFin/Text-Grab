@@ -50,12 +50,12 @@ public static class ShapeExtensions
 
     public static bool IsGood(this Rect rect)
     {
-        if (double.IsNaN(rect.X) 
+        if (double.IsNaN(rect.X)
             || double.IsNegativeInfinity(rect.X)
             || double.IsPositiveInfinity(rect.X))
             return false;
-        
-        if (double.IsNaN(rect.Y) 
+
+        if (double.IsNaN(rect.Y)
             || double.IsNegativeInfinity(rect.Y)
             || double.IsPositiveInfinity(rect.Y))
             return false;

@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Media;
 using Text_Grab.Models;
 using ZXing;
 using ZXing.Common;
@@ -29,7 +26,7 @@ public static class BarcodeUtilities
         if (result is not null)
             resultString = result.Text;
 
-        return new OcrOutput ()
+        return new OcrOutput()
         {
             Kind = OcrOutputKind.Barcode,
             RawOutput = resultString,
@@ -79,7 +76,7 @@ public static class BarcodeUtilities
         };
         encodingOptions.Hints.Add(ZXing.EncodeHintType.ERROR_CORRECTION, correctionLevel);
         barcodeWriter.Options = encodingOptions;
-        
+
         SvgImage svg = barcodeWriter.Write(text);
 
         return svg;

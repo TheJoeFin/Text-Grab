@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Controls;
 using Text_Grab.Controls;
-using Text_Grab.UndoRedoOperations;
 
 namespace Text_Grab.UndoRedoOperations;
 
 internal class AddWordBorder : Operation, IUndoRedoOperation
 {
-    public AddWordBorder(uint transactionId, WordBorder wordBorder, 
+    public AddWordBorder(uint transactionId, WordBorder wordBorder,
         Canvas canvas, ICollection<WordBorder> wordBorders) : base(transactionId)
     {
         WordBorder = wordBorder;

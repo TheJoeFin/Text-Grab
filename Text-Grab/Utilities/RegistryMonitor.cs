@@ -43,7 +43,8 @@ namespace RegistryUtils;
 /// }
 /// </code>
 /// </example>
-public class RegistryMonitor : IDisposable {
+public class RegistryMonitor : IDisposable
+{
     #region P/Invoke
 
     [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
@@ -90,7 +91,8 @@ public class RegistryMonitor : IDisposable {
     /// the base class's <see cref="OnRegChanged"/> method.
     /// </note>
     /// </remarks>
-    protected virtual void OnRegChanged() {
+    protected virtual void OnRegChanged()
+    {
         RegChanged?.Invoke(this, new EventArgs());
     }
 
@@ -112,7 +114,8 @@ public class RegistryMonitor : IDisposable {
     /// the base class's <see cref="OnError"/> method.
     /// </note>
     /// </remarks>
-    protected virtual void OnError(Exception e) {
+    protected virtual void OnError(Exception e)
+    {
         Error?.Invoke(this, new ErrorEventArgs(e));
     }
 
@@ -136,7 +139,8 @@ public class RegistryMonitor : IDisposable {
     /// Initializes a new instance of the <see cref="RegistryMonitor"/> class.
     /// </summary>
     /// <param name="registryKey">The registry key to monitor.</param>
-    public RegistryMonitor(RegistryKey registryKey) {
+    public RegistryMonitor(RegistryKey registryKey)
+    {
         InitRegistryKey(registryKey.Name);
     }
 
@@ -144,7 +148,8 @@ public class RegistryMonitor : IDisposable {
     /// Initializes a new instance of the <see cref="RegistryMonitor"/> class.
     /// </summary>
     /// <param name="name">The name.</param>
-    public RegistryMonitor(string name) {
+    public RegistryMonitor(string name)
+    {
         if (name == null || name.Length == 0)
             throw new ArgumentNullException(nameof(name));
 
@@ -156,14 +161,16 @@ public class RegistryMonitor : IDisposable {
     /// </summary>
     /// <param name="registryHive">The registry hive.</param>
     /// <param name="subKey">The sub key.</param>
-    public RegistryMonitor(RegistryHive registryHive, string subKey) {
+    public RegistryMonitor(RegistryHive registryHive, string subKey)
+    {
         InitRegistryKey(registryHive, subKey);
     }
 
     /// <summary>
     /// Disposes this object.
     /// </summary>
-    public void Dispose() {
+    public void Dispose()
+    {
         Stop();
         _disposed = true;
         GC.SuppressFinalize(this);
@@ -172,10 +179,13 @@ public class RegistryMonitor : IDisposable {
     /// <summary>
     /// Gets or sets the <see cref="RegChangeNotifyFilter">RegChangeNotifyFilter</see>.
     /// </summary>
-    public RegChangeNotifyFilter RegChangeNotifyFilter {
+    public RegChangeNotifyFilter RegChangeNotifyFilter
+    {
         get { return _regFilter; }
-        set {
-            lock (_threadLock) {
+        set
+        {
+            lock (_threadLock)
+            {
                 if (IsMonitoring)
                     throw new InvalidOperationException("Monitoring thread is already running");
 
@@ -186,8 +196,10 @@ public class RegistryMonitor : IDisposable {
 
     #region Initialization
 
-    private void InitRegistryKey(RegistryHive hive, string name) {
-        _registryHive = hive switch {
+    private void InitRegistryKey(RegistryHive hive, string name)
+    {
+        _registryHive = hive switch
+        {
             RegistryHive.ClassesRoot => HKEY_CLASSES_ROOT,
             RegistryHive.CurrentConfig => HKEY_CURRENT_CONFIG,
             RegistryHive.CurrentUser => HKEY_CURRENT_USER,
@@ -199,7 +211,8 @@ public class RegistryMonitor : IDisposable {
         _registrySubName = name;
     }
 
-    private void InitRegistryKey(string name) {
+    private void InitRegistryKey(string name)
+    {
         string[] nameParts = name.Split('\\');
 
         switch (nameParts[0])
@@ -241,21 +254,26 @@ public class RegistryMonitor : IDisposable {
     /// <b>true</b> if this <see cref="RegistryMonitor"/> object is currently monitoring;
     /// otherwise, <b>false</b>.
     /// </summary>
-    public bool IsMonitoring {
+    public bool IsMonitoring
+    {
         get { return _thread != null; }
     }
 
     /// <summary>
     /// Start monitoring.
     /// </summary>
-    public void Start() {
+    public void Start()
+    {
         if (_disposed)
             throw new ObjectDisposedException(null, "This instance is already disposed");
 
-        lock (_threadLock) {
-            if (!IsMonitoring) {
+        lock (_threadLock)
+        {
+            if (!IsMonitoring)
+            {
                 _eventTerminate.Reset();
-                _thread = new Thread(new ThreadStart(MonitorThread)) {
+                _thread = new Thread(new ThreadStart(MonitorThread))
+                {
                     IsBackground = true
                 };
                 _thread.Start();
@@ -266,29 +284,36 @@ public class RegistryMonitor : IDisposable {
     /// <summary>
     /// Stops the monitoring thread.
     /// </summary>
-    public void Stop() {
+    public void Stop()
+    {
         if (_disposed)
             throw new ObjectDisposedException(null, "This instance is already disposed");
 
-        lock (_threadLock) {
-            if (_thread is Thread thread) {
+        lock (_threadLock)
+        {
+            if (_thread is Thread thread)
+            {
                 _eventTerminate.Set();
                 thread.Join();
             }
         }
     }
 
-    private void MonitorThread() {
-        try {
+    private void MonitorThread()
+    {
+        try
+        {
             ThreadLoop();
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             OnError(e);
         }
         _thread = null;
     }
 
-    private void ThreadLoop() {
+    private void ThreadLoop()
+    {
         if (_registryHive is null || _registrySubName is null)
             return;
 
@@ -300,10 +325,12 @@ public class RegistryMonitor : IDisposable {
         if (result != 0)
             throw new Win32Exception(result);
 
-        try {
+        try
+        {
             AutoResetEvent _eventNotify = new(false);
             WaitHandle[] waitHandles = new WaitHandle[] { _eventNotify, _eventTerminate };
-            while (!_eventTerminate.WaitOne(0, true)) {
+            while (!_eventTerminate.WaitOne(0, true))
+            {
                 result = RegNotifyChangeKeyValue(registryKey,
                                     true,
                                     _regFilter,
@@ -312,13 +339,16 @@ public class RegistryMonitor : IDisposable {
                 if (result != 0)
                     throw new Win32Exception(result);
 
-                if (WaitHandle.WaitAny(waitHandles) == 0) {
+                if (WaitHandle.WaitAny(waitHandles) == 0)
+                {
                     OnRegChanged();
                 }
             }
         }
-        finally {
-            if (registryKey != IntPtr.Zero) {
+        finally
+        {
+            if (registryKey != IntPtr.Zero)
+            {
                 RegCloseKey(registryKey);
             }
         }
@@ -329,7 +359,8 @@ public class RegistryMonitor : IDisposable {
 /// Filter for notifications reported by <see cref="RegistryMonitor"/>.
 /// </summary>
 [Flags]
-public enum RegChangeNotifyFilter {
+public enum RegChangeNotifyFilter
+{
     /// <summary>Notify the caller if a subkey is added or deleted.</summary>
     Key = 1,
     /// <summary>Notify the caller of changes to the attributes of the key,

@@ -41,10 +41,10 @@ public class ResultTable
         Rectangle bordersBorder = new();
         if (wordBorders.Count > 0)
         {
-            var leftsMin = wordBorders.Select(x => x.Left).Min();
-            var topsMin = wordBorders.Select(x => x.Top).Min();
-            var rightsMax = wordBorders.Select(x => x.Right).Max();
-            var bottomsMax = wordBorders.Select(x => x.Bottom).Max();
+            double leftsMin = wordBorders.Select(x => x.Left).Min();
+            double topsMin = wordBorders.Select(x => x.Top).Min();
+            double rightsMax = wordBorders.Select(x => x.Right).Max();
+            double bottomsMax = wordBorders.Select(x => x.Bottom).Max();
 
             bordersBorder = new()
             {
@@ -72,13 +72,13 @@ public class ResultTable
         if (Rows.Count >= 1)
         {
             topBound = (int)Rows[0].Top;
-            bottomBound = (int)Rows[Rows.Count - 1].Bottom;
+            bottomBound = (int)Rows[^1].Bottom;
         }
 
         if (Columns.Count >= 1)
         {
             leftBound = (int)Columns[0].Left;
-            rightBound = (int)Columns[Columns.Count - 1].Right;
+            rightBound = (int)Columns[^1].Right;
         }
 
         BoundingRect = new()
@@ -333,7 +333,7 @@ public class ResultTable
             Canvas.SetLeft(rowBorder, tableBoundingRect.X);
             Canvas.SetTop(rowBorder, row.Top);
 
-            Rect rowRect = new Rect(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
+            Rect rowRect = new(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
 
             foreach (WordBorder wb in wordBorders)
             {
@@ -375,7 +375,7 @@ public class ResultTable
             Canvas.SetLeft(columnBorder, column.Left);
             Canvas.SetTop(columnBorder, tableBoundingRect.Y);
 
-            Rect columnRect = new Rect(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
+            Rect columnRect = new(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
             foreach (WordBorder wb in wordBorders)
             {
                 if (wb.IntersectsWith(columnRect))

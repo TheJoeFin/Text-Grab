@@ -1,10 +1,5 @@
-﻿using Microsoft.Toolkit.Uwp.Notifications;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Text_Grab.Utilities;
 
@@ -26,7 +21,7 @@ public class SystemThemeUtility
 
             if (o.ToString() == "1")
                 return true;
-            
+
             return false;
         }
         catch (Exception)

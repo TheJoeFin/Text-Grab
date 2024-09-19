@@ -27,7 +27,7 @@ public static class LanguageExtensions
     public static bool IsLatinBased(this Language language)
     {
         // List of Latin-based languages
-        List<string> LatinLanguages = new List<string>()
+        List<string> LatinLanguages = new()
         {
             "en",  // English
             "es",  // Spanish

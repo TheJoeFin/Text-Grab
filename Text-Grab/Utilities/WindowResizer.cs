@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -41,7 +40,7 @@ public class WindowResizer
     /// <summary>
     /// The last calculated available screen size
     /// </summary>
-    private Rect mScreenSize = new Rect();
+    private Rect mScreenSize = new();
 
     /// <summary>
     /// How close to the edge the window has to be to be detected as at the edge of the screen
@@ -69,13 +68,13 @@ public class WindowResizer
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    static extern bool GetCursorPos(out POINT lpPoint);
+    private static extern bool GetCursorPos(out POINT lpPoint);
 
     [DllImport("user32.dll")]
-    static extern bool GetMonitorInfo(IntPtr hMonitor, MONITORINFO lpmi);
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, MONITORINFO lpmi);
 
     [DllImport("user32.dll", SetLastError = true)]
-    static extern IntPtr MonitorFromPoint(POINT pt, MonitorOptions dwFlags);
+    private static extern IntPtr MonitorFromPoint(POINT pt, MonitorOptions dwFlags);
 
     #endregion
 
@@ -122,7 +121,7 @@ public class WindowResizer
     private void GetTransform()
     {
         // Get the visual source
-        var source = PresentationSource.FromVisual(mWindow);
+        PresentationSource source = PresentationSource.FromVisual(mWindow);
 
         // Reset the transform to default
         mTransformToDevice = default(Matrix);
@@ -143,8 +142,8 @@ public class WindowResizer
     private void Window_SourceInitialized(object? sender, System.EventArgs e)
     {
         // Get the handle of this window
-        var handle = (new WindowInteropHelper(mWindow)).Handle;
-        var handleSource = HwndSource.FromHwnd(handle);
+        nint handle = (new WindowInteropHelper(mWindow)).Handle;
+        HwndSource handleSource = HwndSource.FromHwnd(handle);
 
         // If not found, end
         if (handleSource == null)
@@ -171,26 +170,26 @@ public class WindowResizer
             return;
 
         // Get the WPF size
-        var size = e.NewSize;
+        Size size = e.NewSize;
 
         // Get window rectangle
-        var top = mWindow.Top;
-        var left = mWindow.Left;
-        var bottom = top + size.Height;
-        var right = left + mWindow.Width;
+        double top = mWindow.Top;
+        double left = mWindow.Left;
+        double bottom = top + size.Height;
+        double right = left + mWindow.Width;
 
         // Get window position/size in device pixels
-        var windowTopLeft = mTransformToDevice.Transform(new Point(left, top));
-        var windowBottomRight = mTransformToDevice.Transform(new Point(right, bottom));
+        Point windowTopLeft = mTransformToDevice.Transform(new Point(left, top));
+        Point windowBottomRight = mTransformToDevice.Transform(new Point(right, bottom));
 
         // Check for edges docked
-        var edgedTop = windowTopLeft.Y <= (mScreenSize.Top + mEdgeTolerance);
-        var edgedLeft = windowTopLeft.X <= (mScreenSize.Left + mEdgeTolerance);
-        var edgedBottom = windowBottomRight.Y >= (mScreenSize.Bottom - mEdgeTolerance);
-        var edgedRight = windowBottomRight.X >= (mScreenSize.Right - mEdgeTolerance);
+        bool edgedTop = windowTopLeft.Y <= (mScreenSize.Top + mEdgeTolerance);
+        bool edgedLeft = windowTopLeft.X <= (mScreenSize.Left + mEdgeTolerance);
+        bool edgedBottom = windowBottomRight.Y >= (mScreenSize.Bottom - mEdgeTolerance);
+        bool edgedRight = windowBottomRight.X >= (mScreenSize.Right - mEdgeTolerance);
 
         // Get docked position
-        var dock = WindowDockPosition.Undocked;
+        WindowDockPosition dock = WindowDockPosition.Undocked;
 
         // Left docking
         if (edgedTop && edgedBottom && edgedLeft)
@@ -234,7 +233,7 @@ public class WindowResizer
                 break;
         }
 
-        return (IntPtr)0;
+        return 0;
     }
 
     #endregion
@@ -255,15 +254,15 @@ public class WindowResizer
         GetCursorPos(out lMousePosition);
 
         // Get the primary monitor at cursor position 0,0
-        var lPrimaryScreen = MonitorFromPoint(new POINT(0, 0), MonitorOptions.MONITOR_DEFAULTTOPRIMARY);
+        nint lPrimaryScreen = MonitorFromPoint(new POINT(0, 0), MonitorOptions.MONITOR_DEFAULTTOPRIMARY);
 
         // Try and get the primary screen information
-        var lPrimaryScreenInfo = new MONITORINFO();
+        MONITORINFO lPrimaryScreenInfo = new();
         if (!GetMonitorInfo(lPrimaryScreen, lPrimaryScreenInfo))
             return;
 
         // Now get the current screen
-        var lCurrentScreen = MonitorFromPoint(lMousePosition, MonitorOptions.MONITOR_DEFAULTTONEAREST);
+        nint lCurrentScreen = MonitorFromPoint(lMousePosition, MonitorOptions.MONITOR_DEFAULTTONEAREST);
 
         // If this has changed from the last one, update the transform
         if (lCurrentScreen != mLastScreen || mTransformToDevice == default(Matrix))
@@ -273,11 +272,11 @@ public class WindowResizer
         mLastScreen = lCurrentScreen;
 
         // Get min/max structure to fill with information
-        var lMmiTmp = (MINMAXINFO?)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO));
+        MINMAXINFO? lMmiTmp = (MINMAXINFO?)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO));
         if (lMmiTmp == null)
             return;
 
-        var lMmi = lMmiTmp.Value;
+        MINMAXINFO lMmi = lMmiTmp.Value;
 
         lMmi.ptMaxPosition.X = lPrimaryScreenInfo.rcWork.Left;
         lMmi.ptMaxPosition.Y = lPrimaryScreenInfo.rcWork.Top;
@@ -285,7 +284,7 @@ public class WindowResizer
         lMmi.ptMaxSize.Y = lPrimaryScreenInfo.rcWork.Bottom - lPrimaryScreenInfo.rcWork.Top;
 
         // Set min size
-        var minSize = mTransformToDevice.Transform(new Point(mWindow.MinWidth, mWindow.MinHeight));
+        Point minSize = mTransformToDevice.Transform(new Point(mWindow.MinWidth, mWindow.MinHeight));
 
         lMmi.ptMinTrackSize.X = (int)minSize.X;
         lMmi.ptMinTrackSize.Y = (int)minSize.Y;
@@ -300,7 +299,7 @@ public class WindowResizer
 
 #region Dll Helper Structures
 
-enum MonitorOptions : uint
+internal enum MonitorOptions : uint
 {
     MONITOR_DEFAULTTONULL = 0x00000000,
     MONITOR_DEFAULTTOPRIMARY = 0x00000001,
@@ -312,8 +311,8 @@ enum MonitorOptions : uint
 public class MONITORINFO
 {
     public int cbSize = Marshal.SizeOf(typeof(MONITORINFO));
-    public Rectangle rcMonitor = new Rectangle();
-    public Rectangle rcWork = new Rectangle();
+    public Rectangle rcMonitor = new();
+    public Rectangle rcWork = new();
     public int dwFlags = 0;
 }
 
