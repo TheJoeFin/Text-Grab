@@ -411,4 +411,37 @@ you are a bold one!", @"", 0, SpotInLine.End)]
     {
         Assert.Equal(expected, inputString.LimitCharactersPerLine(charLimit, spotInLine));
     }
+
+    private string actualGuids = """
+        97a56312-d8e8-4ca5-87fa-18e35266d31e
+        bdc5a5f2-d6ff-403d-a632-f9006387e149
+        aeef14aa-9aff-4f0d-8ca5-e5df1b399c20
+        c702f24c-e51b-4ebd-bb45-56df08266e80
+        a87f9201-a046-425d-b92b-b488667a5d92
+        bc656414-4f2a-4219-b763-810632a535e2
+        11c5ecc4-0c0a-4606-a54f-16df976637d1
+        5cec5cc9-782d-47aa-bff3-c84e13a81604
+        8501db7b-ee04-4fb2-8516-f5e2f0bc71bf
+        8da03c16-6d3f-4750-831b-c3866af85551
+        03d82c33-489c-41b2-8222-cc489d00b1bf
+        edf3b5ee-658e-41ea-8f7a-494a07beb322
+        4418874a-30c7-4a16-aba5-0f2a0c49b4f9
+        d4144186-4fad-40a0-bda9-7e3a2ea58a48
+        486d81d0-0d56-466b-856c-0bc37e897b7b
+        935155d5-1a96-4901-8b7d-23854fceb32d
+        ff826fac-d166-441e-8040-05218989e805
+        0a4ed755-f236-4e10-8b0b-592a527bb560
+        9be83ad8-5e2d-4e37-a9f5-9b728cd9b934
+        926ef504-264d-4762-b781-8813156eaa86
+        """;
+
+
+    [Theory]
+    [InlineData("g7a56312-d8e8-4ca5-87fa-18e3S266d3le", "97a56312-d8e8-4ca5-87fa-18e35266d31e")]
+    [InlineData("g7a56312-d8e 8-4ca5-87fa-18e3S2 66d3le", "97a56312-d8e8-4ca5-87fa-18e35266d31e")]
+    [InlineData("g7a56312-\r\nd8e8\r\n-4ca5-87fa-18e3S266d3le", "97a56312-d8e8-4ca5-87fa-18e35266d31e")]
+    public void TestGuidCorrections(string input, string expected)
+    {
+        Assert.Equal(expected, input.CorrectCommonGuidErrors());
+    }
 }
