@@ -2127,5 +2127,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         DefaultSettings.EditWindowIsWordWrapOn = WrapTextMenuItem.IsChecked;
     }
+
+    private void CorrectGuid_Click(object sender, RoutedEventArgs e)
+    {
+        string workingString = GetSelectedTextOrAllText();
+
+        workingString = workingString.CorrectCommonGuidErrors();
+
+        if (PassedTextControl.SelectionLength == 0)
+            PassedTextControl.Text = workingString;
+        else
+            PassedTextControl.SelectedText = workingString;
+    }
     #endregion Methods
 }

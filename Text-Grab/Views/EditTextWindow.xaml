@@ -216,6 +216,10 @@
                     Click="TryToAlphaMenuItem_Click"
                     Header="Try To Make _Letters" />
                 <MenuItem
+                    x:Name="CorrectGuid"
+                    Click="CorrectGuid_Click"
+                    Header="Correct Common _GUID/UUID Errors" />
+                <MenuItem
                     x:Name="ToggleCaseMenuItem"
                     Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                     Header="Toggle _Case"

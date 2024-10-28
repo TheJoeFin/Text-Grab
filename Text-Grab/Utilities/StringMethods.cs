@@ -59,6 +59,14 @@ public static class StringMethods
         {'b', '6'}, {'z', '2'}, {'Z', '2'}
     };
 
+    public static readonly Dictionary<char, char> GuidCorrections = new()
+    {
+        {'o', '0'}, {'O', '0'}, {'i', '1'}, {'l', '1'}, {'I', '1'},
+        {'h', '4'}, {'z', '2'}, {'Z', '2'}, {'g', '9'}, {'G', '9'},
+        {'s', '5'}, {'S', '5'}, {'Ø', '0'}, {'#', 'f'}, {'@', '0'},
+        {'Q', '0'}, {'¥', 'f'}, {'£', 'f'}, {'/', '7'}
+    };
+
     public static string ReplaceWithDictionary(this string str, Dictionary<char, char> dict)
     {
         StringBuilder sb = new();
@@ -72,6 +80,17 @@ public static class StringMethods
     public static string ReplaceGreekOrCyrillicWithLatin(this string str)
     {
         return str.ReplaceWithDictionary(GreekCyrillicLatinMap);
+    }
+
+    public static string CorrectCommonGuidErrors(this string guid)
+    {
+        // remove all spaces
+        guid = guid.Replace(" ", "");
+        // if a line ends with a dash remove the newline after the dash
+        guid = guid.Replace("-\r\n", "-");
+        // if a line begins with a dash remove the newline before the dash
+        guid = guid.Replace("\r\n-", "-");
+        return guid.ReplaceWithDictionary(GuidCorrections);
     }
 
     public static IEnumerable<int> AllIndexesOf(this string str, string searchString)
