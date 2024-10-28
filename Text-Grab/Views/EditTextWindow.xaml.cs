@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -46,6 +47,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand ReplaceReservedCmd = new();
     public static RoutedCommand SingleLineCmd = new();
     public static RoutedCommand SplitOnSelectionCmd = new();
+    public static RoutedCommand SplitAfterSelectionCmd = new();
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
@@ -1890,6 +1892,23 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         StringBuilder textToManipulate = new(PassedTextControl.Text);
 
         textToManipulate = textToManipulate.Replace(selectedText, Environment.NewLine + selectedText);
+
+        PassedTextControl.Text = textToManipulate.ToString();
+    }
+
+    private void SplitAfterSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(selectedText))
+        {
+            System.Windows.MessageBox.Show("No text selected", "Did not split lines");
+            return;
+        }
+
+        StringBuilder textToManipulate = new(PassedTextControl.Text);
+
+        textToManipulate = textToManipulate.Replace(selectedText, selectedText + Environment.NewLine);
 
         PassedTextControl.Text = textToManipulate.ToString();
     }

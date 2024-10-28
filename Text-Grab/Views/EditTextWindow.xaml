@@ -76,6 +76,10 @@
             Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
             Executed="SplitOnSelectionCmdExecuted" />
         <CommandBinding
+            CanExecute="SplitOnSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
+            Executed="SplitAfterSelectionCmdExecuted" />
+        <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
             Executed="IsolateSelectionCmdExecuted" />
@@ -284,6 +288,10 @@
                     x:Name="SplitLineBeforeSelectionMI"
                     Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
                     Header="Split Lines _Before Each Selection" />
+                <MenuItem
+                    x:Name="SplitLineAfterSelectionMI"
+                    Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
+                    Header="Split Lines _After Each Selection" />
                 <MenuItem
                     x:Name="IsolateSelectionMI"
                     Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
