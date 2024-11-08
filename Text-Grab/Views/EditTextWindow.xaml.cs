@@ -2046,17 +2046,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void UpdateLineAndColumnText()
     {
+        char[] delimiters = [' ', '\r', '\n'];
+
         if (PassedTextControl.SelectionLength < 1)
         {
             int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
             int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
+            int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
-            BottomBarText.Text = $"Ln {lineNumber + 1}, Col {columnNumber}";
+            BottomBarText.Text = $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}";
         }
         else
         {
             int selectionStartIndex = PassedTextControl.SelectionStart;
             int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
+            int words = PassedTextControl.Text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
             int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
 

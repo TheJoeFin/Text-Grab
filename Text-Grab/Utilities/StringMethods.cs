@@ -767,4 +767,20 @@ public static class StringMethods
     {
         return Regex.IsMatch(s, @"\n$");
     }
+
+    public static string RemoveNonWordChars(this string strIn)
+    {
+        // Replace invalid characters with empty strings.
+        try
+        {
+            return Regex.Replace(strIn, @"[^\w\s]", "",
+                                 RegexOptions.None, TimeSpan.FromSeconds(5));
+        }
+        // If we timeout when replacing invalid characters,
+        // we should return Empty.
+        catch (RegexMatchTimeoutException)
+        {
+            return String.Empty;
+        }
+    }
 }
