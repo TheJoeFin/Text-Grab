@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -51,6 +52,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
+    public static RoutedCommand GoogleSearchCmd = new();
+    public static RoutedCommand BingSearchCmd = new();
+    public static RoutedCommand DuckDuckGoSearchCmd = new();
     public bool LaunchedFromNotification = false;
     private CancellationTokenSource? cancellationTokenForDirOCR;
     private string historyId = string.Empty;
@@ -132,7 +136,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
             {nameof(OcrPasteCommand), OcrPasteCommand},
-            {nameof(MakeQrCodeCmd), MakeQrCodeCmd}
+            {nameof(MakeQrCodeCmd), MakeQrCodeCmd},
+            {nameof(GoogleSearchCmd), GoogleSearchCmd},
+            {nameof(BingSearchCmd), BingSearchCmd},
+            {nameof(DuckDuckGoSearchCmd), DuckDuckGoSearchCmd}
         };
     }
 
@@ -956,6 +963,27 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (!string.IsNullOrEmpty(PassedTextControl.SelectedText))
             PassedTextControl.Text = PassedTextControl.SelectedText;
+    }
+
+    private async void GoogleSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.google.com/search?q={searchStringUrlSafe}")));
+    }
+
+    private async void BingSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
+    }
+
+    private async void DuckDuckGoSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
     }
 
     private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)

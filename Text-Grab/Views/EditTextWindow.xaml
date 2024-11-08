@@ -127,6 +127,18 @@
             CanExecute="MakeQrCodeCanExecute"
             Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
             Executed="MakeQrCodeExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.GoogleSearchCmd}"
+            Executed="GoogleSearchExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.BingSearchCmd}"
+            Executed="BingSearchExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.DuckDuckGoSearchCmd}"
+            Executed="DuckDuckGoSearchExecuted" />
     </Window.CommandBindings>
     <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
@@ -252,6 +264,18 @@
                     x:Name="FindAndReplaceMenuItem"
                     Click="FindAndReplaceMenuItem_Click"
                     Header="Find and Replace" />
+                <MenuItem
+                    x:Name="GoogleSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.GoogleSearchCmd}"
+                    Header="_Google Selection..." />
+                <MenuItem
+                    x:Name="BingSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.BingSearchCmd}"
+                    Header="_Bing Selection..." />
+                <MenuItem
+                    x:Name="DuckSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.DuckDuckGoSearchCmd}"
+                    Header="_Duck Duck Go Selection..." />
                 <Separator />
                 <MenuItem
                     x:Name="SelectWordMenuItem"
