@@ -55,7 +55,7 @@ public class ClipboardUtilities
         {
             IDataObject clipboardData = System.Windows.Clipboard.GetDataObject();
             if (clipboardData is null
-                || !clipboardData.GetDataPresent(System.Windows.Forms.DataFormats.Bitmap))
+                || !clipboardData.GetDataPresent(DataFormats.Bitmap))
                 return (false, null);
 
             imageSource = System.Windows.Clipboard.GetImage();

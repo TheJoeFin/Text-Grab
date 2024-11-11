@@ -10,7 +10,6 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Text_Grab.Controls;
 

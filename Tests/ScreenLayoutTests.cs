@@ -135,26 +135,4 @@ public class ScreenLayoutTests
         Assert.False(display4.Contains(smallRect6));
         Assert.False(display5.Contains(smallRect6));
     }
-
-
-    [Fact]
-    public void CompareDapploToWinForms()
-    {
-        DisplayInfo[] dapploDisplays = Dapplo.Windows.User32.DisplayInfo.AllDisplayInfos;
-
-        System.Windows.Forms.Screen[] winFormsDisplays = System.Windows.Forms.Screen.AllScreens;
-
-        Assert.Equal(dapploDisplays.Length, winFormsDisplays.Length);
-
-        for (int i = 0; i < dapploDisplays.Length; i++)
-        {
-            Rect dapploRect = dapploDisplays[i].Bounds;
-            Rect winFormsRect = winFormsDisplays[i].Bounds.AsRect();
-
-            Point dapploCenterPoint = dapploRect.CenterPoint();
-            Point winFormsCenterPoint = winFormsRect.CenterPoint();
-
-            Assert.Equal(dapploCenterPoint, winFormsCenterPoint);
-        }
-    }
 }

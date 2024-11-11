@@ -729,7 +729,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         }
         catch (Exception ex)
         {
-            System.Windows.Forms.MessageBox.Show($"Failed to save csv file. {ex.Message}");
+            System.Windows.MessageBox.Show($"Failed to save csv file. {ex.Message}");
         }
     }
     #endregion Methods

@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Input;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
@@ -25,6 +24,7 @@ using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Microsoft.Win32;
 
 namespace Text_Grab;
 
@@ -804,11 +804,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void FontMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        using FontDialog fd = new();
+        FontDialog fd = new();
         System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
         fd.Font = currentFont;
-        DialogResult result = fd.ShowDialog();
-        if (result != System.Windows.Forms.DialogResult.OK)
+        bool? result = fd.ShowDialog();
+        if (result != true)
             return;
 
         Debug.WriteLine(fd.Font);
@@ -1028,8 +1028,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
     private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        FolderBrowserDialog folderBrowserDialog1 = new();
-        DialogResult result = folderBrowserDialog1.ShowDialog();
+        var folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+        var result = folderBrowserDialog1.ShowDialog();
 
         if (result is not System.Windows.Forms.DialogResult.OK)
             return;
@@ -1510,8 +1510,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
     private async void ReadFolderOfImages_Click(object sender, RoutedEventArgs e)
     {
-        FolderBrowserDialog folderBrowserDialog = new();
-        DialogResult result = folderBrowserDialog.ShowDialog();
+        var folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
+        var result = folderBrowserDialog.ShowDialog();
 
         if (result is not System.Windows.Forms.DialogResult.OK)
             return;
