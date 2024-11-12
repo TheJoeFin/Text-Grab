@@ -83,9 +83,6 @@ static partial class OSInterop
     public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 
     [LibraryImport("user32.dll")]
-    public static partial short GetAsyncKeyState(int vKey);
-
-    [LibraryImport("user32.dll")]
     public static partial uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
     [StructLayout(LayoutKind.Sequential)]
