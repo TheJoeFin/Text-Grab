@@ -7,6 +7,7 @@
 		<RootNamespace>Text_Grab</RootNamespace>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
+        <UseWindowsForms>true</UseWindowsForms>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<ApplicationIcon>TealSelect.ico</ApplicationIcon>
 		<StartupObject>Text_Grab.App</StartupObject>
