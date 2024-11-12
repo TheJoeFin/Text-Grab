@@ -55,6 +55,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand GoogleSearchCmd = new();
     public static RoutedCommand BingSearchCmd = new();
     public static RoutedCommand DuckDuckGoSearchCmd = new();
+    public static RoutedCommand GitHubSearchCmd = new();
     public bool LaunchedFromNotification = false;
     private CancellationTokenSource? cancellationTokenForDirOCR;
     private string historyId = string.Empty;
@@ -139,7 +140,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {nameof(MakeQrCodeCmd), MakeQrCodeCmd},
             {nameof(GoogleSearchCmd), GoogleSearchCmd},
             {nameof(BingSearchCmd), BingSearchCmd},
-            {nameof(DuckDuckGoSearchCmd), DuckDuckGoSearchCmd}
+            {nameof(DuckDuckGoSearchCmd), DuckDuckGoSearchCmd},
+            {nameof(GitHubSearchCmd), GitHubSearchCmd},
         };
     }
 
@@ -984,6 +986,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string possibleSearch = PassedTextControl.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
+    }
+
+    private async void GitHubSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://github.com/search?q={searchStringUrlSafe}")));
     }
 
     private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
