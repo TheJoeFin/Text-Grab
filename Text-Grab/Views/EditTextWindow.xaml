@@ -139,6 +139,10 @@
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.DuckDuckGoSearchCmd}"
             Executed="DuckDuckGoSearchExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.GitHubSearchCmd}"
+            Executed="GitHubSearchExecuted" />
     </Window.CommandBindings>
     <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
@@ -276,6 +280,10 @@
                     x:Name="DuckSearchMenuItem"
                     Command="{x:Static local:EditTextWindow.DuckDuckGoSearchCmd}"
                     Header="_Duck Duck Go Selection..." />
+                <MenuItem
+                    x:Name="GitHubSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.GitHubSearchCmd}"
+                    Header="Git_Hub Search Selection..." />
                 <Separator />
                 <MenuItem
                     x:Name="SelectWordMenuItem"
