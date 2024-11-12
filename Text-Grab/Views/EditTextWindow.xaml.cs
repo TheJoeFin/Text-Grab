@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -46,11 +48,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand ReplaceReservedCmd = new();
     public static RoutedCommand SingleLineCmd = new();
     public static RoutedCommand SplitOnSelectionCmd = new();
+    public static RoutedCommand SplitAfterSelectionCmd = new();
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
+    public static RoutedCommand GoogleSearchCmd = new();
+    public static RoutedCommand BingSearchCmd = new();
+    public static RoutedCommand DuckDuckGoSearchCmd = new();
+    public static RoutedCommand GitHubSearchCmd = new();
     public bool LaunchedFromNotification = false;
-    CancellationTokenSource? cancellationTokenForDirOCR;
+    private CancellationTokenSource? cancellationTokenForDirOCR;
     private string historyId = string.Empty;
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
@@ -130,7 +137,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {nameof(DeleteAllSelectionPatternCmd), DeleteAllSelectionPatternCmd},
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
             {nameof(OcrPasteCommand), OcrPasteCommand},
-            {nameof(MakeQrCodeCmd), MakeQrCodeCmd}
+            {nameof(MakeQrCodeCmd), MakeQrCodeCmd},
+            {nameof(GoogleSearchCmd), GoogleSearchCmd},
+            {nameof(BingSearchCmd), BingSearchCmd},
+            {nameof(DuckDuckGoSearchCmd), DuckDuckGoSearchCmd},
+            {nameof(GitHubSearchCmd), GitHubSearchCmd},
         };
     }
 
@@ -718,8 +729,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // D9 is 43
         // D0 is 34
 
-        if (keyNumberPressed < -1
-            || keyNumberPressed > 8)
+        if (keyNumberPressed is < (-1)
+            or > 8)
             return;
 
         // since D9 is next to D0 it makes sense
@@ -894,8 +905,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int selectionPositionInLine = PassedTextControl.SelectionStart;
         for (int i = initialSelectionStart; i >= 0; i--)
         {
-            if (PassedTextControl.Text[i] == '\n'
-                || PassedTextControl.Text[i] == '\r')
+            if (PassedTextControl.Text[i] is '\n'
+                or '\r')
             {
                 selectionPositionInLine = initialSelectionStart - i - 1;
                 break;
@@ -954,6 +965,34 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (!string.IsNullOrEmpty(PassedTextControl.SelectedText))
             PassedTextControl.Text = PassedTextControl.SelectedText;
+    }
+
+    private async void GoogleSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.google.com/search?q={searchStringUrlSafe}")));
+    }
+
+    private async void BingSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
+    }
+
+    private async void DuckDuckGoSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
+    }
+
+    private async void GitHubSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://github.com/search?q={searchStringUrlSafe}")));
     }
 
     private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
@@ -1184,7 +1223,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SelectLine();
         string lineText = PassedTextControl.SelectedText;
         bool lineEndsInNewLine = lineText.EndsWithNewline();
-        PassedTextControl.SelectedText = $"{ lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{ lineText}";
+        PassedTextControl.SelectedText = $"{lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{lineText}";
         int length = lineText.Length;
         if (!lineEndsInNewLine)
             length += Environment.NewLine.Length;
@@ -1894,6 +1933,23 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Text = textToManipulate.ToString();
     }
 
+    private void SplitAfterSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(selectedText))
+        {
+            System.Windows.MessageBox.Show("No text selected", "Did not split lines");
+            return;
+        }
+
+        StringBuilder textToManipulate = new(PassedTextControl.Text);
+
+        textToManipulate = textToManipulate.Replace(selectedText, selectedText + Environment.NewLine);
+
+        PassedTextControl.Text = textToManipulate.ToString();
+    }
+
     private void ToggleCase(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
         string textToModify = GetSelectedTextOrAllText();
@@ -1999,17 +2055,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void UpdateLineAndColumnText()
     {
+        char[] delimiters = [' ', '\r', '\n'];
+
         if (PassedTextControl.SelectionLength < 1)
         {
             int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
             int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
+            int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
-            BottomBarText.Text = $"Ln {lineNumber + 1}, Col {columnNumber}";
+            BottomBarText.Text = $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}";
         }
         else
         {
             int selectionStartIndex = PassedTextControl.SelectionStart;
             int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
+            int words = PassedTextControl.Text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
             int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
 
@@ -2101,12 +2161,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (!IsLoaded)
             return;
 
-        if ((bool)WrapTextMenuItem.IsChecked)
+        if (WrapTextMenuItem.IsChecked)
             PassedTextControl.TextWrapping = TextWrapping.Wrap;
         else
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
 
-        DefaultSettings.EditWindowIsWordWrapOn = (bool)WrapTextMenuItem.IsChecked;
+        DefaultSettings.EditWindowIsWordWrapOn = WrapTextMenuItem.IsChecked;
+    }
+
+    private void CorrectGuid_Click(object sender, RoutedEventArgs e)
+    {
+        string workingString = GetSelectedTextOrAllText();
+
+        workingString = workingString.CorrectCommonGuidErrors();
+
+        if (PassedTextControl.SelectionLength == 0)
+            PassedTextControl.Text = workingString;
+        else
+            PassedTextControl.SelectedText = workingString;
     }
     #endregion Methods
 }

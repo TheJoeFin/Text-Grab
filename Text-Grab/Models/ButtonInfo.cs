@@ -199,6 +199,38 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 1.7,
+            ButtonText = "Google...",
+            SymbolText = "",
+            Command = "GoogleSearchCmd",
+            SymbolIcon = SymbolRegular.GlobeSearch24
+        },
+        new()
+        {
+            OrderNumber = 1.8,
+            ButtonText = "Bing...",
+            SymbolText = "",
+            Command = "BingSearchCmd",
+            SymbolIcon = SymbolRegular.GlobeSearch24
+        },
+        new()
+        {
+            OrderNumber = 1.9,
+            ButtonText = "Duck Duck Go...",
+            SymbolText = "",
+            Command = "DuckDuckGoSearchCmd",
+            SymbolIcon = SymbolRegular.GlobeSearch24
+        },
+        new()
+        {
+            OrderNumber = 1.91,
+            ButtonText = "Search GitHub...",
+            SymbolText = "",
+            Command = "GitHubSearchCmd",
+            SymbolIcon = SymbolRegular.GlobeSearch24
+        },
+        new()
+        {
             OrderNumber = 2.1,
             ButtonText = "Open Settings",
             SymbolText = "",

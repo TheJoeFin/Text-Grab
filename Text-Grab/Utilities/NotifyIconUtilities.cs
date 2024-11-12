@@ -49,7 +49,7 @@ public static class NotifyIconUtilities
         UnregisterHotkeys(app);
     }
 
-    static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
+    private static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
     {
         if (!AppUtilities.TextGrabSettings.GlobalHotkeysEnabled)
             return;

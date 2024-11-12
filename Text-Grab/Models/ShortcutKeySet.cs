@@ -41,14 +41,14 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
         if (!shortcutsAsString.Contains('-'))
             return;
 
-        var enabledSplitKeys = shortcutsAsString.Split('-');
+        string[] enabledSplitKeys = shortcutsAsString.Split('-');
 
         bool parsedEnabledSuccessfully = bool.TryParse(enabledSplitKeys[0], out bool parsedEnabled);
 
         if (!parsedEnabledSuccessfully || enabledSplitKeys.Length < 2)
             return;
 
-        var splitUpString = enabledSplitKeys[1].Split('+');
+        string[] splitUpString = enabledSplitKeys[1].Split('+');
         string? keyString = splitUpString.LastOrDefault();
 
         if (Enum.TryParse(keyString, out Key parsedKey))

@@ -47,7 +47,7 @@ internal class SettingsService : IDisposable
                 throw;
 #endif
             }
-            
+
         }
     }
 

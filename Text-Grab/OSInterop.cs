@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-static partial class OSInterop
+internal static partial class OSInterop
 {
     [LibraryImport("user32.dll")]
     public static partial int GetSystemMetrics(int smIndex);
@@ -38,8 +38,8 @@ static partial class OSInterop
     public class MONITORINFOEX
     {
         public int cbSize = Marshal.SizeOf(typeof(MONITORINFOEX));
-        public RECT rcMonitor = new RECT();
-        public RECT rcWork = new RECT();
+        public RECT rcMonitor = new();
+        public RECT rcWork = new();
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
         public char[] szDevice = new char[32];
         public int dwFlags;

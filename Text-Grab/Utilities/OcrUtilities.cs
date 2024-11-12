@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -14,11 +12,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Controls;
-using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
-using Text_Grab.Views;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
@@ -30,7 +26,7 @@ namespace Text_Grab.Utilities;
 
 public static class OcrUtilities
 {
-    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     public static void GetTextFromOcrLine(this OcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
@@ -97,7 +93,7 @@ public static class OcrUtilities
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
-        return GetStringFromOcrOutputs( await GetTextFromImageAsync(bmp, language, languageTag));
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language, languageTag));
     }
 
     public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, Language language)
@@ -129,7 +125,7 @@ public static class OcrUtilities
         return (ocrResult, scale);
     }
 
-    public async static Task<OcrResult> GetOcrFromStreamAsync(MemoryStream memoryStream, Language language)
+    public static async Task<OcrResult> GetOcrFromStreamAsync(MemoryStream memoryStream, Language language)
     {
         using WrappingStream wrapper = new(memoryStream);
         wrapper.Position = 0;
@@ -141,7 +137,7 @@ public static class OcrUtilities
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
 
-    public async static Task<OcrResult> GetOcrFromStreamAsync(IRandomAccessStream stream, Language language)
+    public static async Task<OcrResult> GetOcrFromStreamAsync(IRandomAccessStream stream, Language language)
     {
         BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(stream);
         using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
@@ -149,13 +145,13 @@ public static class OcrUtilities
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
 
-    public async static Task<OcrResult> GetOcrResultFromImageAsync(BitmapImage scaledBitmap, Language language)
+    public static async Task<OcrResult> GetOcrResultFromImageAsync(BitmapImage scaledBitmap, Language language)
     {
         Bitmap bitmap = ImageMethods.BitmapImageToBitmap(scaledBitmap);
         return await GetOcrResultFromImageAsync(bitmap, language);
     }
 
-    public async static Task<OcrResult> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, Language language)
+    public static async Task<OcrResult> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, Language language)
     {
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(language);
 
@@ -165,7 +161,7 @@ public static class OcrUtilities
         return await ocrEngine.RecognizeAsync(scaledBitmap);
     }
 
-    public async static Task<OcrResult> GetOcrResultFromImageAsync(Bitmap scaledBitmap, Language language)
+    public static async Task<OcrResult> GetOcrResultFromImageAsync(Bitmap scaledBitmap, Language language)
     {
         await using MemoryStream memory = new();
         using WrappingStream wrapper = new(memory);
@@ -180,7 +176,7 @@ public static class OcrUtilities
         return await GetOcrResultFromImageAsync(softwareBmp, language);
     }
 
-    public async static void GetCopyTextFromPreviousRegion()
+    public static async void GetCopyTextFromPreviousRegion()
     {
         HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();
 
@@ -211,7 +207,7 @@ public static class OcrUtilities
         OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, null);
     }
 
-    public async static Task GetTextFromPreviousFullscreenRegion(TextBox? destinationTextBox = null)
+    public static async Task GetTextFromPreviousFullscreenRegion(TextBox? destinationTextBox = null)
     {
         HistoryInfo? lastFsg = Singleton<HistoryService>.Instance.GetLastFullScreenGrabInfo();
 
@@ -242,7 +238,7 @@ public static class OcrUtilities
         OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, destinationTextBox);
     }
 
-    public async static Task<List<OcrOutput>> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, Language language)
+    public static async Task<List<OcrOutput>> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, Language language)
     {
         OcrResult ocrResult = await GetOcrFromStreamAsync(randomAccessStream, language);
 
@@ -271,7 +267,7 @@ public static class OcrUtilities
         //          Read QR Codes from software bitmaps
     }
 
-    public async static Task<List<OcrOutput>> GetTextFromImageAsync(BitmapImage bitmapImage, Language language)
+    public static async Task<List<OcrOutput>> GetTextFromImageAsync(BitmapImage bitmapImage, Language language)
     {
         Bitmap bitmap = ImageMethods.BitmapImageToBitmap(bitmapImage);
         return await GetTextFromImageAsync(bitmap, language);
@@ -287,12 +283,12 @@ public static class OcrUtilities
         throw new NotImplementedException();
     }
 
-    public async static Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language, string tessTag = "")
+    public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language, string tessTag = "")
     {
         List<OcrOutput> outputs = new();
 
-        if (DefaultSettings.UseTesseract 
-            && TesseractHelper.CanLocateTesseractExe() 
+        if (DefaultSettings.UseTesseract
+            && TesseractHelper.CanLocateTesseractExe()
             && !string.IsNullOrEmpty(tessTag))
         {
             OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, language, tessTag);
@@ -403,14 +399,14 @@ public static class OcrUtilities
         return string.Empty;
     }
 
-    public async static Task<double> GetIdealScaleFactorForOcrAsync(SoftwareBitmap bitmap, Language selectedLanguage)
+    public static async Task<double> GetIdealScaleFactorForOcrAsync(SoftwareBitmap bitmap, Language selectedLanguage)
     {
         OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
 
         return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.PixelHeight, bitmap.PixelWidth);
     }
 
-    public async static Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, Language selectedLanguage)
+    public static async Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, Language selectedLanguage)
     {
         OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
 

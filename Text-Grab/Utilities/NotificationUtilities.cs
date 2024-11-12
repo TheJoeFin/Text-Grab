@@ -12,17 +12,17 @@ internal static class NotificationUtilities
 
         // changed to using base64
         // the padding '=' will be encoded as '%3D' in the toast XML, so remove them
-        string encodedString = Convert.ToBase64String(plainTextBytes).TrimEnd('='); 
+        string encodedString = Convert.ToBase64String(plainTextBytes).TrimEnd('=');
 
         // truncate toast body text first, if it is too long
         string toastBody;
         if (copiedText.Length > 150)
-            toastBody = copiedText.Substring(0, 150) + "...";
+            toastBody = copiedText[..150] + "...";
         else
             toastBody = copiedText;
 
         // build the toast XML
-        var toast = new ToastContentBuilder()
+        ToastContentBuilder toast = new ToastContentBuilder()
             .AddArgument("text", encodedString)
             .AddText("Text Grab")
             .AddText(toastBody);

@@ -27,7 +27,7 @@ public partial class App : System.Windows.Application
 {
     #region Fields
 
-    readonly static Settings _defaultSettings = AppUtilities.TextGrabSettings;
+    private static readonly Settings _defaultSettings = AppUtilities.TextGrabSettings;
 
     #endregion Fields
 
@@ -232,7 +232,7 @@ public partial class App : System.Windows.Application
         Singleton<HistoryService>.Instance.WriteHistory();
     }
 
-    async void appStartup(object sender, StartupEventArgs e)
+    private async void appStartup(object sender, StartupEventArgs e)
     {
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;

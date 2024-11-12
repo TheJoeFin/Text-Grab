@@ -76,6 +76,10 @@
             Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
             Executed="SplitOnSelectionCmdExecuted" />
         <CommandBinding
+            CanExecute="SplitOnSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
+            Executed="SplitAfterSelectionCmdExecuted" />
+        <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
             Executed="IsolateSelectionCmdExecuted" />
@@ -123,6 +127,22 @@
             CanExecute="MakeQrCodeCanExecute"
             Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
             Executed="MakeQrCodeExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.GoogleSearchCmd}"
+            Executed="GoogleSearchExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.BingSearchCmd}"
+            Executed="BingSearchExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.DuckDuckGoSearchCmd}"
+            Executed="DuckDuckGoSearchExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.GitHubSearchCmd}"
+            Executed="GitHubSearchExecuted" />
     </Window.CommandBindings>
     <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
@@ -212,6 +232,10 @@
                     Click="TryToAlphaMenuItem_Click"
                     Header="Try To Make _Letters" />
                 <MenuItem
+                    x:Name="CorrectGuid"
+                    Click="CorrectGuid_Click"
+                    Header="Correct Common _GUID/UUID Errors" />
+                <MenuItem
                     x:Name="ToggleCaseMenuItem"
                     Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                     Header="Toggle _Case"
@@ -244,6 +268,22 @@
                     x:Name="FindAndReplaceMenuItem"
                     Click="FindAndReplaceMenuItem_Click"
                     Header="Find and Replace" />
+                <MenuItem
+                    x:Name="GoogleSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.GoogleSearchCmd}"
+                    Header="_Google Selection..." />
+                <MenuItem
+                    x:Name="BingSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.BingSearchCmd}"
+                    Header="_Bing Selection..." />
+                <MenuItem
+                    x:Name="DuckSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.DuckDuckGoSearchCmd}"
+                    Header="_Duck Duck Go Selection..." />
+                <MenuItem
+                    x:Name="GitHubSearchMenuItem"
+                    Command="{x:Static local:EditTextWindow.GitHubSearchCmd}"
+                    Header="Git_Hub Search Selection..." />
                 <Separator />
                 <MenuItem
                     x:Name="SelectWordMenuItem"
@@ -284,6 +324,10 @@
                     x:Name="SplitLineBeforeSelectionMI"
                     Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
                     Header="Split Lines _Before Each Selection" />
+                <MenuItem
+                    x:Name="SplitLineAfterSelectionMI"
+                    Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
+                    Header="Split Lines _After Each Selection" />
                 <MenuItem
                     x:Name="IsolateSelectionMI"
                     Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"

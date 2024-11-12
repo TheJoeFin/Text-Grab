@@ -3,7 +3,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using System.Windows.Input;
 using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
@@ -37,8 +36,9 @@ public static partial class HotKeyManager
         _wnd?.Invoke(new UnRegisterHotKeyDelegate(UnRegisterHotKeyInternal), _hwnd, id);
     }
 
-    delegate void RegisterHotKeyDelegate(IntPtr hwnd, int id, uint modifiers, uint key);
-    delegate void UnRegisterHotKeyDelegate(IntPtr hwnd, int id);
+    private delegate void RegisterHotKeyDelegate(IntPtr hwnd, int id, uint modifiers, uint key);
+
+    private delegate void UnRegisterHotKeyDelegate(IntPtr hwnd, int id);
 
     private static void RegisterHotKeyInternal(IntPtr hwnd, int id, uint modifiers, uint key)
     {
@@ -60,10 +60,10 @@ public static partial class HotKeyManager
 
     private static volatile MessageWindow? _wnd;
     private static volatile IntPtr _hwnd;
-    private static ManualResetEvent? _windowReadyEvent = new ManualResetEvent(false);
+    private static ManualResetEvent? _windowReadyEvent = new(false);
     static HotKeyManager()
     {
-        Thread messageLoop = new Thread(delegate ()
+        Thread messageLoop = new(delegate ()
           {
               Application.Run(new MessageWindow());
           });
@@ -85,7 +85,7 @@ public static partial class HotKeyManager
         {
             if (m.Msg == WM_HOTKEY)
             {
-                HotKeyEventArgs e = new HotKeyEventArgs(m.LParam);
+                HotKeyEventArgs e = new(m.LParam);
                 HotKeyManager.OnHotKeyPressed(e);
             }
 

@@ -94,7 +94,7 @@ public partial class KeysSettings : Page
             return false;
 
         return true;
-    }   
+    }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {

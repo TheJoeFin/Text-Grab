@@ -2,7 +2,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Windows.Graphics.Printing.Workflow;
 
 namespace Text_Grab.Controls;
 

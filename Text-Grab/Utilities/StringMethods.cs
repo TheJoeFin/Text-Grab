@@ -59,6 +59,14 @@ public static class StringMethods
         {'b', '6'}, {'z', '2'}, {'Z', '2'}
     };
 
+    public static readonly Dictionary<char, char> GuidCorrections = new()
+    {
+        {'o', '0'}, {'O', '0'}, {'i', '1'}, {'l', '1'}, {'I', '1'},
+        {'h', '4'}, {'z', '2'}, {'Z', '2'}, {'g', '9'}, {'G', '9'},
+        {'s', '5'}, {'S', '5'}, {'Ø', '0'}, {'#', 'f'}, {'@', '0'},
+        {'Q', '0'}, {'¥', 'f'}, {'£', 'f'}, {'/', '7'}
+    };
+
     public static string ReplaceWithDictionary(this string str, Dictionary<char, char> dict)
     {
         StringBuilder sb = new();
@@ -72,6 +80,17 @@ public static class StringMethods
     public static string ReplaceGreekOrCyrillicWithLatin(this string str)
     {
         return str.ReplaceWithDictionary(GreekCyrillicLatinMap);
+    }
+
+    public static string CorrectCommonGuidErrors(this string guid)
+    {
+        // remove all spaces
+        guid = guid.Replace(" ", "");
+        // if a line ends with a dash remove the newline after the dash
+        guid = guid.Replace("-\r\n", "-");
+        // if a line begins with a dash remove the newline before the dash
+        guid = guid.Replace("\r\n-", "-");
+        return guid.ReplaceWithDictionary(GuidCorrections);
     }
 
     public static IEnumerable<int> AllIndexesOf(this string str, string searchString)
@@ -507,7 +526,7 @@ public static class StringMethods
         return possibleShortenedPatterns.First();
     }
 
-    static IEnumerable<string> Split(string str, int chunkSize)
+    private static IEnumerable<string> Split(string str, int chunkSize)
     {
         return Enumerable.Range(0, str.Length / chunkSize)
             .Select(i => str.Substring(i * chunkSize, chunkSize));
@@ -662,7 +681,7 @@ public static class StringMethods
                 continue;
             }
 
-            if (spotInLine== SpotInLine.Beginning)
+            if (spotInLine == SpotInLine.Beginning)
                 returnStringBuilder.AppendLine(line[..lineLimit]);
             else
                 returnStringBuilder.AppendLine(line.Substring(line.Length - (lineLimit), lineLimit));
@@ -683,7 +702,7 @@ public static class StringMethods
     {
         // Basic Latin characters are those with Unicode code points
         // in the range U+0000 to U+007F (inclusive)
-        return c >= '\u0000' && c <= '\u007F';
+        return c is >= '\u0000' and <= '\u007F';
     }
 
     public static string GetCharactersToLeftOfNewLine(ref string mainString, int index, int numberOfCharacters)
@@ -747,5 +766,21 @@ public static class StringMethods
     public static bool EndsWithNewline(this string s)
     {
         return Regex.IsMatch(s, @"\n$");
+    }
+
+    public static string RemoveNonWordChars(this string strIn)
+    {
+        // Replace invalid characters with empty strings.
+        try
+        {
+            return Regex.Replace(strIn, @"[^\w\s]", "",
+                                 RegexOptions.None, TimeSpan.FromSeconds(5));
+        }
+        // If we timeout when replacing invalid characters,
+        // we should return Empty.
+        catch (RegexMatchTimeoutException)
+        {
+            return String.Empty;
+        }
     }
 }

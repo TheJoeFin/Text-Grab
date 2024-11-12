@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Controls;
 using Text_Grab.Controls;
-using Text_Grab.UndoRedoOperations;
 
 namespace Text_Grab.UndoRedoOperations;
 
@@ -16,7 +15,7 @@ internal class RemoveWordBorder : Operation, IUndoRedoOperation
     }
 
     private List<WordBorder> RemovingWordBorders;
-    
+
     private Canvas Canvas;
 
     private ICollection<WordBorder> WordBorders;

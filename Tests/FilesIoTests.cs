@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Drawing;
 using Text_Grab;
 using Text_Grab.Utilities;
 
@@ -16,7 +11,7 @@ public class FilesIoTests
     [WpfFact]
     public async Task CanSaveImagesWithHistory()
     {
-        Bitmap fontSampleBitmap = new Bitmap(FileUtilities.GetPathToLocalFile(fontSamplePath));
+        Bitmap fontSampleBitmap = new(FileUtilities.GetPathToLocalFile(fontSamplePath));
 
         bool couldSave = await FileUtilities.SaveImageFile(fontSampleBitmap, "newTest.png", FileStorageKind.WithHistory);
 

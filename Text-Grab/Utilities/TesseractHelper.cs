@@ -30,7 +30,7 @@ public static class TesseractHelper
     private const string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
     private const string basicPath = @"C:\Program Files\Tesseract-OCR\tesseract.exe";
 
-    private readonly static Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
 
     public static bool CanLocateTesseractExe()
@@ -184,7 +184,7 @@ public static class TesseractHelper
         return $"{exePath}\\tempImage.png";
     }
 
-    public async static Task<List<string>> TesseractLanguagesAsStrings()
+    public static async Task<List<string>> TesseractLanguagesAsStrings()
     {
         List<string> languageStrings = new();
 
@@ -217,7 +217,7 @@ public static class TesseractHelper
         return languageStrings;
     }
 
-    public async static Task<List<ILanguage>> TesseractLanguages()
+    public static async Task<List<ILanguage>> TesseractLanguages()
     {
         List<string> languageStrings = await TesseractLanguagesAsStrings();
         List<ILanguage> tesseractLanguages = new();

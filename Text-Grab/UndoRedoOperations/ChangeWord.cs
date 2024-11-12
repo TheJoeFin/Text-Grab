@@ -1,19 +1,16 @@
-﻿using System.Collections.Generic;
-using System.Windows.Controls;
-using Text_Grab.Controls;
-using Text_Grab.UndoRedoOperations;
+﻿using Text_Grab.Controls;
 
 namespace Text_Grab.UndoRedoOperations;
 
 internal class ChangeWord : Operation, IUndoRedoOperation
 {
-    public ChangeWord(uint transactionId, WordBorder wordBorder, 
+    public ChangeWord(uint transactionId, WordBorder wordBorder,
         string oldWord, string newWord) : base(transactionId)
     {
         WordBorder = wordBorder;
         OldWord = oldWord;
         NewWord = newWord;
-        
+
     }
 
     private WordBorder WordBorder;

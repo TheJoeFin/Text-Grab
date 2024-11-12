@@ -42,14 +42,15 @@ public static class WindowUtilities
         if (storedPosition != null
             && storedPosition.Count == 4)
         {
-            bool couldParseAll = false;
-            couldParseAll = double.TryParse(storedPosition[0], out double parsedX);
-            couldParseAll = double.TryParse(storedPosition[1], out double parsedY);
-            couldParseAll = double.TryParse(storedPosition[2], out double parsedWid);
-            couldParseAll = double.TryParse(storedPosition[3], out double parsedHei);
+            bool couldParseX = double.TryParse(storedPosition[0], out double parsedX);
+            bool couldParseY = double.TryParse(storedPosition[1], out double parsedY);
+            bool couldParseW = double.TryParse(storedPosition[2], out double parsedWid);
+            bool couldParseH = double.TryParse(storedPosition[3], out double parsedHei);
+
+            bool couldParseAll = couldParseX && couldParseY && couldParseW && couldParseH;
+
             Rect storedSize = new((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
             DisplayInfo[] allScreens = DisplayInfo.AllDisplayInfos;
-            WindowCollection allWindows = Application.Current.Windows;
 
             if (parsedHei < 10 || parsedWid < 10)
                 return;
@@ -57,6 +58,8 @@ public static class WindowUtilities
             foreach (DisplayInfo screen in allScreens)
             {
                 Rect screenRect = screen.Bounds;
+                DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(passedWindow);
+                screenRect = screenRect.GetScaledDownByDpi(dpi);
                 if (screenRect.IntersectsWith(storedSize))
                     isStoredRectWithinScreen = true;
             }
@@ -239,7 +242,7 @@ public static class WindowUtilities
         // Most significant bit is set if key is down
         if ((GetAsyncKeyState((int)modifier) & 0x8000) != 0)
         {
-            var inputEvent = default(INPUT);
+            INPUT inputEvent = default(INPUT);
             inputEvent.Type = OSInterop.InputType.INPUT_KEYBOARD;
             inputEvent.U.Ki.WVk = modifier;
             inputEvent.U.Ki.DwFlags = KEYEVENTF.KEYUP;
@@ -251,7 +254,7 @@ public static class WindowUtilities
     {
         WindowCollection allWindows = Application.Current.Windows;
 
-        foreach (var window in allWindows)
+        foreach (Window window in allWindows)
         {
             if (window is T matchWindow)
             {
@@ -262,7 +265,15 @@ public static class WindowUtilities
 
         // No Window Found, open a new one
         T newWindow = new();
-        newWindow.Show();
+
+        try
+        {
+            newWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("An error occurred while trying to open a new window. Please try again.", ex.Message);
+        }
         return newWindow;
     }
 
@@ -288,7 +299,7 @@ public static class WindowUtilities
         if (shouldShutDown)
             Application.Current.Shutdown();
     }
-    
+
     public static bool GetMousePosition(out Point mousePosition)
     {
         if (GetCursorPos(out POINT point))
@@ -316,7 +327,7 @@ public static class WindowUtilities
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    static extern bool GetCursorPos(out POINT lpPoint);
+    private static extern bool GetCursorPos(out POINT lpPoint);
 
     #endregion
 }

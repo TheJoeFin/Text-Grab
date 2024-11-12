@@ -11,7 +11,7 @@ namespace Text_Grab.Models;
 // based on: https://stackoverflow.com/questions/61041282/showing-image-thumbnail-with-mouse-cursor-while-dragging/61148788#61148788
 public static class DragDataObject
 {
-    private static readonly Guid DataObject = new Guid("b8c0bd9f-ed24-455c-83e6-d5390c4fe8c4");
+    private static readonly Guid DataObject = new("b8c0bd9f-ed24-455c-83e6-d5390c4fe8c4");
 
     public static IDataObject FromFile(string filePath)
     {
@@ -25,7 +25,7 @@ public static class DragDataObject
         ArgumentNullException.ThrowIfNull(dataObject);
 
         IDragSourceHelper dragDropHelper = (IDragSourceHelper)new DragDropHelper();
-        ShDragImage dragImage = new ShDragImage
+        ShDragImage dragImage = new()
         {
             HBmpDragImage = hBitmap,
             SizeDragImage = new Size(width, height),
@@ -81,7 +81,7 @@ public static class DragDataObject
             return null;
         }
 
-        Bitmap bitmap = new Bitmap(source.PixelWidth, source.PixelHeight, DrawingImaging.PixelFormat.Format32bppArgb);
+        Bitmap bitmap = new(source.PixelWidth, source.PixelHeight, DrawingImaging.PixelFormat.Format32bppArgb);
         DrawingImaging.BitmapData bitmapData = bitmap.LockBits(new Rectangle(Point.Empty, bitmap.Size), DrawingImaging.ImageLockMode.WriteOnly, DrawingImaging.PixelFormat.Format32bppArgb);
 
         source.CopyPixels(System.Windows.Int32Rect.Empty, bitmapData.Scan0, bitmapData.Height * bitmapData.Stride, bitmapData.Stride);

@@ -7,10 +7,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Models;
-using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Text_Grab.Controls;
 
@@ -28,10 +26,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public static RoutedCommand MergeWordsCommand = new();
     private int contextMenuBaseSize;
-    private SolidColorBrush contrastingForeground = new SolidColorBrush(Colors.White);
+    private SolidColorBrush contrastingForeground = new(Colors.White);
     private DispatcherTimer debounceTimer = new();
     private double left = 0;
-    private SolidColorBrush matchingBackground = new SolidColorBrush(Colors.Black);
+    private SolidColorBrush matchingBackground = new(Colors.Black);
     private double top = 0;
 
     #endregion Fields
@@ -201,7 +199,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         EditWordTextBox.Height = this.Height - 2;
         EditWordTextBox.FontSize = 14;
 
-        if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
+        if (Uri.TryCreate(Word, UriKind.Absolute, out Uri? uri))
             EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
     }
 
@@ -248,7 +246,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             textBoxContextMenu.Items.RemoveAt(contextMenuBaseSize);
         }
 
-        if (Uri.TryCreate(Word, UriKind.Absolute, out var uri))
+        if (Uri.TryCreate(Word, UriKind.Absolute, out Uri? uri))
         {
             string headerText = $"Try to go to: {Word}";
             int maxLength = 36;
@@ -310,7 +308,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         if (sender is not FrameworkElement fe)
             return;
-        Enum.TryParse(typeof(Side), fe.Tag.ToString(), out var side);
+        Enum.TryParse(typeof(Side), fe.Tag.ToString(), out object? side);
 
         if (side is not Side sideEnum)
             return;

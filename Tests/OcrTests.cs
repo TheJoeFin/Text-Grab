@@ -256,8 +256,8 @@ December	12	Winter";
             Assert.Contains(tag, actualStrings);
         }
     }
-    
-    [WpfFact(Skip ="fails GitHub actions")]
+
+    [WpfFact(Skip = "fails GitHub actions")]
     public async Task GetTesseractStrongLanguages()
     {
         List<ILanguage> expectedList = new()
