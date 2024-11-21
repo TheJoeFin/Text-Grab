@@ -637,26 +637,28 @@ public partial class FullscreenGrab : Window
             };
         }
 
-        if (!string.IsNullOrWhiteSpace(TextFromOCR))
-        {
-            if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
-            {
-                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-                destinationTextBox = etw.PassedTextControl;
-            }
-
-            OutputUtilities.HandleTextFromOcr(
-                TextFromOCR,
-                isSingleLine,
-                isTable,
-                destinationTextBox);
-            WindowUtilities.CloseAllFullscreenGrabs();
-        }
-        else
+        if (string.IsNullOrWhiteSpace(TextFromOCR))
         {
             BackgroundBrush.Opacity = .2;
             TopButtonsStackPanel.Visibility = Visibility.Visible;
+            return;
         }
+
+        if (GuidFixMenuItem.IsChecked is true)
+            TextFromOCR = TextFromOCR.CorrectCommonGuidErrors();
+
+        if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
+        {
+            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            destinationTextBox = etw.PassedTextControl;
+        }
+
+        OutputUtilities.HandleTextFromOcr(
+            TextFromOCR,
+            isSingleLine,
+            isTable,
+            destinationTextBox);
+        WindowUtilities.CloseAllFullscreenGrabs();
     }
 
     private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
