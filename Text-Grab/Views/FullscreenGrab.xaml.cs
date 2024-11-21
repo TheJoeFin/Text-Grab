@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -647,7 +648,15 @@ public partial class FullscreenGrab : Window
         if (GuidFixMenuItem.IsChecked is true)
             TextFromOCR = TextFromOCR.CorrectCommonGuidErrors();
 
-        if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
+        if (BingSearchPostCapture.IsChecked is true)
+        {
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
+            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
+        }
+
+        if (SendToEditTextToggleButton.IsChecked is true
+            && destinationTextBox is null
+            && BingSearchPostCapture.IsChecked is false)
         {
             EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
             destinationTextBox = etw.PassedTextControl;

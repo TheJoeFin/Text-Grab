@@ -237,7 +237,8 @@
                                 IsCheckable="True"
                                 StaysOpenOnClick="True" />
                             <MenuItem
-                                Header="Fix Thing 2"
+                                Name="BingSearchPostCapture"
+                                Header="Bing Search"
                                 IsCheckable="True"
                                 StaysOpenOnClick="True" />
                             <MenuItem
