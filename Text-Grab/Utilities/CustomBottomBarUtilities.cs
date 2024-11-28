@@ -71,6 +71,8 @@ public class CustomBottomBarUtilities
         List<MethodInfo> methods = GetMethods(editTextWindow);
         Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
+        int index = 1;
+
         foreach (ButtonInfo buttonItem in GetCustomBottomBarItemsSetting())
         {
             CollapsibleButton button = new()
@@ -78,7 +80,7 @@ public class CustomBottomBarUtilities
                 ButtonText = buttonItem.ButtonText,
                 IsSymbol = buttonItem.IsSymbol,
                 CustomButton = buttonItem,
-                ToolTip = buttonItem.ButtonText,
+                ToolTip = $"{buttonItem.ButtonText} (ctrl + {index})",
                 ButtonSymbol = buttonItem.SymbolIcon
             };
 
@@ -97,6 +99,7 @@ public class CustomBottomBarUtilities
                 button.Command = routedCommand;
 
             bottomBarButtons.Add(button);
+            index++;
         }
 
         return bottomBarButtons;
