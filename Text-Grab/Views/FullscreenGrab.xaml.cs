@@ -183,8 +183,23 @@ public partial class FullscreenGrab : Window
             case Key.D8:
             case Key.D9:
                 int numberPressed = (int)key - 34; // D1 casts to 35, D2 to 36, etc.
-                int numberOfLanguages = LanguagesComboBox.Items.Count;
 
+                if (KeyboardExtensions.IsCtrlDown())
+                {
+                    if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu
+                        || !flyoutMenu.HasItems
+                        || numberPressed - 1 >= flyoutMenu.Items.Count
+                        || flyoutMenu.Items[numberPressed - 1] is not MenuItem selectedItem)
+                    {
+                        return;
+                    }
+
+                    selectedItem.IsChecked = !selectedItem.IsChecked;
+                    CheckIfAnyPostActionsSelcted();
+                    return;
+                }
+
+                int numberOfLanguages = LanguagesComboBox.Items.Count;
                 if (numberPressed <= numberOfLanguages
                     && numberPressed - 1 >= 0
                     && numberPressed - 1 != LanguagesComboBox.SelectedIndex
@@ -194,6 +209,23 @@ public partial class FullscreenGrab : Window
             default:
                 break;
         }
+    }
+
+    private void CheckIfAnyPostActionsSelcted()
+    {
+        if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu || !flyoutMenu.HasItems)
+            return;
+
+        foreach (MenuItem item in flyoutMenu.Items)
+        {
+            if (item.IsChecked)
+            {
+                NextStepDropDownButton.Background = new SolidColorBrush(Colors.LightGreen);
+                return;
+            }
+        }
+
+        NextStepDropDownButton.Background = new SolidColorBrush(Colors.Black);
     }
 
     private static bool CheckIfCheckingOrUnchecking(object? sender)
