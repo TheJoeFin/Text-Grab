@@ -226,8 +226,8 @@
                     x:Name="NextStepDropDownButton"
                     Height="34"
                     Margin="2,0"
-                    Background="{StaticResource Teal}"
-                    IsDefault="True">
+                    IsDefault="True"
+                    ToolTip="Actions to perform after grabbing text...">
                     <wpfui:DropDownButton.Icon>
                         <wpfui:SymbolIcon Symbol="FlashFlow24" />
                     </wpfui:DropDownButton.Icon>
@@ -238,19 +238,37 @@
                             PreviewKeyDown="FullscreenGrab_KeyDown">
                             <MenuItem
                                 Name="GuidFixMenuItem"
+                                Click="PostActionMenuItem_Click"
                                 Header="Fix GUIDs"
                                 InputGestureText="CTRL + 1"
                                 IsCheckable="True"
                                 StaysOpenOnClick="False" />
                             <MenuItem
-                                Name="BingSearchPostCapture"
-                                Header="Bing Search"
+                                Name="TrimEachLineMenuItem"
+                                Click="PostActionMenuItem_Click"
+                                Header="Trim each line"
                                 InputGestureText="CTRL + 2"
                                 IsCheckable="True"
                                 StaysOpenOnClick="False" />
                             <MenuItem
-                                Header="Fix Thing 3"
+                                Name="RemoveDuplicatesMenuItem"
+                                Click="PostActionMenuItem_Click"
+                                Header="Remove duplicate lines"
                                 InputGestureText="CTRL + 3"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="BingSearchPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Bing Search"
+                                InputGestureText="CTRL + 4"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="InsertPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Try to insert text"
+                                InputGestureText="CTRL + 5"
                                 IsCheckable="True"
                                 StaysOpenOnClick="False" />
                         </ContextMenu>

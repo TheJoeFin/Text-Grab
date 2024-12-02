@@ -220,12 +220,14 @@ public partial class FullscreenGrab : Window
         {
             if (item.IsChecked)
             {
-                NextStepDropDownButton.Background = new SolidColorBrush(Colors.LightGreen);
+                if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
+                    NextStepDropDownButton.Background = tealButtonStyle;
                 return;
             }
         }
 
-        NextStepDropDownButton.Background = new SolidColorBrush(Colors.Black);
+        if (FindResource("ControlFillColorDefaultBrush") is SolidColorBrush SymbolButtonStyle)
+            NextStepDropDownButton.Background = SymbolButtonStyle;
     }
 
     private static bool CheckIfCheckingOrUnchecking(object? sender)
@@ -680,6 +682,22 @@ public partial class FullscreenGrab : Window
         if (GuidFixMenuItem.IsChecked is true)
             TextFromOCR = TextFromOCR.CorrectCommonGuidErrors();
 
+        if (TrimEachLineMenuItem.IsChecked is true)
+        {
+            string workingString = TextFromOCR;
+            string[] stringSplit = workingString.Split(Environment.NewLine);
+
+            string finalString = "";
+            foreach (string line in stringSplit)
+                if (!string.IsNullOrWhiteSpace(line))
+                    finalString += line.Trim() + Environment.NewLine;
+
+            TextFromOCR = finalString;
+        }
+
+        if (RemoveDuplicatesMenuItem.IsChecked is true)
+            TextFromOCR = TextFromOCR.RemoveDuplicateLines();
+
         if (BingSearchPostCapture.IsChecked is true)
         {
             string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
@@ -700,6 +718,9 @@ public partial class FullscreenGrab : Window
             isTable,
             destinationTextBox);
         WindowUtilities.CloseAllFullscreenGrabs();
+
+        if (InsertPostCapture.IsChecked is true && !DefaultSettings.TryInsert)
+            await WindowUtilities.TryInsertString(TextFromOCR);
     }
 
     private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
@@ -847,6 +868,11 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.T, isActive);
         SelectSingleToggleButton(sender);
+    }
+
+    private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        CheckIfAnyPostActionsSelcted();
     }
     #endregion Methods
 }
