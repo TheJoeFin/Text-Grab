@@ -700,19 +700,19 @@ public partial class FullscreenGrab : Window
 
         if (BingSearchPostCapture.IsChecked is true)
         {
-            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR.MakeStringSingleLine());
             _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
         }
 
         if (GoogleSearchPostCapture.IsChecked is true)
         {
-            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR.MakeStringSingleLine());
             _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.google.com/search?q={searchStringUrlSafe}")));
         }
 
         if (DuckSearchPostCapture.IsChecked is true)
         {
-            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR.MakeStringSingleLine());
             _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
         }
 
