@@ -222,6 +222,72 @@
                         </ToggleButton>
                     </StackPanel>
                 </Border>
+                <wpfui:DropDownButton
+                    x:Name="NextStepDropDownButton"
+                    Height="34"
+                    Margin="2,0"
+                    IsDefault="True"
+                    ToolTip="Actions to perform after grabbing text...">
+                    <wpfui:DropDownButton.Icon>
+                        <wpfui:SymbolIcon Symbol="FlashFlow24" />
+                    </wpfui:DropDownButton.Icon>
+                    <wpfui:DropDownButton.Flyout>
+                        <ContextMenu
+                            MouseEnter="RegionClickCanvas_MouseEnter"
+                            MouseLeave="RegionClickCanvas_MouseLeave"
+                            PreviewKeyDown="FullscreenGrab_KeyDown">
+                            <MenuItem
+                                Name="GuidFixMenuItem"
+                                Click="PostActionMenuItem_Click"
+                                Header="Fix GUIDs"
+                                InputGestureText="CTRL + 1"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="TrimEachLineMenuItem"
+                                Click="PostActionMenuItem_Click"
+                                Header="Trim each line"
+                                InputGestureText="CTRL + 2"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="RemoveDuplicatesMenuItem"
+                                Click="PostActionMenuItem_Click"
+                                Header="Remove duplicate lines"
+                                InputGestureText="CTRL + 3"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="BingSearchPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Bing Search"
+                                InputGestureText="CTRL + 4"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="GoogleSearchPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Google Search"
+                                InputGestureText="CTRL + 5"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="DuckSearchPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Duck Duck Go Search"
+                                InputGestureText="CTRL + 6"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="InsertPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Try to insert text"
+                                InputGestureText="CTRL + 7"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                        </ContextMenu>
+                    </wpfui:DropDownButton.Flyout>
+                </wpfui:DropDownButton>
                 <ToggleButton
                     x:Name="SendToEditTextToggleButton"
                     Width="34"

@@ -122,6 +122,15 @@ public static class StringMethods
         if (cursorPosition < 0)
             cursorPosition = 0;
 
+        try
+        {
+            char check = input[cursorPosition];
+        }
+        catch (IndexOutOfRangeException)
+        {
+            return (cursorPosition, 0);
+        }
+
         // Check if the cursor is at a space
         if (char.IsWhiteSpace(input[cursorPosition]))
             cursorPosition = FindNearestLetterIndex(input, cursorPosition);
