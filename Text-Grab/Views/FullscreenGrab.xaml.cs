@@ -216,9 +216,9 @@ public partial class FullscreenGrab : Window
         if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu || !flyoutMenu.HasItems)
             return;
 
-        foreach (MenuItem item in flyoutMenu.Items)
+        foreach (object anyItem in flyoutMenu.Items)
         {
-            if (item.IsChecked)
+            if (anyItem is MenuItem item && item.IsChecked)
             {
                 if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
                     NextStepDropDownButton.Background = tealButtonStyle;
@@ -702,6 +702,18 @@ public partial class FullscreenGrab : Window
         {
             string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
             _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
+        }
+
+        if (GoogleSearchPostCapture.IsChecked is true)
+        {
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
+            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.google.com/search?q={searchStringUrlSafe}")));
+        }
+
+        if (DuckSearchPostCapture.IsChecked is true)
+        {
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
+            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
         }
 
         if (SendToEditTextToggleButton.IsChecked is true

@@ -265,10 +265,24 @@
                                 IsCheckable="True"
                                 StaysOpenOnClick="False" />
                             <MenuItem
+                                Name="GoogleSearchPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Google Search"
+                                InputGestureText="CTRL + 5"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
+                                Name="DuckSearchPostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Duck Duck Go Search"
+                                InputGestureText="CTRL + 6"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False" />
+                            <MenuItem
                                 Name="InsertPostCapture"
                                 Click="PostActionMenuItem_Click"
                                 Header="Try to insert text"
-                                InputGestureText="CTRL + 5"
+                                InputGestureText="CTRL + 7"
                                 IsCheckable="True"
                                 StaysOpenOnClick="False" />
                         </ContextMenu>
