@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using Humanizer;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Views;
@@ -362,11 +364,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         if (MainDataGrid.ItemsSource is not List<LookupItem> lookUpList
             || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
+        {
+            EditTextWindow etw = new(SearchBox.Text, false);
+            etw.Show();
+            this.Close();
+            WindowUtilities.ShouldShutDown();
             return;
+        }
 
         isPuttingValueIn = true;
 
-        List<LookupItem> selectedLookupItems = new();
+        List<LookupItem> selectedLookupItems = [];
 
         foreach (object item in MainDataGrid.SelectedItems)
             if (item is LookupItem selectedLookupItem)
@@ -375,10 +383,10 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (selectedLookupItems.Count == 0)
             selectedLookupItems.Add(firstLookupItem);
 
+        bool openedHistoryItemOrLink = false;
         StringBuilder stringBuilder = new();
 
-        if (keysDown is null)
-            keysDown = KeyboardExtensions.GetKeyboardModifiersDown();
+        keysDown ??= KeyboardExtensions.GetKeyboardModifiersDown();
 
         switch (keysDown)
         {
@@ -414,8 +422,40 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 break;
             default:
                 foreach (LookupItem lItem in selectedLookupItems)
-                    stringBuilder.AppendLine(lItem.longValue);
+                {
+                    switch (lItem.Kind)
+                    {
+                        case LookupItemKind.EditWindow when lItem.HistoryItem is not null:
+                            {
+                                EditTextWindow editTextWindow = new(lItem.HistoryItem);
+                                editTextWindow.Show();
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
+                        case LookupItemKind.GrabFrame when lItem.HistoryItem is not null:
+                            {
+                                GrabFrame gf = new(lItem.HistoryItem);
+                                gf.Show();
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
+                        case LookupItemKind.Link:
+                            Process.Start(new ProcessStartInfo(lItem.longValue) { UseShellExecute = true });
+                            openedHistoryItemOrLink = true;
+                            break;
+                        default:
+                            stringBuilder.AppendLine(lItem.longValue);
+                            break;
+                    }
+                }
                 break;
+        }
+
+        if (openedHistoryItemOrLink)
+        {
+            this.Close();
+            WindowUtilities.ShouldShutDown();
+            return;
         }
 
         if (string.IsNullOrEmpty(stringBuilder.ToString()))
@@ -693,6 +733,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         await ReadCsvFileIntoQuickSimpleLookup(DefaultSettings.LookupFileLocation);
 
+        AddHistoryItemsToLookup();
+
         if (DefaultSettings.TryInsert && !IsFromETW)
             PasteToggleButton.IsChecked = true;
 
@@ -703,6 +745,18 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         Activate();
         SearchBox.Focus();
     }
+
+    private void AddHistoryItemsToLookup()
+    {
+        List<HistoryInfo> historyItems = Singleton<HistoryService>.Instance.GetEditWindows();
+
+        foreach (HistoryInfo historyItem in historyItems)
+        {
+            LookupItem newItem = new(historyItem);
+            ItemsDictionary.Add(newItem);
+        }
+    }
+
     private async Task WriteDataToCSV()
     {
         if (!string.IsNullOrWhiteSpace(SearchBox.Text))
