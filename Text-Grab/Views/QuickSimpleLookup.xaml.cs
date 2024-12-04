@@ -690,7 +690,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         List<string> searchArray = SearchBox.Text.ToLower().Split().ToList();
         searchArray.Sort();
 
-        List<LookupItem> filteredList = new();
+        List<LookupItem> filteredList = [];
 
         foreach (LookupItem lItem in ItemsDictionary)
         {
@@ -748,9 +748,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private void AddHistoryItemsToLookup()
     {
-        List<HistoryInfo> historyItems = Singleton<HistoryService>.Instance.GetEditWindows();
+        List<HistoryInfo> textHistoryItems = Singleton<HistoryService>.Instance.GetEditWindows();
 
-        foreach (HistoryInfo historyItem in historyItems)
+        foreach (HistoryInfo historyItem in textHistoryItems)
+        {
+            LookupItem newItem = new(historyItem);
+            ItemsDictionary.Add(newItem);
+        }
+
+        List<HistoryInfo> grabFrameHistoryItems = Singleton<HistoryService>.Instance.GetRecentGrabs();
+
+        foreach (HistoryInfo historyItem in grabFrameHistoryItems)
         {
             LookupItem newItem = new(historyItem);
             ItemsDictionary.Add(newItem);
