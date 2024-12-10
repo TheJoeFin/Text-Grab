@@ -11,6 +11,7 @@
     Width="800"
     Height="400"
     Closed="FluentWindow_Closed"
+    Closing="FluentWindow_Closing"
     Loaded="Window_Loaded"
     PreviewKeyDown="QuickSimpleLookup_PreviewKeyDown"
     Topmost="True"
@@ -23,7 +24,7 @@
         <Style x:Key="CellTextBlock" TargetType="TextBlock">
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="6" />
-            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Top" />
         </Style>
     </Window.Resources>
 
@@ -212,7 +213,10 @@
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
-                            <TextBox Loaded="EditingTextBox_Loaded" Text="{Binding shortValue}" />
+                            <TextBox
+                                VerticalAlignment="Top"
+                                Loaded="EditingTextBox_Loaded"
+                                Text="{Binding shortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>

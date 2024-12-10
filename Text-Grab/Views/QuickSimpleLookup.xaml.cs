@@ -1,4 +1,4 @@
-﻿using Humanizer;
+﻿using Microsoft.VisualBasic.FileIO;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -33,6 +33,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private int rowCount = 0;
     private string valueUnderEdit = string.Empty;
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private List<LookupItem> lookupItems = [];
 
     #endregion Fields
 
@@ -50,7 +51,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     public bool IsEditingDataGrid { get; set; } = false;
     public bool IsFromETW { get; set; } = false;
-    public List<LookupItem> ItemsDictionary { get; set; } = new();
+    public List<LookupItem> ItemsDictionary { get; set; } = [];
 
     #endregion Properties
 
@@ -58,20 +59,20 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private static LookupItem ParseStringToLookupItem(char splitChar, string row)
     {
-        List<string> cells = row.Split(splitChar).ToList();
+        List<string> cells = [.. row.Split(splitChar)];
         LookupItem newRow = new();
-        if (cells.FirstOrDefault() is String firstCell)
+        if (cells.FirstOrDefault() is string firstCell)
             newRow.shortValue = firstCell;
 
         newRow.longValue = "";
         if (cells.Count > 1 && cells[1] is not null)
-            newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+            newRow.longValue = string.Join(" ", cells.Skip(1).ToArray());
         return newRow;
     }
 
     private static IEnumerable<LookupItem> ParseStringToRows(string clipboardContent, bool isCSV = false)
     {
-        List<string> rows = clipboardContent.Split(Environment.NewLine).ToList();
+        List<string> rows = [.. clipboardContent.Split(Environment.NewLine)];
 
         char splitChar = isCSV ? ',' : '\t';
 
@@ -100,7 +101,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         MainDataGrid.ItemsSource = null;
         ItemsDictionary.Add(newItem);
-        MainDataGrid.ItemsSource = ItemsDictionary;
+        lookupItems.Add(newItem);
 
         UpdateRowCount();
         MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
@@ -188,9 +189,10 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private List<LookupItem> GetMainDataGridSelection()
     {
-        if (MainDataGrid.SelectedItems is not List<LookupItem> selectedItems || selectedItems.Count == 0)
+        if (MainDataGrid.SelectedItems is not List<LookupItem> selectedItems
+            || selectedItems.Count == 0)
         {
-            selectedItems = new List<LookupItem>();
+            selectedItems = [];
             if (MainDataGrid.SelectedItem is not LookupItem selectedLookupItem)
                 return selectedItems;
 
@@ -283,12 +285,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Create OpenFileDialog 
-        Microsoft.Win32.OpenFileDialog dlg = new();
-
-        // Set filter for file extension and default file extension 
-        dlg.DefaultExt = ".csv";
-        dlg.Filter = "Comma Separated Values File (.csv)|*.csv";
-        dlg.CheckFileExists = true;
+        OpenFileDialog dlg = new()
+        {
+            // Set filter for file extension and default file extension 
+            DefaultExt = ".csv",
+            Filter = "Comma Separated Values File (.csv)|*.csv",
+            CheckFileExists = true
+        };
 
         bool? result = dlg.ShowDialog();
 
@@ -310,17 +313,18 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async void PickSaveLocation_Click(object sender, RoutedEventArgs e)
     {
-        SaveFileDialog dlg = new();
-
-        dlg.AddExtension = true;
-        dlg.DefaultExt = ".csv";
-        dlg.InitialDirectory = "C:\\";
-        dlg.FileName = "QuickSimpleLookupDataFile.csv";
-        dlg.OverwritePrompt = false;
+        SaveFileDialog dlg = new()
+        {
+            AddExtension = true,
+            DefaultExt = ".csv",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            FileName = "QuickSimpleLookupDataFile.csv",
+            OverwritePrompt = false
+        };
 
         if (!string.IsNullOrEmpty(DefaultSettings.LookupFileLocation))
         {
-            dlg.InitialDirectory = DefaultSettings.LookupFileLocation;
+            dlg.InitialDirectory = Path.GetDirectoryName(DefaultSettings.LookupFileLocation);
             dlg.FileName = Path.GetFileName(DefaultSettings.LookupFileLocation);
         }
 
@@ -596,6 +600,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             PopulateSampleData();
 
         ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
+        lookupItems = new(ItemsDictionary);
 
         MainDataGrid.ItemsSource = null;
         MainDataGrid.ItemsSource = ItemsDictionary;
@@ -618,6 +623,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             if (item is LookupItem selectedLookupItem)
             {
                 filteredLookupList.Remove(selectedLookupItem);
+                lookupItems.Remove(selectedLookupItem);
                 ItemsDictionary.Remove(selectedLookupItem);
                 SaveBTN.Visibility = Visibility.Visible;
             }
@@ -687,7 +693,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         else
             MainDataGrid.CanUserAddRows = false;
 
-        List<string> searchArray = SearchBox.Text.ToLower().Split().ToList();
+        List<string> searchArray = [.. SearchBox.Text.ToLower().Split()];
         searchArray.Sort();
 
         List<LookupItem> filteredList = [];
@@ -772,10 +778,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         StringBuilder csvContents = new();
 
-        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave)
-            return;
-
-        foreach (LookupItem lookupItem in itemsToSave)
+        foreach (LookupItem lookupItem in lookupItems)
             csvContents.AppendLine(lookupItem.ToCSVString());
 
         try
@@ -791,6 +794,12 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         {
             System.Windows.Forms.MessageBox.Show($"Failed to save csv file. {ex.Message}");
         }
+    }
+
+    private void FluentWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        // Can't do this here because it will close the app before the text can be inserted
+        // WindowUtilities.ShouldShutDown();
     }
     #endregion Methods
 }
