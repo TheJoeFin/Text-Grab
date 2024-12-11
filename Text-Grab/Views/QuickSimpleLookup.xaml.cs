@@ -27,7 +27,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     #region Fields
 
     public TextBox? DestinationTextBox;
-    private string cacheFilename = "QuickSimpleLookupCache.csv";
+    private readonly string cacheFilename = "QuickSimpleLookupCache.csv";
     private bool isPuttingValueIn = false;
     private LookupItem? lastSelection;
     private int rowCount = 0;

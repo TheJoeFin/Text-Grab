@@ -16,6 +16,21 @@ public class LookupItem : IEquatable<LookupItem>
     public string shortValue { get; set; } = string.Empty;
     public string longValue { get; set; } = string.Empty;
 
+    public Wpf.Ui.Controls.SymbolRegular UiSymbol
+    {
+        get
+        {
+            return Kind switch
+            {
+                LookupItemKind.Simple => Wpf.Ui.Controls.SymbolRegular.Diamond24,
+                LookupItemKind.EditWindow => Wpf.Ui.Controls.SymbolRegular.Window24,
+                LookupItemKind.GrabFrame => Wpf.Ui.Controls.SymbolRegular.PanelBottom20,
+                LookupItemKind.Link => Wpf.Ui.Controls.SymbolRegular.Link24,
+                _ => Wpf.Ui.Controls.SymbolRegular.Diamond24,
+            };
+        }
+    }
+
     public LookupItemKind Kind { get; set; } = LookupItemKind.Simple;
 
     public LookupItem()

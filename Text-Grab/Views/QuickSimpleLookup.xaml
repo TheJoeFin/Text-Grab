@@ -199,6 +199,27 @@
             SelectionChanged="MainDataGrid_SelectionChanged"
             SelectionUnit="FullRow">
             <DataGrid.Columns>
+                <DataGridTemplateColumn Width="auto">
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock
+                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                            Style="{StaticResource CellTextBlock}"
+                            Text="" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ui:SymbolIcon Symbol="{Binding UiSymbol}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <TextBox
+                                VerticalAlignment="Top"
+                                Loaded="EditingTextBox_Loaded"
+                                Text="{Binding shortValue}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTemplateColumn Width="*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
