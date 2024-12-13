@@ -22,11 +22,11 @@ public class LookupItem : IEquatable<LookupItem>
         {
             return Kind switch
             {
-                LookupItemKind.Simple => Wpf.Ui.Controls.SymbolRegular.Diamond24,
+                LookupItemKind.Simple => Wpf.Ui.Controls.SymbolRegular.Copy20,
                 LookupItemKind.EditWindow => Wpf.Ui.Controls.SymbolRegular.Window24,
                 LookupItemKind.GrabFrame => Wpf.Ui.Controls.SymbolRegular.PanelBottom20,
                 LookupItemKind.Link => Wpf.Ui.Controls.SymbolRegular.Link24,
-                _ => Wpf.Ui.Controls.SymbolRegular.Diamond24,
+                _ => Wpf.Ui.Controls.SymbolRegular.Copy20,
             };
         }
     }
