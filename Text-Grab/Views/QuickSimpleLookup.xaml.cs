@@ -32,6 +32,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private LookupItem? lastSelection;
     private int rowCount = 0;
     private string valueUnderEdit = string.Empty;
+    private LookupItem? itemUnderEdit;
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private List<LookupItem> lookupItems = [];
 
@@ -229,6 +230,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private void MainDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
         IsEditingDataGrid = true;
+        itemUnderEdit = e.Row.Item as LookupItem;
     }
 
     private void MainDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -236,7 +238,27 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         IsEditingDataGrid = false;
 
         if (e.EditAction == DataGridEditAction.Cancel)
+        {
+            itemUnderEdit = null;
             return;
+        }
+
+        LookupItem? editedRow = e.Row.Item as LookupItem;
+        int prevIndex = -1;
+
+        if (itemUnderEdit is not null)
+        {
+            prevIndex = lookupItems.IndexOf(itemUnderEdit);
+            lookupItems.Remove(itemUnderEdit);
+        }
+
+        if (editedRow is not null)
+        {
+            if (prevIndex > -1)
+                lookupItems.Insert(prevIndex, editedRow);
+            else
+                lookupItems.Add(editedRow);
+        }
 
         DependencyObject child = VisualTreeHelper.GetChild(e.EditingElement, 0);
         if (child is TextBox editedBox
