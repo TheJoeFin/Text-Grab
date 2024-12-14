@@ -47,7 +47,7 @@ public class LookupItem : IEquatable<LookupItem>
     public LookupItem(HistoryInfo historyInfo)
     {
         shortValue = historyInfo.CaptureDateTime.Humanize() + Environment.NewLine + historyInfo.CaptureDateTime.ToString("F");
-        longValue = historyInfo.TextContent;
+        longValue = historyInfo.TextContent.Length > 100 ? historyInfo.TextContent[..100] : historyInfo.TextContent;
         HistoryItem = historyInfo;
 
         if (string.IsNullOrEmpty(historyInfo.ImagePath))
@@ -58,7 +58,13 @@ public class LookupItem : IEquatable<LookupItem>
 
     public HistoryInfo? HistoryItem { get; set; }
 
-    public override string ToString() => $"{shortValue} {longValue}";
+    public override string ToString()
+    {
+        if (HistoryItem is not null)
+            return $"{HistoryItem.CaptureDateTime:F} {HistoryItem.TextContent}";
+
+        return $"{shortValue} {longValue}";
+    }
 
     public string ToCSVString() => $"{shortValue},{longValue}";
 

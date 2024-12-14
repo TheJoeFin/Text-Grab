@@ -140,5 +140,8 @@
     <Setting Name="GrabFrameScrollBehavior" Type="System.String" Scope="User">
       <Value Profile="(Default)">Resize</Value>
     </Setting>
+    <Setting Name="LookupSearchHistory" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

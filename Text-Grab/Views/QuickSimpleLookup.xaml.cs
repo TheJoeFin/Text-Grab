@@ -739,7 +739,11 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         await ReadCsvFileIntoQuickSimpleLookup(DefaultSettings.LookupFileLocation);
 
-        AddHistoryItemsToLookup();
+        if (DefaultSettings.LookupSearchHistory)
+        {
+            AddHistoryItemsToLookup();
+            SearchHistory.IsChecked = true;
+        }
 
         if (DefaultSettings.TryInsert && !IsFromETW)
             PasteToggleButton.IsChecked = true;
@@ -800,6 +804,23 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         // Can't do this here because it will close the app before the text can be inserted
         // WindowUtilities.ShouldShutDown();
+    }
+
+    private async void SearchHistory_Click(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.LookupSearchHistory = SearchHistory.IsChecked is true;
+
+        lookupItems.Clear();
+        ItemsDictionary.Clear();
+        MainDataGrid.ItemsSource = null;
+
+        await ReadCsvFileIntoQuickSimpleLookup(DefaultSettings.LookupFileLocation);
+
+        if (DefaultSettings.LookupSearchHistory)
+        {
+            AddHistoryItemsToLookup();
+            SearchHistory.IsChecked = true;
+        }
     }
     #endregion Methods
 }

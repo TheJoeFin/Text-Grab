@@ -153,6 +153,11 @@
                             Click="ParseCSVFileMenuItem_Click"
                             Header="Add Rows from CSV File..." />
                         <MenuItem
+                            x:Name="SearchHistory"
+                            Click="SearchHistory_Click"
+                            Header="Search History"
+                            IsCheckable="True" />
+                        <MenuItem
                             x:Name="TextGrabSettingsMenuItem"
                             Click="TextGrabSettingsMenuItem_Click"
                             Header="Text Grab Settings" />
