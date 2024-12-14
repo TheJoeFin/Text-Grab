@@ -322,7 +322,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         string csvToOpenPath = dlg.FileName;
 
-        await ReadCsvFileIntoQuickSimpleLookup(csvToOpenPath);
+        await LoadDataGridContent(csvToOpenPath);
         SaveBTN.Visibility = Visibility.Visible;
     }
 
@@ -362,7 +362,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         {
             // clear and load the new file
             ItemsDictionary.Clear();
-            await ReadCsvFileIntoQuickSimpleLookup(dlg.FileName);
+            await LoadDataGridContent(dlg.FileName);
         }
         else
             await WriteDataToCSV();
@@ -371,15 +371,19 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private void PopulateSampleData()
     {
         LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly");
+        sampleItem1.Kind = LookupItemKind.Simple;
         ItemsDictionary.Add(sampleItem1);
 
         LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File");
+        sampleItem2.Kind = LookupItemKind.Simple;
         ItemsDictionary.Add(sampleItem2);
 
         LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices");
+        sampleItem3.Kind = LookupItemKind.Simple;
         ItemsDictionary.Add(sampleItem3);
 
         LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.");
+        sampleItem4.Kind = LookupItemKind.Simple;
         ItemsDictionary.Add(sampleItem4);
 
         MainDataGrid.ItemsSource = null;
@@ -609,7 +613,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private async Task ReadCsvFileIntoQuickSimpleLookup(string csvToOpenPath)
+    private async Task LoadDataGridContent(string csvToOpenPath)
     {
         string contentToParse = string.Empty;
 
@@ -621,10 +625,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (string.IsNullOrWhiteSpace(contentToParse))
             PopulateSampleData();
 
-        ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
-        lookupItems = new(ItemsDictionary);
-
         MainDataGrid.ItemsSource = null;
+
+        ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
+        lookupItems = [.. ItemsDictionary];
+
+        if (DefaultSettings.LookupSearchHistory)
+        {
+            AddHistoryItemsToItemsDictionary();
+            SearchHistory.IsChecked = true;
+        }
+
         MainDataGrid.ItemsSource = ItemsDictionary;
 
         UpdateRowCount();
@@ -767,13 +778,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        await ReadCsvFileIntoQuickSimpleLookup(DefaultSettings.LookupFileLocation);
-
-        if (DefaultSettings.LookupSearchHistory)
-        {
-            AddHistoryItemsToLookup();
-            SearchHistory.IsChecked = true;
-        }
+        await LoadDataGridContent(DefaultSettings.LookupFileLocation);
 
         if (DefaultSettings.TryInsert && !IsFromETW)
             PasteToggleButton.IsChecked = true;
@@ -786,7 +791,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         SearchBox.Focus();
     }
 
-    private void AddHistoryItemsToLookup()
+    private void AddHistoryItemsToItemsDictionary()
     {
         List<HistoryInfo> textHistoryItems = Singleton<HistoryService>.Instance.GetEditWindows();
 
@@ -844,13 +849,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         ItemsDictionary.Clear();
         MainDataGrid.ItemsSource = null;
 
-        await ReadCsvFileIntoQuickSimpleLookup(DefaultSettings.LookupFileLocation);
-
-        if (DefaultSettings.LookupSearchHistory)
-        {
-            AddHistoryItemsToLookup();
-            SearchHistory.IsChecked = true;
-        }
+        await LoadDataGridContent(DefaultSettings.LookupFileLocation);
     }
     #endregion Methods
 }
