@@ -47,7 +47,8 @@ public class LookupItem : IEquatable<LookupItem>
     public LookupItem(HistoryInfo historyInfo)
     {
         shortValue = historyInfo.CaptureDateTime.Humanize() + Environment.NewLine + historyInfo.CaptureDateTime.ToString("F");
-        longValue = historyInfo.TextContent.Length > 100 ? historyInfo.TextContent[..100] : historyInfo.TextContent;
+        longValue = historyInfo.TextContent.Length > 100 ? historyInfo.TextContent[..100] + "…" : historyInfo.TextContent;
+
         HistoryItem = historyInfo;
 
         if (string.IsNullOrEmpty(historyInfo.ImagePath))

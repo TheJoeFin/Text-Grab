@@ -626,6 +626,14 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 lookupItems.Remove(selectedLookupItem);
                 ItemsDictionary.Remove(selectedLookupItem);
                 SaveBTN.Visibility = Visibility.Visible;
+
+                if (selectedLookupItem.HistoryItem is null)
+                    continue;
+
+                if (selectedLookupItem.Kind is LookupItemKind.EditWindow)
+                    Singleton<HistoryService>.Instance.RemoveTextHistoryItem(selectedLookupItem.HistoryItem);
+                else if (selectedLookupItem.Kind is LookupItemKind.GrabFrame)
+                    Singleton<HistoryService>.Instance.RemoveImageHistoryItem(selectedLookupItem.HistoryItem);
             }
         }
 
