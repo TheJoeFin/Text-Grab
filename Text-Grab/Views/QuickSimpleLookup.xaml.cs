@@ -370,20 +370,28 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private void PopulateSampleData()
     {
-        LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly");
-        sampleItem1.Kind = LookupItemKind.Simple;
+        LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem1);
 
-        LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File");
-        sampleItem2.Kind = LookupItemKind.Simple;
+        LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem2);
 
-        LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices");
-        sampleItem3.Kind = LookupItemKind.Simple;
+        LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem3);
 
-        LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.");
-        sampleItem4.Kind = LookupItemKind.Simple;
+        LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem4);
 
         MainDataGrid.ItemsSource = null;
@@ -658,10 +666,12 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 filteredLookupList.Remove(selectedLookupItem);
                 lookupItems.Remove(selectedLookupItem);
                 ItemsDictionary.Remove(selectedLookupItem);
-                SaveBTN.Visibility = Visibility.Visible;
 
                 if (selectedLookupItem.HistoryItem is null)
+                {
+                    SaveBTN.Visibility = Visibility.Visible;
                     continue;
+                }
 
                 if (selectedLookupItem.Kind is LookupItemKind.EditWindow)
                     Singleton<HistoryService>.Instance.RemoveTextHistoryItem(selectedLookupItem.HistoryItem);
@@ -850,6 +860,64 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         MainDataGrid.ItemsSource = null;
 
         await LoadDataGridContent(DefaultSettings.LookupFileLocation);
+    }
+
+    private void DeleteItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (MainDataGrid.SelectedItem is not LookupItem lookupItem)
+            return;
+
+        RowDeleted();
+    }
+
+    private void OpenInETWMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (MainDataGrid.SelectedItem is not LookupItem lookupItem)
+            return;
+
+        switch (lookupItem.Kind)
+        {
+            case LookupItemKind.Simple:
+                StringBuilder sb = new();
+                sb.Append(lookupItem.shortValue);
+                sb.Append(Environment.NewLine);
+                sb.AppendLine(lookupItem.longValue);
+                EditTextWindow etw = new(sb.ToString(), false);
+                etw.Show();
+                break;
+            case LookupItemKind.EditWindow:
+                if (lookupItem.HistoryItem is not null)
+                {
+                    EditTextWindow editTextWindow = new(lookupItem.HistoryItem);
+                    editTextWindow.Show();
+                    return;
+                }
+
+                EditTextWindow etw2 = new(lookupItem.longValue, false);
+                etw2.Show();
+                break;
+            case LookupItemKind.GrabFrame:
+                if (lookupItem.HistoryItem is not null)
+                {
+                    EditTextWindow editTextWindow = new(lookupItem.HistoryItem);
+                    editTextWindow.Show();
+                    return;
+                }
+
+                EditTextWindow etw3 = new(lookupItem.longValue, false);
+                etw3.Show();
+                break;
+            case LookupItemKind.Link:
+                StringBuilder sb2 = new();
+                sb2.Append(lookupItem.shortValue);
+                sb2.Append(Environment.NewLine);
+                sb2.AppendLine(lookupItem.longValue);
+                EditTextWindow etw4 = new(sb2.ToString(), false);
+                etw4.Show();
+                break;
+            default:
+                break;
+        }
     }
     #endregion Methods
 }
