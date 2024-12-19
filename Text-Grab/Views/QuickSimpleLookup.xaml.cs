@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic.FileIO;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,9 +18,6 @@ using Text_Grab.Utilities;
 
 namespace Text_Grab.Views;
 
-/// <summary>
-/// Interaction logic for QuickSimpleLookup.xaml
-/// </summary>
 public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 {
     #region Fields
@@ -63,11 +59,11 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         List<string> cells = [.. row.Split(splitChar)];
         LookupItem newRow = new();
         if (cells.FirstOrDefault() is string firstCell)
-            newRow.shortValue = firstCell;
+            newRow.ShortValue = firstCell;
 
-        newRow.longValue = "";
+        newRow.LongValue = "";
         if (cells.Count > 1 && cells[1] is not null)
-            newRow.longValue = string.Join(" ", cells.Skip(1).ToArray());
+            newRow.LongValue = string.Join(" ", cells.Skip(1).ToArray());
         return newRow;
     }
 
@@ -443,16 +439,16 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
                     return;
 
-                if (Uri.TryCreate(lookupItem.longValue, UriKind.Absolute, out Uri? uri))
+                if (Uri.TryCreate(lookupItem.LongValue, UriKind.Absolute, out Uri? uri))
                 {
-                    Process.Start(new ProcessStartInfo(lookupItem.longValue) { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo(lookupItem.LongValue) { UseShellExecute = true });
                     this.Close();
                     return;
                 }
                 break;
             case KeyboardModifiersDown.Ctrl:
                 foreach (LookupItem lItem in selectedLookupItems)
-                    stringBuilder.AppendLine(lItem.shortValue);
+                    stringBuilder.AppendLine(lItem.ShortValue);
                 break;
             case KeyboardModifiersDown.Shift:
                 foreach (LookupItem lItem in selectedLookupItems)
@@ -478,11 +474,11 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                                 break;
                             }
                         case LookupItemKind.Link:
-                            Process.Start(new ProcessStartInfo(lItem.longValue) { UseShellExecute = true });
+                            Process.Start(new ProcessStartInfo(lItem.LongValue) { UseShellExecute = true });
                             openedHistoryItemOrLink = true;
                             break;
                         default:
-                            stringBuilder.AppendLine(lItem.longValue);
+                            stringBuilder.AppendLine(lItem.LongValue);
                             break;
                     }
                 }
@@ -879,9 +875,9 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         {
             case LookupItemKind.Simple:
                 StringBuilder sb = new();
-                sb.Append(lookupItem.shortValue);
+                sb.Append(lookupItem.ShortValue);
                 sb.Append(Environment.NewLine);
-                sb.AppendLine(lookupItem.longValue);
+                sb.AppendLine(lookupItem.LongValue);
                 EditTextWindow etw = new(sb.ToString(), false);
                 etw.Show();
                 break;
@@ -893,7 +889,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                     return;
                 }
 
-                EditTextWindow etw2 = new(lookupItem.longValue, false);
+                EditTextWindow etw2 = new(lookupItem.LongValue, false);
                 etw2.Show();
                 break;
             case LookupItemKind.GrabFrame:
@@ -904,14 +900,14 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                     return;
                 }
 
-                EditTextWindow etw3 = new(lookupItem.longValue, false);
+                EditTextWindow etw3 = new(lookupItem.LongValue, false);
                 etw3.Show();
                 break;
             case LookupItemKind.Link:
                 StringBuilder sb2 = new();
-                sb2.Append(lookupItem.shortValue);
+                sb2.Append(lookupItem.ShortValue);
                 sb2.Append(Environment.NewLine);
-                sb2.AppendLine(lookupItem.longValue);
+                sb2.AppendLine(lookupItem.LongValue);
                 EditTextWindow etw4 = new(sb2.ToString(), false);
                 etw4.Show();
                 break;

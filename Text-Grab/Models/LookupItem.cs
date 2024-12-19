@@ -13,8 +13,8 @@ public enum LookupItemKind
 
 public class LookupItem : IEquatable<LookupItem>
 {
-    public string shortValue { get; set; } = string.Empty;
-    public string longValue { get; set; } = string.Empty;
+    public string ShortValue { get; set; } = string.Empty;
+    public string LongValue { get; set; } = string.Empty;
 
     public Wpf.Ui.Controls.SymbolRegular UiSymbol
     {
@@ -40,14 +40,14 @@ public class LookupItem : IEquatable<LookupItem>
 
     public LookupItem(string sv, string lv)
     {
-        shortValue = sv;
-        longValue = lv;
+        ShortValue = sv;
+        LongValue = lv;
     }
 
     public LookupItem(HistoryInfo historyInfo)
     {
-        shortValue = historyInfo.CaptureDateTime.Humanize() + Environment.NewLine + historyInfo.CaptureDateTime.ToString("F");
-        longValue = historyInfo.TextContent.Length > 100 ? historyInfo.TextContent[..100].Trim() + "…" : historyInfo.TextContent.Trim();
+        ShortValue = historyInfo.CaptureDateTime.Humanize() + Environment.NewLine + historyInfo.CaptureDateTime.ToString("F");
+        LongValue = historyInfo.TextContent.Length > 100 ? historyInfo.TextContent[..100].Trim() + "…" : historyInfo.TextContent.Trim();
 
         HistoryItem = historyInfo;
 
@@ -64,10 +64,10 @@ public class LookupItem : IEquatable<LookupItem>
         if (HistoryItem is not null)
             return $"{HistoryItem.CaptureDateTime:F} {HistoryItem.TextContent}";
 
-        return $"{shortValue} {longValue}";
+        return $"{ShortValue} {LongValue}";
     }
 
-    public string ToCSVString() => $"{shortValue},{longValue}";
+    public string ToCSVString() => $"{ShortValue},{LongValue}";
 
     public bool Equals(LookupItem? other)
     {

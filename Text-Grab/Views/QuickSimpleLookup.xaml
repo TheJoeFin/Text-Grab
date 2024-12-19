@@ -221,7 +221,7 @@
                             <TextBox
                                 VerticalAlignment="Top"
                                 Loaded="EditingTextBox_Loaded"
-                                Text="{Binding shortValue}" />
+                                Text="{Binding ShortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
@@ -234,7 +234,7 @@
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding shortValue}" />
+                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding ShortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
@@ -242,7 +242,7 @@
                             <TextBox
                                 VerticalAlignment="Top"
                                 Loaded="EditingTextBox_Loaded"
-                                Text="{Binding shortValue}" />
+                                Text="{Binding ShortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
@@ -255,7 +255,7 @@
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding longValue}" />
+                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding LongValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
@@ -263,7 +263,7 @@
                             <TextBox
                                 AcceptsTab="True"
                                 Loaded="EditingTextBox_Loaded"
-                                Text="{Binding longValue}" />
+                                Text="{Binding LongValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
