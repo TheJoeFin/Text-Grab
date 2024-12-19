@@ -11,6 +11,7 @@
     Width="800"
     Height="400"
     Closed="FluentWindow_Closed"
+    Closing="FluentWindow_Closing"
     Loaded="Window_Loaded"
     PreviewKeyDown="QuickSimpleLookup_PreviewKeyDown"
     Topmost="True"
@@ -23,7 +24,7 @@
         <Style x:Key="CellTextBlock" TargetType="TextBlock">
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="6" />
-            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Top" />
         </Style>
     </Window.Resources>
 
@@ -152,6 +153,11 @@
                             Click="ParseCSVFileMenuItem_Click"
                             Header="Add Rows from CSV File..." />
                         <MenuItem
+                            x:Name="SearchHistory"
+                            Click="SearchHistory_Click"
+                            Header="Search History"
+                            IsCheckable="True" />
+                        <MenuItem
                             x:Name="TextGrabSettingsMenuItem"
                             Click="TextGrabSettingsMenuItem_Click"
                             Header="Text Grab Settings" />
@@ -198,6 +204,27 @@
             SelectionChanged="MainDataGrid_SelectionChanged"
             SelectionUnit="FullRow">
             <DataGrid.Columns>
+                <DataGridTemplateColumn Width="auto">
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock
+                            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                            Style="{StaticResource CellTextBlock}"
+                            Text="" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ui:SymbolIcon Symbol="{Binding UiSymbol}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <TextBox
+                                VerticalAlignment="Top"
+                                Loaded="EditingTextBox_Loaded"
+                                Text="{Binding ShortValue}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTemplateColumn Width="*">
                     <DataGridTemplateColumn.Header>
                         <TextBlock
@@ -207,12 +234,15 @@
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding shortValue}" />
+                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding ShortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
-                            <TextBox Loaded="EditingTextBox_Loaded" Text="{Binding shortValue}" />
+                            <TextBox
+                                VerticalAlignment="Top"
+                                Loaded="EditingTextBox_Loaded"
+                                Text="{Binding ShortValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
@@ -225,7 +255,7 @@
                     </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding longValue}" />
+                            <TextBlock Style="{StaticResource CellTextBlock}" Text="{Binding LongValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
@@ -233,11 +263,31 @@
                             <TextBox
                                 AcceptsTab="True"
                                 Loaded="EditingTextBox_Loaded"
-                                Text="{Binding longValue}" />
+                                Text="{Binding LongValue}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        x:Name="DeleteItem"
+                        Click="DeleteItem_Click"
+                        Header="Delete">
+                        <MenuItem.Icon>
+                            <ui:SymbolIcon Symbol="Delete24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="OpenInETWMenuItem"
+                        Click="OpenInETWMenuItem_Click"
+                        Header="Open in Edit Text Window">
+                        <MenuItem.Icon>
+                            <ui:SymbolIcon Symbol="Window24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
         </DataGrid>
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>

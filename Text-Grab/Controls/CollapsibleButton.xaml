@@ -24,7 +24,9 @@
         <ui:SymbolIcon
             Margin="12,2"
             d:Symbol="Diamond24"
-            Symbol="{Binding Path=ButtonSymbol, Mode=TwoWay, ElementName=CollapsibleButtonUserControl}" />
+            Symbol="{Binding Path=ButtonSymbol,
+                             Mode=TwoWay,
+                             ElementName=CollapsibleButtonUserControl}" />
 
         <TextBlock
             x:Name="ButtonTextBlock"
@@ -32,7 +34,9 @@
             Margin="0,0,12,0"
             VerticalAlignment="Center"
             d:Text="Design Text"
-            Text="{Binding ElementName=CollapsibleButtonUserControl, Path=ButtonText, Mode=TwoWay}" />
+            Text="{Binding ElementName=CollapsibleButtonUserControl,
+                           Path=ButtonText,
+                           Mode=TwoWay}" />
     </Grid>
     <Button.ContextMenu>
         <ContextMenu>
@@ -40,7 +44,8 @@
                 Name="ChangeButtonLayout"
                 Click="ChangeButtonLayout_Click"
                 Header="Change Style"
-                IsEnabled="{Binding ElementName=CollapsibleButtonUserControl, Path=CanChangeStyle}" />
+                IsEnabled="{Binding ElementName=CollapsibleButtonUserControl,
+                                    Path=CanChangeStyle}" />
         </ContextMenu>
     </Button.ContextMenu>
 </Button>

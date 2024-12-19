@@ -40,7 +40,7 @@ public partial class FullscreenGrab : Window
     private double xShiftDelta;
     private double yShiftDelta;
     private HistoryInfo? historyInfo;
-    private bool usingTesseract;
+    private readonly bool usingTesseract;
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     #endregion Fields
