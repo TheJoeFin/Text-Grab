@@ -137,6 +137,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {nameof(OcrPasteCommand), OcrPasteCommand},
             {nameof(MakeQrCodeCmd), MakeQrCodeCmd},
             {nameof(WebSearchCmd), WebSearchCmd},
+            {nameof(DefaultWebSearchCmd), DefaultWebSearchCmd},
         };
     }
 

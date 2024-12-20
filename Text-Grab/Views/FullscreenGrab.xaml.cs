@@ -698,27 +698,19 @@ public partial class FullscreenGrab : Window
         if (RemoveDuplicatesMenuItem.IsChecked is true)
             TextFromOCR = TextFromOCR.RemoveDuplicateLines();
 
-        if (BingSearchPostCapture.IsChecked is true)
+        if (WebSearchPostCapture.IsChecked is true)
         {
-            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR.MakeStringSingleLine());
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
-        }
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
 
-        if (GoogleSearchPostCapture.IsChecked is true)
-        {
-            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR.MakeStringSingleLine());
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.google.com/search?q={searchStringUrlSafe}")));
-        }
+            WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
 
-        if (DuckSearchPostCapture.IsChecked is true)
-        {
-            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR.MakeStringSingleLine());
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
+            Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
+            _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
         }
 
         if (SendToEditTextToggleButton.IsChecked is true
             && destinationTextBox is null
-            && BingSearchPostCapture.IsChecked is false)
+            && WebSearchPostCapture.IsChecked is false)
         {
             EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
             destinationTextBox = etw.PassedTextControl;
