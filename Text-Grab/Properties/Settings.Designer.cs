@@ -586,5 +586,29 @@ namespace Text_Grab.Properties {
                 this["LookupSearchHistory"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DefaultWebSearch {
+            get {
+                return ((string)(this["DefaultWebSearch"]));
+            }
+            set {
+                this["DefaultWebSearch"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string WebSearchItemsJson {
+            get {
+                return ((string)(this["WebSearchItemsJson"]));
+            }
+            set {
+                this["WebSearchItemsJson"] = value;
+            }
+        }
     }
 }

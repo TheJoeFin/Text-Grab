@@ -27,7 +27,8 @@ public class CustomBottomBarUtilities
         if (customBottomBarItems is null || customBottomBarItems.Count == 0)
             return ButtonInfo.DefaultButtonList;
 
-        // check to see if the first element is using the default symbol, Diamond24, which is unused by any button
+        // check to see if the first element is using the default symbol of Diamond24
+        // which is unused by any button
         if (customBottomBarItems.First().SymbolIcon == SymbolRegular.Diamond24)
         {
             // Migrate to the new SymbolRegular instead of the old symbols.
@@ -36,7 +37,6 @@ public class CustomBottomBarUtilities
             foreach (ButtonInfo buttonInfo in customBottomBarItems)
                 buttonInfo.SymbolIcon = buttonDictionary[buttonInfo.ButtonText];
         }
-
 
         return customBottomBarItems;
     }

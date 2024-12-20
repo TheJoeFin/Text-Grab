@@ -131,6 +131,10 @@
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.WebSearchCmd}"
             Executed="WebSearchExecuted" />
+        <CommandBinding
+            CanExecute="IsolateSelectionCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
+            Executed="DefaultWebSearchExecuted" />
     </Window.CommandBindings>
     <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
@@ -256,7 +260,10 @@
                     x:Name="FindAndReplaceMenuItem"
                     Click="FindAndReplaceMenuItem_Click"
                     Header="Find and Replace" />
-                <MenuItem x:Name="DefaultWebSearch" Header="Default Web Search" />
+                <MenuItem
+                    x:Name="DefaultWebSearch"
+                    Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
+                    Header="Default Web Search" />
                 <MenuItem x:Name="WebSearchCollection" Header="Search web with..." />
                 <Separator />
                 <MenuItem
