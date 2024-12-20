@@ -68,7 +68,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CliWrap" Version="3.6.7" />
+		<PackageReference Include="CliWrap" Version="3.7.0" />
 		<PackageReference Include="Dapplo.Windows.User32" Version="1.0.28" />
 		<PackageReference Include="Humanizer.Core" Version="2.14.1" />
 		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
