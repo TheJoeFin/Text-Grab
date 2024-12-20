@@ -20,7 +20,7 @@ public class CustomBottomBarUtilities
         if (string.IsNullOrWhiteSpace(json))
             return ButtonInfo.DefaultButtonList;
 
-        List<ButtonInfo>? customBottomBarItems = new();
+        List<ButtonInfo>? customBottomBarItems = [];
 
         customBottomBarItems = JsonSerializer.Deserialize<List<ButtonInfo>>(json);
 
@@ -41,10 +41,9 @@ public class CustomBottomBarUtilities
         return customBottomBarItems;
     }
 
-    // a method to save a list of collapsible buttons to the settings as json
     public static void SaveCustomBottomBarItemsSetting(List<CollapsibleButton> bottomBarButtons)
     {
-        List<ButtonInfo> customButtons = new();
+        List<ButtonInfo> customButtons = [];
 
         foreach (CollapsibleButton collapsible in bottomBarButtons)
             customButtons.Add(new(collapsible));
@@ -54,20 +53,15 @@ public class CustomBottomBarUtilities
 
     public static void SaveCustomBottomBarItemsSetting(List<ButtonInfo> bottomBarButtons)
     {
-        // serialize the list of custom bottom bar items to json
         string json = JsonSerializer.Serialize(bottomBarButtons);
-
-        // save the json string to the settings
         AppUtilities.TextGrabSettings.BottomButtonsJson = json;
-
-        // save the settings
         AppUtilities.TextGrabSettings.Save();
     }
 
     public static List<CollapsibleButton> GetBottomBarButtons(EditTextWindow editTextWindow)
     {
-        List<CollapsibleButton> bottomBarButtons = new();
-        Dictionary<string, RoutedCommand> _localRoutedCommands = new();
+        List<CollapsibleButton> bottomBarButtons = [];
+        Dictionary<string, RoutedCommand> _localRoutedCommands = [];
         List<MethodInfo> methods = GetMethods(editTextWindow);
         Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
@@ -105,13 +99,11 @@ public class CustomBottomBarUtilities
         return bottomBarButtons;
     }
 
-    // a method which returns a list of all methods in this class
     private static List<MethodInfo> GetMethods(object obj)
     {
-        return obj.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).ToList();
+        return [.. obj.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)];
     }
 
-    // using the above method match a method name to a string parameter
     private static MethodInfo? GetMethodInfoForName(string methodName, List<MethodInfo> methods)
     {
         foreach (MethodInfo method in methods)
@@ -121,7 +113,6 @@ public class CustomBottomBarUtilities
         return null;
     }
 
-    // a method to match a command name to a string parameter
     private static RoutedCommand? GetCommandBinding(string commandName, Dictionary<string, RoutedCommand> routedCommands)
     {
         foreach (string commandKey in routedCommands.Keys)
