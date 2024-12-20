@@ -26,6 +26,7 @@ public record WebSearchUrlModel
         }
     }
 
+    public override string ToString() => Name;
 
     private List<WebSearchUrlModel> webSearchers = [];
 

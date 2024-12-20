@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:Text_Grab.Models"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="GeneralSettings"
     d:DesignHeight="1450"
@@ -211,6 +212,24 @@
         <TextBlock Style="{StaticResource TextBodyNormal}">
             Disabling may speed up results
         </TextBlock>
+
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Web Search Options" />
+        <ComboBox
+            x:Name="WebSearchersComboBox"
+            Width="300"
+            HorizontalAlignment="Left"
+            IsTextSearchCaseSensitive="False"
+            SelectionChanged="WebSearchersComboBox_SelectionChanged">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
 
         <TextBlock
             Margin="0,16,0,4"
