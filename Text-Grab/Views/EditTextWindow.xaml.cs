@@ -52,10 +52,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
-    public static RoutedCommand GoogleSearchCmd = new();
-    public static RoutedCommand BingSearchCmd = new();
-    public static RoutedCommand DuckDuckGoSearchCmd = new();
-    public static RoutedCommand GitHubSearchCmd = new();
+    public static RoutedCommand WebSearchCmd = new();
     public bool LaunchedFromNotification = false;
     private CancellationTokenSource? cancellationTokenForDirOCR;
     private string historyId = string.Empty;
@@ -138,10 +135,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
             {nameof(OcrPasteCommand), OcrPasteCommand},
             {nameof(MakeQrCodeCmd), MakeQrCodeCmd},
-            {nameof(GoogleSearchCmd), GoogleSearchCmd},
-            {nameof(BingSearchCmd), BingSearchCmd},
-            {nameof(DuckDuckGoSearchCmd), DuckDuckGoSearchCmd},
-            {nameof(GitHubSearchCmd), GitHubSearchCmd},
+            {nameof(WebSearchCmd), WebSearchCmd},
         };
     }
 
@@ -244,7 +238,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         stopwatch.Start();
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
 
-        List<AsyncOcrFileResult> ocrFileResults = new();
+        List<AsyncOcrFileResult> ocrFileResults = [];
         foreach (string path in imageFiles)
         {
             AsyncOcrFileResult ocrFileResult = new(path);
@@ -899,7 +893,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+        string[] splitString = PassedTextControl.Text.Split([Environment.NewLine], StringSplitOptions.None);
         string selectionText = PassedTextControl.SelectedText;
         int initialSelectionStart = PassedTextControl.SelectionStart;
         int selectionPositionInLine = PassedTextControl.SelectionStart;
@@ -993,6 +987,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string possibleSearch = PassedTextControl.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://github.com/search?q={searchStringUrlSafe}")));
+    }
+
+    private async void WebSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+
+        if (e.Parameter is not WebSearchUrlModel webSearcher)
+            return;
+
+        Uri searchUri = new($"{webSearcher.Url}{searchStringUrlSafe}");
+        _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
     }
 
     private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
@@ -1152,7 +1158,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void LoadRecentTextHistory()
     {
         List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
-        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
+        grabsHistories = [.. grabsHistories.OrderByDescending(x => x.CaptureDateTime)];
 
         OpenRecentMenuItem.Items.Clear();
 
@@ -1777,7 +1783,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (DefaultSettings.IsFontItalic)
             PassedTextControl.FontStyle = FontStyles.Italic;
 
-        TextDecorationCollection tdc = new();
+        TextDecorationCollection tdc = [];
         if (DefaultSettings.IsFontUnderline) tdc.Add(TextDecorations.Underline);
         if (DefaultSettings.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
         PassedTextControl.TextDecorations = tdc;
@@ -1883,6 +1889,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RoutedCommand duplicateLine = new();
         _ = duplicateLine.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(duplicateLine, DuplicateSelectedLine));
+
+        List<WebSearchUrlModel> searchers = WebSearchUrlModel.GetDefaultWebSearchUrls();
+
+        foreach (WebSearchUrlModel searcher in searchers)
+        {
+            MenuItem searchItem = new()
+            {
+                Header = $"Search with {searcher.Name}...",
+                Command = WebSearchCmd,
+                CommandParameter = searcher,
+            };
+
+            WebSearchCollection.Items.Add(searchItem);
+        }
     }
 
     private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
