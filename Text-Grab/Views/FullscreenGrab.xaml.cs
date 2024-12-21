@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -39,7 +40,7 @@ public partial class FullscreenGrab : Window
     private double xShiftDelta;
     private double yShiftDelta;
     private HistoryInfo? historyInfo;
-    private bool usingTesseract;
+    private readonly bool usingTesseract;
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     #endregion Fields
@@ -182,8 +183,23 @@ public partial class FullscreenGrab : Window
             case Key.D8:
             case Key.D9:
                 int numberPressed = (int)key - 34; // D1 casts to 35, D2 to 36, etc.
-                int numberOfLanguages = LanguagesComboBox.Items.Count;
 
+                if (KeyboardExtensions.IsCtrlDown())
+                {
+                    if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu
+                        || !flyoutMenu.HasItems
+                        || numberPressed - 1 >= flyoutMenu.Items.Count
+                        || flyoutMenu.Items[numberPressed - 1] is not MenuItem selectedItem)
+                    {
+                        return;
+                    }
+
+                    selectedItem.IsChecked = !selectedItem.IsChecked;
+                    CheckIfAnyPostActionsSelcted();
+                    return;
+                }
+
+                int numberOfLanguages = LanguagesComboBox.Items.Count;
                 if (numberPressed <= numberOfLanguages
                     && numberPressed - 1 >= 0
                     && numberPressed - 1 != LanguagesComboBox.SelectedIndex
@@ -193,6 +209,25 @@ public partial class FullscreenGrab : Window
             default:
                 break;
         }
+    }
+
+    private void CheckIfAnyPostActionsSelcted()
+    {
+        if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu || !flyoutMenu.HasItems)
+            return;
+
+        foreach (object anyItem in flyoutMenu.Items)
+        {
+            if (anyItem is MenuItem item && item.IsChecked)
+            {
+                if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
+                    NextStepDropDownButton.Background = tealButtonStyle;
+                return;
+            }
+        }
+
+        if (FindResource("ControlFillColorDefaultBrush") is SolidColorBrush SymbolButtonStyle)
+            NextStepDropDownButton.Background = SymbolButtonStyle;
     }
 
     private static bool CheckIfCheckingOrUnchecking(object? sender)
@@ -637,26 +672,59 @@ public partial class FullscreenGrab : Window
             };
         }
 
-        if (!string.IsNullOrWhiteSpace(TextFromOCR))
-        {
-            if (SendToEditTextToggleButton.IsChecked is true && destinationTextBox is null)
-            {
-                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-                destinationTextBox = etw.PassedTextControl;
-            }
-
-            OutputUtilities.HandleTextFromOcr(
-                TextFromOCR,
-                isSingleLine,
-                isTable,
-                destinationTextBox);
-            WindowUtilities.CloseAllFullscreenGrabs();
-        }
-        else
+        if (string.IsNullOrWhiteSpace(TextFromOCR))
         {
             BackgroundBrush.Opacity = .2;
             TopButtonsStackPanel.Visibility = Visibility.Visible;
+            return;
         }
+
+        if (GuidFixMenuItem.IsChecked is true)
+            TextFromOCR = TextFromOCR.CorrectCommonGuidErrors();
+
+        if (TrimEachLineMenuItem.IsChecked is true)
+        {
+            string workingString = TextFromOCR;
+            string[] stringSplit = workingString.Split(Environment.NewLine);
+
+            string finalString = "";
+            foreach (string line in stringSplit)
+                if (!string.IsNullOrWhiteSpace(line))
+                    finalString += line.Trim() + Environment.NewLine;
+
+            TextFromOCR = finalString;
+        }
+
+        if (RemoveDuplicatesMenuItem.IsChecked is true)
+            TextFromOCR = TextFromOCR.RemoveDuplicateLines();
+
+        if (WebSearchPostCapture.IsChecked is true)
+        {
+            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
+
+            WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+
+            Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
+            _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
+        }
+
+        if (SendToEditTextToggleButton.IsChecked is true
+            && destinationTextBox is null
+            && WebSearchPostCapture.IsChecked is false)
+        {
+            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+            destinationTextBox = etw.PassedTextControl;
+        }
+
+        OutputUtilities.HandleTextFromOcr(
+            TextFromOCR,
+            isSingleLine,
+            isTable,
+            destinationTextBox);
+        WindowUtilities.CloseAllFullscreenGrabs();
+
+        if (InsertPostCapture.IsChecked is true && !DefaultSettings.TryInsert)
+            await WindowUtilities.TryInsertString(TextFromOCR);
     }
 
     private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
@@ -804,6 +872,11 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.T, isActive);
         SelectSingleToggleButton(sender);
+    }
+
+    private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        CheckIfAnyPostActionsSelcted();
     }
     #endregion Methods
 }

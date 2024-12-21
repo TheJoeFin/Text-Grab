@@ -140,5 +140,14 @@
     <Setting Name="GrabFrameScrollBehavior" Type="System.String" Scope="User">
       <Value Profile="(Default)">Resize</Value>
     </Setting>
+    <Setting Name="LookupSearchHistory" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DefaultWebSearch" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="WebSearchItemsJson" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

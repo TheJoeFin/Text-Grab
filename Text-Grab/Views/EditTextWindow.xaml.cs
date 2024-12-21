@@ -52,13 +52,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand ToggleCaseCmd = new();
     public static RoutedCommand UnstackCmd = new();
     public static RoutedCommand UnstackGroupCmd = new();
-    public static RoutedCommand GoogleSearchCmd = new();
-    public static RoutedCommand BingSearchCmd = new();
-    public static RoutedCommand DuckDuckGoSearchCmd = new();
-    public static RoutedCommand GitHubSearchCmd = new();
+    public static RoutedCommand WebSearchCmd = new();
+    public static RoutedCommand DefaultWebSearchCmd = new();
     public bool LaunchedFromNotification = false;
     private CancellationTokenSource? cancellationTokenForDirOCR;
-    private string historyId = string.Empty;
+    private readonly string historyId = string.Empty;
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
 
@@ -115,7 +113,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public CurrentCase CaseStatusOfToggle { get; set; } = CurrentCase.Unknown;
 
     public bool WrapText { get; set; } = false;
-    private bool _IsAccessingClipboard { get; set; } = false;
+    private bool IsAccessingClipboard { get; set; } = false;
 
     #endregion Properties
 
@@ -138,10 +136,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {nameof(InsertSelectionOnEveryLineCmd), InsertSelectionOnEveryLineCmd},
             {nameof(OcrPasteCommand), OcrPasteCommand},
             {nameof(MakeQrCodeCmd), MakeQrCodeCmd},
-            {nameof(GoogleSearchCmd), GoogleSearchCmd},
-            {nameof(BingSearchCmd), BingSearchCmd},
-            {nameof(DuckDuckGoSearchCmd), DuckDuckGoSearchCmd},
-            {nameof(GitHubSearchCmd), GitHubSearchCmd},
+            {nameof(WebSearchCmd), WebSearchCmd},
+            {nameof(DefaultWebSearchCmd), DefaultWebSearchCmd},
         };
     }
 
@@ -178,7 +174,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             files = Directory.GetFiles(folderPath, "*.*", searchOption);
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             PassedTextControl.AppendText($"Failed to read directory: {ex.Message}{Environment.NewLine}");
         }
@@ -244,7 +240,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         stopwatch.Start();
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
 
-        List<AsyncOcrFileResult> ocrFileResults = new();
+        List<AsyncOcrFileResult> ocrFileResults = [];
         foreach (string path in imageFiles)
         {
             AsyncOcrFileResult ocrFileResult = new(path);
@@ -551,7 +547,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void CanOcrPasteExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        _IsAccessingClipboard = true;
+        IsAccessingClipboard = true;
         DataPackageView? dataPackageView = null;
 
         try
@@ -565,7 +561,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         finally
         {
-            _IsAccessingClipboard = false;
+            IsAccessingClipboard = false;
         }
 
         if (dataPackageView is null)
@@ -620,17 +616,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void Clipboard_ContentChanged(object? sender, object e)
     {
-        if (ClipboardWatcherMenuItem.IsChecked is false || _IsAccessingClipboard)
+        if (ClipboardWatcherMenuItem.IsChecked is false || IsAccessingClipboard)
             return;
 
-        _IsAccessingClipboard = true;
+        IsAccessingClipboard = true;
         DataPackageView? dataPackageView = null;
 
         try
         {
             dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
         }
@@ -644,13 +640,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 text += Environment.NewLine;
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Debug.WriteLine($"error with dataPackageView.GetTextAsync(). Exception Message: {ex.Message}");
             }
         };
 
-        _IsAccessingClipboard = false;
+        IsAccessingClipboard = false;
     }
 
     private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
@@ -899,7 +895,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string[] splitString = PassedTextControl.Text.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+        string[] splitString = PassedTextControl.Text.Split([Environment.NewLine], StringSplitOptions.None);
         string selectionText = PassedTextControl.SelectedText;
         int initialSelectionStart = PassedTextControl.SelectionStart;
         int selectionPositionInLine = PassedTextControl.SelectionStart;
@@ -995,12 +991,35 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://github.com/search?q={searchStringUrlSafe}")));
     }
 
-    private void keyedCtrlF(object sender, ExecutedRoutedEventArgs e)
+    private async void WebSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+
+        if (e.Parameter is not WebSearchUrlModel webSearcher)
+            return;
+
+        Uri searchUri = new($"{webSearcher.Url}{searchStringUrlSafe}");
+        _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
+    }
+
+    private async void DefaultWebSearchExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string possibleSearch = PassedTextControl.SelectedText;
+        string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
+
+        WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+
+        Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
+        _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
+    }
+
+    private void KeyedCtrlF(object sender, ExecutedRoutedEventArgs e)
     {
         WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
-    private void keyedCtrlG(object sender, ExecutedRoutedEventArgs e)
+    private void KeyedCtrlG(object sender, ExecutedRoutedEventArgs e)
     {
         CheckForGrabFrameOrLaunch();
     }
@@ -1152,7 +1171,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void LoadRecentTextHistory()
     {
         List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
-        grabsHistories = grabsHistories.OrderByDescending(x => x.CaptureDateTime).ToList();
+        grabsHistories = [.. grabsHistories.OrderByDescending(x => x.CaptureDateTime)];
 
         OpenRecentMenuItem.Items.Clear();
 
@@ -1435,21 +1454,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
     {
-        _IsAccessingClipboard = true;
+        IsAccessingClipboard = true;
         DataPackageView? dataPackageView = null;
 
         try
         {
             dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Debug.WriteLine($"error with Windows.ApplicationModel.DataTransfer.Clipboard.GetContent(). Exception Message: {ex.Message}");
         }
 
         if (dataPackageView is null)
         {
-            _IsAccessingClipboard = false;
+            IsAccessingClipboard = false;
             return;
         }
 
@@ -1460,7 +1479,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 string textFromClipboard = await dataPackageView.GetTextAsync();
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(textFromClipboard); }));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Debug.WriteLine($"error with dataPackageView.GetTextAsync(). Exception Message: {ex.Message}");
             }
@@ -1476,7 +1495,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Debug.WriteLine($"error with dataPackageView.GetBitmapAsync(). Exception Message: {ex.Message}");
             }
@@ -1501,13 +1520,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Debug.WriteLine($"error with dataPackageView.GetStorageItemsAsync(). Exception Message: {ex.Message}");
             }
         }
 
-        _IsAccessingClipboard = false;
+        IsAccessingClipboard = false;
 
         if (e is not null)
             e.Handled = true;
@@ -1777,7 +1796,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (DefaultSettings.IsFontItalic)
             PassedTextControl.FontStyle = FontStyles.Italic;
 
-        TextDecorationCollection tdc = new();
+        TextDecorationCollection tdc = [];
         if (DefaultSettings.IsFontUnderline) tdc.Add(TextDecorations.Underline);
         if (DefaultSettings.IsFontStrikeout) tdc.Add(TextDecorations.Strikethrough);
         PassedTextControl.TextDecorations = tdc;
@@ -1810,11 +1829,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         RoutedCommand newFullscreenGrab = new();
         _ = newFullscreenGrab.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control));
-        _ = CommandBindings.Add(new CommandBinding(newFullscreenGrab, keyedCtrlF));
+        _ = CommandBindings.Add(new CommandBinding(newFullscreenGrab, KeyedCtrlF));
 
         RoutedCommand newGrabFrame = new();
         _ = newGrabFrame.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
-        _ = CommandBindings.Add(new CommandBinding(newGrabFrame, keyedCtrlG));
+        _ = CommandBindings.Add(new CommandBinding(newGrabFrame, KeyedCtrlG));
 
         RoutedCommand selectLineCommand = new();
         _ = selectLineCommand.InputGestures.Add(new KeyGesture(Key.L, ModifierKeys.Control));
@@ -1883,6 +1902,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RoutedCommand duplicateLine = new();
         _ = duplicateLine.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(duplicateLine, DuplicateSelectedLine));
+
+        List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
+
+        foreach (WebSearchUrlModel searcher in searchers)
+        {
+            MenuItem searchItem = new()
+            {
+                Header = $"Search with {searcher.Name}...",
+                Command = WebSearchCmd,
+                CommandParameter = searcher,
+            };
+
+            WebSearchCollection.Items.Add(searchItem);
+        }
     }
 
     private void SingleLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)

@@ -13,24 +13,24 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Views;
 
-/// <summary>
-/// Interaction logic for QuickSimpleLookup.xaml
-/// </summary>
 public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 {
     #region Fields
 
     public TextBox? DestinationTextBox;
-    private string cacheFilename = "QuickSimpleLookupCache.csv";
+    private readonly string cacheFilename = "QuickSimpleLookupCache.csv";
     private bool isPuttingValueIn = false;
     private LookupItem? lastSelection;
     private int rowCount = 0;
     private string valueUnderEdit = string.Empty;
+    private LookupItem? itemUnderEdit;
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private List<LookupItem> lookupItems = [];
 
     #endregion Fields
 
@@ -48,7 +48,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     public bool IsEditingDataGrid { get; set; } = false;
     public bool IsFromETW { get; set; } = false;
-    public List<LookupItem> ItemsDictionary { get; set; } = new();
+    public List<LookupItem> ItemsDictionary { get; set; } = [];
 
     #endregion Properties
 
@@ -56,20 +56,20 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private static LookupItem ParseStringToLookupItem(char splitChar, string row)
     {
-        List<string> cells = row.Split(splitChar).ToList();
+        List<string> cells = [.. row.Split(splitChar)];
         LookupItem newRow = new();
-        if (cells.FirstOrDefault() is String firstCell)
-            newRow.shortValue = firstCell;
+        if (cells.FirstOrDefault() is string firstCell)
+            newRow.ShortValue = firstCell;
 
-        newRow.longValue = "";
+        newRow.LongValue = "";
         if (cells.Count > 1 && cells[1] is not null)
-            newRow.longValue = String.Join(" ", cells.Skip(1).ToArray());
+            newRow.LongValue = string.Join(" ", cells.Skip(1).ToArray());
         return newRow;
     }
 
     private static IEnumerable<LookupItem> ParseStringToRows(string clipboardContent, bool isCSV = false)
     {
-        List<string> rows = clipboardContent.Split(Environment.NewLine).ToList();
+        List<string> rows = [.. clipboardContent.Split(Environment.NewLine)];
 
         char splitChar = isCSV ? ',' : '\t';
 
@@ -98,7 +98,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         MainDataGrid.ItemsSource = null;
         ItemsDictionary.Add(newItem);
-        MainDataGrid.ItemsSource = ItemsDictionary;
+        lookupItems.Add(newItem);
 
         UpdateRowCount();
         MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
@@ -186,9 +186,10 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private List<LookupItem> GetMainDataGridSelection()
     {
-        if (MainDataGrid.SelectedItems is not List<LookupItem> selectedItems || selectedItems.Count == 0)
+        if (MainDataGrid.SelectedItems is not List<LookupItem> selectedItems
+            || selectedItems.Count == 0)
         {
-            selectedItems = new List<LookupItem>();
+            selectedItems = [];
             if (MainDataGrid.SelectedItem is not LookupItem selectedLookupItem)
                 return selectedItems;
 
@@ -225,6 +226,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private void MainDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
         IsEditingDataGrid = true;
+        itemUnderEdit = e.Row.Item as LookupItem;
     }
 
     private void MainDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -232,7 +234,27 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         IsEditingDataGrid = false;
 
         if (e.EditAction == DataGridEditAction.Cancel)
+        {
+            itemUnderEdit = null;
             return;
+        }
+
+        LookupItem? editedRow = e.Row.Item as LookupItem;
+        int prevIndex = -1;
+
+        if (itemUnderEdit is not null)
+        {
+            prevIndex = lookupItems.IndexOf(itemUnderEdit);
+            lookupItems.Remove(itemUnderEdit);
+        }
+
+        if (editedRow is not null)
+        {
+            if (prevIndex > -1)
+                lookupItems.Insert(prevIndex, editedRow);
+            else
+                lookupItems.Add(editedRow);
+        }
 
         DependencyObject child = VisualTreeHelper.GetChild(e.EditingElement, 0);
         if (child is TextBox editedBox
@@ -281,12 +303,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Create OpenFileDialog 
-        Microsoft.Win32.OpenFileDialog dlg = new();
-
-        // Set filter for file extension and default file extension 
-        dlg.DefaultExt = ".csv";
-        dlg.Filter = "Comma Separated Values File (.csv)|*.csv";
-        dlg.CheckFileExists = true;
+        OpenFileDialog dlg = new()
+        {
+            // Set filter for file extension and default file extension 
+            DefaultExt = ".csv",
+            Filter = "Comma Separated Values File (.csv)|*.csv",
+            CheckFileExists = true
+        };
 
         bool? result = dlg.ShowDialog();
 
@@ -295,7 +318,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         string csvToOpenPath = dlg.FileName;
 
-        await ReadCsvFileIntoQuickSimpleLookup(csvToOpenPath);
+        await LoadDataGridContent(csvToOpenPath);
         SaveBTN.Visibility = Visibility.Visible;
     }
 
@@ -308,17 +331,18 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async void PickSaveLocation_Click(object sender, RoutedEventArgs e)
     {
-        SaveFileDialog dlg = new();
-
-        dlg.AddExtension = true;
-        dlg.DefaultExt = ".csv";
-        dlg.InitialDirectory = "C:\\";
-        dlg.FileName = "QuickSimpleLookupDataFile.csv";
-        dlg.OverwritePrompt = false;
+        SaveFileDialog dlg = new()
+        {
+            AddExtension = true,
+            DefaultExt = ".csv",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            FileName = "QuickSimpleLookupDataFile.csv",
+            OverwritePrompt = false
+        };
 
         if (!string.IsNullOrEmpty(DefaultSettings.LookupFileLocation))
         {
-            dlg.InitialDirectory = DefaultSettings.LookupFileLocation;
+            dlg.InitialDirectory = Path.GetDirectoryName(DefaultSettings.LookupFileLocation);
             dlg.FileName = Path.GetFileName(DefaultSettings.LookupFileLocation);
         }
 
@@ -334,7 +358,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         {
             // clear and load the new file
             ItemsDictionary.Clear();
-            await ReadCsvFileIntoQuickSimpleLookup(dlg.FileName);
+            await LoadDataGridContent(dlg.FileName);
         }
         else
             await WriteDataToCSV();
@@ -342,16 +366,28 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private void PopulateSampleData()
     {
-        LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly");
+        LookupItem sampleItem1 = new("This is the key", "This is the value you want to copy quickly")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem1);
 
-        LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File");
+        LookupItem sampleItem2 = new("Import data", "From a copied Excel table, or import from a CSV File")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem2);
 
-        LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices");
+        LookupItem sampleItem3 = new("You can change save location", "Putting the data store location in OneDrive it will sync across devices")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem3);
 
-        LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.");
+        LookupItem sampleItem4 = new("Delete these initial rows", "and add your own manually if you like.")
+        {
+            Kind = LookupItemKind.Simple
+        };
         ItemsDictionary.Add(sampleItem4);
 
         MainDataGrid.ItemsSource = null;
@@ -362,11 +398,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         if (MainDataGrid.ItemsSource is not List<LookupItem> lookUpList
             || lookUpList.FirstOrDefault() is not LookupItem firstLookupItem)
+        {
+            EditTextWindow etw = new(SearchBox.Text, false);
+            etw.Show();
+            this.Close();
+            WindowUtilities.ShouldShutDown();
             return;
+        }
 
         isPuttingValueIn = true;
 
-        List<LookupItem> selectedLookupItems = new();
+        List<LookupItem> selectedLookupItems = [];
 
         foreach (object item in MainDataGrid.SelectedItems)
             if (item is LookupItem selectedLookupItem)
@@ -375,10 +417,10 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (selectedLookupItems.Count == 0)
             selectedLookupItems.Add(firstLookupItem);
 
+        bool openedHistoryItemOrLink = false;
         StringBuilder stringBuilder = new();
 
-        if (keysDown is null)
-            keysDown = KeyboardExtensions.GetKeyboardModifiersDown();
+        keysDown ??= KeyboardExtensions.GetKeyboardModifiersDown();
 
         switch (keysDown)
         {
@@ -397,16 +439,16 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
                     return;
 
-                if (Uri.TryCreate(lookupItem.longValue, UriKind.Absolute, out Uri? uri))
+                if (Uri.TryCreate(lookupItem.LongValue, UriKind.Absolute, out Uri? uri))
                 {
-                    Process.Start(new ProcessStartInfo(lookupItem.longValue) { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo(lookupItem.LongValue) { UseShellExecute = true });
                     this.Close();
                     return;
                 }
                 break;
             case KeyboardModifiersDown.Ctrl:
                 foreach (LookupItem lItem in selectedLookupItems)
-                    stringBuilder.AppendLine(lItem.shortValue);
+                    stringBuilder.AppendLine(lItem.ShortValue);
                 break;
             case KeyboardModifiersDown.Shift:
                 foreach (LookupItem lItem in selectedLookupItems)
@@ -414,8 +456,40 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 break;
             default:
                 foreach (LookupItem lItem in selectedLookupItems)
-                    stringBuilder.AppendLine(lItem.longValue);
+                {
+                    switch (lItem.Kind)
+                    {
+                        case LookupItemKind.EditWindow when lItem.HistoryItem is not null:
+                            {
+                                EditTextWindow editTextWindow = new(lItem.HistoryItem);
+                                editTextWindow.Show();
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
+                        case LookupItemKind.GrabFrame when lItem.HistoryItem is not null:
+                            {
+                                GrabFrame gf = new(lItem.HistoryItem);
+                                gf.Show();
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
+                        case LookupItemKind.Link:
+                            Process.Start(new ProcessStartInfo(lItem.LongValue) { UseShellExecute = true });
+                            openedHistoryItemOrLink = true;
+                            break;
+                        default:
+                            stringBuilder.AppendLine(lItem.LongValue);
+                            break;
+                    }
+                }
                 break;
+        }
+
+        if (openedHistoryItemOrLink)
+        {
+            this.Close();
+            WindowUtilities.ShouldShutDown();
+            return;
         }
 
         if (string.IsNullOrEmpty(stringBuilder.ToString()))
@@ -543,7 +617,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private async Task ReadCsvFileIntoQuickSimpleLookup(string csvToOpenPath)
+    private async Task LoadDataGridContent(string csvToOpenPath)
     {
         string contentToParse = string.Empty;
 
@@ -555,9 +629,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (string.IsNullOrWhiteSpace(contentToParse))
             PopulateSampleData();
 
-        ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
-
         MainDataGrid.ItemsSource = null;
+
+        ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
+        lookupItems = [.. ItemsDictionary];
+
+        if (DefaultSettings.LookupSearchHistory)
+        {
+            AddHistoryItemsToItemsDictionary();
+            SearchHistory.IsChecked = true;
+        }
+
         MainDataGrid.ItemsSource = ItemsDictionary;
 
         UpdateRowCount();
@@ -578,8 +660,19 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             if (item is LookupItem selectedLookupItem)
             {
                 filteredLookupList.Remove(selectedLookupItem);
+                lookupItems.Remove(selectedLookupItem);
                 ItemsDictionary.Remove(selectedLookupItem);
-                SaveBTN.Visibility = Visibility.Visible;
+
+                if (selectedLookupItem.HistoryItem is null)
+                {
+                    SaveBTN.Visibility = Visibility.Visible;
+                    continue;
+                }
+
+                if (selectedLookupItem.Kind is LookupItemKind.EditWindow)
+                    Singleton<HistoryService>.Instance.RemoveTextHistoryItem(selectedLookupItem.HistoryItem);
+                else if (selectedLookupItem.Kind is LookupItemKind.GrabFrame)
+                    Singleton<HistoryService>.Instance.RemoveImageHistoryItem(selectedLookupItem.HistoryItem);
             }
         }
 
@@ -647,10 +740,10 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         else
             MainDataGrid.CanUserAddRows = false;
 
-        List<string> searchArray = SearchBox.Text.ToLower().Split().ToList();
+        List<string> searchArray = [.. SearchBox.Text.ToLower().Split()];
         searchArray.Sort();
 
-        List<LookupItem> filteredList = new();
+        List<LookupItem> filteredList = [];
 
         foreach (LookupItem lItem in ItemsDictionary)
         {
@@ -691,7 +784,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        await ReadCsvFileIntoQuickSimpleLookup(DefaultSettings.LookupFileLocation);
+        await LoadDataGridContent(DefaultSettings.LookupFileLocation);
 
         if (DefaultSettings.TryInsert && !IsFromETW)
             PasteToggleButton.IsChecked = true;
@@ -703,6 +796,26 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         Activate();
         SearchBox.Focus();
     }
+
+    private void AddHistoryItemsToItemsDictionary()
+    {
+        List<HistoryInfo> textHistoryItems = Singleton<HistoryService>.Instance.GetEditWindows();
+
+        foreach (HistoryInfo historyItem in textHistoryItems)
+        {
+            LookupItem newItem = new(historyItem);
+            ItemsDictionary.Add(newItem);
+        }
+
+        List<HistoryInfo> grabFrameHistoryItems = Singleton<HistoryService>.Instance.GetRecentGrabs();
+
+        foreach (HistoryInfo historyItem in grabFrameHistoryItems)
+        {
+            LookupItem newItem = new(historyItem);
+            ItemsDictionary.Add(newItem);
+        }
+    }
+
     private async Task WriteDataToCSV()
     {
         if (!string.IsNullOrWhiteSpace(SearchBox.Text))
@@ -710,10 +823,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         StringBuilder csvContents = new();
 
-        if (MainDataGrid.ItemsSource is not List<LookupItem> itemsToSave)
-            return;
-
-        foreach (LookupItem lookupItem in itemsToSave)
+        foreach (LookupItem lookupItem in lookupItems)
             csvContents.AppendLine(lookupItem.ToCSVString());
 
         try
@@ -728,6 +838,81 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         catch (Exception ex)
         {
             System.Windows.Forms.MessageBox.Show($"Failed to save csv file. {ex.Message}");
+        }
+    }
+
+    private void FluentWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        // Can't do this here because it will close the app before the text can be inserted
+        // WindowUtilities.ShouldShutDown();
+    }
+
+    private async void SearchHistory_Click(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.LookupSearchHistory = SearchHistory.IsChecked is true;
+
+        lookupItems.Clear();
+        ItemsDictionary.Clear();
+        MainDataGrid.ItemsSource = null;
+
+        await LoadDataGridContent(DefaultSettings.LookupFileLocation);
+    }
+
+    private void DeleteItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (MainDataGrid.SelectedItem is not LookupItem lookupItem)
+            return;
+
+        RowDeleted();
+    }
+
+    private void OpenInETWMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (MainDataGrid.SelectedItem is not LookupItem lookupItem)
+            return;
+
+        switch (lookupItem.Kind)
+        {
+            case LookupItemKind.Simple:
+                StringBuilder sb = new();
+                sb.Append(lookupItem.ShortValue);
+                sb.Append(Environment.NewLine);
+                sb.AppendLine(lookupItem.LongValue);
+                EditTextWindow etw = new(sb.ToString(), false);
+                etw.Show();
+                break;
+            case LookupItemKind.EditWindow:
+                if (lookupItem.HistoryItem is not null)
+                {
+                    EditTextWindow editTextWindow = new(lookupItem.HistoryItem);
+                    editTextWindow.Show();
+                    return;
+                }
+
+                EditTextWindow etw2 = new(lookupItem.LongValue, false);
+                etw2.Show();
+                break;
+            case LookupItemKind.GrabFrame:
+                if (lookupItem.HistoryItem is not null)
+                {
+                    EditTextWindow editTextWindow = new(lookupItem.HistoryItem);
+                    editTextWindow.Show();
+                    return;
+                }
+
+                EditTextWindow etw3 = new(lookupItem.LongValue, false);
+                etw3.Show();
+                break;
+            case LookupItemKind.Link:
+                StringBuilder sb2 = new();
+                sb2.Append(lookupItem.ShortValue);
+                sb2.Append(Environment.NewLine);
+                sb2.AppendLine(lookupItem.LongValue);
+                EditTextWindow etw4 = new(sb2.ToString(), false);
+                etw4.Show();
+                break;
+            default:
+                break;
         }
     }
     #endregion Methods

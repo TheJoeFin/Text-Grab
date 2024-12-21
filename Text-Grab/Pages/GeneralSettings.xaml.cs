@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
@@ -115,6 +118,13 @@ public partial class GeneralSettings : Page
         {
             StartupOnLoginCheckBox.IsChecked = DefaultSettings.StartupOnLogin;
         }
+
+        List<WebSearchUrlModel> searcherSettings = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
+
+        foreach (WebSearchUrlModel searcher in searcherSettings)
+            WebSearchersComboBox.Items.Add(searcher);
+
+        WebSearchersComboBox.SelectedItem = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
 
         ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
 
@@ -355,5 +365,15 @@ public partial class GeneralSettings : Page
             return;
 
         DefaultSettings.ShowToast = false;
+    }
+
+    private void WebSearchersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!settingsSet
+            || sender is not ComboBox comboBox
+            || comboBox.SelectedItem is not WebSearchUrlModel newDefault)
+            return;
+
+        Singleton<WebSearchUrlModel>.Instance.DefaultSearcher = newDefault;
     }
 }
