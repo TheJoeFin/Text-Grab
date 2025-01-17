@@ -1,4 +1,6 @@
-﻿using Microsoft.Win32;
+﻿using CliWrap.Buffered;
+using CliWrap;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -56,6 +58,22 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private static LookupItem ParseStringToLookupItem(char splitChar, string row)
     {
+        LookupItemKind kind = LookupItemKind.Simple;
+        if (row.StartsWith('>'))
+        {
+            kind = LookupItemKind.Command;
+        }
+        else if (row.StartsWith("http"))
+            kind = LookupItemKind.Link;
+        else if (row.StartsWith("🔗"))
+        {
+            kind = LookupItemKind.Link;
+        }
+        else if (row.StartsWith('⚡'))
+        {
+            kind = LookupItemKind.Dynamic;
+        }
+
         List<string> cells = [.. row.Split(splitChar)];
         LookupItem newRow = new();
         if (cells.FirstOrDefault() is string firstCell)
@@ -64,6 +82,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         newRow.LongValue = "";
         if (cells.Count > 1 && cells[1] is not null)
             newRow.LongValue = string.Join(" ", cells.Skip(1).ToArray());
+
+        newRow.Kind = kind;
         return newRow;
     }
 
@@ -477,6 +497,11 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                             Process.Start(new ProcessStartInfo(lItem.LongValue) { UseShellExecute = true });
                             openedHistoryItemOrLink = true;
                             break;
+                        case LookupItemKind.Command:
+                            openedHistoryItemOrLink = await RunCli(lItem.LongValue);
+                            break;
+                        case LookupItemKind.Dynamic:
+                            break;
                         default:
                             stringBuilder.AppendLine(lItem.LongValue);
                             break;
@@ -532,6 +557,48 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         }
 
         WindowUtilities.ShouldShutDown();
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="longValue"></param>
+    /// <returns>returns if output is empty or whitespace</returns>
+    private async Task<bool> RunCli(string longValue)
+    {
+        string[] commands = longValue.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (commands.Length == 0)
+            return true;
+
+        BufferedCommandResult result = await Cli.Wrap("powershell")
+                                .WithArguments(commands)
+                                .WithValidation(CommandResultValidation.None)
+                                .ExecuteBufferedAsync(Encoding.UTF8);
+
+        string outputText = result.StandardOutput.Trim();
+        string errorText = result.StandardError.Trim();
+
+        string shortOutput = "Output";
+        if (string.IsNullOrWhiteSpace(outputText))
+        {
+            if (string.IsNullOrWhiteSpace(errorText))
+                return true;
+
+            shortOutput = "ERROR!";
+            outputText = errorText;
+        }
+
+        LookupItem newItem = new(shortOutput, outputText)
+        {
+            Kind = LookupItemKind.Simple
+        };
+
+        MainDataGrid.ItemsSource = null;
+        List<LookupItem> newItems = [newItem];
+        MainDataGrid.ItemsSource = newItems;
+
+        return false;
     }
 
     private async void QuickSimpleLookup_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -719,9 +786,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 if (row is null)
                 {
                     MainDataGrid.UpdateLayout();
-                    MainDataGrid.ScrollIntoView(MainDataGrid.Items[lastSelectionInt]);
-                    await Task.Delay(lastSelectionInt > maxMsDelay ? maxMsDelay : lastSelectionInt);
-                    row = (DataGridRow)MainDataGrid.ItemContainerGenerator.ContainerFromIndex(lastSelectionInt);
+
+                    if (lastSelectionInt > -1)
+                    {
+                        MainDataGrid.ScrollIntoView(MainDataGrid.Items[lastSelectionInt]);
+                        await Task.Delay(lastSelectionInt > maxMsDelay ? maxMsDelay : lastSelectionInt);
+                        row = (DataGridRow)MainDataGrid.ItemContainerGenerator.ContainerFromIndex(lastSelectionInt);
+                    }
                 }
 
                 if (row is not null)

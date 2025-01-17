@@ -9,6 +9,8 @@ public enum LookupItemKind
     EditWindow = 1,
     GrabFrame = 2,
     Link = 3,
+    Command = 4,
+    Dynamic = 5,
 }
 
 public class LookupItem : IEquatable<LookupItem>
@@ -26,6 +28,8 @@ public class LookupItem : IEquatable<LookupItem>
                 LookupItemKind.EditWindow => Wpf.Ui.Controls.SymbolRegular.Window24,
                 LookupItemKind.GrabFrame => Wpf.Ui.Controls.SymbolRegular.PanelBottom20,
                 LookupItemKind.Link => Wpf.Ui.Controls.SymbolRegular.Link24,
+                LookupItemKind.Command => Wpf.Ui.Controls.SymbolRegular.WindowConsole20,
+                LookupItemKind.Dynamic => Wpf.Ui.Controls.SymbolRegular.Flash24,
                 _ => Wpf.Ui.Controls.SymbolRegular.Copy20,
             };
         }
