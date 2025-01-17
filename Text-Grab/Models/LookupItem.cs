@@ -1,5 +1,6 @@
 ﻿using Humanizer;
 using System;
+using System.Linq;
 
 namespace Text_Grab.Models;
 
@@ -41,6 +42,8 @@ public class LookupItem : IEquatable<LookupItem>
     {
 
     }
+
+    public string FirstLettersString => string.Join("", ShortValue.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(s => s[0])).ToLower();
 
     public LookupItem(string sv, string lv)
     {

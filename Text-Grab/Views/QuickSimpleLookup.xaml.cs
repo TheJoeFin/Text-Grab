@@ -827,7 +827,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                     matchAllSearchWords = false;
             }
 
-            if (matchAllSearchWords)
+            if (matchAllSearchWords
+                || lItem.FirstLettersString.Contains(SearchBox.Text.ToLower(), StringComparison.CurrentCultureIgnoreCase))
                 filteredList.Add(lItem);
         }
 
