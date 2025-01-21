@@ -1,0 +1,14 @@
+﻿<UserControl
+    x:Class="Text_Grab.Controls.RegExIcon"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="200"
+    d:DesignWidth="222"
+    mc:Ignorable="d">
+    <Viewbox>
+        <Path Data="M148 97L117.5 149.5L87.5 128L125 82L75 71.5L86 38.5L135.5 57.5L125 0H171.5L161 57.5L210.5 38.5L221.5 71.5L171.5 82L209 128L179 149.5L148 97Z M0 129 L75 129 L 75 204 L0 204 z" Fill="{Binding IconColor}" />
+    </Viewbox>
+</UserControl>

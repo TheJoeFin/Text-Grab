@@ -17,6 +17,7 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
+using System.Text.RegularExpressions;
 
 namespace Text_Grab.Views;
 
@@ -757,12 +758,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (sender is not TextBox searchingBox || !IsLoaded)
             return;
 
-        if (string.IsNullOrEmpty(searchingBox.Text))
+        await ReSearch(searchingBox.Text);
+    }
+
+    private async Task ReSearch(string searchString)
+    {
+        if (string.IsNullOrEmpty(searchString))
             SearchLabel.Visibility = Visibility.Visible;
         else
             SearchLabel.Visibility = Visibility.Collapsed;
 
-        if (searchingBox.Text.Contains('\t'))
+        if (searchString.Contains('\t'))
         {
             // a tab has been entered and this will be a new entry
             AddItemBtn.Visibility = Visibility.Visible;
@@ -774,7 +780,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         MainDataGrid.ItemsSource = null;
 
-        if (string.IsNullOrEmpty(searchingBox.Text))
+        if (string.IsNullOrEmpty(searchString))
         {
             MainDataGrid.ItemsSource = ItemsDictionary;
             MainDataGrid.CanUserAddRows = true;
@@ -811,7 +817,55 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         else
             MainDataGrid.CanUserAddRows = false;
 
-        List<string> searchArray = [.. SearchBox.Text.ToLower().Split()];
+        if (RegExToggleButton.IsChecked is true)
+            RegexSearch(searchString);
+        else
+            StandardSearch(searchString);
+
+        UpdateRowCount();
+    }
+
+    private void RegexSearch(string searchString)
+    {
+        Regex searchRegex;
+
+        try
+        {
+            searchRegex = new Regex(searchString, RegexOptions.IgnoreCase);
+        }
+        catch
+        {
+            RegExToggleButton.BorderBrush = Brushes.Red;
+            RegExToggleButton.ToolTip = "Invalid Regular Expression";
+            return;
+        }
+
+        RegExToggleButton.BorderBrush = Brushes.Transparent;
+        RegExToggleButton.ToolTip = "Searh using Regular Expression Syntax";
+
+        List<LookupItem> filteredList = [];
+
+        foreach (LookupItem lItem in ItemsDictionary)
+        {
+            string lItemAsString = lItem.ToString().ToLower();
+
+            if (searchRegex.IsMatch(lItemAsString)
+                || lItem.FirstLettersString.Contains(SearchBox.Text.ToLower(), StringComparison.CurrentCultureIgnoreCase))
+                filteredList.Add(lItem);
+        }
+
+        MainDataGrid.ItemsSource = filteredList;
+
+        if (MainDataGrid.Items.Count > 0)
+            MainDataGrid.SelectedIndex = 0;
+    }
+
+    private void StandardSearch(string searchString)
+    {
+        RegExToggleButton.BorderBrush = Brushes.Transparent;
+        RegExToggleButton.ToolTip = "Searh using Regular Expression Syntax";
+
+        List<string> searchArray = [.. searchString.ToLower().Split()];
         searchArray.Sort();
 
         List<LookupItem> filteredList = [];
@@ -836,8 +890,6 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         if (MainDataGrid.Items.Count > 0)
             MainDataGrid.SelectedIndex = 0;
-
-        UpdateRowCount();
     }
 
     private void TextGrabSettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -987,5 +1039,11 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 break;
         }
     }
+
+    private async void RegExToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        await ReSearch(SearchBox.Text);
+    }
+
     #endregion Methods
 }
