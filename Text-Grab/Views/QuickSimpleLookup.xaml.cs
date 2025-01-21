@@ -674,6 +674,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                     e.Handled = true;
                 }
                 break;
+            case Key.R:
+                if (KeyboardExtensions.IsCtrlDown())
+                {
+                    RegExToggleButton.IsChecked = !RegExToggleButton.IsChecked;
+                    e.Handled = true;
+                }
+                break;
             case Key.End:
                 GoToEndOfMainDataGrid();
                 break;
