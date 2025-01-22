@@ -66,6 +66,22 @@
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 IsHitTestVisible="False"
                 Opacity="0.5" />
+            <ToggleButton
+                x:Name="RegExToggleButton"
+                Grid.Column="0"
+                Height="26"
+                Margin="0,0,5,0"
+                Padding="7,4"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                BorderThickness="1"
+                Checked="RegExToggleButton_Checked"
+                Style="{StaticResource ToggleSymbolButton}"
+                Unchecked="RegExToggleButton_Checked">
+                <Viewbox Width="12" Height="12">
+                    <controls:RegExIcon IconColor="{DynamicResource TextFillColorPrimaryBrush}" />
+                </Viewbox>
+            </ToggleButton>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
