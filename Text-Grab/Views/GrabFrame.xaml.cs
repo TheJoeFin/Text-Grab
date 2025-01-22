@@ -60,17 +60,17 @@ public partial class GrabFrame : Window
     private bool isSearchSelectionOverridden = false;
     private bool isSelecting;
     private bool isSpaceJoining = true;
-    private Dictionary<WordBorder, Rect> movingWordBordersDictionary = new();
+    private readonly Dictionary<WordBorder, Rect> movingWordBordersDictionary = [];
     private OcrResult? ocrResultOfWindow;
-    private DispatcherTimer reDrawTimer = new();
-    private DispatcherTimer reSearchTimer = new();
+    private readonly DispatcherTimer reDrawTimer = new();
+    private readonly DispatcherTimer reSearchTimer = new();
     private Side resizingSide = Side.None;
-    private Border selectBorder = new();
+    private readonly Border selectBorder = new();
     private Point startingMovingPoint;
-    private UndoRedo UndoRedo = new();
+    private readonly UndoRedo UndoRedo = new();
     private bool wasAltHeld = false;
     private double windowFrameImageScale = 1;
-    private ObservableCollection<WordBorder> wordBorders = new();
+    private readonly ObservableCollection<WordBorder> wordBorders = [];
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private ScrollBehavior scrollBehavior = ScrollBehavior.Resize;
 
@@ -219,8 +219,7 @@ public partial class GrabFrame : Window
                 return currentLanguage;
 
             currentLanguage = LanguagesComboBox.SelectedItem as Language;
-            if (currentLanguage is null)
-                currentLanguage = LanguageUtilities.GetOCRLanguage();
+            currentLanguage ??= LanguageUtilities.GetOCRLanguage();
 
             return currentLanguage;
         }
@@ -240,7 +239,7 @@ public partial class GrabFrame : Window
     }
 
     public string FrameText { get; private set; } = string.Empty;
-    public bool isCtrlDown => KeyboardExtensions.IsCtrlDown() || AddEditOcrMenuItem.IsChecked is true;
+    public bool IsCtrlDown => KeyboardExtensions.IsCtrlDown() || AddEditOcrMenuItem.IsChecked is true;
     public bool IsEditingAnyWordBorders => wordBorders.Any(x => x.IsEditing);
     public bool IsFreezeMode { get; set; } = false;
     public bool IsFromEditWindow => destinationTextBox is not null;
@@ -261,7 +260,7 @@ public partial class GrabFrame : Window
         if (frameContentImageSource is BitmapImage image)
             bitmap = ImageMethods.BitmapImageToBitmap(image);
 
-        List<WordBorderInfo> wbInfoList = new();
+        List<WordBorderInfo> wbInfoList = [];
 
         foreach (WordBorder wb in wordBorders)
             wbInfoList.Add(new WordBorderInfo(wb));
@@ -362,7 +361,7 @@ public partial class GrabFrame : Window
         if (startEndTransaction)
             UndoRedo.StartTransaction();
 
-        List<WordBorder> deletedWordBorder = new() { wordBorder };
+        List<WordBorder> deletedWordBorder = [wordBorder];
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
             new GrabFrameOperationArgs()
             {
@@ -451,7 +450,7 @@ public partial class GrabFrame : Window
         RectanglesCanvas.ContextMenu.IsOpen = false;
         FreezeGrabFrame();
 
-        List<WordBorder> selectedWordBorders = wordBorders.Where(w => w.IsSelected).OrderBy(o => o.Left).ToList();
+        List<WordBorder> selectedWordBorders = [.. wordBorders.Where(w => w.IsSelected).OrderBy(o => o.Left)];
 
         if (selectedWordBorders.Count < 2)
             return;
@@ -551,7 +550,7 @@ public partial class GrabFrame : Window
         startingMovingPoint = new(wordBorder.Left, wordBorder.Top);
         resizingSide = sideEnum;
 
-        ICollection<WordBorder> bordersMoving = new List<WordBorder>() { wordBorder };
+        ICollection<WordBorder> bordersMoving = [wordBorder];
 
         if (sideEnum == Side.None)
             bordersMoving = SelectedWordBorders();
@@ -1564,10 +1563,11 @@ public partial class GrabFrame : Window
     private async void OpenImageMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         // Create OpenFileDialog 
-        Microsoft.Win32.OpenFileDialog dlg = new();
-
-        // Set filter for file extension and default file extension
-        dlg.Filter = FileUtilities.GetImageFilter();
+        Microsoft.Win32.OpenFileDialog dlg = new()
+        {
+            // Set filter for file extension and default file extension
+            Filter = FileUtilities.GetImageFilter()
+        };
 
         bool? result = dlg.ShowDialog();
 
@@ -1670,7 +1670,7 @@ public partial class GrabFrame : Window
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
-        if (isCtrlDown)
+        if (IsCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
         else
             RectanglesCanvas.Cursor = null;
@@ -1710,7 +1710,7 @@ public partial class GrabFrame : Window
         selectBorder.Height = Math.Max(clickedPoint.Y, movingPoint.Y) - top;
         Canvas.SetTop(selectBorder, top);
 
-        if (isCtrlDown)
+        if (IsCtrlDown)
         {
             double smallestHeight = 6;
             double largestHeight = Height;
@@ -1756,7 +1756,7 @@ public partial class GrabFrame : Window
             UndoRedo.EndTransaction();
         }
 
-        if (isCtrlDown && movingWordBordersDictionary.Count == 0
+        if (IsCtrlDown && movingWordBordersDictionary.Count == 0
             && selectBorder.Height > 6 && selectBorder.Width > 6)
             AddNewWordBorder(selectBorder);
 
@@ -2053,7 +2053,7 @@ new GrabFrameOperationArgs()
         List<WordBorder> wbToEdit = SelectedWordBorders();
 
         if (wbToEdit.Count == 0)
-            wbToEdit = wordBorders.ToList();
+            wbToEdit = [.. wordBorders];
 
         UndoRedo.StartTransaction();
         foreach (WordBorder wb in wbToEdit)
@@ -2070,7 +2070,7 @@ new GrabFrameOperationArgs()
         List<WordBorder> wbToEdit = SelectedWordBorders();
 
         if (wbToEdit.Count == 0)
-            wbToEdit = wordBorders.ToList();
+            wbToEdit = [.. wordBorders];
 
         UndoRedo.StartTransaction();
         foreach (WordBorder wb in wbToEdit)
@@ -2190,7 +2190,7 @@ new GrabFrameOperationArgs()
         if (TableToggleButton.IsChecked is true)
         {
             TryToPlaceTable();
-            ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders.ToList(), isSpaceJoining);
+            ResultTable.GetTextFromTabledWordBorders(stringBuilder, [.. wordBorders], isSpaceJoining);
         }
         else
         {
@@ -2237,7 +2237,7 @@ new GrabFrameOperationArgs()
                 e.Handled = true;
         }
 
-        if (isCtrlDown)
+        if (IsCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
 
         if (IsEditingAnyWordBorders || SearchBox.IsFocused)
@@ -2263,7 +2263,7 @@ new GrabFrameOperationArgs()
                 e.Handled = true;
         }
 
-        if (!isCtrlDown)
+        if (!IsCtrlDown)
             RectanglesCanvas.Cursor = null;
     }
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
