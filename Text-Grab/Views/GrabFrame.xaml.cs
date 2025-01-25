@@ -1386,28 +1386,32 @@ public partial class GrabFrame : Window
         e.Handled = true;
         double aspectRatio = (Height - 66) / (Width - 4);
 
+        float changeFraction = 0.2f;
+        double widthDelta = Width * changeFraction;
+        double offsetDelta = Width * (changeFraction / 2);
+
         if (e.Delta > 0)
         {
-            Width += 100;
-            Left -= 50;
+            Width += widthDelta;
+            Left -= offsetDelta;
 
             if (!KeyboardExtensions.IsShiftDown())
             {
-                Height += 100 * aspectRatio;
-                Top -= 50 * aspectRatio;
+                Height += (widthDelta) * aspectRatio;
+                Top -= (offsetDelta) * aspectRatio;
             }
         }
         else if (e.Delta < 0)
         {
             if (Width > 120 && Height > 120)
             {
-                Width -= 100;
-                Left += 50;
+                Width -= widthDelta;
+                Left += offsetDelta;
 
                 if (!KeyboardExtensions.IsShiftDown())
                 {
-                    Height -= 100 * aspectRatio;
-                    Top += 50 * aspectRatio;
+                    Height -= (widthDelta) * aspectRatio;
+                    Top += (offsetDelta) * aspectRatio;
                 }
             }
         }
