@@ -187,6 +187,20 @@
                             InputGestureText="Hold Ctrl"
                             IsCheckable="True" />
                         <Separator />
+                        <MenuItem Header="Edit Image">
+                            <MenuItem
+                                Name="InvertColorsMI"
+                                Click="InvertColorsMI_Click"
+                                Header="Invert Colors" />
+                            <MenuItem
+                                Name="AutoContrastMI"
+                                Click="AutoContrastMI_Click"
+                                Header="Increase Contrast" />
+                            <MenuItem
+                                Name="GrayscaleMI"
+                                Click="GrayscaleMI_Click"
+                                Header="Grayscale" />
+                        </MenuItem>
                         <MenuItem
                             Click="RefreshBTN_Click"
                             Header="Refresh Grab Frame OCR Results"

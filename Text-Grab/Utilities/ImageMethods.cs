@@ -71,6 +71,25 @@ public static class ImageMethods
         return bitmapImage;
     }
 
+    public static BitmapImage CachedBitmapToBitmapImage(System.Windows.Media.Imaging.CachedBitmap cachedBitmap)
+    {
+        BitmapImage bitmapImage = new();
+        using (MemoryStream memoryStream = new())
+        {
+            BitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(cachedBitmap));
+            encoder.Save(memoryStream);
+            memoryStream.Position = 0;
+
+            bitmapImage.BeginInit();
+            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            bitmapImage.StreamSource = memoryStream;
+            bitmapImage.EndInit();
+            bitmapImage.Freeze();
+        }
+        return bitmapImage;
+    }
+
     public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region)
     {
         Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);

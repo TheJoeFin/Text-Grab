@@ -265,7 +265,17 @@ public partial class GrabFrame : Window
         foreach (WordBorder wb in wordBorders)
             wbInfoList.Add(new WordBorderInfo(wb));
 
-        string wbInfoJson = JsonSerializer.Serialize<List<WordBorderInfo>>(wbInfoList);
+        string wbInfoJson;
+        try
+        {
+            wbInfoJson = JsonSerializer.Serialize(wbInfoList);
+        }
+        catch
+        {
+#if DEBUG
+            throw;
+#endif
+        }
 
         Rect sizePosRect = new()
         {
@@ -927,7 +937,7 @@ public partial class GrabFrame : Window
 
         System.Drawing.Bitmap? bmp = null;
 
-        if (frameContentImageSource is BitmapImage bmpImg)
+        if (frameContentImageSource is BitmapSource bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
 
         int lineNumber = 0;
@@ -2393,4 +2403,64 @@ new GrabFrameOperationArgs()
     }
 
     #endregion Methods
+
+    private void InvertColorsMI_Click(object sender, RoutedEventArgs e)
+    {
+        reDrawTimer.Stop();
+        RectanglesCanvas.Children.Clear();
+        wordBorders.Clear();
+
+        if (!IsFreezeMode)
+            FreezeGrabFrame();
+
+        if (frameContentImageSource is null)
+        {
+            reDrawTimer.Start();
+            return;
+        }
+
+        frameContentImageSource = MagickHelpers.Invert(frameContentImageSource);
+        GrabFrameImage.Source = frameContentImageSource;
+        reDrawTimer.Start();
+    }
+
+    private void AutoContrastMI_Click(object sender, RoutedEventArgs e)
+    {
+        reDrawTimer.Stop();
+        RectanglesCanvas.Children.Clear();
+        wordBorders.Clear();
+
+        if (!IsFreezeMode)
+            FreezeGrabFrame();
+
+        if (frameContentImageSource is null)
+        {
+            reDrawTimer.Start();
+            return;
+        }
+
+        frameContentImageSource = MagickHelpers.Contrast(frameContentImageSource);
+        GrabFrameImage.Source = frameContentImageSource;
+        reDrawTimer.Start();
+    }
+
+    private void GrayscaleMI_Click(object sender, RoutedEventArgs e)
+    {
+        reDrawTimer.Stop();
+        RectanglesCanvas.Children.Clear();
+        wordBorders.Clear();
+
+        if (!IsFreezeMode)
+            FreezeGrabFrame();
+
+        if (frameContentImageSource is null)
+        {
+            reDrawTimer.Start();
+            return;
+        }
+
+        frameContentImageSource = MagickHelpers.Grayscale(frameContentImageSource as BitmapSource);
+        GrabFrameImage.Source = frameContentImageSource;
+        reDrawTimer.Start();
+    }
 }
