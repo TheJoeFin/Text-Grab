@@ -1,8 +1,12 @@
-﻿using System;
+﻿using CliWrap.Buffered;
+using CliWrap;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,9 +20,6 @@ using Windows.Media.Ocr;
 
 namespace Text_Grab.Pages;
 
-/// <summary>
-/// Interaction logic for LanguageSettings.xaml
-/// </summary>
 public partial class LanguageSettings : Page
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
@@ -47,9 +48,22 @@ public partial class LanguageSettings : Page
     private void LoadWindowsLanguages()
     {
         WindowsLanguagesListView.Items.Clear();
-        List<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages.ToList();
+        List<Language> possibleOCRLanguages = [.. OcrEngine.AvailableRecognizerLanguages];
         foreach (Language language in possibleOCRLanguages)
             WindowsLanguagesListView.Items.Add(language);
+
+        AllWindowsLanguagesComboBox.Items.Clear();
+        foreach (string textName in WindowsLanguageUtilities.AllLanguages)
+        {
+            CultureInfo languageCulture = new(textName);
+            string paddedTextName = textName.PadRight(12);
+            LangListItem langListItem = new()
+            {
+                LeftPart = paddedTextName,
+                RightPart = languageCulture.DisplayName
+            };
+            AllWindowsLanguagesComboBox.Items.Add(langListItem );
+        }
     }
 
     private async Task LoadTesseractContent()
@@ -154,5 +168,50 @@ public partial class LanguageSettings : Page
     {
         Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
         e.Handled = true;
+    }
+
+    private async void InstalWindowsLangButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (AllWindowsLanguagesComboBox.SelectedItem is not LangListItem pickedLanguageFile)
+            return;
+
+        string command = WindowsLanguageUtilities.PowerShellCommandForInstallingWithTag(pickedLanguageFile.LeftPart);
+
+        string demoCommand = @"powershell $Capability = Get-WindowsCapability -Online | Where-Object {{ $_.Name -Like 'Language.OCR*tr-TR*' }};
+ $Capability | Add-WindowsCapability -Online";
+
+        ProcessStartInfo startInfo = new()
+        {
+            UseShellExecute = true,
+            WorkingDirectory = Environment.CurrentDirectory,
+            FileName = "cmd.exe",
+            Verb = "runas",
+            Arguments = demoCommand,
+            WindowStyle = ProcessWindowStyle.Normal
+        };
+
+        try
+        {
+            Process? process = Process.Start(startInfo);
+            if (process is not null)
+                await process.WaitForExitAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
+        }
+    }
+}
+
+
+public record LangListItem
+{
+    public string RightPart { get; set; } = string.Empty;
+
+    public string LeftPart { get; set; } = string.Empty;
+
+    public override string ToString()
+    {
+        return string.Join(' ', [LeftPart, RightPart]);
     }
 }

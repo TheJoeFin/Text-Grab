@@ -25,6 +25,36 @@
                 Click="HyperlinkButton_Click"
                 Content="How to install OCR languages with PowerShell"
                 NavigateUri="https://learn.microsoft.com/en-us/windows/powertoys/text-extractor#how-to-query-for-ocr-language-packs" />
+            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                <ComboBox
+                    x:Name="AllWindowsLanguagesComboBox"
+                    Width="300"
+                    IsEditable="True"
+                    IsTextSearchCaseSensitive="False"
+                    IsTextSearchEnabled="True">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="local:LangListItem">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="2*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Margin="0,0,20,0" Text="{Binding LeftPart}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{Binding RightPart}"
+                                    TextAlignment="Left" />
+                            </Grid>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Margin="12,0,0,0" Click="InstalWindowsLangButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Shield24" />
+                        <TextBlock Margin="6,0,0,0" Text="Install" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
             <!--  Show the commands to execute to add other languages  -->
             <ui:ListView
                 x:Name="WindowsLanguagesListView"
