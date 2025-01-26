@@ -82,6 +82,9 @@ internal class UndoRedo
             case UndoRedoOperation.ResizeWordBorder:
                 InsertResizeWordBorderOperation((GrabFrameOperationArgs)operationArgs);
                 break;
+            case UndoRedoOperation.ChangedImage:
+                InsertChangedImageOperation((GrabFrameOperationArgs)operationArgs);
+                break;
             case UndoRedoOperation.None:
             default:
                 break;
@@ -105,6 +108,9 @@ internal class UndoRedo
 
     private void InsertResizeWordBorderOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
         new ResizeWordBorder(TransactionId, args.WordBorder, args.OldSize, args.NewSize));
+
+    private void InsertChangedImageOperation(GrabFrameOperationArgs args) => AddOperationToUndoStack(
+        new ChangedImage(TransactionId, args.DestinationImage, args.RemovingWordBorders, args.GrabFrameCanvas, args.WordBorders, args.OldImage, args.NewImage));
 
     public void Undo()
     {

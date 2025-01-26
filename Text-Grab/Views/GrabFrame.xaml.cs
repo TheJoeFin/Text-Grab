@@ -992,11 +992,11 @@ public partial class GrabFrame : Window
 
                 UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
         new GrabFrameOperationArgs()
-        {
-            WordBorder = wordBorderBox,
-            WordBorders = wordBorders,
-            GrabFrameCanvas = RectanglesCanvas
-        });
+                    {
+                        WordBorder = wordBorderBox,
+                        WordBorders = wordBorders,
+                        GrabFrameCanvas = RectanglesCanvas
+                    });
             }
 
             lineNumber++;
@@ -1432,7 +1432,7 @@ public partial class GrabFrame : Window
     {
         if (e.MiddleButton == MouseButtonState.Pressed)
         {
-            DefaultSettings.LastUsedLang = String.Empty;
+            DefaultSettings.LastUsedLang = string.Empty;
             DefaultSettings.Save();
         }
     }
@@ -2299,6 +2299,7 @@ new GrabFrameOperationArgs()
     private void CloseOnGrabMenuItem_Click(object sender, RoutedEventArgs e)
     {
         DefaultSettings.CloseFrameOnGrab = CloseOnGrabMenuItem.IsChecked is true;
+        DefaultSettings.Save();
     }
 
     private void CanExecuteGrab(object sender, CanExecuteRoutedEventArgs e)
@@ -2376,6 +2377,7 @@ new GrabFrameOperationArgs()
             return;
 
         DefaultSettings.GrabFrameScrollBehavior = scrollBehavior.ToString();
+        DefaultSettings.Save();
         SetScrollBehaviorMenuItems();
     }
 
@@ -2406,10 +2408,19 @@ new GrabFrameOperationArgs()
         }
     }
 
-    #endregion Methods
-
     private void InvertColorsMI_Click(object sender, RoutedEventArgs e)
     {
+        List<WordBorder> existingWordBorders = new(wordBorders);
+
+        GrabFrameOperationArgs args = new()
+        {
+            WordBorders = wordBorders,
+            GrabFrameCanvas = RectanglesCanvas,
+            DestinationImage = GrabFrameImage,
+            RemovingWordBorders = existingWordBorders,
+            OldImage = frameContentImageSource
+        };
+
         reDrawTimer.Stop();
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
@@ -2426,6 +2437,10 @@ new GrabFrameOperationArgs()
         frameContentImageSource = MagickHelpers.Invert(frameContentImageSource);
         GrabFrameImage.Source = frameContentImageSource;
         reDrawTimer.Start();
+
+        args.NewImage = frameContentImageSource;
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangedImage, args);
     }
 
     private void AutoContrastMI_Click(object sender, RoutedEventArgs e)
@@ -2467,4 +2482,6 @@ new GrabFrameOperationArgs()
         GrabFrameImage.Source = frameContentImageSource;
         reDrawTimer.Start();
     }
+
+    #endregion Methods
 }
