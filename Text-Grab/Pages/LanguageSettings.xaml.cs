@@ -1,12 +1,8 @@
-﻿using CliWrap.Buffered;
-using CliWrap;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -51,19 +47,6 @@ public partial class LanguageSettings : Page
         List<Language> possibleOCRLanguages = [.. OcrEngine.AvailableRecognizerLanguages];
         foreach (Language language in possibleOCRLanguages)
             WindowsLanguagesListView.Items.Add(language);
-
-        AllWindowsLanguagesComboBox.Items.Clear();
-        foreach (string textName in WindowsLanguageUtilities.AllLanguages)
-        {
-            CultureInfo languageCulture = new(textName);
-            string paddedTextName = textName.PadRight(12);
-            LangListItem langListItem = new()
-            {
-                LeftPart = paddedTextName,
-                RightPart = languageCulture.DisplayName
-            };
-            AllWindowsLanguagesComboBox.Items.Add(langListItem );
-        }
     }
 
     private async Task LoadTesseractContent()
@@ -170,31 +153,26 @@ public partial class LanguageSettings : Page
         e.Handled = true;
     }
 
-    private async void InstalWindowsLangButton_Click(object sender, RoutedEventArgs e)
+    private void InstalWindowsLangButton_Click(object sender, RoutedEventArgs e)
     {
-        if (AllWindowsLanguagesComboBox.SelectedItem is not LangListItem pickedLanguageFile)
+        if (AppContext.BaseDirectory is not string exeDir)
             return;
 
-        string command = WindowsLanguageUtilities.PowerShellCommandForInstallingWithTag(pickedLanguageFile.LeftPart);
-
-        string demoCommand = @"powershell $Capability = Get-WindowsCapability -Online | Where-Object {{ $_.Name -Like 'Language.OCR*tr-TR*' }};
- $Capability | Add-WindowsCapability -Online";
+        string exePath = Path.Combine(exeDir, "Text-Grab.exe");
 
         ProcessStartInfo startInfo = new()
         {
             UseShellExecute = true,
             WorkingDirectory = Environment.CurrentDirectory,
-            FileName = "cmd.exe",
+            FileName = exePath,
             Verb = "runas",
-            Arguments = demoCommand,
+            Arguments = "admin",
             WindowStyle = ProcessWindowStyle.Normal
         };
 
         try
         {
             Process? process = Process.Start(startInfo);
-            if (process is not null)
-                await process.WaitForExitAsync();
         }
         catch (Exception ex)
         {

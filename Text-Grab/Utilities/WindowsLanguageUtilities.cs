@@ -1,16 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Text_Grab.Utilities;
+﻿namespace Text_Grab.Utilities;
 public class WindowsLanguageUtilities
 {
     public static string PowerShellCommandForInstallingWithTag(string languageTag)
     {
         // $Capability = Get-WindowsCapability -Online | Where-Object { $_.Name -Like 'Language.OCR*en-US*' }
         return $"$Capability = Get-WindowsCapability -Online | Where-Object {{ $_.Name -Like 'Language.OCR*{languageTag}*' }}; $Capability | Add-WindowsCapability -Online";
+    }
+
+    public static string DismLanguageCommand(string languageTag)
+    {
+        return $"Language.OCR~~~{languageTag}";
     }
 
     public static string PowerShellCommandForUninstallingWithTag(string languageTag)
