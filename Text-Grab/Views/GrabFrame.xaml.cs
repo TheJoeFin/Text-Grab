@@ -552,7 +552,7 @@ public partial class GrabFrame : Window
 
     public List<WordBorder> SelectedWordBorders()
     {
-        return wordBorders.Where(w => w.IsSelected).ToList();
+        return [.. wordBorders.Where(w => w.IsSelected)];
     }
 
     public void StartWordBorderMoveResize(WordBorder wordBorder, Side sideEnum)
@@ -871,7 +871,7 @@ public partial class GrabFrame : Window
     {
         FreezeGrabFrame();
 
-        List<WordBorder> selectedWordBorders = wordBorders.Where(x => x.IsSelected).ToList();
+        List<WordBorder> selectedWordBorders = [.. wordBorders.Where(x => x.IsSelected)];
 
         if (selectedWordBorders.Count == 0)
             return selectedWordBorders;
@@ -1018,7 +1018,7 @@ public partial class GrabFrame : Window
 
     private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        List<WordBorder> selectedWords = wordBorders.Where(m => m.IsSelected).ToList();
+        List<WordBorder> selectedWords = [.. wordBorders.Where(m => m.IsSelected)];
         if (selectedWords.Count == 0)
             return;
 
@@ -1216,6 +1216,7 @@ public partial class GrabFrame : Window
         AutoOcrCheckBox.IsChecked = DefaultSettings.GrabFrameAutoOcr;
         AlwaysUpdateEtwCheckBox.IsChecked = DefaultSettings.GrabFrameUpdateEtw;
         CloseOnGrabMenuItem.IsChecked = DefaultSettings.CloseFrameOnGrab;
+        ReadBarcodesMenuItem.IsChecked = DefaultSettings.GrabFrameReadBarcodes;
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
         SetScrollBehaviorMenuItems();
     }
@@ -1821,11 +1822,11 @@ public partial class GrabFrame : Window
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
 new GrabFrameOperationArgs()
-{
-    RemovingWordBorders = new(wordBorders),
-    WordBorders = wordBorders,
-    GrabFrameCanvas = RectanglesCanvas
-});
+            {
+                RemovingWordBorders = [.. wordBorders],
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
 
         ResetGrabFrame();
 
@@ -2124,6 +2125,9 @@ new GrabFrameOperationArgs()
 
     private void TryToReadBarcodes(DpiScale dpi)
     {
+        if (DefaultSettings.GrabFrameReadBarcodes is false)
+            return;
+
         System.Drawing.Bitmap bitmapOfGrabFrame = ImageMethods.GetWindowsBoundsBitmap(this);
 
         BarcodeReader barcodeReader = new()
@@ -2132,15 +2136,15 @@ new GrabFrameOperationArgs()
             Options = new ZXing.Common.DecodingOptions { TryHarder = true }
         };
 
-        ZXing.Result result = barcodeReader.Decode(bitmapOfGrabFrame);
+        Result result = barcodeReader.Decode(bitmapOfGrabFrame);
 
         if (result is null)
             return;
 
         ResultPoint[] rawPoints = result.ResultPoints;
 
-        float[] xs = rawPoints.Reverse().Take(4).Select(x => x.X).ToArray();
-        float[] ys = rawPoints.Reverse().Take(4).Select(x => x.Y).ToArray();
+        float[] xs = [.. rawPoints.Reverse().Take(4).Select(x => x.X)];
+        float[] ys = [.. rawPoints.Reverse().Take(4).Select(x => x.Y)];
 
         Point minPoint = new(xs.Min(), ys.Min());
         Point maxPoint = new(xs.Max(), ys.Max());
@@ -2194,10 +2198,10 @@ new GrabFrameOperationArgs()
 
     private void UpdateFrameText()
     {
-        string[] selectedWbs = wordBorders
+        string[] selectedWbs = [.. wordBorders
             .OrderBy(b => b.Top)
             .Where(w => w.IsSelected)
-            .Select(t => t.Word).ToArray();
+            .Select(t => t.Word)];
 
         StringBuilder stringBuilder = new();
 
@@ -2211,7 +2215,7 @@ new GrabFrameOperationArgs()
             if (selectedWbs.Length > 0)
                 stringBuilder.AppendJoin(Environment.NewLine, selectedWbs);
             else
-                stringBuilder.AppendJoin(Environment.NewLine, wordBorders.Select(w => w.Word).ToArray());
+                stringBuilder.AppendJoin(Environment.NewLine, [.. wordBorders.Select(w => w.Word)]);
         }
 
         FrameText = stringBuilder.ToString();
@@ -2410,7 +2414,7 @@ new GrabFrameOperationArgs()
 
     private void InvertColorsMI_Click(object sender, RoutedEventArgs e)
     {
-        List<WordBorder> existingWordBorders = new(wordBorders);
+        List<WordBorder> existingWordBorders = [.. wordBorders];
 
         GrabFrameOperationArgs args = new()
         {
@@ -2484,4 +2488,13 @@ new GrabFrameOperationArgs()
     }
 
     #endregion Methods
+
+    private void ReadBarcodesMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem barcodeMenuItem)
+            return;
+
+        DefaultSettings.GrabFrameReadBarcodes = barcodeMenuItem.IsChecked is true;
+        DefaultSettings.Save();
+    }
 }

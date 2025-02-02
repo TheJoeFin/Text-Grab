@@ -127,6 +127,12 @@
                             IsCheckable="True"
                             IsChecked="True" />
                         <MenuItem
+                            x:Name="ReadBarcodesMenuItem"
+                            Checked="ReadBarcodesMenuItem_Checked"
+                            Header="Try to read barcodes and QR Codes"
+                            IsCheckable="True"
+                            Unchecked="ReadBarcodesMenuItem_Checked" />
+                        <MenuItem
                             x:Name="IsTopmostMenuItem"
                             Header="Keep Grab Frame On Top"
                             IsCheckable="True"
