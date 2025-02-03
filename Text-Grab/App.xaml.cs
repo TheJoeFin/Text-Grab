@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -234,6 +235,9 @@ public partial class App : System.Windows.Application
 
     private async void appStartup(object sender, StartupEventArgs e)
     {
+        if (checkForAdminWindow(e.Args))
+            return;
+
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
@@ -270,6 +274,23 @@ public partial class App : System.Windows.Application
         }
 
         DefaultLaunch();
+    }
+
+    private bool checkForAdminWindow(string[] args)
+    {
+        WindowCollection allWindows = Current.Windows;
+
+        foreach (Window window in allWindows)
+            if (window is AdminWindow)
+                return true;
+
+        if (args.Length == 0 || !args.Contains("admin"))
+            return false;
+
+        AdminWindow aw = new();
+        aw.Show();
+
+        return true;
     }
 
     private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

@@ -25,6 +25,14 @@
                 Click="HyperlinkButton_Click"
                 Content="How to install OCR languages with PowerShell"
                 NavigateUri="https://learn.microsoft.com/en-us/windows/powertoys/text-extractor#how-to-query-for-ocr-language-packs" />
+            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                <Button Margin="12,0,0,0" Click="InstalWindowsLangButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Shield24" />
+                        <TextBlock Margin="6,0,0,0" Text="Manage Windows OCR Languages" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
             <!--  Show the commands to execute to add other languages  -->
             <ui:ListView
                 x:Name="WindowsLanguagesListView"

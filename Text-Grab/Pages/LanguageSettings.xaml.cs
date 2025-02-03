@@ -16,9 +16,6 @@ using Windows.Media.Ocr;
 
 namespace Text_Grab.Pages;
 
-/// <summary>
-/// Interaction logic for LanguageSettings.xaml
-/// </summary>
 public partial class LanguageSettings : Page
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
@@ -47,7 +44,7 @@ public partial class LanguageSettings : Page
     private void LoadWindowsLanguages()
     {
         WindowsLanguagesListView.Items.Clear();
-        List<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages.ToList();
+        List<Language> possibleOCRLanguages = [.. OcrEngine.AvailableRecognizerLanguages];
         foreach (Language language in possibleOCRLanguages)
             WindowsLanguagesListView.Items.Add(language);
     }
@@ -154,5 +151,45 @@ public partial class LanguageSettings : Page
     {
         Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
         e.Handled = true;
+    }
+
+    private void InstalWindowsLangButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (AppContext.BaseDirectory is not string exeDir)
+            return;
+
+        string exePath = Path.Combine(exeDir, "Text-Grab.exe");
+
+        ProcessStartInfo startInfo = new()
+        {
+            UseShellExecute = true,
+            WorkingDirectory = Environment.CurrentDirectory,
+            FileName = exePath,
+            Verb = "runas",
+            Arguments = "admin",
+            WindowStyle = ProcessWindowStyle.Normal
+        };
+
+        try
+        {
+            Process? process = Process.Start(startInfo);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
+        }
+    }
+}
+
+
+public record LangListItem
+{
+    public string RightPart { get; set; } = string.Empty;
+
+    public string LeftPart { get; set; } = string.Empty;
+
+    public override string ToString()
+    {
+        return string.Join(' ', [LeftPart, RightPart]);
     }
 }
