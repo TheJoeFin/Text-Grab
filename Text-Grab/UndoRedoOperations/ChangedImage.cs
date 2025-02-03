@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Text_Grab.Controls;
@@ -38,8 +39,12 @@ internal class ChangedImage : Operation, IUndoRedoOperation
 
         foreach (WordBorder wordBorder in PreviousWordBorders)
         {
-            RectanglesCanvas.Children.Add(wordBorder);
-            WordBorders.Add(wordBorder);
+            try
+            {
+                RectanglesCanvas.Children.Add(wordBorder);
+                WordBorders.Add(wordBorder);
+            }
+            catch (ArgumentException) { }
         }
     }
 

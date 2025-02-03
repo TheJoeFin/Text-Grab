@@ -2412,8 +2412,10 @@ new GrabFrameOperationArgs()
         }
     }
 
-    private void InvertColorsMI_Click(object sender, RoutedEventArgs e)
+    private async void InvertColorsMI_Click(object sender, RoutedEventArgs e)
     {
+        UndoRedo.StartTransaction();
+
         List<WordBorder> existingWordBorders = [.. wordBorders];
 
         GrabFrameOperationArgs args = new()
@@ -2424,6 +2426,14 @@ new GrabFrameOperationArgs()
             RemovingWordBorders = existingWordBorders,
             OldImage = frameContentImageSource
         };
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = existingWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
 
         reDrawTimer.Stop();
         RectanglesCanvas.Children.Clear();
@@ -2440,17 +2450,37 @@ new GrabFrameOperationArgs()
 
         frameContentImageSource = MagickHelpers.Invert(frameContentImageSource);
         GrabFrameImage.Source = frameContentImageSource;
-        reDrawTimer.Start();
+        await DrawRectanglesAroundWords(SearchBox.Text);
 
         args.NewImage = frameContentImageSource;
 
-        UndoRedo.StartTransaction();
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangedImage, args);
         UndoRedo.EndTransaction();
     }
 
-    private void AutoContrastMI_Click(object sender, RoutedEventArgs e)
+    private async void AutoContrastMI_Click(object sender, RoutedEventArgs e)
     {
+        UndoRedo.StartTransaction();
+
+        List<WordBorder> existingWordBorders = [.. wordBorders];
+
+        GrabFrameOperationArgs args = new()
+        {
+            WordBorders = wordBorders,
+            GrabFrameCanvas = RectanglesCanvas,
+            DestinationImage = GrabFrameImage,
+            RemovingWordBorders = existingWordBorders,
+            OldImage = frameContentImageSource
+        };
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = existingWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+
         reDrawTimer.Stop();
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
@@ -2466,11 +2496,37 @@ new GrabFrameOperationArgs()
 
         frameContentImageSource = MagickHelpers.Contrast(frameContentImageSource);
         GrabFrameImage.Source = frameContentImageSource;
-        reDrawTimer.Start();
+        await DrawRectanglesAroundWords(SearchBox.Text);
+
+        args.NewImage = frameContentImageSource;
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangedImage, args);
+        UndoRedo.EndTransaction();
     }
 
-    private void GrayscaleMI_Click(object sender, RoutedEventArgs e)
+    private async void GrayscaleMI_Click(object sender, RoutedEventArgs e)
     {
+        UndoRedo.StartTransaction();
+
+        List<WordBorder> existingWordBorders = [.. wordBorders];
+
+        GrabFrameOperationArgs args = new()
+        {
+            WordBorders = wordBorders,
+            GrabFrameCanvas = RectanglesCanvas,
+            DestinationImage = GrabFrameImage,
+            RemovingWordBorders = existingWordBorders,
+            OldImage = frameContentImageSource
+        };
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = existingWordBorders,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+
         reDrawTimer.Stop();
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
@@ -2486,10 +2542,13 @@ new GrabFrameOperationArgs()
 
         frameContentImageSource = MagickHelpers.Grayscale(frameContentImageSource as BitmapSource);
         GrabFrameImage.Source = frameContentImageSource;
-        reDrawTimer.Start();
-    }
+        await DrawRectanglesAroundWords(SearchBox.Text);
 
-    #endregion Methods
+        args.NewImage = frameContentImageSource;
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangedImage, args);
+        UndoRedo.EndTransaction();
+    }
 
     private void ReadBarcodesMenuItem_Checked(object sender, RoutedEventArgs e)
     {
@@ -2499,4 +2558,6 @@ new GrabFrameOperationArgs()
         DefaultSettings.GrabFrameReadBarcodes = barcodeMenuItem.IsChecked is true;
         DefaultSettings.Save();
     }
+
+    #endregion Methods
 }
