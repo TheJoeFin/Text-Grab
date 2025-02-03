@@ -44,7 +44,7 @@ internal class UndoRedo
         if (ActiveTransactionIdCount >= UndoRedoTransactionCapacity)
         {
             uint? transactionIdToRemove = UndoStack.First?.Value.TransactionId;
-            while (UndoStack.First?.Value.TransactionId == transactionIdToRemove)
+            while (UndoStack.First?.Value.TransactionId == transactionIdToRemove && transactionIdToRemove is not null)
             {
                 if (UndoStack.Count != 0)
                     UndoStack.RemoveFirst();

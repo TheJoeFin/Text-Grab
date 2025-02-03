@@ -991,7 +991,7 @@ public partial class GrabFrame : Window
                 _ = RectanglesCanvas.Children.Add(wordBorderBox);
 
                 UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
-        new GrabFrameOperationArgs()
+                    new GrabFrameOperationArgs()
                     {
                         WordBorder = wordBorderBox,
                         WordBorders = wordBorders,
@@ -2444,7 +2444,9 @@ new GrabFrameOperationArgs()
 
         args.NewImage = frameContentImageSource;
 
+        UndoRedo.StartTransaction();
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangedImage, args);
+        UndoRedo.EndTransaction();
     }
 
     private void AutoContrastMI_Click(object sender, RoutedEventArgs e)
