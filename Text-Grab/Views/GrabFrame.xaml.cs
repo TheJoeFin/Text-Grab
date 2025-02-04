@@ -2414,7 +2414,7 @@ new GrabFrameOperationArgs()
 
     private async void InvertColorsMI_Click(object sender, RoutedEventArgs e)
     {
-        UndoRedo.StartTransaction();
+        UndoRedo.EndTransaction();
 
         List<WordBorder> existingWordBorders = [.. wordBorders];
 
@@ -2445,6 +2445,7 @@ new GrabFrameOperationArgs()
         if (frameContentImageSource is null)
         {
             reDrawTimer.Start();
+            UndoRedo.EndTransaction();
             return;
         }
 
@@ -2460,7 +2461,7 @@ new GrabFrameOperationArgs()
 
     private async void AutoContrastMI_Click(object sender, RoutedEventArgs e)
     {
-        UndoRedo.StartTransaction();
+        UndoRedo.EndTransaction();
 
         List<WordBorder> existingWordBorders = [.. wordBorders];
 
@@ -2491,6 +2492,7 @@ new GrabFrameOperationArgs()
         if (frameContentImageSource is null)
         {
             reDrawTimer.Start();
+            UndoRedo.EndTransaction();
             return;
         }
 
@@ -2506,7 +2508,7 @@ new GrabFrameOperationArgs()
 
     private async void GrayscaleMI_Click(object sender, RoutedEventArgs e)
     {
-        UndoRedo.StartTransaction();
+        UndoRedo.EndTransaction();
 
         List<WordBorder> existingWordBorders = [.. wordBorders];
 
@@ -2537,6 +2539,7 @@ new GrabFrameOperationArgs()
         if (frameContentImageSource is null)
         {
             reDrawTimer.Start();
+            UndoRedo.EndTransaction();
             return;
         }
 

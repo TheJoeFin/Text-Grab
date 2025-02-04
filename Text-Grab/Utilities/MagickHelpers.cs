@@ -5,7 +5,7 @@ using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace Text_Grab.Views;
+namespace Text_Grab.Utilities;
 
 public class MagickHelpers
 {
