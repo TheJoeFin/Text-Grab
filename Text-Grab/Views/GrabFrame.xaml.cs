@@ -2412,7 +2412,7 @@ new GrabFrameOperationArgs()
         }
     }
 
-    private async void InvertColorsMI_Click(object sender, RoutedEventArgs e)
+    private void InvertColorsMI_Click(object sender, RoutedEventArgs e)
     {
         UndoRedo.EndTransaction();
 
@@ -2451,12 +2451,12 @@ new GrabFrameOperationArgs()
 
         frameContentImageSource = MagickHelpers.Invert(frameContentImageSource);
         GrabFrameImage.Source = frameContentImageSource;
-        await DrawRectanglesAroundWords(SearchBox.Text);
 
         args.NewImage = frameContentImageSource;
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangedImage, args);
         UndoRedo.EndTransaction();
+        reDrawTimer.Start();
     }
 
     private void AutoContrastMI_Click(object sender, RoutedEventArgs e)
@@ -2600,7 +2600,7 @@ new GrabFrameOperationArgs()
         reDrawTimer.Start();
     }
 
-    private async void GrayscaleMI_Click(object sender, RoutedEventArgs e)
+    private void GrayscaleMI_Click(object sender, RoutedEventArgs e)
     {
         UndoRedo.EndTransaction();
 
@@ -2639,12 +2639,12 @@ new GrabFrameOperationArgs()
 
         frameContentImageSource = MagickHelpers.Grayscale(frameContentImageSource as BitmapSource);
         GrabFrameImage.Source = frameContentImageSource;
-        await DrawRectanglesAroundWords(SearchBox.Text);
 
         args.NewImage = frameContentImageSource;
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.ChangedImage, args);
         UndoRedo.EndTransaction();
+        reDrawTimer.Start();
     }
 
     private void ReadBarcodesMenuItem_Checked(object sender, RoutedEventArgs e)
