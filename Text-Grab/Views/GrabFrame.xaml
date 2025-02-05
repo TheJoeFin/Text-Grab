@@ -201,7 +201,15 @@
                             <MenuItem
                                 Name="AutoContrastMI"
                                 Click="AutoContrastMI_Click"
-                                Header="Increase Contrast" />
+                                Header="Increase Contrast (Sigmoid)" />
+                            <MenuItem
+                                Name="BrightenMI"
+                                Click="BrightenMI_Click"
+                                Header="Brighten" />
+                            <MenuItem
+                                Name="DarkenMI"
+                                Click="DarkenMI_Click"
+                                Header="Darken" />
                             <MenuItem
                                 Name="GrayscaleMI"
                                 Click="GrayscaleMI_Click"

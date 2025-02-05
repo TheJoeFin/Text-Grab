@@ -9,6 +9,32 @@ namespace Text_Grab.Utilities;
 
 public class MagickHelpers
 {
+    public static ImageSource? Brighten(ImageSource? source)
+    {
+        BitmapImage? bitmapImage = null;
+        if (source is CachedBitmap cachedBitmap)
+        {
+            bitmapImage = ImageMethods.CachedBitmapToBitmapImage(cachedBitmap);
+        }
+        else if (source is BitmapImage)
+        {
+            bitmapImage = source as BitmapImage;
+        }
+
+        if (bitmapImage is null)
+            return null;
+
+        Bitmap bitmap = ImageMethods.BitmapImageToBitmap(bitmapImage);
+
+        MagickImageFactory imageFactory = new();
+        if (imageFactory.Create(bitmap) is not MagickImage magickImage)
+            return null;
+
+        magickImage.BrightnessContrast(new Percentage(10), new Percentage(0));
+
+        return magickImage.ToBitmapSource();
+    }
+
     public static ImageSource? Contrast(ImageSource? source)
     {
         BitmapImage? bitmapImage = null;
@@ -31,6 +57,32 @@ public class MagickHelpers
             return null;
 
         magickImage.SigmoidalContrast(10);
+
+        return magickImage.ToBitmapSource();
+    }
+
+    public static ImageSource? Darken(ImageSource? source)
+    {
+        BitmapImage? bitmapImage = null;
+        if (source is CachedBitmap cachedBitmap)
+        {
+            bitmapImage = ImageMethods.CachedBitmapToBitmapImage(cachedBitmap);
+        }
+        else if (source is BitmapImage)
+        {
+            bitmapImage = source as BitmapImage;
+        }
+
+        if (bitmapImage is null)
+            return null;
+
+        Bitmap bitmap = ImageMethods.BitmapImageToBitmap(bitmapImage);
+
+        MagickImageFactory imageFactory = new();
+        if (imageFactory.Create(bitmap) is not MagickImage magickImage)
+            return null;
+
+        magickImage.BrightnessContrast(new Percentage(-10), new Percentage(0));
 
         return magickImage.ToBitmapSource();
     }
