@@ -1639,7 +1639,7 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (scrollBehavior == ScrollBehavior.Zoom)
+        if (MainZoomBorder.CanPan)
         {
             if (e.MiddleButton == MouseButtonState.Pressed)
             {
@@ -1687,13 +1687,15 @@ public partial class GrabFrame : Window
     {
         if (IsCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
+        else if (MainZoomBorder.CanPan)
+            RectanglesCanvas.Cursor = Cursors.SizeAll;
         else
             RectanglesCanvas.Cursor = null;
 
         if (!isSelecting && !isMiddleDown && movingWordBordersDictionary.Count == 0)
             return;
 
-        if (scrollBehavior == ScrollBehavior.Zoom
+        if (MainZoomBorder.CanPan
             && !KeyboardExtensions.IsShiftDown()
             && !KeyboardExtensions.IsCtrlDown())
         {
