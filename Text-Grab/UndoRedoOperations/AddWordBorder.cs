@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows.Controls;
 using Text_Grab.Controls;
 
@@ -14,11 +15,11 @@ internal class AddWordBorder : Operation, IUndoRedoOperation
         WordBorders = wordBorders;
     }
 
-    private WordBorder WordBorder;
+    private readonly WordBorder WordBorder;
 
-    private Canvas Canvas;
+    private readonly Canvas Canvas;
 
-    private ICollection<WordBorder> WordBorders;
+    private readonly ICollection<WordBorder> WordBorders;
 
     public UndoRedoOperation GetUndoRedoOperation() => UndoRedoOperation.AddWordBorder;
 
@@ -30,7 +31,11 @@ internal class AddWordBorder : Operation, IUndoRedoOperation
 
     public void Redo()
     {
-        Canvas.Children.Add(WordBorder);
-        WordBorders.Add(WordBorder);
+        try
+        {
+            Canvas.Children.Add(WordBorder);
+            WordBorders.Add(WordBorder);
+        }
+        catch (ArgumentException) { }
     }
 }

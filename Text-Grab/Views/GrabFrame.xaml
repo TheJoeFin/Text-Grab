@@ -127,10 +127,18 @@
                             IsCheckable="True"
                             IsChecked="True" />
                         <MenuItem
+                            x:Name="ReadBarcodesMenuItem"
+                            Checked="ReadBarcodesMenuItem_Checked"
+                            Header="Try to read barcodes and QR Codes"
+                            IsCheckable="True"
+                            Unchecked="ReadBarcodesMenuItem_Checked" />
+                        <MenuItem
                             x:Name="IsTopmostMenuItem"
                             Header="Keep Grab Frame On Top"
                             IsCheckable="True"
-                            IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}" />
+                            IsChecked="{Binding Topmost,
+                                                ElementName=GrabFrameWindow,
+                                                Mode=TwoWay}" />
                         <Separator />
                         <MenuItem
                             Command="{x:Static local:GrabFrame.PasteCommand}"
@@ -185,6 +193,28 @@
                             InputGestureText="Hold Ctrl"
                             IsCheckable="True" />
                         <Separator />
+                        <MenuItem Header="Edit Image">
+                            <MenuItem
+                                Name="InvertColorsMI"
+                                Click="InvertColorsMI_Click"
+                                Header="Invert Colors" />
+                            <MenuItem
+                                Name="AutoContrastMI"
+                                Click="AutoContrastMI_Click"
+                                Header="Increase Contrast (Sigmoid)" />
+                            <MenuItem
+                                Name="BrightenMI"
+                                Click="BrightenMI_Click"
+                                Header="Brighten" />
+                            <MenuItem
+                                Name="DarkenMI"
+                                Click="DarkenMI_Click"
+                                Header="Darken" />
+                            <MenuItem
+                                Name="GrayscaleMI"
+                                Click="GrayscaleMI_Click"
+                                Header="Grayscale" />
+                        </MenuItem>
                         <MenuItem
                             Click="RefreshBTN_Click"
                             Header="Refresh Grab Frame OCR Results"
@@ -193,31 +223,41 @@
                             Checked="AspectRationMI_Checked"
                             Header="Maintain Aspect Ratio"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=AspectRationMI, Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=AspectRationMI,
+                                                Mode=TwoWay}"
                             Unchecked="AspectRationMI_Checked" />
                         <MenuItem
                             Click="FreezeToggleButton_Click"
                             Header="Freeze Image In Frame"
                             InputGestureText="F"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=FreezeToggleButton,
+                                                Mode=TwoWay}" />
                         <MenuItem
                             Click="TableToggleButton_Click"
                             Header="Analyze as a Table"
                             InputGestureText="T"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=TableToggleButton,
+                                                Mode=TwoWay}" />
                         <MenuItem
                             Click="EditToggleButton_Click"
                             Header="Allow recognized words to be edited"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=EditToggleButton, Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=EditToggleButton,
+                                                Mode=TwoWay}" />
                         <MenuItem
                             Click="EditTextBTN_Click"
                             Header="Send results to an Edit Text Window"
                             InputGestureText="E"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=EditTextToggleButton,
+                                                Mode=TwoWay}" />
                         <Separator />
                         <MenuItem
                             x:Name="InvertSelectionMenuItem"
@@ -496,7 +536,9 @@
                         Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                         IsHitTestVisible="False"
                         Opacity="0.5"
-                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
+                        Visibility="{Binding Visibility,
+                                             ElementName=SearchBox,
+                                             Mode=OneWay}" />
                     <controls:CollapsibleButton
                         x:Name="ClearBTN"
                         Grid.Column="1"
