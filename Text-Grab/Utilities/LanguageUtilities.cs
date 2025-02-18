@@ -16,6 +16,11 @@ public static class LanguageUtilities
         return new(inputLang);
     }
 
+    public static IList<Language> GetAllLanguages()
+    {
+        return [.. OcrEngine.AvailableRecognizerLanguages];
+    }
+
     public static Language GetOCRLanguage()
     {
         Language selectedLanguage = GetCurrentInputLanguage();
@@ -32,7 +37,7 @@ public static class LanguageUtilities
             }
         }
 
-        List<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages.ToList();
+        List<Language> possibleOCRLanguages = [.. OcrEngine.AvailableRecognizerLanguages];
 
         if (possibleOCRLanguages.Count == 0)
         {
@@ -44,8 +49,8 @@ public static class LanguageUtilities
         // then we need to find a similar language to use
         if (possibleOCRLanguages.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
         {
-            List<Language> similarLanguages = possibleOCRLanguages.Where(
-                la => la.AbbreviatedName == selectedLanguage.AbbreviatedName).ToList();
+            List<Language> similarLanguages = [.. possibleOCRLanguages.Where(
+                la => la.AbbreviatedName == selectedLanguage.AbbreviatedName)];
 
             if (similarLanguages is not null && similarLanguages.Count > 0)
                 selectedLanguage = similarLanguages.First();

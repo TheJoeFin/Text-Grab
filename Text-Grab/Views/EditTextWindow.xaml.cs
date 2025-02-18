@@ -15,6 +15,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Markup;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -158,7 +159,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public async Task OcrAllImagesInFolder(string folderPath, OcrDirectoryOptions options)
     {
-        IEnumerable<String>? files = null;
+        IEnumerable<string>? files = null;
 
         if (string.IsNullOrWhiteSpace(folderPath) && string.IsNullOrWhiteSpace(options.Path))
             return;
@@ -1033,6 +1034,33 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
             return;
+
+
+        if (clickedMenuItem.Tag is Language winLang)
+        {
+            CultureInfo cultureInfo = new(winLang.LanguageTag);
+            selectedCultureInfo = cultureInfo;
+            XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
+            Language = xmlLang;
+        }
+        else if (clickedMenuItem.Tag is TessLang tessLang)
+        {
+            try
+            {
+                CultureInfo cultureInfo = new(tessLang.CultureDisplayName);
+                selectedCultureInfo = cultureInfo;
+                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
+                Language = xmlLang;
+            }
+            catch (CultureNotFoundException)
+            {
+                Language currentLang = LanguageUtilities.GetCurrentInputLanguage();
+                CultureInfo cultureInfo = new(currentLang.LanguageTag);
+                selectedCultureInfo = cultureInfo;
+                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
+                Language = xmlLang;
+            }
+        }
 
         foreach (MenuItem menuItem in LanguageMenuItem.Items)
         {
