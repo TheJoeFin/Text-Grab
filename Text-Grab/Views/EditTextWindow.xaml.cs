@@ -313,6 +313,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
+
+        if (DefaultSettings.EtwShowLangPicker)
+        {
+            LanguagePicker languagePicker = new();
+            languagePicker.LanguageChanged -= LanguagePicker_LanguageChanged;
+            languagePicker.LanguageChanged += LanguagePicker_LanguageChanged;
+            BottomBarButtons.Children.Add(languagePicker);
+        }
+    }
+
+    private void LanguagePicker_LanguageChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is not LanguagePicker languagePicker)
+            return;
+
+        Language selectedLanguage = languagePicker.SelectedLanguage;
+        CultureInfo cultureInfo = new(selectedLanguage.LanguageTag);
+        selectedCultureInfo = cultureInfo;
+        XmlLanguage xmlLang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
+        Language = xmlLang;
     }
 
     internal HistoryInfo AsHistoryItem()
