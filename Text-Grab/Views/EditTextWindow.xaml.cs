@@ -15,6 +15,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Markup;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -158,7 +159,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public async Task OcrAllImagesInFolder(string folderPath, OcrDirectoryOptions options)
     {
-        IEnumerable<String>? files = null;
+        IEnumerable<string>? files = null;
 
         if (string.IsNullOrWhiteSpace(folderPath) && string.IsNullOrWhiteSpace(options.Path))
             return;
@@ -182,7 +183,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (files is null)
             return;
 
-        List<string> imageFiles = files.Where(x => IoUtilities.ImageExtensions.Contains(Path.GetExtension(x).ToLower())).ToList();
+        List<string> imageFiles = [.. files.Where(x => IoUtilities.ImageExtensions.Contains(Path.GetExtension(x).ToLower()))];
 
         if (imageFiles.Count == 0)
         {
@@ -312,6 +313,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
+
+        if (DefaultSettings.EtwShowLangPicker)
+        {
+            LanguagePicker languagePicker = new();
+            languagePicker.LanguageChanged -= LanguagePicker_LanguageChanged;
+            languagePicker.LanguageChanged += LanguagePicker_LanguageChanged;
+            BottomBarButtons.Children.Add(languagePicker);
+        }
+    }
+
+    private void LanguagePicker_LanguageChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is not LanguagePicker languagePicker)
+            return;
+
+        Language selectedLanguage = languagePicker.SelectedLanguage;
+        CultureInfo cultureInfo = new(selectedLanguage.LanguageTag);
+        selectedCultureInfo = cultureInfo;
+        XmlLanguage xmlLang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
+        Language = xmlLang;
     }
 
     internal HistoryInfo AsHistoryItem()
@@ -340,7 +361,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         OpenedFilePath = pathOfFileToOpen;
 
-        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles);
+        Language lang = new(selectedCultureInfo.IetfLanguageTag);
+        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, lang);
 
         if (KindOpened == OpenContentKind.TextFile
             && !isMultipleFiles
@@ -766,11 +788,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
     {
-        // Mark the event as handled, so TextBox's native Drop handler is not called.
-
         if (e.Data.GetDataPresent("Text"))
             return;
 
+        // Mark the event as handled, so TextBox's native Drop handler is not called.
         e.Handled = true;
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
 
@@ -912,7 +933,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int selectionLength = PassedTextControl.SelectionLength;
 
         if (string.IsNullOrEmpty(splitString.Last()))
-            splitString = splitString.SkipLast(1).ToArray();
+            splitString = [.. splitString.SkipLast(1)];
 
         StringBuilder sb = new();
         foreach (string line in splitString)
@@ -1033,6 +1054,36 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
             return;
+
+        if (clickedMenuItem.Tag is Language winLang)
+        {
+            CultureInfo cultureInfo = new(winLang.LanguageTag);
+            selectedCultureInfo = cultureInfo;
+            XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
+            Language = xmlLang;
+        }
+        else if (clickedMenuItem.Tag is TessLang tessLang)
+        {
+            try
+            {
+                CultureInfo cultureInfo = new(tessLang.CultureDisplayName);
+                selectedCultureInfo = cultureInfo;
+                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
+                Language = xmlLang;
+            }
+            catch (CultureNotFoundException)
+            {
+                Language currentLang = LanguageUtilities.GetCurrentInputLanguage();
+                CultureInfo cultureInfo = new(currentLang.LanguageTag);
+                selectedCultureInfo = cultureInfo;
+                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
+                Language = xmlLang;
+            }
+        }
+
+        foreach (object? child in BottomBarButtons.Children)
+            if (child is LanguagePicker languagePicker)
+                languagePicker.Select(selectedCultureInfo.IetfLanguageTag);
 
         foreach (MenuItem menuItem in LanguageMenuItem.Items)
         {

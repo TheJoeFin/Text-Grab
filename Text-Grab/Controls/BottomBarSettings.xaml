@@ -230,6 +230,14 @@
                         Show Scrollbar
                     </TextBlock>
                 </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowLanguagePickerToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Language picker
+                    </TextBlock>
+                </ui:ToggleSwitch>
 
             </StackPanel>
         </Grid>

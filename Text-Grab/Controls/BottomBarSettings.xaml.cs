@@ -20,20 +20,21 @@ public partial class BottomBarSettings : FluentWindow
     {
         InitializeComponent();
 
-        List<ButtonInfo> allBtns = new(ButtonInfo.AllButtons);
+        List<ButtonInfo> allBtns = [.. ButtonInfo.AllButtons];
 
-        ButtonsInRightList = new(CustomBottomBarUtilities.GetCustomBottomBarItemsSetting());
+        ButtonsInRightList = [.. CustomBottomBarUtilities.GetCustomBottomBarItemsSetting()];
         RightListBox.ItemsSource = ButtonsInRightList;
         foreach (ButtonInfo cbutton in ButtonsInRightList)
         {
             allBtns.Remove(cbutton);
         }
 
-        ButtonsInLeftList = new(allBtns);
+        ButtonsInLeftList = [.. allBtns];
         LeftListBox.ItemsSource = ButtonsInLeftList;
 
         ShowCursorTextCheckBox.IsChecked = DefaultSettings.ShowCursorText;
         ShowScrollbarCheckBox.IsChecked = DefaultSettings.ScrollBottomBar;
+        ShowLanguagePickerToggle.IsChecked = DefaultSettings.EtwShowLangPicker;
     }
 
     #endregion Constructors
@@ -119,6 +120,7 @@ public partial class BottomBarSettings : FluentWindow
     {
         DefaultSettings.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
         DefaultSettings.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
+        DefaultSettings.EtwShowLangPicker = ShowLanguagePickerToggle.IsChecked ?? true;
         DefaultSettings.Save();
 
         CustomBottomBarUtilities.SaveCustomBottomBarItemsSetting(ButtonsInRightList.ToList());

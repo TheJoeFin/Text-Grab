@@ -622,5 +622,17 @@ namespace Text_Grab.Properties {
                 this["GrabFrameReadBarcodes"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EtwShowLangPicker {
+            get {
+                return ((bool)(this["EtwShowLangPicker"]));
+            }
+            set {
+                this["EtwShowLangPicker"] = value;
+            }
+        }
     }
 }
