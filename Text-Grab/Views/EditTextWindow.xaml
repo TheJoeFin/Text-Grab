@@ -389,7 +389,7 @@
                     x:Name="ReadFolderOfImages"
                     Click="ReadFolderOfImages_Click"
                     Header="_Extract Text from Images in Folder..." />
-                <MenuItem x:Name="LanguageMenuItem" Header="Set Window Language..." />
+                <MenuItem x:Name="LanguageMenuItem" Header="OCR in Language..." />
                 <MenuItem
                     x:Name="RecursiveFoldersCheck"
                     Header="Scan all folders recursively"

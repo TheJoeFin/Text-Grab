@@ -183,7 +183,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (files is null)
             return;
 
-        List<string> imageFiles = files.Where(x => IoUtilities.ImageExtensions.Contains(Path.GetExtension(x).ToLower())).ToList();
+        List<string> imageFiles = [.. files.Where(x => IoUtilities.ImageExtensions.Contains(Path.GetExtension(x).ToLower()))];
 
         if (imageFiles.Count == 0)
         {
@@ -361,7 +361,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         OpenedFilePath = pathOfFileToOpen;
 
-        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles);
+        Language lang = new(selectedCultureInfo.IetfLanguageTag);
+        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, lang);
 
         if (KindOpened == OpenContentKind.TextFile
             && !isMultipleFiles
@@ -787,11 +788,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
     {
-        // Mark the event as handled, so TextBox's native Drop handler is not called.
-
         if (e.Data.GetDataPresent("Text"))
             return;
 
+        // Mark the event as handled, so TextBox's native Drop handler is not called.
         e.Handled = true;
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
 
@@ -933,7 +933,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int selectionLength = PassedTextControl.SelectionLength;
 
         if (string.IsNullOrEmpty(splitString.Last()))
-            splitString = splitString.SkipLast(1).ToArray();
+            splitString = [.. splitString.SkipLast(1)];
 
         StringBuilder sb = new();
         foreach (string line in splitString)
@@ -1055,7 +1055,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
             return;
 
-
         if (clickedMenuItem.Tag is Language winLang)
         {
             CultureInfo cultureInfo = new(winLang.LanguageTag);
@@ -1081,6 +1080,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 Language = xmlLang;
             }
         }
+
+        foreach (object? child in BottomBarButtons.Children)
+            if (child is LanguagePicker languagePicker)
+                languagePicker.Select(selectedCultureInfo.IetfLanguageTag);
 
         foreach (MenuItem menuItem in LanguageMenuItem.Items)
         {

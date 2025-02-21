@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Utilities;
@@ -50,5 +51,19 @@ public partial class LanguagePicker : UserControl
     private void MainComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         LanguageChanged?.Invoke(this, new RoutedEventArgs());
+    }
+
+    internal void Select(string ietfLanguageTag)
+    {
+        int i = 0;
+        foreach (object? item in MainComboBox.Items)
+        {
+            if (item is Language language && language.LanguageTag == ietfLanguageTag)
+            {
+                MainComboBox.SelectedIndex = i;
+                break;
+            }
+            i++;
+        }
     }
 }
