@@ -1696,6 +1696,8 @@ public partial class GrabFrame : Window
         if (!isSelecting && !isMiddleDown && movingWordBordersDictionary.Count == 0)
             return;
 
+        isMiddleDown = e.MiddleButton == MouseButtonState.Pressed;
+
         if (MainZoomBorder.CanPan
             && !KeyboardExtensions.IsShiftDown()
             && !KeyboardExtensions.IsCtrlDown())
