@@ -16,6 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -60,6 +61,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private readonly string historyId = string.Empty;
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
+    private readonly DispatcherTimer EscapekeyTimer = new();
+    private int EscapekeyTimerCount = 0;
 
     private WindowState? prevWindowState;
     private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
@@ -735,9 +738,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void EditTextWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (!Keyboard.IsKeyDown(Key.LeftCtrl) && !Keyboard.IsKeyDown(Key.RightCtrl))
-            return;
+        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            ProcessBottomBarKeyPress(e);
 
+        if (e.Key == Key.Escape)
+        {
+            cancellationTokenForDirOCR?.Cancel();
+            EscapekeyTimerCount++;
+
+            if (EscapekeyTimerCount == 1)
+                EscapekeyTimer.Start();
+        }
+    }
+
+    private void ProcessBottomBarKeyPress(System.Windows.Input.KeyEventArgs e)
+    {
         UIElementCollection bottomBarButtons = BottomBarButtons.Children;
 
         int keyNumberPressed = (int)e.Key - 35;
@@ -2233,6 +2248,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+
+        EscapekeyTimer.Interval = TimeSpan.FromMilliseconds(700);
+        EscapekeyTimer.Tick += EscapekeyTimer_Tick;
+    }
+
+    private void EscapekeyTimer_Tick(object? sender, EventArgs e)
+    {
+        EscapekeyTimer.Stop();
+
+        if (EscapekeyTimerCount >= 3)
+            Close();
+
+        EscapekeyTimerCount = 0;
     }
 
     private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
