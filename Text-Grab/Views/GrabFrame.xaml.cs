@@ -272,6 +272,7 @@ public partial class GrabFrame : Window
         }
         catch
         {
+            wbInfoJson = string.Empty;
 #if DEBUG
             throw;
 #endif
