@@ -920,12 +920,29 @@ public partial class GrabFrame : Window
 
         Point windowPosition = this.GetAbsolutePosition();
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        double canvasScale = CanvasViewBox.GetHorizontalScaleFactor();
+        Point rectanglesPosition = RectanglesCanvas.TransformToAncestor(this)
+                                                   .Transform(new Point(0, 0));
+
+        if (double.IsNaN(canvasScale))
+            canvasScale = 1;
+
+        double ContentWidth = RectanglesCanvas.RenderSize.Width;
+        double ContentHeight = RectanglesCanvas.RenderSize.Height;
+
+        if (ContentWidth == 4 || ContentHeight == 2)
+        {
+            ContentWidth = RectanglesBorder.RenderSize.Width;
+            ContentHeight = RectanglesBorder.RenderSize.Height;
+            rectanglesPosition = new(-2, 32);
+        }
+
         System.Drawing.Rectangle rectCanvasSize = new()
         {
-            Width = (int)((ActualWidth + 2) * dpi.DpiScaleX),
-            Height = (int)((ActualHeight - 64) * dpi.DpiScaleY),
-            X = (int)((windowPosition.X - 2) * dpi.DpiScaleX),
-            Y = (int)((windowPosition.Y + 32) * dpi.DpiScaleY)
+            Width = (int)(ContentWidth * dpi.DpiScaleX * canvasScale),
+            Height = (int)(ContentHeight * dpi.DpiScaleY * canvasScale),
+            X = (int)((windowPosition.X + rectanglesPosition.X) * dpi.DpiScaleX),
+            Y = (int)((windowPosition.Y + rectanglesPosition.Y) * dpi.DpiScaleY)
         };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
