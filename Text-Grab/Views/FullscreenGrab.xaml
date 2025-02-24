@@ -250,35 +250,40 @@
                                 Header="Fix GUIDs"
                                 InputGestureText="CTRL + 1"
                                 IsCheckable="True"
-                                StaysOpenOnClick="False" />
+                                StaysOpenOnClick="False"
+                                ToolTip="Corrects common errors with hex (0-F) when OCRing UUID/GUIDs" />
                             <MenuItem
                                 Name="TrimEachLineMenuItem"
                                 Click="PostActionMenuItem_Click"
                                 Header="Trim each line"
                                 InputGestureText="CTRL + 2"
                                 IsCheckable="True"
-                                StaysOpenOnClick="False" />
+                                StaysOpenOnClick="False"
+                                ToolTip="Remove empty space characters from the beginning and end of each line" />
                             <MenuItem
                                 Name="RemoveDuplicatesMenuItem"
                                 Click="PostActionMenuItem_Click"
                                 Header="Remove duplicate lines"
                                 InputGestureText="CTRL + 3"
                                 IsCheckable="True"
-                                StaysOpenOnClick="False" />
+                                StaysOpenOnClick="False"
+                                ToolTip="Remove duplicate lines, keeping the first instance" />
                             <MenuItem
                                 Name="WebSearchPostCapture"
                                 Click="PostActionMenuItem_Click"
                                 Header="Web Search"
                                 InputGestureText="CTRL + 4"
                                 IsCheckable="True"
-                                StaysOpenOnClick="False" />
+                                StaysOpenOnClick="False"
+                                ToolTip="Search the web using the default web search engine" />
                             <MenuItem
                                 Name="InsertPostCapture"
                                 Click="PostActionMenuItem_Click"
                                 Header="Try to insert text"
                                 InputGestureText="CTRL + 5"
                                 IsCheckable="True"
-                                StaysOpenOnClick="False" />
+                                StaysOpenOnClick="False"
+                                ToolTip="Try to insert the copied text into the current caret position" />
                         </ContextMenu>
                     </wpfui:DropDownButton.Flyout>
                 </wpfui:DropDownButton>

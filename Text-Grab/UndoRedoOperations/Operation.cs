@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Text_Grab.Controls;
 
 namespace Text_Grab.UndoRedoOperations;
@@ -15,6 +16,7 @@ internal abstract class Operation
 public enum UndoRedoOperation
 {
     None,
+    ChangedImage,
     AddWordBorder,
     ChangeWord,
     RemoveWordBorder,
@@ -49,4 +51,10 @@ public struct GrabFrameOperationArgs
     public string OldWord { get; set; }
 
     public string NewWord { get; set; }
+
+    public Image DestinationImage { get; set; }
+
+    public ImageSource? OldImage { get; set; }
+
+    public ImageSource? NewImage { get; set; }
 }

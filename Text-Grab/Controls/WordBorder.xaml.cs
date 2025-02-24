@@ -347,7 +347,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     private void WordBorder_MouseEnter(object sender, RoutedEventArgs e)
     {
-        if (OwnerGrabFrame?.isCtrlDown is true)
+        if (OwnerGrabFrame?.IsCtrlDown is true)
             MoveResizeBorder.Visibility = Visibility.Visible;
         else
             MoveResizeBorder.Visibility = Visibility.Collapsed;

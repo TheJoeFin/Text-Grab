@@ -31,13 +31,7 @@ public class ButtonInfo
 
     public override int GetHashCode()
     {
-        int hash = 17;
-        hash = (hash * 23) + ButtonText.GetHashCode();
-        hash = (hash * 23) + SymbolText.GetHashCode();
-        hash = (hash * 23) + Background.GetHashCode();
-        hash = (hash * 23) + Command.GetHashCode();
-        hash = (hash * 23) + ClickEvent.GetHashCode();
-        return hash;
+        return System.HashCode.Combine(ButtonText, SymbolText, Background, Command, ClickEvent);
     }
 
     // a constructor which takes a collapsible button
@@ -71,8 +65,8 @@ public class ButtonInfo
         IsSymbol = isSymbol;
     }
 
-    public static List<ButtonInfo> DefaultButtonList { get; set; } = new()
-    {
+    public static List<ButtonInfo> DefaultButtonList { get; set; } =
+    [
         new()
         {
             ButtonText = "Copy and Close",
@@ -122,15 +116,15 @@ public class ButtonInfo
         new()
         {
             ButtonText = "Edit Bottom Bar",
-            SymbolText = "",
+            SymbolText = "",
             ClickEvent = "EditBottomBarMenuItem_Click",
             IsSymbol = true,
-            SymbolIcon = SymbolRegular.CalendarEdit24
+            SymbolIcon = SymbolRegular.CalendarSettings24
         },
-    };
+    ];
 
-    public static List<ButtonInfo> AllButtons { get; set; } = new()
-    {
+    public static List<ButtonInfo> AllButtons { get; set; } =
+    [
         new()
         {
             OrderNumber = 1.1,
@@ -449,7 +443,7 @@ public class ButtonInfo
             ClickEvent = "SettingsMenuItem_Click",
             SymbolIcon = SymbolRegular.Settings24
         },
-    };
+    ];
 }
 
 

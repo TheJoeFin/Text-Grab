@@ -3,29 +3,28 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Globalization;
 
 namespace Text_Grab.Utilities;
 
 public class IoUtilities
 {
-    public static readonly List<string> ImageExtensions = new() { ".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif" };
+    public static readonly List<string> ImageExtensions = [".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif"];
 
 
-    public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false)
+    public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, Language? language = null)
     {
         StringBuilder stringBuilder = new();
         OpenContentKind openContentKind = OpenContentKind.Image;
 
         if (isMultipleFiles)
-        {
             stringBuilder.AppendLine(pathOfFileToOpen);
-        }
 
         if (ImageExtensions.Contains(Path.GetExtension(pathOfFileToOpen).ToLower()))
         {
             try
             {
-                stringBuilder.Append(await OcrUtilities.OcrAbsoluteFilePathAsync(pathOfFileToOpen));
+                stringBuilder.Append(await OcrUtilities.OcrAbsoluteFilePathAsync(pathOfFileToOpen, language));
             }
             catch (Exception)
             {

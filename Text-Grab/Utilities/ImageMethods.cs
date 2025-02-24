@@ -71,6 +71,25 @@ public static class ImageMethods
         return bitmapImage;
     }
 
+    public static BitmapImage CachedBitmapToBitmapImage(System.Windows.Media.Imaging.CachedBitmap cachedBitmap)
+    {
+        BitmapImage bitmapImage = new();
+        using (MemoryStream memoryStream = new())
+        {
+            BitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(cachedBitmap));
+            encoder.Save(memoryStream);
+            memoryStream.Position = 0;
+
+            bitmapImage.BeginInit();
+            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            bitmapImage.StreamSource = memoryStream;
+            bitmapImage.EndInit();
+            bitmapImage.Freeze();
+        }
+        return bitmapImage;
+    }
+
     public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region)
     {
         Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -91,8 +110,8 @@ public static class ImageMethods
 
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
-        int thisCorrectedLeft = (int)(absPosPoint.X);
-        int thisCorrectedTop = (int)(absPosPoint.Y);
+        int thisCorrectedLeft = (int)absPosPoint.X;
+        int thisCorrectedTop = (int)absPosPoint.Y;
 
         if (passedWindow is GrabFrame grabFrame)
         {
@@ -101,10 +120,21 @@ public static class ImageMethods
             int borderThickness = 2;
             int titleBarHeight = 32;
             int bottomBarHeight = 42;
-            thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
-            thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
-            windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
-            windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
+
+            if (imageRect == Rect.Empty)
+            {
+                thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
+                thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
+                windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
+                windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
+            }
+            else
+            {
+                thisCorrectedLeft = (int)imageRect.Left;
+                thisCorrectedTop = (int)imageRect.Top;
+                windowWidth = (int)imageRect.Width;
+                windowHeight = (int)imageRect.Height;
+            }
         }
 
         Bitmap bmp = new(windowWidth, windowHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);

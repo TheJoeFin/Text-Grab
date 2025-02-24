@@ -37,7 +37,7 @@ public class ZoomBorder : Border
         }
     }
 
-    public bool CanPan { get; set; } = true;
+    public bool CanPan { get; set; } = false;
 
     public bool CanZoom { get; set; } = true;
 
@@ -83,6 +83,8 @@ public class ZoomBorder : Border
         TranslateTransform tt = GetTranslateTransform(child);
         tt.X = 0.0;
         tt.Y = 0.0;
+
+        CanPan = false;
     }
 
     private void Child_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -109,6 +111,8 @@ public class ZoomBorder : Border
 
         tt.X = absoluteX - relative.X * st.ScaleX;
         tt.Y = absoluteY - relative.Y * st.ScaleY;
+
+        CanPan = true;
     }
 
     private void Child_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
