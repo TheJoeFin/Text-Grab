@@ -2,8 +2,8 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows10.0.20348.0</TargetFramework>
-        <WindowsSdkPackageVersion>10.0.20348.48</WindowsSdkPackageVersion>
+		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+        <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
 		<RootNamespace>Text_Grab</RootNamespace>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
@@ -19,6 +19,7 @@
 		<RepositoryUrl>https://github.com/TheJoeFin/Text-Grab</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>SmallTile.scale-125.png</PackageIcon>
+        <WindowsPackageType>None</WindowsPackageType>
 		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
 		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -75,6 +76,7 @@
 		<PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.5" />
 		<PackageReference Include="Magick.NET.SystemWindowsMedia" Version="8.0.5" />
 		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250127003-experimental3" />
 		<PackageReference Include="System.Drawing.Common" Version="9.0.3" />
 		<PackageReference Include="WPF-UI" Version="4.0.2" />
 		<PackageReference Include="WPF-UI.Tray" Version="4.0.2" />
