@@ -9,9 +9,19 @@ public class TessLang : ILanguage
 
     private readonly CultureInfo cultureInfo;
 
+    private readonly bool isScript = false;
+
     public TessLang(string tessLangTag)
     {
+        RawTag = tessLangTag;
         string cultureTag = tessLangTag;
+
+        if (tessLangTag.Contains("script"))
+        {
+            isScript = true;
+            cultureTag = cultureTag.Replace("script\\", "");
+        }
+
         if (tessLangTag.Contains("vert"))
         {
             IsVertical = true;
@@ -22,18 +32,44 @@ public class TessLang : ILanguage
         _tessLangTag = tessLangTag;
     }
 
-    private static CultureInfo GetCultureInfoFromTesseractTag(string tessLangTag)
+    private CultureInfo GetCultureInfoFromTesseractTag(string tessLangTag)
     {
         tessLangTag = tessLangTag.Replace("_frak", "");
         tessLangTag = tessLangTag.Replace("_old", "");
         tessLangTag = tessLangTag.Replace("_latn", "");
 
-        return tessLangTag switch
+        if (isScript)
+            tessLangTag = getTagFromEnglishName(tessLangTag);
+
+        try
         {
-            "chi_sim" => new CultureInfo("zh-Hans"),
-            "chi_tra" => new CultureInfo("zh-Hant"),
-            _ => new CultureInfo(tessLangTag)
-        };
+            CultureInfo matchedInfo = tessLangTag switch
+            {
+                "chi_sim" => new CultureInfo("zh-Hans"),
+                "chi_tra" => new CultureInfo("zh-Hant"),
+                _ => new CultureInfo(tessLangTag)
+            };
+            return matchedInfo;
+        }
+        catch
+        {
+            string tag = getTagFromEnglishName(tessLangTag);
+
+            return new CultureInfo(tag);
+        }
+    }
+
+    private string getTagFromEnglishName(string EnglishName)
+    {
+        foreach (CultureInfo info in CultureInfo.GetCultures(CultureTypes.NeutralCultures))
+        {
+            if (info.EnglishName.Equals(EnglishName, System.StringComparison.InvariantCultureIgnoreCase))
+            {
+                return info.IetfLanguageTag;
+            }
+        }
+
+        return string.Empty;
     }
 
     public string AbbreviatedName => _tessLangTag;
@@ -70,6 +106,9 @@ public class TessLang : ILanguage
             if (IsVertical)
                 return $"{cultureInfo.DisplayName} Vertical";
 
+            if (isScript)
+                return $"{cultureInfo.DisplayName} Script";
+
             return $"{cultureInfo.DisplayName}";
         }
     }
@@ -91,5 +130,7 @@ public class TessLang : ILanguage
 
     public string Script => string.Empty;
 
-    public string LanguageTag => _tessLangTag;
+    public string LanguageTag => RawTag;
+
+    public string RawTag { get; set; } = string.Empty;
 }
