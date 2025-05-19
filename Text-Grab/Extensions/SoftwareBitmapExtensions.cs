@@ -83,8 +83,8 @@ public static class SoftwareBitmapExtensions
         {
             for (int x = 0; x < inputBitmap.PixelWidth; x++)
             {
-                int inputIndex = ((y * inputBitmap.PixelWidth) + x) * 4;
-                int maskIndex = (y * grayMask.PixelWidth) + x;
+                int inputIndex = (y * inputBitmap.PixelWidth + x) * 4;
+                int maskIndex = y * grayMask.PixelWidth + x;
 
                 if (maskBuffer[maskIndex] == 0)
                 {
@@ -93,7 +93,7 @@ public static class SoftwareBitmapExtensions
             }
         }
 
-        SoftwareBitmap segmentedBitmap = new(BitmapPixelFormat.Bgra8, inputBitmap.PixelWidth, inputBitmap.PixelHeight);
+        var segmentedBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, inputBitmap.PixelWidth, inputBitmap.PixelHeight);
         segmentedBitmap.CopyFromBuffer(inputBuffer.AsBuffer());
         return segmentedBitmap;
     }
