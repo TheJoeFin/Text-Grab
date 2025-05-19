@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+        <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
         <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
 		<RootNamespace>Text_Grab</RootNamespace>
 		<Nullable>enable</Nullable>
@@ -20,7 +20,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>SmallTile.scale-125.png</PackageIcon>
         <WindowsPackageType>None</WindowsPackageType>
-		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
 		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
