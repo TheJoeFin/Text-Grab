@@ -1,16 +1,21 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.20348</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.22621</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
 
-    <IsPackable>false</IsPackable>
+      <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Images\font_sample.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250127003-experimental3" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250410001-experimental1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -21,6 +26,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Text-Grab\Text-Grab.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\font_sample.png" />
   </ItemGroup>
 
   <ItemGroup>

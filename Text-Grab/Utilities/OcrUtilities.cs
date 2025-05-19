@@ -93,7 +93,7 @@ public static class OcrUtilities
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
-        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language, languageTag));
+        return GetStringFromOcrOutputs(await GetTextFromWcrAsync(bmp, language, languageTag));
     }
 
     public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, Language language)
@@ -281,6 +281,28 @@ public static class OcrUtilities
     public static Task<List<OcrOutput>> GetTextFromStreamAsync(IRandomAccessStream stream, Language language)
     {
         throw new NotImplementedException();
+    }
+
+    public static async Task<List<OcrOutput>> GetTextFromWcrAsync(Bitmap bitmap, Language language, string tessTag = "")
+    {
+        // get temp path
+        string tempPath = Path.GetTempPath();
+        string tempFileName = Path.GetRandomFileName() + ".bmp";
+        string tempFilePath = Path.Combine(tempPath, tempFileName);
+        bitmap.Save(tempFilePath, ImageFormat.Bmp);
+
+        string result = await WcrUtilities.GetTextWithWcr(tempFilePath);
+
+        OcrOutput paragraphsOutput = new()
+        {
+            Kind = OcrOutputKind.Paragraph,
+            RawOutput = result,
+            Language = language,
+            SourceBitmap = bitmap,
+        };
+
+        List<OcrOutput> outputs = [paragraphsOutput];
+        return outputs;
     }
 
     public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language, string tessTag = "")

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+        <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
         <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
 		<RootNamespace>Text_Grab</RootNamespace>
 		<Nullable>enable</Nullable>
@@ -20,9 +20,10 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>SmallTile.scale-125.png</PackageIcon>
         <WindowsPackageType>None</WindowsPackageType>
-		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
 		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -36,19 +37,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="Images\CJKE-SampleText.png">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
 		<Resource Include="Images\ETW.png">
-		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
 		<Resource Include="Images\FSG.png">
-		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
 		<Resource Include="Images\GF.png">
-		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
 		<Resource Include="Images\QSL.png">
-		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
-		<Resource Include="Images\TealSelect40.png" />
+		<Resource Include="Images\TealSelect40.png">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -71,13 +77,13 @@
 	<ItemGroup>
 		<PackageReference Include="CliWrap" Version="3.8.2" />
 		<PackageReference Include="Dapplo.Windows.User32" Version="1.0.28" />
-		<PackageReference Include="Humanizer.Core" Version="2.14.1" />
-		<PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.5.0" />
-		<PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.5" />
-		<PackageReference Include="Magick.NET.SystemWindowsMedia" Version="8.0.5" />
+		<PackageReference Include="Humanizer.Core" Version="3.0.0-beta.54" />
+		<PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.6.0" />
+		<PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.6" />
+		<PackageReference Include="Magick.NET.SystemWindowsMedia" Version="8.0.6" />
 		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250127003-experimental3" />
-		<PackageReference Include="System.Drawing.Common" Version="9.0.3" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250410001-experimental1" />
+		<PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.4.25258.110" />
 		<PackageReference Include="WPF-UI" Version="4.0.2" />
 		<PackageReference Include="WPF-UI.Tray" Version="4.0.2" />
 		<PackageReference Include="ZXing.Net" Version="0.16.10" />
@@ -85,9 +91,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="Images\Text-Grab-Icon.png" />
-		<Resource Include="Images\t_32.png" />
-		<Resource Include="Images\Toast.png" />
+		<Resource Include="Images\Text-Grab-Icon.png">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\t_32.png">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\Toast.png">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
 	</ItemGroup>
 
 	<ItemGroup>
