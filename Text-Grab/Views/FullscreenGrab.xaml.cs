@@ -33,7 +33,7 @@ public partial class FullscreenGrab : Window
     private bool isComboBoxReady = false;
     private bool isSelecting = false;
     private bool isShiftDown = false;
-    private Border selectBorder = new();
+    private readonly Border selectBorder = new();
     private double selectLeft;
     private double selectTop;
     private System.Windows.Point shiftPoint = new();
@@ -195,7 +195,7 @@ public partial class FullscreenGrab : Window
                     }
 
                     selectedItem.IsChecked = !selectedItem.IsChecked;
-                    CheckIfAnyPostActionsSelcted();
+                    CheckIfAnyPostActionsSelected();
                     return;
                 }
 
@@ -211,7 +211,7 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    private void CheckIfAnyPostActionsSelcted()
+    private void CheckIfAnyPostActionsSelected()
     {
         if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu || !flyoutMenu.HasItems)
             return;
@@ -876,7 +876,7 @@ public partial class FullscreenGrab : Window
 
     private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        CheckIfAnyPostActionsSelcted();
+        CheckIfAnyPostActionsSelected();
     }
     #endregion Methods
 }
