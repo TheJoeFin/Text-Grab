@@ -19,7 +19,6 @@
 		<RepositoryUrl>https://github.com/TheJoeFin/Text-Grab</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>SmallTile.scale-125.png</PackageIcon>
-        <WindowsPackageType>None</WindowsPackageType>
 		<SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
 		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>

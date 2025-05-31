@@ -7,10 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Windows.Graphics.Imaging;
-using Windows.Storage;
-using Windows.Storage.Streams;
-
-using Text_Grab.Extensions;
 
 
 namespace Text_Grab.Utilities;
@@ -49,9 +45,7 @@ public static class WcrUtilities
         StringBuilder stringBuilder = new();
 
         foreach (RecognizedLine? line in result.Lines)
-        {
             stringBuilder.AppendLine(line.Text);
-        }
 
         return stringBuilder.ToString();
     }
