@@ -1,7 +1,6 @@
 ﻿using Microsoft.Graphics.Imaging;
 using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.Imaging;
-using Microsoft.Windows.Management.Deployment;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,9 +10,32 @@ using Windows.Graphics.Imaging;
 
 namespace Text_Grab.Utilities;
 
-public static class WcrUtilities
+public static class WindowsAiUtilities
 {
-    public static async Task<string> GetTextWithWcr(string imagePath)
+    public static bool CanDeviceUseWinAI()
+    {
+        // Check if the app is packaged and if the AI feature is supported
+        if (!AppUtilities.IsPackaged())
+            return false;
+
+        try
+        {
+            AIFeatureReadyState readyState = TextRecognizer.GetReadyState();
+            if (readyState == AIFeatureReadyState.NotSupportedOnCurrentSystem)
+                return false;
+            else
+                return true;
+        }
+        catch (Exception)
+        {
+#if DEBUG
+            throw;
+#endif
+            return false;
+        }
+    }
+
+    public static async Task<string> GetTextWithWinAI(string imagePath)
     {
         if (!AppUtilities.IsPackaged())
             return "ERROR: This method requires a packaged app environment.";
@@ -33,13 +55,10 @@ public static class WcrUtilities
         SoftwareBitmap bitmap = await imagePath.FilePathToSoftwareBitmapAsync();
         ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
 
-        // System.UnauthorizedAccessException: 'Access is denied.
-        
         RecognizedText? result = textRecognizer?
             .RecognizeTextFromImage(imageBuffer);
 
-
-        if (result == null)
+        if (result is null)
             return "ERROR: No text recognized";
 
         StringBuilder stringBuilder = new();
