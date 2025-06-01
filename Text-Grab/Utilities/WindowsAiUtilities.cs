@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Windows.Graphics.Imaging;
+using Windows.Media.Ocr;
 
 
 namespace Text_Grab.Utilities;
@@ -37,14 +38,10 @@ public static class WindowsAiUtilities
 
     public static async Task<string> GetTextWithWinAI(string imagePath)
     {
-        if (!AppUtilities.IsPackaged())
-            return "ERROR: This method requires a packaged app environment.";
+        if (!CanDeviceUseWinAI())
+            return "ERROR: Cannot use Windows AI on this device.";
 
         AIFeatureReadyState readyState = TextRecognizer.GetReadyState();
-        if (readyState is AIFeatureReadyState.NotSupportedOnCurrentSystem)
-        {
-            return "ERROR: Windows AI not supported";
-        }
         if (readyState == AIFeatureReadyState.NotReady)
         {
             AIFeatureReadyResult op = await TextRecognizer.EnsureReadyAsync();
@@ -67,5 +64,25 @@ public static class WindowsAiUtilities
             stringBuilder.AppendLine(line.Text);
 
         return stringBuilder.ToString();
+    }
+
+    public static async Task<RecognizedText?> GetOcrResultAsync(SoftwareBitmap softwareBitmap)
+    {
+        if (!CanDeviceUseWinAI())
+            return null;
+
+        AIFeatureReadyState readyState = TextRecognizer.GetReadyState();
+        if (readyState == AIFeatureReadyState.NotReady)
+        {
+            AIFeatureReadyResult op = await TextRecognizer.EnsureReadyAsync();
+        }
+
+        using TextRecognizer textRecognizer = await TextRecognizer.CreateAsync();
+        ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(softwareBitmap);
+
+        RecognizedText? result = textRecognizer?
+            .RecognizeTextFromImage(imageBuffer);
+
+        return result;
     }
 }

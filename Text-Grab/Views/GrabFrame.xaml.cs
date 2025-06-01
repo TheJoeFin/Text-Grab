@@ -1,4 +1,5 @@
 ﻿using Fasetto.Word;
+using Microsoft.Windows.AI.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -62,6 +63,7 @@ public partial class GrabFrame : Window
     private bool isSpaceJoining = true;
     private readonly Dictionary<WordBorder, Rect> movingWordBordersDictionary = [];
     private OcrResult? ocrResultOfWindow;
+    private RecognizedText? aiOcrResult;
     private readonly DispatcherTimer reDrawTimer = new();
     private readonly DispatcherTimer reSearchTimer = new();
     private Side resizingSide = Side.None;
@@ -606,8 +608,8 @@ public partial class GrabFrame : Window
         SearchBox.Text = wordPattern;
     }
 
-    [DllImport("user32.dll")]
-    private static extern short GetKeyState(VirtualKeyCodes code);
+    [LibraryImport("user32.dll")]
+    private static partial short GetKeyState(VirtualKeyCodes code);
 
     private static float GetWidthOfString(string str, int width, int height)
     {
@@ -1463,6 +1465,9 @@ public partial class GrabFrame : Window
 
         Language? pickedLang = langComboBox.SelectedItem as Language;
 
+        if (langComboBox.SelectedItem is WindowsAiLang winAiLang)
+            pickedLang = winAiLang;
+
         if (pickedLang != null)
         {
             currentLanguage = pickedLang;
@@ -1495,6 +1500,13 @@ public partial class GrabFrame : Window
 
             count++;
         }
+
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            WindowsAiLang winAiLang = new();
+            LanguagesComboBox.Items.Insert(0, winAiLang);
+        }
+
 
         isLanguageBoxLoaded = true;
     }
