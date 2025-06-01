@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
+using Text_Grab.Models;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 
@@ -19,6 +20,17 @@ public static class LanguageUtilities
     public static IList<Language> GetAllLanguages()
     {
         return [.. OcrEngine.AvailableRecognizerLanguages];
+    }
+
+    public static string GetLanguageTag(object language)
+    {
+        if (language is Language lang)
+            return lang.LanguageTag;
+        if (language is WindowsAiLang)
+            return "WinAI";
+        if (language is TessLang tessLang)
+            return tessLang.RawTag;
+        throw new ArgumentException("Unsupported language type", nameof(language));
     }
 
     public static Language GetOCRLanguage()

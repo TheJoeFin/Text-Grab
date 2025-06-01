@@ -327,12 +327,18 @@ public partial class FullscreenGrab : Window
             TableMenuItem.Visibility = Visibility.Collapsed;
             TableToggleButton.Visibility = Visibility.Collapsed;
         }
-
-        if (languageCmbBox.SelectedItem is Language pickedLang)
+        else if (languageCmbBox.SelectedItem is Language pickedLang)
         {
             DefaultSettings.LastUsedLang = pickedLang.LanguageTag;
             DefaultSettings.Save();
 
+            TableMenuItem.Visibility = Visibility.Visible;
+            TableToggleButton.Visibility = Visibility.Visible;
+        }
+        else if (languageCmbBox.SelectedItem is WindowsAiLang winAiLang)
+        {
+            DefaultSettings.LastUsedLang = winAiLang.CultureDisplayName;
+            DefaultSettings.Save();
             TableMenuItem.Visibility = Visibility.Visible;
             TableToggleButton.Visibility = Visibility.Visible;
         }
@@ -380,9 +386,22 @@ public partial class FullscreenGrab : Window
 
         int count = 0;
         // TODO Find a way to combine with the ETW language drop down
+        // or just put this logic into Language Utilities
 
         bool haveSetLastLang = false;
         string lastTextLang = DefaultSettings.LastUsedLang;
+
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            WindowsAiLang winAiLang = new();
+            languagesComboBox.Items.Add(winAiLang);
+
+            if (lastTextLang == winAiLang.CultureDisplayName)
+            {
+                languagesComboBox.SelectedIndex = 0;
+            }
+        }
+
         if (usingTesseract)
         {
             List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
@@ -623,13 +642,15 @@ public partial class FullscreenGrab : Window
 
         try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
 
-        if (LanguagesComboBox.SelectedItem is not Language selectedOcrLang)
-            selectedOcrLang = LanguageUtilities.GetOCRLanguage();
+        object selectedOcrLang = LanguagesComboBox.SelectedItem;
 
-        string tessTag = string.Empty;
-
-        if (LanguagesComboBox.SelectedItem is TessLang tessLang)
-            tessTag = tessLang.LanguageTag;
+        // if (LanguagesComboBox.SelectedItem is not Language selectedOcrLang)
+        //     selectedOcrLang = LanguageUtilities.GetOCRLanguage();
+        // 
+        // string tessTag = string.Empty;
+        // 
+        // if (LanguagesComboBox.SelectedItem is TessLang tessLang)
+        //     tessTag = tessLang.LanguageTag;
 
         bool isSmallClick = (selectBorder.Width < 3 || selectBorder.Height < 3);
 
@@ -644,7 +665,7 @@ public partial class FullscreenGrab : Window
         else if (isTable)
             TextFromOCR = await OcrUtilities.GetRegionsTextAsTableAsync(this, regionScaled, selectedOcrLang);
         else
-            TextFromOCR = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang, tessTag);
+            TextFromOCR = await OcrUtilities.GetRegionsTextAsync(this, regionScaled, selectedOcrLang);
 
         if (DefaultSettings.UseHistory && !isSmallClick)
         {
@@ -662,7 +683,7 @@ public partial class FullscreenGrab : Window
             {
                 ID = Guid.NewGuid().ToString(),
                 DpiScaleFactor = m.M11,
-                LanguageTag = selectedOcrLang.LanguageTag,
+                LanguageTag = LanguageUtilities.GetLanguageTag(selectedOcrLang),
                 CaptureDateTime = DateTimeOffset.Now,
                 PositionRect = historyRect,
                 IsTable = TableToggleButton.IsChecked!.Value,

@@ -24,7 +24,7 @@ using Point = System.Windows.Point;
 
 namespace Text_Grab.Utilities;
 
-public static class OcrUtilities
+public static partial class OcrUtilities
 {
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
@@ -50,7 +50,7 @@ public static class OcrUtilities
             bool isFirstWord = true;
             bool isPrevWordSpaceJoining = false;
 
-            Regex regexSpaceJoiningWord = new(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}");
+            Regex regexSpaceJoiningWord = SpaceJoiningWordRegex();
 
             foreach (OcrWord ocrWord in ocrLine.Words)
             {
@@ -83,7 +83,7 @@ public static class OcrUtilities
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
-    public static async Task<string> GetRegionsTextAsync(Window passedWindow, Rectangle selectedRegion, Language language, string languageTag = "")
+    public static async Task<string> GetRegionsTextAsync(Window passedWindow, Rectangle selectedRegion, object language)
     {
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
@@ -93,11 +93,14 @@ public static class OcrUtilities
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
 
-        return GetStringFromOcrOutputs(await GetTextFromWcrAsync(bmp, language, languageTag));
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
-    public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, Language language)
+    public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, object objLang)
     {
+        if (objLang is not Language language)
+            language = LanguageUtilities.GetCurrentInputLanguage();
+
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
         int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
@@ -155,8 +158,7 @@ public static class OcrUtilities
     {
         OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(language);
 
-        if (ocrEngine is null)
-            ocrEngine = OcrEngine.TryCreateFromLanguage(LanguageUtilities.GetCurrentInputLanguage());
+        ocrEngine ??= OcrEngine.TryCreateFromLanguage(LanguageUtilities.GetCurrentInputLanguage());
 
         return await ocrEngine.RecognizeAsync(scaledBitmap);
     }
@@ -242,7 +244,7 @@ public static class OcrUtilities
     {
         OcrResult ocrResult = await GetOcrFromStreamAsync(randomAccessStream, language);
 
-        List<OcrOutput> outputs = new();
+        List<OcrOutput> outputs = [];
 
         OcrOutput paragraphsOutput = GetTextFromOcrResult(language, null, ocrResult);
 
@@ -283,7 +285,7 @@ public static class OcrUtilities
         throw new NotImplementedException();
     }
 
-    public static async Task<List<OcrOutput>> GetTextFromWcrAsync(Bitmap bitmap, Language language, string tessTag = "")
+    public static async Task<List<OcrOutput>> GetTextFromWinAiAsync(Bitmap bitmap, WindowsAiLang language, string tessTag = "")
     {
         // get temp path
         string tempPath = Path.GetTempPath();
@@ -291,7 +293,7 @@ public static class OcrUtilities
         string tempFilePath = Path.Combine(tempPath, tempFileName);
         bitmap.Save(tempFilePath, ImageFormat.Bmp);
 
-        string result = await WcrUtilities.GetTextWithWcr(tempFilePath);
+        string result = await WindowsAiUtilities.GetTextWithWinAI(tempFilePath);
 
         OcrOutput paragraphsOutput = new()
         {
@@ -305,15 +307,16 @@ public static class OcrUtilities
         return outputs;
     }
 
-    public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language, string tessTag = "")
+    public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, object language, string tessTag = "")
     {
-        List<OcrOutput> outputs = new();
+        List<OcrOutput> outputs = [];
 
         if (DefaultSettings.UseTesseract
+            && language is TessLang tessLang
             && TesseractHelper.CanLocateTesseractExe()
             && !string.IsNullOrEmpty(tessTag))
         {
-            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, language, tessTag);
+            OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, tessLang);
             outputs.Add(tesseractOutput);
 
             if (DefaultSettings.TryToReadBarcodes)
@@ -325,10 +328,18 @@ public static class OcrUtilities
             return outputs;
         }
 
-        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
+        if (language is WindowsAiLang winLang)
+        {
+            return await GetTextFromWinAiAsync(bitmap, winLang, tessTag);
+        }
+
+        if (language is not Language ocrLanguage)
+            ocrLanguage = LanguageUtilities.GetCurrentInputLanguage();
+
+        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, ocrLanguage);
         Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
-        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, language);
-        OcrOutput paragraphsOutput = GetTextFromOcrResult(language, scaledBitmap, ocrResult);
+        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, ocrLanguage);
+        OcrOutput paragraphsOutput = GetTextFromOcrResult(ocrLanguage, scaledBitmap, ocrResult);
         outputs.Add(paragraphsOutput);
 
         if (DefaultSettings.TryToReadBarcodes)
@@ -392,15 +403,17 @@ public static class OcrUtilities
         droppedImage.EndInit();
         droppedImage.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
-        if (language is null)
-            language = LanguageUtilities.GetCurrentInputLanguage();
+        language ??= LanguageUtilities.GetCurrentInputLanguage();
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language, tesseractLanguageTag));
     }
 
-    public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, Language OcrLang)
+    public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, object OcrLang)
     {
+        if (OcrLang is not Language language)
+            language = LanguageUtilities.GetCurrentInputLanguage();
+
         using Bitmap bmp = ImageMethods.GetWindowsBoundsBitmap(passedWindow);
-        string ocrText = await GetTextFromClickedWordAsync(clickedPoint, bmp, OcrLang);
+        string ocrText = await GetTextFromClickedWordAsync(clickedPoint, bmp, language);
         return ocrText.Trim();
     }
 
@@ -437,7 +450,7 @@ public static class OcrUtilities
 
     private static double GetIdealScaleFactorForOcrResult(OcrResult ocrResult, int height, int width)
     {
-        List<double> heightsList = new();
+        List<double> heightsList = [];
         double scaleFactor = 1.5;
 
         foreach (OcrLine ocrLine in ocrResult.Lines)
@@ -480,4 +493,7 @@ public static class OcrUtilities
             Height = Math.Abs(bottom - top)
         };
     }
+
+    [GeneratedRegex(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}")]
+    private static partial Regex SpaceJoiningWordRegex();
 }

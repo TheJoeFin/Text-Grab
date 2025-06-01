@@ -12,7 +12,7 @@ public record OcrOutput
     public string RawOutput { get; set; } = string.Empty;
     public string CleanedOutput { get; set; } = string.Empty;
     public Bitmap? SourceBitmap { get; set; }
-    public Language? Language { get; set; }
+    public object? Language { get; set; }
 
     public void CleanOutput()
     {
