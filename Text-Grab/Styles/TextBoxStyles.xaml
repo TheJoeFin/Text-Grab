@@ -169,7 +169,8 @@
                             x:Name="Arrow"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            Data="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}">
+                            Data="{Binding Content,
+                                           RelativeSource={RelativeSource TemplatedParent}}">
                             <Path.Fill>
                                 <SolidColorBrush x:Name="ArrowFill" Color="{DynamicResource ControlMediumColor}" />
                             </Path.Fill>
