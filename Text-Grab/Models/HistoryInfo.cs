@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Text.Json.Serialization;
 using System.Windows;
+using Text_Grab.Interfaces;
 using Text_Grab.Utilities;
 using Windows.Globalization;
 
@@ -34,17 +35,26 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public double DpiScaleFactor { get; set; } = 1.0;
 
-    public string LanguageTag { get; set; } = String.Empty;
+    public string LanguageTag { get; set; } = string.Empty;
+
+    // make sure this is set everywhere that languages are being set
+    `````public LanguageKind LanguageKind { get; set; } = LanguageKind.Global;
 
     [JsonIgnore]
-    public Language OcrLanguage
+    public ILanguage OcrLanguage
     {
         get
         {
             if (string.IsNullOrWhiteSpace(LanguageTag))
-                return LanguageUtilities.GetCurrentInputLanguage();
+                return new GlobalLang(LanguageUtilities.GetCurrentInputLanguage());
 
-            return new Language(LanguageTag);
+            return LanguageKind switch
+            {
+                LanguageKind.Global => new GlobalLang(new Language(LanguageTag)),
+                LanguageKind.Tesseract => new TessLang(LanguageTag),
+                LanguageKind.WindowsAi => new WindowsAiLang(),
+                _ => new GlobalLang(LanguageUtilities.GetCurrentInputLanguage()),
+            };
         }
     }
 
