@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(dotnet build)",
+      "Bash(ls:*)",
+      "Bash(./Tests.exe --help)",
+      "Bash(dotnet --version)",
+      "Bash(dotnet build:*)"
+    ],
+    "deny": []
+  }
+}
