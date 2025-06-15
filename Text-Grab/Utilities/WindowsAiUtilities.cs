@@ -6,8 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Windows.Graphics.Imaging;
-using Windows.Media.Ocr;
-
 
 namespace Text_Grab.Utilities;
 

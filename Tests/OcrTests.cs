@@ -178,7 +178,7 @@ December	12	Winter";
     [WpfFact(Skip = "since the hocr is not being used from Tesseract it will not be tested for now")]
     public async Task TesseractHocr()
     {
-        int intialLinesToSkip = 12;
+        int initialLinesToSkip = 12;
 
         // Given
         string hocrFilePath = FileUtilities.GetPathToLocalFile(@"TextFiles\font_sample.hocr");
@@ -186,7 +186,7 @@ December	12	Winter";
 
         // combine string array into one string
         StringBuilder sb = new();
-        foreach (string line in hocrFileContentsArray.Skip(intialLinesToSkip).ToArray())
+        foreach (string line in hocrFileContentsArray.Skip(initialLinesToSkip).ToArray())
             sb.AppendLine(line);
 
         string hocrFileContents = sb.ToString();
@@ -198,23 +198,23 @@ December	12	Winter";
         BitmapImage bmpImg = new(fileURI);
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
-        Language language = LanguageUtilities.GetOCRLanguage();
+        ILanguage language = LanguageUtilities.GetOCRLanguage();
         double idealScaleFactor = await OcrUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
-        TessLang englishLanguage = new("eng");
-        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
+        TessLang EnglishLanguage = new("eng");
+        OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, EnglishLanguage);
 
-        string[] tessoutputArray = tessoutput.RawOutput.Split(Environment.NewLine);
+        string[] tesseractOutputArray = tesseractOutput.RawOutput.Split(Environment.NewLine);
         StringBuilder sb2 = new();
-        foreach (string line in tessoutputArray.Skip(intialLinesToSkip).ToArray())
+        foreach (string line in tesseractOutputArray.Skip(initialLinesToSkip).ToArray())
             sb2.AppendLine(line);
 
-        tessoutput.RawOutput = sb2.ToString();
+        tesseractOutput.RawOutput = sb2.ToString();
 
         // Then
-        Assert.Equal(hocrFileContents, tessoutput.RawOutput);
+        Assert.Equal(hocrFileContents, tesseractOutput.RawOutput);
     }
 
     [WpfFact]
@@ -227,19 +227,19 @@ December	12	Winter";
         BitmapImage bmpImg = new(fileURI);
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
-        Language language = LanguageUtilities.GetOCRLanguage();
+        ILanguage language = LanguageUtilities.GetOCRLanguage();
         double idealScaleFactor = await OcrUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
-        TessLang englishLanguage = new("eng");
-        OcrOutput tessoutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, englishLanguage);
+        TessLang EnglishLanguage = new("eng");
+        OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(scaledBMP, EnglishLanguage);
 
-        if (tessoutput.RawOutput == "Cannot find tesseract.exe")
+        if (tesseractOutput.RawOutput == "Cannot find tesseract.exe")
             return;
 
         // Then
-        Assert.Equal(fontSampleResultForTesseract, tessoutput.RawOutput);
+        Assert.Equal(fontSampleResultForTesseract, tesseractOutput.RawOutput);
     }
 
     [WpfFact(Skip = "fails GitHub actions")]
