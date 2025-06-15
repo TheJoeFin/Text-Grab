@@ -14,6 +14,8 @@ public interface ILanguage
 
     public string LanguageTag { get; }
 
+    public string DisplayName { get; }
+
     public LanguageLayoutDirection LayoutDirection { get; }
 
     public string NativeName { get; }

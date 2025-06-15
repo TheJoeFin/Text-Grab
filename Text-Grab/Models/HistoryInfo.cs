@@ -37,8 +37,7 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public string LanguageTag { get; set; } = string.Empty;
 
-    // make sure this is set everywhere that languages are being set
-    `````public LanguageKind LanguageKind { get; set; } = LanguageKind.Global;
+    public LanguageKind LanguageKind { get; set; } = LanguageKind.Global;
 
     [JsonIgnore]
     public ILanguage OcrLanguage
@@ -46,14 +45,14 @@ public class HistoryInfo : IEquatable<HistoryInfo>
         get
         {
             if (string.IsNullOrWhiteSpace(LanguageTag))
-                return new GlobalLang(LanguageUtilities.GetCurrentInputLanguage());
+                return new GlobalLang(LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US"));
 
             return LanguageKind switch
             {
                 LanguageKind.Global => new GlobalLang(new Language(LanguageTag)),
                 LanguageKind.Tesseract => new TessLang(LanguageTag),
                 LanguageKind.WindowsAi => new WindowsAiLang(),
-                _ => new GlobalLang(LanguageUtilities.GetCurrentInputLanguage()),
+                _ => new GlobalLang(LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US")),
             };
         }
     }

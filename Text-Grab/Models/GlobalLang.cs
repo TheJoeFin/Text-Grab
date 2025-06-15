@@ -1,7 +1,8 @@
 ﻿using Text_Grab.Interfaces;
 
 namespace Text_Grab.Models;
-internal class GlobalLang : ILanguage
+
+public class GlobalLang : ILanguage
 {
     public GlobalLang(Windows.Globalization.Language lang)
     {
@@ -11,7 +12,22 @@ internal class GlobalLang : ILanguage
         LayoutDirection = lang.LayoutDirection;
         NativeName = lang.NativeName;
         Script = lang.Script;
+        OriginalLanguage = lang;
     }
+
+    public GlobalLang(string inputLang)
+    {
+        Windows.Globalization.Language language = new(inputLang);
+        AbbreviatedName = language.AbbreviatedName;
+        CultureDisplayName = language.DisplayName;
+        LanguageTag = language.LanguageTag;
+        LayoutDirection = language.LayoutDirection;
+        NativeName = language.NativeName;
+        Script = language.Script;
+        OriginalLanguage = language;
+    }
+
+    public Windows.Globalization.Language OriginalLanguage { get; set; }
 
     public string AbbreviatedName { get; set; }
 
