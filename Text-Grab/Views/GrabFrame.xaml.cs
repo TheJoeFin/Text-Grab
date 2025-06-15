@@ -26,6 +26,7 @@ using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.UndoRedoOperations;
 using Text_Grab.Utilities;
+using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.System;
 using ZXing;
@@ -63,7 +64,7 @@ public partial class GrabFrame : Window
     private bool isSpaceJoining = true;
     private readonly Dictionary<WordBorder, Rect> movingWordBordersDictionary = [];
     private OcrResult? ocrResultOfWindow;
-    private RecognizedText? aiOcrResult;
+    private RecognizedText? aiOcrResult; // This field is intended for future use with Windows AI OCR.
     private readonly DispatcherTimer reDrawTimer = new();
     private readonly DispatcherTimer reSearchTimer = new();
     private Side resizingSide = Side.None;
@@ -213,14 +214,18 @@ public partial class GrabFrame : Window
 
     #region Properties
 
-    public Language CurrentLanguage
+    public ILanguage CurrentLanguage
     {
         get
         {
             if (currentLanguage is not null)
                 return currentLanguage;
 
-            currentLanguage = LanguagesComboBox.SelectedItem as Language;
+            if (LanguagesComboBox.SelectedItem is ILanguage selectedILang)
+                currentLanguage = selectedILang;
+            else if (LanguagesComboBox.SelectedItem is Language selectedLang) // Should not happen if ComboBox is populated with ILanguage
+                currentLanguage = new GlobalLang(selectedLang);
+
             currentLanguage ??= LanguageUtilities.GetOCRLanguage();
 
             return currentLanguage;
@@ -296,6 +301,7 @@ public partial class GrabFrame : Window
         {
             ID = id,
             LanguageTag = CurrentLanguage.LanguageTag,
+            LanguageKind = LanguageUtilities.GetLanguageKind(currentLanguage ?? CurrentLanguage),
             CaptureDateTime = DateTimeOffset.UtcNow,
             TextContent = FrameText,
             WordBorderInfoJson = wbInfoJson,
@@ -659,7 +665,9 @@ public partial class GrabFrame : Window
         double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
         Rect rect = selectBorder.GetAbsolutePlacement(true);
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
-        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), CurrentLanguage);
+        // Language language = CurrentLanguage.AsLanguage() ?? LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
+        ILanguage language = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), language);
 
         if (DefaultSettings.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
@@ -867,7 +875,14 @@ public partial class GrabFrame : Window
 
     private void CopyText_Click(object sender, RoutedEventArgs e)
     {
-        try { Clipboard.SetDataObject(FrameText, true); } catch { }
+        try
+        {
+            Clipboard.SetDataObject(FrameText, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy text to clipboard: {ex.Message}");
+        }
     }
 
     private List<WordBorder> DeleteSelectedWordBorders()
@@ -948,12 +963,18 @@ public partial class GrabFrame : Window
         };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
-            (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
+        {
+            ILanguage lang = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+            if (lang is not GlobalLang globalLang)
+                globalLang = new GlobalLang(lang.LanguageTag);
+
+            (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, globalLang);
+        }
 
         if (ocrResultOfWindow is null)
             return;
 
-        isSpaceJoining = CurrentLanguage.IsSpaceJoining();
+        isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
         System.Drawing.Bitmap? bmp = null;
 
@@ -997,7 +1018,7 @@ public partial class GrabFrame : Window
                 MatchingBackground = backgroundBrush,
             };
 
-            if (CurrentLanguage.IsRightToLeft())
+            if (CurrentLanguage!.IsRightToLeft())
             {
                 StringBuilder sb = new(ocrText);
                 sb.ReverseWordsForRightToLeft();
@@ -1463,7 +1484,7 @@ public partial class GrabFrame : Window
         if (!isLanguageBoxLoaded || sender is not ComboBox langComboBox)
             return;
 
-        Language? pickedLang = langComboBox.SelectedItem as Language;
+        ILanguage? pickedLang = langComboBox.SelectedItem as ILanguage;
 
         if (langComboBox.SelectedItem is WindowsAiLang winAiLang)
             pickedLang = winAiLang;
@@ -1487,7 +1508,7 @@ public partial class GrabFrame : Window
             return;
 
         IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
-        Language firstLang = LanguageUtilities.GetOCRLanguage();
+        ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
 
         int count = 0;
 
@@ -1856,11 +1877,11 @@ public partial class GrabFrame : Window
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
 new GrabFrameOperationArgs()
-            {
-                RemovingWordBorders = [.. wordBorders],
-                WordBorders = wordBorders,
-                GrabFrameCanvas = RectanglesCanvas
-            });
+{
+    RemovingWordBorders = [.. wordBorders],
+    WordBorders = wordBorders,
+    GrabFrameCanvas = RectanglesCanvas
+});
 
         ResetGrabFrame();
 

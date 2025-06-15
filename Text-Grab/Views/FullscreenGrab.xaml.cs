@@ -428,7 +428,7 @@ public partial class FullscreenGrab : Window
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
 
-        Language firstLang = LanguageUtilities.GetOCRLanguage();
+        ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
 
         foreach (Language language in possibleOCRLanguages)
         {
@@ -642,15 +642,8 @@ public partial class FullscreenGrab : Window
 
         try { RegionClickCanvas.Children.Remove(selectBorder); } catch { }
 
-        object selectedOcrLang = LanguagesComboBox.SelectedItem;
-
-        // if (LanguagesComboBox.SelectedItem is not Language selectedOcrLang)
-        //     selectedOcrLang = LanguageUtilities.GetOCRLanguage();
-        // 
-        // string tessTag = string.Empty;
-        // 
-        // if (LanguagesComboBox.SelectedItem is TessLang tessLang)
-        //     tessTag = tessLang.LanguageTag;
+        if (LanguagesComboBox.SelectedItem is not ILanguage selectedOcrLang)
+            selectedOcrLang = LanguageUtilities.GetOCRLanguage();
 
         bool isSmallClick = (selectBorder.Width < 3 || selectBorder.Height < 3);
 
@@ -684,6 +677,7 @@ public partial class FullscreenGrab : Window
                 ID = Guid.NewGuid().ToString(),
                 DpiScaleFactor = m.M11,
                 LanguageTag = LanguageUtilities.GetLanguageTag(selectedOcrLang),
+                LanguageKind = LanguageUtilities.GetLanguageKind(selectedOcrLang),
                 CaptureDateTime = DateTimeOffset.Now,
                 PositionRect = historyRect,
                 IsTable = TableToggleButton.IsChecked!.Value,

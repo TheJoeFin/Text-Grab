@@ -194,7 +194,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        Language selectedLanguage = LanguageUtilities.GetOCRLanguage();
+        ILanguage selectedLanguage = LanguageUtilities.GetOCRLanguage();
         string tesseractLanguageTag = string.Empty;
 
         if (LanguageMenuItem.Items.Count > 0)
@@ -203,10 +203,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 if (languageSubItem.IsChecked)
                 {
-                    if (languageSubItem.Tag is Language language)
-                        selectedLanguage = language;
-                    else if (languageSubItem.Tag is TessLang tesseractLanguage)
-                        tesseractLanguageTag = tesseractLanguage.LanguageTag;
+                    if (languageSubItem.Tag is ILanguage iLanguageFromTag) // Changed to ILanguage
+                    {
+                        selectedLanguage = iLanguageFromTag;
+                    }
+                    else if (languageSubItem.Tag is string langTag) // Fallback for simple string tags if any
+                        tesseractLanguageTag = langTag;
                 }
             }
         }
@@ -331,7 +333,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is not LanguagePicker languagePicker)
             return;
 
-        Language selectedLanguage = languagePicker.SelectedLanguage;
+        ILanguage selectedILanguage = languagePicker.SelectedLanguage;
+        Language? selectedLanguage = selectedILanguage.AsLanguage();
+
+        if (selectedLanguage is null)
+            return;
+
         CultureInfo cultureInfo = new(selectedLanguage.LanguageTag);
         selectedCultureInfo = cultureInfo;
         XmlLanguage xmlLang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
@@ -344,6 +351,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ID = historyId,
             LanguageTag = LanguageUtilities.GetCurrentInputLanguage().LanguageTag,
+            LanguageKind = LanguageKind.Global,
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
@@ -364,7 +372,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         OpenedFilePath = pathOfFileToOpen;
 
-        Language lang = new(selectedCultureInfo.IetfLanguageTag);
+        ILanguage lang = new GlobalLang(selectedCultureInfo.IetfLanguageTag);
         (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, lang);
 
         if (KindOpened == OpenContentKind.TextFile
@@ -389,14 +397,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return listOfNames.ToString();
     }
 
-    private static async Task<string> OcrFile(string path, Language? selectedLanguage, string tesseractLanguageTag, OcrDirectoryOptions options)
+    private static async Task<string> OcrFile(string path, ILanguage? selectedLanguage, OcrDirectoryOptions options)
     {
         StringBuilder returnString = new();
         if (options.OutputFileNames)
             returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path, selectedLanguage, tesseractLanguageTag);
+            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path, selectedLanguage);
 
             if (!string.IsNullOrWhiteSpace(ocrText))
             {
@@ -669,7 +677,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 Debug.WriteLine($"error with dataPackageView.GetTextAsync(). Exception Message: {ex.Message}");
             }
-        };
+        }
+        ;
 
         IsAccessingClipboard = false;
     }
@@ -1088,7 +1097,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
             catch (CultureNotFoundException)
             {
-                Language currentLang = LanguageUtilities.GetCurrentInputLanguage();
+                ILanguage currentLang = LanguageUtilities.GetCurrentInputLanguage();
                 CultureInfo cultureInfo = new(currentLang.LanguageTag);
                 selectedCultureInfo = cultureInfo;
                 XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
@@ -1206,7 +1215,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
 
-        Language firstLang = LanguageUtilities.GetOCRLanguage();
+        ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
 
         foreach (Language language in possibleOCRLanguages)
         {
@@ -1413,7 +1422,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         newEtwWithText.Show();
     }
 
-    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults, Language selectedLanguage, string tesseractLanguageTag)
+    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults, ILanguage selectedLanguage, string tesseractLanguageTag)
     {
         if (cancellationTokenForDirOCR is null)
             return;
@@ -1433,7 +1442,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, tesseractLanguageTag, options);
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
             if (!options.WriteTxtFiles)
