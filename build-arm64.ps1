@@ -11,6 +11,9 @@ if (Test-Path -Path $BuildPath) {
 	Remove-Item $BuildPath -Recurse
 }
 
+# Create the build path
+New-Item -ItemType Directory -Path $BuildPath -Force | Out-Null
+
 # Dotnet restore and build
 dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 	--runtime win-arm64 `
@@ -18,14 +21,11 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 	-c Release `
 	-v minimal `
 	-o $BuildPath `
-	-p:PublishReadyToRun=true `
 	-p:PublishSingleFile=true `
+    -p:EnableMsixTooling=true `
 	-p:CopyOutputSymbolsToPublishDirectory=false `
 	-p:Version=$VersionDot `
 	--nologo
-
-# Archive Build
-Compress-Archive -Path "$BuildPath\$Project.exe" -DestinationPath $Archive
 
 # Dotnet restore and build
 dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
@@ -34,8 +34,8 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 	-c Release `
 	-v minimal `
 	-o $BuildPathSC `
-	-p:PublishReadyToRun=true `
 	-p:PublishSingleFile=true `
+    -p:EnableMsixTooling=true `
 	-p:CopyOutputSymbolsToPublishDirectory=false `
 	-p:Version=$VersionDot `
 	--nologo
