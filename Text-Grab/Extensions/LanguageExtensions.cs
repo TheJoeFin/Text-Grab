@@ -51,9 +51,6 @@ public static class LanguageExtensions
 
     public static bool IsLatinBased(this ILanguage selectedLanguage)
     {
-        if (selectedLanguage is GlobalLang language)
-            return language.IsLatinBased();
-
         // List of Latin-based languages
         List<string> LatinLanguages =
         [
