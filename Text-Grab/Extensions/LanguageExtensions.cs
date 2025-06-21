@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows.Markup;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -29,10 +30,6 @@ public static class LanguageExtensions
     // Extension methods for ILanguage interface
     public static bool IsSpaceJoining(this ILanguage selectedLanguage)
     {
-        if (selectedLanguage is GlobalLang language)
-            return language.IsSpaceJoining();
-
-        // For other language types, use the LanguageTag property
         if (selectedLanguage.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase))
             return false;
         else if (selectedLanguage.LanguageTag.Equals("ja", StringComparison.InvariantCultureIgnoreCase))
@@ -63,10 +60,10 @@ public static class LanguageExtensions
         ];
 
         // Get the abbreviated name of the culture
-        string abbreviatedName = selectedLanguage.AbbreviatedName.ToLowerInvariant();
+        string languageTag = selectedLanguage.LanguageTag;
 
-        // Check if the abbreviated name of the culture is in the list of Latin-based languages
-        return LatinLanguages.Contains(abbreviatedName);
+        // Check if the abbreviated name starts with any of the Latin-based language prefixes
+        return LatinLanguages.Any(lang => languageTag.StartsWith(lang, StringComparison.InvariantCultureIgnoreCase));
     }
 
     // Helper method to convert ILanguage to Language when needed
