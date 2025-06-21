@@ -8,7 +8,8 @@
       "Bash(ls:*)",
       "Bash(./Tests.exe --help)",
       "Bash(dotnet --version)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)"
     ],
     "deny": []
   }
