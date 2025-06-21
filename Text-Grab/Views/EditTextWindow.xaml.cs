@@ -66,6 +66,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private WindowState? prevWindowState;
     private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
+    private ILanguage selectedILanguage = LanguageUtilities.GetCurrentInputLanguage();
 
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
@@ -333,16 +334,36 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is not LanguagePicker languagePicker)
             return;
 
-        ILanguage selectedILanguage = languagePicker.SelectedLanguage;
-        Language? selectedLanguage = selectedILanguage.AsLanguage();
+        selectedILanguage = languagePicker.SelectedLanguage;
 
-        if (selectedLanguage is null)
+        string tag = selectedILanguage.LanguageTag;
+
+        foreach (MenuItem item in LanguageMenuItem.Items)
+        {
+            if (item.Tag is ILanguage iLanguageFromTag && iLanguageFromTag.LanguageTag == tag)
+                item.IsChecked = true;
+            else
+                item.IsChecked = false;
+        }
+
+        if (selectedILanguage is WindowsAiLang)
+        {
+            SetCultureAndLanguageToDefault();
             return;
+        }
 
-        CultureInfo cultureInfo = new(selectedLanguage.LanguageTag);
+        CultureInfo cultureInfo = new(selectedILanguage.LanguageTag);
         selectedCultureInfo = cultureInfo;
-        XmlLanguage xmlLang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
+        XmlLanguage xmlLang = XmlLanguage.GetLanguage(selectedILanguage.LanguageTag);
         Language = xmlLang;
+    }
+
+    private void SetCultureAndLanguageToDefault()
+    {
+        selectedCultureInfo = CultureInfo.CurrentCulture;
+        string currentInputTag = Windows.Globalization.Language.CurrentInputMethodLanguageTag;
+        XmlLanguage xmlDefaultLang = XmlLanguage.GetLanguage(currentInputTag);
+        Language = xmlDefaultLang;
     }
 
     internal HistoryInfo AsHistoryItem()
@@ -372,8 +393,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         OpenedFilePath = pathOfFileToOpen;
 
-        ILanguage lang = new GlobalLang(selectedCultureInfo.IetfLanguageTag);
-        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, lang);
+        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
 
         if (KindOpened == OpenContentKind.TextFile
             && !isMultipleFiles
@@ -1079,40 +1099,29 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
             return;
 
-        if (clickedMenuItem.Tag is Language winLang)
+        if (clickedMenuItem.Tag is not ILanguage ILang)
+            return;
+
+        selectedILanguage = ILang;
+
+        try
         {
-            CultureInfo cultureInfo = new(winLang.LanguageTag);
+            CultureInfo cultureInfo = new(selectedILanguage.LanguageTag);
             selectedCultureInfo = cultureInfo;
             XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
             Language = xmlLang;
         }
-        else if (clickedMenuItem.Tag is TessLang tessLang)
+        catch (CultureNotFoundException)
         {
-            try
-            {
-                CultureInfo cultureInfo = new(tessLang.CultureDisplayName);
-                selectedCultureInfo = cultureInfo;
-                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
-                Language = xmlLang;
-            }
-            catch (CultureNotFoundException)
-            {
-                ILanguage currentLang = LanguageUtilities.GetCurrentInputLanguage();
-                CultureInfo cultureInfo = new(currentLang.LanguageTag);
-                selectedCultureInfo = cultureInfo;
-                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
-                Language = xmlLang;
-            }
+            SetCultureAndLanguageToDefault();
         }
 
         foreach (object? child in BottomBarButtons.Children)
             if (child is LanguagePicker languagePicker)
-                languagePicker.Select(selectedCultureInfo.IetfLanguageTag);
+                languagePicker.Select(selectedILanguage.LanguageTag);
 
         foreach (MenuItem menuItem in LanguageMenuItem.Items)
-        {
             menuItem.IsChecked = false;
-        }
 
         clickedMenuItem.IsChecked = true;
     }
@@ -1183,11 +1192,29 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (captureMenuItem.Items.Count > 0)
             return;
 
-        // TODO Find a way to combine with the FSG language drop down
-
         bool haveSetLastLang = false;
         string lastTextLang = DefaultSettings.LastUsedLang;
         bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            WindowsAiLang windowsAiLang = new();
+
+            MenuItem languageMenuItem = new()
+            {
+                Header = windowsAiLang.DisplayName,
+                Tag = windowsAiLang,
+                IsCheckable = true,
+            };
+
+            languageMenuItem.Click += LanguageMenuItem_Click;
+            captureMenuItem.Items.Add(languageMenuItem);
+            if (!haveSetLastLang && windowsAiLang.CultureDisplayName == lastTextLang)
+            {
+                languageMenuItem.IsChecked = true;
+                haveSetLastLang = true;
+            }
+        }
 
         if (usingTesseract)
         {
@@ -1222,7 +1249,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             MenuItem languageMenuItem = new()
             {
                 Header = language.DisplayName,
-                Tag = language,
+                Tag = new GlobalLang(language),
                 IsCheckable = true,
             };
             languageMenuItem.Click += LanguageMenuItem_Click;

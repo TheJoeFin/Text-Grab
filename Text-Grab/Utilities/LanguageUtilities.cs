@@ -19,9 +19,23 @@ public static class LanguageUtilities
         return new GlobalLang(inputLang);
     }
 
-    public static IList<Language> GetAllLanguages()
+    public static IList<ILanguage> GetAllLanguages()
     {
-        return [.. OcrEngine.AvailableRecognizerLanguages];
+        List<ILanguage> languages = [];
+
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            // Add Windows AI languages
+            languages.Add(new WindowsAiLang());
+        }
+
+        foreach (Language lang in OcrEngine.AvailableRecognizerLanguages)
+        {
+            // Wrap Windows.Globalization.Language in a compatible ILanguage implementation
+            languages.Add(new GlobalLang(lang));
+        }
+
+        return languages;
     }
 
     public static string GetLanguageTag(object language)
@@ -66,7 +80,7 @@ public static class LanguageUtilities
             }
         }
 
-        List<Language> possibleOCRLanguages = [.. GetAllLanguages()];
+        List<ILanguage> possibleOCRLanguages = [.. GetAllLanguages()];
 
         if (possibleOCRLanguages.Count == 0)
             return new GlobalLang("en-US");
@@ -74,15 +88,15 @@ public static class LanguageUtilities
         // check to see if the selected language is in the list of available OCR languages
         if (possibleOCRLanguages.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
         {
-            List<Language>? similarLanguages = [.. possibleOCRLanguages.Where(
+            List<ILanguage>? similarLanguages = [.. possibleOCRLanguages.Where(
                 la => la.LanguageTag.Contains(selectedLanguage.LanguageTag)
                 || selectedLanguage.LanguageTag.Contains(la.LanguageTag)
             )];
 
             if (similarLanguages is not null && similarLanguages.Count > 0)
-                return new GlobalLang(similarLanguages.First());
+                return new GlobalLang(similarLanguages.First().LanguageTag);
             else
-                return new GlobalLang(possibleOCRLanguages.First());
+                return new GlobalLang(possibleOCRLanguages.First().LanguageTag);
         }
 
         return selectedLanguage ?? new GlobalLang("en-US");

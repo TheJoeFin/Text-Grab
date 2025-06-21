@@ -38,13 +38,10 @@ public partial class LanguagePicker : UserControl
 
         int selectedIndex = 0;
         int i = 0;
-        // LanguageUtilities.GetAllLanguages() returns IList<Language>, convert to ILanguage
-        foreach (Language langFromUtil in LanguageUtilities.GetAllLanguages())
+        foreach (ILanguage langFromUtil in LanguageUtilities.GetAllLanguages())
         {
-            // Wrap Windows.Globalization.Language in a compatible ILanguage implementation (e.g., GlobalLang)
-            ILanguage iLang = new GlobalLang(langFromUtil);
-            Languages.Add(iLang);
-            if (iLang.LanguageTag == currentInputGlobalLang.LanguageTag)
+            Languages.Add(langFromUtil);
+            if (langFromUtil.LanguageTag == currentInputGlobalLang.LanguageTag)
                 selectedIndex = i;
             i++;
         }
