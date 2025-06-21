@@ -156,16 +156,16 @@
     <Content Include="Text-Grab-Icon.png" />
     <None Include="Package.StoreAssociation.xml" />
   </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\Text-Grab\Text-Grab.csproj">
-            <SkipGetTargetFrameworkProperties>True</SkipGetTargetFrameworkProperties>
-        </ProjectReference>
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250513003" />
-        <PackageReference Include="System.Net.Http" Version="4.3.4" />
-        <PackageReference Include="System.Private.Uri" Version="4.3.2" />
-        <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-    </ItemGroup>
-    <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\Text-Grab\Text-Grab.csproj">
+      <SkipGetTargetFrameworkProperties>True</SkipGetTargetFrameworkProperties>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+  </ItemGroup>
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
 </Project>
