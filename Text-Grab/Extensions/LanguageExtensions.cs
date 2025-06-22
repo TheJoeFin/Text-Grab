@@ -27,7 +27,6 @@ public static class LanguageExtensions
         return culture.TextInfo.IsRightToLeft;
     }
 
-    // Extension methods for ILanguage interface
     public static bool IsSpaceJoining(this ILanguage selectedLanguage)
     {
         if (selectedLanguage.LanguageTag.StartsWith("zh", StringComparison.InvariantCultureIgnoreCase))
@@ -59,14 +58,11 @@ public static class LanguageExtensions
             "pt"   // Portuguese
         ];
 
-        // Get the abbreviated name of the culture
         string languageTag = selectedLanguage.LanguageTag;
 
-        // Check if the abbreviated name starts with any of the Latin-based language prefixes
         return LatinLanguages.Any(lang => languageTag.StartsWith(lang, StringComparison.InvariantCultureIgnoreCase));
     }
 
-    // Helper method to convert ILanguage to Language when needed
     public static Language? AsLanguage(this ILanguage iLanguage)
     {
         if (iLanguage is GlobalLang language)

@@ -1,28 +1,25 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Interfaces;
-using Text_Grab.Models;
 using Text_Grab.Utilities;
-using Windows.Globalization; // Still needed for fallback or specific cases if any remain
 
 namespace Text_Grab.Controls;
 
 public partial class LanguagePicker : UserControl
 {
-    public ObservableCollection<ILanguage> Languages { get; } = []; // Changed Type
+    public ObservableCollection<ILanguage> Languages { get; } = [];
 
     public event RoutedEventHandler? LanguageChanged;
 
-    public ILanguage SelectedLanguage // Changed Type
+    public ILanguage SelectedLanguage
     {
-        get { return (ILanguage)GetValue(SelectedLanguageProperty); } // Changed Type
+        get { return (ILanguage)GetValue(SelectedLanguageProperty); }
         set { SetValue(SelectedLanguageProperty, value); }
     }
 
     public static readonly DependencyProperty SelectedLanguageProperty =
-        DependencyProperty.Register("SelectedLanguage", typeof(ILanguage), typeof(LanguagePicker), new PropertyMetadata(null)); // Changed Type
+        DependencyProperty.Register("SelectedLanguage", typeof(ILanguage), typeof(LanguagePicker), new PropertyMetadata(null));
 
     public LanguagePicker()
     {
@@ -61,12 +58,12 @@ public partial class LanguagePicker : UserControl
         }
     }
 
-    internal void Select(string ietfLanguageTag)
+    internal void Select(string languageTag)
     {
         int i = 0;
-        foreach (ILanguage language in Languages) // Iterate over the ILanguage collection
+        foreach (ILanguage language in Languages)
         {
-            if (language.LanguageTag == ietfLanguageTag)
+            if (language.LanguageTag == languageTag)
             {
                 MainComboBox.SelectedIndex = i;
                 SelectedLanguage = language;
