@@ -63,10 +63,18 @@ public static class LanguageUtilities
 
     public static ILanguage GetOCRLanguage()
     {
+        string lastUsedLang = AppUtilities.TextGrabSettings.LastUsedLang;
+
         ILanguage selectedLanguage = GetCurrentInputLanguage();
 
-        if (!string.IsNullOrEmpty(AppUtilities.TextGrabSettings.LastUsedLang))
+        if (!string.IsNullOrEmpty(lastUsedLang))
         {
+            if (lastUsedLang == new WindowsAiLang().LanguageTag)
+            {
+                // If the last used language is Windows AI, return it directly
+                return new WindowsAiLang();
+            }
+
             try
             {
                 selectedLanguage = new GlobalLang(AppUtilities.TextGrabSettings.LastUsedLang);

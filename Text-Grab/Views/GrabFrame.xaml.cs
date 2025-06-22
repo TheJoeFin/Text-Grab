@@ -1506,22 +1506,28 @@ public partial class GrabFrame : Window
         IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
         ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
 
-        int count = 0;
-
         foreach (Language language in possibleOCRLangs)
         {
-            LanguagesComboBox.Items.Add(language);
-
-            if (language.LanguageTag == firstLang?.LanguageTag)
-                LanguagesComboBox.SelectedIndex = count;
-
-            count++;
+            GlobalLang globalLang = new(language);
+            LanguagesComboBox.Items.Add(globalLang);
         }
 
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
             WindowsAiLang winAiLang = new();
             LanguagesComboBox.Items.Insert(0, winAiLang);
+        }
+
+        for (int i = 0; i < LanguagesComboBox.Items.Count; i++)
+        {
+            if (LanguagesComboBox.Items[i] is not ILanguage item)
+                continue;
+
+            if (item.LanguageTag == firstLang.LanguageTag)
+            {
+                LanguagesComboBox.SelectedIndex = i;
+                break;
+            }
         }
 
 

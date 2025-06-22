@@ -337,7 +337,7 @@ public partial class FullscreenGrab : Window
         }
         else if (languageCmbBox.SelectedItem is WindowsAiLang winAiLang)
         {
-            DefaultSettings.LastUsedLang = winAiLang.CultureDisplayName;
+            DefaultSettings.LastUsedLang = winAiLang.LanguageTag;
             DefaultSettings.Save();
             TableMenuItem.Visibility = Visibility.Visible;
             TableToggleButton.Visibility = Visibility.Visible;
@@ -396,7 +396,7 @@ public partial class FullscreenGrab : Window
             WindowsAiLang winAiLang = new();
             languagesComboBox.Items.Add(winAiLang);
 
-            if (lastTextLang == winAiLang.CultureDisplayName)
+            if (lastTextLang == winAiLang.LanguageTag)
             {
                 languagesComboBox.SelectedIndex = 0;
             }
