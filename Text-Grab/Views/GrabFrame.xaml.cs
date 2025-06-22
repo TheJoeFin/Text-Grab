@@ -63,8 +63,7 @@ public partial class GrabFrame : Window
     private bool isSelecting;
     private bool isSpaceJoining = true;
     private readonly Dictionary<WordBorder, Rect> movingWordBordersDictionary = [];
-    private OcrResult? ocrResultOfWindow;
-    private RecognizedText? aiOcrResult; // This field is intended for future use with Windows AI OCR.
+    private IOcrLinesWords? ocrResultOfWindow;
     private readonly DispatcherTimer reDrawTimer = new();
     private readonly DispatcherTimer reSearchTimer = new();
     private Side resizingSide = Side.None;
@@ -474,7 +473,7 @@ public partial class GrabFrame : Window
         if (selectedWordBorders.Count < 2)
             return;
 
-        Rect bounds = new()
+        Windows.Foundation.Rect bounds = new()
         {
             X = selectedWordBorders.Select(w => w.Left).Min(),
             Y = selectedWordBorders.Select(w => w.Top).Min(),
@@ -507,7 +506,7 @@ public partial class GrabFrame : Window
         if (frameContentImageSource is BitmapImage bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
 
-        Rect lineRect = new()
+        Windows.Foundation.Rect lineRect = new()
         {
             X = bounds.X * windowFrameImageScale,
             Y = bounds.Y * windowFrameImageScale,
@@ -678,7 +677,7 @@ public partial class GrabFrame : Window
         if (frameContentImageSource is BitmapImage bmpImg)
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
 
-        Rect lineRect = new()
+        Windows.Foundation.Rect lineRect = new()
         {
             X = ((Canvas.GetLeft(selectBorder) * windowFrameImageScale) - 10) * dpi.DpiScaleX,
             Y = (Canvas.GetTop(selectBorder) * windowFrameImageScale) * dpi.DpiScaleY,
@@ -962,13 +961,10 @@ public partial class GrabFrame : Window
             Y = (int)((windowPosition.Y + rectanglesPosition.Y) * dpi.DpiScaleY)
         };
 
-        if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Count == 0)
+        if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Length == 0)
         {
             ILanguage lang = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-            if (lang is not GlobalLang globalLang)
-                globalLang = new GlobalLang(lang.LanguageTag);
-
-            (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, globalLang);
+            (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
         }
 
         if (ocrResultOfWindow is null)
@@ -984,13 +980,13 @@ public partial class GrabFrame : Window
         int lineNumber = 0;
         double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
 
-        foreach (OcrLine ocrLine in ocrResultOfWindow.Lines)
+        foreach (IOcrLine ocrLine in ocrResultOfWindow.Lines)
         {
             StringBuilder lineText = new();
             ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
             lineText.RemoveTrailingNewlines();
 
-            Rect lineRect = ocrLine.GetBoundingRect();
+            Windows.Foundation.Rect lineRect = ocrLine.BoundingBox;
 
             SolidColorBrush backgroundBrush = new(Colors.Black);
 
@@ -1209,7 +1205,7 @@ public partial class GrabFrame : Window
             UnfreezeGrabFrame();
     }
 
-    private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Rect lineRect)
+    private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
     {
         SolidColorBrush backgroundBrush = new(Colors.Black);
         double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
@@ -2062,24 +2058,15 @@ new GrabFrameOperationArgs()
 
     private void SetRotationBasedOnOcrResult()
     {
-        if (ocrResultOfWindow != null && ocrResultOfWindow.TextAngle != null)
+        if (ocrResultOfWindow is null)
+            return;
+
+        RotateTransform transform = new((double)ocrResultOfWindow.Angle)
         {
-            RotateTransform transform = new((double)ocrResultOfWindow.TextAngle)
-            {
-                CenterX = (Width - 4) / 2,
-                CenterY = (Height - 60) / 2
-            };
-            RectanglesCanvas.RenderTransform = transform;
-        }
-        else
-        {
-            RotateTransform transform = new(0)
-            {
-                CenterX = (Width - 4) / 2,
-                CenterY = (Height - 60) / 2
-            };
-            RectanglesCanvas.RenderTransform = transform;
-        }
+            CenterX = (Width - 4) / 2,
+            CenterY = (Height - 60) / 2
+        };
+        RectanglesCanvas.RenderTransform = transform;
     }
 
     private void SettingsBTN_Click(object sender, RoutedEventArgs e)

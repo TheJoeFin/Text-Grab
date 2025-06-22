@@ -2,9 +2,11 @@
 using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.Imaging;
 using System;
+using System.Drawing;
 using System.Text;
 using System.Threading.Tasks;
 using Text_Grab.Extensions;
+using Text_Grab.Models;
 using Windows.Graphics.Imaging;
 
 namespace Text_Grab.Utilities;
@@ -62,6 +64,21 @@ public static class WindowsAiUtilities
             stringBuilder.AppendLine(line.Text);
 
         return stringBuilder.ToString();
+    }
+
+    public static async Task<WinAiOcrLinesWords?> GetOcrResultAsync(Bitmap bmp)
+    {
+        string tempFilePath = System.IO.Path.GetTempFileName();
+        bmp.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
+        SoftwareBitmap softwareBitmap = await tempFilePath.FilePathToSoftwareBitmapAsync();
+
+        // for some reason "await bmp.CreateSoftwareBitmap()" does not work, so we use the file path method instead
+        RecognizedText? recognizedText = await GetOcrResultAsync(softwareBitmap);
+
+        if (recognizedText is null)
+            return null;
+
+        return new WinAiOcrLinesWords(recognizedText);
     }
 
     public static async Task<RecognizedText?> GetOcrResultAsync(SoftwareBitmap softwareBitmap)

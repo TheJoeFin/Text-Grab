@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Foundation;
@@ -10,11 +12,11 @@ using Windows.Storage.Streams;
 
 namespace Text_Grab.Extensions;
 
-internal static class SoftwareBitmapExtensions
+public static class SoftwareBitmapExtensions
 {
     public static async Task<SoftwareBitmapSource> ToSourceAsync(this SoftwareBitmap softwareBitmap)
     {
-        var source = new SoftwareBitmapSource();
+        SoftwareBitmapSource source = new();
 
         if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 || softwareBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
         {
@@ -53,12 +55,12 @@ internal static class SoftwareBitmapExtensions
         {
             for (int x = (int)rect.X; x < (int)(rect.X + rect.Width); x++)
             {
-                pixelData[y * bitmap.PixelWidth + x] = 255; // White
+                pixelData[(y * bitmap.PixelWidth) + x] = 255; // White
             }
         }
 
         // Create a new SoftwareBitmap with Gray8 pixel format
-        var maskBitmap = new SoftwareBitmap(BitmapPixelFormat.Gray8, bitmap.PixelWidth, bitmap.PixelHeight, BitmapAlphaMode.Ignore);
+        SoftwareBitmap maskBitmap = new(BitmapPixelFormat.Gray8, bitmap.PixelWidth, bitmap.PixelHeight, BitmapAlphaMode.Ignore);
 
         maskBitmap.CopyFromBuffer(pixelData.AsBuffer());
 
@@ -81,8 +83,8 @@ internal static class SoftwareBitmapExtensions
         {
             for (int x = 0; x < inputBitmap.PixelWidth; x++)
             {
-                int inputIndex = (y * inputBitmap.PixelWidth + x) * 4;
-                int maskIndex = y * grayMask.PixelWidth + x;
+                int inputIndex = ((y * inputBitmap.PixelWidth) + x) * 4;
+                int maskIndex = (y * grayMask.PixelWidth) + x;
 
                 if (maskBuffer[maskIndex] == 0)
                 {
@@ -91,8 +93,22 @@ internal static class SoftwareBitmapExtensions
             }
         }
 
-        var segmentedBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, inputBitmap.PixelWidth, inputBitmap.PixelHeight);
+        SoftwareBitmap segmentedBitmap = new(BitmapPixelFormat.Bgra8, inputBitmap.PixelWidth, inputBitmap.PixelHeight);
         segmentedBitmap.CopyFromBuffer(inputBuffer.AsBuffer());
         return segmentedBitmap;
+    }
+
+    public static async Task<SoftwareBitmap> CreateSoftwareBitmap(this System.Drawing.Bitmap bitmap)
+    {
+        await using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
+
+        bitmap.Save(wrapper, ImageFormat.Bmp);
+        wrapper.Position = 0;
+        BitmapDecoder bmpDecoder = await BitmapDecoder.CreateAsync(wrapper.AsRandomAccessStream());
+        using SoftwareBitmap softwareBmp = await bmpDecoder.GetSoftwareBitmapAsync();
+        await wrapper.FlushAsync();
+
+        return softwareBmp;
     }
 }

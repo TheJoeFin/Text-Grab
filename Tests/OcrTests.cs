@@ -91,9 +91,10 @@ December	12	Winter";
 
         Uri uri = new(testImagePath, UriKind.Relative);
         Language EnglishLanguage = new("en-US");
+        GlobalLang globalLang = new(EnglishLanguage);
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, EnglishLanguage);
+        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
@@ -148,9 +149,10 @@ December	12	Winter";
         string testImagePath = @".\Images\Table-Test-2.png";
         Uri uri = new(testImagePath, UriKind.Relative);
         Language EnglishLanguage = new("en-US");
+        GlobalLang globalLang = new(EnglishLanguage);
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, EnglishLanguage);
+        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
         DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()

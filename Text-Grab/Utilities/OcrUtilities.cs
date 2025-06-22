@@ -29,7 +29,7 @@ public static partial class OcrUtilities
 {
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
-    public static void GetTextFromOcrLine(this OcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
+    public static void GetTextFromOcrLine(this IOcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
         // (when OCR language is zh or ja)
         // matches words in a space-joining language, which contains:
@@ -53,7 +53,7 @@ public static partial class OcrUtilities
 
             Regex regexSpaceJoiningWord = SpaceJoiningWordRegex();
 
-            foreach (OcrWord ocrWord in ocrLine.Words)
+            foreach (IOcrWord ocrWord in ocrLine.Words)
             {
                 string wordString = ocrWord.Text;
 
@@ -99,14 +99,6 @@ public static partial class OcrUtilities
 
     public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, ILanguage objLang)
     {
-        Language language;
-        if (objLang is ILanguage iLang)
-            language = iLang.AsLanguage() ?? LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
-        else if (objLang is GlobalLang lang)
-            language = lang.OriginalLanguage;
-        else
-            language = LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
-
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
         int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
@@ -117,34 +109,50 @@ public static partial class OcrUtilities
         double scale = await GetIdealScaleFactorForOcrAsync(bmp, objLang);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
         DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
-        OcrResult ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, language);
+        IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, objLang);
         List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpiScale);
-        return ResultTable.GetWordsAsTable(wordBorders, dpiScale, language.IsSpaceJoining());
+        return ResultTable.GetWordsAsTable(wordBorders, dpiScale, objLang.IsSpaceJoining());
     }
 
-    public static async Task<(OcrResult, double)> GetOcrResultFromRegionAsync(Rectangle region, GlobalLang language)
+    public static async Task<(IOcrLinesWords?, double)> GetOcrResultFromRegionAsync(Rectangle region, ILanguage language)
     {
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
 
+        if (language is WindowsAiLang)
+        {
+            return (await WindowsAiUtilities.GetOcrResultAsync(bmp), 1.0);
+        }
+
+        if (language is not GlobalLang globalLang)
+            globalLang = new GlobalLang(language.LanguageTag);
 
         double scale = await GetIdealScaleFactorForOcrAsync(bmp, language);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
 
-        OcrResult ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, language.OriginalLanguage);
+        IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, globalLang);
 
         return (ocrResult, scale);
+
     }
 
-    public static async Task<OcrResult> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, Language language)
+    public static async Task<IOcrLinesWords> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, ILanguage language)
     {
-        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(language);
+        if (language is WindowsAiLang winAiLang)
+        {
+            return new WinAiOcrLinesWords(await WindowsAiUtilities.GetOcrResultAsync(scaledBitmap));
+        }
+
+        if (language is not GlobalLang globalLang)
+            globalLang = new GlobalLang(language.LanguageTag);
+
+        OcrEngine ocrEngine = OcrEngine.TryCreateFromLanguage(globalLang.OriginalLanguage);
 
         ocrEngine ??= OcrEngine.TryCreateFromLanguage(LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US"));
 
-        return await ocrEngine.RecognizeAsync(scaledBitmap);
+        return new WinRtOcrLinesWords(await ocrEngine.RecognizeAsync(scaledBitmap));
     }
 
-    public static async Task<OcrResult> GetOcrResultFromImageAsync(Bitmap scaledBitmap, Language language)
+    public static async Task<IOcrLinesWords> GetOcrResultFromImageAsync(Bitmap scaledBitmap, ILanguage language)
     {
         await using MemoryStream memory = new();
         using WrappingStream wrapper = new(memory);
@@ -274,21 +282,13 @@ public static partial class OcrUtilities
         {
             outputs.AddRange(await GetTextFromWinAiAsync(bitmap, winAiLang));
         }
-        else if (language is GlobalLang ocrLanguageFromILang)
-        {
-            double scale = await GetIdealScaleFactorForOcrAsync(bitmap, ocrLanguageFromILang);
-            Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
-            OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, ocrLanguageFromILang.OriginalLanguage);
-            OcrOutput paragraphsOutput = GetTextFromOcrResult(ocrLanguageFromILang.OriginalLanguage, scaledBitmap, ocrResult);
-            outputs.Add(paragraphsOutput);
-        }
         else
         {
-            Language fallbackLang = LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
-            double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
+            GlobalLang ocrLanguageFromILang = language as GlobalLang ?? new GlobalLang("en-US");
+            double scale = await GetIdealScaleFactorForOcrAsync(bitmap, ocrLanguageFromILang);
             Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
-            OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, fallbackLang);
-            OcrOutput paragraphsOutput = GetTextFromOcrResult(fallbackLang, scaledBitmap, ocrResult);
+            IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, ocrLanguageFromILang);
+            OcrOutput paragraphsOutput = GetTextFromOcrResult(ocrLanguageFromILang, scaledBitmap, ocrResult);
             outputs.Add(paragraphsOutput);
         }
 
@@ -301,13 +301,13 @@ public static partial class OcrUtilities
         return outputs;
     }
 
-    private static OcrOutput GetTextFromOcrResult(Language language, Bitmap? scaledBitmap, OcrResult ocrResult)
+    private static OcrOutput GetTextFromOcrResult(ILanguage language, Bitmap? scaledBitmap, IOcrLinesWords ocrResult)
     {
         StringBuilder text = new();
 
         bool isSpaceJoiningOCRLang = language.IsSpaceJoining();
 
-        foreach (OcrLine ocrLine in ocrResult.Lines)
+        foreach (IOcrLine ocrLine in ocrResult.Lines)
             ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
 
         if (language.IsRightToLeft())
@@ -359,31 +359,23 @@ public static partial class OcrUtilities
 
     public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, ILanguage OcrLang)
     {
-        Language language;
-        if (OcrLang is ILanguage iLang)
-            language = iLang.AsLanguage() ?? LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
-        else if (OcrLang is GlobalLang lang)
-            language = lang.OriginalLanguage;
-        else
-            language = LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
-
         using Bitmap bmp = ImageMethods.GetWindowsBoundsBitmap(passedWindow);
-        string ocrText = await GetTextFromClickedWordAsync(clickedPoint, bmp, language);
+        string ocrText = await GetTextFromClickedWordAsync(clickedPoint, bmp, OcrLang);
         return ocrText.Trim();
     }
 
-    private static async Task<string> GetTextFromClickedWordAsync(Point singlePoint, Bitmap bitmap, Language language)
+    private static async Task<string> GetTextFromClickedWordAsync(Point singlePoint, Bitmap bitmap, ILanguage language)
     {
         return GetTextFromClickedWord(singlePoint, await OcrUtilities.GetOcrResultFromImageAsync(bitmap, language));
     }
 
-    private static string GetTextFromClickedWord(Point singlePoint, OcrResult ocrResult)
+    private static string GetTextFromClickedWord(Point singlePoint, IOcrLinesWords ocrResult)
     {
         Windows.Foundation.Point fPoint = new(singlePoint.X, singlePoint.Y);
 
-        foreach (OcrLine ocrLine in ocrResult.Lines)
-            foreach (OcrWord ocrWord in ocrLine.Words)
-                if (ocrWord.BoundingRect.Contains(fPoint))
+        foreach (IOcrLine ocrLine in ocrResult.Lines)
+            foreach (IOcrWord ocrWord in ocrLine.Words)
+                if (ocrWord.BoundingBox.Contains(fPoint))
                     return ocrWord.Text;
 
         return string.Empty;
@@ -391,21 +383,18 @@ public static partial class OcrUtilities
 
     public static async Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, ILanguage selectedLanguage)
     {
-        Language language = selectedLanguage.AsLanguage() ?? new Language("en-US");
-
-        OcrResult ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, language);
-
+        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
         return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.Height, bitmap.Width);
     }
 
-    private static double GetIdealScaleFactorForOcrResult(OcrResult ocrResult, int height, int width)
+    private static double GetIdealScaleFactorForOcrResult(IOcrLinesWords ocrResult, int height, int width)
     {
         List<double> heightsList = [];
         double scaleFactor = 1.5;
 
-        foreach (OcrLine ocrLine in ocrResult.Lines)
-            foreach (OcrWord ocrWord in ocrLine.Words)
-                heightsList.Add(ocrWord.BoundingRect.Height);
+        foreach (IOcrLine ocrLine in ocrResult.Lines)
+            foreach (IOcrWord ocrWord in ocrLine.Words)
+                heightsList.Add(ocrWord.BoundingBox.Height);
 
         double lineHeight = 10;
 
