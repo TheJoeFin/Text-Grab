@@ -13,7 +13,7 @@
         <StartupObject>Text_Grab.App</StartupObject>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
-        <Copyright>Joseph Finney 2024</Copyright>
+        <Copyright>Joseph Finney 2025</Copyright>
         <PackageProjectUrl>TextGrab.net</PackageProjectUrl>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/TheJoeFin/Text-Grab</RepositoryUrl>
