@@ -269,29 +269,7 @@ public static partial class OcrUtilities
         return outputs;
     }
 
-    public static async Task<List<OcrOutput>> GetTextFromWcrAsync(Bitmap bitmap, Language language, string tessTag = "")
-    {
-        // get temp path
-        string tempPath = Path.GetTempPath();
-        string tempFileName = Path.GetRandomFileName() + ".bmp";
-        string tempFilePath = Path.Combine(tempPath, tempFileName);
-        bitmap.Save(tempFilePath, ImageFormat.Bmp);
-
-        string result = await WcrUtilities.GetTextWithWcr(tempFilePath);
-
-        OcrOutput paragraphsOutput = new()
-        {
-            Kind = OcrOutputKind.Paragraph,
-            RawOutput = result,
-            Language = language,
-            SourceBitmap = bitmap,
-        };
-
-        List<OcrOutput> outputs = [paragraphsOutput];
-        return outputs;
-    }
-
-    public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, Language language, string tessTag = "")
+    public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, ILanguage language)
     {
         List<OcrOutput> outputs = [];
 
