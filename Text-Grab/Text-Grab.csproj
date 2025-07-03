@@ -12,7 +12,7 @@
         <ApplicationIcon>TealSelect.ico</ApplicationIcon>
         <StartupObject>Text_Grab.App</StartupObject>
         <ApplicationManifest>app.manifest</ApplicationManifest>
-        <Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
+        <Platforms>x64;x86;ARM64</Platforms>
         <Copyright>Joseph Finney 2025</Copyright>
         <PackageProjectUrl>TextGrab.net</PackageProjectUrl>
         <RepositoryType>git</RepositoryType>
@@ -23,7 +23,7 @@
         <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-        <EnableMsixTooling>true</EnableMsixTooling>
+        <EnableMsixTooling>false</EnableMsixTooling>
     </PropertyGroup>
 
     <ItemGroup>
