@@ -6,9 +6,6 @@
         <Nullable>enable</Nullable>
         <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
         <IsPackable>false</IsPackable>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-        <Platforms>x64</Platforms>
-        <EnableMsixTooling>true</EnableMsixTooling>
     </PropertyGroup>
 
     <ItemGroup>
