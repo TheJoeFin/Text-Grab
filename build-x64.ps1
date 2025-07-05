@@ -4,7 +4,7 @@ $Version = Get-Date -Format "yyyy-MM-dd" # 2020-11-1
 $VersionDot = $Version -replace '-','.'
 $Project = "Text-Grab"
 $Archive = "$BuildPath\$Project-$Version.zip"
-$ArchiveSC = "$BuildPath\$Project-Self-Contained-$Version.zip"
+$ArchiveSC = "$BuildPath\$Project-x64-Self-Contained-$Version.zip"
 
 # Clean up
 if(Test-Path -Path $BuildPath)
@@ -19,6 +19,7 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 	   -c Release `
 	   -v minimal `
 	   -o $BuildPath `
+	   -p:EnableMsixTooling=true `
 	   -p:PublishReadyToRun=true `
 	   -p:PublishSingleFile=true `
 	   -p:CopyOutputSymbolsToPublishDirectory=false `
@@ -26,7 +27,7 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 	   --nologo
 
 # Archive Build
-Compress-Archive -Path "$BuildPath\$Project.exe" -DestinationPath $Archive
+# Compress-Archive -Path "$BuildPath\$Project.exe" -DestinationPath $Archive
 
 # Dotnet restore and build
 dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
@@ -35,6 +36,7 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 	   -c Release `
 	   -v minimal `
 	   -o $BuildPathSC `
+	   -p:EnableMsixTooling=true `
 	   -p:PublishReadyToRun=true `
 	   -p:PublishSingleFile=true `
 	   -p:CopyOutputSymbolsToPublishDirectory=false `
