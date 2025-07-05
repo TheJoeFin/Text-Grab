@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Globalization;
+using Text_Grab.Interfaces;
 
 namespace Text_Grab.Utilities;
 
@@ -11,8 +11,7 @@ public class IoUtilities
 {
     public static readonly List<string> ImageExtensions = [".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif"];
 
-
-    public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, Language? language = null)
+    public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, ILanguage? language = null)
     {
         StringBuilder stringBuilder = new();
         OpenContentKind openContentKind = OpenContentKind.Image;

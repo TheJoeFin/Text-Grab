@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Input;
+using Text_Grab.Interfaces;
+using Text_Grab.Models;
 using Windows.Globalization;
 using Windows.Media.Ocr;
 
@@ -9,61 +12,107 @@ namespace Text_Grab.Utilities;
 
 public static class LanguageUtilities
 {
-    public static Language GetCurrentInputLanguage()
+    public static ILanguage GetCurrentInputLanguage()
     {
         // use currently selected Language
         string inputLang = InputLanguageManager.Current.CurrentInputLanguage.Name;
-        return new(inputLang);
+        return new GlobalLang(inputLang);
     }
 
-    public static IList<Language> GetAllLanguages()
+    public static IList<ILanguage> GetAllLanguages()
     {
-        return [.. OcrEngine.AvailableRecognizerLanguages];
-    }
+        List<ILanguage> languages = [];
 
-    public static Language GetOCRLanguage()
-    {
-        Language selectedLanguage = GetCurrentInputLanguage();
-
-        if (!string.IsNullOrEmpty(AppUtilities.TextGrabSettings.LastUsedLang))
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
+            // Add Windows AI languages
+            languages.Add(new WindowsAiLang());
+        }
+
+        foreach (Language lang in OcrEngine.AvailableRecognizerLanguages)
+        {
+            // Wrap Windows.Globalization.Language in a compatible ILanguage implementation
+            languages.Add(new GlobalLang(lang));
+        }
+
+        return languages;
+    }
+
+    public static string GetLanguageTag(object language)
+    {
+        return language switch
+        {
+            Language lang => lang.LanguageTag,
+            WindowsAiLang => "WinAI",
+            TessLang tessLang => tessLang.RawTag,
+            GlobalLang gLang => gLang.LanguageTag,
+            _ => throw new ArgumentException("Unsupported language type", nameof(language)),
+        };
+    }
+
+    public static LanguageKind GetLanguageKind(object language)
+    {
+        return language switch
+        {
+            Language => LanguageKind.Global,
+            WindowsAiLang => LanguageKind.WindowsAi,
+            TessLang => LanguageKind.Tesseract,
+            _ => LanguageKind.Global, // Default fallback
+        };
+    }
+
+    public static ILanguage GetOCRLanguage()
+    {
+        string lastUsedLang = AppUtilities.TextGrabSettings.LastUsedLang;
+
+        ILanguage selectedLanguage = GetCurrentInputLanguage();
+
+        if (!string.IsNullOrEmpty(lastUsedLang))
+        {
+            if (lastUsedLang == new WindowsAiLang().LanguageTag)
+            {
+                // If the last used language is Windows AI, return it directly
+                return new WindowsAiLang();
+            }
+
             try
             {
-                selectedLanguage = new(AppUtilities.TextGrabSettings.LastUsedLang);
+                selectedLanguage = new GlobalLang(AppUtilities.TextGrabSettings.LastUsedLang);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Failed to parse LastUsedLang: {AppUtilities.TextGrabSettings.LastUsedLang}\n{ex.Message}");
+
+                // if the language tag is invalid, reset to current input language
                 selectedLanguage = GetCurrentInputLanguage();
             }
         }
 
-        List<Language> possibleOCRLanguages = [.. OcrEngine.AvailableRecognizerLanguages];
+        List<ILanguage> possibleOCRLanguages = [.. GetAllLanguages()];
 
         if (possibleOCRLanguages.Count == 0)
-        {
-            System.Windows.MessageBox.Show("No possible OCR languages are installed.", "Text Grab");
-            throw new Exception("No possible OCR languages are installed");
-        }
+            return new GlobalLang("en-US");
 
-        // If the selected input language or last used language is not a possible OCR Language
-        // then we need to find a similar language to use
+        // check to see if the selected language is in the list of available OCR languages
         if (possibleOCRLanguages.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
         {
-            List<Language> similarLanguages = [.. possibleOCRLanguages.Where(
-                la => la.AbbreviatedName == selectedLanguage.AbbreviatedName)];
+            List<ILanguage>? similarLanguages = [.. possibleOCRLanguages.Where(
+                la => la.LanguageTag.Contains(selectedLanguage.LanguageTag)
+                || selectedLanguage.LanguageTag.Contains(la.LanguageTag)
+            )];
 
             if (similarLanguages is not null && similarLanguages.Count > 0)
-                selectedLanguage = similarLanguages.First();
+                return new GlobalLang(similarLanguages.First().LanguageTag);
             else
-                selectedLanguage = possibleOCRLanguages.First();
+                return new GlobalLang(possibleOCRLanguages.First().LanguageTag);
         }
 
-        return selectedLanguage;
+        return selectedLanguage ?? new GlobalLang("en-US");
     }
 
     public static bool IsCurrentLanguageLatinBased()
     {
-        Language lang = GetCurrentInputLanguage();
+        ILanguage lang = GetCurrentInputLanguage();
         return lang.IsLatinBased();
     }
 }

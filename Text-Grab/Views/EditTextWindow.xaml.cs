@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -61,11 +60,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private readonly string historyId = string.Empty;
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
-    private readonly DispatcherTimer EscapekeyTimer = new();
-    private int EscapekeyTimerCount = 0;
+    private readonly DispatcherTimer EscapeKeyTimer = new();
+    private int EscapeKeyTimerCount = 0;
 
     private WindowState? prevWindowState;
     private CultureInfo selectedCultureInfo = CultureInfo.CurrentCulture;
+    private ILanguage selectedILanguage = LanguageUtilities.GetCurrentInputLanguage();
 
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
@@ -194,7 +194,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        Language selectedLanguage = LanguageUtilities.GetOCRLanguage();
+        ILanguage selectedLanguage = LanguageUtilities.GetOCRLanguage();
         string tesseractLanguageTag = string.Empty;
 
         if (LanguageMenuItem.Items.Count > 0)
@@ -203,10 +203,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 if (languageSubItem.IsChecked)
                 {
-                    if (languageSubItem.Tag is Language language)
-                        selectedLanguage = language;
-                    else if (languageSubItem.Tag is TessLang tesseractLanguage)
-                        tesseractLanguageTag = tesseractLanguage.LanguageTag;
+                    if (languageSubItem.Tag is ILanguage iLanguageFromTag) // Changed to ILanguage
+                    {
+                        selectedLanguage = iLanguageFromTag;
+                    }
+                    else if (languageSubItem.Tag is string langTag) // Fallback for simple string tags if any
+                        tesseractLanguageTag = langTag;
                 }
             }
         }
@@ -331,11 +333,36 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is not LanguagePicker languagePicker)
             return;
 
-        Language selectedLanguage = languagePicker.SelectedLanguage;
-        CultureInfo cultureInfo = new(selectedLanguage.LanguageTag);
+        selectedILanguage = languagePicker.SelectedLanguage;
+
+        string tag = selectedILanguage.LanguageTag;
+
+        foreach (MenuItem item in LanguageMenuItem.Items)
+        {
+            if (item.Tag is ILanguage iLanguageFromTag && iLanguageFromTag.LanguageTag == tag)
+                item.IsChecked = true;
+            else
+                item.IsChecked = false;
+        }
+
+        if (selectedILanguage is WindowsAiLang)
+        {
+            SetCultureAndLanguageToDefault();
+            return;
+        }
+
+        CultureInfo cultureInfo = new(selectedILanguage.LanguageTag);
         selectedCultureInfo = cultureInfo;
-        XmlLanguage xmlLang = XmlLanguage.GetLanguage(selectedLanguage.LanguageTag);
+        XmlLanguage xmlLang = XmlLanguage.GetLanguage(selectedILanguage.LanguageTag);
         Language = xmlLang;
+    }
+
+    private void SetCultureAndLanguageToDefault()
+    {
+        selectedCultureInfo = CultureInfo.CurrentCulture;
+        string currentInputTag = Windows.Globalization.Language.CurrentInputMethodLanguageTag;
+        XmlLanguage xmlDefaultLang = XmlLanguage.GetLanguage(currentInputTag);
+        Language = xmlDefaultLang;
     }
 
     internal HistoryInfo AsHistoryItem()
@@ -344,6 +371,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ID = historyId,
             LanguageTag = LanguageUtilities.GetCurrentInputLanguage().LanguageTag,
+            LanguageKind = LanguageKind.Global,
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
@@ -364,8 +392,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         OpenedFilePath = pathOfFileToOpen;
 
-        Language lang = new(selectedCultureInfo.IetfLanguageTag);
-        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, lang);
+        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
 
         if (KindOpened == OpenContentKind.TextFile
             && !isMultipleFiles
@@ -389,14 +416,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return listOfNames.ToString();
     }
 
-    private static async Task<string> OcrFile(string path, Language? selectedLanguage, string tesseractLanguageTag, OcrDirectoryOptions options)
+    private static async Task<string> OcrFile(string path, ILanguage? selectedLanguage, OcrDirectoryOptions options)
     {
         StringBuilder returnString = new();
         if (options.OutputFileNames)
             returnString.AppendLine(Path.GetFileName(path));
         try
         {
-            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path, selectedLanguage, tesseractLanguageTag);
+            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path, selectedLanguage);
 
             if (!string.IsNullOrWhiteSpace(ocrText))
             {
@@ -669,7 +696,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 Debug.WriteLine($"error with dataPackageView.GetTextAsync(). Exception Message: {ex.Message}");
             }
-        };
+        }
+        ;
 
         IsAccessingClipboard = false;
     }
@@ -744,10 +772,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (e.Key == Key.Escape)
         {
             cancellationTokenForDirOCR?.Cancel();
-            EscapekeyTimerCount++;
+            EscapeKeyTimerCount++;
 
-            if (EscapekeyTimerCount == 1)
-                EscapekeyTimer.Start();
+            if (EscapeKeyTimerCount == 1)
+                EscapeKeyTimer.Start();
         }
     }
 
@@ -1070,40 +1098,29 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
             return;
 
-        if (clickedMenuItem.Tag is Language winLang)
+        if (clickedMenuItem.Tag is not ILanguage ILang)
+            return;
+
+        selectedILanguage = ILang;
+
+        try
         {
-            CultureInfo cultureInfo = new(winLang.LanguageTag);
+            CultureInfo cultureInfo = new(selectedILanguage.LanguageTag);
             selectedCultureInfo = cultureInfo;
             XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
             Language = xmlLang;
         }
-        else if (clickedMenuItem.Tag is TessLang tessLang)
+        catch (CultureNotFoundException)
         {
-            try
-            {
-                CultureInfo cultureInfo = new(tessLang.CultureDisplayName);
-                selectedCultureInfo = cultureInfo;
-                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
-                Language = xmlLang;
-            }
-            catch (CultureNotFoundException)
-            {
-                Language currentLang = LanguageUtilities.GetCurrentInputLanguage();
-                CultureInfo cultureInfo = new(currentLang.LanguageTag);
-                selectedCultureInfo = cultureInfo;
-                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
-                Language = xmlLang;
-            }
+            SetCultureAndLanguageToDefault();
         }
 
         foreach (object? child in BottomBarButtons.Children)
             if (child is LanguagePicker languagePicker)
-                languagePicker.Select(selectedCultureInfo.IetfLanguageTag);
+                languagePicker.Select(selectedILanguage.LanguageTag);
 
         foreach (MenuItem menuItem in LanguageMenuItem.Items)
-        {
             menuItem.IsChecked = false;
-        }
 
         clickedMenuItem.IsChecked = true;
     }
@@ -1174,11 +1191,29 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (captureMenuItem.Items.Count > 0)
             return;
 
-        // TODO Find a way to combine with the FSG language drop down
-
         bool haveSetLastLang = false;
         string lastTextLang = DefaultSettings.LastUsedLang;
         bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            WindowsAiLang windowsAiLang = new();
+
+            MenuItem languageMenuItem = new()
+            {
+                Header = windowsAiLang.DisplayName,
+                Tag = windowsAiLang,
+                IsCheckable = true,
+            };
+
+            languageMenuItem.Click += LanguageMenuItem_Click;
+            captureMenuItem.Items.Add(languageMenuItem);
+            if (!haveSetLastLang && windowsAiLang.CultureDisplayName == lastTextLang)
+            {
+                languageMenuItem.IsChecked = true;
+                haveSetLastLang = true;
+            }
+        }
 
         if (usingTesseract)
         {
@@ -1206,14 +1241,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
 
-        Language firstLang = LanguageUtilities.GetOCRLanguage();
+        ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
 
         foreach (Language language in possibleOCRLanguages)
         {
             MenuItem languageMenuItem = new()
             {
                 Header = language.DisplayName,
-                Tag = language,
+                Tag = new GlobalLang(language),
                 IsCheckable = true,
             };
             languageMenuItem.Click += LanguageMenuItem_Click;
@@ -1250,7 +1285,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         foreach (HistoryInfo history in grabsHistories)
         {
             MenuItem menuItem = new();
-            menuItem.Click += (object sender, RoutedEventArgs args) =>
+            menuItem.Click += (sender, args) =>
             {
                 if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
                 {
@@ -1413,7 +1448,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         newEtwWithText.Show();
     }
 
-    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults, Language selectedLanguage, string tesseractLanguageTag)
+    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults, ILanguage selectedLanguage, string tesseractLanguageTag)
     {
         if (cancellationTokenForDirOCR is null)
             return;
@@ -1433,7 +1468,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, tesseractLanguageTag, options);
+            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
             if (!options.WriteTxtFiles)
@@ -2136,7 +2171,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selection = Regex.Replace(PassedTextControl.SelectedText, @"(\r\n|\n|\r)", Environment.NewLine);
+        string selection = NewlineReturns().Replace(PassedTextControl.SelectedText, Environment.NewLine);
         string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
@@ -2145,7 +2180,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void UnstackGroupExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selection = Regex.Replace(PassedTextControl.SelectedText, @"(\r\n|\n|\r)", Environment.NewLine);
+        string selection = NewlineReturns().Replace(PassedTextControl.SelectedText, Environment.NewLine);
         string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
@@ -2161,6 +2196,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
             int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
             int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
+
 
             BottomBarText.Text = $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}";
         }
@@ -2249,18 +2285,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
 
-        EscapekeyTimer.Interval = TimeSpan.FromMilliseconds(700);
-        EscapekeyTimer.Tick += EscapekeyTimer_Tick;
+        EscapeKeyTimer.Interval = TimeSpan.FromMilliseconds(700);
+        EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
     }
 
-    private void EscapekeyTimer_Tick(object? sender, EventArgs e)
+    private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
     {
-        EscapekeyTimer.Stop();
+        EscapeKeyTimer.Stop();
 
-        if (EscapekeyTimerCount >= 3)
+        if (EscapeKeyTimerCount >= 3)
             Close();
 
-        EscapekeyTimerCount = 0;
+        EscapeKeyTimerCount = 0;
     }
 
     private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
@@ -2292,5 +2328,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else
             PassedTextControl.SelectedText = workingString;
     }
+
+    [GeneratedRegex(@"(\r\n|\n|\r)")]
+    private static partial Regex NewlineReturns();
     #endregion Methods
 }

@@ -84,3 +84,10 @@ public enum ScrollBehavior
     Resize = 1,
     Zoom = 2,
 }
+
+public enum LanguageKind
+{
+    Global = 0,
+    Tesseract = 1,
+    WindowsAi = 2,
+}
