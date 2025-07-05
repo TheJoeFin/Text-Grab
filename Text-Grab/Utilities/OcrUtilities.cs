@@ -340,7 +340,7 @@ public static partial class OcrUtilities
         return text.ToString();
     }
 
-    public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath, ILanguage? language = null, string tesseractLanguageTag = "")
+    public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath, ILanguage? language = null)
     {
         Uri fileURI = new(absolutePath, UriKind.Absolute);
         FileInfo fileInfo = new(fileURI.LocalPath);
