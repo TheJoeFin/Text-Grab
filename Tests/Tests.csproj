@@ -28,30 +28,30 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Update="Images\FontTest.png">
+        <Content Include="Images\FontTest.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Update="Images\font_sample.png">
+        <Content Include="Images\font_sample.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Update="Images\GUIDs.png">
+        <Content Include="Images\GUIDs.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Update="Images\QrCodeTestImage.png">
+        <Content Include="Images\QrCodeTestImage.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Update="Images\Table-Test-2.png">
+        <Content Include="Images\Table-Test-2.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Update="Images\Table-Test.png">
+        <Content Include="Images\Table-Test.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Update="Images\toc.png">
+        <Content Include="Images\toc.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <None Update="Images\font_sample.png">
+        <Content Include="Images\font_sample.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
+        </Content>
     </ItemGroup>
 
 </Project>
