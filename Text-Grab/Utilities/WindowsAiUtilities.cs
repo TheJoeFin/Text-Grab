@@ -16,7 +16,7 @@ public static class WindowsAiUtilities
     public static bool CanDeviceUseWinAI()
     {
         // Check if the app is packaged and if the AI feature is supported
-        if (!AppUtilities.IsPackaged())
+        if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())
             return false;
 
         try
