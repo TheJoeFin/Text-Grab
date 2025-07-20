@@ -1247,8 +1247,7 @@ internal static partial class OSInterop
 
     public static bool IsWindows10()
     {
-        int versionMajor = Environment.OSVersion.Version.Major;
-        int versionMinor = Environment.OSVersion.Version.Minor;
-        return versionMajor == 10 && versionMinor == 0;
+        int build = Environment.OSVersion.Version.Build;
+        return build < 22000;
     }
 }
