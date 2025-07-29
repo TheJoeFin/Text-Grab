@@ -106,18 +106,16 @@ public static class TesseractHelper
         return result.StandardOutput;
     }
 
-    public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, Windows.Globalization.Language language, string tessTag = "")
+    public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, TessLang language)
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
-        if (string.IsNullOrWhiteSpace(tessTag))
-            tessTag = language.LanguageTag;
 
         OcrOutput ocrOutput = new()
         {
             Engine = OcrEngineKind.Tesseract,
             Kind = OcrOutputKind.Paragraph,
             SourceBitmap = bmp,
-            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), tessTag)
+            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language.RawTag)
         };
         ocrOutput.CleanOutput();
 

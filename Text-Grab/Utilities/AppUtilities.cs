@@ -20,4 +20,16 @@ internal class AppUtilities
     }
 
     internal static Settings TextGrabSettings => Singleton<SettingsService>.Instance.ClassicSettings;
+
+    internal static string GetAppVersion()
+    {
+        if (IsPackaged())
+        {
+            PackageVersion version = Package.Current.Id.Version;
+            return $"{version.Major}.{version.Minor}.{version.Build}" ?? "unknown error reading package version";
+        }
+
+        
+        return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown error reading assembly version";
+    }
 }

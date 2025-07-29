@@ -11,7 +11,8 @@ public class FilesIoTests
     [WpfFact]
     public async Task CanSaveImagesWithHistory()
     {
-        Bitmap fontSampleBitmap = new(FileUtilities.GetPathToLocalFile(fontSamplePath));
+        string path = FileUtilities.GetPathToLocalFile(fontSamplePath);
+        Bitmap fontSampleBitmap = new(path);
 
         bool couldSave = await FileUtilities.SaveImageFile(fontSampleBitmap, "newTest.png", FileStorageKind.WithHistory);
 

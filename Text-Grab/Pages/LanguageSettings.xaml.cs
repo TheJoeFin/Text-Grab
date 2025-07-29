@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Windows.AI;
+using Microsoft.Windows.AI.Imaging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -31,6 +33,8 @@ public partial class LanguageSettings : Page
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
+        LoadAiStatus();
+
         LoadWindowsLanguages();
 
         if (DefaultSettings.UseTesseract)
@@ -41,6 +45,48 @@ public partial class LanguageSettings : Page
         else
         {
             TesseractLanguagesStackPanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void LoadAiStatus()
+    {
+        if (OSInterop.IsWindows10())
+        {
+            StatusTextBlock.Text = "Not supported";
+            ReasonTextBlock.Text = "Windows AI is not supported on Windows 10.";
+            return;
+        }
+
+        // Check if the app is packaged and if the AI feature is supported
+        if (!AppUtilities.IsPackaged())
+        {
+            StatusTextBlock.Text = "Not supported";
+            ReasonTextBlock.Text = "Windows AI is only supported in packaged apps.";
+            StoreLink.Visibility = Visibility.Visible;
+            return;
+        }
+
+        try
+        {
+            AIFeatureReadyState readyState = TextRecognizer.GetReadyState();
+            if (readyState == AIFeatureReadyState.NotSupportedOnCurrentSystem)
+            {
+                StatusTextBlock.Text = "Not supported";
+                ReasonTextBlock.Text = "Windows AI is not supported on this system.";
+                return;
+            }
+            else
+            {
+                StatusTextBlock.Text = "Ready";
+                ReasonTextBlock.Text = "Windows AI is supported on this system.";
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusTextBlock.Text = "Failed to ready";
+            ReasonTextBlock.Text = $"An error occurred while checking Windows AI support: {ex.Message}";
+            return;
         }
     }
 

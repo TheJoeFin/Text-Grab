@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
-using Windows.Globalization;
+using Windows.Graphics.Imaging;
 
 namespace Text_Grab.Models;
 
@@ -12,7 +12,8 @@ public record OcrOutput
     public string RawOutput { get; set; } = string.Empty;
     public string CleanedOutput { get; set; } = string.Empty;
     public Bitmap? SourceBitmap { get; set; }
-    public Language? Language { get; set; }
+    public SoftwareBitmap? SourceSoftwareBitmap { get; set; }
+    public object? Language { get; set; }
 
     public void CleanOutput()
     {

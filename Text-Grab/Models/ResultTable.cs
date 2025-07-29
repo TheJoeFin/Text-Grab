@@ -136,17 +136,17 @@ public class ResultTable
         return allBoundingRects;
     }
 
-    public static List<WordBorder> ParseOcrResultIntoWordBorders(OcrResult ocrResult, DpiScale dpi)
+    public static List<WordBorder> ParseOcrResultIntoWordBorders(IOcrLinesWords ocrResult, DpiScale dpi)
     {
         List<WordBorder> wordBorders = new();
         int lineNumber = 0;
 
-        foreach (OcrLine ocrLine in ocrResult.Lines)
+        foreach (IOcrLine ocrLine in ocrResult.Lines)
         {
-            double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
-            double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
-            double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
-            double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
+            double top = ocrLine.Words.Select(x => x.BoundingBox.Top).Min();
+            double bottom = ocrLine.Words.Select(x => x.BoundingBox.Bottom).Max();
+            double left = ocrLine.Words.Select(x => x.BoundingBox.Left).Min();
+            double right = ocrLine.Words.Select(x => x.BoundingBox.Right).Max();
 
             Rect lineRect = new()
             {

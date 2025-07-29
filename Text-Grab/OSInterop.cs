@@ -1244,4 +1244,10 @@ internal static partial class OSInterop
         /// </summary>
         public IntPtr AdditionalInformation;
     }
+
+    public static bool IsWindows10()
+    {
+        int build = Environment.OSVersion.Version.Build;
+        return build < 22000;
+    }
 }

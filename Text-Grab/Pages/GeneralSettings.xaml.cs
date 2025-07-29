@@ -35,6 +35,8 @@ public partial class GeneralSettings : Page
 
         if (!AppUtilities.IsPackaged())
             OpenExeFolderButton.Visibility = Visibility.Visible;
+
+        VersionTextblock.Text = $"Version {AppUtilities.GetAppVersion()}";
     }
 
     private void OpenExeFolderButton_Click(object sender, RoutedEventArgs args)
