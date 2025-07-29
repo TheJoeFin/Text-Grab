@@ -62,6 +62,7 @@ public partial class LanguageSettings : Page
         {
             StatusTextBlock.Text = "Not supported";
             ReasonTextBlock.Text = "Windows AI is only supported in packaged apps.";
+            StoreLink.Visibility = Visibility.Visible;
             return;
         }
 
