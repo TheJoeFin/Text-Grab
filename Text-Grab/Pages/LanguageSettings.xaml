@@ -13,39 +13,76 @@
     mc:Ignorable="d">
 
     <StackPanel Margin="20,12,40,40" Orientation="Vertical">
-        <StackPanel Orientation="Vertical">
-            <TextBlock Style="{StaticResource TextHeader}" Text="Language Settings" />
+        <TextBlock Style="{StaticResource TextHeader}" Text="Language Settings" />
+        <TextBlock
+            Margin="0,12,0,2"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Windows AI OCR" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
             <TextBlock
-                Margin="0,12,0,6"
-                FontWeight="Bold"
+                Name="StatusTextBlock"
+                Margin="0,2,6,0"
+                FontWeight="Black"
                 Style="{StaticResource TextBodyNormal}"
-                Text="Windows Installed Languages" />
-            <!--  auto pull and parse which Windows Languages are installed  -->
-            <ui:HyperlinkButton
-                Click="HyperlinkButton_Click"
-                Content="How to install OCR languages with PowerShell"
-                NavigateUri="https://learn.microsoft.com/en-us/windows/powertoys/text-extractor#how-to-query-for-ocr-language-packs" />
-            <!--  Show the commands to execute to add other languages  -->
-            <ui:ListView
-                x:Name="WindowsLanguagesListView"
-                MaxWidth="600"
-                HorizontalAlignment="Left">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid>
-                            <TextBlock Margin="4,2" Text="{Binding DisplayName}" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ui:ListView>
-        </StackPanel>
+                Text="STATUS" />
+            <TextBlock
+                Name="ReasonTextBlock"
+                Grid.Column="1"
+                Margin="0,2,6,0"
+                FontStyle="Italic"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Reason"
+                TextWrapping="Wrap" />
+        </Grid>
+        <TextBlock
+            Margin="0,12,0,6"
+            Style="{StaticResource TextBodyNormal}"
+            TextWrapping="Wrap">
+            Windows AI OCR is a new state-of-the-art OCR engine first introduced on Copilot+ PCs. It supports a wide range of styles and languages, as well as being more accurate.
+        </TextBlock>
+        <ui:HyperlinkButton
+            Click="HyperlinkButton_Click"
+            Content="Learn more about Windows AI Foundry"
+            NavigateUri="https://learn.microsoft.com/en-us/windows/ai/apis/" />
+
+        <TextBlock
+            Margin="0,24,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Windows Installed Languages" />
+        <!--  auto pull and parse which Windows Languages are installed  -->
+        <ui:HyperlinkButton
+            Click="HyperlinkButton_Click"
+            Content="How to install OCR languages with PowerShell"
+            NavigateUri="https://learn.microsoft.com/en-us/windows/powertoys/text-extractor#how-to-query-for-ocr-language-packs" />
+        <!--  Show the commands to execute to add other languages  -->
+        <ui:ListView
+            x:Name="WindowsLanguagesListView"
+            MaxWidth="600"
+            HorizontalAlignment="Left">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <TextBlock Margin="4,2" Text="{Binding DisplayName}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ui:ListView>
         <StackPanel
             x:Name="TesseractLanguagesStackPanel"
             d:Visibility="Visible"
             Orientation="Vertical"
             Visibility="Collapsed">
             <TextBlock
-                Margin="0,12,0,6"
+                Margin="0,24,0,6"
+                FontSize="18"
                 FontWeight="Bold"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Tesseract Languages" />
