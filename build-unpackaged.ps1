@@ -1,5 +1,4 @@
 $Version = Get-Date -Format "yyyy-MM-dd"
-$VersionDot = $Version -replace '-', '.'
 $Project = "Text-Grab"
 
 # Define build paths for both architectures
@@ -9,9 +8,7 @@ $BuildPathARM64 = "$PSScriptRoot\bld\arm64"
 $BuildPathARM64SC = "$PSScriptRoot\bld\arm64\Text-Grab-Self-Contained"
 
 # Define archive paths
-$ArchiveX64 = "$BuildPathX64\$Project-$Version.zip"
 $ArchiveX64SC = "$BuildPathX64\$Project-x64-Self-Contained-$Version.zip"
-$ArchiveARM64 = "$BuildPathARM64\$Project-$Version.zip"
 $ArchiveARM64SC = "$BuildPathARM64\$Project-Self-Contained-$Version.zip"
 
 Write-Host "Building Text-Grab for x64 and ARM64 architectures..." -ForegroundColor Green
@@ -88,6 +85,20 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
     -p:CopyOutputSymbolsToPublishDirectory=false `
     --nologo
 
+Write-Host "`n=== Renaming ARM64 Executables ===" -ForegroundColor Magenta
+
+# Rename ARM64 Framework-Dependent executable
+Write-Host "Renaming ARM64 framework-dependent executable..." -ForegroundColor Yellow
+if (Test-Path "$BuildPathARM64\$Project.exe") {
+    Rename-Item "$BuildPathARM64\$Project.exe" "Text-Grab-arm64.exe"
+}
+
+# Rename ARM64 Self-Contained executable
+Write-Host "Renaming ARM64 self-contained executable..." -ForegroundColor Yellow
+if (Test-Path "$BuildPathARM64SC\$Project.exe") {
+    Rename-Item "$BuildPathARM64SC\$Project.exe" "Text-Grab-arm64.exe"
+}
+
 Write-Host "`n=== Creating Archives ===" -ForegroundColor Magenta
 
 # Create x64 Self-Contained Archive
@@ -102,8 +113,8 @@ Write-Host "`n=== Build Summary ===" -ForegroundColor Green
 Write-Host "x64 Framework-Dependent: $BuildPathX64\$Project.exe" -ForegroundColor White
 Write-Host "x64 Self-Contained: $BuildPathX64SC\$Project.exe" -ForegroundColor White
 Write-Host "x64 Self-Contained Archive: $ArchiveX64SC" -ForegroundColor White
-Write-Host "ARM64 Framework-Dependent: $BuildPathARM64\$Project.exe" -ForegroundColor White
-Write-Host "ARM64 Self-Contained: $BuildPathARM64SC\$Project.exe" -ForegroundColor White
+Write-Host "ARM64 Framework-Dependent: $BuildPathARM64\Text-Grab-arm64.exe" -ForegroundColor White
+Write-Host "ARM64 Self-Contained: $BuildPathARM64SC\Text-Grab-arm64.exe" -ForegroundColor White
 Write-Host "ARM64 Self-Contained Archive: $ArchiveARM64SC" -ForegroundColor White
 
 # Get and display the actual product version from the built executable
