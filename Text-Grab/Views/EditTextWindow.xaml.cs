@@ -1740,11 +1740,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             double d when double.IsNaN(d) => "NaN",
             double d when double.IsPositiveInfinity(d) => "∞",
             double d when double.IsNegativeInfinity(d) => "-∞",
-            double d => Math.Abs(d % 1) < double.Epsilon ? d.ToString("F0") : d.ToString("G15"),
-            decimal m => m.ToString(),
-            int i => i.ToString(),
-            long l => l.ToString(),
-            float f => f.ToString("G7"),
+            double d => Math.Abs(d % 1) < double.Epsilon ? d.ToString("N0") : d.ToString("N7"),
+            decimal m => m.ToString("N7"),
+            int i => i.ToString("N0"),
+            long l => l.ToString("N0"),
+            float f => f.ToString("N7"),
             bool b => b.ToString().ToLower(),
             _ => result.ToString() ?? "null"
         };
@@ -2498,6 +2498,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
 
         InitializeExpressionEvaluator();
+        ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+        ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
+        SetCalcPaneVis();
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
@@ -2543,4 +2546,35 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     [GeneratedRegex(@"(\r\n|\n|\r)")]
     private static partial Regex NewlineReturns();
     #endregion Methods
+
+    private void ShowCalcPaneMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+            return;
+
+        DefaultSettings.CalcShowPane = menuItem.IsChecked;
+
+        SetCalcPaneVis();
+    }
+
+    private void SetCalcPaneVis()
+    {
+        if (ShowCalcPaneMenuItem.IsChecked)
+        {
+            CalcResultsTextControl.Visibility = Visibility.Visible;
+            _debounceTimer.Start();
+        }
+        else
+        {
+            CalcResultsTextControl.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ShowErrorsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+            return;
+
+        DefaultSettings.CalcShowErrors = menuItem.IsChecked;
+    }
 }

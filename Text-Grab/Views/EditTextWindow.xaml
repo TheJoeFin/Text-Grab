@@ -330,6 +330,7 @@
             <MenuItem Header="F_ormat">
                 <MenuItem
                     x:Name="ShowErrorsMenuItem"
+                    Click="ShowErrorsMenuItem_Click"
                     Header="Show Math Errors"
                     IsCheckable="True" />
                 <MenuItem
@@ -455,6 +456,11 @@
                     x:Name="RestoreThisPosition"
                     Click="RestoreThisPosition_Click"
                     Header="_Restore this windows's position" />
+                <MenuItem
+                    x:Name="ShowCalcPaneMenuItem"
+                    Click="ShowCalcPaneMenuItem_Click"
+                    Header="Show calculations pane"
+                    IsCheckable="True" />
                 <Separator />
                 <MenuItem
                     x:Name="NewWindowMenuItem"
@@ -494,8 +500,8 @@
         </Menu>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
             <TextBox
                 x:Name="PassedTextControl"
@@ -518,14 +524,6 @@
                 TextChanged="PassedTextControl_TextChanged"
                 TextWrapping="WrapWithOverflow"
                 VerticalScrollBarVisibility="Auto" />
-            <GridSplitter
-                x:Name="TextBoxSplitter"
-                Grid.Column="1"
-                Width="5"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Stretch"
-                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                ResizeDirection="Columns" />
             <TextBox
                 x:Name="CalcResultsTextControl"
                 Grid.Column="1"
@@ -533,13 +531,25 @@
                 AcceptsReturn="True"
                 AcceptsTab="True"
                 Background="Gray"
-                FontSize="16"
+                FontSize="{Binding ElementName=PassedTextControl,
+                                   Path=FontSize,
+                                   Mode=OneWay}"
                 HorizontalScrollBarVisibility="Auto"
                 IsInactiveSelectionHighlightEnabled="True"
                 IsReadOnly="True"
                 Style="{DynamicResource TextBoxStyle2}"
-                TextWrapping="WrapWithOverflow"
+                TextWrapping="NoWrap"
                 VerticalScrollBarVisibility="Auto" />
+
+            <GridSplitter
+                x:Name="TextBoxSplitter"
+                Grid.Column="1"
+                Width="5"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                ResizeDirection="Auto"
+                ShowsPreview="True" />
         </Grid>
 
         <ScrollViewer
