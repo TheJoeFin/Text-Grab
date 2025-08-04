@@ -38,7 +38,7 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
     -v minimal `
     -o $BuildPathX64 `
     -p:EnableMsixTooling=true `
-    -p:PublishReadyToRun=true `
+    -p:PublishReadyToRun=false `
     -p:PublishSingleFile=true `
     -p:CopyOutputSymbolsToPublishDirectory=false `
     --nologo
