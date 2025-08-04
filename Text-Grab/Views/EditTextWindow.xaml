@@ -329,6 +329,10 @@
             </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
+                    x:Name="ShowErrorsMenuItem"
+                    Header="Show Math Errors"
+                    IsCheckable="True" />
+                <MenuItem
                     x:Name="MarginsMenuItem"
                     Checked="MarginsMenuItem_Checked"
                     Header="_Use Margins"
@@ -488,27 +492,55 @@
                     Header="_About" />
             </MenuItem>
         </Menu>
-        <TextBox
-            x:Name="PassedTextControl"
-            Grid.Row="2"
-            AcceptsReturn="True"
-            AcceptsTab="True"
-            AllowDrop="True"
-            AutoWordSelection="True"
-            CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
-            ContextMenuOpening="PassedTextControl_ContextMenuOpening"
-            FontSize="16"
-            HorizontalScrollBarVisibility="Auto"
-            IsInactiveSelectionHighlightEnabled="True"
-            PreviewDragOver="ETWindow_DragOver"
-            PreviewDrop="ETWindow_Drop"
-            SelectionChanged="PassedTextControl_SelectionChanged"
-            SizeChanged="PassedTextControl_SizeChanged"
-            SpellCheck.IsEnabled="True"
-            Style="{DynamicResource TextBoxStyle2}"
-            TextChanged="PassedTextControl_TextChanged"
-            TextWrapping="WrapWithOverflow"
-            VerticalScrollBarVisibility="Auto" />
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                x:Name="PassedTextControl"
+                Grid.Row="2"
+                AcceptsReturn="True"
+                AcceptsTab="True"
+                AllowDrop="True"
+                AutoWordSelection="True"
+                CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                ContextMenuOpening="PassedTextControl_ContextMenuOpening"
+                FontSize="16"
+                HorizontalScrollBarVisibility="Auto"
+                IsInactiveSelectionHighlightEnabled="True"
+                PreviewDragOver="ETWindow_DragOver"
+                PreviewDrop="ETWindow_Drop"
+                SelectionChanged="PassedTextControl_SelectionChanged"
+                SizeChanged="PassedTextControl_SizeChanged"
+                SpellCheck.IsEnabled="True"
+                Style="{DynamicResource TextBoxStyle2}"
+                TextChanged="PassedTextControl_TextChanged"
+                TextWrapping="WrapWithOverflow"
+                VerticalScrollBarVisibility="Auto" />
+            <GridSplitter
+                x:Name="TextBoxSplitter"
+                Grid.Column="1"
+                Width="5"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                ResizeDirection="Columns" />
+            <TextBox
+                x:Name="CalcResultsTextControl"
+                Grid.Column="1"
+                MinWidth="150"
+                AcceptsReturn="True"
+                AcceptsTab="True"
+                Background="Gray"
+                FontSize="16"
+                HorizontalScrollBarVisibility="Auto"
+                IsInactiveSelectionHighlightEnabled="True"
+                IsReadOnly="True"
+                Style="{DynamicResource TextBoxStyle2}"
+                TextWrapping="WrapWithOverflow"
+                VerticalScrollBarVisibility="Auto" />
+        </Grid>
 
         <ScrollViewer
             x:Name="BottomBarScrollViewer"

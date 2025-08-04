@@ -16,6 +16,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Threading;
+using NCalc;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -1551,6 +1552,214 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         UpdateLineAndColumnText();
+
+        // Reset the debounce timer
+        _debounceTimer.Stop();
+        _debounceTimer.Start();
+    }
+
+    private DispatcherTimer _debounceTimer = null!;
+    private const int DEBOUNCE_DELAY_MS = 300;
+    private readonly Dictionary<string, object> _parameters = [];
+
+    private void InitializeExpressionEvaluator()
+    {
+        // Set up debounce timer to avoid excessive calculations
+        _debounceTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(DEBOUNCE_DELAY_MS)
+        };
+        _debounceTimer.Tick += DebounceTimer_Tick;
+    }
+
+    private async void DebounceTimer_Tick(object? sender, EventArgs e)
+    {
+        _debounceTimer.Stop();
+        await EvaluateExpressions();
+    }
+
+    private async Task EvaluateExpressions()
+    {
+        string input = PassedTextControl.Text;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            CalcResultsTextControl.Text = "";
+            // StatusText.Text = "Ready. Enter a math expression to begin...";
+            _parameters.Clear();
+            return;
+        }
+
+        string[] lines = input.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        List<string> results = [];
+        int errorCount = 0;
+
+        // Clear parameters and rebuild from scratch for each evaluation
+        _parameters.Clear();
+
+        foreach (string line in lines)
+        {
+            string trimmedLine = line.Trim();
+            if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith("//") || trimmedLine.StartsWith('#'))
+            {
+                results.Add(""); // Preserve line structure for comments/empty lines
+                continue;
+            }
+
+            try
+            {
+                // Check if this is a parameter assignment (contains '=' but not '==' or '!=' etc.)
+                if (IsParameterAssignment(trimmedLine))
+                {
+                    await HandleParameterAssignment(trimmedLine, results);
+                }
+                else
+                {
+                    // Regular expression evaluation
+                    await EvaluateRegularExpression(trimmedLine, results);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ShowErrorsMenuItem.IsChecked == true)
+                {
+                    results.Add($"Error: {ex.Message}");
+                }
+                else
+                {
+                    results.Add(""); // Empty line when errors are hidden
+                }
+                errorCount++;
+            }
+        }
+
+        CalcResultsTextControl.Text = string.Join("\n", results);
+
+        // Update status
+        if (errorCount == 0)
+        {
+            // StatusText.Text = $"✓ {lines.Length} expression(s) evaluated successfully";
+        }
+        else
+        {
+            // StatusText.Text = $"⚠ {lines.Length - errorCount} successful, {errorCount} error(s)";
+        }
+    }
+
+    private bool IsParameterAssignment(string line)
+    {
+        // Check for assignment pattern: variable = expression
+        // Avoid matching comparison operators (==, !=, <=, >=)
+        return line.Contains('=') &&
+               !line.Contains("==") &&
+               !line.Contains("!=") &&
+               !line.Contains("<=") &&
+               !line.Contains(">=") &&
+               line.IndexOf('=') == line.LastIndexOf('='); // Ensure single '='
+    }
+
+    private async Task HandleParameterAssignment(string line, List<string> results)
+    {
+        int equalIndex = line.IndexOf('=');
+        string variableName = line[..equalIndex].Trim();
+        string expression = line[(equalIndex + 1)..].Trim();
+
+        // Validate variable name (simple validation)
+        if (!IsValidVariableName(variableName))
+        {
+            throw new ArgumentException($"Invalid variable name: {variableName}");
+        }
+
+        // Evaluate the expression to get the value
+        AsyncExpression expr = new(expression);
+
+        // Set up parameter handler for existing parameters
+        expr.EvaluateParameterAsync += (name, args) =>
+        {
+            if (_parameters.ContainsKey(name))
+                args.Result = _parameters[name];
+            else
+                args.Result = null; // Default to null if parameter not found
+            return ValueTask.CompletedTask;
+        };
+
+        object? result = await expr.EvaluateAsync();
+
+        if (result != null)
+        {
+            _parameters[variableName] = result;
+            results.Add($"var {variableName} = {FormatResult(result)}");
+        }
+        else
+        {
+            results.Add($"var {variableName} = null");
+        }
+    }
+
+    private async Task EvaluateRegularExpression(string line, List<string> results)
+    {
+        AsyncExpression expression = new(line);
+
+        // Set up parameter handler
+        expression.EvaluateParameterAsync += (name, args) =>
+        {
+            if (_parameters.ContainsKey(name))
+            {
+                args.Result = _parameters[name];
+            }
+            return ValueTask.CompletedTask;
+        };
+
+        object? result = await expression.EvaluateAsync();
+
+        if (result != null)
+        {
+            string formattedResult = FormatResult(result);
+            results.Add(formattedResult);
+        }
+        else
+        {
+            results.Add("null");
+        }
+    }
+
+    private bool IsValidVariableName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return false;
+
+        // Must start with letter or underscore
+        if (!char.IsLetter(name[0]) && name[0] != '_') return false;
+
+        // Rest must be letters, digits, or underscores
+        return name.Skip(1).All(c => char.IsLetterOrDigit(c) || c == '_');
+    }
+
+    private string FormatResult(object result)
+    {
+        return result switch
+        {
+            double d when double.IsNaN(d) => "NaN",
+            double d when double.IsPositiveInfinity(d) => "∞",
+            double d when double.IsNegativeInfinity(d) => "-∞",
+            double d => Math.Abs(d % 1) < double.Epsilon ? d.ToString("F0") : d.ToString("G15"),
+            decimal m => m.ToString(),
+            int i => i.ToString(),
+            long l => l.ToString(),
+            float f => f.ToString("G7"),
+            bool b => b.ToString().ToLower(),
+            _ => result.ToString() ?? "null"
+        };
+    }
+
+    private async void ShowErrorsCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        // Re-evaluate expressions when toggle changes
+        await EvaluateExpressions();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _debounceTimer?.Stop();
+        base.OnClosed(e);
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -2287,6 +2496,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         EscapeKeyTimer.Interval = TimeSpan.FromMilliseconds(700);
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
+
+        InitializeExpressionEvaluator();
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
