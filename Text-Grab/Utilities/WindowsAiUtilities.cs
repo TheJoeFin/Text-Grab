@@ -3,6 +3,7 @@ using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.Imaging;
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Text_Grab.Extensions;
@@ -18,6 +19,13 @@ public static class WindowsAiUtilities
         // Check if the app is packaged and if the AI feature is supported
         if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())
             return false;
+
+        // Today, Windows AI Text Recognition is only supported on ARM64
+        Architecture arch = RuntimeInformation.ProcessArchitecture;
+        if (arch != Architecture.Arm64)
+            return false;
+
+        // After checking for Arm64 the remainder checks should be good to catch supporting devices
 
         try
         {
