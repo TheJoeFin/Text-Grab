@@ -422,8 +422,6 @@ public partial class FullscreenGrab : Window
 
                 count++;
             }
-            if (languagesComboBox.SelectedIndex == -1)
-                languagesComboBox.SelectedIndex = 0;
         }
 
         IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
@@ -444,6 +442,10 @@ public partial class FullscreenGrab : Window
 
             count++;
         }
+
+        // if no lang is set, select the first one
+        if (languagesComboBox.SelectedIndex == -1)
+            languagesComboBox.SelectedIndex = 0;
     }
 
     private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
