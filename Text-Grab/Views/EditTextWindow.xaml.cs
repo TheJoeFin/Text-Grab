@@ -1,4 +1,6 @@
 ﻿using Humanizer;
+using NCalc;
+using NCalc.Factories;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,9 +17,8 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
-using System.Windows.Threading;
 using System.Windows.Media;
-using NCalc;
+using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -72,7 +73,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     // Remember last non-collapsed width for the calc column
-    private GridLength _lastCalcColumnWidth = new GridLength(1, GridUnitType.Star);
+    private GridLength _lastCalcColumnWidth = new(1, GridUnitType.Star);
 
     #endregion Fields
 
@@ -127,7 +128,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     #endregion Properties
 
     #region Methods
-    
+
     public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {
         return new Dictionary<string, RoutedCommand>()
@@ -414,10 +415,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         StringBuilder listOfNames = new();
         listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
         foreach (string folder in folders)
-            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, folder.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
 
         foreach (string file in files)
-            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, file.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
         return listOfNames.ToString();
     }
 
@@ -881,7 +882,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void FontMenuItem_Click(object sender, RoutedEventArgs e)
     {
         using FontDialog fd = new();
-        System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
+        System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)(PassedTextControl.FontSize * 72.0 / 96.0));
         fd.Font = currentFont;
         DialogResult result = fd.ShowDialog();
         if (result != System.Windows.Forms.DialogResult.OK)
@@ -890,7 +891,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Debug.WriteLine(fd.Font);
 
         DefaultSettings.FontFamilySetting = fd.Font.Name;
-        DefaultSettings.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
+        DefaultSettings.FontSizeSetting = fd.Font.Size * 96.0 / 72.0;
         DefaultSettings.IsFontBold = fd.Font.Bold;
         DefaultSettings.IsFontItalic = fd.Font.Italic;
         DefaultSettings.IsFontUnderline = fd.Font.Underline;
@@ -989,8 +990,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (CalcResultsTextControl.Visibility != Visibility.Visible)
                 return;
 
-            var mainSv = GetScrollViewer(PassedTextControl);
-            var calcSv = GetScrollViewer(CalcResultsTextControl);
+            ScrollViewer? mainSv = GetScrollViewer(PassedTextControl);
+            ScrollViewer? calcSv = GetScrollViewer(CalcResultsTextControl);
             if (mainSv is null || calcSv is null)
                 return;
 
@@ -1054,7 +1055,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 if (line.Length > selectionPositionInLine)
                     sb.Append(line.Insert(selectionPositionInLine, selectionText));
                 else
-                    sb.Append(line).Append(selectionText.PadLeft((selectionPositionInLine + selectionLength) - line.Length));
+                    sb.Append(line).Append(selectionText.PadLeft(selectionPositionInLine + selectionLength - line.Length));
             }
             sb.Append(Environment.NewLine);
         }
@@ -1617,7 +1618,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _debounceTimer.Start();
         // If a newline append auto-scrolls the main box, ensure calc scroll follows too
         // Schedule after layout so offsets are accurate
-        Dispatcher.BeginInvoke((Action)SyncCalcScrollToMain, DispatcherPriority.Background);
+        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
     }
 
     private DispatcherTimer _debounceTimer = null!;
@@ -1656,7 +1657,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CalcResultsTextControl.Text = "";
             _parameters.Clear();
             // Keep scrolls aligned even when clearing
-            Dispatcher.BeginInvoke((Action)SyncCalcScrollToMain, DispatcherPriority.Render);
+            Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
             return;
         }
 
@@ -1685,7 +1686,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 }
                 else
                 {
-                    await EvaluateRegularExpression(trimmedLine, results);
+                    await EvaluateStandardExpression(trimmedLine, results);
                 }
             }
             catch (Exception ex)
@@ -1705,7 +1706,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Update the text control with results
         CalcResultsTextControl.Text = string.Join("\n", results);
         // After updating calc text, its ScrollViewer resets; resync to main scroll
-        Dispatcher.BeginInvoke((Action)SyncCalcScrollToMain, DispatcherPriority.Render);
+        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
 
         // Optional status (kept commented)
         // if (errorCount == 0) { } else { }
@@ -1723,6 +1724,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                line.IndexOf('=') == line.LastIndexOf('='); // Ensure single '='
     }
 
+    private string StandardizeDecimalAndGroupSeparators(string expression)
+    {
+        if (selectedCultureInfo is null)
+            return expression;
+        string decimalSep = selectedCultureInfo.NumberFormat.NumberDecimalSeparator;
+        string groupSep = selectedCultureInfo.NumberFormat.NumberGroupSeparator;
+
+        if (!string.IsNullOrEmpty(groupSep))
+            expression = expression.Replace(groupSep, "");
+        if (decimalSep != ".")
+            expression = expression.Replace(".", decimalSep);
+
+        return expression;
+    }
+
     private async Task HandleParameterAssignment(string line, List<string> results)
     {
         int equalIndex = line.IndexOf('=');
@@ -1736,7 +1752,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         // Evaluate the expression to get the value
+        expression = StandardizeDecimalAndGroupSeparators(expression);
         AsyncExpression expr = new(expression);
+        expr.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
 
         // Set up parameter handler for existing parameters
         expr.EvaluateParameterAsync += (name, args) =>
@@ -1761,10 +1779,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private async Task EvaluateRegularExpression(string line, List<string> results)
+    private async Task EvaluateStandardExpression(string line, List<string> results)
     {
         ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
+        line = StandardizeDecimalAndGroupSeparators(line);
         AsyncExpression expression = new(line, option);
+
+        expression.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
 
         // Set up parameter handler
         expression.EvaluateParameterAsync += (name, args) =>
@@ -2605,7 +2626,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
                 // Estimate line height from font size; 1em ~ FontSize pixels, add padding
                 double lineHeight = Math.Max(12, PassedTextControl.FontSize * 1.35);
-                mainSv.ScrollToVerticalOffset(mainSv.VerticalOffset + lines * lineHeight);
+                mainSv.ScrollToVerticalOffset(mainSv.VerticalOffset + (lines * lineHeight));
                 e.Handled = true;
             }
         }
