@@ -1763,7 +1763,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async Task EvaluateRegularExpression(string line, List<string> results)
     {
-        AsyncExpression expression = new(line);
+        ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
+        AsyncExpression expression = new(line, option);
 
         // Set up parameter handler
         expression.EvaluateParameterAsync += (name, args) =>
