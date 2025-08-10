@@ -501,7 +501,7 @@
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="CalcColumn" Width="*" />
             </Grid.ColumnDefinitions>
             <TextBox
                 x:Name="PassedTextControl"
@@ -530,7 +530,7 @@
                 MinWidth="150"
                 AcceptsReturn="True"
                 AcceptsTab="True"
-                Background="Gray"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                 FontSize="{Binding ElementName=PassedTextControl,
                                    Path=FontSize,
                                    Mode=OneWay}"
@@ -539,7 +539,7 @@
                 IsReadOnly="True"
                 Style="{DynamicResource TextBoxStyle2}"
                 TextWrapping="NoWrap"
-                VerticalScrollBarVisibility="Auto" />
+                VerticalScrollBarVisibility="Hidden" />
 
             <GridSplitter
                 x:Name="TextBoxSplitter"
@@ -550,6 +550,24 @@
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                 ResizeDirection="Auto"
                 ShowsPreview="True" />
+
+            <!--  Subtle shadow at the edge of the calc pane/splitter for visual separation  -->
+            <Rectangle
+                x:Name="CalcPaneShadow"
+                Grid.Column="1"
+                Width="8"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Panel.ZIndex="100"
+                IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <!--  Slight shadow cast toward the calc pane area  -->
+                        <GradientStop Offset="0" Color="#33000000" />
+                        <GradientStop Offset="1" Color="#00000000" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
         </Grid>
 
         <ScrollViewer
