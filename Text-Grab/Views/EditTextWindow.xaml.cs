@@ -127,7 +127,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     #endregion Properties
 
     #region Methods
-
+    
     public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {
         return new Dictionary<string, RoutedCommand>()
@@ -1637,6 +1637,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private async void DebounceTimer_Tick(object? sender, EventArgs e)
     {
         _debounceTimer.Stop();
+
+        if (CalcResultsTextControl.Visibility != Visibility.Visible)
+            return;
+
         await EvaluateExpressions();
     }
 
@@ -1749,11 +1753,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (result != null)
         {
             _parameters[variableName] = result;
-            results.Add($"var {variableName} = {FormatResult(result)}");
+            results.Add($"> {variableName} = {FormatResult(result)}");
         }
         else
         {
-            results.Add($"var {variableName} = null");
+            results.Add($"> {variableName} = null");
         }
     }
 
@@ -1802,11 +1806,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             double d when double.IsNaN(d) => "NaN",
             double d when double.IsPositiveInfinity(d) => "∞",
             double d when double.IsNegativeInfinity(d) => "-∞",
-            double d => Math.Abs(d % 1) < double.Epsilon ? d.ToString("N0") : d.ToString("N7"),
-            decimal m => m.ToString("N7"),
+            double d => Math.Abs(d % 1) < double.Epsilon ? d.ToString("N0") : d.ToString("#,##0.###"),
+            decimal m => m.ToString("#,##0.###"),
             int i => i.ToString("N0"),
             long l => l.ToString("N0"),
-            float f => f.ToString("N7"),
+            float f => f.ToString("#,##0.###"),
             bool b => b.ToString().ToLower(),
             _ => result.ToString() ?? "null"
         };
