@@ -1753,7 +1753,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Evaluate the expression to get the value
         expression = StandardizeDecimalAndGroupSeparators(expression);
-        AsyncExpression expr = new(expression);
+        ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
+        AsyncExpression expr = new(expression,option);
         expr.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
 
         // Set up parameter handler for existing parameters
