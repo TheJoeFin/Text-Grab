@@ -436,7 +436,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 selectedLookupItems.Add(selectedLookupItem);
 
         if (selectedLookupItems.Count == 0)
-            selectedLookupItems.Add(firstLookupItem);
+        {
+            // If no explicit selection, check if we have a valid SelectedItem first
+            if (MainDataGrid.SelectedItem is LookupItem currentlySelectedItem)
+                selectedLookupItems.Add(currentlySelectedItem);
+            else
+                selectedLookupItems.Add(firstLookupItem);
+        }
 
         bool openedHistoryItemOrLink = false;
         StringBuilder stringBuilder = new();
@@ -487,10 +493,26 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                                 openedHistoryItemOrLink = true;
                                 break;
                             }
+                        case LookupItemKind.EditWindow when lItem.HistoryItem is null:
+                            {
+                                // Fallback for EditWindow without HistoryItem
+                                EditTextWindow editTextWindow = new(lItem.LongValue, false);
+                                editTextWindow.Show();
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
                         case LookupItemKind.GrabFrame when lItem.HistoryItem is not null:
                             {
                                 GrabFrame gf = new(lItem.HistoryItem);
                                 gf.Show();
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
+                        case LookupItemKind.GrabFrame when lItem.HistoryItem is null:
+                            {
+                                // Fallback for GrabFrame without HistoryItem - open in EditTextWindow
+                                EditTextWindow editTextWindow = new(lItem.LongValue, false);
+                                editTextWindow.Show();
                                 openedHistoryItemOrLink = true;
                                 break;
                             }
