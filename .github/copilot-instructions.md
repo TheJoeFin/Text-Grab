@@ -65,9 +65,9 @@ The application supports command-line arguments:
 **ALWAYS run these validation steps after making changes (Windows only):**
 
 ### Core OCR Functionality
-1. **Image OCR Test**: Run `dotnet test Tests/Tests.csproj --filter "OcrFontSampleImage"` - validates basic OCR engine
-2. **QR Code Reading**: Run `dotnet test Tests/Tests.csproj --filter "ReadQrCode"` - validates barcode/QR functionality  
-3. **Table Analysis**: Run `dotnet test Tests/Tests.csproj --filter "AnalyzeTable"` - validates structured data extraction
+1. **Image OCR Test**: Run `dotnet test Tests/Tests.csproj` and verify OcrFontSampleImage test passes - validates basic OCR engine
+2. **QR Code Reading**: Run `dotnet test Tests/Tests.csproj` and verify ReadQrCode test passes - validates barcode/QR functionality  
+3. **Table Analysis**: Run `dotnet test Tests/Tests.csproj` and verify AnalyzeTable test passes - validates structured data extraction
 
 ### Manual Application Testing (Windows Only)
 1. **Full-Screen Mode**: Launch app → Press Windows+Shift+T → Select screen region → Verify text copied to clipboard
@@ -171,5 +171,6 @@ dotnet restore Text-Grab.sln -p:EnableWindowsTargeting=true
 - **DPI awareness** is essential for accurate screen capture - avoid modifying DPI-related code
 - **Clipboard integration** requires testing on actual Windows systems
 - **Performance** matters for OCR operations - profile changes that affect image processing
+- **Package references** - only add new package references when absolutely needed or explicitly asked
 
 Remember: This is a Windows-native application leveraging platform-specific APIs. Development and testing should primarily occur on Windows systems.
