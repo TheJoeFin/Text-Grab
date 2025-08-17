@@ -1614,14 +1614,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         UpdateLineAndColumnText();
 
         // Reset the debounce timer
-        _debounceTimer.Stop();
-        _debounceTimer.Start();
+        _debounceTimer?.Stop();
+        _debounceTimer?.Start();
         // If a newline append auto-scrolls the main box, ensure calc scroll follows too
         // Schedule after layout so offsets are accurate
         Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
     }
 
-    private DispatcherTimer _debounceTimer = null!;
+    private DispatcherTimer? _debounceTimer = null!;
     private const int DEBOUNCE_DELAY_MS = 300;
     private readonly Dictionary<string, object> _parameters = [];
 
@@ -1637,7 +1637,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void DebounceTimer_Tick(object? sender, EventArgs e)
     {
-        _debounceTimer.Stop();
+        _debounceTimer?.Stop();
 
         if (CalcResultsTextControl.Visibility != Visibility.Visible)
             return;
@@ -2689,7 +2689,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Restore previous width if it was collapsed
             if (CalcColumn.Width.Value == 0)
                 CalcColumn.Width = _lastCalcColumnWidth;
-            _debounceTimer.Start();
+            _debounceTimer?.Start();
         }
         else
         {
