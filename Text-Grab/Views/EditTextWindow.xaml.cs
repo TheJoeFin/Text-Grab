@@ -1,6 +1,5 @@
 ﻿using Humanizer;
 using NCalc;
-using NCalc.Factories;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -113,6 +112,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             this.Top = historyInfo.PositionRect.Y;
             this.Width = historyInfo.PositionRect.Width;
             this.Height = historyInfo.PositionRect.Height;
+        }
+
+        if (historyInfo.HasCalcPaneOpen)
+        {
+            // use the tag to track that it was set from history item
+            ShowCalcPaneMenuItem.Tag = true;
+            ShowCalcPaneMenuItem.IsChecked = true;
+            _lastCalcColumnWidth = new GridLength(historyInfo.CalcPaneWidth);
         }
     }
 
@@ -381,6 +388,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
+            CalcPaneWidth = (CalcColumn.Width.IsStar) ? (int)(CalcColumn.ActualWidth) : 0,
+            HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true
         };
 
         if (string.IsNullOrWhiteSpace(historyInfo.ID))
@@ -1754,8 +1763,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Evaluate the expression to get the value
         expression = StandardizeDecimalAndGroupSeparators(expression);
         ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
-        AsyncExpression expr = new(expression,option);
-        expr.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
+        AsyncExpression expr = new(expression, option)
+        {
+            CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture
+        };
 
         // Set up parameter handler for existing parameters
         expr.EvaluateParameterAsync += (name, args) =>
@@ -1784,9 +1795,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
         line = StandardizeDecimalAndGroupSeparators(line);
-        AsyncExpression expression = new(line, option);
-
-        expression.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
+        AsyncExpression expression = new(line, option)
+        {
+            CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture
+        };
 
         // Set up parameter handler
         expression.EvaluateParameterAsync += (name, args) =>
@@ -2587,7 +2599,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
 
         InitializeExpressionEvaluator();
-        ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+
+        if (ShowCalcPaneMenuItem.Tag is not true)
+            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+
         ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
         SetCalcPaneVis();
 
@@ -2711,5 +2726,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         DefaultSettings.CalcShowErrors = menuItem.IsChecked;
         _ = EvaluateExpressions();
+    }
+
+    private void TextBoxSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        CalcColumn.Width = new GridLength(1, GridUnitType.Star);
     }
 }

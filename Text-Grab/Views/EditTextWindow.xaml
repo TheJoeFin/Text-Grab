@@ -539,7 +539,15 @@
                 IsReadOnly="True"
                 Style="{DynamicResource TextBoxStyle2}"
                 TextWrapping="NoWrap"
-                VerticalScrollBarVisibility="Hidden" />
+                VerticalScrollBarVisibility="Hidden">
+                <TextBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Name="HideCalcPaneContextItem" Header="Hide Pane" />
+                        <MenuItem Name="ShowCalcErrorsContextItem" Header="Show Errors" />
+                        <MenuItem Name="CopyAllContextItem" Header="Copy All" />
+                    </ContextMenu>
+                </TextBox.ContextMenu>
+            </TextBox>
 
             <GridSplitter
                 x:Name="TextBoxSplitter"
@@ -548,6 +556,7 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Stretch"
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                MouseDoubleClick="TextBoxSplitter_MouseDoubleClick"
                 ResizeDirection="Auto"
                 ShowsPreview="True" />
 
