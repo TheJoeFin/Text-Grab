@@ -62,12 +62,11 @@ internal class ImplementAppOptions
         else
         {
             string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-            string? BaseDir = System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory);
+            string executablePath = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Text-Grab.exe");
             RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
-            if (key is not null
-                && BaseDir is not null)
+            if (key is not null)
             {
-                key.SetValue("Text-Grab", $"\"{BaseDir}\\Text-Grab.exe\"");
+                key.SetValue("Text-Grab", $"\"{executablePath}\"");
             }
         }
         await Task.CompletedTask;
