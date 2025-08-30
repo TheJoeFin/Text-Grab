@@ -2,6 +2,8 @@ name: "Build Text Grab"
 on:
   push:
     branches: [dev]
+  pull_request:
+    branches: [dev]
 
 env:
   PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
