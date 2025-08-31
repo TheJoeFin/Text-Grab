@@ -11,6 +11,8 @@ using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
 using Wpf.Ui.Controls;
+using Dapplo.Windows.User32; // Added for monitor enumeration
+using Text_Grab.Extensions; // For ScaledBounds extension
 
 namespace Text_Grab.Pages;
 
@@ -29,14 +31,49 @@ public partial class GeneralSettings : Page
 
     #endregion Fields
 
+    // Simple view-model for monitor rows
+    public sealed class MonitorInfoRow
+    {
+        public required string Title { get; init; }
+    }
+
+    public ObservableCollection<MonitorInfoRow> MonitorInfos { get; } = new();
+
     public GeneralSettings()
     {
         InitializeComponent();
+        DataContext = this;
 
         if (!AppUtilities.IsPackaged())
             OpenExeFolderButton.Visibility = Visibility.Visible;
 
         VersionTextblock.Text = $"Version {AppUtilities.GetAppVersion()}";
+    }
+
+    private static string RectToString(Rect r) => $"X={r.X}, Y={r.Y}, Width={r.Width}, Height={r.Height}";
+
+    private void LoadMonitorInfo()
+    {
+        MonitorInfos.Clear();
+        DisplayInfo[] displays = DisplayInfo.AllDisplayInfos;
+        for (int i = 0; i < displays.Length; i++)
+        {
+            DisplayInfo di = displays[i];
+
+            // Get DPI scale percent
+            NativeMethods.GetScaleFactorForMonitor(di.MonitorHandle, out uint scalePercent);
+
+            // Raw and scaled bounds (scaled to WPF/FullscreenGrab logic)
+            Rect raw = di.Bounds;
+            Rect scaled = di.ScaledBounds();
+
+            string title = $"Display {i + 1}: {scalePercent}%  |  Bounds [{RectToString(raw)}]  |  Scaled [{RectToString(scaled)}]";
+
+            MonitorInfos.Add(new MonitorInfoRow
+            {
+                Title = title
+            });
+        }
     }
 
     private void OpenExeFolderButton_Click(object sender, RoutedEventArgs args)
@@ -139,6 +176,9 @@ public partial class GeneralSettings : Page
         TryInsertCheckbox.IsChecked = DefaultSettings.TryInsert;
         InsertDelaySeconds = DefaultSettings.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
+
+        // Populate monitor information section
+        LoadMonitorInfo();
 
         settingsSet = true;
     }

@@ -11,6 +11,8 @@ using Text_Grab.Properties;
 using Text_Grab.Services;
 using Windows.Globalization;
 using Windows.Media.Ocr;
+using Dapplo.Windows.User32; // Added for display enumeration
+using Text_Grab.Extensions;  // For ScaledBounds()
 
 namespace Text_Grab.Utilities;
 
@@ -28,7 +30,8 @@ public static class DiagnosticsUtilities
             SettingsInfo = GetSettingsInfo(),
             HistoryInfo = GetHistoryInfo(),
             LanguageInfo = GetLanguageInfo(),
-            TesseractInfo = await GetTesseractInfoAsync()
+            TesseractInfo = await GetTesseractInfoAsync(),
+            Monitors = GetMonitorsInfo() // New: include monitors info
         };
 
         var options = new JsonSerializerOptions
@@ -288,6 +291,44 @@ public static class DiagnosticsUtilities
             };
         }
     }
+
+    private static List<MonitorInfoModel> GetMonitorsInfo()
+    {
+        var monitors = new List<MonitorInfoModel>();
+        try
+        {
+            DisplayInfo[] displays = DisplayInfo.AllDisplayInfos;
+            for (int i = 0; i < displays.Length; i++)
+            {
+                DisplayInfo di = displays[i];
+                // DPI scale percent
+                NativeMethods.GetScaleFactorForMonitor(di.MonitorHandle, out uint scalePercent);
+                // Raw and scaled bounds
+                var raw = di.Bounds;
+                var scaled = di.ScaledBounds();
+
+                monitors.Add(new MonitorInfoModel
+                {
+                    Index = i + 1,
+                    ScalePercent = scalePercent,
+                    Bounds = new MonitorRectModel { X = raw.X, Y = raw.Y, Width = raw.Width, Height = raw.Height },
+                    ScaledBounds = new MonitorRectModel { X = scaled.X, Y = scaled.Y, Width = scaled.Width, Height = scaled.Height }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            monitors.Add(new MonitorInfoModel
+            {
+                Index = -1,
+                ScalePercent = 0,
+                Bounds = new MonitorRectModel(),
+                ScaledBounds = new MonitorRectModel(),
+                ErrorMessage = $"Error reading monitors: {ex.Message}"
+            });
+        }
+        return monitors;
+    }
 }
 
 // Data models for the bug report
@@ -302,6 +343,7 @@ public class BugReportModel
     public HistoryInfoModel HistoryInfo { get; set; } = new();
     public LanguageInfoModel LanguageInfo { get; set; } = new();
     public TesseractInfoModel TesseractInfo { get; set; } = new();
+    public List<MonitorInfoModel> Monitors { get; set; } = new(); // New: monitors
 }
 
 public class StartupDetailsModel
@@ -368,4 +410,21 @@ public class TesseractInfoModel
     public List<string> AvailableLanguages { get; set; } = new();
     public List<string> ConfiguredLanguages { get; set; } = new();
     public string? ErrorMessage { get; set; }
+}
+
+public class MonitorInfoModel
+{
+    public int Index { get; set; }
+    public uint ScalePercent { get; set; }
+    public MonitorRectModel Bounds { get; set; } = new();
+    public MonitorRectModel ScaledBounds { get; set; } = new();
+    public string? ErrorMessage { get; set; }
+}
+
+public class MonitorRectModel
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
 }
