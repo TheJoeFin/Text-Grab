@@ -9,25 +9,25 @@ public class StartupTests
     [Fact]
     public void StartupPathCalculation_OldVsNewLogic()
     {
-        // Arrange - Simulate a typical executable path structure
-        string simulatedBaseDirectory = "/usr/app/bin/";
+        // Arrange - Simulate a typical Windows executable path structure
+        string simulatedBaseDirectory = @"C:\Apps\Text-Grab\";
         
         // Act - Old buggy logic (what's currently in the code)
-        string? parentDir = Path.GetDirectoryName(simulatedBaseDirectory.TrimEnd('/'));
+        string? parentDir = Path.GetDirectoryName(simulatedBaseDirectory.TrimEnd('\\'));
         string oldLogicPath = parentDir is not null ? 
             $"\"{parentDir}\\Text-Grab.exe\"" : "";
         
         // Act - New correct logic (what it should be)
-        string newLogicPath = $"\"{simulatedBaseDirectory}Text-Grab.exe\"";
+        string newLogicPath = $"\"{Path.Combine(simulatedBaseDirectory, "Text-Grab.exe")}\"";
         
         // Assert - The paths should be different (proving the bug exists)
         Assert.NotEqual(oldLogicPath, newLogicPath);
         
         // Assert - Old logic should point to parent directory (wrong)
-        Assert.Contains("/usr/app\\Text-Grab.exe", oldLogicPath);
+        Assert.Contains(@"C:\Apps\Text-Grab.exe", oldLogicPath);
         
         // Assert - New logic should point to base directory (correct)
-        Assert.Contains("/usr/app/bin/Text-Grab.exe", newLogicPath);
+        Assert.Contains(@"C:\Apps\Text-Grab\Text-Grab.exe", newLogicPath);
     }
 
     [Fact]
