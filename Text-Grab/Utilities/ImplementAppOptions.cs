@@ -62,13 +62,49 @@ internal class ImplementAppOptions
         else
         {
             string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-            string executablePath = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Text-Grab.exe");
+            
+            // Use the correct executable path for both deployment types
+            string executablePath = GetCorrectExecutablePath();
+            
             RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
-            if (key is not null)
+            if (key is not null && !string.IsNullOrEmpty(executablePath))
             {
                 key.SetValue("Text-Grab", $"\"{executablePath}\"");
             }
         }
         await Task.CompletedTask;
+    }
+
+    private static string GetCorrectExecutablePath()
+    {
+        // For single-file self-contained apps, use the original executable location
+        if (IsExtractedSingleFile())
+        {
+            // Try to get the original path from command line args or process info
+            string? processPath = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(processPath) && System.IO.File.Exists(processPath))
+            {
+                return processPath;
+            }
+        }
+        
+        // For framework-dependent apps, use the base directory approach
+        string? baseDir = System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory);
+        if (!string.IsNullOrEmpty(baseDir))
+        {
+            string exePath = System.IO.Path.Combine(baseDir, "Text-Grab.exe");
+            if (System.IO.File.Exists(exePath))
+            {
+                return exePath;
+            }
+        }
+        
+        // Fallback to process path
+        return Environment.ProcessPath ?? "";
+    }
+
+    private static bool IsExtractedSingleFile()
+    {
+        return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_BUNDLE_EXTRACT_BASE_DIR"));
     }
 }
