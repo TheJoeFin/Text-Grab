@@ -1,18 +1,17 @@
+using Dapplo.Windows.User32;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using Microsoft.Win32;
+using System.Windows;
+using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
-using Windows.Globalization;
 using Windows.Media.Ocr;
-using Dapplo.Windows.User32; // Added for display enumeration
-using Text_Grab.Extensions;  // For ScaledBounds()
 
 namespace Text_Grab.Utilities;
 
@@ -20,7 +19,7 @@ public static class DiagnosticsUtilities
 {
     public static async Task<string> GenerateBugReportAsync()
     {
-        var bugReport = new BugReportModel
+        BugReportModel bugReport = new()
         {
             GeneratedAt = DateTimeOffset.Now,
             AppVersion = AppUtilities.GetAppVersion(),
@@ -31,10 +30,10 @@ public static class DiagnosticsUtilities
             HistoryInfo = GetHistoryInfo(),
             LanguageInfo = GetLanguageInfo(),
             TesseractInfo = await GetTesseractInfoAsync(),
-            Monitors = GetMonitorsInfo() // New: include monitors info
+            Monitors = GetMonitorsInfo()
         };
 
-        var options = new JsonSerializerOptions
+        JsonSerializerOptions options = new()
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -46,13 +45,13 @@ public static class DiagnosticsUtilities
     public static async Task<string> SaveBugReportToFileAsync()
     {
         string bugReportJson = await GenerateBugReportAsync();
-        
+
         string fileName = $"TextGrab_BugReport_{DateTime.Now:yyyyMMdd_HHmmss}.json";
         string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string filePath = Path.Combine(documentsPath, fileName);
-        
+
         await File.WriteAllTextAsync(filePath, bugReportJson);
-        
+
         return filePath;
     }
 
@@ -60,15 +59,14 @@ public static class DiagnosticsUtilities
     {
         if (AppUtilities.IsPackaged())
             return "Packaged (Microsoft Store or sideloaded)";
-        
-        // Check if it's self-contained by looking for runtime files
+
         string baseDir = AppContext.BaseDirectory;
         bool hasCoreClr = File.Exists(Path.Combine(baseDir, "coreclr.dll"));
         bool hasHostFxr = File.Exists(Path.Combine(baseDir, "hostfxr.dll"));
-        
+
         if (hasCoreClr && hasHostFxr)
             return "Self-contained executable";
-        
+
         return "Framework-dependent executable";
     }
 
@@ -76,13 +74,13 @@ public static class DiagnosticsUtilities
     {
         try
         {
-            using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
-            if (key != null)
+            using RegistryKey? key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+            if (key is not null)
             {
                 string? productName = key.GetValue("ProductName")?.ToString();
                 string? displayVersion = key.GetValue("DisplayVersion")?.ToString();
                 string? buildLabEx = key.GetValue("BuildLabEx")?.ToString();
-                
+
                 return $"{productName} {displayVersion} (Build: {buildLabEx})";
             }
         }
@@ -90,13 +88,13 @@ public static class DiagnosticsUtilities
         {
             return $"Unable to determine Windows version: {ex.Message}";
         }
-        
+
         return $"Windows {Environment.OSVersion.Version}";
     }
 
     private static StartupDetailsModel GetStartupDetails()
     {
-        var details = new StartupDetailsModel
+        StartupDetailsModel details = new()
         {
             IsPackaged = AppUtilities.IsPackaged(),
             BaseDirectory = AppContext.BaseDirectory,
@@ -113,15 +111,13 @@ public static class DiagnosticsUtilities
         {
             details.StartupMethod = "Registry Run key (unpackaged apps)";
             details.RegistryPath = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-            
-            // Calculate the path that would be set in registry (using the fixed logic)
+
             string executablePath = Path.Combine(AppContext.BaseDirectory, "Text-Grab.exe");
-            details.CalculatedRegistryValue = $"\"{executablePath}\"";
-            
-            // Try to read the actual registry value
+            details.CalculatedRegistryValue = $"{executablePath}";
+
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
+                using RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
                 details.ActualRegistryValue = key?.GetValue("Text-Grab")?.ToString() ?? "Not set";
             }
             catch (Exception ex)
@@ -135,8 +131,8 @@ public static class DiagnosticsUtilities
 
     private static SettingsInfoModel GetSettingsInfo()
     {
-        var settings = AppUtilities.TextGrabSettings;
-        
+        Settings settings = AppUtilities.TextGrabSettings;
+
         return new SettingsInfoModel
         {
             FirstRun = settings.FirstRun,
@@ -144,19 +140,17 @@ public static class DiagnosticsUtilities
             StartupOnLogin = settings.StartupOnLogin,
             RunInBackground = settings.RunInTheBackground,
             GlobalHotkeysEnabled = settings.GlobalHotkeysEnabled,
-            TryToReadBarcodes = false, // Property doesn't exist in current settings
+            TryToReadBarcodes = false,
             CorrectErrors = settings.CorrectErrors,
-            CorrectToLatin = false, // Property doesn't exist in current settings
+            CorrectToLatin = false,
             UseTesseract = settings.UseTesseract,
-            UseWindowsOcr = true, // Assume true as it's built-in Windows OCR
-            UseWindowsAi = false, // Property doesn't exist, check through utility
+            WindowsAiAvailable = WindowsAiUtilities.CanDeviceUseWinAI(),
             DefaultLaunch = settings.DefaultLaunch?.ToString() ?? "Unknown",
-            DefaultLanguage = "Not configured in settings", // Property doesn't exist in current settings
+            DefaultLanguage = "Not configured in settings",
             TesseractPath = settings.TesseractPath ?? string.Empty,
             NeverAutoUseClipboard = settings.NeverAutoUseClipboard,
             FontFamilySetting = settings.FontFamilySetting ?? "Default",
             IsFontBold = settings.IsFontBold,
-            ShowTooltips = false // Property doesn't exist in current settings
         };
     }
 
@@ -164,16 +158,15 @@ public static class DiagnosticsUtilities
     {
         try
         {
-            var historyService = Singleton<HistoryService>.Instance;
-            var imageHistory = historyService.GetRecentGrabs();
-            
-            // We can get some text history info but there's no public getter for full text history
+            HistoryService historyService = Singleton<HistoryService>.Instance;
+            List<HistoryInfo>? imageHistory = historyService.GetRecentGrabs();
+
             string lastTextHistory = historyService.GetLastTextHistory();
             bool hasTextHistory = !string.IsNullOrEmpty(lastTextHistory);
-            
+
             return new HistoryInfoModel
             {
-                TextOnlyHistoryCount = hasTextHistory ? 1 : 0, // Can only tell if there's at least one
+                TextOnlyHistoryCount = hasTextHistory ? 1 : 0,
                 ImageHistoryCount = imageHistory?.Count ?? 0,
                 TotalHistoryCount = (hasTextHistory ? 1 : 0) + (imageHistory?.Count ?? 0),
                 OldestEntryDate = GetOldestHistoryDate(null, imageHistory),
@@ -196,27 +189,27 @@ public static class DiagnosticsUtilities
 
     private static DateTimeOffset? GetOldestHistoryDate(IList<HistoryInfo>? textHistory, IList<HistoryInfo>? imageHistory)
     {
-        var dates = new List<DateTimeOffset>();
-        
-        if (textHistory != null)
+        List<DateTimeOffset> dates = [];
+
+        if (textHistory is not null)
             dates.AddRange(textHistory.Select(h => h.CaptureDateTime));
-        
-        if (imageHistory != null)
+
+        if (imageHistory is not null)
             dates.AddRange(imageHistory.Select(h => h.CaptureDateTime));
-        
+
         return dates.Count > 0 ? dates.Min() : null;
     }
 
     private static DateTimeOffset? GetNewestHistoryDate(IList<HistoryInfo>? textHistory, IList<HistoryInfo>? imageHistory)
     {
-        var dates = new List<DateTimeOffset>();
-        
-        if (textHistory != null)
+        List<DateTimeOffset> dates = [];
+
+        if (textHistory is not null)
             dates.AddRange(textHistory.Select(h => h.CaptureDateTime));
-        
-        if (imageHistory != null)
+
+        if (imageHistory is not null)
             dates.AddRange(imageHistory.Select(h => h.CaptureDateTime));
-        
+
         return dates.Count > 0 ? dates.Max() : null;
     }
 
@@ -224,16 +217,16 @@ public static class DiagnosticsUtilities
     {
         try
         {
-            var availableLanguages = LanguageUtilities.GetAllLanguages();
-            var currentLanguage = LanguageUtilities.GetCurrentInputLanguage();
-            
+            IList<Interfaces.ILanguage> availableLanguages = LanguageUtilities.GetAllLanguages();
+            Interfaces.ILanguage currentLanguage = LanguageUtilities.GetCurrentInputLanguage();
+
             return new LanguageInfoModel
             {
                 CurrentInputLanguage = currentLanguage.LanguageTag,
-                AvailableOcrLanguages = OcrEngine.AvailableRecognizerLanguages.Select(l => l.LanguageTag).ToList(),
+                AvailableOcrLanguages = [.. OcrEngine.AvailableRecognizerLanguages.Select(l => l.LanguageTag)],
                 AvailableLanguagesCount = availableLanguages.Count,
                 WindowsAiAvailable = WindowsAiUtilities.CanDeviceUseWinAI(),
-                TesseractLanguagesConfigured = new List<string> { "Will be populated from Tesseract installation" }
+                TesseractLanguagesConfigured = ["Will be populated from Tesseract installation"]
             };
         }
         catch (Exception ex)
@@ -241,10 +234,10 @@ public static class DiagnosticsUtilities
             return new LanguageInfoModel
             {
                 CurrentInputLanguage = "Error",
-                AvailableOcrLanguages = new List<string>(),
+                AvailableOcrLanguages = [],
                 AvailableLanguagesCount = 0,
                 WindowsAiAvailable = false,
-                TesseractLanguagesConfigured = new List<string>(),
+                TesseractLanguagesConfigured = [],
                 ErrorMessage = $"Error accessing language info: {ex.Message}"
             };
         }
@@ -255,7 +248,7 @@ public static class DiagnosticsUtilities
         try
         {
             bool canLocate = TesseractHelper.CanLocateTesseractExe();
-            List<string> availableLanguages = new();
+            List<string> availableLanguages = [];
 
             if (canLocate)
             {
@@ -265,7 +258,7 @@ public static class DiagnosticsUtilities
                 }
                 catch (Exception ex)
                 {
-                    availableLanguages = new List<string> { $"Error getting languages: {ex.Message}" };
+                    availableLanguages = [$"Error getting languages: {ex.Message}"];
                 }
             }
 
@@ -275,7 +268,7 @@ public static class DiagnosticsUtilities
                 ExecutablePath = canLocate ? "Located (path private)" : "Not found",
                 Version = "Version info not publicly available",
                 AvailableLanguages = availableLanguages,
-                ConfiguredLanguages = new List<string> { "Will be populated from Tesseract installation" }
+                ConfiguredLanguages = ["Will be populated from Tesseract installation"]
             };
         }
         catch (Exception ex)
@@ -285,8 +278,8 @@ public static class DiagnosticsUtilities
                 IsInstalled = false,
                 ExecutablePath = string.Empty,
                 Version = string.Empty,
-                AvailableLanguages = new List<string>(),
-                ConfiguredLanguages = new List<string>(),
+                AvailableLanguages = [],
+                ConfiguredLanguages = [],
                 ErrorMessage = $"Error accessing Tesseract info: {ex.Message}"
             };
         }
@@ -294,7 +287,7 @@ public static class DiagnosticsUtilities
 
     private static List<MonitorInfoModel> GetMonitorsInfo()
     {
-        var monitors = new List<MonitorInfoModel>();
+        List<MonitorInfoModel> monitors = [];
         try
         {
             DisplayInfo[] displays = DisplayInfo.AllDisplayInfos;
@@ -304,15 +297,15 @@ public static class DiagnosticsUtilities
                 // DPI scale percent
                 NativeMethods.GetScaleFactorForMonitor(di.MonitorHandle, out uint scalePercent);
                 // Raw and scaled bounds
-                var raw = di.Bounds;
-                var scaled = di.ScaledBounds();
+                Dapplo.Windows.Common.Structs.NativeRect raw = di.Bounds;
+                Rect scaled = di.ScaledBounds();
 
                 monitors.Add(new MonitorInfoModel
                 {
                     Index = i + 1,
                     ScalePercent = scalePercent,
-                    Bounds = new MonitorRectModel { X = raw.X, Y = raw.Y, Width = raw.Width, Height = raw.Height },
-                    ScaledBounds = new MonitorRectModel { X = scaled.X, Y = scaled.Y, Width = scaled.Width, Height = scaled.Height }
+                    Bounds = raw,
+                    ScaledBounds = scaled
                 });
             }
         }
@@ -322,8 +315,8 @@ public static class DiagnosticsUtilities
             {
                 Index = -1,
                 ScalePercent = 0,
-                Bounds = new MonitorRectModel(),
-                ScaledBounds = new MonitorRectModel(),
+                Bounds = new Rect(),
+                ScaledBounds = new Rect(),
                 ErrorMessage = $"Error reading monitors: {ex.Message}"
             });
         }
@@ -331,7 +324,6 @@ public static class DiagnosticsUtilities
     }
 }
 
-// Data models for the bug report
 public class BugReportModel
 {
     public DateTimeOffset GeneratedAt { get; set; }
@@ -343,7 +335,7 @@ public class BugReportModel
     public HistoryInfoModel HistoryInfo { get; set; } = new();
     public LanguageInfoModel LanguageInfo { get; set; } = new();
     public TesseractInfoModel TesseractInfo { get; set; } = new();
-    public List<MonitorInfoModel> Monitors { get; set; } = new(); // New: monitors
+    public List<MonitorInfoModel> Monitors { get; set; } = [];
 }
 
 public class StartupDetailsModel
@@ -369,15 +361,13 @@ public class SettingsInfoModel
     public bool CorrectErrors { get; set; }
     public bool CorrectToLatin { get; set; }
     public bool UseTesseract { get; set; }
-    public bool UseWindowsOcr { get; set; }
-    public bool UseWindowsAi { get; set; }
+    public bool WindowsAiAvailable { get; set; }
     public string DefaultLaunch { get; set; } = string.Empty;
     public string DefaultLanguage { get; set; } = string.Empty;
     public string TesseractPath { get; set; } = string.Empty;
     public bool NeverAutoUseClipboard { get; set; }
     public string FontFamilySetting { get; set; } = string.Empty;
     public bool IsFontBold { get; set; }
-    public bool ShowTooltips { get; set; }
 }
 
 public class HistoryInfoModel
@@ -395,10 +385,10 @@ public class HistoryInfoModel
 public class LanguageInfoModel
 {
     public string CurrentInputLanguage { get; set; } = string.Empty;
-    public List<string> AvailableOcrLanguages { get; set; } = new();
+    public List<string> AvailableOcrLanguages { get; set; } = [];
     public int AvailableLanguagesCount { get; set; }
     public bool WindowsAiAvailable { get; set; }
-    public List<string> TesseractLanguagesConfigured { get; set; } = new();
+    public List<string> TesseractLanguagesConfigured { get; set; } = [];
     public string? ErrorMessage { get; set; }
 }
 
@@ -407,8 +397,8 @@ public class TesseractInfoModel
     public bool IsInstalled { get; set; }
     public string ExecutablePath { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
-    public List<string> AvailableLanguages { get; set; } = new();
-    public List<string> ConfiguredLanguages { get; set; } = new();
+    public List<string> AvailableLanguages { get; set; } = [];
+    public List<string> ConfiguredLanguages { get; set; } = [];
     public string? ErrorMessage { get; set; }
 }
 
@@ -416,15 +406,7 @@ public class MonitorInfoModel
 {
     public int Index { get; set; }
     public uint ScalePercent { get; set; }
-    public MonitorRectModel Bounds { get; set; } = new();
-    public MonitorRectModel ScaledBounds { get; set; } = new();
+    public Rect Bounds { get; set; } = new();
+    public Rect ScaledBounds { get; set; } = new();
     public string? ErrorMessage { get; set; }
-}
-
-public class MonitorRectModel
-{
-    public double X { get; set; }
-    public double Y { get; set; }
-    public double Width { get; set; }
-    public double Height { get; set; }
 }
