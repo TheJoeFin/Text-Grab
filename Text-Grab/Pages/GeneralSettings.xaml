@@ -75,22 +75,6 @@
             </StackPanel>
         </Border>
 
-        <!--  Monitors  -->
-        <TextBlock
-            Margin="0,16,0,4"
-            FontSize="16"
-            Style="{StaticResource TextHeader}"
-            Text="Monitors" />
-        <Border Padding="12" Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="6">
-            <ItemsControl ItemsSource="{Binding MonitorInfos}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Margin="0,2" Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap" Text="{Binding Title}"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
-
         <!--  Theme  -->
         <TextBlock
             Margin="0,16,0,4"
