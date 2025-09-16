@@ -28,24 +28,15 @@ public partial class GeneralSettings : Page
 
     #endregion Fields
 
-    // Simple view-model for monitor rows
-    public sealed class MonitorInfoRow
-    {
-        public required string Title { get; init; }
-    }
-
     public GeneralSettings()
     {
         InitializeComponent();
-        DataContext = this;
 
         if (!AppUtilities.IsPackaged())
             OpenExeFolderButton.Visibility = Visibility.Visible;
 
         VersionTextblock.Text = $"Version {AppUtilities.GetAppVersion()}";
     }
-
-    private static string RectToString(Rect r) => $"X={r.X}, Y={r.Y}, Width={r.Width}, Height={r.Height}";
 
     private void OpenExeFolderButton_Click(object sender, RoutedEventArgs args)
     {
