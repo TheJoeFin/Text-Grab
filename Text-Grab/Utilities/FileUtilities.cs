@@ -62,14 +62,8 @@ public class FileUtilities
 
     public static string GetPathToLocalFile(string imageRelativePath)
     {
-        Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
-        string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-        string? dirPath = Path.GetDirectoryName(codeBasePath);
-
-        if (dirPath is null)
-            dirPath = "";
-
-        return Path.Combine(dirPath, imageRelativePath);
+        string executableDirectory = GetCorrectExecutableDirectory();
+        return Path.Combine(executableDirectory, imageRelativePath);
     }
 
     public static async Task<string> GetPathToHistory()
@@ -175,17 +169,17 @@ public class FileUtilities
 
     private static string GetFolderPathUnpackaged(string filename, FileStorageKind storageKind)
     {
-        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-        string historyDirectory = $"{exePath}\\history";
+        string executableDirectory = GetCorrectExecutableDirectory();
+        string historyDirectory = Path.Combine(executableDirectory, "history");
 
         switch (storageKind)
         {
             case FileStorageKind.Absolute:
                 return filename;
             case FileStorageKind.WithExe:
-                return $"{exePath!}";
+                return executableDirectory;
             case FileStorageKind.WithHistory:
-                return $"{historyDirectory}";
+                return historyDirectory;
             default:
                 break;
         }
@@ -312,6 +306,50 @@ public class FileUtilities
             Directory.Delete(historyDirectory, true);
         }
         catch { }
+    }
+
+    private static string GetCorrectExecutableDirectory()
+    {
+        // For single-file self-contained apps, use the original executable location
+        if (IsExtractedSingleFile())
+        {
+            // Try to get the original path from command line args or process info
+            string? processPath = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(processPath) && System.IO.File.Exists(processPath))
+            {
+                string? processDir = Path.GetDirectoryName(processPath);
+                if (!string.IsNullOrEmpty(processDir))
+                {
+                    return processDir;
+                }
+            }
+        }
+        
+        // For framework-dependent apps, use the base directory approach
+        string baseDir = System.AppContext.BaseDirectory;
+        if (!string.IsNullOrEmpty(baseDir))
+        {
+            // Remove trailing slash/backslash to ensure consistency
+            return baseDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+        
+        // Fallback to process directory
+        string? fallbackProcessPath = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(fallbackProcessPath))
+        {
+            string? processDir = Path.GetDirectoryName(fallbackProcessPath);
+            if (!string.IsNullOrEmpty(processDir))
+            {
+                return processDir;
+            }
+        }
+        
+        return "";
+    }
+
+    private static bool IsExtractedSingleFile()
+    {
+        return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_BUNDLE_EXTRACT_BASE_DIR"));
     }
     #endregion Private Methods
 }
