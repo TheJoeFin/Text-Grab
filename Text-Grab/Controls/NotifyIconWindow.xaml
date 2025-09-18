@@ -79,6 +79,14 @@
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
+                        x:Name="LastEditWindow"
+                        Click="LastEditWindow_Click"
+                        Header="Last Edit Text Window">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="History20" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
                         x:Name="EditWindowMenuItem"
                         Click="EditWindowMenuItem_Click"
                         Header="Edit Text Window">
