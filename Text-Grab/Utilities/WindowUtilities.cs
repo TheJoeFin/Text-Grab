@@ -291,6 +291,11 @@ public static class WindowUtilities
                     && app.TextGrabIcon == null
                     && zeroOpenWindows)
                     shouldShutDown = true;
+
+                if (app.TextGrabIcon is not null
+                    && app.TextGrabIcon.Icon is null
+                    && zeroOpenWindows)
+                    shouldShutDown = true;
             }
         }
         else if (zeroOpenWindows)

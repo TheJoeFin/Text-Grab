@@ -16,6 +16,16 @@
         <TextBlock Style="{StaticResource TextHeader}" Text="Dangerous Options" />
 
         <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Generate bug report with app diagnostic information.
+        </TextBlock>
+        <controls:CollapsibleButton
+            x:Name="ExportBugReportButton"
+            HorizontalAlignment="Left"
+            ButtonSymbol="DocumentSave24"
+            ButtonText="Export Bug Report"
+            Click="ExportBugReportButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
             Reset All settings to default settings.
         </TextBlock>
         <controls:CollapsibleButton

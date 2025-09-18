@@ -2,6 +2,8 @@ name: "Build Text Grab"
 on:
   push:
     branches: [dev]
+  pull_request:
+    branches: [dev]
 
 env:
   PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
@@ -15,7 +17,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "9.0.x"
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }}
       - name: Build

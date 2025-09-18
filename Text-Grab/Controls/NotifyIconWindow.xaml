@@ -16,7 +16,6 @@
     Left="-50"
     Opacity="0"
     ShowInTaskbar="True"
-    ToolTip="Text Grab"
     Top="-50"
     WindowStyle="ToolWindow"
     mc:Ignorable="d">
@@ -26,7 +25,7 @@
             Icon="/Images/TealSelect40.png"
             IsVisibleChanged="NotifyIcon_IsVisibleChanged"
             LeftClick="NotifyIcon_LeftClick"
-            ToolTip="Text Grab">
+            TooltipText="Text Grab">
             <WpfUiIcon:NotifyIcon.Menu>
                 <ContextMenu>
                     <MenuItem
@@ -77,6 +76,14 @@
                         Header="Grab Frame">
                         <MenuItem.Icon>
                             <wpfui:SymbolIcon Symbol="PanelBottom20" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="LastEditWindow"
+                        Click="LastEditWindow_Click"
+                        Header="Last Edit Text Window">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="History20" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem

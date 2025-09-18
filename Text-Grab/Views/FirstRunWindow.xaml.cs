@@ -10,14 +10,9 @@ using Wpf.Ui.Controls;
 
 namespace Text_Grab;
 
-/// <summary>
-/// Interaction logic for FirstRunWindow.xaml
-/// </summary>
 public partial class FirstRunWindow : FluentWindow
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
-
-    #region Constructors
 
     public FirstRunWindow()
     {
@@ -25,13 +20,10 @@ public partial class FirstRunWindow : FluentWindow
         App.SetTheme();
     }
 
-    #endregion Constructors
-
-    #region Methods
-
     private void BackgroundCheckBox_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender is ToggleSwitch toggleSwitch && toggleSwitch.IsChecked is not null)
+        if (sender is ToggleSwitch toggleSwitch
+            && toggleSwitch.IsChecked is not null)
         {
             DefaultSettings.RunInTheBackground = (bool)toggleSwitch.IsChecked;
             ImplementAppOptions.ImplementBackgroundOption(DefaultSettings.RunInTheBackground);
@@ -193,6 +185,4 @@ public partial class FirstRunWindow : FluentWindow
     {
         WindowUtilities.ShouldShutDown();
     }
-
-    #endregion Methods
 }
