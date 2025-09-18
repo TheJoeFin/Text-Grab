@@ -16,7 +16,6 @@
     Left="-50"
     Opacity="0"
     ShowInTaskbar="True"
-    ToolTip="Text Grab"
     Top="-50"
     WindowStyle="ToolWindow"
     mc:Ignorable="d">
@@ -26,7 +25,7 @@
             Icon="/Images/TealSelect40.png"
             IsVisibleChanged="NotifyIcon_IsVisibleChanged"
             LeftClick="NotifyIcon_LeftClick"
-            ToolTip="Text Grab">
+            TooltipText="Text Grab">
             <WpfUiIcon:NotifyIcon.Menu>
                 <ContextMenu>
                     <MenuItem
