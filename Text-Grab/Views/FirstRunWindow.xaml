@@ -352,8 +352,7 @@
                     x:Name="BackgroundCheckBox"
                     Margin="50,5,50,0"
                     HorizontalAlignment="Center"
-                    Checked="BackgroundCheckBox_Checked"
-                    Unchecked="BackgroundCheckBox_Checked">
+                    Click="BackgroundCheckBox_Checked">
                     <TextBlock Margin="0" Style="{StaticResource TextBody}">
                         Run Text Grab in the background
                     </TextBlock>
