@@ -1,6 +1,7 @@
 ﻿using Microsoft.Graphics.Imaging;
 using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.Imaging;
+using Microsoft.Windows.AI.Text;
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -107,5 +108,80 @@ public static class WindowsAiUtilities
             .RecognizeTextFromImage(imageBuffer);
 
         return result;
+    }
+
+    internal static async Task<string> SummarizeParagraph(string textToSummarize)
+    {
+        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+
+        TextSummarizer textSummarizer = new(languageModel);
+
+        bool wasTruncated = false;
+
+        if (textSummarizer.IsPromptLargerThanContext(textToSummarize, out ulong cutOff))
+        {
+            textToSummarize = textToSummarize[..(int)cutOff];
+            wasTruncated = true;
+        }
+        LanguageModelResponseResult result = await textSummarizer.SummarizeParagraphAsync(textToSummarize);
+
+        if (result.Status == LanguageModelResponseStatus.Complete)
+        {
+            if (wasTruncated)
+                return $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}";
+            else
+                return result.Text;
+        }
+        else
+            return $"ERROR: Unable to summarize text. {result.ExtendedError.Message}";
+    }
+
+    internal static async Task<string> Rewrite(string textToRewrite)
+    {
+        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+
+        TextRewriter textRewriter = new(languageModel);
+        try
+        {
+            LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite, TextRewriteTone.Concise);
+            if (result.Status == LanguageModelResponseStatus.Complete)
+            {
+                return result.Text;
+            }
+            else
+                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
+        }
+        catch (Exception ex)
+        {
+            return $"ERROR: Failed to Rewrite: {ex.Message}";
+        }
+    }
+
+    internal static async Task<string> TextToTable(string textToTable)
+    {
+        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+
+        TextToTableConverter toTableConverter = new(languageModel);
+        try
+        {
+            TextToTableResponseResult result = await toTableConverter.ConvertAsync(textToTable);
+            if (result.Status == LanguageModelResponseStatus.Complete)
+            {
+                TextToTableRow[] rows = result.GetRows();
+                StringBuilder sb = new();
+                foreach (TextToTableRow row in rows)
+                {
+                    string[] columns = row.GetColumns();
+                    sb.AppendLine(string.Join("\t", columns));
+                }
+                return sb.ToString();
+            }
+            else
+                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
+        }
+        catch (Exception ex)
+        {
+            return $"ERROR: Failed to Rewrite: {ex.Message}";
+        }
     }
 }
