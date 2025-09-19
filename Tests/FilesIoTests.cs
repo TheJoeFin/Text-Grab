@@ -6,7 +6,7 @@ namespace Tests;
 
 public class FilesIoTests
 {
-    private const string fontSamplePath = @".\Images\font_sample.png";
+    private const string fontSamplePath = @"Images\font_sample.png";
 
     [WpfFact]
     public async Task CanSaveImagesWithHistory()

@@ -58,7 +58,11 @@ public class FileUtilities
 
     public static string GetPathToLocalFile(string imageRelativePath)
     {
-        string executableDirectory = GetExePath();
+        string? executableDirectory = Path.GetDirectoryName(GetExePath());
+
+        if (executableDirectory is null)
+            throw new NullReferenceException($"{nameof(executableDirectory)} cannot be null");
+
         return Path.Combine(executableDirectory, imageRelativePath);
     }
 
