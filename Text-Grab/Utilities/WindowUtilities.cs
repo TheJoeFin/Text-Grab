@@ -14,7 +14,7 @@ using static OSInterop;
 
 namespace Text_Grab.Utilities;
 
-public static class WindowUtilities
+public static partial class WindowUtilities
 {
     public static void AddTextToOpenWindow(string textToAdd)
     {
@@ -35,7 +35,7 @@ public static class WindowUtilities
         if (passedWindow is GrabFrame)
             storedPositionString = AppUtilities.TextGrabSettings.GrabFrameWindowSizeAndPosition;
 
-        List<string> storedPosition = new(storedPositionString.Split(','));
+        List<string> storedPosition = [.. storedPositionString.Split(',')];
 
         bool isStoredRectWithinScreen = false;
 
@@ -81,9 +81,9 @@ public static class WindowUtilities
         DisplayInfo[] allScreens = DisplayInfo.AllDisplayInfos;
         WindowCollection allWindows = Application.Current.Windows;
 
-        List<FullscreenGrab> allFullscreenGrab = new();
+        List<FullscreenGrab> allFullscreenGrab = [];
 
-        int numberOfScreens = allScreens.Count();
+        int numberOfScreens = allScreens.Length;
 
         foreach (Window window in allWindows)
             if (window is FullscreenGrab grab)
@@ -201,7 +201,7 @@ public static class WindowUtilities
     {
         await Task.Delay(TimeSpan.FromSeconds(AppUtilities.TextGrabSettings.InsertDelay));
 
-        List<INPUT> inputs = new();
+        List<INPUT> inputs = [];
         // make sure keys are up.
         TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.LCONTROL);
         TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RCONTROL);
@@ -330,9 +330,9 @@ public static class WindowUtilities
 
     #region DLLImport
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetCursorPos(out POINT lpPoint);
+    private static partial bool GetCursorPos(out POINT lpPoint);
 
     #endregion
 }

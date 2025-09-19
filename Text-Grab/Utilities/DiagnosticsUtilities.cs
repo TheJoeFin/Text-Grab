@@ -112,7 +112,8 @@ public static class DiagnosticsUtilities
             details.StartupMethod = "Registry Run key (unpackaged apps)";
             details.RegistryPath = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
 
-            string executablePath = Path.Combine(AppContext.BaseDirectory, "Text-Grab.exe");
+            string exeName = Path.GetFileName(Environment.ProcessPath ?? "Text-Grab.exe");
+            string executablePath = Path.Combine(AppContext.BaseDirectory, exeName);
             details.CalculatedRegistryValue = $"{executablePath}";
 
             try

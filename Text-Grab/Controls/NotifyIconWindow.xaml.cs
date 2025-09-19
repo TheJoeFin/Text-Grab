@@ -7,9 +7,7 @@ using Text_Grab.Views;
 using Wpf.Ui.Tray.Controls;
 
 namespace Text_Grab.Controls;
-/// <summary>
-/// Interaction logic for NotifyIconWindow.xaml
-/// </summary>
+
 public partial class NotifyIconWindow : Window
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
@@ -30,7 +28,7 @@ public partial class NotifyIconWindow : Window
         App.DefaultLaunch();
     }
 
-    private void Window_Activated(object sender, System.EventArgs e)
+    private void Window_Activated(object sender, EventArgs e)
     {
         Hide();
         NotifyIcon.Visibility = Visibility.Visible;

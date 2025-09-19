@@ -36,7 +36,7 @@ public class FileUtilities
         string imageExtensions = string.Empty;
         string separator = "";
         ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-        Dictionary<string, string> imageFilters = new();
+        Dictionary<string, string> imageFilters = [];
         foreach (ImageCodecInfo codec in codecs)
         {
             if (codec.FilenameExtension is not string extension)
@@ -48,11 +48,7 @@ public class FileUtilities
         }
         string result = string.Empty;
         separator = "";
-        //foreach (KeyValuePair<string, string> filter in imageFilters)
-        //{
-        //    result += $"{separator}{filter.Key}|{filter.Value}";
-        //    separator = "|";
-        //}
+
         if (!string.IsNullOrEmpty(imageExtensions))
         {
             result += $"{separator}Image files|{imageExtensions}";
@@ -62,7 +58,7 @@ public class FileUtilities
 
     public static string GetPathToLocalFile(string imageRelativePath)
     {
-        string executableDirectory = GetCorrectExecutableDirectory();
+        string executableDirectory = GetExePath();
         return Path.Combine(executableDirectory, imageRelativePath);
     }
 
@@ -169,7 +165,13 @@ public class FileUtilities
 
     private static string GetFolderPathUnpackaged(string filename, FileStorageKind storageKind)
     {
-        string executableDirectory = GetCorrectExecutableDirectory();
+        string defaultFallback = "c:\\Text-Grab";
+
+        string? executableDirectory = Path.GetDirectoryName(GetExePath());
+
+        if (string.IsNullOrEmpty(executableDirectory))
+            return defaultFallback;
+
         string historyDirectory = Path.Combine(executableDirectory, "history");
 
         switch (storageKind)
@@ -184,7 +186,7 @@ public class FileUtilities
                 break;
         }
 
-        return $"c:\\";
+        return defaultFallback;
     }
 
     private static async Task<StorageFolder> GetStorageFolderPackaged(string fileName, FileStorageKind storageKind)
@@ -308,14 +310,17 @@ public class FileUtilities
         catch { }
     }
 
-    private static string GetCorrectExecutableDirectory()
+    public static string GetExePath()
     {
+        if (!string.IsNullOrEmpty(Environment.ProcessPath))
+            return Environment.ProcessPath;
+
         // For single-file self-contained apps, use the original executable location
         if (IsExtractedSingleFile())
         {
             // Try to get the original path from command line args or process info
             string? processPath = Environment.ProcessPath;
-            if (!string.IsNullOrEmpty(processPath) && System.IO.File.Exists(processPath))
+            if (!string.IsNullOrEmpty(processPath) && File.Exists(processPath))
             {
                 string? processDir = Path.GetDirectoryName(processPath);
                 if (!string.IsNullOrEmpty(processDir))
@@ -326,7 +331,7 @@ public class FileUtilities
         }
         
         // For framework-dependent apps, use the base directory approach
-        string baseDir = System.AppContext.BaseDirectory;
+        string baseDir = AppContext.BaseDirectory;
         if (!string.IsNullOrEmpty(baseDir))
         {
             // Remove trailing slash/backslash to ensure consistency
@@ -349,7 +354,14 @@ public class FileUtilities
 
     private static bool IsExtractedSingleFile()
     {
-        return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_BUNDLE_EXTRACT_BASE_DIR"));
+        string baseDir = AppContext.BaseDirectory;
+
+        if (baseDir.Contains(@"AppData\Local\Temp\Text-Grab"))
+            return true;
+
+        return false;
+
+        // return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_BUNDLE_EXTRACT_BASE_DIR"));
     }
     #endregion Private Methods
 }

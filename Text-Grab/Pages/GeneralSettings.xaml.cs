@@ -40,7 +40,7 @@ public partial class GeneralSettings : Page
 
     private void OpenExeFolderButton_Click(object sender, RoutedEventArgs args)
     {
-        if (Path.GetDirectoryName(AppContext.BaseDirectory) is not string exePath)
+        if (Path.GetDirectoryName(FileUtilities.GetExePath()) is not string exePath)
             return;
 
         Uri source = new(exePath, UriKind.Absolute);
