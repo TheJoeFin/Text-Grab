@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Windows.Graphics.Imaging;
+using ZXing;
 
 namespace Text_Grab.Utilities;
 
@@ -118,22 +119,30 @@ public static class WindowsAiUtilities
 
         bool wasTruncated = false;
 
-        if (textSummarizer.IsPromptLargerThanContext(textToSummarize, out ulong cutOff))
-        {
-            textToSummarize = textToSummarize[..(int)cutOff];
-            wasTruncated = true;
-        }
-        LanguageModelResponseResult result = await textSummarizer.SummarizeParagraphAsync(textToSummarize);
+        // if (textSummarizer.IsPromptLargerThanContext(textToSummarize, out ulong cutOff))
+        // {
+        //     textToSummarize = textToSummarize[..(int)cutOff];
+        //     wasTruncated = true;
+        // }
 
-        if (result.Status == LanguageModelResponseStatus.Complete)
+        try
         {
-            if (wasTruncated)
-                return $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}";
+            LanguageModelResponseResult result = await textSummarizer.SummarizeParagraphAsync(textToSummarize);
+
+            if (result.Status == LanguageModelResponseStatus.Complete)
+            {
+                if (wasTruncated)
+                    return $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}";
+                else
+                    return result.Text;
+            }
             else
-                return result.Text;
+                return $"ERROR: Unable to summarize text. {result.ExtendedError.Message}";
         }
-        else
-            return $"ERROR: Unable to summarize text. {result.ExtendedError.Message}";
+        catch (Exception ex)
+        {
+            return $"ERROR: Unable to summarize text. {ex.Message}";
+        }
     }
 
     internal static async Task<string> Rewrite(string textToRewrite)
@@ -143,7 +152,8 @@ public static class WindowsAiUtilities
         TextRewriter textRewriter = new(languageModel);
         try
         {
-            LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite, TextRewriteTone.Concise);
+            //LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite, TextRewriteTone.Concise);
+            LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite);
             if (result.Status == LanguageModelResponseStatus.Complete)
             {
                 return result.Text;
