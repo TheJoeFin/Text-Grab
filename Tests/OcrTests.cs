@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using Text_Grab;
@@ -55,6 +56,7 @@ November	11	Fall
 December	12	Winter";
 
     private const string ComplexTablePath = @".\Images\Table-Complex.png";
+    private const string ComplexWordBorders = @".\TextFiles\Table-Complex-WordBorders.json";
     private const string ComplexTableResult = @"""DESCRIPTION	YEAR TO DATE ACTUAL	ANNUAL BUDGET	BALANCE	% BUDGET REMAINING
 CORPORATE INCOME	(1) $138,553	$358,100	$219,547	61 %
 FOUNDATION INCOME	432,275	824,700	392,425	48%
@@ -216,16 +218,18 @@ REVENUES OVERI(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A
     public async Task OcrComplexTableTestImage()
     {
         // Given
-        string testImagePath = ComplexTablePath;
+        //string testImagePath = ComplexTablePath;
+        string resultWordBorders = ComplexWordBorders;
         string expectedResult = ComplexTableResult;
-        Uri uri = new(testImagePath, UriKind.Relative);
-        Language EnglishLanguage = new("en-US");
-        GlobalLang globalLang = new(EnglishLanguage);
-        Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
+        string wordBordersJson = await File.ReadAllTextAsync(FileUtilities.GetPathToLocalFile(resultWordBorders));
+
+        HistoryInfo? info = JsonSerializer.Deserialize<HistoryInfo>(wordBordersJson);
+        List<WordBorderInfo> wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(info?.WordBorderInfoJson ?? "[]")
+            ?? throw new Exception("Failed to deserialize WordBorderInfo list");
+
+        List<WordBorder> wordBorders = [.. wbInfoList.Select(wbInfo => new WordBorder(wbInfo))];
 
         // When
-        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
-        DpiScale dpiScale = new(1, 1);
         // 1514 x 1243 image size
         Rectangle rectCanvasSize = new()
         {
@@ -235,7 +239,6 @@ REVENUES OVERI(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A
             Y = 0
         };
 
-        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpiScale);
         ResultTable resultTable = new();
         resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
         StringBuilder stringBuilder = new();

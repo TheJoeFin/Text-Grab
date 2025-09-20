@@ -56,4 +56,16 @@
         </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Update="Images\Table-Complex.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="TextFiles\Table-Complex-WordBorders.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>
