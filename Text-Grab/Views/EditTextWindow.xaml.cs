@@ -2342,7 +2342,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         string textToSummarize = GetSelectedTextOrAllText();
 
-        this.IsEnabled = false;
+        SetToLoading("Summarizing...");
 
         try
         {
@@ -2355,7 +2355,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         finally
         {
-            this.IsEnabled = true;
+            SetToLoaded();
         }
     }
 
@@ -2372,7 +2372,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         string textToRewrite = GetSelectedTextOrAllText();
 
-        this.IsEnabled = false;
+        SetToLoading("Rewriting...");
         try
         {
             string summarizedText = await WindowsAiUtilities.Rewrite(textToRewrite);
@@ -2384,7 +2384,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         finally
         {
-            this.IsEnabled = true;
+            SetToLoaded();
         }
     }
 
@@ -2392,7 +2392,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         string textToTable = GetSelectedTextOrAllText();
 
-        this.IsEnabled = false;
+        SetToLoading("Converting...");
 
         try
         {
@@ -2405,7 +2405,23 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         finally
         {
-            this.IsEnabled = true;
+            SetToLoaded();
         }
+    }
+
+    private void SetToLoading(string message = "")
+    {
+        IsEnabled = false;
+
+        if (!string.IsNullOrWhiteSpace(message))
+            ProgressText.Text = message;
+
+        LoadingStack.Visibility = Visibility.Visible;
+    }
+
+    private void SetToLoaded()
+    {
+        IsEnabled = true;
+        LoadingStack.Visibility = Visibility.Collapsed;
     }
 }
