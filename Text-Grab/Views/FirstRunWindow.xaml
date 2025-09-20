@@ -351,8 +351,7 @@
                 <ui:ToggleSwitch
                     x:Name="BackgroundCheckBox"
                     Margin="50,5,50,0"
-                    HorizontalAlignment="Center"
-                    Click="BackgroundCheckBox_Checked">
+                    HorizontalAlignment="Center">
                     <TextBlock Margin="0" Style="{StaticResource TextBody}">
                         Run Text Grab in the background
                     </TextBlock>

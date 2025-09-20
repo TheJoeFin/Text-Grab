@@ -42,7 +42,10 @@ public static class WindowsAiUtilities
 #if DEBUG
             throw;
 #endif
+
+#pragma warning disable CS0162 // Unreachable code detected
             return false;
+#pragma warning restore CS0162 // Unreachable code detected
         }
     }
 
@@ -119,6 +122,7 @@ public static class WindowsAiUtilities
 
         bool wasTruncated = false;
 
+        // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
         // if (textSummarizer.IsPromptLargerThanContext(textToSummarize, out ulong cutOff))
         // {
         //     textToSummarize = textToSummarize[..(int)cutOff];
@@ -152,6 +156,7 @@ public static class WindowsAiUtilities
         TextRewriter textRewriter = new(languageModel);
         try
         {
+            // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
             //LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite, TextRewriteTone.Concise);
             LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite);
             if (result.Status == LanguageModelResponseStatus.Complete)

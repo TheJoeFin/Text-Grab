@@ -20,11 +20,6 @@ public partial class FirstRunWindow : FluentWindow
         App.SetTheme();
     }
 
-    private void BackgroundCheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-        
-    }
-
     private async void FirstRun_Loaded(object sender, RoutedEventArgs e)
     {
         TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);

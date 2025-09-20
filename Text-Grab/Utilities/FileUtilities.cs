@@ -12,8 +12,6 @@ namespace Text_Grab.Utilities;
 
 public class FileUtilities
 {
-    #region Public Methods
-
     public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
     {
         if (AppUtilities.IsPackaged())
@@ -157,9 +155,6 @@ public class FileUtilities
 
         return await File.ReadAllTextAsync(filePath);
     }
-    #endregion Public Methods
-
-    #region Private Methods
 
     private static void AddText(FileStream fs, string value)
     {
@@ -318,54 +313,7 @@ public class FileUtilities
     {
         if (!string.IsNullOrEmpty(Environment.ProcessPath))
             return Environment.ProcessPath;
-
-        // For single-file self-contained apps, use the original executable location
-        if (IsExtractedSingleFile())
-        {
-            // Try to get the original path from command line args or process info
-            string? processPath = Environment.ProcessPath;
-            if (!string.IsNullOrEmpty(processPath) && File.Exists(processPath))
-            {
-                string? processDir = Path.GetDirectoryName(processPath);
-                if (!string.IsNullOrEmpty(processDir))
-                {
-                    return processDir;
-                }
-            }
-        }
-        
-        // For framework-dependent apps, use the base directory approach
-        string baseDir = AppContext.BaseDirectory;
-        if (!string.IsNullOrEmpty(baseDir))
-        {
-            // Remove trailing slash/backslash to ensure consistency
-            return baseDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        }
-        
-        // Fallback to process directory
-        string? fallbackProcessPath = Environment.ProcessPath;
-        if (!string.IsNullOrEmpty(fallbackProcessPath))
-        {
-            string? processDir = Path.GetDirectoryName(fallbackProcessPath);
-            if (!string.IsNullOrEmpty(processDir))
-            {
-                return processDir;
-            }
-        }
         
         return "";
     }
-
-    private static bool IsExtractedSingleFile()
-    {
-        string baseDir = AppContext.BaseDirectory;
-
-        if (baseDir.Contains(@"AppData\Local\Temp\Text-Grab"))
-            return true;
-
-        return false;
-
-        // return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_BUNDLE_EXTRACT_BASE_DIR"));
-    }
-    #endregion Private Methods
 }
