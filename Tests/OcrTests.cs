@@ -54,6 +54,42 @@ October	10	Fall
 November	11	Fall
 December	12	Winter";
 
+    private const string ComplexTablePath = @".\Images\Table-Complex.png";
+    private const string ComplexTableResult = @"""DESCRIPTION	YEAR TO DATE ACTUAL	ANNUAL BUDGET	BALANCE	% BUDGET REMAINING
+CORPORATE INCOME	(1) $138,553	$358,100	$219,547	61 %
+FOUNDATION INCOME	432,275	824,700	392,425	48%
+GOVERNMENT INCOME	375,375	833,825	458,450	55%
+PUBLICATIONS INCOME	1,341	3,000	1,659	55%
+INTEREST INCOME	(2) 26,767	39,000	12,233	31%
+INVESTMENT GAIN	(3) 50,472	0	N/A	N/A
+MISCELLANEOUS INCOME	1,650	6,995	5,345	76 %
+TOTAL REVENUE	1,026,433	2,065,620	1,089,659	53%
+SALARIES & WAGES	355,633	603,840	248,207	41%
+FRINGE BENEFITS	63,182	120,120	56,938	47%
+OFFICE RENT	83,131	132,000	48,869	37%
+EQUIPMENT RENTAL & MAINTENANCE	15,364	19,900	4,536	23%
+SUPPLIES	8,051	10,200	2,149	21%
+TELEPHONE AND POSTAGE	15,088	24,100	9,012	37%
+INSURANCE	6,149	5,500	(649)	(12)%
+REGISTRATION & LICENSES	415	760	345	45%
+DEPRECIATION	8,482	17,000	8,518	50%
+BANK CHARGES	344	670	326	49%
+AUDIT FEES	19,000	19,000	0	0%
+BOARD MEETINGS	12,541	20,000	7,459	37%
+TRAVEL	6,910	20,000	13,090	65%
+LODGING & PERDIEM	15,623	20,000	4,377	22%
+SEMINARS & MEETINGS	3,442	8,700	5,258	60%
+PROFESSIONAL FESS	5,050	16,000	10,950	68%
+PRINTING & PUBLICATIONS	25,576	25,000	(576)	(2)%
+MATERIALS,SUBS,DUES & TRAININGS	4,445	6,800	2,355	35%
+LOCAL STAFF DEVELOPMENT	0	7,500	7,500	100%
+STIPENDS	8,250	9,750	1,500	15%
+SUBTOTAL	656,675	1,086,840	430,165	40%
+TRANSFER PAYMENTS TO SUBRECIPIENTS	360,009	978,780	618,771	63%
+TOTAL EXPENDITURES	1,016,684	2,065,620	1,048,936	51%
+REVENUES OVERI(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A
+""";
+
     [WpfFact]
     public async Task OcrFontSampleImage()
     {
@@ -168,6 +204,40 @@ December	12	Winter";
         ResultTable resultTable = new();
         resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
 
+        StringBuilder stringBuilder = new();
+
+        ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders, true);
+
+        // Then
+        Assert.Equal(expectedResult, stringBuilder.ToString());
+    }
+
+    [WpfFact]
+    public async Task OcrComplexTableTestImage()
+    {
+        // Given
+        string testImagePath = ComplexTablePath;
+        string expectedResult = ComplexTableResult;
+        Uri uri = new(testImagePath, UriKind.Relative);
+        Language EnglishLanguage = new("en-US");
+        GlobalLang globalLang = new(EnglishLanguage);
+        Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
+
+        // When
+        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
+        DpiScale dpiScale = new(1, 1);
+        // 1514 x 1243 image size
+        Rectangle rectCanvasSize = new()
+        {
+            Width = 1514,
+            Height = 1243,
+            X = 0,
+            Y = 0
+        };
+
+        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpiScale);
+        ResultTable resultTable = new();
+        resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
         StringBuilder stringBuilder = new();
 
         ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders, true);
