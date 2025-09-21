@@ -6,7 +6,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Text_Grab.Controls;
 using Text_Grab.Utilities;
 using Windows.Media.Ocr;
 using Rect = System.Windows.Rect;
@@ -34,17 +33,18 @@ public class ResultTable
 
     }
 
-    public ResultTable(ref List<WordBorder> wordBorders, DpiScale dpiScale)
+    // New: accept pure model objects
+    public ResultTable(ref List<WordBorderInfo> wordBorders, DpiScale dpiScale)
     {
         int borderBuffer = 3;
 
         Rectangle bordersBorder = new();
         if (wordBorders.Count > 0)
         {
-            double leftsMin = wordBorders.Select(x => x.Left).Min();
-            double topsMin = wordBorders.Select(x => x.Top).Min();
-            double rightsMax = wordBorders.Select(x => x.Right).Max();
-            double bottomsMax = wordBorders.Select(x => x.Bottom).Max();
+            double leftsMin = wordBorders.Select(x => x.BorderRect.Left).Min();
+            double topsMin = wordBorders.Select(x => x.BorderRect.Top).Min();
+            double rightsMax = wordBorders.Select(x => x.BorderRect.Right).Max();
+            double bottomsMax = wordBorders.Select(x => x.BorderRect.Bottom).Max();
 
             bordersBorder = new()
             {
@@ -133,10 +133,9 @@ public class ResultTable
         return allBoundingRects;
     }
 
-    public static List<WordBorder> ParseOcrResultIntoWordBorders(IOcrLinesWords ocrResult, DpiScale dpi)
+    public static List<WordBorderInfo> ParseOcrResultIntoWordBorderInfos(IOcrLinesWords ocrResult, DpiScale dpi)
     {
-        List<WordBorder> wordBorders = [];
-        int lineNumber = 0;
+        List<WordBorderInfo> infos = [];
 
         foreach (IOcrLine ocrLine in ocrResult.Lines)
         {
@@ -156,27 +155,23 @@ public class ResultTable
             StringBuilder lineText = new();
             ocrLine.GetTextFromOcrLine(true, lineText);
 
-            WordBorder wordBorderBox = new()
+            WordBorderInfo info = new()
             {
-                Width = lineRect.Width / dpi.DpiScaleX,
-                Height = lineRect.Height / dpi.DpiScaleY,
-                Top = lineRect.Y,
-                Left = lineRect.X,
+                BorderRect = new Rect(lineRect.X, lineRect.Y, lineRect.Width, lineRect.Height),
                 Word = lineText.ToString().Trim(),
-                ToolTip = ocrLine.Text,
-                LineNumber = lineNumber,
+                ResultRowID = 0,
+                ResultColumnID = 0
             };
-            wordBorders.Add(wordBorderBox);
 
-            lineNumber++;
+            infos.Add(info);
         }
 
-        return wordBorders;
+        return infos;
     }
 
-    public void AnalyzeAsTable(ICollection<WordBorder> wordBorders, Rectangle rectCanvasSize)
+    // New core analyzer that operates on WordBorderInfo (pure model)
+    public void AnalyzeAsTable(ICollection<WordBorderInfo> wordBorders, Rectangle rectCanvasSize)
     {
-        // New robust approach: cluster rows and columns using word center positions
         if (wordBorders == null || wordBorders.Count == 0)
         {
             Rows.Clear();
@@ -184,106 +179,95 @@ public class ResultTable
             return;
         }
 
-        // Normalize content: trim each word's leading/trailing whitespace
-        foreach (WordBorder wb in wordBorders)
+        foreach (WordBorderInfo wb in wordBorders)
         {
             if (wb.Word is string s && s.Length > 0)
                 wb.Word = s.Trim();
         }
 
-        // Compute adaptive thresholds
-        double medianHeight = Median(wordBorders.Select(w => w.Height).Where(h => h > 0));
+        double medianHeight = Median(wordBorders.Select(w => w.BorderRect.Height).Where(h => h > 0));
         if (double.IsNaN(medianHeight) || medianHeight <= 0) medianHeight = 20;
-        double rowCenterThreshold = Math.Max(4, medianHeight * 0.75); // cluster rows by centerY
+        double rowCenterThreshold = Math.Max(4, medianHeight * 0.75);
 
-        double medianWidth = Median(wordBorders.Select(w => w.Width).Where(w => w > 0));
+        double medianWidth = Median(wordBorders.Select(w => w.BorderRect.Width).Where(w => w > 0));
         if (double.IsNaN(medianWidth) || medianWidth <= 0) medianWidth = 40;
-        double columnCenterThreshold = Math.Max(24, medianWidth * 0.9); // cluster columns by centerX
+        double columnCenterThreshold = Math.Max(24, medianWidth * 0.9);
 
         List<ResultRow> resultRows = BuildRowsByCenterClustering(wordBorders, rowCenterThreshold, medianHeight);
         List<ResultColumn> resultColumns = BuildColumnsByCenterClustering(wordBorders, columnCenterThreshold);
 
-        // Assign to table
         Rows.Clear();
         Rows.AddRange(resultRows);
         Columns.Clear();
         Columns.AddRange(resultColumns);
 
-        // Final, robust assignment of each word border into the best matching row/column
         AssignWordBordersToFinalGrid(wordBorders);
 
         ParseRowAndColumnLines();
         DrawTable();
     }
 
-    private static List<ResultRow> BuildRowsByCenterClustering(ICollection<WordBorder> wordBorders, double centerThreshold, double medianHeight)
+    private static List<ResultRow> BuildRowsByCenterClustering(ICollection<WordBorderInfo> wordBorders, double centerThreshold, double medianHeight)
     {
-        // cluster by centerY regardless of gaps in other columns
-        List<WordBorder> ordered = [.. wordBorders
-            .OrderBy(w => w.Top + (w.Height / 2.0))
-            .ThenBy(w => w.Left)];
+        List<WordBorderInfo> ordered = [.. wordBorders
+            .OrderBy(w => w.BorderRect.Top + (w.BorderRect.Height / 2.0))
+            .ThenBy(w => w.BorderRect.Left)];
 
-        // Maintain working clusters with words for potential merging
-        List<(double Top, double Bottom, List<WordBorder> Words)> clusters = [];
+        List<(double Top, double Bottom, List<WordBorderInfo> Words)> clusters = [];
 
-        foreach (WordBorder? wb in ordered)
+        foreach (WordBorderInfo? wb in ordered)
         {
-            double centerY = wb.Top + (wb.Height / 2.0);
+            double centerY = wb.BorderRect.Top + (wb.BorderRect.Height / 2.0);
 
             if (clusters.Count == 0)
             {
-                clusters.Add((wb.Top, wb.Bottom, new List<WordBorder> { wb }));
+                clusters.Add((wb.BorderRect.Top, wb.BorderRect.Bottom, new List<WordBorderInfo> { wb }));
                 continue;
             }
 
-            (double Top, double Bottom, List<WordBorder> Words) = clusters[^1];
+            (double Top, double Bottom, List<WordBorderInfo> Words) = clusters[^1];
             double lastCenter = (Top + Bottom) / 2.0;
 
             if (Math.Abs(centerY - lastCenter) <= centerThreshold)
             {
-                // same row cluster
                 Words.Add(wb);
-                double newTop = Math.Min(Top, wb.Top);
-                double newBottom = Math.Max(Bottom, wb.Bottom);
+                double newTop = Math.Min(Top, wb.BorderRect.Top);
+                double newBottom = Math.Max(Bottom, wb.BorderRect.Bottom);
                 clusters[^1] = (newTop, newBottom, Words);
             }
             else
             {
-                clusters.Add((wb.Top, wb.Bottom, new List<WordBorder> { wb }));
+                clusters.Add((wb.BorderRect.Top, wb.BorderRect.Bottom, new List<WordBorderInfo> { wb }));
             }
         }
 
-        // Merge tiny single-word rows that are very close to an adjacent row (e.g., header split)
-        double mergeThreshold = Math.Max(centerThreshold * 1.5, medianHeight); // allow a bit more than clustering threshold
+        double mergeThreshold = Math.Max(centerThreshold * 1.5, medianHeight);
         int idx = 0;
         while (idx < clusters.Count - 1)
         {
-            (double Top, double Bottom, List<WordBorder> Words) = clusters[idx];
-            (double Top, double Bottom, List<WordBorder> Words) nxt = clusters[idx + 1];
+            (double Top, double Bottom, List<WordBorderInfo> Words) = clusters[idx];
+            (double Top, double Bottom, List<WordBorderInfo> Words) nxt = clusters[idx + 1];
             double curCenter = (Top + Bottom) / 2.0;
             double nxtCenter = (nxt.Top + nxt.Bottom) / 2.0;
             double gap = Math.Abs(nxtCenter - curCenter);
 
             if (Words.Count <= 1 && gap <= mergeThreshold)
             {
-                // merge cur into next
                 nxt.Words.InsertRange(0, Words);
                 double newTop = Math.Min(Top, nxt.Top);
                 double newBottom = Math.Max(Bottom, nxt.Bottom);
                 clusters[idx + 1] = (newTop, newBottom, nxt.Words);
                 clusters.RemoveAt(idx);
-                // do not increment idx; re-evaluate
                 continue;
             }
             idx++;
         }
 
-        // Also check backward merge for leading single word above a dense row
         idx = 1;
         while (idx < clusters.Count)
         {
-            (double Top, double Bottom, List<WordBorder> Words) = clusters[idx - 1];
-            (double Top, double Bottom, List<WordBorder> Words) cur = clusters[idx];
+            (double Top, double Bottom, List<WordBorderInfo> Words) = clusters[idx - 1];
+            (double Top, double Bottom, List<WordBorderInfo> Words) cur = clusters[idx];
             double prevCenter = (Top + Bottom) / 2.0;
             double curCenter2 = (cur.Top + cur.Bottom) / 2.0;
             double gap = Math.Abs(curCenter2 - prevCenter);
@@ -303,7 +287,7 @@ public class ResultTable
         List<ResultRow> rows = [];
         for (int i = 0; i < clusters.Count; i++)
         {
-            (double Top, double Bottom, List<WordBorder> Words) = clusters[i];
+            (double Top, double Bottom, List<WordBorderInfo> Words) = clusters[i];
             rows.Add(new ResultRow
             {
                 ID = i,
@@ -316,55 +300,51 @@ public class ResultTable
         return rows;
     }
 
-    private static List<ResultColumn> BuildColumnsByCenterClustering(ICollection<WordBorder> wordBorders, double centerThreshold)
+    // Overload for WordBorderInfo
+    private static List<ResultColumn> BuildColumnsByCenterClustering(ICollection<WordBorderInfo> wordBorders, double centerThreshold)
     {
-        // cluster by centerX across the table
-        List<WordBorder> ordered = [.. wordBorders
-            .OrderBy(w => w.Left + (w.Width / 2.0))
-            .ThenBy(w => w.Top)];
+        List<WordBorderInfo> ordered = [.. wordBorders
+            .OrderBy(w => w.BorderRect.Left + (w.BorderRect.Width / 2.0))
+            .ThenBy(w => w.BorderRect.Top)];
 
-        List<(double Left, double Right, List<WordBorder> Words)> clusters = [];
+        List<(double Left, double Right, List<WordBorderInfo> Words)> clusters = [];
 
-        foreach (WordBorder? wb in ordered)
+        foreach (WordBorderInfo? wb in ordered)
         {
-            double centerX = wb.Left + (wb.Width / 2.0);
+            double centerX = wb.BorderRect.Left + (wb.BorderRect.Width / 2.0);
 
             if (clusters.Count == 0)
             {
-                clusters.Add((wb.Left, wb.Right, new List<WordBorder> { wb }));
+                clusters.Add((wb.BorderRect.Left, wb.BorderRect.Right, new List<WordBorderInfo> { wb }));
                 continue;
             }
 
-            (double Left, double Right, List<WordBorder> Words) = clusters[^1];
+            (double Left, double Right, List<WordBorderInfo> Words) = clusters[^1];
             double lastCenter = (Left + Right) / 2.0;
 
             if (Math.Abs(centerX - lastCenter) <= centerThreshold)
             {
-                // same column cluster
                 Words.Add(wb);
-                double newLeft = Math.Min(Left, wb.Left);
-                double newRight = Math.Max(Right, wb.Right);
+                double newLeft = Math.Min(Left, wb.BorderRect.Left);
+                double newRight = Math.Max(Right, wb.BorderRect.Right);
                 clusters[^1] = (newLeft, newRight, Words);
             }
             else
             {
-                clusters.Add((wb.Left, wb.Right, new List<WordBorder> { wb }));
+                clusters.Add((wb.BorderRect.Left, wb.BorderRect.Right, new List<WordBorderInfo> { wb }));
             }
         }
 
-        // Optional: merge very thin or low-density columns into neighbors if their span is tiny
         double avgWidth = clusters.Select(c => c.Right - c.Left).DefaultIfEmpty(0).Average();
         int ci = 0;
         while (ci < clusters.Count - 1)
         {
-            (double Left, double Right, List<WordBorder> Words) = clusters[ci];
-            (double Left, double Right, List<WordBorder> Words) nxt = clusters[ci + 1];
+            (double Left, double Right, List<WordBorderInfo> Words) = clusters[ci];
+            (double Left, double Right, List<WordBorderInfo> Words) nxt = clusters[ci + 1];
             double curWidth = Right - Left;
             double gap = nxt.Left - Right;
-            // merge tiny columns or columns separated by negligible gap
             if ((Words.Count <= 1 && curWidth < avgWidth * 0.4) || gap < Math.Max(6, centerThreshold * 0.25))
             {
-                // merge cur into next
                 double newLeft = Math.Min(Left, nxt.Left);
                 double newRight = Math.Max(Right, nxt.Right);
                 nxt.Words.InsertRange(0, Words);
@@ -375,11 +355,10 @@ public class ResultTable
             ci++;
         }
 
-        // Convert clusters to ResultColumn with sequential IDs
         List<ResultColumn> cols = [];
         for (int i = 0; i < clusters.Count; i++)
         {
-            (double Left, double Right, List<WordBorder> Words) = clusters[i];
+            (double Left, double Right, List<WordBorderInfo> Words) = clusters[i];
             cols.Add(new ResultColumn
             {
                 ID = i,
@@ -444,206 +423,58 @@ public class ResultTable
         return resultRows;
     }
 
-    private static List<int> CalculateRowAreas(Rectangle rectCanvasSize, int hitGridSpacing, int numberOfHorizontalLines, Canvas tableIntersectionCanvas, ICollection<WordBorder> wordBorders)
+    private void DrawTable()
     {
-        List<int> rowAreas = [];
+        // Draw the lines and bounds of the table
+        SolidColorBrush tableColor = new(System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
 
-        for (int i = 0; i < numberOfHorizontalLines; i++)
+        TableLines = new Canvas()
+        {
+            Tag = "TableLines"
+        };
+
+        Border tableOutline = new()
+        {
+            Width = this.BoundingRect.Width,
+            Height = this.BoundingRect.Height,
+            BorderThickness = new Thickness(3),
+            BorderBrush = tableColor
+        };
+        TableLines.Children.Add(tableOutline);
+        Canvas.SetTop(tableOutline, this.BoundingRect.Y);
+        Canvas.SetLeft(tableOutline, this.BoundingRect.X);
+
+        foreach (int columnLine in this.ColumnLines)
+        {
+            Border vertLine = new()
+            {
+                Width = 2,
+                Height = this.BoundingRect.Height,
+                Background = tableColor
+            };
+            TableLines.Children.Add(vertLine);
+            Canvas.SetTop(vertLine, this.BoundingRect.Y);
+            Canvas.SetLeft(vertLine, columnLine);
+        }
+
+        foreach (int rowLine in this.RowLines)
         {
             Border horzLine = new()
             {
-                Height = 1,
-                Width = rectCanvasSize.Width,
-                Opacity = 0,
-                Background = new SolidColorBrush(Colors.Gray)
+                Height = 2,
+                Width = this.BoundingRect.Width,
+                Background = tableColor
             };
-            Rect horzLineRect = new(0, i * hitGridSpacing, horzLine.Width, horzLine.Height);
-            _ = tableIntersectionCanvas.Children.Add(horzLine);
-            Canvas.SetTop(horzLine, i * 3);
-
-            CheckInersectionsWithWordBorders(hitGridSpacing, wordBorders, rowAreas, i, horzLineRect);
-        }
-
-        return rowAreas;
-    }
-
-    private static void CheckInersectionsWithWordBorders(int hitGridSpacing, ICollection<WordBorder> wordBorders, ICollection<int> rowAreas, int i, Rect horzLineRect)
-    {
-        foreach (WordBorder wb in wordBorders)
-        {
-            if (wb.IntersectsWith(horzLineRect))
-            {
-                rowAreas.Add(i * hitGridSpacing);
-                break;
-            }
+            TableLines.Children.Add(horzLine);
+            Canvas.SetTop(horzLine, rowLine);
+            Canvas.SetLeft(horzLine, this.BoundingRect.X);
         }
     }
 
-    private static ICollection<WordBorder> CombineOutliers(ICollection<WordBorder> wordBorders, List<ResultRow> resultRows, Canvas tableIntersectionCanvas, List<ResultColumn> resultColumns, Rect tableBoundingRect)
+    // Build text from model-only borders
+    public static void GetTextFromTabledWordBorders(StringBuilder stringBuilder, List<WordBorderInfo> wordBorders, bool isSpaceJoining)
     {
-        // refine the rows and columns for outliers
-        for (int r = 0; r < 5; r++)
-        {
-            // Be conservative merging rows; only merge truly empty rows
-            int rowOutlierThreshold = 1;
-            List<int> outlierRowIDs = FindOutlierRowIds(wordBorders, resultRows, tableIntersectionCanvas, tableBoundingRect, r, rowOutlierThreshold);
-
-            if (outlierRowIDs.Count > 0)
-                MergeTheseRowIDs(resultRows, outlierRowIDs);
-
-            // Columns can be merged a bit more aggressively
-            int columnOutlierThreshold = 2;
-            List<int> outlierColumnIDs = FindOutlierColumnIds(wordBorders, tableIntersectionCanvas, resultColumns, tableBoundingRect, columnOutlierThreshold);
-
-            if (outlierColumnIDs.Count > 0 && r != 4)
-                MergetheseColumnIDs(resultColumns, outlierColumnIDs);
-        }
-
-        return wordBorders;
-    }
-
-    private static List<int> FindOutlierRowIds(
-        ICollection<WordBorder> wordBorders,
-        ICollection<ResultRow> resultRows,
-        Canvas tableIntersectionCanvas,
-        Rect tableBoundingRect,
-        int r,
-        int outlierThreshould)
-    {
-        List<int> outlierRowIDs = [];
-
-        foreach (ResultRow row in resultRows)
-        {
-            int numberOfIntersectingWords = 0;
-            Border rowBorder = new()
-            {
-                Height = row.Bottom - row.Top,
-                Width = tableBoundingRect.Width,
-                Background = new SolidColorBrush(Colors.Red),
-                Tag = row.ID
-            };
-            tableIntersectionCanvas.Children.Add(rowBorder);
-            Canvas.SetLeft(rowBorder, tableBoundingRect.X);
-            Canvas.SetTop(rowBorder, row.Top);
-
-            Rect rowRect = new(tableBoundingRect.X, row.Top, rowBorder.Width, rowBorder.Height);
-
-            foreach (WordBorder wb in wordBorders)
-            {
-                if (wb.IntersectsWith(rowRect))
-                {
-                    numberOfIntersectingWords++;
-                    wb.ResultRowID = row.ID;
-                }
-            }
-
-            // Only consider truly empty or near-empty rows as outliers
-            if (numberOfIntersectingWords < outlierThreshould && r != 4)
-                outlierRowIDs.Add(row.ID);
-        }
-
-        return outlierRowIDs;
-    }
-
-    private static List<int> FindOutlierColumnIds(
-        ICollection<WordBorder> wordBorders,
-        Canvas tableIntersectionCanvas,
-        List<ResultColumn> resultColumns,
-        Rect tableBoundingRect,
-        int outlierThreshould)
-    {
-        List<int> outlierColumnIDs = [];
-
-        foreach (ResultColumn column in resultColumns)
-        {
-            int numberOfIntersectingWords = 0;
-            Border columnBorder = new()
-            {
-                Height = tableBoundingRect.Height,
-                Width = column.Right - column.Left,
-                Background = new SolidColorBrush(Colors.Blue),
-                Opacity = 0.2,
-                Tag = column.ID
-            };
-            tableIntersectionCanvas.Children.Add(columnBorder);
-            Canvas.SetLeft(columnBorder, column.Left);
-            Canvas.SetTop(columnBorder, tableBoundingRect.Y);
-
-            Rect columnRect = new(column.Left, tableBoundingRect.Y, columnBorder.Width, columnBorder.Height);
-            foreach (WordBorder wb in wordBorders)
-            {
-                if (wb.IntersectsWith(columnRect))
-                {
-                    numberOfIntersectingWords++;
-                    wb.ResultColumnID = column.ID;
-                }
-            }
-
-            if (numberOfIntersectingWords <= outlierThreshould)
-                outlierColumnIDs.Add(column.ID);
-        }
-
-        return outlierColumnIDs;
-    }
-
-    private static void MergetheseColumnIDs(List<ResultColumn> resultColumns, List<int> outlierColumnIDs)
-    {
-        for (int i = 0; i < outlierColumnIDs.Count; i++)
-        {
-            for (int j = 0; j < resultColumns.Count; j++)
-            {
-                ResultColumn jthColumn = resultColumns[j];
-                if (jthColumn.ID == outlierColumnIDs[i])
-                {
-                    if (j == 0)
-                    {
-                        // merge with next column if possible
-                        if (j + 1 < resultColumns.Count)
-                        {
-                            ResultColumn nextColumn = resultColumns[j + 1];
-                            nextColumn.Left = jthColumn.Left;
-                        }
-                    }
-                    else if (j == resultColumns.Count - 1)
-                    {
-                        // merge with previous column
-                        if (j - 1 >= 0)
-                        {
-                            ResultColumn prevColumn = resultColumns[j - 1];
-                            prevColumn.Right = jthColumn.Right;
-                        }
-                    }
-                    else
-                    {
-                        // merge with closet column
-                        ResultColumn prevColumn = resultColumns[j - 1];
-                        ResultColumn nextColumn = resultColumns[j + 1];
-                        int distToPrev = (int)(jthColumn.Left - prevColumn.Right);
-                        int distToNext = (int)(nextColumn.Left - jthColumn.Right);
-
-                        if (distToNext < distToPrev)
-                        {
-                            // merge with next column
-                            nextColumn.Left = jthColumn.Left;
-                        }
-                        else
-                        {
-                            // merge with prev column
-                            prevColumn.Right = jthColumn.Right;
-                        }
-                    }
-                    resultColumns.RemoveAt(j);
-                }
-            }
-        }
-    }
-
-    public static void GetTextFromTabledWordBorders(StringBuilder stringBuilder, List<WordBorder> wordBorders, bool isSpaceJoining)
-    {
-        List<WordBorder>? selectedBorders = [.. wordBorders.Where(w => w.IsSelected)];
-
-        if (selectedBorders.Count == 0)
-            selectedBorders.AddRange(wordBorders);
+        List<WordBorderInfo> selectedBorders = [.. wordBorders];
 
         // custom comparator for natural reading order within each cell
         double leftTieThreshold = 12; // pixels considered aligned vertically
@@ -660,27 +491,22 @@ public class ResultTable
             int colCmp = a.ResultColumnID.CompareTo(b.ResultColumnID);
             if (colCmp != 0) return colCmp;
 
-            double leftDiff = Math.Abs(a.Left - b.Left);
+            double leftDiff = Math.Abs(a.BorderRect.Left - b.BorderRect.Left);
             if (leftDiff <= leftTieThreshold)
             {
-                // Same visual column: sort by Top first, then Left
-                int topCmp = a.Top.CompareTo(b.Top);
+                int topCmp = a.BorderRect.Top.CompareTo(b.BorderRect.Top);
                 if (topCmp != 0) return topCmp;
-                return a.Left.CompareTo(b.Left);
+                return a.BorderRect.Left.CompareTo(b.BorderRect.Left);
             }
-            // Different visual columns within the cell row: sort by Left
-            int leftCmp = a.Left.CompareTo(b.Left);
+            int leftCmp = a.BorderRect.Left.CompareTo(b.BorderRect.Left);
             if (leftCmp != 0) return leftCmp;
-            return a.Top.CompareTo(b.Top);
+            return a.BorderRect.Top.CompareTo(b.BorderRect.Top);
         });
 
         List<string> lineList = [];
-        int? lastLineNum = 0;
+        int? lastLineNum = selectedBorders.FirstOrDefault()?.ResultRowID;
         int lastColumnNum = 0;
-        WordBorder? prevBorderOnLine = null;
-
-        if (selectedBorders.FirstOrDefault() != null)
-            lastLineNum = selectedBorders.FirstOrDefault()!.LineNumber;
+        WordBorderInfo? prevBorderOnLine = null;
 
         int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
 
@@ -694,7 +520,7 @@ public class ResultTable
 
         for (int i = 0; i < selectedBorders.Count; i++)
         {
-            WordBorder border = selectedBorders[i];
+            WordBorderInfo border = selectedBorders[i];
 
             if (lineList.Count == 0)
             {
@@ -738,18 +564,13 @@ public class ResultTable
                 && prevBorderOnLine.ResultColumnID == border.ResultColumnID
                 && prevBorderOnLine.ResultRowID == border.ResultRowID)
             {
-                double visualGap = border.Left - prevBorderOnLine.Right;
-                double tolerance = Math.Max(3, Math.Min(prevBorderOnLine.Height, border.Height) * 0.25);
+                double visualGap = border.BorderRect.Left - prevBorderOnLine.BorderRect.Right;
+                double tolerance = Math.Max(3, Math.Min(prevBorderOnLine.BorderRect.Height, border.BorderRect.Height) * 0.25);
 
                 // Case 1: current is just "%"
                 if (border.Word == "%")
                 {
-                    // If very close OR both tokens are white background, merge without space
-                    System.Windows.Media.Color prevBg = prevBorderOnLine.MatchingBackground.Color;
-                    System.Windows.Media.Color curBg = border.MatchingBackground.Color;
-                    bool prevIsWhite = prevBg.A == 0xFF && prevBg.R == 0xFF && prevBg.G == 0xFF && prevBg.B == 0xFF;
-                    bool curIsWhite = curBg.A == 0xFF && curBg.R == 0xFF && curBg.G == 0xFF && curBg.B == 0xFF;
-                    if (visualGap <= tolerance || (prevIsWhite && curIsWhite))
+                    if (visualGap <= tolerance)
                     {
                         lineList[^1] = lineList[^1] + "%";
                         prevBorderOnLine = border;
@@ -772,23 +593,9 @@ public class ResultTable
 
             // Normalize token
             string wordToAdd = border.Word;
-            // Unescape any JSON-escaped ampersand sequences (e.g., "\u0026" -> "&")
             wordToAdd = wordToAdd.Replace("\\u0026", "&");
 
-            if (wordToAdd.Contains('%') && wordToAdd.Contains(" %"))
-            {
-                // Only collapse the space for white-background tokens (avoid collapsing gray-highlighted ones like '61 %')
-                System.Windows.Media.Color bg = border.MatchingBackground.Color;
-                bool isWhiteBg = bg.A == 0xFF && bg.R == 0xFF && bg.G == 0xFF && bg.B == 0xFF;
-                if (isWhiteBg)
-                {
-                    int idxPercent = wordToAdd.LastIndexOf('%');
-                    if (idxPercent > 0 && wordToAdd[idxPercent - 1] == ' ')
-                    {
-                        wordToAdd = wordToAdd.Remove(idxPercent - 1, 1);
-                    }
-                }
-            }
+            // Note: Do not collapse internal " %" spacing; keep source token as-is
 
             // Append token now
             lineList.Add(wordToAdd);
@@ -801,7 +608,7 @@ public class ResultTable
                 bool nextHasPercent = false;
                 for (int j = i + 1; j < selectedBorders.Count; j++)
                 {
-                    WordBorder nb = selectedBorders[j];
+                    WordBorderInfo nb = selectedBorders[j];
                     if (nb.ResultRowID != border.ResultRowID) break; // next row
                     if (nb.ResultColumnID != border.ResultColumnID) break; // next column in this row
                     // same cell
@@ -909,93 +716,17 @@ public class ResultTable
         }
     }
 
-    private void DrawTable()
-    {
-        // Draw the lines and bounds of the table
-        SolidColorBrush tableColor = new(System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
-
-        TableLines = new Canvas()
-        {
-            Tag = "TableLines"
-        };
-
-        Border tableOutline = new()
-        {
-            Width = this.BoundingRect.Width,
-            Height = this.BoundingRect.Height,
-            BorderThickness = new Thickness(3),
-            BorderBrush = tableColor
-        };
-        TableLines.Children.Add(tableOutline);
-        Canvas.SetTop(tableOutline, this.BoundingRect.Y);
-        Canvas.SetLeft(tableOutline, this.BoundingRect.X);
-
-        foreach (int columnLine in this.ColumnLines)
-        {
-            Border vertLine = new()
-            {
-                Width = 2,
-                Height = this.BoundingRect.Height,
-                Background = tableColor
-            };
-            TableLines.Children.Add(vertLine);
-            Canvas.SetTop(vertLine, this.BoundingRect.Y);
-            Canvas.SetLeft(vertLine, columnLine);
-        }
-
-        foreach (int rowLine in this.RowLines)
-        {
-            Border horzLine = new()
-            {
-                Height = 2,
-                Width = this.BoundingRect.Width,
-                Background = tableColor
-            };
-            TableLines.Children.Add(horzLine);
-            Canvas.SetTop(horzLine, rowLine);
-            Canvas.SetLeft(horzLine, this.BoundingRect.X);
-        }
-    }
-
-    public static string GetWordsAsTable(List<WordBorder> wordBorders, DpiScale dpiScale, bool isSpaceJoining)
-    {
-        List<WordBorder> smallerBorders = [];
-        foreach (WordBorder originalWB in wordBorders)
-        {
-            WordBorder newWB = new()
-            {
-                Word = originalWB.Word,
-                Left = originalWB.Left,
-                Top = originalWB.Top,
-                Width = originalWB.Width > 10 ? originalWB.Width - 6 : originalWB.Width,
-                Height = originalWB.Height > 10 ? originalWB.Height - 6 : originalWB.Height,
-                ResultRowID = originalWB.ResultRowID,
-                ResultColumnID = originalWB.ResultColumnID,
-            };
-            smallerBorders.Add(newWB);
-        }
-        ;
-
-        ResultTable resultTable = new(ref smallerBorders, dpiScale);
-        StringBuilder stringBuilder = new();
-        GetTextFromTabledWordBorders(
-            stringBuilder,
-            smallerBorders,
-            isSpaceJoining);
-        return stringBuilder.ToString();
-    }
-
-    private void AssignWordBordersToFinalGrid(ICollection<WordBorder> wordBorders)
+    // Overload for WordBorderInfo
+    private void AssignWordBordersToFinalGrid(ICollection<WordBorderInfo> wordBorders)
     {
         if (Rows.Count == 0 || Columns.Count == 0)
             return;
 
-        foreach (WordBorder wb in wordBorders)
+        foreach (WordBorderInfo wb in wordBorders)
         {
-            double centerX = wb.Left + (wb.Width / 2.0);
-            double centerY = wb.Top + (wb.Height / 2.0);
+            double centerX = wb.BorderRect.Left + (wb.BorderRect.Width / 2.0);
+            double centerY = wb.BorderRect.Top + (wb.BorderRect.Height / 2.0);
 
-            // Find row
             int rowIndex = -1;
             for (int i = 0; i < Rows.Count; i++)
             {
@@ -1007,7 +738,6 @@ public class ResultTable
             }
             if (rowIndex == -1)
             {
-                // choose closest by vertical distance
                 double minDist = double.MaxValue;
                 for (int i = 0; i < Rows.Count; i++)
                 {
@@ -1022,7 +752,6 @@ public class ResultTable
                 }
             }
 
-            // Find column
             int colIndex = -1;
             for (int j = 0; j < Columns.Count; j++)
             {

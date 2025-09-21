@@ -142,7 +142,7 @@ REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
             Y = 0
         };
 
-        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpi);
+        List<WordBorderInfo> wordBorders = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, dpi);
 
         ResultTable resultTable = new();
         resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
@@ -200,7 +200,7 @@ REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
             Y = 0
         };
 
-        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpi);
+        List<WordBorderInfo> wordBorders = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, dpi);
 
         ResultTable resultTable = new();
         resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
@@ -224,8 +224,6 @@ REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
         List<WordBorderInfo> wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(wordBordersJson ?? "[]")
             ?? throw new Exception("Failed to deserialize WordBorderInfo list");
 
-        List<WordBorder> wordBorders = [.. wbInfoList.Select(wbInfo => new WordBorder(wbInfo))];
-
         // When
         // 1514 x 1243 image size
         Rectangle rectCanvasSize = new()
@@ -237,10 +235,10 @@ REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
         };
 
         ResultTable resultTable = new();
-        resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
+        resultTable.AnalyzeAsTable(wbInfoList, rectCanvasSize);
         StringBuilder stringBuilder = new();
 
-        ResultTable.GetTextFromTabledWordBorders(stringBuilder, wordBorders, true);
+        ResultTable.GetTextFromTabledWordBorders(stringBuilder, wbInfoList, true);
 
         // Then
         Assert.Equal(expectedResult, stringBuilder.ToString());

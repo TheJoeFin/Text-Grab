@@ -494,11 +494,13 @@ public partial class GrabFrame : Window
 
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
-        string mergedContent = ResultTable.GetWordsAsTable(
-            selectedWordBorders,
-            dpi,
-            CurrentLanguage.IsSpaceJoining());
-        mergedContent = mergedContent.Replace('\t', ' ');
+        // Build merged content via model-only ResultTable
+        List<WordBorderInfo> selInfos = [.. selectedWordBorders.Select(wb => new WordBorderInfo(wb))];
+        ResultTable tmp = new();
+        tmp.AnalyzeAsTable(selInfos, new System.Drawing.Rectangle(0, 0, (int)ActualWidth, (int)ActualHeight));
+        StringBuilder sb = new();
+        ResultTable.GetTextFromTabledWordBorders(sb, selInfos, CurrentLanguage.IsSpaceJoining());
+        string mergedContent = sb.ToString().Replace('\t', ' ');
 
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
@@ -920,7 +922,7 @@ public partial class GrabFrame : Window
         reSearchTimer.Start();
     }
 
-    private async Task DrawRectanglesAroundWords(string searchWord = "")
+    public async Task DrawRectanglesAroundWords(string searchWord = "")
     {
         if (isDrawing || IsDragOver)
             return;
@@ -1061,10 +1063,15 @@ public partial class GrabFrame : Window
 
         EditTextWindow editWindow = new();
         bool isSpaceJoiningLang = CurrentLanguage.IsSpaceJoining();
-        string separator = isSpaceJoiningLang ? " " : "";
         DpiScale dpiScale = VisualTreeHelper.GetDpi(this);
 
-        string stringForETW = ResultTable.GetWordsAsTable(selectedWords, dpiScale, isSpaceJoiningLang);
+        // Convert to model-only infos and generate text
+        List<WordBorderInfo> infos = [.. selectedWords.Select(wb => new WordBorderInfo(wb))];
+        ResultTable tmp = new();
+        tmp.AnalyzeAsTable(infos, new System.Drawing.Rectangle(0, 0, (int)ActualWidth, (int)ActualHeight));
+        StringBuilder sb = new();
+        ResultTable.GetTextFromTabledWordBorders(sb, infos, isSpaceJoiningLang);
+        string stringForETW = sb.ToString();
 
         editWindow.AddThisText(stringForETW);
         editWindow.Show();
@@ -2162,8 +2169,11 @@ new GrabFrameOperationArgs()
         try
         {
             AnalyzedResultTable = new();
-            AnalyzedResultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
-            RectanglesCanvas.Children.Add(AnalyzedResultTable.TableLines);
+            // Convert UI controls to model-only infos
+            List<WordBorderInfo> wbInfos = [.. wordBorders.Select(wb => new WordBorderInfo(wb))];
+            AnalyzedResultTable.AnalyzeAsTable(wbInfos, rectCanvasSize);
+            if (AnalyzedResultTable.TableLines is not null)
+                RectanglesCanvas.Children.Add(AnalyzedResultTable.TableLines);
         }
         catch (Exception ex)
         {
@@ -2256,7 +2266,9 @@ new GrabFrameOperationArgs()
         if (TableToggleButton.IsChecked is true)
         {
             TryToPlaceTable();
-            ResultTable.GetTextFromTabledWordBorders(stringBuilder, [.. wordBorders], isSpaceJoining);
+            // Build table text via model-only API
+            List<WordBorderInfo> infos = [.. wordBorders.Select(wb => new WordBorderInfo(wb))];
+            ResultTable.GetTextFromTabledWordBorders(stringBuilder, infos, isSpaceJoining);
         }
         else
         {
