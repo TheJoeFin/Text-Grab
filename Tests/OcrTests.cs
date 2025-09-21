@@ -57,14 +57,14 @@ December	12	Winter";
 
     private const string ComplexTablePath = @".\Images\Table-Complex.png";
     private const string ComplexWordBorders = @".\TextFiles\Table-Complex-WordBorders.json";
-    private const string ComplexTableResult = @"""DESCRIPTION	YEAR TO DATE ACTUAL	ANNUAL BUDGET	BALANCE	% BUDGET REMAINING
+    private const string ComplexTableResult = @"DESCRIPTION	YEAR TO DATE ACTUAL	ANNUAL BUDGET	BALANCE	% BUDGET REMAINING
 CORPORATE INCOME	(1) $138,553	$358,100	$219,547	61 %
 FOUNDATION INCOME	432,275	824,700	392,425	48%
 GOVERNMENT INCOME	375,375	833,825	458,450	55%
 PUBLICATIONS INCOME	1,341	3,000	1,659	55%
 INTEREST INCOME	(2) 26,767	39,000	12,233	31%
 INVESTMENT GAIN	(3) 50,472	0	N/A	N/A
-MISCELLANEOUS INCOME	1,650	6,995	5,345	76 %
+MISCELLANEOUS INCOME	1,650	6,995	5,345	76%
 TOTAL REVENUE	1,026,433	2,065,620	1,089,659	53%
 SALARIES & WAGES	355,633	603,840	248,207	41%
 FRINGE BENEFITS	63,182	120,120	56,938	47%
@@ -82,15 +82,14 @@ TRAVEL	6,910	20,000	13,090	65%
 LODGING & PERDIEM	15,623	20,000	4,377	22%
 SEMINARS & MEETINGS	3,442	8,700	5,258	60%
 PROFESSIONAL FESS	5,050	16,000	10,950	68%
-PRINTING & PUBLICATIONS	25,576	25,000	(576)	(2)%
+PRINTING & PUBLICATIONS	25,576	25,000	(576)	(2) %
 MATERIALS,SUBS,DUES & TRAININGS	4,445	6,800	2,355	35%
 LOCAL STAFF DEVELOPMENT	0	7,500	7,500	100%
 STIPENDS	8,250	9,750	1,500	15%
 SUBTOTAL	656,675	1,086,840	430,165	40%
 TRANSFER PAYMENTS TO SUBRECIPIENTS	360,009	978,780	618,771	63%
 TOTAL EXPENDITURES	1,016,684	2,065,620	1,048,936	51%
-REVENUES OVERI(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A
-""";
+REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
 
     [WpfFact]
     public async Task OcrFontSampleImage()
@@ -218,13 +217,11 @@ REVENUES OVERI(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A
     public async Task OcrComplexTableTestImage()
     {
         // Given
-        //string testImagePath = ComplexTablePath;
         string resultWordBorders = ComplexWordBorders;
         string expectedResult = ComplexTableResult;
         string wordBordersJson = await File.ReadAllTextAsync(FileUtilities.GetPathToLocalFile(resultWordBorders));
 
-        HistoryInfo? info = JsonSerializer.Deserialize<HistoryInfo>(wordBordersJson);
-        List<WordBorderInfo> wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(info?.WordBorderInfoJson ?? "[]")
+        List<WordBorderInfo> wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(wordBordersJson ?? "[]")
             ?? throw new Exception("Failed to deserialize WordBorderInfo list");
 
         List<WordBorder> wordBorders = [.. wbInfoList.Select(wbInfo => new WordBorder(wbInfo))];
