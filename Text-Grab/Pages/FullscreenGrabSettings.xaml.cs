@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using Text_Grab;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
@@ -22,7 +23,6 @@ public partial class FullscreenGrabSettings : Page
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         // hydrate controls from settings
-        StartSingleLineCheckBox.IsChecked = DefaultSettings.FSGMakeSingleLineToggle;
         SendToEtwCheckBox.IsChecked = DefaultSettings.FsgSendEtwToggle;
         TryInsertCheckBox.IsChecked = DefaultSettings.TryInsert;
 
@@ -31,13 +31,49 @@ public partial class FullscreenGrabSettings : Page
 
         InsertDelaySlider.IsEnabled = TryInsertCheckBox.IsChecked == true;
 
+        // Determine default mode
+        FsgDefaultMode mode = FsgDefaultMode.Default;
+        if (!string.IsNullOrWhiteSpace(DefaultSettings.FsgDefaultMode))
+            Enum.TryParse(DefaultSettings.FsgDefaultMode, true, out mode);
+
+        if (mode == FsgDefaultMode.Table)
+        {
+            TableModeRadio.IsChecked = true;
+        }
+        else if (DefaultSettings.FSGMakeSingleLineToggle)
+        {
+            SingleLineModeRadio.IsChecked = true;
+        }
+        else
+        {
+            DefaultModeRadio.IsChecked = true;
+        }
+
         _loaded = true;
     }
 
-    private void StartSingleLineCheckBox_Click(object sender, RoutedEventArgs e)
+    private void DefaultModeRadio_Click(object sender, RoutedEventArgs e)
     {
-        if (!_loaded) return;
-        DefaultSettings.FSGMakeSingleLineToggle = StartSingleLineCheckBox.IsChecked == true;
+        if (!_loaded || DefaultModeRadio.IsChecked != true) return;
+        DefaultSettings.FsgDefaultMode = nameof(FsgDefaultMode.Default);
+        DefaultSettings.FSGMakeSingleLineToggle = false;
+        DefaultSettings.Save();
+    }
+
+    private void SingleLineModeRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded || SingleLineModeRadio.IsChecked != true) return;
+        // SingleLine uses the legacy flag, FsgDefaultMode stays Default
+        DefaultSettings.FSGMakeSingleLineToggle = true;
+        DefaultSettings.FsgDefaultMode = nameof(FsgDefaultMode.Default);
+        DefaultSettings.Save();
+    }
+
+    private void TableModeRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded || TableModeRadio.IsChecked != true) return;
+        DefaultSettings.FsgDefaultMode = nameof(FsgDefaultMode.Table);
+        DefaultSettings.FSGMakeSingleLineToggle = false;
         DefaultSettings.Save();
     }
 
