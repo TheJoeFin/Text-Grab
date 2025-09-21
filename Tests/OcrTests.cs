@@ -1,15 +1,14 @@
 using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using Text_Grab;
-using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Windows.Globalization;
-using Windows.Media.Ocr;
 
 namespace Tests;
 
@@ -89,7 +88,7 @@ STIPENDS	8,250	9,750	1,500	15%
 SUBTOTAL	656,675	1,086,840	430,165	40%
 TRANSFER PAYMENTS TO SUBRECIPIENTS	360,009	978,780	618,771	63%
 TOTAL EXPENDITURES	1,016,684	2,065,620	1,048,936	51%
-REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
+REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
 
     [WpfFact]
     public async Task OcrFontSampleImage()
@@ -315,7 +314,7 @@ REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
     [WpfFact(Skip = "fails GitHub actions")]
     public async Task GetTessLanguages()
     {
-        List<string> expected = new() { "eng", "spa" };
+        List<string> expected = ["eng", "spa"];
         List<string> actualStrings = await TesseractHelper.TesseractLanguagesAsStrings();
 
         if (actualStrings.Count == 0)
@@ -330,11 +329,11 @@ REVENUES OVERY(UNDER) EXPENDITURES 	 $9,749 	 $0 	 $9,749 	 N/A";
     [WpfFact(Skip = "fails GitHub actions")]
     public async Task GetTesseractStrongLanguages()
     {
-        List<ILanguage> expectedList = new()
-        {
+        List<ILanguage> expectedList =
+        [
             new TessLang("eng"),
             new TessLang("spa"),
-        };
+        ];
 
         List<ILanguage> actualList = await TesseractHelper.TesseractLanguages();
 

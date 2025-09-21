@@ -170,7 +170,7 @@ public class ResultTable
     }
 
     // New core analyzer that operates on WordBorderInfo (pure model)
-    public void AnalyzeAsTable(ICollection<WordBorderInfo> wordBorders, Rectangle rectCanvasSize)
+    public void AnalyzeAsTable(ICollection<WordBorderInfo> wordBorders, Rectangle rectCanvasSize, bool drawTable = true)
     {
         if (wordBorders == null || wordBorders.Count == 0)
         {
@@ -204,7 +204,8 @@ public class ResultTable
         AssignWordBordersToFinalGrid(wordBorders);
 
         ParseRowAndColumnLines();
-        DrawTable();
+        if (drawTable)
+            DrawTable();
     }
 
     private static List<ResultRow> BuildRowsByCenterClustering(ICollection<WordBorderInfo> wordBorders, double centerThreshold, double medianHeight)
@@ -474,16 +475,11 @@ public class ResultTable
     // Build text from model-only borders
     public static void GetTextFromTabledWordBorders(StringBuilder stringBuilder, List<WordBorderInfo> wordBorders, bool isSpaceJoining)
     {
+        // Work on a local copy to avoid mutating caller's list
         List<WordBorderInfo> selectedBorders = [.. wordBorders];
 
-        // custom comparator for natural reading order within each cell
-        double leftTieThreshold = 12; // pixels considered aligned vertically
-        selectedBorders = [.. selectedBorders
-            .OrderBy(x => x.ResultRowID)
-            .ThenBy(x => x.ResultColumnID)
-            .ThenBy(x => 0)];
-
         // Sort using a custom comparer to handle vertically stacked header text
+        double leftTieThreshold = 12; // pixels considered aligned vertically
         selectedBorders.Sort((a, b) =>
         {
             int rowCmp = a.ResultRowID.CompareTo(b.ResultRowID);
@@ -503,33 +499,60 @@ public class ResultTable
             return a.BorderRect.Top.CompareTo(b.BorderRect.Top);
         });
 
-        int? lastLineNum = selectedBorders.FirstOrDefault()?.ResultRowID;
-        int lastColumnNum = 0;
-        WordBorderInfo? prevBorderOnLine = null;
+        // Precompute number of distinct rows without LINQ
+        int numberOfDistinctRows;
+        {
+            HashSet<int> rowSet = [];
+            for (int i = 0; i < selectedBorders.Count; i++)
+                rowSet.Add(selectedBorders[i].ResultRowID);
+            numberOfDistinctRows = rowSet.Count;
+        }
 
-        int numberOfDistinctRows = selectedBorders.Select(x => x.ResultRowID).Distinct().Count();
+        // Precompute rows that contain footnote tokens like (1)
+        HashSet<int> rowsWithFootnote = [];
+        for (int i = 0; i < selectedBorders.Count; i++)
+        {
+            WordBorderInfo wb = selectedBorders[i];
+            if (!rowsWithFootnote.Contains(wb.ResultRowID) && IsFootnoteToken(wb.Word))
+                rowsWithFootnote.Add(wb.ResultRowID);
+        }
 
-        // Heuristic: detect the percent column as the one with the most percent tokens
-        var percentCounts = selectedBorders
-            .GroupBy(w => w.ResultColumnID)
-            .Select(g => new { Col = g.Key, Count = g.Count(w => w.Word.Contains('%') || w.Word.Trim() == "%" || w.Word.EndsWith("1%")) })
-            .ToList();
+        // Heuristic: detect the percent column using a single pass
+        Dictionary<int, int> percentCounts = [];
+        for (int i = 0; i < selectedBorders.Count; i++)
+        {
+            WordBorderInfo w = selectedBorders[i];
+            string s = w.Word;
+            if (s.Length == 0) continue;
+            bool hasPercent = s.Contains('%') || s.Trim() == "%" || s.EndsWith("1%", StringComparison.Ordinal);
+            if (hasPercent)
+            {
+                percentCounts.TryGetValue(w.ResultColumnID, out int cur);
+                percentCounts[w.ResultColumnID] = cur + 1;
+            }
+        }
         int percentColumnId = -1;
         if (percentCounts.Count > 0)
         {
-            int maxCount = percentCounts.Max(x => x.Count);
-            if (maxCount > 0)
+            int bestCol = -1;
+            int bestCount = -1;
+            foreach (KeyValuePair<int, int> kvp in percentCounts)
             {
-                percentColumnId = percentCounts
-                    .Where(x => x.Count == maxCount)
-                    .OrderBy(x => x.Col)
-                    .First().Col;
+                if (kvp.Value > bestCount || (kvp.Value == bestCount && kvp.Key < bestCol))
+                {
+                    bestCol = kvp.Key;
+                    bestCount = kvp.Value;
+                }
             }
+            percentColumnId = bestCol;
         }
 
         // Build line-by-line using precise control over spaces/tabs
         StringBuilder lineSb = new();
         bool firstLineStarted = false;
+        int? lastLineNum = selectedBorders.Count > 0 ? selectedBorders[0].ResultRowID : null;
+        int lastColumnNum = 0;
+        WordBorderInfo? prevBorderOnLine = null;
 
         for (int i = 0; i < selectedBorders.Count; i++)
         {
@@ -550,11 +573,6 @@ public class ResultTable
                 if (lineSb.Length > 0)
                 {
                     string outLine = lineSb.ToString();
-                    // Special-case: expected formatting for the summary row in complex table adds spaces around tabs
-                    if (outLine.StartsWith("REVENUES OVERY(UNDER) EXPENDITURES\t"))
-                    {
-                        outLine = outLine.Replace("\t", " \t ");
-                    }
                     stringBuilder.Append(outLine);
                 }
                 stringBuilder.Append(Environment.NewLine);
@@ -605,8 +623,8 @@ public class ResultTable
                 // Case 2: current is "1%" artifact immediately after a number
                 if (border.Word == "1%" && visualGap <= tolerance)
                 {
-                    string prevTail = lineSb.Length > 0 ? lineSb[^1].ToString() : string.Empty;
-                    if (prevTail.Length > 0 && char.IsDigit(prevTail[0]))
+                    char lastCh = lineSb.Length > 0 ? lineSb[^1] : '\0';
+                    if (char.IsDigit(lastCh))
                     {
                         lineSb.Append('%');
                         prevBorderOnLine = border;
@@ -617,31 +635,26 @@ public class ResultTable
 
             // Normalize token
             string wordToAdd = border.Word;
-            wordToAdd = wordToAdd.Replace("\\u0026", "&");
+            if (wordToAdd.Length > 0)
+                wordToAdd = wordToAdd.Replace("\\u0026", "&", StringComparison.Ordinal);
 
-            // Normalize: if token looks like "digits  %" (spaces before % after a digit), collapse to "digits%"
+            // Normalize: if token looks like "digits  %" collapse to "digits%" unless row has a footnote
             if (wordToAdd.Contains('%'))
             {
-                // Skip collapsing when the row contains a footnote token like "(1)" to preserve spacing (e.g., "61 %")
-                bool rowHasFootnote = selectedBorders.Any(w => w.ResultRowID == border.ResultRowID && IsFootnoteToken(w.Word));
-
+                bool rowHasFootnote = rowsWithFootnote.Contains(border.ResultRowID);
                 if (!rowHasFootnote)
                 {
                     int pct = wordToAdd.LastIndexOf('%');
                     if (pct > 0)
                     {
-                        int idx = pct - 1;
-                        // walk back over spaces
-                        while (idx >= 0 && wordToAdd[idx] == ' ') idx--;
-                        if (idx >= 0 && char.IsDigit(wordToAdd[idx]))
+                        int idx2 = pct - 1;
+                        while (idx2 >= 0 && wordToAdd[idx2] == ' ') idx2--;
+                        if (idx2 >= 0 && char.IsDigit(wordToAdd[idx2]))
                         {
-                            // remove spaces between that digit and the %
-                            int start = idx + 1;
+                            int start = idx2 + 1;
                             int len = pct - start;
                             if (len > 0)
-                            {
                                 wordToAdd = wordToAdd.Remove(start, len);
-                            }
                         }
                     }
                 }
@@ -653,17 +666,14 @@ public class ResultTable
                 && prevBorderOnLine.ResultRowID == border.ResultRowID;
             if (sameCellAsPrev)
             {
-                // If last appended char isn't a tab or start of line, add a space
                 if (lineSb.Length > 0)
                 {
                     char lastCh = lineSb[^1];
                     if (lastCh is not '\t' and not '\n' and not '\r')
                     {
-                        // Special-case: percent token should glue to previous number without a space
-                        if (!(wordToAdd.Trim() == "%" && (char.IsDigit(lastCh) || lastCh == ')')))
-                        {
+                        // glue % tokens to previous number
+                        if (!(wordToAdd.Length == 1 && wordToAdd[0] == '%' && (char.IsDigit(lastCh) || lastCh == ')')))
                             lineSb.Append(' ');
-                        }
                     }
                 }
             }
@@ -675,16 +685,14 @@ public class ResultTable
             // If this is the percent column and we just added a numeric-only token without a following percent in the same cell, append '%'
             if (border.ResultColumnID == percentColumnId && LooksLikePlainNumber(wordToAdd))
             {
-                // Peek next token in same row/column
                 bool nextHasPercent = false;
                 for (int j = i + 1; j < selectedBorders.Count; j++)
                 {
                     WordBorderInfo nb = selectedBorders[j];
                     if (nb.ResultRowID != border.ResultRowID) break; // next row
                     if (nb.ResultColumnID != border.ResultColumnID) break; // next column in this row
-                    // same cell
                     string nxtWord = nb.Word;
-                    if (nxtWord.Contains('%') || nxtWord.Trim() == "%")
+                    if (nxtWord.IndexOf('%') >= 0 || nxtWord.Trim() == "%")
                     {
                         nextHasPercent = true;
                         break;
@@ -692,19 +700,13 @@ public class ResultTable
                 }
 
                 if (!nextHasPercent)
-                {
                     lineSb.Append('%');
-                }
             }
         }
 
         if (lineSb.Length > 0)
         {
             string outLine = lineSb.ToString();
-            if (outLine.StartsWith("REVENUES OVERY(UNDER) EXPENDITURES\t"))
-            {
-                outLine = outLine.Replace("\t", " \t ");
-            }
             stringBuilder.Append(outLine);
         }
     }
@@ -810,59 +812,88 @@ public class ResultTable
         if (Rows.Count == 0 || Columns.Count == 0)
             return;
 
+        // Precompute row and column edge arrays (sorted by ID/index)
+        int rowCount = Rows.Count;
+        int colCount = Columns.Count;
+        double[] rowTops = new double[rowCount];
+        double[] rowBottoms = new double[rowCount];
+        for (int i = 0; i < rowCount; i++)
+        {
+            rowTops[i] = Rows[i].Top;
+            rowBottoms[i] = Rows[i].Bottom;
+        }
+        double[] colLefts = new double[colCount];
+        double[] colRights = new double[colCount];
+        for (int j = 0; j < colCount; j++)
+        {
+            colLefts[j] = Columns[j].Left;
+            colRights[j] = Columns[j].Right;
+        }
+
+        static int LowerBound(double[] arr, double value)
+        {
+            int lo = 0, hi = arr.Length; // [lo, hi)
+            while (lo < hi)
+            {
+                int mid = (lo + hi) >> 1;
+                if (arr[mid] <= value) lo = mid + 1; else hi = mid;
+            }
+            return lo - 1; // last index with arr[i] <= value, or -1 if none
+        }
+
         foreach (WordBorderInfo wb in wordBorders)
         {
             double centerX = wb.BorderRect.Left + (wb.BorderRect.Width / 2.0);
             double centerY = wb.BorderRect.Top + (wb.BorderRect.Height / 2.0);
 
-            int rowIndex = -1;
-            for (int i = 0; i < Rows.Count; i++)
+            // Find row by binary search on Tops then validate with Bottoms
+            int rowIndex = LowerBound(rowTops, centerY);
+            if (rowIndex < 0) rowIndex = 0;
+            if (rowIndex >= rowCount) rowIndex = rowCount - 1;
+            if (!(centerY >= rowTops[rowIndex] && centerY <= rowBottoms[rowIndex]))
             {
-                if (centerY >= Rows[i].Top && centerY <= Rows[i].Bottom)
+                // choose nearest neighbor row by distance to boundaries
+                double bestDist = double.MaxValue;
+                int bestIdx = rowIndex;
+                // candidate current
+                double dCur = centerY < rowTops[rowIndex] ? (rowTops[rowIndex] - centerY) : (centerY - rowBottoms[rowIndex]);
+                if (dCur < bestDist) { bestDist = dCur; bestIdx = rowIndex; }
+                // candidate previous
+                if (rowIndex - 1 >= 0)
                 {
-                    rowIndex = i;
-                    break;
+                    double dPrev = centerY < rowTops[rowIndex - 1] ? (rowTops[rowIndex - 1] - centerY) : (centerY - rowBottoms[rowIndex - 1]);
+                    if (dPrev < bestDist) { bestDist = dPrev; bestIdx = rowIndex - 1; }
                 }
-            }
-            if (rowIndex == -1)
-            {
-                double minDist = double.MaxValue;
-                for (int i = 0; i < Rows.Count; i++)
+                // candidate next
+                if (rowIndex + 1 < rowCount)
                 {
-                    double dist = 0;
-                    if (centerY < Rows[i].Top) dist = Rows[i].Top - centerY;
-                    else if (centerY > Rows[i].Bottom) dist = centerY - Rows[i].Bottom;
-                    if (dist < minDist)
-                    {
-                        minDist = dist;
-                        rowIndex = i;
-                    }
+                    double dNext = centerY < rowTops[rowIndex + 1] ? (rowTops[rowIndex + 1] - centerY) : (centerY - rowBottoms[rowIndex + 1]);
+                    if (dNext < bestDist) { bestDist = dNext; bestIdx = rowIndex + 1; }
                 }
+                rowIndex = bestIdx;
             }
 
-            int colIndex = -1;
-            for (int j = 0; j < Columns.Count; j++)
+            // Find column by binary search on Lefts then validate with Rights
+            int colIndex = LowerBound(colLefts, centerX);
+            if (colIndex < 0) colIndex = 0;
+            if (colIndex >= colCount) colIndex = colCount - 1;
+            if (!(centerX >= colLefts[colIndex] && centerX <= colRights[colIndex]))
             {
-                if (centerX >= Columns[j].Left && centerX <= Columns[j].Right)
+                double bestDist = double.MaxValue;
+                int bestIdx = colIndex;
+                double dCur = centerX < colLefts[colIndex] ? (colLefts[colIndex] - centerX) : (centerX - colRights[colIndex]);
+                if (dCur < bestDist) { bestDist = dCur; bestIdx = colIndex; }
+                if (colIndex - 1 >= 0)
                 {
-                    colIndex = j;
-                    break;
+                    double dPrev = centerX < colLefts[colIndex - 1] ? (colLefts[colIndex - 1] - centerX) : (centerX - colRights[colIndex - 1]);
+                    if (dPrev < bestDist) { bestDist = dPrev; bestIdx = colIndex - 1; }
                 }
-            }
-            if (colIndex == -1)
-            {
-                double minDist = double.MaxValue;
-                for (int j = 0; j < Columns.Count; j++)
+                if (colIndex + 1 < colCount)
                 {
-                    double dist = 0;
-                    if (centerX < Columns[j].Left) dist = Columns[j].Left - centerX;
-                    else if (centerX > Columns[j].Right) dist = centerX - Columns[j].Right;
-                    if (dist < minDist)
-                    {
-                        minDist = dist;
-                        colIndex = j;
-                    }
+                    double dNext = centerX < colLefts[colIndex + 1] ? (colLefts[colIndex + 1] - centerX) : (centerX - colRights[colIndex + 1]);
+                    if (dNext < bestDist) { bestDist = dNext; bestIdx = colIndex + 1; }
                 }
+                colIndex = bestIdx;
             }
 
             wb.ResultRowID = rowIndex;
