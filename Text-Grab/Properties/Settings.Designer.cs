@@ -646,5 +646,17 @@ namespace Text_Grab.Properties {
                 this["FsgDefaultMode"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool FsgShadeOverlay {
+            get {
+                return ((bool)(this["FsgShadeOverlay"]));
+            }
+            set {
+                this["FsgShadeOverlay"] = value;
+            }
+        }
     }
 }
