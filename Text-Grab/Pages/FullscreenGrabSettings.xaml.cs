@@ -1,0 +1,68 @@
+﻿using System;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
+using Text_Grab.Properties;
+using Text_Grab.Utilities;
+
+namespace Text_Grab.Pages;
+/// <summary>
+/// Interaction logic for FullscreenGrabSettings.xaml
+/// </summary>
+public partial class FullscreenGrabSettings : Page
+{
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private bool _loaded = false;
+
+    public FullscreenGrabSettings()
+    {
+        InitializeComponent();
+    }
+
+    private void Page_Loaded(object sender, RoutedEventArgs e)
+    {
+        // hydrate controls from settings
+        StartSingleLineCheckBox.IsChecked = DefaultSettings.FSGMakeSingleLineToggle;
+        SendToEtwCheckBox.IsChecked = DefaultSettings.FsgSendEtwToggle;
+        TryInsertCheckBox.IsChecked = DefaultSettings.TryInsert;
+
+        InsertDelaySlider.Value = Math.Clamp(DefaultSettings.InsertDelay, InsertDelaySlider.Minimum, InsertDelaySlider.Maximum);
+        InsertDelayValueText.Text = DefaultSettings.InsertDelay.ToString("0.0", CultureInfo.InvariantCulture);
+
+        InsertDelaySlider.IsEnabled = TryInsertCheckBox.IsChecked == true;
+
+        _loaded = true;
+    }
+
+    private void StartSingleLineCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        DefaultSettings.FSGMakeSingleLineToggle = StartSingleLineCheckBox.IsChecked == true;
+        DefaultSettings.Save();
+    }
+
+    private void SendToEtwCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        DefaultSettings.FsgSendEtwToggle = SendToEtwCheckBox.IsChecked == true;
+        DefaultSettings.Save();
+    }
+
+    private void TryInsertCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        bool enabled = TryInsertCheckBox.IsChecked == true;
+        DefaultSettings.TryInsert = enabled;
+        DefaultSettings.Save();
+        InsertDelaySlider.IsEnabled = enabled;
+    }
+
+    private void InsertDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_loaded) return;
+        double newVal = Math.Round(InsertDelaySlider.Value, 1);
+        DefaultSettings.InsertDelay = newVal;
+        DefaultSettings.Save();
+        InsertDelayValueText.Text = newVal.ToString("0.0", CultureInfo.InvariantCulture);
+    }
+}
