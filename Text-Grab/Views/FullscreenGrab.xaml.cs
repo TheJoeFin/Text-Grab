@@ -83,7 +83,8 @@ public partial class FullscreenGrab : Window
     {
         BackgroundImage.Source = null;
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
-        BackgroundBrush.Opacity = 0.2;
+        // Honor user preference for shaded overlay while selecting
+        BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? 0.2 : 0.0;
     }
 
     internal void KeyPressed(Key key, bool? isActive = null)
@@ -218,7 +219,7 @@ public partial class FullscreenGrab : Window
 
         foreach (object anyItem in flyoutMenu.Items)
         {
-            if (anyItem is MenuItem item && item.IsChecked)
+            if (anyItem is MenuItem item and { IsChecked: true })
             {
                 if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
                     NextStepDropDownButton.Background = tealButtonStyle;
@@ -691,7 +692,7 @@ public partial class FullscreenGrab : Window
 
         if (string.IsNullOrWhiteSpace(TextFromOCR))
         {
-            BackgroundBrush.Opacity = .2;
+            BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? .2 : 0.0;
             TopButtonsStackPanel.Visibility = Visibility.Visible;
             return;
         }
