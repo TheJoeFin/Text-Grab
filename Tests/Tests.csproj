@@ -9,6 +9,7 @@
         <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
         <IsPackable>false</IsPackable>
         <MsixToolingEnabled>true</MsixToolingEnabled>
+        <UseWPF>true</UseWPF>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,6 +25,8 @@
         </PackageReference>
         <PackageReference Include="Xunit.StaFact" Version="3.0.13" />
         <PackageReference Include="xunit.v3" Version="3.0.1" />
+        <PackageReference Include="BenchmarkDotNet" Version="0.15.3" />
+        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.0.36421.1" />
     </ItemGroup>
 
     <ItemGroup>
