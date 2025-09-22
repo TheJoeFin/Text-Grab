@@ -161,9 +161,7 @@
                     Height="34"
                     Margin="4,0,2,0"
                     Click="FreezeMenuItem_Click"
-                    IsChecked="{Binding IsChecked,
-                                        ElementName=FreezeMenuItem,
-                                        Mode=TwoWay}"
+                    IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(F) Freeze what is on screens">
                     <wpfui:SymbolIcon Symbol="Pause24" />
@@ -193,9 +191,7 @@
                             Margin="0"
                             d:IsChecked="True"
                             Click="SingleLineMenuItem_Click"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=SingleLineMenuItem,
-                                                Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(S) Make result a single line">
                             <wpfui:SymbolIcon Symbol="SubtractSquare24" />
@@ -207,9 +203,7 @@
                             Margin="0"
                             d:IsChecked="True"
                             Click="TableToggleButton_Click"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=TableMenuItem,
-                                                Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked, ElementName=TableMenuItem, Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) OCR text as a table">
                             <wpfui:SymbolIcon Symbol="Table24" />
@@ -221,9 +215,7 @@
                             Margin="0"
                             d:IsChecked="True"
                             Click="NewGrabFrameMenuItem_Click"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=NewGrabFrameMenuItem,
-                                                Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(G) Place a Grab Frame">
                             <wpfui:SymbolIcon Symbol="PanelBottom20" />
@@ -294,9 +286,7 @@
                     Margin="2,0"
                     d:IsChecked="True"
                     Click="SendToEditTextToggleButton_Click"
-                    IsChecked="{Binding IsChecked,
-                                        ElementName=SendToEtwMenuItem,
-                                        Mode=TwoWay}"
+                    IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(E) Send to an Edit Text Window">
                     <wpfui:SymbolIcon Symbol="Window24" />
