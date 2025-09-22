@@ -26,8 +26,7 @@ public partial class FullscreenGrabSettings : Page
         SendToEtwCheckBox.IsChecked = DefaultSettings.FsgSendEtwToggle;
         TryInsertCheckBox.IsChecked = DefaultSettings.TryInsert;
 
-        if (FindName("ShadeOverlayCheckBox") is CheckBox shade)
-            shade.IsChecked = DefaultSettings.FsgShadeOverlay;
+        ShadeOverlayCheckBox.IsChecked = DefaultSettings.FsgShadeOverlay;
 
         InsertDelaySlider.Value = Math.Clamp(DefaultSettings.InsertDelay, InsertDelaySlider.Minimum, InsertDelaySlider.Maximum);
         InsertDelayValueText.Text = DefaultSettings.InsertDelay.ToString("0.0", CultureInfo.InvariantCulture);

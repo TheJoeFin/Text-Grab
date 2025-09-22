@@ -219,7 +219,7 @@ public partial class FullscreenGrab : Window
 
         foreach (object anyItem in flyoutMenu.Items)
         {
-            if (anyItem is MenuItem item and { IsChecked: true })
+            if (anyItem is MenuItem item && item.IsChecked is true)
             {
                 if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
                     NextStepDropDownButton.Background = tealButtonStyle;
