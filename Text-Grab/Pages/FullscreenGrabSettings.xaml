@@ -1,0 +1,107 @@
+﻿<Page
+    x:Class="Text_Grab.Pages.FullscreenGrabSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="FullscreenGrabSettings"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    Loaded="Page_Loaded"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20,12,40,40" Orientation="Vertical">
+            <TextBlock Style="{StaticResource TextHeader}" Text="Fullscreen Grab Settings"></TextBlock>
+
+            <TextBlock
+                Margin="0,12,0,6"
+                FontSize="18"
+                FontWeight="Bold"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Defaults"></TextBlock>
+
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Start mode:"></TextBlock>
+                <StackPanel Margin="12,6,0,0">
+                    <RadioButton x:Name="DefaultModeRadio" GroupName="FsgStartMode" Click="DefaultModeRadio_Click">Default (Standard)</RadioButton>
+                    <RadioButton x:Name="SingleLineModeRadio" GroupName="FsgStartMode" Click="SingleLineModeRadio_Click">Single Line</RadioButton>
+                    <RadioButton x:Name="TableModeRadio" GroupName="FsgStartMode" Click="TableModeRadio_Click">Table</RadioButton>
+                </StackPanel>
+                <TextBlock
+                    Margin="24,6,0,0"
+                    Opacity="0.75"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="Single Line outputs captures as a single line (same as pressing S). Table mode requires Windows OCR/AI languages."></TextBlock>
+            </StackPanel>
+
+            <CheckBox
+                x:Name="SendToEtwCheckBox"
+                Margin="0,4,0,0"
+                Click="SendToEtwCheckBox_Click"
+                Content="Send output to Edit Text Window by default"></CheckBox>
+            <TextBlock
+                Margin="24,0,0,8"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Automatically route capture text into the Edit Text Window (same as pressing E)."></TextBlock>
+
+            <!-- Shade overlay option -->
+            <CheckBox
+                x:Name="ShadeOverlayCheckBox"
+                Margin="0,8,0,0"
+                Click="ShadeOverlayCheckBox_Click"
+                Content="Dim screen with translucent overlay while selecting"></CheckBox>
+            <TextBlock
+                Margin="24,0,0,8"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Controls the transparent overlay shown during Fullscreen Grab selection. Turn off to disable screen dimming."></TextBlock>
+
+            <TextBlock
+                Margin="0,16,0,6"
+                FontSize="18"
+                FontWeight="Bold"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Post-capture insert"></TextBlock>
+
+            <CheckBox
+                x:Name="TryInsertCheckBox"
+                Margin="0,4,0,0"
+                Click="TryInsertCheckBox_Click"
+                Content="Insert captured text into the focused app after closing Fullscreen Grab"></CheckBox>
+
+            <StackPanel
+                Margin="24,6,0,0"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="Insert delay (seconds):"></TextBlock>
+                <Slider
+                    x:Name="InsertDelaySlider"
+                    Width="200"
+                    Margin="12,0,0,0"
+                    IsSnapToTickEnabled="True"
+                    Maximum="5"
+                    Minimum="0"
+                    SmallChange="0.1"
+                    TickFrequency="0.1"
+                    ValueChanged="InsertDelaySlider_ValueChanged"></Slider>
+                <TextBlock
+                    x:Name="InsertDelayValueText"
+                    Width="40"
+                    Margin="12,0,0,0"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource TextBodyNormal}"></TextBlock>
+            </StackPanel>
+
+            <TextBlock
+                Margin="24,2,0,0"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="How long to wait before simulating paste (Ctrl+V)."></TextBlock>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

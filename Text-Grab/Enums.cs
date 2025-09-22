@@ -91,3 +91,10 @@ public enum LanguageKind
     Tesseract = 1,
     WindowsAi = 2,
 }
+
+public enum FsgDefaultMode
+{
+    Default = 0,
+    SingleLine = 1,
+    Table = 2,
+}
