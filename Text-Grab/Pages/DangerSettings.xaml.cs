@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.IO;
+using System.Diagnostics;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -16,6 +18,34 @@ public partial class DangerSettings : Page
     public DangerSettings()
     {
         InitializeComponent();
+    }
+
+    private async void ExportBugReportButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string filePath = await DiagnosticsUtilities.SaveBugReportToFileAsync();
+            
+            MessageBoxResult result = MessageBox.Show(
+                $"Bug report saved to:\n{filePath}\n\nWould you like to open the file location?", 
+                "Bug Report Generated", 
+                MessageBoxButton.YesNo, 
+                MessageBoxImage.Information);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                // Open the file location in File Explorer
+                Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to generate bug report:\n{ex.Message}", 
+                "Error", 
+                MessageBoxButton.OK, 
+                MessageBoxImage.Error);
+        }
     }
 
     private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)

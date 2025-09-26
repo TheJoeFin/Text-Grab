@@ -12,8 +12,6 @@ namespace Text_Grab.Utilities;
 
 public class FileUtilities
 {
-    #region Public Methods
-
     public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
     {
         if (AppUtilities.IsPackaged())
@@ -36,7 +34,7 @@ public class FileUtilities
         string imageExtensions = string.Empty;
         string separator = "";
         ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-        Dictionary<string, string> imageFilters = new();
+        Dictionary<string, string> imageFilters = [];
         foreach (ImageCodecInfo codec in codecs)
         {
             if (codec.FilenameExtension is not string extension)
@@ -48,11 +46,7 @@ public class FileUtilities
         }
         string result = string.Empty;
         separator = "";
-        //foreach (KeyValuePair<string, string> filter in imageFilters)
-        //{
-        //    result += $"{separator}{filter.Key}|{filter.Value}";
-        //    separator = "|";
-        //}
+
         if (!string.IsNullOrEmpty(imageExtensions))
         {
             result += $"{separator}Image files|{imageExtensions}";
@@ -62,14 +56,12 @@ public class FileUtilities
 
     public static string GetPathToLocalFile(string imageRelativePath)
     {
-        Uri codeBaseUrl = new(System.AppDomain.CurrentDomain.BaseDirectory);
-        string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-        string? dirPath = Path.GetDirectoryName(codeBasePath);
+        string? executableDirectory = Path.GetDirectoryName(GetExePath());
 
-        if (dirPath is null)
-            dirPath = "";
+        if (executableDirectory is null)
+            throw new NullReferenceException($"{nameof(executableDirectory)} cannot be null");
 
-        return Path.Combine(dirPath, imageRelativePath);
+        return Path.Combine(executableDirectory, imageRelativePath);
     }
 
     public static async Task<string> GetPathToHistory()
@@ -163,9 +155,6 @@ public class FileUtilities
 
         return await File.ReadAllTextAsync(filePath);
     }
-    #endregion Public Methods
-
-    #region Private Methods
 
     private static void AddText(FileStream fs, string value)
     {
@@ -175,22 +164,28 @@ public class FileUtilities
 
     private static string GetFolderPathUnpackaged(string filename, FileStorageKind storageKind)
     {
-        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-        string historyDirectory = $"{exePath}\\history";
+        string defaultFallback = "c:\\Text-Grab";
+
+        string? executableDirectory = Path.GetDirectoryName(GetExePath());
+
+        if (string.IsNullOrEmpty(executableDirectory))
+            return defaultFallback;
+
+        string historyDirectory = Path.Combine(executableDirectory, "history");
 
         switch (storageKind)
         {
             case FileStorageKind.Absolute:
                 return filename;
             case FileStorageKind.WithExe:
-                return $"{exePath!}";
+                return executableDirectory;
             case FileStorageKind.WithHistory:
-                return $"{historyDirectory}";
+                return historyDirectory;
             default:
                 break;
         }
 
-        return $"c:\\";
+        return defaultFallback;
     }
 
     private static async Task<StorageFolder> GetStorageFolderPackaged(string fileName, FileStorageKind storageKind)
@@ -313,5 +308,12 @@ public class FileUtilities
         }
         catch { }
     }
-    #endregion Private Methods
+
+    public static string GetExePath()
+    {
+        if (!string.IsNullOrEmpty(Environment.ProcessPath))
+            return Environment.ProcessPath;
+        
+        return "";
+    }
 }

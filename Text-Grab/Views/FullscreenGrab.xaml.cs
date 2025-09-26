@@ -83,7 +83,8 @@ public partial class FullscreenGrab : Window
     {
         BackgroundImage.Source = null;
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
-        BackgroundBrush.Opacity = 0.2;
+        // Honor user preference for shaded overlay while selecting
+        BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? 0.2 : 0.0;
     }
 
     internal void KeyPressed(Key key, bool? isActive = null)
@@ -218,7 +219,7 @@ public partial class FullscreenGrab : Window
 
         foreach (object anyItem in flyoutMenu.Items)
         {
-            if (anyItem is MenuItem item && item.IsChecked)
+            if (anyItem is MenuItem item && item.IsChecked is true)
             {
                 if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
                     NextStepDropDownButton.Background = tealButtonStyle;
@@ -691,7 +692,7 @@ public partial class FullscreenGrab : Window
 
         if (string.IsNullOrWhiteSpace(TextFromOCR))
         {
-            BackgroundBrush.Opacity = .2;
+            BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? .2 : 0.0;
             TopButtonsStackPanel.Visibility = Visibility.Visible;
             return;
         }
@@ -781,17 +782,14 @@ public partial class FullscreenGrab : Window
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Maximized;
-        FullWindow.Rect = new System.Windows.Rect(0, 0, Width, Height);
+        FullWindow.Rect = new Rect(0, 0, Width, Height);
         KeyDown += FullscreenGrab_KeyDown;
         KeyUp += FullscreenGrab_KeyUp;
 
         SetImageToBackground();
 
-        if (DefaultSettings.FSGMakeSingleLineToggle)
-        {
-            SingleLineToggleButton.IsChecked = true;
-            SelectSingleToggleButton(SingleLineToggleButton);
-        }
+        // Remove legacy pre-load toggle selection; we'll apply defaults after languages are loaded
+        // to account for Table mode availability based on OCR engine.
 
         if (DefaultSettings.FsgSendEtwToggle)
             SendToEditTextToggleButton.IsChecked = true;
@@ -806,6 +804,71 @@ public partial class FullscreenGrab : Window
         ];
         await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
         isComboBoxReady = true;
+
+        // Apply default mode based on new FsgDefaultMode setting, with fallback to legacy SingleLine flag
+        try
+        {
+            FsgDefaultMode mode = FsgDefaultMode.Default;
+            string? modeSetting = DefaultSettings.FsgDefaultMode;
+            if (!string.IsNullOrWhiteSpace(modeSetting))
+                Enum.TryParse(modeSetting, true, out mode);
+
+            switch (mode)
+            {
+                case FsgDefaultMode.SingleLine:
+                    SingleLineToggleButton.IsChecked = true;
+                    SelectSingleToggleButton(SingleLineToggleButton);
+                    break;
+                case FsgDefaultMode.Table:
+                    if (TableToggleButton.Visibility == Visibility.Visible)
+                    {
+                        TableToggleButton.IsChecked = true;
+                        SelectSingleToggleButton(TableToggleButton);
+                    }
+                    else
+                    {
+                        // Fallback when Table mode isn't available for selected OCR engine
+                        if (DefaultSettings.FSGMakeSingleLineToggle)
+                        {
+                            SingleLineToggleButton.IsChecked = true;
+                            SelectSingleToggleButton(SingleLineToggleButton);
+                        }
+                        else
+                        {
+                            StandardModeToggleButton.IsChecked = true;
+                            SelectSingleToggleButton(StandardModeToggleButton);
+                        }
+                    }
+                    break;
+                case FsgDefaultMode.Default:
+                default:
+                    if (DefaultSettings.FSGMakeSingleLineToggle)
+                    {
+                        SingleLineToggleButton.IsChecked = true;
+                        SelectSingleToggleButton(SingleLineToggleButton);
+                    }
+                    else
+                    {
+                        StandardModeToggleButton.IsChecked = true;
+                        SelectSingleToggleButton(StandardModeToggleButton);
+                    }
+                    break;
+            }
+        }
+        catch
+        {
+            // Fallback to legacy behavior if parsing fails
+            if (DefaultSettings.FSGMakeSingleLineToggle)
+            {
+                SingleLineToggleButton.IsChecked = true;
+                SelectSingleToggleButton(SingleLineToggleButton);
+            }
+            else
+            {
+                StandardModeToggleButton.IsChecked = true;
+                SelectSingleToggleButton(StandardModeToggleButton);
+            }
+        }
 
         if (IsMouseOver)
             TopButtonsStackPanel.Visibility = Visibility.Visible;

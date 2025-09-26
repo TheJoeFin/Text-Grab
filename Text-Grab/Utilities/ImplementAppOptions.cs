@@ -19,7 +19,6 @@ internal class ImplementAppOptions
     {
         if (runInBackground)
         {
-            // Get strongly-typed current application
             NotifyIconUtilities.SetupNotifyIcon();
         }
         else
@@ -61,13 +60,13 @@ internal class ImplementAppOptions
         }
         else
         {
-            string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-            string? BaseDir = System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory);
+            string path = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";            
+            string executablePath = FileUtilities.GetExePath();
+            
             RegistryKey? key = Registry.CurrentUser.OpenSubKey(path, true);
-            if (key is not null
-                && BaseDir is not null)
+            if (key is not null && !string.IsNullOrEmpty(executablePath))
             {
-                key.SetValue("Text-Grab", $"\"{BaseDir}\\Text-Grab.exe\"");
+                key.SetValue("Text-Grab", $"\"{executablePath}\"");
             }
         }
         await Task.CompletedTask;
