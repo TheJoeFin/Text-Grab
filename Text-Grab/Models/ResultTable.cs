@@ -395,7 +395,7 @@ public class ResultTable
             // check if should set this as top
             if (i == 0)
                 rowTop = thisLine;
-            else if (i - 1 >= 0)
+            else
             {
                 int prevRow = rowAreas[i - 1];
                 if (thisLine - prevRow != hitGridSpacing)
@@ -736,9 +736,9 @@ public class ResultTable
         if (t.Contains("N/A", StringComparison.OrdinalIgnoreCase)) return false;
         // remove commas
         t = t.Replace(",", "");
-        // strip parentheses around negatives
-        if (t.StartsWith('(') && t.EndsWith(')') && t.Length > 2)
-            t = t[1..^1];
+        // strip parentheses only if it's a negative number (e.g., "(-123)")
+        if (t.StartsWith('(') && t.EndsWith(')') && t.Length > 3 && t[1] == '-')
+            t = t[2..^1]; // remove '(' and ')' and leading '-'
         return t.All(ch => char.IsDigit(ch));
     }
 

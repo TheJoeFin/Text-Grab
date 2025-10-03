@@ -922,7 +922,7 @@ public partial class GrabFrame : Window
         reSearchTimer.Start();
     }
 
-    public async Task DrawRectanglesAroundWords(string searchWord = "")
+    private async Task DrawRectanglesAroundWords(string searchWord = "")
     {
         if (isDrawing || IsDragOver)
             return;
