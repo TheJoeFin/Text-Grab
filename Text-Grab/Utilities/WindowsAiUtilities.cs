@@ -68,7 +68,7 @@ public static class WindowsAiUtilities
         RecognizedText? result = textRecognizer?
             .RecognizeTextFromImage(imageBuffer);
 
-        if (result is null)
+        if (result is null || result.Lines is null)
             return "ERROR: No text recognized";
 
         StringBuilder stringBuilder = new();
