@@ -2614,7 +2614,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CalcResultsTextControl.PreviewMouseWheel += CalcResultsTextControl_PreviewMouseWheel;
         }
         catch { /* ignore if not ready yet */ }
-    }
 
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
