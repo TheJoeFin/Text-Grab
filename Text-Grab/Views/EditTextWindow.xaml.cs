@@ -2616,6 +2616,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         catch { /* ignore if not ready yet */ }
     }
 
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            AiMenuItem.Visibility = Visibility.Visible;
+        }
+    }
+
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
     {
         EscapeKeyTimer.Stop();
@@ -2682,6 +2688,93 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     [GeneratedRegex(@"(\r\n|\n|\r)")]
     private static partial Regex NewlineReturns();
     #endregion Methods
+
+    private async void SummarizeMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string textToSummarize = GetSelectedTextOrAllText();
+
+        SetToLoading("Summarizing...");
+
+        try
+        {
+            string summarizedText = await WindowsAiUtilities.SummarizeParagraph(textToSummarize);
+
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = summarizedText;
+            else
+                PassedTextControl.SelectedText = summarizedText;
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+    }
+
+    private void LearnAiMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string url = "https://learn.microsoft.com/en-us/windows/ai/apis/phi-silica";
+        Uri source = new(url, UriKind.Absolute);
+        System.Windows.Navigation.RequestNavigateEventArgs ev = new(source, url);
+        Process.Start(new ProcessStartInfo(ev.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
+
+    private async void RewriteMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string textToRewrite = GetSelectedTextOrAllText();
+
+        SetToLoading("Rewriting...");
+        try
+        {
+            string summarizedText = await WindowsAiUtilities.Rewrite(textToRewrite);
+
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = summarizedText;
+            else
+                PassedTextControl.SelectedText = summarizedText;
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+    }
+
+    private async void ConvertTableMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string textToTable = GetSelectedTextOrAllText();
+
+        SetToLoading("Converting...");
+
+        try
+        {
+            string summarizedText = await WindowsAiUtilities.TextToTable(textToTable);
+
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = summarizedText;
+            else
+                PassedTextControl.SelectedText = summarizedText;
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+    }
+
+    private void SetToLoading(string message = "")
+    {
+        IsEnabled = false;
+
+        if (!string.IsNullOrWhiteSpace(message))
+            ProgressText.Text = message;
+
+        LoadingStack.Visibility = Visibility.Visible;
+    }
+
+    private void SetToLoaded()
+    {
+        IsEnabled = true;
+        LoadingStack.Visibility = Visibility.Collapsed;
+    }
 
     private void ShowCalcPaneMenuItem_Click(object sender, RoutedEventArgs e)
     {

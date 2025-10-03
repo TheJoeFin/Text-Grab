@@ -1,6 +1,7 @@
 ﻿using Microsoft.Graphics.Imaging;
 using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.Imaging;
+using Microsoft.Windows.AI.Text;
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Windows.Graphics.Imaging;
+using ZXing;
 
 namespace Text_Grab.Utilities;
 
@@ -40,7 +42,10 @@ public static class WindowsAiUtilities
 #if DEBUG
             throw;
 #endif
+
+#pragma warning disable CS0162 // Unreachable code detected
             return false;
+#pragma warning restore CS0162 // Unreachable code detected
         }
     }
 
@@ -63,7 +68,7 @@ public static class WindowsAiUtilities
         RecognizedText? result = textRecognizer?
             .RecognizeTextFromImage(imageBuffer);
 
-        if (result is null)
+        if (result is null || result.Lines is null)
             return "ERROR: No text recognized";
 
         StringBuilder stringBuilder = new();
@@ -107,5 +112,91 @@ public static class WindowsAiUtilities
             .RecognizeTextFromImage(imageBuffer);
 
         return result;
+    }
+
+    internal static async Task<string> SummarizeParagraph(string textToSummarize)
+    {
+        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+
+        TextSummarizer textSummarizer = new(languageModel);
+
+        bool wasTruncated = false;
+
+        // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
+        // if (textSummarizer.IsPromptLargerThanContext(textToSummarize, out ulong cutOff))
+        // {
+        //     textToSummarize = textToSummarize[..(int)cutOff];
+        //     wasTruncated = true;
+        // }
+
+        try
+        {
+            LanguageModelResponseResult result = await textSummarizer.SummarizeParagraphAsync(textToSummarize);
+
+            if (result.Status == LanguageModelResponseStatus.Complete)
+            {
+                if (wasTruncated)
+                    return $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}";
+                else
+                    return result.Text;
+            }
+            else
+                return $"ERROR: Unable to summarize text. {result.ExtendedError.Message}";
+        }
+        catch (Exception ex)
+        {
+            return $"ERROR: Unable to summarize text. {ex.Message}";
+        }
+    }
+
+    internal static async Task<string> Rewrite(string textToRewrite)
+    {
+        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+
+        TextRewriter textRewriter = new(languageModel);
+        try
+        {
+            // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
+            //LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite, TextRewriteTone.Concise);
+            LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite);
+            if (result.Status == LanguageModelResponseStatus.Complete)
+            {
+                return result.Text;
+            }
+            else
+                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
+        }
+        catch (Exception ex)
+        {
+            return $"ERROR: Failed to Rewrite: {ex.Message}";
+        }
+    }
+
+    internal static async Task<string> TextToTable(string textToTable)
+    {
+        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+
+        TextToTableConverter toTableConverter = new(languageModel);
+        try
+        {
+            TextToTableResponseResult result = await toTableConverter.ConvertAsync(textToTable);
+            if (result.Status == LanguageModelResponseStatus.Complete)
+            {
+                TextToTableRow[] rows = result.GetRows();
+                StringBuilder sb = new();
+                foreach (TextToTableRow row in rows)
+                {
+                    string[] columns = row.GetColumns();
+                    sb.AppendLine(string.Join("\t", columns));
+                }
+                return sb.ToString();
+            }
+            else
+                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
+        }
+        catch (Exception ex)
+        {
+            return $"ERROR: Failed to Rewrite: {ex.Message}";
+        }
     }
 }

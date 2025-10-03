@@ -1,15 +1,17 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
+using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Wpf.Ui.Tray.Controls;
 
 namespace Text_Grab.Controls;
-/// <summary>
-/// Interaction logic for NotifyIconWindow.xaml
-/// </summary>
+
 public partial class NotifyIconWindow : Window
 {
+    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
     public NotifyIconWindow()
     {
         InitializeComponent();
@@ -26,20 +28,45 @@ public partial class NotifyIconWindow : Window
         App.DefaultLaunch();
     }
 
-    private void Window_Activated(object sender, System.EventArgs e)
+    private void Window_Activated(object sender, EventArgs e)
     {
         Hide();
         NotifyIcon.Visibility = Visibility.Visible;
+
+        string toolTipText = "Text Grab";
+        TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
+
+        switch (defaultLaunchSetting)
+        {
+            case TextGrabMode.Fullscreen:
+                toolTipText += " - Fullscreen Grab";
+                break;
+            case TextGrabMode.GrabFrame:
+                toolTipText += " - Grab Frame";
+                break;
+            case TextGrabMode.EditText:
+                toolTipText += " - Edit Text";
+                break;
+            case TextGrabMode.QuickLookup:
+                toolTipText += " - Quick Lookup";
+                break;
+            default:
+                break;
+        }
+
+        NotifyIcon.TooltipText = toolTipText;
     }
 
     private void EditWindowMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        EditTextWindow etw = new(); etw.Show();
+        EditTextWindow etw = new();
+        etw.Show();
     }
 
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        GrabFrame gf = new(); gf.Show();
+        GrabFrame gf = new();
+        gf.Show();
     }
 
     private void FullscreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
@@ -54,7 +81,8 @@ public partial class NotifyIconWindow : Window
 
     private void LookupMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        QuickSimpleLookup qsl = new(); qsl.Show();
+        QuickSimpleLookup qsl = new();
+        qsl.Show();
     }
 
     private void LastGrabMenuItem_Click(object sender, RoutedEventArgs e)
@@ -64,12 +92,20 @@ public partial class NotifyIconWindow : Window
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        SettingsWindow sw = new(); sw.Show();
+        SettingsWindow sw = new();
+        sw.Show();
     }
 
     private void NotifyIcon_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if (!NotifyIcon.IsVisible)
             NotifyIcon.Visibility = Visibility.Visible;
+    }
+
+    private void LastEditWindow_Click(object sender, RoutedEventArgs e)
+    {
+        EditTextWindow etw = new();
+        etw.Show();
+        etw.OpenMostRecentTextHistoryItem();
     }
 }

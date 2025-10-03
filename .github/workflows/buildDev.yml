@@ -2,6 +2,12 @@ name: "Build Text Grab"
 on:
   push:
     branches: [dev]
+  pull_request:
+    branches: [dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
@@ -11,17 +17,17 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "9.0.x"
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }}
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }} -p:EnableMsixTooling=true
       - name: Test
-        run: dotnet test ${{ env.TEST_PATH }} -r win-x64  -p:EnableMsixTooling=true
+        run: dotnet test ${{ env.TEST_PATH }} -r win-x64
 
       - name: Build for release and Publish
         run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -p:EnableMsixTooling=true -o publish

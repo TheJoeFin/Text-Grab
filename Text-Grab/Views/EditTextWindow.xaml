@@ -327,6 +327,27 @@
                     Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
                     Header="Insert Selection On Every Line" />
             </MenuItem>
+            <MenuItem
+                Name="AiMenuItem"
+                Header="_Local AI"
+                Visibility="Collapsed">
+                <MenuItem
+                    x:Name="SummarizeMenuItem"
+                    Click="SummarizeMenuItem_Click"
+                    Header="_Summarize Paragraph" />
+                <MenuItem
+                    x:Name="RewriteMenuItem"
+                    Click="RewriteMenuItem_Click"
+                    Header="_Rewrite" />
+                <MenuItem
+                    x:Name="ConvertTableMenuItem"
+                    Click="ConvertTableMenuItem_Click"
+                    Header="_Convert to Table" />
+                <MenuItem
+                    x:Name="LearnAiMenuItem"
+                    Click="LearnAiMenuItem_Click"
+                    Header="_Learn About Local AI Features" />
+            </MenuItem>
             <MenuItem Header="F_ormat">
                 <MenuItem
                     x:Name="ShowErrorsMenuItem"
@@ -613,5 +634,25 @@
                 </Grid.ContextMenu>
             </Grid>
         </ScrollViewer>
+        <StackPanel
+            x:Name="LoadingStack"
+            Grid.RowSpan="4"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Orientation="Vertical"
+            Visibility="Collapsed">
+            <ui:ProgressRing
+                x:Name="ProgressRing"
+                Width="60"
+                Height="60"
+                IsIndeterminate="True" />
+            <TextBlock
+                x:Name="ProgressText"
+                Margin="0,12,0,0"
+                FontSize="16"
+                FontWeight="Bold"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                Text="Working..." />
+        </StackPanel>
     </Grid>
 </ui:FluentWindow>
