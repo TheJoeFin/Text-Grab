@@ -682,5 +682,17 @@ namespace Text_Grab.Properties {
                 this["CalcShowPane"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("400")]
+        public int CalcPaneWidth {
+            get {
+                return ((int)(this["CalcPaneWidth"]));
+            }
+            set {
+                this["CalcPaneWidth"] = value;
+            }
+        }
     }
 }

@@ -119,7 +119,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // use the tag to track that it was set from history item
             ShowCalcPaneMenuItem.Tag = true;
             ShowCalcPaneMenuItem.IsChecked = true;
-            _lastCalcColumnWidth = new GridLength(historyInfo.CalcPaneWidth);
+            
+            // Set the width to restore - use history width if valid, otherwise use default
+            int widthToRestore = historyInfo.CalcPaneWidth > 0 ? historyInfo.CalcPaneWidth : DefaultSettings.CalcPaneWidth;
+            if (widthToRestore <= 0)
+                widthToRestore = 400; // Fallback to default
+
+            CalcColumn.Width = new GridLength(widthToRestore, GridUnitType.Pixel);
+            _lastCalcColumnWidth = new GridLength(widthToRestore, GridUnitType.Pixel);
         }
     }
 
@@ -303,11 +310,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         cancellationTokenForDirOCR = null;
     }
 
-    public void OpenMostRecentTextHistoryItem()
-    {
-        PassedTextControl.Text = Singleton<HistoryService>.Instance.GetLastTextHistory();
-    }
-
     public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
         PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
@@ -380,6 +382,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     internal HistoryInfo AsHistoryItem()
     {
+        int calcPaneWidth = 0;
+        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
+        {
+            if (CalcColumn.Width.IsStar)
+                calcPaneWidth = (int)CalcColumn.ActualWidth;
+            else
+                calcPaneWidth = (int)CalcColumn.Width.Value;
+        }
+
         HistoryInfo historyInfo = new()
         {
             ID = historyId,
@@ -388,7 +399,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
-            CalcPaneWidth = (CalcColumn.Width.IsStar) ? (int)(CalcColumn.ActualWidth) : 0,
+            CalcPaneWidth = calcPaneWidth,
             HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true
         };
 
@@ -1945,7 +1956,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void PreviousRegion_Click(object sender, RoutedEventArgs e)
     {
-        HistoryService hs = Singleton<HistoryService>.Instance;
+        HistoryService hs = Singleton<HistoryService>. Instance;
 
         if (hs.HasAnyFullscreenHistory())
             await OcrUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
@@ -2546,6 +2557,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
         DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+        
+        // Save calc pane width to settings when closing with pane open
+        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
+        {
+            if (CalcColumn.Width.IsStar)
+                DefaultSettings.CalcPaneWidth = (int)CalcColumn.ActualWidth;
+            else
+                DefaultSettings.CalcPaneWidth = (int)CalcColumn.Width.Value;
+        }
+        
         DefaultSettings.Save();
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
@@ -2599,6 +2620,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
 
         InitializeExpressionEvaluator();
+
+        // Restore calc pane width from settings if not loading from history
+        if (ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
+        {
+            _lastCalcColumnWidth = new GridLength(DefaultSettings.CalcPaneWidth, GridUnitType.Pixel);
+        }
 
         if (ShowCalcPaneMenuItem.Tag is not true)
             ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
@@ -2787,6 +2814,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SetCalcPaneVis()
     {
+        // Check if we're loading from history and should ignore default settings
+        if (ShowCalcPaneMenuItem.Tag is bool fromHistory && fromHistory)
+        {
+            ShowCalcPaneMenuItem.Tag = null; // Clear the flag after first use
+            // Use ShowCalcPaneMenuItem.IsChecked which was set from history
+        }
+        else
+        {
+            // Not from history, apply user's default setting
+            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+        }
+
         if (ShowCalcPaneMenuItem.IsChecked)
         {
             CalcResultsTextControl.Visibility = Visibility.Visible;
