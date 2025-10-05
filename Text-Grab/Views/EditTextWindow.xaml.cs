@@ -1783,9 +1783,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         expr.EvaluateParameterAsync += (name, args) =>
         {
             if (_parameters.ContainsKey(name))
+            {
                 args.Result = _parameters[name];
+            }
+            else if (TryGetMathConstant(name, out var constantValue))
+            {
+                args.Result = constantValue;
+            }
             else
+            {
                 args.Result = null; // Default to null if parameter not found
+            }
             return ValueTask.CompletedTask;
         };
 
@@ -1818,6 +1826,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 args.Result = _parameters[name];
             }
+            else if (TryGetMathConstant(name, out var constantValue))
+            {
+                args.Result = constantValue;
+            }
             return ValueTask.CompletedTask;
         };
 
@@ -1843,6 +1855,34 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Rest must be letters, digits, or underscores
         return name.Skip(1).All(c => char.IsLetterOrDigit(c) || c == '_');
+    }
+
+    /// <summary>
+    /// Attempts to get a built-in math constant value for the given parameter name.
+    /// Supports case-insensitive matching for common mathematical constants.
+    /// </summary>
+    /// <param name="name">The parameter name to check</param>
+    /// <param name="value">The constant value if found</param>
+    /// <returns>True if the parameter is a recognized math constant</returns>
+    private static bool TryGetMathConstant(string name, out double value)
+    {
+        value = name.ToLowerInvariant() switch
+        {
+            "pi" => Math.PI,                    // π ≈ 3.14159265359
+            "e" => Math.E,                      // e ≈ 2.71828182846
+            "tau" => Math.Tau,                  // τ = 2π ≈ 6.28318530718
+            "phi" => (1.0 + Math.Sqrt(5.0)) / 2.0, // Golden ratio ≈ 1.61803398875
+            "sqrt2" => Math.Sqrt(2.0),          // √2 ≈ 1.41421356237
+            "sqrt3" => Math.Sqrt(3.0),          // √3 ≈ 1.73205080757
+            "sqrt5" => Math.Sqrt(5.0),          // √5 ≈ 2.23606797750
+            "ln2" => Math.Log(2.0),             // ln(2) ≈ 0.69314718056
+            "ln10" => Math.Log(10.0),           // ln(10) ≈ 2.30258509299
+            "log2e" => Math.Log2(Math.E),       // log₂(e) ≈ 1.44269504089
+            "log10e" => Math.Log10(Math.E),     // log₁₀(e) ≈ 0.43429448190
+            _ => double.NaN
+        };
+
+        return !double.IsNaN(value);
     }
 
     private string FormatResult(object result)

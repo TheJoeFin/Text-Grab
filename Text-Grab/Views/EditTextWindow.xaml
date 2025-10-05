@@ -646,7 +646,7 @@
                             Text="Features:" 
                             Margin="0,0,0,4" />
                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
-                            <Run Text="• Basic math: +, -, *, /, %, ^" />
+                            <Run Text="• Basic math: +, -, *, /, %, ** for exponent" />
                         </TextBlock>
                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
                             <Run Text="• Functions: sin, cos, tan, sqrt, abs, log, etc." />
@@ -655,10 +655,7 @@
                             <Run Text="• Variables: x = 10" />
                         </TextBlock>
                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
-                            <Run Text="• Constants: pi, e" />
-                        </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
-                            <Run Text="• Comments: // or #" />
+                            <Run Text="• Constants: pi, e, tau, phi, sqrt2, sqrt3, sqrt5, ln2, ln10, log2e, log10e" />
                         </TextBlock>
                         <TextBlock 
                             FontWeight="SemiBold" 
@@ -672,6 +669,7 @@
                             <Run Text="x = 10" /><LineBreak />
                             <Run Text="y = 20" /><LineBreak />
                             <Run Text="x + y" /><LineBreak />
+                            <Run Text="sin(pi/2)" /><LineBreak />
                             <Run Text="sqrt(x * y)" />
                         </TextBlock>
                         <TextBlock TextWrapping="Wrap" Margin="0,8,0,0" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
