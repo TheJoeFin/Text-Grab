@@ -530,14 +530,14 @@
                 Width="32"
                 Height="32"
                 Margin="4,0,4,0"
+                Padding="0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Center"
-                Click="CalcToggleButton_Click"
-                ToolTip="Toggle Calculator Pane (Ctrl+P)"
                 Background="Transparent"
                 BorderThickness="0"
-                Padding="0">
-                <ui:SymbolIcon Symbol="Calculator24" FontSize="16" />
+                Click="CalcToggleButton_Click"
+                ToolTip="Toggle Calculation Pane (Ctrl+P)">
+                <ui:SymbolIcon FontSize="16" Symbol="Calculator24" />
             </Button>
         </Grid>
         <Grid Grid.Row="2">
@@ -591,88 +591,93 @@
 
             <StackPanel
                 Grid.Column="1"
-                Orientation="Horizontal"
+                Margin="8,8,8,0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
-                Margin="8,8,8,0">
+                Orientation="Horizontal">
                 <Button
                     x:Name="CalcCopyAllButton"
                     Width="24"
                     Height="24"
                     Margin="0,0,4,0"
+                    Padding="0"
                     Background="Transparent"
                     BorderThickness="0"
-                    Padding="0"
-                    ToolTip="Copy All Results"
-                    Click="CalcCopyAllButton_Click">
-                    <ui:SymbolIcon Symbol="Copy24" FontSize="14" />
+                    Click="CalcCopyAllButton_Click"
+                    ToolTip="Copy All Results">
+                    <ui:SymbolIcon FontSize="14" Symbol="Copy24" />
                 </Button>
                 <Button
                     x:Name="CalcInfoButton"
                     Width="24"
                     Height="24"
+                    Padding="0"
                     Background="Transparent"
                     BorderThickness="0"
-                    Padding="0"
-                    ToolTip="Calculator Pane Help"
-                    Click="CalcInfoButton_Click">
-                    <ui:SymbolIcon Symbol="Info24" FontSize="14" />
+                    Click="CalcInfoButton_Click"
+                    ToolTip="Calculation Pane Help">
+                    <ui:SymbolIcon FontSize="14" Symbol="Info24" />
                 </Button>
             </StackPanel>
-            
+
             <Popup
                 x:Name="CalcInfoPopup"
                 Grid.Column="1"
-                PlacementTarget="{Binding ElementName=CalcInfoButton}"
+                AllowsTransparency="True"
                 Placement="Left"
-                StaysOpen="False"
-                AllowsTransparency="True">
-                <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                        BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="16">
+                PlacementTarget="{Binding ElementName=CalcInfoButton}"
+                StaysOpen="False">
+                <Border
+                    Padding="16"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                    BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4">
                     <StackPanel Width="300">
-                        <TextBlock 
-                            FontSize="16" 
-                            FontWeight="Bold" 
-                            Text="Calculator Pane" 
-                            Margin="0,0,0,8" />
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="16"
+                            FontWeight="Bold"
+                            Text="Calculation Pane" />
+                        <TextBlock Margin="0,0,0,8" TextWrapping="Wrap">
                             <Run Text="Type mathematical expressions in the text area and see results calculated in real-time." />
                         </TextBlock>
-                        <TextBlock 
-                            FontWeight="SemiBold" 
-                            Text="Features:" 
-                            Margin="0,0,0,4" />
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                        <TextBlock
+                            Margin="0,0,0,4"
+                            FontWeight="SemiBold"
+                            Text="Features:" />
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
                             <Run Text="• Basic math: +, -, *, /, %, ** for exponent" />
                         </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
                             <Run Text="• Functions: sin, cos, tan, sqrt, abs, log, etc." />
                         </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
                             <Run Text="• Variables: x = 10" />
                         </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
                             <Run Text="• Constants: pi, e, tau, phi, sqrt2, sqrt3, sqrt5, ln2, ln10, log2e, log10e" />
                         </TextBlock>
-                        <TextBlock 
-                            FontWeight="SemiBold" 
-                            Text="Example:" 
-                            Margin="0,0,0,4" />
-                        <TextBlock 
-                            FontFamily="Consolas" 
+                        <TextBlock
+                            Margin="0,0,0,4"
+                            FontWeight="SemiBold"
+                            Text="Example:" />
+                        <TextBlock
+                            Margin="0,0,0,4"
+                            FontFamily="Consolas"
                             FontSize="12"
-                            TextWrapping="Wrap"
-                            Margin="0,0,0,4">
+                            TextWrapping="Wrap">
                             <Run Text="x = 10" /><LineBreak />
                             <Run Text="y = 20" /><LineBreak />
                             <Run Text="x + y" /><LineBreak />
                             <Run Text="sin(pi/2)" /><LineBreak />
                             <Run Text="sqrt(x * y)" />
                         </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,8,0,0" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <TextBlock
+                            Margin="0,8,0,0"
+                            FontSize="11"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap">
                             <Run Text="Toggle with Ctrl+P or the calculator button" />
                         </TextBlock>
                     </StackPanel>
