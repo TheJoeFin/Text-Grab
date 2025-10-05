@@ -2686,6 +2686,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
+            return;
+
+        try
+        {
+            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
+        }
+    }
+
     private void CalcInfoButton_Click(object sender, RoutedEventArgs e)
     {
         CalcInfoPopup.IsOpen = !CalcInfoPopup.IsOpen;

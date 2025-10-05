@@ -589,21 +589,36 @@
                 </TextBox.ContextMenu>
             </TextBox>
 
-            <Button
-                x:Name="CalcInfoButton"
+            <StackPanel
                 Grid.Column="1"
-                Width="24"
-                Height="24"
-                Margin="8,8,8,0"
+                Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
-                Background="Transparent"
-                BorderThickness="0"
-                Padding="0"
-                ToolTip="Calculator Pane Help"
-                Click="CalcInfoButton_Click">
-                <ui:SymbolIcon Symbol="Info24" FontSize="14" />
-            </Button>
+                Margin="8,8,8,0">
+                <Button
+                    x:Name="CalcCopyAllButton"
+                    Width="24"
+                    Height="24"
+                    Margin="0,0,4,0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    ToolTip="Copy All Results"
+                    Click="CalcCopyAllButton_Click">
+                    <ui:SymbolIcon Symbol="Copy24" FontSize="14" />
+                </Button>
+                <Button
+                    x:Name="CalcInfoButton"
+                    Width="24"
+                    Height="24"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    ToolTip="Calculator Pane Help"
+                    Click="CalcInfoButton_Click">
+                    <ui:SymbolIcon Symbol="Info24" FontSize="14" />
+                </Button>
+            </StackPanel>
             
             <Popup
                 x:Name="CalcInfoPopup"
