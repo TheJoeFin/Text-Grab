@@ -1571,7 +1571,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             // Set filter for file extension and default file extension 
             DefaultExt = ".txt",
-            Filter = "Text documents (.txt)|*.txt"
+            Filter = "Text documents (.txt)|*.txt|All(*.*)|*"
         };
 
         bool? result = dlg.ShowDialog();
@@ -2637,6 +2637,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
         setCalcPaneVisibility();
 
+        // Wire up calc pane context menu
+        HideCalcPaneContextItem.Click += HideCalcPaneContextItem_Click;
+        ShowCalcErrorsContextItem.Click += ShowCalcErrorsContextItem_Click;
+        CopyAllContextItem.Click += CopyAllContextItem_Click;
+
         // Attach scrolling synchronization
         try
         {
@@ -2650,6 +2655,40 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             AiMenuItem.Visibility = Visibility.Visible;
         }
+    }
+
+    private void HideCalcPaneContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = false;
+        DefaultSettings.CalcShowPane = false;
+        setCalcPaneVisibility();
+    }
+
+    private void ShowCalcErrorsContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowErrorsMenuItem.IsChecked = !ShowErrorsMenuItem.IsChecked;
+        DefaultSettings.CalcShowErrors = ShowErrorsMenuItem.IsChecked;
+        _ = EvaluateExpressions();
+    }
+
+    private void CopyAllContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
+            return;
+
+        try
+        {
+            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
+        }
+    }
+
+    private void CalcInfoButton_Click(object sender, RoutedEventArgs e)
+    {
+        CalcInfoPopup.IsOpen = !CalcInfoPopup.IsOpen;
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
@@ -2690,7 +2729,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
     }
 
-    private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
+    private void WrapTextCHBX_Checked(object sender, RoutedEventArgs e)
     {
         if (!IsLoaded)
             return;

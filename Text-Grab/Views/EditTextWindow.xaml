@@ -367,11 +367,11 @@
                         Unchecked="MarginsMenuItem_Checked" />
                     <MenuItem
                         x:Name="WrapTextMenuItem"
-                        Checked="WrapTextCHBOX_Checked"
+                        Checked="WrapTextCHBX_Checked"
                         Header="_Wrap Text"
                         IsCheckable="True"
                         IsChecked="True"
-                        Unchecked="WrapTextCHBOX_Checked" />
+                        Unchecked="WrapTextCHBX_Checked" />
                     <MenuItem
                         x:Name="FontMenuItem"
                         Click="FontMenuItem_Click"
@@ -588,6 +588,83 @@
                     </ContextMenu>
                 </TextBox.ContextMenu>
             </TextBox>
+
+            <Button
+                x:Name="CalcInfoButton"
+                Grid.Column="1"
+                Width="24"
+                Height="24"
+                Margin="8,8,8,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="0"
+                ToolTip="Calculator Pane Help"
+                Click="CalcInfoButton_Click">
+                <ui:SymbolIcon Symbol="Info24" FontSize="14" />
+            </Button>
+            
+            <Popup
+                x:Name="CalcInfoPopup"
+                Grid.Column="1"
+                PlacementTarget="{Binding ElementName=CalcInfoButton}"
+                Placement="Left"
+                StaysOpen="False"
+                AllowsTransparency="True">
+                <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                        BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16">
+                    <StackPanel Width="300">
+                        <TextBlock 
+                            FontSize="16" 
+                            FontWeight="Bold" 
+                            Text="Calculator Pane" 
+                            Margin="0,0,0,8" />
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run Text="Type mathematical expressions in the text area and see results calculated in real-time." />
+                        </TextBlock>
+                        <TextBlock 
+                            FontWeight="SemiBold" 
+                            Text="Features:" 
+                            Margin="0,0,0,4" />
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                            <Run Text="• Basic math: +, -, *, /, %, ^" />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                            <Run Text="• Functions: sin, cos, tan, sqrt, abs, log, etc." />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                            <Run Text="• Variables: x = 10" />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4">
+                            <Run Text="• Constants: pi, e" />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run Text="• Comments: // or #" />
+                        </TextBlock>
+                        <TextBlock 
+                            FontWeight="SemiBold" 
+                            Text="Example:" 
+                            Margin="0,0,0,4" />
+                        <TextBlock 
+                            FontFamily="Consolas" 
+                            FontSize="12"
+                            TextWrapping="Wrap"
+                            Margin="0,0,0,4">
+                            <Run Text="x = 10" /><LineBreak />
+                            <Run Text="y = 20" /><LineBreak />
+                            <Run Text="x + y" /><LineBreak />
+                            <Run Text="sqrt(x * y)" />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,8,0,0" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            <Run Text="Toggle with Ctrl+P or the calculator button" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </Popup>
 
             <GridSplitter
                 x:Name="TextBoxSplitter"
