@@ -2325,6 +2325,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = duplicateLine.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(duplicateLine, DuplicateSelectedLine));
 
+        RoutedCommand toggleCalcPane = new();
+        _ = toggleCalcPane.InputGestures.Add(new KeyGesture(Key.P, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(toggleCalcPane, ToggleCalcPaneExecuted));
+
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
@@ -2809,6 +2813,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         DefaultSettings.CalcShowPane = menuItem.IsChecked;
 
+        SetCalcPaneVis();
+    }
+
+    private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
+        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
         SetCalcPaneVis();
     }
 
