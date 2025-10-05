@@ -2816,6 +2816,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         setCalcPaneVisibility();
     }
 
+    private void CalcToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
+        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
+        setCalcPaneVisibility();
+    }
+
     private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
     {
         ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
