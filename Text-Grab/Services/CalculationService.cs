@@ -152,7 +152,7 @@ public class CalculationService
             {
                 args.Result = _parameters[name];
             }
-            else if (TryGetMathConstant(name, out var constantValue))
+            else if (TryGetMathConstant(name, out double constantValue))
             {
                 args.Result = constantValue;
             }
@@ -162,6 +162,9 @@ public class CalculationService
             }
             return ValueTask.CompletedTask;
         };
+
+        // Register custom functions
+        RegisterCustomFunctions(expr);
 
         object? result = await expr.EvaluateAsync();
 
@@ -195,12 +198,15 @@ public class CalculationService
             {
                 args.Result = _parameters[name];
             }
-            else if (TryGetMathConstant(name, out var constantValue))
+            else if (TryGetMathConstant(name, out double constantValue))
             {
                 args.Result = constantValue;
             }
             return ValueTask.CompletedTask;
         };
+
+        // Register custom functions
+        RegisterCustomFunctions(expression);
 
         object? result = await expression.EvaluateAsync();
 
@@ -294,6 +300,47 @@ public class CalculationService
     public IReadOnlyDictionary<string, object> GetParameters()
     {
         return _parameters;
+    }
+
+    /// <summary>
+    /// Registers custom functions for the expression evaluator.
+    /// </summary>
+    private static void RegisterCustomFunctions(AsyncExpression expression)
+    {
+        // Register Sum function
+        expression.EvaluateFunctionAsync += async (name, args) =>
+        {
+            if (name.Equals("Sum", StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Parameters.Length == 0)
+                {
+                    args.Result = 0;
+                    return;
+                }
+
+                decimal sum = 0m;
+                foreach (AsyncExpression parameter in args.Parameters)
+                {
+                    object? value = await parameter.EvaluateAsync();
+                    
+                    // Handle different numeric types
+                    if (value is null)
+                        continue;
+                    
+                    try
+                    {
+                        sum += Convert.ToDecimal(value);
+                    }
+                    catch
+                    {
+                        // If conversion fails, skip this value
+                        continue;
+                    }
+                }
+                
+                args.Result = sum;
+            }
+        };
     }
 }
 

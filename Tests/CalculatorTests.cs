@@ -985,4 +985,356 @@ area";
     }
 
     #endregion CalculationService Tests
+
+    #region Sum Function Tests
+
+    [Fact]
+    public async Task Sum_WithNoArguments_ReturnsZero()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum()";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("0", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithSingleNumber_ReturnsThatNumber()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(42)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("42", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithMultipleNumbers_ReturnsCorrectSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(1; 2; 3; 4; 5)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("15", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithNegativeNumbers_ReturnsCorrectSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(-10, -20, -30)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("-60", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithMixedPositiveAndNegative_ReturnsCorrectSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(100; -25; 50; -15; -10)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("100", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithDecimalNumbers_ReturnsCorrectSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(1.5; 2.5; 3.5)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("7.5", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithExpressions_EvaluatesAndSums()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(2 + 3; 4 * 2; 10 / 2)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("18", result.Output); // (2+3) + (4*2) + (10/2) = 5 + 8 + 5 = 18
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithVariables_UsesVariableValues()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "a = 10\nb = 20\nc = 30\nSum(a; b; c)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(4, lines.Length);
+        Assert.Equal("60", lines[3]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithNestedFunctions_Works()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(Abs(-5); Sqrt(16); Max(10; 20))";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("29", result.Output); // 5 + 4 + 20 = 29
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithLargeNumbers_ReturnsCorrectSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(1000000; 2000000; 3000000)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("6,000,000", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithZeros_ReturnsCorrectSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(0; 0; 0; 5; 0)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("5", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_CaseInsensitive_Works()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "sum(1; 2; 3)\nSUM(4; 5; 6)\nSuM(7; 8; 9)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Equal("6", lines[0]);
+        Assert.Equal("15", lines[1]);
+        Assert.Equal("24", lines[2]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithMathConstants_Works()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(Pi; E; Tau)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        // Pi + E + Tau ≈ 3.14159 + 2.71828 + 6.28318 ≈ 12.14305
+        Assert.Contains("12", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_InComplexExpression_Works()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "total = Sum(10; 20; 30)\naverage = total / 3\naverage";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Contains("total = 60", lines[0]);
+        Assert.Contains("average = 20", lines[1]);
+        Assert.Equal("20", lines[2]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithVeryLongList_ReturnsCorrectSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        // Sum of 1 to 100 = 5050
+        string input = "Sum(1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20; " +
+                      "21; 22; 23; 24; 25; 26; 27; 28; 29; 30; 31; 32; 33; 34; 35; 36; 37; 38; 39; 40; " +
+                      "41; 42; 43; 44; 45; 46; 47; 48; 49; 50; 51; 52; 53; 54; 55; 56; 57; 58; 59; 60; " +
+                      "61; 62; 63; 64; 65; 66; 67; 68; 69; 70; 71; 72; 73; 74; 75; 76; 77; 78; 79; 80; " +
+                      "81; 82; 83; 84; 85; 86; 87; 88; 89; 90; 91; 92; 93; 94; 95; 96; 97; 98; 99; 100)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("5,050", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_RealWorldExample_MonthlyExpenses()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"// Monthly expenses
+rent = 1500
+utilities = 250
+groceries = 600
+transportation = 200
+entertainment = 300
+
+// Calculate total using Sum
+totalExpenses = Sum(rent; utilities; groceries; transportation; entertainment)
+totalExpenses";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Contains("2,850", lines[lines.Length - 1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_RealWorldExample_ScoreCalculation()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"// Test scores
+test1 = 85
+test2 = 92
+test3 = 78
+test4 = 95
+
+// Calculate total and average
+totalPoints = Sum(test1; test2; test3; test4)
+averageScore = totalPoints / 4
+
+totalPoints
+averageScore";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Contains("350", lines[lines.Length - 2]); // Total
+        Assert.Contains("87.5", lines[lines.Length - 1]); // Average
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithMultipleSumCalls_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"group1 = Sum(1; 2; 3)
+group2 = Sum(4; 5; 6)
+group3 = Sum(7; 8; 9)
+grandTotal = Sum(group1; group2; group3)
+grandTotal";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Contains("group1 = 6", lines[0]);
+        Assert.Contains("group2 = 15", lines[1]);
+        Assert.Contains("group3 = 24", lines[2]);
+        Assert.Contains("grandTotal = 45", lines[3]);
+        Assert.Equal("45", lines[4]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithMixedIntegerAndDecimal_ReturnsDecimalSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(10; 5.5; 3; 2.25)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("20.75", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Sum_WithParenthesesAndOperations_CorrectPrecedence()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum((2 + 3) * 2; (10 - 5) / 5; 8)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("19", result.Output); // (5*2) + (5/5) + 8 = 10 + 1 + 8 = 19
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion Sum Function Tests
 }
