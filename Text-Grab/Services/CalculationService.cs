@@ -123,6 +123,79 @@ public class CalculationService
     }
 
     /// <summary>
+    /// Parses quantity words and abbreviations in expressions, converting them to numeric values.
+    /// Examples: "5 million" -> "5000000.0", "3 dozen" -> "36", "2.5 k" -> "2500"
+    /// </summary>
+    /// <param name="expression">The expression to parse</param>
+    /// <returns>The expression with quantity words replaced by numeric values</returns>
+    public static string ParseQuantityWords(string expression)
+    {
+        if (string.IsNullOrWhiteSpace(expression))
+            return expression;
+
+        // Dictionary of quantity words and their multipliers
+        // Note: Using decimal for precision, max value is ~7.9 x 10^28
+        Dictionary<string, decimal> quantityMultipliers = new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Large orders of magnitude (within decimal range)
+            { "octillion", 1_000_000_000_000_000_000_000_000_000M },              // 10^27
+            { "septillion", 1_000_000_000_000_000_000_000_000M },                 // 10^24
+            { "sextillion", 1_000_000_000_000_000_000_000M },                     // 10^21
+            { "quintillion", 1_000_000_000_000_000_000M },                        // 10^18
+            { "quadrillion", 1_000_000_000_000_000M },                            // 10^15
+            { "trillion", 1_000_000_000_000M },                                   // 10^12
+            { "billion", 1_000_000_000M },                                        // 10^9
+            { "million", 1_000_000M },                                            // 10^6
+            { "thousand", 1_000M },                                               // 10^3
+            { "hundred", 100M },                                                  // 10^2
+            // Special quantities
+            { "dozen", 12M },
+            { "score", 20M },
+            { "gross", 144M },
+            // Abbreviations
+            { "k", 1_000M },
+            { "m", 1_000_000M },
+            { "b", 1_000_000_000M },
+            { "t", 1_000_000_000_000M },
+            { "q", 1_000_000_000_000_000M }  // Quadrillion
+        };
+
+        // Process each quantity word
+        foreach ((string? word, decimal multiplier) in quantityMultipliers)
+        {
+            // Use regex to find patterns like "5 million", "2.5 thousand", "-3 dozen", etc.
+            // Pattern matches: optional negative sign, digits with optional decimal point, whitespace, and the quantity word
+            string pattern = @"(-?\d+\.?\d*)\s+" + System.Text.RegularExpressions.Regex.Escape(word) + @"\b";
+
+            expression = System.Text.RegularExpressions.Regex.Replace(
+                expression,
+                pattern,
+                match =>
+                {
+                    string numberStr = match.Groups[1].Value;
+                    if (decimal.TryParse(numberStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number))
+                    {
+                        decimal result = number * multiplier;
+                        // For large numbers (> 100k), add .0 to ensure double/decimal evaluation in NCalc
+                        // This prevents int32 overflow issues
+                        if (Math.Abs(result) > 100000 && result % 1 == 0)
+                        {
+                            return result.ToString("F1", CultureInfo.InvariantCulture);
+                        }
+                        // Format without decimal places if it's a whole number and small
+                        return result % 1 == 0
+                            ? result.ToString("F0", CultureInfo.InvariantCulture)
+                            : result.ToString(CultureInfo.InvariantCulture);
+                    }
+                    return match.Value;
+                },
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+
+        return expression;
+    }
+
+    /// <summary>
     /// Handles parameter assignment (variable = expression).
     /// </summary>
     private async Task<string> HandleParameterAssignmentAsync(string line)
@@ -136,6 +209,9 @@ public class CalculationService
         {
             throw new ArgumentException($"Invalid variable name: {variableName}");
         }
+
+        // Parse quantity words first
+        expression = ParseQuantityWords(expression);
 
         // Evaluate the expression to get the value
         expression = StandardizeDecimalAndGroupSeparators(expression);
@@ -184,6 +260,9 @@ public class CalculationService
     /// </summary>
     private async Task<string> EvaluateStandardExpressionAsync(string line)
     {
+        // Parse quantity words first
+        line = ParseQuantityWords(line);
+
         ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
         line = StandardizeDecimalAndGroupSeparators(line);
         AsyncExpression expression = new(line, option)
@@ -322,11 +401,11 @@ public class CalculationService
                 foreach (AsyncExpression parameter in args.Parameters)
                 {
                     object? value = await parameter.EvaluateAsync();
-                    
+
                     // Handle different numeric types
                     if (value is null)
                         continue;
-                    
+
                     try
                     {
                         sum += Convert.ToDecimal(value);
@@ -337,7 +416,7 @@ public class CalculationService
                         continue;
                     }
                 }
-                
+
                 args.Result = sum;
             }
         };
