@@ -521,8 +521,8 @@
         </Menu>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*" />
-                <ColumnDefinition x:Name="CalcColumn" Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="CalcColumn" Width="200" />
             </Grid.ColumnDefinitions>
             <TextBox
                 x:Name="PassedTextControl"
@@ -552,9 +552,7 @@
                 AcceptsReturn="True"
                 AcceptsTab="True"
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                FontSize="{Binding ElementName=PassedTextControl,
-                                   Path=FontSize,
-                                   Mode=OneWay}"
+                FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
                 HorizontalScrollBarVisibility="Auto"
                 IsInactiveSelectionHighlightEnabled="True"
                 IsReadOnly="True"

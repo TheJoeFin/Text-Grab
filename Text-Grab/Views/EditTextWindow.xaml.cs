@@ -2635,7 +2635,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
 
         ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
-        SetCalcPaneVis();
+        setCalcPaneVisibility();
 
         // Attach scrolling synchronization
         try
@@ -2813,17 +2813,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         DefaultSettings.CalcShowPane = menuItem.IsChecked;
 
-        SetCalcPaneVis();
+        setCalcPaneVisibility();
     }
 
     private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
     {
         ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
         DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
-        SetCalcPaneVis();
+        setCalcPaneVisibility();
     }
 
-    private void SetCalcPaneVis()
+    private void setCalcPaneVisibility()
     {
         // Check if we're loading from history and should ignore default settings
         if (ShowCalcPaneMenuItem.Tag is bool fromHistory && fromHistory)
@@ -2872,6 +2872,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void TextBoxSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        CalcColumn.Width = new GridLength(1, GridUnitType.Star);
+        // Toggle between equal split (star) and collapsed
+        if (CalcColumn.Width.IsStar)
+        {
+            // If already star-sized, collapse the pane
+            ShowCalcPaneMenuItem.IsChecked = false;
+            DefaultSettings.CalcShowPane = false;
+            setCalcPaneVisibility();
+        }
+        else
+        {
+            // If collapsed or pixel-sized, set to equal split (1 star = 50% of available space)
+            CalcColumn.Width = new GridLength(1, GridUnitType.Star);
+            _lastCalcColumnWidth = new GridLength(1, GridUnitType.Star);
+        }
     }
 }
