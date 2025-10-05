@@ -1643,7 +1643,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private DispatcherTimer? _debounceTimer = null!;
     private const int DEBOUNCE_DELAY_MS = 300;
-    private readonly Dictionary<string, object> _parameters = [];
+    private readonly CalculationService _calculationService = new();
 
     private void InitializeExpressionEvaluator()
     {
@@ -1675,231 +1675,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (string.IsNullOrWhiteSpace(input))
         {
             CalcResultsTextControl.Text = "";
-            _parameters.Clear();
+            _calculationService.ClearParameters();
             // Keep scrolls aligned even when clearing
             Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
             return;
         }
 
-        // Preserve line mapping so results align 1:1 with input lines
-        string[] lines = input.Split('\n');
-        List<string> results = [];
-        int errorCount = 0;
+        // Update calculation service settings
+        _calculationService.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
+        _calculationService.ShowErrors = ShowErrorsMenuItem.IsChecked == true;
 
-        // Clear parameters and rebuild from scratch for each evaluation
-        _parameters.Clear();
-
-        foreach (string line in lines)
-        {
-            string trimmedLine = line.Trim();
-            if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith("//") || trimmedLine.StartsWith('#'))
-            {
-                results.Add(""); // Preserve line structure for comments/empty lines
-                continue;
-            }
-
-            try
-            {
-                if (IsParameterAssignment(trimmedLine))
-                {
-                    await HandleParameterAssignment(trimmedLine, results);
-                }
-                else
-                {
-                    await EvaluateStandardExpression(trimmedLine, results);
-                }
-            }
-            catch (Exception ex)
-            {
-                if (ShowErrorsMenuItem.IsChecked == true)
-                {
-                    results.Add($"Error: {ex.Message}");
-                }
-                else
-                {
-                    results.Add(""); // Empty line when errors are hidden
-                }
-                errorCount++;
-            }
-        }
+        // Evaluate expressions using the service
+        CalculationResult result = await _calculationService.EvaluateExpressionsAsync(input);
 
         // Update the text control with results
-        CalcResultsTextControl.Text = string.Join("\n", results);
+        CalcResultsTextControl.Text = result.Output;
         // After updating calc text, its ScrollViewer resets; resync to main scroll
         Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
 
         // Optional status (kept commented)
-        // if (errorCount == 0) { } else { }
-    }
-
-    private bool IsParameterAssignment(string line)
-    {
-        // Check for assignment pattern: variable = expression
-        // Avoid matching comparison operators (==, !=, <=, >=)
-        return line.Contains('=') &&
-               !line.Contains("==") &&
-               !line.Contains("!=") &&
-               !line.Contains("<=") &&
-               !line.Contains(">=") &&
-               line.IndexOf('=') == line.LastIndexOf('='); // Ensure single '='
-    }
-
-    private string StandardizeDecimalAndGroupSeparators(string expression)
-    {
-        if (selectedCultureInfo is null)
-            return expression;
-        string decimalSep = selectedCultureInfo.NumberFormat.NumberDecimalSeparator;
-        string groupSep = selectedCultureInfo.NumberFormat.NumberGroupSeparator;
-
-        if (!string.IsNullOrEmpty(groupSep))
-            expression = expression.Replace(groupSep, "");
-        if (decimalSep != ".")
-            expression = expression.Replace(".", decimalSep);
-
-        return expression;
-    }
-
-    private async Task HandleParameterAssignment(string line, List<string> results)
-    {
-        int equalIndex = line.IndexOf('=');
-        string variableName = line[..equalIndex].Trim();
-        string expression = line[(equalIndex + 1)..].Trim();
-
-        // Validate variable name (simple validation)
-        if (!IsValidVariableName(variableName))
-        {
-            throw new ArgumentException($"Invalid variable name: {variableName}");
-        }
-
-        // Evaluate the expression to get the value
-        expression = StandardizeDecimalAndGroupSeparators(expression);
-        ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
-        AsyncExpression expr = new(expression, option)
-        {
-            CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture
-        };
-
-        // Set up parameter handler for existing parameters
-        expr.EvaluateParameterAsync += (name, args) =>
-        {
-            if (_parameters.ContainsKey(name))
-            {
-                args.Result = _parameters[name];
-            }
-            else if (TryGetMathConstant(name, out var constantValue))
-            {
-                args.Result = constantValue;
-            }
-            else
-            {
-                args.Result = null; // Default to null if parameter not found
-            }
-            return ValueTask.CompletedTask;
-        };
-
-        object? result = await expr.EvaluateAsync();
-
-        if (result != null)
-        {
-            _parameters[variableName] = result;
-            results.Add($"> {variableName} = {FormatResult(result)}");
-        }
-        else
-        {
-            results.Add($"> {variableName} = null");
-        }
-    }
-
-    private async Task EvaluateStandardExpression(string line, List<string> results)
-    {
-        ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
-        line = StandardizeDecimalAndGroupSeparators(line);
-        AsyncExpression expression = new(line, option)
-        {
-            CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture
-        };
-
-        // Set up parameter handler
-        expression.EvaluateParameterAsync += (name, args) =>
-        {
-            if (_parameters.ContainsKey(name))
-            {
-                args.Result = _parameters[name];
-            }
-            else if (TryGetMathConstant(name, out var constantValue))
-            {
-                args.Result = constantValue;
-            }
-            return ValueTask.CompletedTask;
-        };
-
-        object? result = await expression.EvaluateAsync();
-
-        if (result != null)
-        {
-            string formattedResult = FormatResult(result);
-            results.Add(formattedResult);
-        }
-        else
-        {
-            results.Add("null");
-        }
-    }
-
-    private bool IsValidVariableName(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return false;
-
-        // Must start with letter or underscore
-        if (!char.IsLetter(name[0]) && name[0] != '_') return false;
-
-        // Rest must be letters, digits, or underscores
-        return name.Skip(1).All(c => char.IsLetterOrDigit(c) || c == '_');
-    }
-
-    /// <summary>
-    /// Attempts to get a built-in math constant value for the given parameter name.
-    /// Supports case-insensitive matching for common mathematical constants.
-    /// </summary>
-    /// <param name="name">The parameter name to check</param>
-    /// <param name="value">The constant value if found</param>
-    /// <returns>True if the parameter is a recognized math constant</returns>
-    private static bool TryGetMathConstant(string name, out double value)
-    {
-        value = name.ToLowerInvariant() switch
-        {
-            "pi" => Math.PI,                    // π ≈ 3.14159265359
-            "e" => Math.E,                      // e ≈ 2.71828182846
-            "tau" => Math.Tau,                  // τ = 2π ≈ 6.28318530718
-            "phi" => (1.0 + Math.Sqrt(5.0)) / 2.0, // Golden ratio ≈ 1.61803398875
-            "sqrt2" => Math.Sqrt(2.0),          // √2 ≈ 1.41421356237
-            "sqrt3" => Math.Sqrt(3.0),          // √3 ≈ 1.73205080757
-            "sqrt5" => Math.Sqrt(5.0),          // √5 ≈ 2.23606797750
-            "ln2" => Math.Log(2.0),             // ln(2) ≈ 0.69314718056
-            "ln10" => Math.Log(10.0),           // ln(10) ≈ 2.30258509299
-            "log2e" => Math.Log2(Math.E),       // log₂(e) ≈ 1.44269504089
-            "log10e" => Math.Log10(Math.E),     // log₁₀(e) ≈ 0.43429448190
-            _ => double.NaN
-        };
-
-        return !double.IsNaN(value);
-    }
-
-    private string FormatResult(object result)
-    {
-        return result switch
-        {
-            double d when double.IsNaN(d) => "NaN",
-            double d when double.IsPositiveInfinity(d) => "∞",
-            double d when double.IsNegativeInfinity(d) => "-∞",
-            double d => Math.Abs(d % 1) < double.Epsilon ? d.ToString("N0") : d.ToString("#,##0.###"),
-            decimal m => m.ToString("#,##0.###"),
-            int i => i.ToString("N0"),
-            long l => l.ToString("N0"),
-            float f => f.ToString("#,##0.###"),
-            bool b => b.ToString().ToLower(),
-            _ => result.ToString() ?? "null"
-        };
+        // if (result.ErrorCount == 0) { } else { }
     }
 
     private async void ShowErrorsCheckBox_Changed(object sender, RoutedEventArgs e)
