@@ -1,5 +1,4 @@
 ﻿using Humanizer;
-using NCalc;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -119,7 +118,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // use the tag to track that it was set from history item
             ShowCalcPaneMenuItem.Tag = true;
             ShowCalcPaneMenuItem.IsChecked = true;
-            
+
             // Set the width to restore - use history width if valid, otherwise use default
             int widthToRestore = historyInfo.CalcPaneWidth > 0 ? historyInfo.CalcPaneWidth : DefaultSettings.CalcPaneWidth;
             if (widthToRestore <= 0)
@@ -1791,7 +1790,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void PreviousRegion_Click(object sender, RoutedEventArgs e)
     {
-        HistoryService hs = Singleton<HistoryService>. Instance;
+        HistoryService hs = Singleton<HistoryService>.Instance;
 
         if (hs.HasAnyFullscreenHistory())
             await OcrUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
@@ -2396,7 +2395,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
         DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
-        
+
         // Save calc pane width to settings when closing with pane open
         if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
         {
@@ -2405,7 +2404,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             else
                 DefaultSettings.CalcPaneWidth = (int)CalcColumn.Width.Value;
         }
-        
+
         DefaultSettings.Save();
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
@@ -2470,7 +2469,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
 
         ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
-        setCalcPaneVisibility();
+        SetCalcPaneVisibility();
 
         // Wire up calc pane context menu
         HideCalcPaneContextItem.Click += HideCalcPaneContextItem_Click;
@@ -2496,7 +2495,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         ShowCalcPaneMenuItem.IsChecked = false;
         DefaultSettings.CalcShowPane = false;
-        setCalcPaneVisibility();
+        SetCalcPaneVisibility();
     }
 
     private void ShowCalcErrorsContextItem_Click(object sender, RoutedEventArgs e)
@@ -2702,24 +2701,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         DefaultSettings.CalcShowPane = menuItem.IsChecked;
 
-        setCalcPaneVisibility();
+        SetCalcPaneVisibility();
     }
 
     private void CalcToggleButton_Click(object sender, RoutedEventArgs e)
     {
         ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
         DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
-        setCalcPaneVisibility();
+        SetCalcPaneVisibility();
     }
 
     private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
     {
         ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
         DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
-        setCalcPaneVisibility();
+        SetCalcPaneVisibility();
     }
 
-    private void setCalcPaneVisibility()
+    private void SetCalcPaneVisibility()
     {
         // Check if we're loading from history and should ignore default settings
         if (ShowCalcPaneMenuItem.Tag is bool fromHistory && fromHistory)
@@ -2774,7 +2773,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // If already star-sized, collapse the pane
             ShowCalcPaneMenuItem.IsChecked = false;
             DefaultSettings.CalcShowPane = false;
-            setCalcPaneVisibility();
+            SetCalcPaneVisibility();
         }
         else
         {
