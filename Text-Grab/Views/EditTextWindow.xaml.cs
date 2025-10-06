@@ -1173,6 +1173,28 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         cancellationTokenForDirOCR?.Cancel();
     }
 
+    private void OpenRecentEditWindowExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string currentText = PassedTextControl.Text;
+
+        HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
+
+        if (historyInfo is null)
+        {
+            // No history available, just open a new window
+            EditTextWindow etw = new();
+            etw.Show();
+            return;
+        }
+
+        EditTextWindow etwHistory = new(historyInfo);
+        etwHistory.Show();
+        etwHistory.Activate();
+
+        if (string.IsNullOrWhiteSpace(currentText))
+            Close();
+    }
+
     private void LanguageMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
@@ -2164,6 +2186,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = toggleCalcPane.InputGestures.Add(new KeyGesture(Key.P, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(toggleCalcPane, ToggleCalcPaneExecuted));
 
+        RoutedCommand openRecentEditWindow = new();
+        _ = openRecentEditWindow.InputGestures.Add(new KeyGesture(Key.T, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(openRecentEditWindow, OpenRecentEditWindowExecuted));
+
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
@@ -2604,10 +2630,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.SelectedText = workingString;
     }
 
-    [GeneratedRegex(@"(\r\n|\n|\r)")]
-    private static partial Regex NewlineReturns();
-    #endregion Methods
-
     private async void SummarizeMenuItem_Click(object sender, RoutedEventArgs e)
     {
         string textToSummarize = GetSelectedTextOrAllText();
@@ -2783,4 +2805,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             _lastCalcColumnWidth = new GridLength(1, GridUnitType.Star);
         }
     }
+
+    [GeneratedRegex(@"(\r\n|\n|\r)")]
+    private static partial Regex NewlineReturns();
+
+    #endregion Methods
 }

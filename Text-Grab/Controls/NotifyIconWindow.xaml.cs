@@ -63,12 +63,14 @@ public partial class NotifyIconWindow : Window
     {
         EditTextWindow etw = new();
         etw.Show();
+        etw.Activate();
     }
 
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
     {
         GrabFrame gf = new();
         gf.Show();
+        gf.Activate();
     }
 
     private void FullscreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
@@ -117,5 +119,6 @@ public partial class NotifyIconWindow : Window
 
         EditTextWindow etwHistory = new(historyInfo);
         etwHistory.Show();
+        etwHistory.Activate();
     }
 }

@@ -56,6 +56,7 @@ public partial class App : System.Windows.Application
             case TextGrabMode.EditText:
                 EditTextWindow manipulateTextWindow = new();
                 manipulateTextWindow.Show();
+                manipulateTextWindow.Activate();
                 break;
             case TextGrabMode.QuickLookup:
                 QuickSimpleLookup quickSimpleLookup = new();
