@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -104,8 +106,16 @@ public partial class NotifyIconWindow : Window
 
     private void LastEditWindow_Click(object sender, RoutedEventArgs e)
     {
-        EditTextWindow etw = new();
-        etw.Show();
-        etw.OpenMostRecentTextHistoryItem();
+        HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
+
+        if (historyInfo is null)
+        {
+            EditTextWindow etw = new();
+            etw.Show();
+            return;
+        }
+
+        EditTextWindow etwHistory = new(historyInfo);
+        etwHistory.Show();
     }
 }

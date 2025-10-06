@@ -150,386 +150,569 @@
             Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-        <Menu
-            Grid.Row="1"
-            ClipToBounds="True"
-            IsMainMenu="True">
-            <MenuItem Header="_File" SubmenuOpened="MenuItem_SubmenuOpened">
-                <MenuItem
-                    x:Name="OpenFileMenuItem"
-                    Click="OpenFileMenuItem_Click"
-                    Header="_Open File..."
-                    InputGestureText="Ctrl + O" />
-                <MenuItem x:Name="OpenRecentMenuItem" Header="Recent" />
-                <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
-                <MenuItem
-                    x:Name="SaveFileMenuItem"
-                    Click="SaveBTN_Click"
-                    Header="_Save"
-                    InputGestureText="Ctrl + S" />
-                <MenuItem
-                    x:Name="SaveAsFileMenuItem"
-                    Click="SaveAsBTN_Click"
-                    Header="Save _As..."
-                    InputGestureText="Ctrl + Shift + S" />
-                <MenuItem
-                    x:Name="CopyAndCloseMenuItem"
-                    Click="CopyCloseBTN_Click"
-                    Header="_Copy And Close" />
-                <MenuItem
-                    x:Name="CloseAndInsertMenuItem"
-                    Click="CopyClosePasteBTN_Click"
-                    Header="Close and I_nsert" />
-                <Separator />
-                <MenuItem
-                    x:Name="SettingsMenuItem"
-                    Click="SettingsMenuItem_Click"
-                    Header="Text Grab Sett_ings..." />
-                <MenuItem
-                    x:Name="CloseMenuItem"
-                    Click="CloseMenuItem_Click"
-                    Header="Close"
-                    InputGestureText="Alt + F4" />
-            </MenuItem>
-            <MenuItem Header="_Edit">
-                <MenuItem Command="ApplicationCommands.Undo" />
-                <MenuItem Command="ApplicationCommands.Redo" />
-                <Separator />
-                <MenuItem Command="ApplicationCommands.Cut" />
-                <MenuItem Command="ApplicationCommands.Copy" />
-                <MenuItem Command="ApplicationCommands.Paste" />
-                <MenuItem
-                    Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
-                    Header="OCR Paste"
-                    InputGestureText="Ctrl + Shift + V" />
-                <Separator />
-                <MenuItem
-                    x:Name="LaunchUriMenuItem"
-                    Command="{x:Static local:EditTextWindow.LaunchCmd}"
-                    Header="Launch URL" />
-                <MenuItem
-                    x:Name="SingleLineMenuItem"
-                    Command="{x:Static local:EditTextWindow.SingleLineCmd}"
-                    Header="Make _Single Line" />
-                <MenuItem
-                    x:Name="_TrimEachLineMenuItem"
-                    Click="TrimEachLineMenuItem_Click"
-                    Header="_Trim Each Line" />
-                <MenuItem
-                    x:Name="TryToNumberMenuItem"
-                    Click="TryToNumberMenuItem_Click"
-                    Header="Try To Make _Numbers" />
-                <MenuItem
-                    x:Name="TryToAlphaMenuItem"
-                    Click="TryToAlphaMenuItem_Click"
-                    Header="Try To Make _Letters" />
-                <MenuItem
-                    x:Name="CorrectGuid"
-                    Click="CorrectGuid_Click"
-                    Header="Correct Common _GUID/UUID Errors" />
-                <MenuItem
-                    x:Name="ToggleCaseMenuItem"
-                    Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-                    Header="Toggle _Case"
-                    InputGestureText="Shift + F3" />
-                <MenuItem
-                    x:Name="RemoveDuplicateLines"
-                    Click="RemoveDuplicateLines_Click"
-                    Header="Remove Duplicate Lines" />
-                <MenuItem
-                    x:Name="ReplaceReservedCharsMenuItem"
-                    Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
-                    Header="_Replace Reserved Characters"
-                    InputGestureText="Ctrl + R" />
-                <MenuItem
-                    x:Name="UnStackMenuItem"
-                    Command="{x:Static local:EditTextWindow.UnstackCmd}"
-                    Header="_Unstack Text (Select Top Row)"
-                    InputGestureText="Ctrl + U" />
-                <MenuItem
-                    x:Name="UnStackGroupMenuItem"
-                    Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
-                    Header="_Unstack Text (Select First Column)" />
-                <MenuItem
-                    x:Name="AddRemoveAtMenuItem"
-                    Click="AddRemoveAtMenuItem_Click"
-                    Header="_Add, Remove, Limit..." />
-            </MenuItem>
-            <MenuItem Header="_Selection">
-                <MenuItem
-                    x:Name="FindAndReplaceMenuItem"
-                    Click="FindAndReplaceMenuItem_Click"
-                    Header="Find and Replace" />
-                <MenuItem
-                    x:Name="DefaultWebSearch"
-                    Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
-                    Header="Default Web Search" />
-                <MenuItem x:Name="WebSearchCollection" Header="Search web with..." />
-                <Separator />
-                <MenuItem
-                    x:Name="SelectWordMenuItem"
-                    Click="SelectWordMenuItem_Click"
-                    Header="Select _Word"
-                    InputGestureText="Ctrl + W" />
-                <MenuItem
-                    x:Name="SelectLineMenuItem"
-                    Click="SelectLineMenuItem_Click"
-                    Header="Select _Line"
-                    InputGestureText="Ctrl + L" />
-                <MenuItem
-                    x:Name="SelectAllMenuItem"
-                    Click="SelectAllMenuItem_Click"
-                    Header="Select All"
-                    InputGestureText="Ctrl + A" />
-                <MenuItem
-                    x:Name="SelectNoneMenuItem"
-                    Click="SelectNoneMenuItem_Click"
-                    Header="Select None" />
-                <MenuItem
-                    x:Name="DeleteSelectedTextMenuItem"
-                    Click="DeleteSelectedTextMenuItem_Click"
-                    Header="Delete Selected Text" />
-                <Separator />
-                <MenuItem
-                    x:Name="MoveLineUpMenuItem"
-                    Click="MoveLineUpMenuItem_Click"
-                    Header="Move Selection _Up"
-                    InputGestureText="Alt + Up" />
-                <MenuItem
-                    x:Name="MoveLineDownMenuItem"
-                    Click="MoveLineDownMenuItem_Click"
-                    Header="Move Selection _Down"
-                    InputGestureText="Alt + Down" />
-                <Separator />
-                <MenuItem
-                    x:Name="SplitLineBeforeSelectionMI"
-                    Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
-                    Header="Split Lines _Before Each Selection" />
-                <MenuItem
-                    x:Name="SplitLineAfterSelectionMI"
-                    Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
-                    Header="Split Lines _After Each Selection" />
-                <MenuItem
-                    x:Name="IsolateSelectionMI"
-                    Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-                    Header="_Isolate Selected Text"
-                    InputGestureText="Ctrl + I" />
-                <MenuItem
-                    x:Name="DeleteAllSelectionMI"
-                    Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
-                    Header="Delete All Instances of Selection" />
-                <MenuItem
-                    x:Name="DeleteAllSelectionPatternMI"
-                    Command="{x:Static local:EditTextWindow.DeleteAllSelectionPatternCmd}"
-                    Header="Delete All Instances of Selection Simple Pattern" />
-                <MenuItem
-                    x:Name="InsertSelectionOnEveryLineMI"
-                    Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
-                    Header="Insert Selection On Every Line" />
-            </MenuItem>
-            <MenuItem
-                Name="AiMenuItem"
-                Header="_Local AI"
-                Visibility="Collapsed">
-                <MenuItem
-                    x:Name="SummarizeMenuItem"
-                    Click="SummarizeMenuItem_Click"
-                    Header="_Summarize Paragraph" />
-                <MenuItem
-                    x:Name="RewriteMenuItem"
-                    Click="RewriteMenuItem_Click"
-                    Header="_Rewrite" />
-                <MenuItem
-                    x:Name="ConvertTableMenuItem"
-                    Click="ConvertTableMenuItem_Click"
-                    Header="_Convert to Table" />
-                <MenuItem
-                    x:Name="LearnAiMenuItem"
-                    Click="LearnAiMenuItem_Click"
-                    Header="_Learn About Local AI Features" />
-            </MenuItem>
-            <MenuItem Header="F_ormat">
-                <MenuItem
-                    x:Name="MarginsMenuItem"
-                    Checked="MarginsMenuItem_Checked"
-                    Header="_Use Margins"
-                    IsCheckable="True"
-                    Unchecked="MarginsMenuItem_Checked" />
-                <MenuItem
-                    x:Name="WrapTextMenuItem"
-                    Checked="WrapTextCHBOX_Checked"
-                    Header="_Wrap Text"
-                    IsCheckable="True"
-                    IsChecked="True"
-                    Unchecked="WrapTextCHBOX_Checked" />
-                <MenuItem
-                    x:Name="FontMenuItem"
-                    Click="FontMenuItem_Click"
-                    Header="_Font..." />
-            </MenuItem>
-            <MenuItem
-                x:Name="CaptureMenuItem"
-                Header="_Capture"
-                SubmenuOpened="CaptureMenuItem_SubmenuOpened">
-                <MenuItem
-                    x:Name="FullScreenGrabMenuItem"
-                    Click="FullScreenGrabMenuItem_Click"
-                    Header="New _Fullscreen Grab"
-                    InputGestureText="Ctrl + F" />
-                <MenuItem
-                    x:Name="FSGDelayMenuItem"
-                    Click="FSGDelayMenuItem_Click"
-                    Header="Fullscreen with 2 second _delay" />
-                <MenuItem
-                    x:Name="PreviousRegionMenuItem"
-                    Click="PreviousRegion_Click"
-                    Header="Grab previous region" />
-                <MenuItem
-                    x:Name="GrabFrameMenuItem"
-                    Click="GrabFrameMenuItem_Click"
-                    Header="New _Grab Frame"
-                    InputGestureText="Ctrl + G" />
-                <Separator />
-                <MenuItem
-                    x:Name="QuickSimpleLookupMenuItem"
-                    Click="LaunchQuickSimpleLookup"
-                    Header="Add From _Quick Simple Lookup"
-                    InputGestureText="Ctrl + Q" />
-                <MenuItem
-                    x:Name="ClipboardWatcherMenuItem"
-                    Header="_Watch Clipboard For Changes"
-                    IsCheckable="True"
-                    IsChecked="False" />
-                <Separator />
-                <MenuItem
-                    x:Name="ListFilesMenuItem"
-                    Click="ListFilesMenuItem_Click"
-                    Header="_List Files and Folders From Folder..." />
-                <Separator />
-                <MenuItem
-                    x:Name="ReadFolderOfImages"
-                    Click="ReadFolderOfImages_Click"
-                    Header="_Extract Text from Images in Folder..." />
-                <MenuItem x:Name="LanguageMenuItem" Header="OCR in Language..." />
-                <MenuItem
-                    x:Name="RecursiveFoldersCheck"
-                    Header="Scan all folders recursively"
-                    IsCheckable="True"
-                    StaysOpenOnClick="True" />
-                <MenuItem
-                    x:Name="ReadFolderOfImagesWriteTxtFiles"
-                    Header="Write ._Txt File For Each Image"
-                    IsCheckable="True"
-                    StaysOpenOnClick="True" />
-                <MenuItem
-                    x:Name="OutputFilenamesCheck"
-                    Header="Write File names in output"
-                    IsCheckable="True"
-                    IsChecked="True"
-                    StaysOpenOnClick="True" />
-                <MenuItem
-                    x:Name="OutputHeaderCheck"
-                    Header="Include output header text"
-                    IsCheckable="True"
-                    IsChecked="True"
-                    StaysOpenOnClick="True" />
-                <MenuItem
-                    x:Name="OutputFooterCheck"
-                    Header="Include output footer text"
-                    IsCheckable="True"
-                    IsChecked="True"
-                    StaysOpenOnClick="True" />
-            </MenuItem>
-            <MenuItem
-                x:Name="WindowMenuItem"
-                Header="_Window"
-                SubmenuOpened="WindowMenuItem_SubmenuOpened">
-                <MenuItem
-                    x:Name="AlwaysOnTop"
-                    Click="AlwaysOnTop_Checked"
-                    Header="_Always On Top"
-                    IsCheckable="True"
-                    IsChecked="False" />
-                <MenuItem
-                    x:Name="HideBottomBarMenuItem"
-                    Click="HideBottomBarMenuItem_Click"
-                    Header="_Hide Bottom Bar"
-                    IsCheckable="True"
-                    IsChecked="False" />
-                <MenuItem
-                    x:Name="LaunchFullscreenOnLoad"
-                    Click="LaunchFullscreenOnLoad_Click"
-                    Header="Open _Fullscreen on Launch"
-                    IsCheckable="True"
-                    IsChecked="False" />
-                <MenuItem
-                    x:Name="RestorePositionMenuItem"
-                    Checked="RestorePositionMenuItem_Checked"
-                    Header="Set postion based on previous Edit Text Window"
-                    IsCheckable="True"
-                    Unchecked="RestorePositionMenuItem_Checked" />
-                <MenuItem
-                    x:Name="RestoreThisPosition"
-                    Click="RestoreThisPosition_Click"
-                    Header="_Restore this windows's position" />
-                <Separator />
-                <MenuItem
-                    x:Name="NewWindowMenuItem"
-                    Click="NewWindow_Clicked"
-                    Header="_New Window" />
-                <MenuItem
-                    x:Name="NewWindowFromSelectionMenuItem"
-                    Click="NewWindowWithText_Clicked"
-                    Header="New Window with Selected _Text" />
-                <MenuItem
-                    x:Name="MakeCodeMenuItem"
-                    Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
-                    Header="Make _QR Code" />
-                <MenuItem
-                    x:Name="OpenLastAsGrabFrameMenuItem"
-                    Click="OpenLastAsGrabFrameMenuItem_Click"
-                    Header="Edit _Last Grab" />
-            </MenuItem>
-            <MenuItem Header="_Help">
-                <MenuItem
-                    x:Name="ContactMenuItem"
-                    Click="ContactMenuItem_Click"
-                    Header="_Contact The Developer..." />
-                <MenuItem
-                    x:Name="RateAndReview"
-                    Click="RateAndReview_Click"
-                    Header="_Rate and Review..." />
-                <MenuItem
-                    x:Name="FeedbackMenuItem"
-                    Click="FeedbackMenuItem_Click"
-                    Header="_Feedback..." />
-                <MenuItem
-                    x:Name="AboutMenuItem"
-                    Click="AboutMenuItem_Click"
-                    Header="_About" />
-            </MenuItem>
-        </Menu>
-        <TextBox
-            x:Name="PassedTextControl"
-            Grid.Row="2"
-            AcceptsReturn="True"
-            AcceptsTab="True"
-            AllowDrop="True"
-            AutoWordSelection="True"
-            CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
-            ContextMenuOpening="PassedTextControl_ContextMenuOpening"
-            FontSize="16"
-            HorizontalScrollBarVisibility="Auto"
-            IsInactiveSelectionHighlightEnabled="True"
-            PreviewDragOver="ETWindow_DragOver"
-            PreviewDrop="ETWindow_Drop"
-            SelectionChanged="PassedTextControl_SelectionChanged"
-            SizeChanged="PassedTextControl_SizeChanged"
-            SpellCheck.IsEnabled="True"
-            Style="{DynamicResource TextBoxStyle2}"
-            TextChanged="PassedTextControl_TextChanged"
-            TextWrapping="WrapWithOverflow"
-            VerticalScrollBarVisibility="Auto" />
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Menu
+                Grid.Column="0"
+                ClipToBounds="True"
+                IsMainMenu="True">
+                <MenuItem Header="_File" SubmenuOpened="MenuItem_SubmenuOpened">
+                    <MenuItem
+                        x:Name="OpenFileMenuItem"
+                        Click="OpenFileMenuItem_Click"
+                        Header="_Open File..."
+                        InputGestureText="Ctrl + O" />
+                    <MenuItem x:Name="OpenRecentMenuItem" Header="Recent" />
+                    <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
+                    <MenuItem
+                        x:Name="SaveFileMenuItem"
+                        Click="SaveBTN_Click"
+                        Header="_Save"
+                        InputGestureText="Ctrl + S" />
+                    <MenuItem
+                        x:Name="SaveAsFileMenuItem"
+                        Click="SaveAsBTN_Click"
+                        Header="Save _As..."
+                        InputGestureText="Ctrl + Shift + S" />
+                    <MenuItem
+                        x:Name="CopyAndCloseMenuItem"
+                        Click="CopyCloseBTN_Click"
+                        Header="_Copy And Close" />
+                    <MenuItem
+                        x:Name="CloseAndInsertMenuItem"
+                        Click="CopyClosePasteBTN_Click"
+                        Header="Close and I_nsert" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="SettingsMenuItem"
+                        Click="SettingsMenuItem_Click"
+                        Header="Text Grab Sett_ings..." />
+                    <MenuItem
+                        x:Name="CloseMenuItem"
+                        Click="CloseMenuItem_Click"
+                        Header="Close"
+                        InputGestureText="Alt + F4" />
+                </MenuItem>
+                <MenuItem Header="_Edit">
+                    <MenuItem Command="ApplicationCommands.Undo" />
+                    <MenuItem Command="ApplicationCommands.Redo" />
+                    <Separator />
+                    <MenuItem Command="ApplicationCommands.Cut" />
+                    <MenuItem Command="ApplicationCommands.Copy" />
+                    <MenuItem Command="ApplicationCommands.Paste" />
+                    <MenuItem
+                        Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
+                        Header="OCR Paste"
+                        InputGestureText="Ctrl + Shift + V" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="LaunchUriMenuItem"
+                        Command="{x:Static local:EditTextWindow.LaunchCmd}"
+                        Header="Launch URL" />
+                    <MenuItem
+                        x:Name="SingleLineMenuItem"
+                        Command="{x:Static local:EditTextWindow.SingleLineCmd}"
+                        Header="Make _Single Line" />
+                    <MenuItem
+                        x:Name="_TrimEachLineMenuItem"
+                        Click="TrimEachLineMenuItem_Click"
+                        Header="_Trim Each Line" />
+                    <MenuItem
+                        x:Name="TryToNumberMenuItem"
+                        Click="TryToNumberMenuItem_Click"
+                        Header="Try To Make _Numbers" />
+                    <MenuItem
+                        x:Name="TryToAlphaMenuItem"
+                        Click="TryToAlphaMenuItem_Click"
+                        Header="Try To Make _Letters" />
+                    <MenuItem
+                        x:Name="CorrectGuid"
+                        Click="CorrectGuid_Click"
+                        Header="Correct Common _GUID/UUID Errors" />
+                    <MenuItem
+                        x:Name="ToggleCaseMenuItem"
+                        Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+                        Header="Toggle _Case"
+                        InputGestureText="Shift + F3" />
+                    <MenuItem
+                        x:Name="RemoveDuplicateLines"
+                        Click="RemoveDuplicateLines_Click"
+                        Header="Remove Duplicate Lines" />
+                    <MenuItem
+                        x:Name="ReplaceReservedCharsMenuItem"
+                        Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
+                        Header="_Replace Reserved Characters"
+                        InputGestureText="Ctrl + R" />
+                    <MenuItem
+                        x:Name="UnStackMenuItem"
+                        Command="{x:Static local:EditTextWindow.UnstackCmd}"
+                        Header="_Unstack Text (Select Top Row)"
+                        InputGestureText="Ctrl + U" />
+                    <MenuItem
+                        x:Name="UnStackGroupMenuItem"
+                        Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
+                        Header="_Unstack Text (Select First Column)" />
+                    <MenuItem
+                        x:Name="AddRemoveAtMenuItem"
+                        Click="AddRemoveAtMenuItem_Click"
+                        Header="_Add, Remove, Limit..." />
+                </MenuItem>
+                <MenuItem Header="_Selection">
+                    <MenuItem
+                        x:Name="FindAndReplaceMenuItem"
+                        Click="FindAndReplaceMenuItem_Click"
+                        Header="Find and Replace" />
+                    <MenuItem
+                        x:Name="DefaultWebSearch"
+                        Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
+                        Header="Default Web Search" />
+                    <MenuItem x:Name="WebSearchCollection" Header="Search web with..." />
+                    <Separator />
+                    <MenuItem
+                        x:Name="SelectWordMenuItem"
+                        Click="SelectWordMenuItem_Click"
+                        Header="Select _Word"
+                        InputGestureText="Ctrl + W" />
+                    <MenuItem
+                        x:Name="SelectLineMenuItem"
+                        Click="SelectLineMenuItem_Click"
+                        Header="Select _Line"
+                        InputGestureText="Ctrl + L" />
+                    <MenuItem
+                        x:Name="SelectAllMenuItem"
+                        Click="SelectAllMenuItem_Click"
+                        Header="Select All"
+                        InputGestureText="Ctrl + A" />
+                    <MenuItem
+                        x:Name="SelectNoneMenuItem"
+                        Click="SelectNoneMenuItem_Click"
+                        Header="Select None" />
+                    <MenuItem
+                        x:Name="DeleteSelectedTextMenuItem"
+                        Click="DeleteSelectedTextMenuItem_Click"
+                        Header="Delete Selected Text" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="MoveLineUpMenuItem"
+                        Click="MoveLineUpMenuItem_Click"
+                        Header="Move Selection _Up"
+                        InputGestureText="Alt + Up" />
+                    <MenuItem
+                        x:Name="MoveLineDownMenuItem"
+                        Click="MoveLineDownMenuItem_Click"
+                        Header="Move Selection _Down"
+                        InputGestureText="Alt + Down" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="SplitLineBeforeSelectionMI"
+                        Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
+                        Header="Split Lines _Before Each Selection" />
+                    <MenuItem
+                        x:Name="SplitLineAfterSelectionMI"
+                        Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
+                        Header="Split Lines _After Each Selection" />
+                    <MenuItem
+                        x:Name="IsolateSelectionMI"
+                        Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
+                        Header="_Isolate Selected Text"
+                        InputGestureText="Ctrl + I" />
+                    <MenuItem
+                        x:Name="DeleteAllSelectionMI"
+                        Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
+                        Header="Delete All Instances of Selection" />
+                    <MenuItem
+                        x:Name="DeleteAllSelectionPatternMI"
+                        Command="{x:Static local:EditTextWindow.DeleteAllSelectionPatternCmd}"
+                        Header="Delete All Instances of Selection Simple Pattern" />
+                    <MenuItem
+                        x:Name="InsertSelectionOnEveryLineMI"
+                        Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
+                        Header="Insert Selection On Every Line" />
+                </MenuItem>
+                <MenuItem
+                    Name="AiMenuItem"
+                    Header="_Local AI"
+                    Visibility="Collapsed">
+                    <MenuItem
+                        x:Name="SummarizeMenuItem"
+                        Click="SummarizeMenuItem_Click"
+                        Header="_Summarize Paragraph" />
+                    <MenuItem
+                        x:Name="RewriteMenuItem"
+                        Click="RewriteMenuItem_Click"
+                        Header="_Rewrite" />
+                    <MenuItem
+                        x:Name="ConvertTableMenuItem"
+                        Click="ConvertTableMenuItem_Click"
+                        Header="_Convert to Table" />
+                    <MenuItem
+                        x:Name="LearnAiMenuItem"
+                        Click="LearnAiMenuItem_Click"
+                        Header="_Learn About Local AI Features" />
+                </MenuItem>
+                <MenuItem Header="F_ormat">
+                    <MenuItem
+                        x:Name="ShowErrorsMenuItem"
+                        Click="ShowErrorsMenuItem_Click"
+                        Header="Show Math Errors"
+                        IsCheckable="True" />
+                    <MenuItem
+                        x:Name="MarginsMenuItem"
+                        Checked="MarginsMenuItem_Checked"
+                        Header="_Use Margins"
+                        IsCheckable="True"
+                        Unchecked="MarginsMenuItem_Checked" />
+                    <MenuItem
+                        x:Name="WrapTextMenuItem"
+                        Checked="WrapTextCHBX_Checked"
+                        Header="_Wrap Text"
+                        IsCheckable="True"
+                        IsChecked="True"
+                        Unchecked="WrapTextCHBX_Checked" />
+                    <MenuItem
+                        x:Name="FontMenuItem"
+                        Click="FontMenuItem_Click"
+                        Header="_Font..." />
+                </MenuItem>
+                <MenuItem
+                    x:Name="CaptureMenuItem"
+                    Header="_Capture"
+                    SubmenuOpened="CaptureMenuItem_SubmenuOpened">
+                    <MenuItem
+                        x:Name="FullScreenGrabMenuItem"
+                        Click="FullScreenGrabMenuItem_Click"
+                        Header="New _Fullscreen Grab"
+                        InputGestureText="Ctrl + F" />
+                    <MenuItem
+                        x:Name="FSGDelayMenuItem"
+                        Click="FSGDelayMenuItem_Click"
+                        Header="Fullscreen with 2 second _delay" />
+                    <MenuItem
+                        x:Name="PreviousRegionMenuItem"
+                        Click="PreviousRegion_Click"
+                        Header="Grab previous region" />
+                    <MenuItem
+                        x:Name="GrabFrameMenuItem"
+                        Click="GrabFrameMenuItem_Click"
+                        Header="New _Grab Frame"
+                        InputGestureText="Ctrl + G" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="QuickSimpleLookupMenuItem"
+                        Click="LaunchQuickSimpleLookup"
+                        Header="Add From _Quick Simple Lookup"
+                        InputGestureText="Ctrl + Q" />
+                    <MenuItem
+                        x:Name="ClipboardWatcherMenuItem"
+                        Header="_Watch Clipboard For Changes"
+                        IsCheckable="True"
+                        IsChecked="False" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="ListFilesMenuItem"
+                        Click="ListFilesMenuItem_Click"
+                        Header="_List Files and Folders From Folder..." />
+                    <Separator />
+                    <MenuItem
+                        x:Name="ReadFolderOfImages"
+                        Click="ReadFolderOfImages_Click"
+                        Header="_Extract Text from Images in Folder..." />
+                    <MenuItem x:Name="LanguageMenuItem" Header="OCR in Language..." />
+                    <MenuItem
+                        x:Name="RecursiveFoldersCheck"
+                        Header="Scan all folders recursively"
+                        IsCheckable="True"
+                        StaysOpenOnClick="True" />
+                    <MenuItem
+                        x:Name="ReadFolderOfImagesWriteTxtFiles"
+                        Header="Write ._Txt File For Each Image"
+                        IsCheckable="True"
+                        StaysOpenOnClick="True" />
+                    <MenuItem
+                        x:Name="OutputFilenamesCheck"
+                        Header="Write File names in output"
+                        IsCheckable="True"
+                        IsChecked="True"
+                        StaysOpenOnClick="True" />
+                    <MenuItem
+                        x:Name="OutputHeaderCheck"
+                        Header="Include output header text"
+                        IsCheckable="True"
+                        IsChecked="True"
+                        StaysOpenOnClick="True" />
+                    <MenuItem
+                        x:Name="OutputFooterCheck"
+                        Header="Include output footer text"
+                        IsCheckable="True"
+                        IsChecked="True"
+                        StaysOpenOnClick="True" />
+                </MenuItem>
+                <MenuItem
+                    x:Name="WindowMenuItem"
+                    Header="_Window"
+                    SubmenuOpened="WindowMenuItem_SubmenuOpened">
+                    <MenuItem
+                        x:Name="AlwaysOnTop"
+                        Click="AlwaysOnTop_Checked"
+                        Header="_Always On Top"
+                        IsCheckable="True"
+                        IsChecked="False" />
+                    <MenuItem
+                        x:Name="HideBottomBarMenuItem"
+                        Click="HideBottomBarMenuItem_Click"
+                        Header="_Hide Bottom Bar"
+                        IsCheckable="True"
+                        IsChecked="False" />
+                    <MenuItem
+                        x:Name="LaunchFullscreenOnLoad"
+                        Click="LaunchFullscreenOnLoad_Click"
+                        Header="Open _Fullscreen on Launch"
+                        IsCheckable="True"
+                        IsChecked="False" />
+                    <MenuItem
+                        x:Name="RestorePositionMenuItem"
+                        Checked="RestorePositionMenuItem_Checked"
+                        Header="Set postion based on previous Edit Text Window"
+                        IsCheckable="True"
+                        Unchecked="RestorePositionMenuItem_Checked" />
+                    <MenuItem
+                        x:Name="RestoreThisPosition"
+                        Click="RestoreThisPosition_Click"
+                        Header="_Restore this windows's position" />
+                    <MenuItem
+                        x:Name="ShowCalcPaneMenuItem"
+                        Click="ShowCalcPaneMenuItem_Click"
+                        Header="Show calculations pane"
+                        IsCheckable="True" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="NewWindowMenuItem"
+                        Click="NewWindow_Clicked"
+                        Header="_New Window" />
+                    <MenuItem
+                        x:Name="NewWindowFromSelectionMenuItem"
+                        Click="NewWindowWithText_Clicked"
+                        Header="New Window with Selected _Text" />
+                    <MenuItem
+                        x:Name="MakeCodeMenuItem"
+                        Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
+                        Header="Make _QR Code" />
+                    <MenuItem
+                        x:Name="OpenLastAsGrabFrameMenuItem"
+                        Click="OpenLastAsGrabFrameMenuItem_Click"
+                        Header="Edit _Last Grab" />
+                </MenuItem>
+                <MenuItem Header="_Help">
+                    <MenuItem
+                        x:Name="ContactMenuItem"
+                        Click="ContactMenuItem_Click"
+                        Header="_Contact The Developer..." />
+                    <MenuItem
+                        x:Name="RateAndReview"
+                        Click="RateAndReview_Click"
+                        Header="_Rate and Review..." />
+                    <MenuItem
+                        x:Name="FeedbackMenuItem"
+                        Click="FeedbackMenuItem_Click"
+                        Header="_Feedback..." />
+                    <MenuItem
+                        x:Name="AboutMenuItem"
+                        Click="AboutMenuItem_Click"
+                        Header="_About" />
+                </MenuItem>
+            </Menu>
+            <Button
+                x:Name="CalcToggleButton"
+                Grid.Column="1"
+                Width="32"
+                Height="32"
+                Margin="4,0,4,0"
+                Padding="0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="CalcToggleButton_Click"
+                ToolTip="Toggle Calculation Pane (Ctrl+P)">
+                <ui:SymbolIcon FontSize="16" Symbol="Calculator24" />
+            </Button>
+        </Grid>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="CalcColumn" Width="200" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                x:Name="PassedTextControl"
+                Grid.Row="2"
+                AcceptsReturn="True"
+                AcceptsTab="True"
+                AllowDrop="True"
+                AutoWordSelection="True"
+                CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                ContextMenuOpening="PassedTextControl_ContextMenuOpening"
+                FontSize="16"
+                HorizontalScrollBarVisibility="Auto"
+                IsInactiveSelectionHighlightEnabled="True"
+                PreviewDragOver="ETWindow_DragOver"
+                PreviewDrop="ETWindow_Drop"
+                SelectionChanged="PassedTextControl_SelectionChanged"
+                SizeChanged="PassedTextControl_SizeChanged"
+                SpellCheck.IsEnabled="True"
+                Style="{DynamicResource TextBoxStyle2}"
+                TextChanged="PassedTextControl_TextChanged"
+                TextWrapping="WrapWithOverflow"
+                VerticalScrollBarVisibility="Auto" />
+            <TextBox
+                x:Name="CalcResultsTextControl"
+                Grid.Column="1"
+                MinWidth="150"
+                AcceptsReturn="True"
+                AcceptsTab="True"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
+                HorizontalScrollBarVisibility="Auto"
+                IsInactiveSelectionHighlightEnabled="True"
+                IsReadOnly="True"
+                Style="{DynamicResource TextBoxStyle2}"
+                TextWrapping="NoWrap"
+                VerticalScrollBarVisibility="Hidden">
+                <TextBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Name="HideCalcPaneContextItem" Header="Hide Pane" />
+                        <MenuItem Name="ShowCalcErrorsContextItem" Header="Show Errors" />
+                        <MenuItem Name="CopyAllContextItem" Header="Copy All" />
+                    </ContextMenu>
+                </TextBox.ContextMenu>
+            </TextBox>
+
+            <StackPanel
+                Grid.Column="1"
+                Margin="8,8,8,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Orientation="Horizontal">
+                <Button
+                    x:Name="CalcCopyAllButton"
+                    Width="24"
+                    Height="24"
+                    Margin="0,0,4,0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CalcCopyAllButton_Click"
+                    ToolTip="Copy All Results">
+                    <ui:SymbolIcon FontSize="14" Symbol="Copy24" />
+                </Button>
+                <Button
+                    x:Name="CalcInfoButton"
+                    Width="24"
+                    Height="24"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CalcInfoButton_Click"
+                    ToolTip="Calculation Pane Help">
+                    <ui:SymbolIcon FontSize="14" Symbol="Info24" />
+                </Button>
+            </StackPanel>
+
+            <Popup
+                x:Name="CalcInfoPopup"
+                Grid.Column="1"
+                AllowsTransparency="True"
+                Placement="Left"
+                PlacementTarget="{Binding ElementName=CalcInfoButton}"
+                StaysOpen="False">
+                <Border
+                    Padding="16"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                    BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4">
+                    <StackPanel Width="300">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="16"
+                            FontWeight="Bold"
+                            Text="Calculation Pane" />
+                        <TextBlock Margin="0,0,0,8" TextWrapping="Wrap">
+                            <Run Text="Type mathematical expressions in the text area and see results calculated in real-time." />
+                        </TextBlock>
+                        <TextBlock
+                            Margin="0,0,0,4"
+                            FontWeight="SemiBold"
+                            Text="Features:" />
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
+                            <Run Text="• Basic math: +, -, *, /, %, ** for exponent" />
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
+                            <Run Text="• Functions: sin, cos, tan, sqrt, abs, log, etc." />
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
+                            <Run Text="• Variables: x = 10" />
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
+                            <Run Text="• Constants: pi, e, tau, phi, sqrt2, sqrt3, sqrt5, ln2, ln10, log2e, log10e" />
+                        </TextBlock>
+                        <TextBlock
+                            Margin="0,0,0,4"
+                            FontWeight="SemiBold"
+                            Text="Example:" />
+                        <TextBlock
+                            Margin="0,0,0,4"
+                            FontFamily="Consolas"
+                            FontSize="12"
+                            TextWrapping="Wrap">
+                            <Run Text="x = 10" /><LineBreak />
+                            <Run Text="y = 20" /><LineBreak />
+                            <Run Text="x + y" /><LineBreak />
+                            <Run Text="sin(pi/2)" /><LineBreak />
+                            <Run Text="sqrt(x * y)" />
+                        </TextBlock>
+                        <TextBlock
+                            Margin="0,8,0,0"
+                            FontSize="11"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap">
+                            <Run Text="Toggle with Ctrl+P or the calculator button" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <GridSplitter
+                x:Name="TextBoxSplitter"
+                Grid.Column="1"
+                Width="5"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                MouseDoubleClick="TextBoxSplitter_MouseDoubleClick"
+                ResizeDirection="Auto"
+                ShowsPreview="True" />
+
+            <!--  Subtle shadow at the edge of the calc pane/splitter for visual separation  -->
+            <Rectangle
+                x:Name="CalcPaneShadow"
+                Grid.Column="1"
+                Width="8"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Panel.ZIndex="100"
+                IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <!--  Slight shadow cast toward the calc pane area  -->
+                        <GradientStop Offset="0" Color="#33000000" />
+                        <GradientStop Offset="1" Color="#00000000" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Grid>
 
         <ScrollViewer
             x:Name="BottomBarScrollViewer"

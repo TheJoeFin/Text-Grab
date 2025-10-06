@@ -658,5 +658,41 @@ namespace Text_Grab.Properties {
                 this["FsgShadeOverlay"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool CalcShowErrors {
+            get {
+                return ((bool)(this["CalcShowErrors"]));
+            }
+            set {
+                this["CalcShowErrors"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool CalcShowPane {
+            get {
+                return ((bool)(this["CalcShowPane"]));
+            }
+            set {
+                this["CalcShowPane"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("400")]
+        public int CalcPaneWidth {
+            get {
+                return ((int)(this["CalcPaneWidth"]));
+            }
+            set {
+                this["CalcPaneWidth"] = value;
+            }
+        }
     }
 }

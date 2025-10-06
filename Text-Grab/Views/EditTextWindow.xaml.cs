@@ -15,6 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
@@ -69,6 +70,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
+    // Remember last non-collapsed width for the calc column
+    private GridLength _lastCalcColumnWidth = new(1, GridUnitType.Star);
+
     #endregion Fields
 
     #region Constructors
@@ -107,6 +111,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             this.Top = historyInfo.PositionRect.Y;
             this.Width = historyInfo.PositionRect.Width;
             this.Height = historyInfo.PositionRect.Height;
+        }
+
+        if (historyInfo.HasCalcPaneOpen)
+        {
+            // use the tag to track that it was set from history item
+            ShowCalcPaneMenuItem.Tag = true;
+            ShowCalcPaneMenuItem.IsChecked = true;
+
+            // Set the width to restore - use history width if valid, otherwise use default
+            int widthToRestore = historyInfo.CalcPaneWidth > 0 ? historyInfo.CalcPaneWidth : DefaultSettings.CalcPaneWidth;
+            if (widthToRestore <= 0)
+                widthToRestore = 400; // Fallback to default
+
+            CalcColumn.Width = new GridLength(widthToRestore, GridUnitType.Pixel);
+            _lastCalcColumnWidth = new GridLength(widthToRestore, GridUnitType.Pixel);
         }
     }
 
@@ -290,11 +309,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         cancellationTokenForDirOCR = null;
     }
 
-    public void OpenMostRecentTextHistoryItem()
-    {
-        PassedTextControl.Text = Singleton<HistoryService>.Instance.GetLastTextHistory();
-    }
-
     public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
         PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
@@ -367,6 +381,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     internal HistoryInfo AsHistoryItem()
     {
+        int calcPaneWidth = 0;
+        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
+        {
+            if (CalcColumn.Width.IsStar)
+                calcPaneWidth = (int)CalcColumn.ActualWidth;
+            else
+                calcPaneWidth = (int)CalcColumn.Width.Value;
+        }
+
         HistoryInfo historyInfo = new()
         {
             ID = historyId,
@@ -375,6 +398,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
+            CalcPaneWidth = calcPaneWidth,
+            HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true
         };
 
         if (string.IsNullOrWhiteSpace(historyInfo.ID))
@@ -409,10 +434,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         StringBuilder listOfNames = new();
         listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
         foreach (string folder in folders)
-            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, folder.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
 
         foreach (string file in files)
-            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, file.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
         return listOfNames.ToString();
     }
 
@@ -876,7 +901,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void FontMenuItem_Click(object sender, RoutedEventArgs e)
     {
         using FontDialog fd = new();
-        System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
+        System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)(PassedTextControl.FontSize * 72.0 / 96.0));
         fd.Font = currentFont;
         DialogResult result = fd.ShowDialog();
         if (result != System.Windows.Forms.DialogResult.OK)
@@ -885,7 +910,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Debug.WriteLine(fd.Font);
 
         DefaultSettings.FontFamilySetting = fd.Font.Name;
-        DefaultSettings.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
+        DefaultSettings.FontSizeSetting = fd.Font.Size * 96.0 / 72.0;
         DefaultSettings.IsFontBold = fd.Font.Bold;
         DefaultSettings.IsFontItalic = fd.Font.Italic;
         DefaultSettings.IsFontUnderline = fd.Font.Underline;
@@ -938,6 +963,61 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (PassedTextControl.FontSize > 4)
                 PassedTextControl.FontSize -= 4;
         }
+    }
+
+    // Keep calc pane scroll in sync with main text box
+    private void PassedTextControl_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        try
+        {
+            if (CalcResultsTextControl.Visibility != Visibility.Visible)
+                return;
+
+            // Obtain internal ScrollViewers for both text boxes
+            if (GetScrollViewer(PassedTextControl) is ScrollViewer mainSv &&
+                GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv)
+            {
+                // Mirror vertical offset only (horizontal can differ due to content widths)
+                if (!DoubleUtil.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
+                    calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
+            }
+        }
+        catch { /* no-op */ }
+    }
+
+    private static ScrollViewer? GetScrollViewer(DependencyObject obj)
+    {
+        if (obj is ScrollViewer sv) return sv;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(obj, i);
+            ScrollViewer? result = GetScrollViewer(child);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    private static class DoubleUtil
+    {
+        public static bool AreClose(double a, double b, double epsilon = 0.25) => Math.Abs(a - b) < epsilon;
+    }
+
+    private void SyncCalcScrollToMain()
+    {
+        try
+        {
+            if (CalcResultsTextControl.Visibility != Visibility.Visible)
+                return;
+
+            ScrollViewer? mainSv = GetScrollViewer(PassedTextControl);
+            ScrollViewer? calcSv = GetScrollViewer(CalcResultsTextControl);
+            if (mainSv is null || calcSv is null)
+                return;
+
+            if (!DoubleUtil.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
+                calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
+        }
+        catch { /* no-op */ }
     }
 
     private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
@@ -994,7 +1074,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 if (line.Length > selectionPositionInLine)
                     sb.Append(line.Insert(selectionPositionInLine, selectionText));
                 else
-                    sb.Append(line).Append(selectionText.PadLeft((selectionPositionInLine + selectionLength) - line.Length));
+                    sb.Append(line).Append(selectionText.PadLeft(selectionPositionInLine + selectionLength - line.Length));
             }
             sb.Append(Environment.NewLine);
         }
@@ -1490,7 +1570,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             // Set filter for file extension and default file extension 
             DefaultExt = ".txt",
-            Filter = "Text documents (.txt)|*.txt"
+            Filter = "Text documents (.txt)|*.txt|All files (*.*)|*.*",
+            DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         };
 
         bool? result = dlg.ShowDialog();
@@ -1551,6 +1632,81 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         UpdateLineAndColumnText();
+
+        // Reset the debounce timer
+        _debounceTimer?.Stop();
+        _debounceTimer?.Start();
+        // If a newline append auto-scrolls the main box, ensure calc scroll follows too
+        // Schedule after layout so offsets are accurate
+        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
+    }
+
+    private DispatcherTimer? _debounceTimer = null;
+    private const int DEBOUNCE_DELAY_MS = 300;
+    private readonly CalculationService _calculationService = new();
+
+    private void InitializeExpressionEvaluator()
+    {
+        // Set up debounce timer to avoid excessive calculations
+        _debounceTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(DEBOUNCE_DELAY_MS)
+        };
+        _debounceTimer.Tick += DebounceTimer_Tick;
+    }
+
+    private async void DebounceTimer_Tick(object? sender, EventArgs e)
+    {
+        _debounceTimer?.Stop();
+
+        if (CalcResultsTextControl.Visibility != Visibility.Visible)
+            return;
+
+        await EvaluateExpressions();
+    }
+
+    private async Task EvaluateExpressions()
+    {
+        // Don't waste cycles if the pane isn't visible
+        if (CalcResultsTextControl.Visibility != Visibility.Visible)
+            return;
+
+        string input = PassedTextControl.Text;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            CalcResultsTextControl.Text = "";
+            _calculationService.ClearParameters();
+            // Keep scrolls aligned even when clearing
+            Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
+            return;
+        }
+
+        // Update calculation service settings
+        _calculationService.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
+        _calculationService.ShowErrors = ShowErrorsMenuItem.IsChecked == true;
+
+        // Evaluate expressions using the service
+        CalculationResult result = await _calculationService.EvaluateExpressionsAsync(input);
+
+        // Update the text control with results
+        CalcResultsTextControl.Text = result.Output;
+        // After updating calc text, its ScrollViewer resets; resync to main scroll
+        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
+
+        // Optional status (kept commented)
+        // if (result.ErrorCount == 0) { } else { }
+    }
+
+    private async void ShowErrorsCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        // Re-evaluate expressions when toggle changes
+        await EvaluateExpressions();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _debounceTimer?.Stop();
+        base.OnClosed(e);
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -2004,6 +2160,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = duplicateLine.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(duplicateLine, DuplicateSelectedLine));
 
+        RoutedCommand toggleCalcPane = new();
+        _ = toggleCalcPane.InputGestures.Add(new KeyGesture(Key.P, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(toggleCalcPane, ToggleCalcPaneExecuted));
+
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
@@ -2236,6 +2396,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
         DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+
+        // Save calc pane width to settings when closing with pane open
+        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
+        {
+            if (CalcColumn.Width.IsStar)
+                DefaultSettings.CalcPaneWidth = (int)CalcColumn.ActualWidth;
+            else
+                DefaultSettings.CalcPaneWidth = (int)CalcColumn.Width.Value;
+        }
+
         DefaultSettings.Save();
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
@@ -2288,10 +2458,87 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Interval = TimeSpan.FromMilliseconds(700);
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
 
+        InitializeExpressionEvaluator();
+
+        // Restore calc pane width from settings if not loading from history
+        if (ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
+        {
+            _lastCalcColumnWidth = new GridLength(DefaultSettings.CalcPaneWidth, GridUnitType.Pixel);
+        }
+
+        if (ShowCalcPaneMenuItem.Tag is not true)
+            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+
+        ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
+        SetCalcPaneVisibility();
+
+        // Wire up calc pane context menu
+        HideCalcPaneContextItem.Click += HideCalcPaneContextItem_Click;
+        ShowCalcErrorsContextItem.Click += ShowCalcErrorsContextItem_Click;
+        CopyAllContextItem.Click += CopyAllContextItem_Click;
+
+        // Attach scrolling synchronization
+        try
+        {
+            PassedTextControl.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(PassedTextControl_ScrollChanged), true);
+            CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
+            CalcResultsTextControl.PreviewMouseWheel += CalcResultsTextControl_PreviewMouseWheel;
+        }
+        catch { /* ignore if not ready yet */ }
+
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
             AiMenuItem.Visibility = Visibility.Visible;
         }
+    }
+
+    private void HideCalcPaneContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = false;
+        DefaultSettings.CalcShowPane = false;
+        SetCalcPaneVisibility();
+    }
+
+    private void ShowCalcErrorsContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowErrorsMenuItem.IsChecked = !ShowErrorsMenuItem.IsChecked;
+        DefaultSettings.CalcShowErrors = ShowErrorsMenuItem.IsChecked;
+        _ = EvaluateExpressions();
+    }
+
+    private void CopyAllContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
+            return;
+
+        try
+        {
+            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
+        }
+    }
+
+    private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
+            return;
+
+        try
+        {
+            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
+        }
+    }
+
+    private void CalcInfoButton_Click(object sender, RoutedEventArgs e)
+    {
+        CalcInfoPopup.IsOpen = !CalcInfoPopup.IsOpen;
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
@@ -2304,12 +2551,35 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimerCount = 0;
     }
 
+    private void CalcResultsTextControl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Forward scrolling intent to the main text box so both stay aligned
+        if (Keyboard.Modifiers == ModifierKeys.Control)
+            return; // let zoom handler take it
+
+        try
+        {
+            if (GetScrollViewer(PassedTextControl) is ScrollViewer mainSv)
+            {
+                // Roughly match WPF default: 3 lines per notch; use a small pixel offset
+                double delta = -e.Delta; // positive means scroll down
+                double lines = delta / 120.0 * 3.0;
+
+                // Estimate line height from font size; 1em ~ FontSize pixels, add padding
+                double lineHeight = Math.Max(12, PassedTextControl.FontSize * 1.35);
+                mainSv.ScrollToVerticalOffset(mainSv.VerticalOffset + (lines * lineHeight));
+                e.Handled = true;
+            }
+        }
+        catch { /* no-op */ }
+    }
+
     private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
     }
 
-    private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
+    private void WrapTextCHBX_Checked(object sender, RoutedEventArgs e)
     {
         if (!IsLoaded)
             return;
@@ -2423,5 +2693,94 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         IsEnabled = true;
         LoadingStack.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowCalcPaneMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+            return;
+
+        DefaultSettings.CalcShowPane = menuItem.IsChecked;
+
+        SetCalcPaneVisibility();
+    }
+
+    private void CalcToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
+        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
+        SetCalcPaneVisibility();
+    }
+
+    private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
+        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
+        SetCalcPaneVisibility();
+    }
+
+    private void SetCalcPaneVisibility()
+    {
+        // Check if we're loading from history and should ignore default settings
+        if (ShowCalcPaneMenuItem.Tag is bool fromHistory && fromHistory)
+        {
+            ShowCalcPaneMenuItem.Tag = null; // Clear the flag after first use
+            // Use ShowCalcPaneMenuItem.IsChecked which was set from history
+        }
+        else
+        {
+            // Not from history, apply user's default setting
+            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+        }
+
+        if (ShowCalcPaneMenuItem.IsChecked)
+        {
+            CalcResultsTextControl.Visibility = Visibility.Visible;
+            TextBoxSplitter.Visibility = Visibility.Visible;
+            CalcPaneShadow.Visibility = Visibility.Visible;
+
+            // Restore previous width if it was collapsed
+            if (CalcColumn.Width.Value == 0)
+                CalcColumn.Width = _lastCalcColumnWidth;
+            _debounceTimer?.Start();
+        }
+        else
+        {
+            CalcResultsTextControl.Visibility = Visibility.Collapsed;
+            TextBoxSplitter.Visibility = Visibility.Collapsed;
+            CalcPaneShadow.Visibility = Visibility.Collapsed;
+
+            // Remember current width, then collapse column to remove pane area
+            if (CalcColumn.Width.Value > 0)
+                _lastCalcColumnWidth = CalcColumn.Width;
+            CalcColumn.Width = new GridLength(0);
+        }
+    }
+
+    private void ShowErrorsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+            return;
+
+        DefaultSettings.CalcShowErrors = menuItem.IsChecked;
+        _ = EvaluateExpressions();
+    }
+
+    private void TextBoxSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        // Toggle between equal split (star) and collapsed
+        if (CalcColumn.Width.IsStar)
+        {
+            // If already star-sized, collapse the pane
+            ShowCalcPaneMenuItem.IsChecked = false;
+            DefaultSettings.CalcShowPane = false;
+            SetCalcPaneVisibility();
+        }
+        else
+        {
+            // If collapsed or pixel-sized, set to equal split (1 star = 50% of available space)
+            CalcColumn.Width = new GridLength(1, GridUnitType.Star);
+            _lastCalcColumnWidth = new GridLength(1, GridUnitType.Star);
+        }
     }
 }
