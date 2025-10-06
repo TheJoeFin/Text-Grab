@@ -1641,7 +1641,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
     }
 
-    private DispatcherTimer? _debounceTimer = null!;
+    private DispatcherTimer? _debounceTimer = null;
     private const int DEBOUNCE_DELAY_MS = 300;
     private readonly CalculationService _calculationService = new();
 
