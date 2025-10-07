@@ -48,12 +48,18 @@ public static partial class OcrUtilities
         }
         else
         {
+            // For CJK languages, we need to filter and merge words intelligently
+            List<IOcrWord> words = [.. ocrLine.Words];
+            
+            // Filter out likely furigana (very small text fragments that are single characters)
+            List<IOcrWord> filteredWords = FilterFurigana(words);
+            
             bool isFirstWord = true;
             bool isPrevWordSpaceJoining = false;
 
             Regex regexSpaceJoiningWord = SpaceJoiningWordRegex();
 
-            foreach (IOcrWord ocrWord in ocrLine.Words)
+            foreach (IOcrWord ocrWord in filteredWords)
             {
                 string wordString = ocrWord.Text;
 
@@ -70,10 +76,77 @@ public static partial class OcrUtilities
                 isFirstWord = false;
                 isPrevWordSpaceJoining = isThisWordSpaceJoining;
             }
+            
+            // Always add newline after processing each OCR line to preserve line boundaries
+            text.AppendLine();
         }
 
         if (DefaultSettings.CorrectToLatin)
             text.ReplaceGreekOrCyrillicWithLatin();
+    }
+
+    private static List<IOcrWord> FilterFurigana(List<IOcrWord> words)
+    {
+        if (words.Count == 0)
+            return words;
+
+        // Calculate the median height of all words
+        List<double> heights = words.Select(w => w.BoundingBox.Height).OrderBy(h => h).ToList();
+        double medianHeight = heights.Count > 0 ? heights[heights.Count / 2] : 0;
+        
+        // Furigana is typically 30-50% the height of main text
+        double furiganaThreshold = medianHeight * 0.6;
+        
+        List<IOcrWord> filteredWords = new();
+        
+        for (int i = 0; i < words.Count; i++)
+        {
+            IOcrWord word = words[i];
+            
+            // Check if this word is likely furigana based on:
+            // 1. Much smaller height than median
+            // 2. Single character (especially hiragana/katakana)
+            // 3. Positioned above main text (smaller Y value)
+            
+            bool isProbablyFurigana = false;
+            
+            if (word.BoundingBox.Height < furiganaThreshold)
+            {
+                // This word is significantly smaller - likely furigana
+                // Check if there's a larger word below it (main kanji)
+                bool hasMainTextBelow = false;
+                for (int j = 0; j < words.Count; j++)
+                {
+                    if (i == j) continue;
+                    IOcrWord otherWord = words[j];
+                    
+                    // Check if this word is below and overlaps horizontally
+                    bool isBelow = otherWord.BoundingBox.Top > word.BoundingBox.Bottom;
+                    bool overlapsHorizontally = !(otherWord.BoundingBox.Right < word.BoundingBox.Left || 
+                                                 otherWord.BoundingBox.Left > word.BoundingBox.Right);
+                    bool isLarger = otherWord.BoundingBox.Height > furiganaThreshold;
+                    
+                    if (isBelow && overlapsHorizontally && isLarger)
+                    {
+                        hasMainTextBelow = true;
+                        break;
+                    }
+                }
+                
+                if (hasMainTextBelow && word.Text.Length <= 2)
+                {
+                    isProbablyFurigana = true;
+                }
+            }
+            
+            if (!isProbablyFurigana)
+            {
+                filteredWords.Add(word);
+            }
+        }
+        
+        // If we filtered everything, return original to avoid losing data
+        return filteredWords.Count > 0 ? filteredWords : words;
     }
 
     public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, ILanguage language)
@@ -371,6 +444,23 @@ public static partial class OcrUtilities
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
         language ??= LanguageUtilities.GetCurrentInputLanguage();
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
+    }
+
+    public static async Task<string> OcrAbsoluteFilePathWithLanguageAsync(string absolutePath, Language language)
+    {
+        Uri fileURI = new(absolutePath, UriKind.Absolute);
+        FileInfo fileInfo = new(fileURI.LocalPath);
+        RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(absolutePath);
+        BitmapImage droppedImage = new();
+        droppedImage.BeginInit();
+        droppedImage.UriSource = fileURI;
+        ImageMethods.RotateImage(droppedImage, rotateFlipType);
+        droppedImage.CacheOption = BitmapCacheOption.None;
+        droppedImage.EndInit();
+        droppedImage.Freeze();
+        Bitmap bmp = ImageMethods.BitmapImageToBitmap(droppedImage);
+        GlobalLang globalLang = new(language);
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, globalLang));
     }
 
     public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, ILanguage OcrLang)

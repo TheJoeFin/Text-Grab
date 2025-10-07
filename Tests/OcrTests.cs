@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -89,6 +89,20 @@ SUBTOTAL	656,675	1,086,840	430,165	40%
 TRANSFER PAYMENTS TO SUBRECIPIENTS	360,009	978,780	618,771	63%
 TOTAL EXPENDITURES	1,016,684	2,065,620	1,048,936	51%
 REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
+
+    private const string jaExpectedResult = """
+        くろ　からだ　しつ
+        黒ごまは体にいいです。タンバク質やカルシウムが
+        かみ　くろ　こうか
+        たくさんあります。髪を黒くする効果もあります。
+        くろ　あぶら　はだ　かみ　りようり
+        黒ごま油は肌や髪に使います。料理にも使います。
+        かゆ　た　からだ
+        お粥やデサートに入れます。でも、食べすきると体 た
+        によくないです。少しすつ食べましよう。
+        """;
+
+    private const string jaTestImagePath = @".\Images\ja-黒くろごまのちから.png";
 
     [WpfFact]
     public async Task OcrFontSampleImage()
@@ -361,5 +375,22 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         Assert.True(new FileInfo(tempFilePath).Length > 0);
 
         File.Delete(tempFilePath);
+    }
+
+    [WpfFact]
+    public async Task OcrJapaneseImage()
+    {
+        // Given
+        string testImagePath = jaTestImagePath;
+        string expectedResult = jaExpectedResult;
+
+        // When
+        Language japaneseLanguage = new("ja-JP");
+        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathWithLanguageAsync(
+            FileUtilities.GetPathToLocalFile(testImagePath),
+            japaneseLanguage);
+
+        // Then
+        Assert.Equal(expectedResult, ocrTextResult);
     }
 }

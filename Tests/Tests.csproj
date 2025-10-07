@@ -62,6 +62,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Update="Images\ja-黒くろごまのちから.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Content Update="Images\Table-Complex.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
