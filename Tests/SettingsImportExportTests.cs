@@ -37,7 +37,11 @@ public class SettingsImportExportTests
 
         string jsonContent = await File.ReadAllTextAsync(settingsJsonPath);
         Assert.False(string.IsNullOrEmpty(jsonContent));
-        Assert.Contains("firstRun", jsonContent.ToLower()); // Check for at least one setting
+        // Check that JSON contains some setting keys (any of the common settings)
+        bool containsSettings = jsonContent.Contains("showtoast") || 
+                                jsonContent.Contains("firstrun") || 
+                                jsonContent.Contains("correcterrors");
+        Assert.True(containsSettings, "Exported JSON should contain at least one settings property");
 
         // Clean up
         if (File.Exists(zipPath))
