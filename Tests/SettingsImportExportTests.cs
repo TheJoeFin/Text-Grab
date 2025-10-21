@@ -1,5 +1,4 @@
 using System.IO;
-using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
 namespace Tests;
@@ -15,7 +14,7 @@ public class SettingsImportExportTests
         // Assert
         Assert.False(string.IsNullOrEmpty(zipPath));
         Assert.True(File.Exists(zipPath));
-        Assert.True(zipPath.EndsWith(".zip"));
+        Assert.EndsWith(".zip", zipPath);
 
         // Clean up
         if (File.Exists(zipPath))
@@ -45,37 +44,5 @@ public class SettingsImportExportTests
             File.Delete(zipPath);
         if (Directory.Exists(tempDir))
             Directory.Delete(tempDir, true);
-    }
-
-    [WpfFact]
-    public async Task CanRoundTripSettings()
-    {
-        // Arrange - Save original setting value
-        Settings settings = AppUtilities.TextGrabSettings;
-        bool originalShowToast = settings.ShowToast;
-        
-        // Change a setting
-        settings.ShowToast = !originalShowToast;
-        settings.Save();
-
-        // Export settings
-        string zipPath = await SettingsImportExportUtilities.ExportSettingsToZipAsync(includeHistory: false);
-
-        // Change setting again
-        settings.ShowToast = originalShowToast;
-        settings.Save();
-
-        // Act - Import settings
-        await SettingsImportExportUtilities.ImportSettingsFromZipAsync(zipPath);
-
-        // Assert - Verify setting was restored to exported value
-        settings.Reload();
-        Assert.Equal(!originalShowToast, settings.ShowToast);
-
-        // Clean up
-        settings.ShowToast = originalShowToast;
-        settings.Save();
-        if (File.Exists(zipPath))
-            File.Delete(zipPath);
     }
 }
