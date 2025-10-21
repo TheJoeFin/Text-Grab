@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
+using Microsoft.Win32;
 
 namespace Text_Grab.Pages;
 
@@ -68,5 +69,78 @@ public partial class DangerSettings : Page
             return;
 
         Singleton<HistoryService>.Instance.DeleteHistory();
+    }
+
+    private async void ExportSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            bool includeHistory = IncludeHistoryCheckBox.IsChecked ?? false;
+            string filePath = await SettingsImportExportUtilities.ExportSettingsToZipAsync(includeHistory);
+            
+            MessageBoxResult result = MessageBox.Show(
+                $"Settings exported successfully to:\n{filePath}\n\nWould you like to open the file location?", 
+                "Export Successful", 
+                MessageBoxButton.YesNo, 
+                MessageBoxImage.Information);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                // Open the file location in File Explorer
+                Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to export settings:\n{ex.Message}", 
+                "Export Error", 
+                MessageBoxButton.OK, 
+                MessageBoxImage.Error);
+        }
+    }
+
+    private async void ImportSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            OpenFileDialog openFileDialog = new()
+            {
+                Filter = "ZIP files (*.zip)|*.zip|All files (*.*)|*.*",
+                Title = "Select Settings Export File",
+                DefaultExt = ".zip"
+            };
+
+            if (openFileDialog.ShowDialog() != true)
+                return;
+
+            MessageBoxResult confirmation = MessageBox.Show(
+                "Importing settings will overwrite your current settings. The application will restart after import.\n\nDo you want to continue?",
+                "Confirm Import",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirmation != MessageBoxResult.Yes)
+                return;
+
+            await SettingsImportExportUtilities.ImportSettingsFromZipAsync(openFileDialog.FileName);
+
+            MessageBox.Show(
+                "Settings imported successfully. The application will now restart.",
+                "Import Successful",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            // Restart the application
+            App.Current.Shutdown();
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to import settings:\n{ex.Message}",
+                "Import Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 }
