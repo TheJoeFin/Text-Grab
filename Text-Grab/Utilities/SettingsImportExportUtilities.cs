@@ -11,6 +11,11 @@ using Text_Grab.Services;
 
 namespace Text_Grab.Utilities;
 
+/// <summary>
+/// Provides functionality to export and import Text Grab settings and history.
+/// Settings are exported to a ZIP file containing a JSON representation of all settings
+/// and optionally the history data (text-only and image history with associated image files).
+/// </summary>
 public static class SettingsImportExportUtilities
 {
     private const string SettingsFileName = "settings.json";
@@ -18,6 +23,11 @@ public static class SettingsImportExportUtilities
     private const string HistoryWithImageFileName = "HistoryWithImage.json";
     private const string HistoryFolderName = "history";
 
+    /// <summary>
+    /// Exports all application settings and optionally history to a ZIP file.
+    /// </summary>
+    /// <param name="includeHistory">Whether to include history data in the export.</param>
+    /// <returns>The full path to the created ZIP file.</returns>
     public static async Task<string> ExportSettingsToZipAsync(bool includeHistory)
     {
         string tempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Export_{Guid.NewGuid()}");
@@ -54,6 +64,10 @@ public static class SettingsImportExportUtilities
         }
     }
 
+    /// <summary>
+    /// Imports settings and history from a previously exported ZIP file.
+    /// </summary>
+    /// <param name="zipFilePath">The full path to the ZIP file to import.</param>
     public static async Task ImportSettingsFromZipAsync(string zipFilePath)
     {
         string tempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Import_{Guid.NewGuid()}");
