@@ -2719,7 +2719,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             '&' => "&amp; or &#38;",
             '"' => "&quot; or &#34;",
             '\'' => "&apos; or &#39;",
-            ' ' => "&nbsp; or &#160;" when codePoint == 160,
+            ' ' when codePoint == 160 => "&nbsp; or &#160;",
             _ => $"&#{codePoint};"
         };
     }
