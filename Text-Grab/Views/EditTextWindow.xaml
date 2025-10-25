@@ -733,14 +733,79 @@
                     Name="BottomBarButtons"
                     Margin="8,0"
                     Orientation="Horizontal" />
-                <TextBlock
-                    x:Name="BottomBarText"
+                <StackPanel
                     Grid.Column="1"
                     Margin="20,0,20,0"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
-                    FontFamily="Cascadia Mono"
-                    Text="Ln 1, Col 0" />
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="MatchCountButton"
+                        Margin="0,0,8,0"
+                        Padding="4,2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="MatchCountButton_Click"
+                        Cursor="Hand"
+                        ToolTip="Click to Find and Replace"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            FontFamily="Cascadia Mono"
+                            FontSize="12"
+                            Text="0 matches" />
+                    </Button>
+                    <Button
+                        x:Name="RegexPatternButton"
+                        Margin="0,0,8,0"
+                        Padding="4,2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="RegexPatternButton_Click"
+                        Cursor="Hand"
+                        ToolTip="Click to copy regex pattern"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            FontFamily="Cascadia Mono"
+                            FontSize="12"
+                            Text="Regex: " />
+                    </Button>
+                    <Button
+                        x:Name="CharDetailsButton"
+                        Margin="0,0,8,0"
+                        Padding="4,2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="CharDetailsButton_Click"
+                        Cursor="Hand"
+                        ToolTip="Click for character details"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            x:Name="CharDetailsButtonText"
+                            FontFamily="Cascadia Mono"
+                            FontSize="12"
+                            Text="U+0000" />
+                    </Button>
+                    <TextBlock
+                        x:Name="BottomBarText"
+                        FontFamily="Cascadia Mono"
+                        Text="Ln 1, Col 0" />
+                </StackPanel>
+                <Popup
+                    x:Name="CharDetailsPopup"
+                    Grid.Column="1"
+                    AllowsTransparency="True"
+                    Placement="Top"
+                    PlacementTarget="{Binding ElementName=CharDetailsButton}"
+                    StaysOpen="False">
+                    <Border
+                        Padding="16"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                        BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                        <StackPanel x:Name="CharDetailsPopupContent" Width="300" />
+                    </Border>
+                </Popup>
                 <Grid.ContextMenu>
                     <ContextMenu>
                         <MenuItem Click="EditBottomBarMenuItem_Click" Header="Edit Bottom Bar" />

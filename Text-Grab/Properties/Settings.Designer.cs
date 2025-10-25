@@ -694,5 +694,41 @@ namespace Text_Grab.Properties {
                 this["CalcPaneWidth"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowWordCount {
+            get {
+                return ((bool)(this["EtwShowWordCount"]));
+            }
+            set {
+                this["EtwShowWordCount"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowCharDetails {
+            get {
+                return ((bool)(this["EtwShowCharDetails"]));
+            }
+            set {
+                this["EtwShowCharDetails"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowMatchCount {
+            get {
+                return ((bool)(this["EtwShowMatchCount"]));
+            }
+            set {
+                this["EtwShowMatchCount"] = value;
+            }
+        }
     }
 }
