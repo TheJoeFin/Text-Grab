@@ -2383,8 +2383,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
             int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
-
-            BottomBarText.Text = $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}";
+            string text = DefaultSettings.EtwShowWordCount 
+                ? $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}" 
+                : $"Ln {lineNumber + 1}, Col {columnNumber}";
+            
+            BottomBarText.Text = text;
+            
+            // Hide selection-specific UI elements
+            MatchCountButton.Visibility = Visibility.Collapsed;
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+            CharDetailsButton.Visibility = Visibility.Collapsed;
         }
         else
         {
@@ -2410,7 +2418,310 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
             else
                 BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
+            
+            // Update selection-specific UI elements
+            UpdateSelectionSpecificUI();
         }
+    }
+
+    private void UpdateSelectionSpecificUI()
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        
+        if (string.IsNullOrEmpty(selectedText))
+        {
+            MatchCountButton.Visibility = Visibility.Collapsed;
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+            CharDetailsButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Show character details for single character selection
+        if (DefaultSettings.EtwShowCharDetails && selectedText.Length == 1)
+        {
+            char selectedChar = selectedText[0];
+            int codePoint = char.ConvertToUtf32(selectedText, 0);
+            string unicodeHex = $"U+{codePoint:X4}";
+            
+            CharDetailsButtonText.Text = unicodeHex;
+            CharDetailsButton.ToolTip = $"{unicodeHex}: {GetUnicodeCategory(selectedChar)}";
+            CharDetailsButton.Visibility = Visibility.Visible;
+        }
+        else if (DefaultSettings.EtwShowCharDetails && selectedText.Length > 1)
+        {
+            CharDetailsButtonText.Text = $"{selectedText.Length} chars";
+            CharDetailsButton.ToolTip = "Click to see character details";
+            CharDetailsButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            CharDetailsButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show match count
+        if (DefaultSettings.EtwShowMatchCount && !string.IsNullOrEmpty(selectedText))
+        {
+            int matchCount = CountMatches(PassedTextControl.Text, selectedText);
+            var matchButton = MatchCountButton.Content as TextBlock;
+            if (matchButton != null)
+            {
+                matchButton.Text = matchCount == 1 ? "1 match" : $"{matchCount} matches";
+            }
+            MatchCountButton.Visibility = matchCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            MatchCountButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show regex pattern
+        if (selectedText.Length > 0 && selectedText.Length <= 50)
+        {
+            string regexPattern = GenerateRegexPattern(selectedText);
+            var regexButton = RegexPatternButton.Content as TextBlock;
+            if (regexButton != null)
+            {
+                regexButton.Text = regexPattern.Length > 30 
+                    ? $"Regex: {regexPattern.Substring(0, 27)}..." 
+                    : $"Regex: {regexPattern}";
+            }
+            RegexPatternButton.ToolTip = $"Click to copy: {regexPattern}";
+            RegexPatternButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private string GetUnicodeCategory(char c)
+    {
+        var category = char.GetUnicodeCategory(c);
+        return category switch
+        {
+            System.Globalization.UnicodeCategory.UppercaseLetter => "Uppercase Letter",
+            System.Globalization.UnicodeCategory.LowercaseLetter => "Lowercase Letter",
+            System.Globalization.UnicodeCategory.TitlecaseLetter => "Titlecase Letter",
+            System.Globalization.UnicodeCategory.ModifierLetter => "Modifier Letter",
+            System.Globalization.UnicodeCategory.OtherLetter => "Other Letter",
+            System.Globalization.UnicodeCategory.NonSpacingMark => "Non-Spacing Mark",
+            System.Globalization.UnicodeCategory.SpacingCombiningMark => "Spacing Mark",
+            System.Globalization.UnicodeCategory.EnclosingMark => "Enclosing Mark",
+            System.Globalization.UnicodeCategory.DecimalDigitNumber => "Decimal Digit",
+            System.Globalization.UnicodeCategory.LetterNumber => "Letter Number",
+            System.Globalization.UnicodeCategory.OtherNumber => "Other Number",
+            System.Globalization.UnicodeCategory.SpaceSeparator => "Space Separator",
+            System.Globalization.UnicodeCategory.LineSeparator => "Line Separator",
+            System.Globalization.UnicodeCategory.ParagraphSeparator => "Paragraph Separator",
+            System.Globalization.UnicodeCategory.Control => "Control Character",
+            System.Globalization.UnicodeCategory.Format => "Format Character",
+            System.Globalization.UnicodeCategory.Surrogate => "Surrogate",
+            System.Globalization.UnicodeCategory.PrivateUse => "Private Use",
+            System.Globalization.UnicodeCategory.ConnectorPunctuation => "Connector Punctuation",
+            System.Globalization.UnicodeCategory.DashPunctuation => "Dash Punctuation",
+            System.Globalization.UnicodeCategory.OpenPunctuation => "Open Punctuation",
+            System.Globalization.UnicodeCategory.ClosePunctuation => "Close Punctuation",
+            System.Globalization.UnicodeCategory.InitialQuotePunctuation => "Initial Quote",
+            System.Globalization.UnicodeCategory.FinalQuotePunctuation => "Final Quote",
+            System.Globalization.UnicodeCategory.OtherPunctuation => "Other Punctuation",
+            System.Globalization.UnicodeCategory.MathSymbol => "Math Symbol",
+            System.Globalization.UnicodeCategory.CurrencySymbol => "Currency Symbol",
+            System.Globalization.UnicodeCategory.ModifierSymbol => "Modifier Symbol",
+            System.Globalization.UnicodeCategory.OtherSymbol => "Other Symbol",
+            System.Globalization.UnicodeCategory.OtherNotAssigned => "Not Assigned",
+            _ => "Unknown"
+        };
+    }
+
+    private int CountMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+        
+        int count = 0;
+        int index = 0;
+        
+        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+        
+        return count;
+    }
+
+    private string GenerateRegexPattern(string text)
+    {
+        // Escape special regex characters
+        string escaped = Regex.Escape(text);
+        return escaped;
+    }
+
+    private void MatchCountButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Open find and replace with the selection pre-loaded
+        LaunchFindAndReplace();
+    }
+
+    private void RegexPatternButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+        
+        string regexPattern = GenerateRegexPattern(selectedText);
+        
+        try
+        {
+            System.Windows.Clipboard.SetDataObject(regexPattern, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy regex pattern to clipboard: {ex.Message}");
+        }
+    }
+
+    private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+
+        CharDetailsPopupContent.Children.Clear();
+
+        if (selectedText.Length == 1)
+        {
+            // Show details for single character
+            char c = selectedText[0];
+            AddCharacterDetailsToPopup(c, CharDetailsPopupContent);
+        }
+        else
+        {
+            // Show details for multiple characters
+            TextBlock headerText = new()
+            {
+                Text = $"Character Details ({selectedText.Length} characters)",
+                FontSize = 14,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            CharDetailsPopupContent.Children.Add(headerText);
+
+            // Limit to first 10 characters to avoid huge popup
+            int charLimit = Math.Min(selectedText.Length, 10);
+            for (int i = 0; i < charLimit; i++)
+            {
+                char c = selectedText[i];
+                
+                if (i > 0)
+                {
+                    Separator sep = new() { Margin = new Thickness(0, 8, 0, 8) };
+                    CharDetailsPopupContent.Children.Add(sep);
+                }
+                
+                AddCharacterDetailsToPopup(c, CharDetailsPopupContent);
+            }
+
+            if (selectedText.Length > charLimit)
+            {
+                TextBlock moreText = new()
+                {
+                    Text = $"... and {selectedText.Length - charLimit} more",
+                    FontSize = 12,
+                    FontStyle = FontStyles.Italic,
+                    Margin = new Thickness(0, 8, 0, 0),
+                    Foreground = new SolidColorBrush(Colors.Gray)
+                };
+                CharDetailsPopupContent.Children.Add(moreText);
+            }
+        }
+
+        CharDetailsPopup.IsOpen = true;
+    }
+
+    private void AddCharacterDetailsToPopup(char c, StackPanel container)
+    {
+        int codePoint = char.ConvertToUtf32(c.ToString(), 0);
+        string unicodeHex = $"U+{codePoint:X4}";
+        string category = GetUnicodeCategory(c);
+        
+        // Character display
+        TextBlock charDisplay = new()
+        {
+            Text = $"Character: '{c}'",
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        container.Children.Add(charDisplay);
+
+        // Unicode code point
+        TextBlock codePointText = new()
+        {
+            Text = $"Unicode: {unicodeHex} (decimal: {codePoint})",
+            FontSize = 12,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        container.Children.Add(codePointText);
+
+        // Category
+        TextBlock categoryText = new()
+        {
+            Text = $"Category: {category}",
+            FontSize = 12,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        container.Children.Add(categoryText);
+
+        // UTF-8 encoding
+        byte[] utf8Bytes = Encoding.UTF8.GetBytes(c.ToString());
+        string utf8Hex = string.Join(" ", utf8Bytes.Select(b => $"0x{b:X2}"));
+        TextBlock utf8Text = new()
+        {
+            Text = $"UTF-8: {utf8Hex}",
+            FontSize = 12,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        container.Children.Add(utf8Text);
+
+        // HTML entity if applicable
+        if (codePoint < 128 || IsCommonHtmlEntity(c))
+        {
+            string htmlEntity = GetHtmlEntity(c, codePoint);
+            if (!string.IsNullOrEmpty(htmlEntity))
+            {
+                TextBlock htmlText = new()
+                {
+                    Text = $"HTML: {htmlEntity}",
+                    FontSize = 12
+                };
+                container.Children.Add(htmlText);
+            }
+        }
+    }
+
+    private bool IsCommonHtmlEntity(char c)
+    {
+        return c switch
+        {
+            '<' or '>' or '&' or '"' or '\'' or ' ' => true,
+            _ => false
+        };
+    }
+
+    private string GetHtmlEntity(char c, int codePoint)
+    {
+        return c switch
+        {
+            '<' => "&lt; or &#60;",
+            '>' => "&gt; or &#62;",
+            '&' => "&amp; or &#38;",
+            '"' => "&quot; or &#34;",
+            '\'' => "&apos; or &#39;",
+            ' ' => "&nbsp; or &#160;" when codePoint == 160,
+            _ => $"&#{codePoint};"
+        };
     }
 
     private void Window_Activated(object sender, EventArgs e)

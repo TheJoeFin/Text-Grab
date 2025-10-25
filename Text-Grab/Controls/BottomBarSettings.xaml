@@ -238,6 +238,30 @@
                         Show Language picker
                     </TextBlock>
                 </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowWordCountToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Word Count
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowCharDetailsToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Character Details
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowMatchCountToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Match Count
+                    </TextBlock>
+                </ui:ToggleSwitch>
 
             </StackPanel>
         </Grid>
