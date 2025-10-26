@@ -2431,6 +2431,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (string.IsNullOrEmpty(selectedText))
         {
             MatchCountButton.Visibility = Visibility.Collapsed;
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
             RegexPatternButton.Visibility = Visibility.Collapsed;
             CharDetailsButton.Visibility = Visibility.Collapsed;
             return;
@@ -2474,6 +2475,23 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             MatchCountButton.Visibility = Visibility.Collapsed;
         }
 
+        // Show similar matches count using regex pattern
+        if (DefaultSettings.EtwShowMatchCount && selectedText.Length > 0 && selectedText.Length <= 50)
+        {
+            string regexPattern = GenerateRegexPattern(selectedText);
+            int similarCount = CountRegexMatches(PassedTextControl.Text, regexPattern);
+            var similarButton = SimilarMatchesButton.Content as TextBlock;
+            if (similarButton != null)
+            {
+                similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
+            }
+            SimilarMatchesButton.Visibility = similarCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
+        }
+
         // Show regex pattern
         if (selectedText.Length > 0 && selectedText.Length <= 50)
         {
@@ -2485,7 +2503,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     ? $"Regex: {regexPattern.Substring(0, 27)}..." 
                     : $"Regex: {regexPattern}";
             }
-            RegexPatternButton.ToolTip = $"Click to copy: {regexPattern}";
+            RegexPatternButton.ToolTip = $"Click to Find and Replace with: {regexPattern}";
             RegexPatternButton.Visibility = Visibility.Visible;
         }
         else
@@ -2550,6 +2568,23 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return count;
     }
 
+    private int CountRegexMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+        
+        try
+        {
+            MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
+            return matches.Count;
+        }
+        catch (Exception)
+        {
+            // If regex is invalid, return 0
+            return 0;
+        }
+    }
+
     private string GenerateRegexPattern(string text)
     {
         // Use ExtractSimplePattern to generate a regex pattern
@@ -2563,6 +2598,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         LaunchFindAndReplace();
     }
 
+    private void SimilarMatchesButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+        
+        string regexPattern = GenerateRegexPattern(selectedText);
+        
+        // Launch Find and Replace with regex enabled
+        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.TextEditWindow = this;
+        findAndReplaceWindow.FindTextBox.Text = regexPattern;
+        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
+        findAndReplaceWindow.Show();
+        findAndReplaceWindow.SearchForText();
+    }
+
     private void RegexPatternButton_Click(object sender, RoutedEventArgs e)
     {
         string selectedText = PassedTextControl.SelectedText;
@@ -2571,14 +2624,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         
         string regexPattern = GenerateRegexPattern(selectedText);
         
-        try
-        {
-            System.Windows.Clipboard.SetDataObject(regexPattern, true);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to copy regex pattern to clipboard: {ex.Message}");
-        }
+        // Launch Find and Replace with regex enabled
+        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.TextEditWindow = this;
+        findAndReplaceWindow.FindTextBox.Text = regexPattern;
+        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
+        findAndReplaceWindow.Show();
+        findAndReplaceWindow.SearchForText();
     }
 
     private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
@@ -2592,149 +2645,94 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (selectedText.Length == 1)
         {
-            // Show details for single character
+            // Show details for single character in multi-line TextBox
             char c = selectedText[0];
-            AddCharacterDetailsToPopup(c, CharDetailsPopupContent);
-        }
-        else
-        {
-            // Show details for multiple characters
-            System.Windows.Controls.TextBox headerText = new()
+            string details = GetCharacterDetailsText(c);
+            
+            System.Windows.Controls.TextBox detailsTextBox = new()
             {
-                Text = $"Character Details ({selectedText.Length} characters)",
-                FontSize = 14,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 12),
+                Text = details,
+                FontSize = 12,
                 IsReadOnly = true,
                 BorderThickness = new Thickness(0),
                 Background = Brushes.Transparent,
                 TextWrapping = TextWrapping.Wrap,
-                Cursor = System.Windows.Input.Cursors.Arrow
+                Cursor = System.Windows.Input.Cursors.Arrow,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
             };
-            CharDetailsPopupContent.Children.Add(headerText);
+            CharDetailsPopupContent.Children.Add(detailsTextBox);
+        }
+        else
+        {
+            // Show details for multiple characters in one multi-line TextBox
+            StringBuilder allDetails = new();
+            allDetails.AppendLine($"Character Details ({selectedText.Length} characters)");
+            allDetails.AppendLine();
 
             // Limit to first 10 characters to avoid huge popup
             int charLimit = Math.Min(selectedText.Length, 10);
             for (int i = 0; i < charLimit; i++)
             {
                 char c = selectedText[i];
+                allDetails.AppendLine(GetCharacterDetailsText(c));
                 
-                if (i > 0)
-                {
-                    Separator sep = new() { Margin = new Thickness(0, 8, 0, 8) };
-                    CharDetailsPopupContent.Children.Add(sep);
-                }
-                
-                AddCharacterDetailsToPopup(c, CharDetailsPopupContent);
+                if (i < charLimit - 1)
+                    allDetails.AppendLine(); // Add blank line between characters
             }
 
             if (selectedText.Length > charLimit)
             {
-                System.Windows.Controls.TextBox moreText = new()
-                {
-                    Text = $"... and {selectedText.Length - charLimit} more",
-                    FontSize = 12,
-                    FontStyle = FontStyles.Italic,
-                    Margin = new Thickness(0, 8, 0, 0),
-                    Foreground = new SolidColorBrush(Colors.Gray),
-                    IsReadOnly = true,
-                    BorderThickness = new Thickness(0),
-                    Background = Brushes.Transparent,
-                    TextWrapping = TextWrapping.Wrap,
-                    Cursor = System.Windows.Input.Cursors.Arrow
-                };
-                CharDetailsPopupContent.Children.Add(moreText);
+                allDetails.AppendLine();
+                allDetails.AppendLine($"... and {selectedText.Length - charLimit} more");
             }
+
+            System.Windows.Controls.TextBox detailsTextBox = new()
+            {
+                Text = allDetails.ToString(),
+                FontSize = 12,
+                IsReadOnly = true,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                TextWrapping = TextWrapping.Wrap,
+                Cursor = System.Windows.Input.Cursors.Arrow,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = 400
+            };
+            CharDetailsPopupContent.Children.Add(detailsTextBox);
         }
 
         CharDetailsPopup.IsOpen = true;
     }
 
-    private void AddCharacterDetailsToPopup(char c, StackPanel container)
+    private string GetCharacterDetailsText(char c)
     {
         int codePoint = char.ConvertToUtf32(c.ToString(), 0);
         string unicodeHex = $"U+{codePoint:X4}";
         string category = GetUnicodeCategory(c);
         
-        // Character display
-        System.Windows.Controls.TextBox charDisplay = new()
-        {
-            Text = $"Character: '{c}'",
-            FontSize = 16,
-            FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 4),
-            IsReadOnly = true,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent,
-            TextWrapping = TextWrapping.Wrap,
-            Cursor = System.Windows.Input.Cursors.Arrow
-        };
-        container.Children.Add(charDisplay);
-
-        // Unicode code point
-        System.Windows.Controls.TextBox codePointText = new()
-        {
-            Text = $"Unicode: {unicodeHex} (decimal: {codePoint})",
-            FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 4),
-            IsReadOnly = true,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent,
-            TextWrapping = TextWrapping.Wrap,
-            Cursor = System.Windows.Input.Cursors.Arrow
-        };
-        container.Children.Add(codePointText);
-
-        // Category
-        System.Windows.Controls.TextBox categoryText = new()
-        {
-            Text = $"Category: {category}",
-            FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 4),
-            IsReadOnly = true,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent,
-            TextWrapping = TextWrapping.Wrap,
-            Cursor = System.Windows.Input.Cursors.Arrow
-        };
-        container.Children.Add(categoryText);
-
+        StringBuilder details = new();
+        details.AppendLine($"Character: '{c}'");
+        details.AppendLine($"Unicode: {unicodeHex} (decimal: {codePoint})");
+        details.AppendLine($"Category: {category}");
+        
         // UTF-8 encoding
         byte[] utf8Bytes = Encoding.UTF8.GetBytes(c.ToString());
         string utf8Hex = string.Join(" ", utf8Bytes.Select(b => $"0x{b:X2}"));
-        System.Windows.Controls.TextBox utf8Text = new()
-        {
-            Text = $"UTF-8: {utf8Hex}",
-            FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 4),
-            IsReadOnly = true,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent,
-            TextWrapping = TextWrapping.Wrap,
-            Cursor = System.Windows.Input.Cursors.Arrow
-        };
-        container.Children.Add(utf8Text);
-
+        details.AppendLine($"UTF-8: {utf8Hex}");
+        
         // HTML entity if applicable
         if (codePoint < 128 || IsCommonHtmlEntity(c))
         {
             string htmlEntity = GetHtmlEntity(c, codePoint);
             if (!string.IsNullOrEmpty(htmlEntity))
             {
-                System.Windows.Controls.TextBox htmlText = new()
-                {
-                    Text = $"HTML: {htmlEntity}",
-                    FontSize = 12,
-                    IsReadOnly = true,
-                    BorderThickness = new Thickness(0),
-                    Background = Brushes.Transparent,
-                    TextWrapping = TextWrapping.Wrap,
-                    Cursor = System.Windows.Input.Cursors.Arrow
-                };
-                container.Children.Add(htmlText);
+                details.AppendLine($"HTML: {htmlEntity}");
             }
         }
+        
+        return details.ToString().TrimEnd();
     }
+
 
     private bool IsCommonHtmlEntity(char c)
     {
