@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using System.Diagnostics;
@@ -104,11 +105,15 @@ public partial class DangerSettings : Page
     {
         try
         {
+            // Set default directory to Documents folder (where exports are saved)
+            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            
             OpenFileDialog openFileDialog = new()
             {
                 Filter = "ZIP files (*.zip)|*.zip|All files (*.*)|*.*",
                 Title = "Select Settings Export File",
-                DefaultExt = ".zip"
+                DefaultExt = ".zip",
+                InitialDirectory = documentsPath
             };
 
             if (openFileDialog.ShowDialog() != true)
@@ -132,7 +137,7 @@ public partial class DangerSettings : Page
                 MessageBoxImage.Information);
 
             // Restart the application
-            App.Current.Shutdown();
+            RestartApplication();
         }
         catch (System.Exception ex)
         {
@@ -142,5 +147,24 @@ public partial class DangerSettings : Page
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private void RestartApplication()
+    {
+        // Get the executable path
+        string exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+        
+        if (!string.IsNullOrEmpty(exePath))
+        {
+            // Start a new instance of the application
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = exePath,
+                UseShellExecute = true
+            });
+        }
+        
+        // Shutdown the current instance
+        App.Current.Shutdown();
     }
 }
