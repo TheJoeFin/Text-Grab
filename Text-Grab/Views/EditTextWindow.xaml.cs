@@ -2552,9 +2552,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private string GenerateRegexPattern(string text)
     {
-        // Escape special regex characters
-        string escaped = Regex.Escape(text);
-        return escaped;
+        // Use ExtractSimplePattern to generate a regex pattern
+        string pattern = text.ExtractSimplePattern();
+        return pattern;
     }
 
     private void MatchCountButton_Click(object sender, RoutedEventArgs e)
@@ -2599,12 +2599,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else
         {
             // Show details for multiple characters
-            TextBlock headerText = new()
+            System.Windows.Controls.TextBox headerText = new()
             {
                 Text = $"Character Details ({selectedText.Length} characters)",
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 12)
+                Margin = new Thickness(0, 0, 0, 12),
+                IsReadOnly = true,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                TextWrapping = TextWrapping.Wrap,
+                Cursor = System.Windows.Input.Cursors.Arrow
             };
             CharDetailsPopupContent.Children.Add(headerText);
 
@@ -2625,13 +2630,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             if (selectedText.Length > charLimit)
             {
-                TextBlock moreText = new()
+                System.Windows.Controls.TextBox moreText = new()
                 {
                     Text = $"... and {selectedText.Length - charLimit} more",
                     FontSize = 12,
                     FontStyle = FontStyles.Italic,
                     Margin = new Thickness(0, 8, 0, 0),
-                    Foreground = new SolidColorBrush(Colors.Gray)
+                    Foreground = new SolidColorBrush(Colors.Gray),
+                    IsReadOnly = true,
+                    BorderThickness = new Thickness(0),
+                    Background = Brushes.Transparent,
+                    TextWrapping = TextWrapping.Wrap,
+                    Cursor = System.Windows.Input.Cursors.Arrow
                 };
                 CharDetailsPopupContent.Children.Add(moreText);
             }
@@ -2647,41 +2657,61 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string category = GetUnicodeCategory(c);
         
         // Character display
-        TextBlock charDisplay = new()
+        System.Windows.Controls.TextBox charDisplay = new()
         {
             Text = $"Character: '{c}'",
             FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 4)
+            Margin = new Thickness(0, 0, 0, 4),
+            IsReadOnly = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            TextWrapping = TextWrapping.Wrap,
+            Cursor = System.Windows.Input.Cursors.Arrow
         };
         container.Children.Add(charDisplay);
 
         // Unicode code point
-        TextBlock codePointText = new()
+        System.Windows.Controls.TextBox codePointText = new()
         {
             Text = $"Unicode: {unicodeHex} (decimal: {codePoint})",
             FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 4)
+            Margin = new Thickness(0, 0, 0, 4),
+            IsReadOnly = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            TextWrapping = TextWrapping.Wrap,
+            Cursor = System.Windows.Input.Cursors.Arrow
         };
         container.Children.Add(codePointText);
 
         // Category
-        TextBlock categoryText = new()
+        System.Windows.Controls.TextBox categoryText = new()
         {
             Text = $"Category: {category}",
             FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 4)
+            Margin = new Thickness(0, 0, 0, 4),
+            IsReadOnly = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            TextWrapping = TextWrapping.Wrap,
+            Cursor = System.Windows.Input.Cursors.Arrow
         };
         container.Children.Add(categoryText);
 
         // UTF-8 encoding
         byte[] utf8Bytes = Encoding.UTF8.GetBytes(c.ToString());
         string utf8Hex = string.Join(" ", utf8Bytes.Select(b => $"0x{b:X2}"));
-        TextBlock utf8Text = new()
+        System.Windows.Controls.TextBox utf8Text = new()
         {
             Text = $"UTF-8: {utf8Hex}",
             FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 4)
+            Margin = new Thickness(0, 0, 0, 4),
+            IsReadOnly = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            TextWrapping = TextWrapping.Wrap,
+            Cursor = System.Windows.Input.Cursors.Arrow
         };
         container.Children.Add(utf8Text);
 
@@ -2691,10 +2721,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             string htmlEntity = GetHtmlEntity(c, codePoint);
             if (!string.IsNullOrEmpty(htmlEntity))
             {
-                TextBlock htmlText = new()
+                System.Windows.Controls.TextBox htmlText = new()
                 {
                     Text = $"HTML: {htmlEntity}",
-                    FontSize = 12
+                    FontSize = 12,
+                    IsReadOnly = true,
+                    BorderThickness = new Thickness(0),
+                    Background = Brushes.Transparent,
+                    TextWrapping = TextWrapping.Wrap,
+                    Cursor = System.Windows.Input.Cursors.Arrow
                 };
                 container.Children.Add(htmlText);
             }
