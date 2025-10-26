@@ -62,14 +62,14 @@ public class SettingsImportExportTests
         System.IO.Compression.ZipFile.ExtractToDirectory(originalZipPath, originalTempDir);
         string originalJsonPath = Path.Combine(originalTempDir, "settings.json");
         string originalJson = await File.ReadAllTextAsync(originalJsonPath);
-        
+
         // Step 3: Deserialize to dictionary to get all key-value pairs
-        var originalSettings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(originalJson);
+        Dictionary<string, JsonElement>? originalSettings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(originalJson);
         Assert.NotNull(originalSettings);
         Assert.NotEmpty(originalSettings);
 
         // Step 4: Modify one value in the JSON to simulate a change
-        var modifiedSettings = new Dictionary<string, JsonElement>(originalSettings);
+        Dictionary<string, JsonElement> modifiedSettings = new Dictionary<string, JsonElement>(originalSettings);
         
         // Find a boolean setting to flip (e.g., ShowToast or FirstRun)
         string keyToModify = originalSettings.Keys.FirstOrDefault(k => 
@@ -111,12 +111,12 @@ public class SettingsImportExportTests
         System.IO.Compression.ZipFile.ExtractToDirectory(reimportedZipPath, reimportedTempDir);
         string reimportedJsonPath = Path.Combine(reimportedTempDir, "settings.json");
         string reimportedJson = await File.ReadAllTextAsync(reimportedJsonPath);
-        
-        var reimportedSettings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(reimportedJson);
+
+        Dictionary<string, JsonElement>? reimportedSettings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(reimportedJson);
         Assert.NotNull(reimportedSettings);
 
         // Step 9: Compare element by element - the modified value should match what we set
-        foreach (var kvp in modifiedSettings)
+        foreach (KeyValuePair<string, JsonElement> kvp in modifiedSettings)
         {
             Assert.True(reimportedSettings.ContainsKey(kvp.Key), 
                 $"Reimported settings missing key: {kvp.Key}");
@@ -125,15 +125,14 @@ public class SettingsImportExportTests
             string expectedValue = kvp.Value.ToString();
             string actualValue = reimportedSettings[kvp.Key].ToString();
             
-            Assert.Equal(expectedValue, actualValue, 
-                $"Value mismatch for key '{kvp.Key}': expected '{expectedValue}', got '{actualValue}'");
+            Assert.Equal(expectedValue,
+                         actualValue);
         }
 
         // Verify the modified key specifically has the new value
         Assert.True(reimportedSettings.ContainsKey(keyToModify), 
             $"Modified key '{keyToModify}' should exist in reimported settings");
-        Assert.Equal(modifiedSettings[keyToModify].ToString(), reimportedSettings[keyToModify].ToString(),
-            $"Modified value for '{keyToModify}' was not preserved through round-trip");
+        Assert.Equal(modifiedSettings[keyToModify].ToString(), reimportedSettings[keyToModify].ToString());
 
         // Step 10: Restore original settings
         await SettingsImportExportUtilities.ImportSettingsFromZipAsync(originalZipPath);
