@@ -755,6 +755,21 @@
                             Text="0 matches" />
                     </Button>
                     <Button
+                        x:Name="SimilarMatchesButton"
+                        Margin="0,0,8,0"
+                        Padding="4,2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="SimilarMatchesButton_Click"
+                        Cursor="Hand"
+                        ToolTip="Click to Find and Replace with pattern"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            FontFamily="Cascadia Mono"
+                            FontSize="12"
+                            Text="0 similar" />
+                    </Button>
+                    <Button
                         x:Name="RegexPatternButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
@@ -762,7 +777,7 @@
                         BorderThickness="0"
                         Click="RegexPatternButton_Click"
                         Cursor="Hand"
-                        ToolTip="Click to copy regex pattern"
+                        ToolTip="Click to open Find and Replace with regex"
                         Visibility="Collapsed">
                         <TextBlock
                             FontFamily="Cascadia Mono"
