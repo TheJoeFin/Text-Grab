@@ -1,12 +1,11 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.IO;
-using System.Diagnostics;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
-using Microsoft.Win32;
 
 namespace Text_Grab.Pages;
 
@@ -24,147 +23,150 @@ public partial class DangerSettings : Page
 
     private async void ExportBugReportButton_Click(object sender, RoutedEventArgs e)
     {
-        try
+      try
         {
             string filePath = await DiagnosticsUtilities.SaveBugReportToFileAsync();
-            
-            MessageBoxResult result = MessageBox.Show(
-                $"Bug report saved to:\n{filePath}\n\nWould you like to open the file location?", 
-                "Bug Report Generated", 
-                MessageBoxButton.YesNo, 
-                MessageBoxImage.Information);
-            
-            if (result == MessageBoxResult.Yes)
-            {
-                // Open the file location in File Explorer
-                Process.Start("explorer.exe", $"/select,\"{filePath}\"");
-            }
+
+  Wpf.Ui.Controls.MessageBoxResult result = await new Wpf.Ui.Controls.MessageBox
+  {
+        Title = "Bug Report Generated",
+                Content = $"Bug report saved to:\n{filePath}\n\nWould you like to open the file location?",
+      PrimaryButtonText = "Yes",
+    CloseButtonText = "No"
+            }.ShowDialogAsync();
+
+            if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+    {
+      // Open the file location in File Explorer
+       Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+     }
         }
-        catch (System.Exception ex)
+   catch (System.Exception ex)
         {
-            MessageBox.Show(
-                $"Failed to generate bug report:\n{ex.Message}", 
-                "Error", 
-                MessageBoxButton.OK, 
-                MessageBoxImage.Error);
+ await new Wpf.Ui.Controls.MessageBox
+    {
+              Title = "Error",
+    Content = $"Failed to generate bug report:\n{ex.Message}",
+          CloseButtonText = "OK"
+     }.ShowDialogAsync();
         }
     }
 
-    private void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
+    private async void ResetSettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to reset all settings to default and delete all history?", "Reset Settings to Default", MessageBoxButton.YesNo);
+        Wpf.Ui.Controls.MessageBoxResult areYouSure = await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Reset Settings to Default",
+            Content = "Are you sure you want to reset all settings to default and delete all history?",
+        PrimaryButtonText = "Yes",
+       CloseButtonText = "No"
+    }.ShowDialogAsync();
 
-        if (areYouSure != MessageBoxResult.Yes)
+      if (areYouSure != Wpf.Ui.Controls.MessageBoxResult.Primary)
             return;
 
         DefaultSettings.Reset();
-        Singleton<HistoryService>.Instance.DeleteHistory();
+    Singleton<HistoryService>.Instance.DeleteHistory();
         App.Current.Shutdown();
     }
 
-    private void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
+    private async void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
     {
-        MessageBoxResult areYouSure = MessageBox.Show("Are you sure you want to delete all history?", "Reset Settings to Default", MessageBoxButton.YesNo);
+        Wpf.Ui.Controls.MessageBoxResult areYouSure = await new Wpf.Ui.Controls.MessageBox
+    {
+        Title = "Reset Settings to Default",
+  Content = "Are you sure you want to delete all history?",
+       PrimaryButtonText = "Yes",
+  CloseButtonText = "No"
+        }.ShowDialogAsync();
 
-        if (areYouSure != MessageBoxResult.Yes)
+        if (areYouSure != Wpf.Ui.Controls.MessageBoxResult.Primary)
             return;
 
-        Singleton<HistoryService>.Instance.DeleteHistory();
+      Singleton<HistoryService>.Instance.DeleteHistory();
     }
 
     private async void ExportSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            bool includeHistory = IncludeHistoryCheckBox.IsChecked ?? false;
+       bool includeHistory = IncludeHistoryCheckBox.IsChecked ?? false;
             string filePath = await SettingsImportExportUtilities.ExportSettingsToZipAsync(includeHistory);
-            
-            MessageBoxResult result = MessageBox.Show(
-                $"Settings exported successfully to:\n{filePath}\n\nWould you like to open the file location?", 
-                "Export Successful", 
-                MessageBoxButton.YesNo, 
-                MessageBoxImage.Information);
-            
-            if (result == MessageBoxResult.Yes)
-            {
-                // Open the file location in File Explorer
-                Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+
+  Wpf.Ui.Controls.MessageBoxResult result = await new Wpf.Ui.Controls.MessageBox
+    {
+        Title = "Export Successful",
+       Content = $"Settings exported successfully to:\n{filePath}\n\nWould you like to open the file location?",
+      PrimaryButtonText = "Yes",
+         CloseButtonText = "No"
+        }.ShowDialogAsync();
+
+ if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+     {
+       // Open the file location in File Explorer
+       Process.Start("explorer.exe", $"/select,\"{filePath}\"");
             }
         }
         catch (System.Exception ex)
-        {
-            MessageBox.Show(
-                $"Failed to export settings:\n{ex.Message}", 
-                "Export Error", 
-                MessageBoxButton.OK, 
-                MessageBoxImage.Error);
+  {
+            await new Wpf.Ui.Controls.MessageBox
+       {
+     Title = "Export Error",
+        Content = $"Failed to export settings:\n{ex.Message}",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 
     private async void ImportSettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            // Set default directory to Documents folder (where exports are saved)
+      try
+   {
+    // Set default directory to Documents folder (where exports are saved)
             string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            
-            OpenFileDialog openFileDialog = new()
+
+ OpenFileDialog openFileDialog = new()
             {
-                Filter = "ZIP files (*.zip)|*.zip|All files (*.*)|*.*",
-                Title = "Select Settings Export File",
-                DefaultExt = ".zip",
+       Filter = "ZIP files (*.zip)|*.zip|All files (*.*)|*.*",
+Title = "Select Settings Export File",
+      DefaultExt = ".zip",
                 InitialDirectory = documentsPath
-            };
+          };
 
-            if (openFileDialog.ShowDialog() != true)
-                return;
+      if (openFileDialog.ShowDialog() != true)
+     return;
 
-            MessageBoxResult confirmation = MessageBox.Show(
-                "Importing settings will overwrite your current settings. The application will restart after import.\n\nDo you want to continue?",
-                "Confirm Import",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (confirmation != MessageBoxResult.Yes)
-                return;
-
-            await SettingsImportExportUtilities.ImportSettingsFromZipAsync(openFileDialog.FileName);
-
-            MessageBox.Show(
-                "Settings imported successfully. The application will now restart.",
-                "Import Successful",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-
-            // Restart the application
-            RestartApplication();
-        }
-        catch (System.Exception ex)
+       Wpf.Ui.Controls.MessageBoxResult confirmation = await new Wpf.Ui.Controls.MessageBox
         {
-            MessageBox.Show(
-                $"Failed to import settings:\n{ex.Message}",
-                "Import Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
+       Title = "Confirm Import",
+     Content = "Importing settings will overwrite your current settings. The application will restart after import.\n\nDo you want to continue?",
+     PrimaryButtonText = "Yes",
+      CloseButtonText = "No"
+      }.ShowDialogAsync();
 
-    private void RestartApplication()
-    {
-        // Get the executable path
-        string exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
-        
-        if (!string.IsNullOrEmpty(exePath))
-        {
-            // Start a new instance of the application
-            Process.Start(new ProcessStartInfo
+            if (confirmation != Wpf.Ui.Controls.MessageBoxResult.Primary)
+    return;
+
+  await SettingsImportExportUtilities.ImportSettingsFromZipAsync(openFileDialog.FileName);
+
+  await new Wpf.Ui.Controls.MessageBox
             {
-                FileName = exePath,
-                UseShellExecute = true
-            });
+            Title = "Import Successful",
+       Content = "Settings imported successfully. Open Text Grab again to fully apply all settings. Shutting down now...",
+       CloseButtonText = "OK"
+      }.ShowDialogAsync();
+
+      // Shut down Text Grab
+ App.Current.Shutdown();
         }
-        
-        // Shutdown the current instance
-        App.Current.Shutdown();
+        catch (Exception ex)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+      Title = "Import Error",
+       Content = $"Failed to import settings:\n{ex.Message}",
+    CloseButtonText = "OK"
+            }.ShowDialogAsync();
+ }
     }
 }

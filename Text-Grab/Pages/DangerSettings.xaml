@@ -21,7 +21,7 @@
         <controls:CollapsibleButton
             x:Name="ExportBugReportButton"
             HorizontalAlignment="Left"
-            ButtonSymbol="DocumentSave24"
+            ButtonSymbol="Bug24"
             ButtonText="Export Bug Report"
             Click="ExportBugReportButton_Click" />
 
@@ -36,7 +36,7 @@
         <controls:CollapsibleButton
             x:Name="ExportSettingsButton"
             HorizontalAlignment="Left"
-            ButtonSymbol="ArrowExport24"
+            ButtonSymbol="FolderZip24"
             ButtonText="Export Settings"
             Click="ExportSettingsButton_Click" />
 
