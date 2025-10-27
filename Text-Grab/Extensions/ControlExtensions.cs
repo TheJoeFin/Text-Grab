@@ -21,6 +21,9 @@ public static class ControlExtensions
 
     public static Rect GetAbsolutePlacement(this FrameworkElement element, bool relativeToScreen = false)
     {
+        // TODO Fix bug:
+        // System.InvalidOperationException: 'This Visual is not connected to a PresentationSource.'
+
         Point absolutePos = element.PointToScreen(new System.Windows.Point(0, 0));
         if (relativeToScreen)
         {
