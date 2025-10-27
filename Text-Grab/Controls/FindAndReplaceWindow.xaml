@@ -89,6 +89,8 @@
                 Grid.Column="1"
                 Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
+                AcceptsReturn="True"
+                AcceptsTab="True"
                 FontFamily="Segoe UI"
                 KeyUp="FindTextBox_KeyUp" />
             <local:CollapsibleButton
@@ -108,6 +110,8 @@
                 Grid.Column="1"
                 Margin="6,6,6,0"
                 VerticalContentAlignment="Center"
+                AcceptsReturn="True"
+                AcceptsTab="True"
                 FontFamily="Segoe UI"
                 Visibility="Visible" />
             <local:CollapsibleButton
