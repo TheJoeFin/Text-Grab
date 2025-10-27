@@ -21,9 +21,34 @@
         <controls:CollapsibleButton
             x:Name="ExportBugReportButton"
             HorizontalAlignment="Left"
-            ButtonSymbol="DocumentSave24"
+            ButtonSymbol="Bug24"
             ButtonText="Export Bug Report"
             Click="ExportBugReportButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Export all settings and optionally history to a portable ZIP file.
+        </TextBlock>
+        <CheckBox
+            x:Name="IncludeHistoryCheckBox"
+            Margin="5,8,0,0"
+            Content="Include history (images and text)"
+            IsChecked="True" />
+        <controls:CollapsibleButton
+            x:Name="ExportSettingsButton"
+            HorizontalAlignment="Left"
+            ButtonSymbol="FolderZip24"
+            ButtonText="Export Settings"
+            Click="ExportSettingsButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Import settings and history from a previously exported ZIP file.
+        </TextBlock>
+        <controls:CollapsibleButton
+            x:Name="ImportSettingsButton"
+            HorizontalAlignment="Left"
+            ButtonSymbol="ArrowImport24"
+            ButtonText="Import Settings"
+            Click="ImportSettingsButton_Click" />
 
         <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
             Reset All settings to default settings.
