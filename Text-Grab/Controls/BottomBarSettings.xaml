@@ -262,6 +262,22 @@
                         Show Match Count
                     </TextBlock>
                 </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowRegexPatternToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Regex of Selection
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowSimilarMatchesToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Similar Matches
+                    </TextBlock>
+                </ui:ToggleSwitch>
 
             </StackPanel>
         </Grid>

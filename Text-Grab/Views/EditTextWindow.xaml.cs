@@ -2476,7 +2476,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         // Show similar matches count using regex pattern
-        if (DefaultSettings.EtwShowMatchCount && selectedText.Length > 0 && selectedText.Length <= 50)
+        if (DefaultSettings.EtwShowSimilarMatches && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
         {
             string regexPattern = GenerateRegexPattern(selectedText);
             int similarCount = CountRegexMatches(PassedTextControl.Text, regexPattern);
@@ -2493,7 +2493,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         // Show regex pattern
-        if (selectedText.Length > 0 && selectedText.Length <= 50)
+        if (DefaultSettings.EtwShowRegexPattern && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
         {
             string regexPattern = GenerateRegexPattern(selectedText);
             var regexButton = RegexPatternButton.Content as TextBlock;
