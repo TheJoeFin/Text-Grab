@@ -730,5 +730,29 @@ namespace Text_Grab.Properties {
                 this["EtwShowMatchCount"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowRegexPattern {
+            get {
+                return ((bool)(this["EtwShowRegexPattern"]));
+            }
+            set {
+                this["EtwShowRegexPattern"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowSimilarMatches {
+            get {
+                return ((bool)(this["EtwShowSimilarMatches"]));
+            }
+            set {
+                this["EtwShowSimilarMatches"] = value;
+            }
+        }
     }
 }
