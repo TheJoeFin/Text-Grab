@@ -406,9 +406,28 @@ public static class StringMethods
         return sb.ToString();
     }
 
-    public static string ExtractSimplePattern(this string stringToExtract)
+    public static string ExtractSimplePattern(this string stringToExtract, int precisionLevel = 3)
     {
-        List<CharRun> charRunList = new();
+        // precisionLevel ranges from 0 (least precise) to 5 (most precise)
+        // 0: \S+ (non-whitespace)
+        // 1: \w+ (word characters)
+        // 2: \w{count} (word characters with count)
+        // 3: [A-z]{3}\d{3} (character types with counts) - DEFAULT
+        // 4: [A][b][c][1][2][3] (individual character class per position)
+        // 5: Abc123 (exact escaped string) - most precise
+
+        if (string.IsNullOrEmpty(stringToExtract))
+            return string.Empty;
+
+        // Level 0: Just match any non-whitespace
+        if (precisionLevel == 0)
+            return @"\S+";
+
+        // Level 1: Match word characters
+        if (precisionLevel == 1)
+            return @"\w+";
+
+        List<CharRun> charRunList = [];
 
         foreach (char c in stringToExtract)
         {
@@ -448,23 +467,130 @@ public static class StringMethods
 
         StringBuilder sb = new();
 
+        // Level 2: Word characters with count but no type differentiation
+        if (precisionLevel == 2)
+        {
+            foreach (CharRun ct in charRunList)
+            {
+                switch (ct.TypeOfChar)
+                {
+                    case CharType.Letter:
+                    case CharType.Number:
+                        sb.Append(@"\w");
+                        break;
+                    case CharType.Space:
+                        sb.Append(@"\s");
+                        break;
+                    case CharType.Special:
+                        sb.Append($@"(\{ct.Character})");
+                        break;
+                    default:
+                        sb.Append(ct.Character);
+                        break;
+                }
+
+                if (ct.NumberOfRun > 1)
+                {
+                    sb.Append('{').Append(ct.NumberOfRun).Append('}');
+                }
+            }
+            return sb.ToString().ShortenRegexPattern();
+        }
+
+        // Level 3: Character types with counts (DEFAULT - original behavior)
+        if (precisionLevel == 3)
+        {
+            foreach (CharRun ct in charRunList)
+            {
+                switch (ct.TypeOfChar)
+                {
+                    case CharType.Letter:
+                        sb.Append("[A-z]");
+                        break;
+                    case CharType.Number:
+                        sb.Append(@"\d");
+                        break;
+                    case CharType.Space:
+                        sb.Append(@"\s");
+                        break;
+                    case CharType.Special:
+                        sb.Append($@"(\{ct.Character})");
+                        break;
+                    default:
+                        sb.Append(ct.Character);
+                        break;
+                }
+
+                if (ct.NumberOfRun > 1)
+                {
+                    sb.Append('{').Append(ct.NumberOfRun).Append('}');
+                }
+            }
+            return sb.ToString().ShortenRegexPattern();
+        }
+
+        // Level 4: Individual character class per position (each position matches one specific character)
+        // For Latin letters, include both upper and lower case variants
+        if (precisionLevel == 4)
+        {
+            foreach (char c in stringToExtract)
+            {
+                if (char.IsWhiteSpace(c))
+                {
+                    sb.Append(@"\s");
+                }
+                else if (specialCharList.Contains(c))
+                {
+                    sb.Append($@"(\{c})");
+                }
+                else if (char.IsLetter(c) && c.IsBasicLatin())
+                {
+                    // For Latin letters, include both upper and lower case
+                    char upper = char.ToUpper(c);
+                    char lower = char.ToLower(c);
+
+                    if (upper != lower)
+                    {
+                        // Letter has both cases, include both
+                        sb.Append('[').Append(upper).Append(lower).Append(']');
+                    }
+                    else
+                    {
+                        // No case distinction (shouldn't normally happen for letters)
+                        sb.Append('[').Append(Regex.Escape(c.ToString())).Append(']');
+                    }
+                }
+                else
+                {
+                    // Non-Latin letters, numbers, and other characters - exact match
+                    sb.Append('[').Append(Regex.Escape(c.ToString())).Append(']');
+                }
+            }
+            return sb.ToString();
+        }
+
+        // Level 5: Exact escaped string (most precise - exact match)
+        if (precisionLevel == 5)
+        {
+            return Regex.Escape(stringToExtract);
+        }
+
+        // Default to level 3
         foreach (CharRun ct in charRunList)
         {
-            // append previous stuff to the string       
             switch (ct.TypeOfChar)
             {
                 case CharType.Letter:
-                    // sb.Append("\\w");
                     sb.Append("[A-z]");
                     break;
                 case CharType.Number:
-                    sb.Append("\\d");
+                    sb.Append(@"\d");
                     break;
                 case CharType.Space:
-                    sb.Append("\\s");
+                    sb.Append(@"\s");
                     break;
                 case CharType.Special:
-                    sb.Append($"(\\{ct.Character})");
+                    sb.Append($@"(\{ct.Character})");
                     break;
                 default:
                     sb.Append(ct.Character);
@@ -487,8 +613,7 @@ public static class StringMethods
 
         StringBuilder sb = new();
 
-        List<string> possibleShortenedPatterns = new();
-        possibleShortenedPatterns.Add(originalPattern);
+        List<string> possibleShortenedPatterns = [originalPattern];
 
         // only look for patterns which are 4 - length / 3 long.
         int maxRepSegCheckLen = originalPattern.Length / 3;
