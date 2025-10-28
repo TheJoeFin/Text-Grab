@@ -160,15 +160,32 @@ Another Line";
     }
 
     [Theory]
-    [InlineData("", @"")]
-    [InlineData("Hello World!", @"[A-z]{5}\s[A-z]{5}!")]
-    [InlineData("123-555-6789", @"\d{3}-\d{3}-\d{4}")]
-    [InlineData("(123)-555-6789", @"(\()\d{3}(\))-\d{3}-\d{4}")]
-    [InlineData("Abc123456-99", @"[A-z]{3}\d{6}-\d{2}")]
-    [InlineData("ab12ab12ab12ab12ab12", @"([A-z]{2}\d{2}){5}")]
-    public void ExtractSimplePatternFromEachString(string inputString, string expectedString)
+    [InlineData("", @"", 3)]
+    [InlineData("Hello World!", @"[A-z]{5}\s[A-z]{5}!", 3)]
+    [InlineData("123-555-6789", @"\d{3}-\d{3}-\d{4}", 3)]
+    [InlineData("(123)-555-6789", @"(\()\d{3}(\))-\d{3}-\d{4}", 3)]
+    [InlineData("Abc123456-99", @"[A-z]{3}\d{6}-\d{2}", 3)]
+    [InlineData("ab12ab12ab12ab12ab12", @"([A-z]{2}\d{2}){5}", 3)]
+    // Precision level 0 tests (least precise - non-whitespace)
+    [InlineData("Abc123", @"\S+", 0)]
+    [InlineData("Hello World", @"\S+", 0)]
+    // Precision level 1 tests (word characters)
+    [InlineData("Abc123", @"\w+", 1)]
+    [InlineData("Test456", @"\w+", 1)]
+    // Precision level 2 tests (word characters with count)
+    [InlineData("Abc123", @"\w{3}\w{3}", 2)]
+    [InlineData("Hello", @"\w{5}", 2)]
+    // Precision level 4 tests (individual character class per position with case variants)
+    [InlineData("Abc", @"[Aa][Bb][Cc]", 4)]
+    [InlineData("123", @"[1][2][3]", 4)]
+    [InlineData("Test", @"[Tt][Ee][Ss][Tt]", 4)]
+    // Precision level 5 tests (exact escaped string - most precise)
+    [InlineData("Abc123", @"Abc123", 5)]
+    [InlineData("Test", @"Test", 5)]
+    [InlineData("Hello World!", @"Hello\ World!", 5)]
+    public void ExtractSimplePatternFromEachString(string inputString, string expectedString, int precisionLevel)
     {
-        string actualString = inputString.ExtractSimplePattern();
+        string actualString = inputString.ExtractSimplePattern(precisionLevel);
         Assert.Equal(expectedString, actualString);
     }
 
