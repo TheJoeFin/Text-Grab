@@ -31,6 +31,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     private MatchCollection? Matches;
     private string stringFromWindow = "";
     private EditTextWindow? textEditWindow;
+    private ExtractedPattern? extractedPattern = null;
 
     #endregion Fields
 
@@ -49,19 +50,17 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     #region Properties
 
-    public List<FindResult> FindResults { get; set; } = new();
+    public List<FindResult> FindResults { get; set; } = [];
 
     public string StringFromWindow
     {
-        get { return stringFromWindow; }
-        set { stringFromWindow = value; }
+        get => stringFromWindow;
+        set => stringFromWindow = value;
     }
+
     public EditTextWindow? TextEditWindow
     {
-        get
-        {
-            return textEditWindow;
-        }
+        get => textEditWindow;
         set
         {
             textEditWindow = value;
@@ -248,10 +247,17 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         string? selection = textEditWindow.PassedTextControl.SelectedText;
 
-        string simplePattern = selection.ExtractSimplePattern();
+        // Generate all precision levels from the selected text
+        extractedPattern = new ExtractedPattern(selection);
+
+        int precisionLevel = (int)PrecisionSlider.Value;
+        string simplePattern = extractedPattern.GetPattern(precisionLevel);
 
         UsePaternCheckBox.IsChecked = true;
         FindTextBox.Text = simplePattern;
+
+        // Enable the slider now that we have an extracted pattern
+        PrecisionSlider.IsEnabled = true;
 
         SearchForText();
     }
@@ -267,6 +273,15 @@ public partial class FindAndReplaceWindow : FluentWindow
     private void FindTextBox_KeyUp(object sender, KeyEventArgs e)
     {
         ChangeFindTextTimer.Stop();
+
+        // Clear extracted pattern when user manually edits the find text
+        // This prevents the slider from trying to generate patterns from regex
+        if (extractedPattern is not null)
+        {
+            extractedPattern = null;
+            // Disable slider when there's no extracted pattern
+            PrecisionSlider.IsEnabled = false;
+        }
 
         if (e.Key == Key.Enter)
         {
@@ -420,6 +435,46 @@ public partial class FindAndReplaceWindow : FluentWindow
             else
                 this.Close();
         }
+    }
+
+    private void PrecisionSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        // Prevent event from firing during window initialization
+        if (!IsLoaded)
+            return;
+
+        // Only update if we have a previously extracted pattern
+        if (extractedPattern is null)
+            return;
+
+        // Only update if regex mode is enabled
+        if (UsePaternCheckBox?.IsChecked is not true)
+            return;
+
+        int precisionLevel = (int)e.NewValue;
+
+        // Get the pre-generated pattern at this precision level (instant, no recalculation!)
+        string pattern = extractedPattern.GetPattern(precisionLevel);
+
+        FindTextBox.Text = pattern;
+        SearchForText();
+    }
+
+    internal void FindByPattern(ExtractedPattern pattern)
+    {
+        // Store the ExtractedPattern so the slider can use it
+        extractedPattern = pattern;
+
+        // Get the pattern at the current slider position
+        int precisionLevel = (int)PrecisionSlider.Value;
+        FindTextBox.Text = pattern.GetPattern(precisionLevel);
+
+        UsePaternCheckBox.IsChecked = true;
+
+        // Enable the slider now that we have an extracted pattern
+        PrecisionSlider.IsEnabled = true;
+
+        SearchForText();
     }
 
     #endregion Methods
