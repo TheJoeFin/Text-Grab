@@ -73,6 +73,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     // Remember last non-collapsed width for the calc column
     private GridLength _lastCalcColumnWidth = new(1, GridUnitType.Star);
 
+    // Store extracted pattern and precision for mouse wheel adjustment
+    private ExtractedPattern? currentExtractedPattern = null;
+    private int currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+
     #endregion Fields
 
     #region Constructors
@@ -2480,12 +2484,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Show similar matches count using regex pattern
         if (DefaultSettings.EtwShowSimilarMatches && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
         {
-            string regexPattern = GenerateRegexPattern(selectedText);
+            // Generate and store the ExtractedPattern if the selection changed
+            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
+            {
+                currentExtractedPattern = new ExtractedPattern(selectedText);
+                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+            }
+
+            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
             int similarCount = CountRegexMatches(PassedTextControl.Text, regexPattern);
             if (SimilarMatchesButton.Content is TextBlock similarButton)
             {
                 similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
             }
+            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
+            SimilarMatchesButton.ToolTip = $"Click to Find and Replace with pattern (Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
             SimilarMatchesButton.Visibility = similarCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else
@@ -2496,14 +2509,22 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Show regex pattern
         if (DefaultSettings.EtwShowRegexPattern && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
         {
-            string regexPattern = GenerateRegexPattern(selectedText);
+            // Generate and store the ExtractedPattern if the selection changed
+            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
+            {
+                currentExtractedPattern = new ExtractedPattern(selectedText);
+                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+            }
+
+            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
             if (RegexPatternButton.Content is TextBlock regexButton)
             {
                 regexButton.Text = regexPattern.Length > 30
                     ? $"Regex: {regexPattern.Substring(0, 27)}..."
                     : $"Regex: {regexPattern}";
             }
-            RegexPatternButton.ToolTip = $"Click to Find and Replace with: {regexPattern}";
+            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
+            RegexPatternButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
             RegexPatternButton.Visibility = Visibility.Visible;
         }
         else
@@ -2587,7 +2608,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private string GenerateRegexPattern(string text)
     {
-        // Use ExtractedPattern to generate a regex pattern at default precision level
+        // Use the stored ExtractedPattern if available and matches current text
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == text)
+        {
+            return currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        }
+
+        // Otherwise create new pattern at default precision
         ExtractedPattern extractedPattern = new(text);
         return extractedPattern.GetPattern(ExtractedPattern.DefaultPrecisionLevel);
     }
@@ -2604,10 +2631,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (string.IsNullOrEmpty(selectedText))
             return;
 
-        string regexPattern = GenerateRegexPattern(selectedText);
-
-        // Create ExtractedPattern to pass to FindByPattern
-        ExtractedPattern extractedPattern = new(selectedText);
+        // Use the stored ExtractedPattern if available, otherwise create new one
+        ExtractedPattern extractedPattern;
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
+        {
+            extractedPattern = currentExtractedPattern;
+        }
+        else
+        {
+            extractedPattern = new ExtractedPattern(selectedText);
+        }
 
         // Launch Find and Replace with regex enabled
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
@@ -2623,8 +2656,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (string.IsNullOrEmpty(selectedText))
             return;
 
-        // Create ExtractedPattern to pass to FindByPattern
-        ExtractedPattern extractedPattern = new(selectedText);
+        // Use the stored ExtractedPattern if available, otherwise create new one
+        ExtractedPattern extractedPattern;
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
+        {
+            extractedPattern = currentExtractedPattern;
+        }
+        else
+        {
+            extractedPattern = new ExtractedPattern(selectedText);
+        }
 
         // Launch Find and Replace with regex enabled
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
@@ -2632,6 +2673,31 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.FindByPattern(extractedPattern);
         findAndReplaceWindow.Show();
+    }
+
+    private void PatternButton_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Only handle if we have a valid ExtractedPattern
+        if (currentExtractedPattern is null)
+            return;
+
+        // Adjust precision level based on scroll direction
+        if (e.Delta > 0)
+        {
+            // Scroll up = increase precision (more specific pattern)
+            currentPrecisionLevel = Math.Min(currentPrecisionLevel + 1, ExtractedPattern.MaxPrecisionLevel);
+        }
+        else if (e.Delta < 0)
+        {
+            // Scroll down = decrease precision (more general pattern)
+            currentPrecisionLevel = Math.Max(currentPrecisionLevel - 1, ExtractedPattern.MinPrecisionLevel);
+        }
+
+        // Update the UI to reflect the new precision level
+        UpdateSelectionSpecificUI();
+
+        // Mark the event as handled so it doesn't bubble up
+        e.Handled = true;
     }
 
     private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
