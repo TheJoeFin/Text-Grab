@@ -189,6 +189,30 @@
                     </TextBlock>
                 </ui:ToggleSwitch>
 
+                <StackPanel
+                    Margin="6,0,12,0"
+                    VerticalAlignment="Center"
+                    Orientation="Vertical">
+                    <TextBlock
+                        Margin="0,0,0,2"
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource TextBodyNormal}">
+                        Precision
+                    </TextBlock>
+                    <Slider
+                        x:Name="PrecisionSlider"
+                        Width="120"
+                        VerticalAlignment="Center"
+                        IsSnapToTickEnabled="True"
+                        Maximum="5"
+                        Minimum="0"
+                        TickFrequency="1"
+                        TickPlacement="BottomRight"
+                        ToolTip="Adjust regex pattern precision (0=least precise, 5=most precise)"
+                        ValueChanged="PrecisionSlider_ValueChanged"
+                        Value="3" />
+                </StackPanel>
+
                 <local:CollapsibleButton
                     x:Name="ExtractSimplePattern"
                     Width="140"

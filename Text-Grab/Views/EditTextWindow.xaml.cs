@@ -999,7 +999,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private static class DoubleUtil
     {
-        public static bool AreClose(double a, double b, double epsilon = 0.25) => Math.Abs(a - b) < epsilon;
+        public static bool AreClose(double a, double b, double epsilon = 0.25)
+        {
+            return Math.Abs(a - b) < epsilon;
+        }
     }
 
     private void SyncCalcScrollToMain()
@@ -2383,12 +2386,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
             int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
-            string text = DefaultSettings.EtwShowWordCount 
-                ? $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}" 
+            string text = DefaultSettings.EtwShowWordCount
+                ? $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}"
                 : $"Ln {lineNumber + 1}, Col {columnNumber}";
-            
+
             BottomBarText.Text = text;
-            
+
             // Hide selection-specific UI elements
             MatchCountButton.Visibility = Visibility.Collapsed;
             RegexPatternButton.Visibility = Visibility.Collapsed;
@@ -2418,7 +2421,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
             else
                 BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
-            
+
             // Update selection-specific UI elements
             UpdateSelectionSpecificUI();
         }
@@ -2427,7 +2430,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void UpdateSelectionSpecificUI()
     {
         string selectedText = PassedTextControl.SelectedText;
-        
+
         if (string.IsNullOrEmpty(selectedText))
         {
             MatchCountButton.Visibility = Visibility.Collapsed;
@@ -2443,7 +2446,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             char selectedChar = selectedText[0];
             int codePoint = char.ConvertToUtf32(selectedText, 0);
             string unicodeHex = $"U+{codePoint:X4}";
-            
+
             CharDetailsButtonText.Text = unicodeHex;
             CharDetailsButton.ToolTip = $"{unicodeHex}: {GetUnicodeCategory(selectedChar)}";
             CharDetailsButton.Visibility = Visibility.Visible;
@@ -2463,8 +2466,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (DefaultSettings.EtwShowMatchCount && !string.IsNullOrEmpty(selectedText))
         {
             int matchCount = CountMatches(PassedTextControl.Text, selectedText);
-            var matchButton = MatchCountButton.Content as TextBlock;
-            if (matchButton != null)
+            if (MatchCountButton.Content is TextBlock matchButton)
             {
                 matchButton.Text = matchCount == 1 ? "1 match" : $"{matchCount} matches";
             }
@@ -2480,8 +2482,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             string regexPattern = GenerateRegexPattern(selectedText);
             int similarCount = CountRegexMatches(PassedTextControl.Text, regexPattern);
-            var similarButton = SimilarMatchesButton.Content as TextBlock;
-            if (similarButton != null)
+            if (SimilarMatchesButton.Content is TextBlock similarButton)
             {
                 similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
             }
@@ -2496,11 +2497,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (DefaultSettings.EtwShowRegexPattern && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
         {
             string regexPattern = GenerateRegexPattern(selectedText);
-            var regexButton = RegexPatternButton.Content as TextBlock;
-            if (regexButton != null)
+            if (RegexPatternButton.Content is TextBlock regexButton)
             {
-                regexButton.Text = regexPattern.Length > 30 
-                    ? $"Regex: {regexPattern.Substring(0, 27)}..." 
+                regexButton.Text = regexPattern.Length > 30
+                    ? $"Regex: {regexPattern.Substring(0, 27)}..."
                     : $"Regex: {regexPattern}";
             }
             RegexPatternButton.ToolTip = $"Click to Find and Replace with: {regexPattern}";
@@ -2514,39 +2514,39 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private string GetUnicodeCategory(char c)
     {
-        var category = char.GetUnicodeCategory(c);
+        UnicodeCategory category = char.GetUnicodeCategory(c);
         return category switch
         {
-            System.Globalization.UnicodeCategory.UppercaseLetter => "Uppercase Letter",
-            System.Globalization.UnicodeCategory.LowercaseLetter => "Lowercase Letter",
-            System.Globalization.UnicodeCategory.TitlecaseLetter => "Titlecase Letter",
-            System.Globalization.UnicodeCategory.ModifierLetter => "Modifier Letter",
-            System.Globalization.UnicodeCategory.OtherLetter => "Other Letter",
-            System.Globalization.UnicodeCategory.NonSpacingMark => "Non-Spacing Mark",
-            System.Globalization.UnicodeCategory.SpacingCombiningMark => "Spacing Mark",
-            System.Globalization.UnicodeCategory.EnclosingMark => "Enclosing Mark",
-            System.Globalization.UnicodeCategory.DecimalDigitNumber => "Decimal Digit",
-            System.Globalization.UnicodeCategory.LetterNumber => "Letter Number",
-            System.Globalization.UnicodeCategory.OtherNumber => "Other Number",
-            System.Globalization.UnicodeCategory.SpaceSeparator => "Space Separator",
-            System.Globalization.UnicodeCategory.LineSeparator => "Line Separator",
-            System.Globalization.UnicodeCategory.ParagraphSeparator => "Paragraph Separator",
-            System.Globalization.UnicodeCategory.Control => "Control Character",
-            System.Globalization.UnicodeCategory.Format => "Format Character",
-            System.Globalization.UnicodeCategory.Surrogate => "Surrogate",
-            System.Globalization.UnicodeCategory.PrivateUse => "Private Use",
-            System.Globalization.UnicodeCategory.ConnectorPunctuation => "Connector Punctuation",
-            System.Globalization.UnicodeCategory.DashPunctuation => "Dash Punctuation",
-            System.Globalization.UnicodeCategory.OpenPunctuation => "Open Punctuation",
-            System.Globalization.UnicodeCategory.ClosePunctuation => "Close Punctuation",
-            System.Globalization.UnicodeCategory.InitialQuotePunctuation => "Initial Quote",
-            System.Globalization.UnicodeCategory.FinalQuotePunctuation => "Final Quote",
-            System.Globalization.UnicodeCategory.OtherPunctuation => "Other Punctuation",
-            System.Globalization.UnicodeCategory.MathSymbol => "Math Symbol",
-            System.Globalization.UnicodeCategory.CurrencySymbol => "Currency Symbol",
-            System.Globalization.UnicodeCategory.ModifierSymbol => "Modifier Symbol",
-            System.Globalization.UnicodeCategory.OtherSymbol => "Other Symbol",
-            System.Globalization.UnicodeCategory.OtherNotAssigned => "Not Assigned",
+            UnicodeCategory.UppercaseLetter => "Uppercase Letter",
+            UnicodeCategory.LowercaseLetter => "Lowercase Letter",
+            UnicodeCategory.TitlecaseLetter => "Titlecase Letter",
+            UnicodeCategory.ModifierLetter => "Modifier Letter",
+            UnicodeCategory.OtherLetter => "Other Letter",
+            UnicodeCategory.NonSpacingMark => "Non-Spacing Mark",
+            UnicodeCategory.SpacingCombiningMark => "Spacing Mark",
+            UnicodeCategory.EnclosingMark => "Enclosing Mark",
+            UnicodeCategory.DecimalDigitNumber => "Decimal Digit",
+            UnicodeCategory.LetterNumber => "Letter Number",
+            UnicodeCategory.OtherNumber => "Other Number",
+            UnicodeCategory.SpaceSeparator => "Space Separator",
+            UnicodeCategory.LineSeparator => "Line Separator",
+            UnicodeCategory.ParagraphSeparator => "Paragraph Separator",
+            UnicodeCategory.Control => "Control Character",
+            UnicodeCategory.Format => "Format Character",
+            UnicodeCategory.Surrogate => "Surrogate",
+            UnicodeCategory.PrivateUse => "Private Use",
+            UnicodeCategory.ConnectorPunctuation => "Connector Punctuation",
+            UnicodeCategory.DashPunctuation => "Dash Punctuation",
+            UnicodeCategory.OpenPunctuation => "Open Punctuation",
+            UnicodeCategory.ClosePunctuation => "Close Punctuation",
+            UnicodeCategory.InitialQuotePunctuation => "Initial Quote",
+            UnicodeCategory.FinalQuotePunctuation => "Final Quote",
+            UnicodeCategory.OtherPunctuation => "Other Punctuation",
+            UnicodeCategory.MathSymbol => "Math Symbol",
+            UnicodeCategory.CurrencySymbol => "Currency Symbol",
+            UnicodeCategory.ModifierSymbol => "Modifier Symbol",
+            UnicodeCategory.OtherSymbol => "Other Symbol",
+            UnicodeCategory.OtherNotAssigned => "Not Assigned",
             _ => "Unknown"
         };
     }
@@ -2555,16 +2555,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
             return 0;
-        
+
         int count = 0;
         int index = 0;
-        
+
         while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
         {
             count++;
             index += pattern.Length;
         }
-        
+
         return count;
     }
 
@@ -2572,7 +2572,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
             return 0;
-        
+
         try
         {
             MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
@@ -2587,9 +2587,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private string GenerateRegexPattern(string text)
     {
-        // Use ExtractSimplePattern to generate a regex pattern
-        string pattern = text.ExtractSimplePattern();
-        return pattern;
+        // Use ExtractedPattern to generate a regex pattern at default precision level
+        ExtractedPattern extractedPattern = new(text);
+        return extractedPattern.GetPattern(ExtractedPattern.DefaultPrecisionLevel);
     }
 
     private void MatchCountButton_Click(object sender, RoutedEventArgs e)
@@ -2603,17 +2603,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string selectedText = PassedTextControl.SelectedText;
         if (string.IsNullOrEmpty(selectedText))
             return;
-        
+
         string regexPattern = GenerateRegexPattern(selectedText);
-        
+
+        // Create ExtractedPattern to pass to FindByPattern
+        ExtractedPattern extractedPattern = new(selectedText);
+
         // Launch Find and Replace with regex enabled
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
         findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.FindTextBox.Text = regexPattern;
-        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
+        findAndReplaceWindow.FindByPattern(extractedPattern);
         findAndReplaceWindow.Show();
-        findAndReplaceWindow.SearchForText();
     }
 
     private void RegexPatternButton_Click(object sender, RoutedEventArgs e)
@@ -2621,23 +2622,22 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string selectedText = PassedTextControl.SelectedText;
         if (string.IsNullOrEmpty(selectedText))
             return;
-        
-        string regexPattern = GenerateRegexPattern(selectedText);
-        
+
+        // Create ExtractedPattern to pass to FindByPattern
+        ExtractedPattern extractedPattern = new(selectedText);
+
         // Launch Find and Replace with regex enabled
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
         findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.FindTextBox.Text = regexPattern;
-        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
+        findAndReplaceWindow.FindByPattern(extractedPattern);
         findAndReplaceWindow.Show();
-        findAndReplaceWindow.SearchForText();
     }
 
     private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
     {
         string selectedText = PassedTextControl.SelectedText;
-        
+
         if (string.IsNullOrEmpty(selectedText))
             return;
 
@@ -2648,7 +2648,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Show details for single character in multi-line TextBox
             char c = selectedText[0];
             string details = GetCharacterDetailsText(c);
-            
+
             System.Windows.Controls.TextBox detailsTextBox = new()
             {
                 Text = details,
@@ -2675,7 +2675,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 char c = selectedText[i];
                 allDetails.AppendLine(GetCharacterDetailsText(c));
-                
+
                 if (i < charLimit - 1)
                     allDetails.AppendLine(); // Add blank line between characters
             }
@@ -2709,17 +2709,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int codePoint = char.ConvertToUtf32(c.ToString(), 0);
         string unicodeHex = $"U+{codePoint:X4}";
         string category = GetUnicodeCategory(c);
-        
+
         StringBuilder details = new();
         details.AppendLine($"Character: '{c}'");
         details.AppendLine($"Unicode: {unicodeHex} (decimal: {codePoint})");
         details.AppendLine($"Category: {category}");
-        
+
         // UTF-8 encoding
         byte[] utf8Bytes = Encoding.UTF8.GetBytes(c.ToString());
         string utf8Hex = string.Join(" ", utf8Bytes.Select(b => $"0x{b:X2}"));
         details.AppendLine($"UTF-8: {utf8Hex}");
-        
+
         // HTML entity if applicable
         if (codePoint < 128 || IsCommonHtmlEntity(c))
         {
@@ -2729,7 +2729,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 details.AppendLine($"HTML: {htmlEntity}");
             }
         }
-        
+
         return details.ToString().TrimEnd();
     }
 
