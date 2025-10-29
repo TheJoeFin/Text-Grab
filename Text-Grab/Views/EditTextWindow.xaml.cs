@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -2399,6 +2400,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Hide selection-specific UI elements
             MatchCountButton.Visibility = Visibility.Collapsed;
             RegexPatternButton.Visibility = Visibility.Collapsed;
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
             CharDetailsButton.Visibility = Visibility.Collapsed;
         }
         else
@@ -2644,9 +2646,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Launch Find and Replace with regex enabled
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindTextBox.Text = extractedPattern.GetPattern(currentPrecisionLevel);
+        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
         findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.FindByPattern(extractedPattern);
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
         findAndReplaceWindow.Show();
     }
 
@@ -2669,9 +2672,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Launch Find and Replace with regex enabled
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindTextBox.Text = extractedPattern.GetPattern(currentPrecisionLevel);
+        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
         findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.FindByPattern(extractedPattern);
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
         findAndReplaceWindow.Show();
     }
 
@@ -2828,7 +2832,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Focus();
     }
 
-    private void Window_Closed(object? sender, EventArgs e)
+    private void Window_Closed(object sender, EventArgs e)
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
         DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
@@ -3216,8 +3220,356 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private void RegexManagerMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.Show();
+    }
+
+    private void SaveCurrentPatternToRegexManager()
+    {
+        if (currentExtractedPattern is null)
+            return;
+
+        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        string sourceText = currentExtractedPattern.OriginalText;
+
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.AddPatternFromText(pattern, sourceText);
+        regexManager.Show();
+    }
+
+    private void LoadStoredPatternToSelection(StoredRegex storedPattern)
+    {
+        if (storedPattern is null)
+            return;
+
+        // Open Find and Replace window with this pattern
+        FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findWindow.FindTextBox.Text = storedPattern.Pattern;
+        findWindow.UsePaternCheckBox.IsChecked = true;
+        findWindow.TextEditWindow = this;
+        findWindow.StringFromWindow = PassedTextControl.Text;
+        findWindow.Show();
+    }
+
+    private void ShowRegexExplanation()
+    {
+        if (currentExtractedPattern is null)
+            return;
+
+        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        string explanation = ExplainRegexPattern(pattern);
+
+        Wpf.Ui.Controls.MessageBox messageBox = new()
+        {
+            Title = "Regex Pattern Explanation",
+            Content = explanation,
+            CloseButtonText = "Close"
+        };
+        _ = messageBox.ShowDialogAsync();
+    }
+
+    private void ExplainPatternMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
+
+        if (string.IsNullOrEmpty(pattern))
+            return;
+
+        // Clear previous content
+        CharDetailsPopupContent.Children.Clear();
+
+        // Create explanation text
+        string explanation = ExplainRegexPattern(pattern);
+
+        System.Windows.Controls.TextBox explanationTextBox = new()
+        {
+            Text = explanation,
+            FontSize = 12,
+            IsReadOnly = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            TextWrapping = TextWrapping.Wrap,
+            Cursor = System.Windows.Input.Cursors.Arrow,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MaxHeight = 400,
+            Padding = new Thickness(8)
+        };
+
+        CharDetailsPopupContent.Children.Add(explanationTextBox);
+        CharDetailsPopup.IsOpen = true;
+    }
+
+    private string ExplainRegexPattern(string pattern)
+    {
+        StringBuilder explanation = new();
+        explanation.AppendLine($"Pattern: {pattern}");
+        explanation.AppendLine();
+
+        int i = 0;
+        while (i < pattern.Length)
+        {
+            char c = pattern[i];
+
+            if (c == '\\' && i + 1 < pattern.Length)
+            {
+                char next = pattern[i + 1];
+                switch (next)
+                {
+                    case 'd':
+                        explanation.AppendLine($"\\d - Matches any digit (0-9)");
+                        i += 2;
+                        break;
+                    case 's':
+                        explanation.AppendLine($"\\s - Matches any whitespace character");
+                        i += 2;
+                        break;
+                    case 'w':
+                        explanation.AppendLine($"\\w - Matches any word character (letter, digit, or underscore)");
+                        i += 2;
+                        break;
+                    case 'S':
+                        explanation.AppendLine($"\\S - Matches any non-whitespace character");
+                        i += 2;
+                        break;
+                    case 'W':
+                        explanation.AppendLine($"\\W - Matches any non-word character");
+                        i += 2;
+                        break;
+                    case 'D':
+                        explanation.AppendLine($"\\D - Matches any non-digit");
+                        i += 2;
+                        break;
+                    default:
+                        explanation.AppendLine($"\\{next} - Escaped special character '{next}'");
+                        i += 2;
+                        break;
+                }
+            }
+            else if (c == '[')
+            {
+                int closeBracket = pattern.IndexOf(']', i);
+                if (closeBracket > i)
+                {
+                    string charClass = pattern.Substring(i, closeBracket - i + 1);
+                    explanation.AppendLine($"{charClass} - Character class: matches one of these characters");
+                    i = closeBracket + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '{' && i + 1 < pattern.Length)
+            {
+                int closeBrace = pattern.IndexOf('}', i);
+                if (closeBrace > i)
+                {
+                    string quantifier = pattern.Substring(i, closeBrace - i + 1);
+                    explanation.AppendLine($"{quantifier} - Quantifier: repeat the previous element exactly this many times");
+                    i = closeBrace + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '(')
+            {
+                int closeParen = pattern.IndexOf(')', i);
+                if (closeParen > i)
+                {
+                    string group = pattern.Substring(i, closeParen - i + 1);
+                    explanation.AppendLine($"{group} - Capturing group");
+                    i = closeParen + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '+')
+            {
+                explanation.AppendLine($"+ - One or more of the previous element");
+                i++;
+            }
+            else if (c == '*')
+            {
+                explanation.AppendLine($"* - Zero or more of the previous element");
+                i++;
+            }
+            else if (c == '?')
+            {
+                explanation.AppendLine($"? - Zero or one of the previous element (optional)");
+                i++;
+            }
+            else if (c == '.')
+            {
+                explanation.AppendLine($". - Matches any single character");
+                i++;
+            }
+            else if (c == '^')
+            {
+                explanation.AppendLine($"^ - Start of line/string");
+                i++;
+            }
+            else if (c == '$')
+            {
+                explanation.AppendLine($"$ - End of line/string");
+                i++;
+            }
+            else
+            {
+                i++;
+            }
+        }
+
+        return explanation.ToString();
+    }
+
     [GeneratedRegex(@"(\r\n|\n|\r)")]
     private static partial Regex NewlineReturns();
 
     #endregion Methods
+
+    private void SavePatternMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
+
+        if (string.IsNullOrEmpty(pattern))
+            return;
+
+        // open the RegexManager and save this pattern
+
+    }
+
+    private void UsePatternMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
+
+    private void PatternContextOpening(object sender, ContextMenuEventArgs e)
+    {
+        // sender should be a button if not return
+        if (sender is not System.Windows.Controls.Button button)
+            return;
+
+        // get the context menu
+        if (button.ContextMenu is null)
+            return;
+
+        ContextMenu contextMenu = button.ContextMenu;
+
+        // Clear existing dynamic items (keep original static items)
+        // Find if "Use Pattern" menu item already exists, remove it to rebuild
+        MenuItem? existingUsePatternItem = null;
+        foreach (var item in contextMenu.Items)
+        {
+            if (item is MenuItem mi && mi.Header?.ToString() == "Use Pattern")
+            {
+                existingUsePatternItem = mi;
+                break;
+            }
+        }
+
+        if (existingUsePatternItem is not null)
+            contextMenu.Items.Remove(existingUsePatternItem);
+
+        // make a context menu item for "use this pattern"
+        MenuItem usePatternMenuItem = new()
+        {
+            Header = "Use Pattern"
+        };
+
+        // add all patterns from regex manager as menu items as children to the new "use this pattern" item
+        List<StoredRegex> storedPatterns = LoadRegexPatterns();
+
+        if (storedPatterns.Count == 0)
+        {
+            MenuItem noPatternItem = new()
+            {
+                Header = "No saved patterns",
+                IsEnabled = false
+            };
+            usePatternMenuItem.Items.Add(noPatternItem);
+        }
+        else
+        {
+            foreach (StoredRegex storedPattern in storedPatterns)
+            {
+                MenuItem patternItem = new()
+                {
+                    Header = storedPattern.Name,
+                    ToolTip = storedPattern.Pattern,
+                    Tag = storedPattern
+                };
+
+                // wire up click event to override the currentExtractedPattern
+                patternItem.Click += (s, args) =>
+                {
+                    if (s is MenuItem clickedItem && clickedItem.Tag is StoredRegex selectedPattern)
+                    {
+                        // Create a new ExtractedPattern from the stored pattern
+                        // Use the pattern's description or name as the source text
+                        string sourceText = string.IsNullOrWhiteSpace(selectedPattern.Description)
+                            ? selectedPattern.Name
+                            : selectedPattern.Description;
+
+                        // Override the current extracted pattern with the selected stored pattern
+                        currentExtractedPattern = new ExtractedPattern(sourceText);
+                        currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+
+                        // Update the UI to reflect the new pattern
+                        UpdateSelectionSpecificUI();
+
+                        // Optionally open Find and Replace with this pattern
+                        LoadStoredPatternToSelection(selectedPattern);
+                    }
+                };
+
+                usePatternMenuItem.Items.Add(patternItem);
+            }
+        }
+
+        // Add separator before the "Use Pattern" item
+        contextMenu.Items.Add(new Separator());
+        
+        // Add the "Use Pattern" menu item to the context menu
+        contextMenu.Items.Add(usePatternMenuItem);
+    }
+
+    private List<StoredRegex> LoadRegexPatterns()
+    {
+        List<StoredRegex> returnRegexes = [];
+
+        // Load from settings
+        string regexListJson = DefaultSettings.RegexList;
+
+        if (!string.IsNullOrWhiteSpace(regexListJson))
+        {
+            try
+            {
+                StoredRegex[]? loadedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
+                if (loadedPatterns is not null)
+                {
+                    foreach (StoredRegex pattern in loadedPatterns)
+                        returnRegexes.Add(pattern);
+                }
+            }
+            catch (JsonException)
+            {
+                // If deserialization fails, start fresh
+            }
+        }
+
+        // Add default patterns if list is empty
+        if (returnRegexes.Count == 0)
+        {
+            foreach (StoredRegex defaultPattern in StoredRegex.GetDefaultPatterns())
+                returnRegexes.Add(defaultPattern);
+        }
+
+        return returnRegexes;
+    }
 }

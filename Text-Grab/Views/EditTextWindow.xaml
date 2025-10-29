@@ -761,14 +761,27 @@
                         Background="Transparent"
                         BorderThickness="0"
                         Click="SimilarMatchesButton_Click"
-                        MouseWheel="PatternButton_MouseWheel"
+                        ContextMenuOpening="PatternContextOpening"
                         Cursor="Hand"
+                        MouseWheel="PatternButton_MouseWheel"
                         ToolTip="Click to Find and Replace with pattern"
                         Visibility="Collapsed">
                         <TextBlock
                             FontFamily="Cascadia Mono"
                             FontSize="12"
                             Text="0 similar" />
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem
+                                    x:Name="SavePatternMenuItem"
+                                    Click="SavePatternMenuItem_Click"
+                                    Header="Save Pattern" />
+                                <MenuItem
+                                    x:Name="ExplainPatternMenuItem"
+                                    Click="ExplainPatternMenuItem_Click"
+                                    Header="Explain Pattern" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
                     </Button>
                     <Button
                         x:Name="RegexPatternButton"
@@ -777,8 +790,8 @@
                         Background="Transparent"
                         BorderThickness="0"
                         Click="RegexPatternButton_Click"
-                        MouseWheel="PatternButton_MouseWheel"
                         Cursor="Hand"
+                        MouseWheel="PatternButton_MouseWheel"
                         ToolTip="Click to open Find and Replace with regex"
                         Visibility="Collapsed">
                         <TextBlock
