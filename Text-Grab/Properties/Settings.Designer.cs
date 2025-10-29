@@ -754,5 +754,17 @@ namespace Text_Grab.Properties {
                 this["EtwShowSimilarMatches"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string RegexList {
+            get {
+                return ((string)(this["RegexList"]));
+            }
+            set {
+                this["RegexList"] = value;
+            }
+        }
     }
 }
