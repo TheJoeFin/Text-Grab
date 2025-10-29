@@ -460,6 +460,13 @@ public partial class FindAndReplaceWindow : FluentWindow
         SearchForText();
     }
 
+    private void ManageRegexButton_Click(object sender, RoutedEventArgs e)
+    {
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.Owner = this;
+        regexManager.Show();
+    }
+
     internal void FindByPattern(ExtractedPattern pattern)
     {
         // Store the ExtractedPattern so the slider can use it

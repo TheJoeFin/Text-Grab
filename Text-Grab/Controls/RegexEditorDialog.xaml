@@ -1,0 +1,84 @@
+<ui:FluentWindow
+    x:Class="Text_Grab.Controls.RegexEditorDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Edit Regex Pattern"
+    Width="600"
+    Height="400"
+    MinWidth="500"
+    MinHeight="350"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+       <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+ <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+      <ui:TitleBar
+Title="Edit Regular Expression"
+    Height="32"
+    Margin="2,2,2,0"
+            Padding="8,2"
+       Icon="{StaticResource TextGrabIcon}" />
+
+        <StackPanel Grid.Row="1" Margin="12">
+  <TextBlock Margin="0,0,0,4" Text="Name:" />
+            <TextBox
+         x:Name="NameTextBox"
+       Margin="0,0,0,12"
+      TextChanged="ValidateInput" />
+
+            <TextBlock Margin="0,0,0,4" Text="Pattern:" />
+            <TextBox
+        x:Name="PatternTextBox"
+       Height="80"
+     Margin="0,0,0,12"
+            AcceptsReturn="True"
+         TextWrapping="Wrap"
+      VerticalScrollBarVisibility="Auto"
+   TextChanged="ValidateInput" />
+
+        <TextBlock Margin="0,0,0,4" Text="Description:" />
+            <TextBox
+   x:Name="DescriptionTextBox"
+    Height="60"
+     Margin="0,0,0,12"
+          AcceptsReturn="True"
+                TextWrapping="Wrap"
+          VerticalScrollBarVisibility="Auto" />
+
+         <TextBlock
+       x:Name="ErrorText"
+    Margin="0,0,0,6"
+       Foreground="Red"
+                Text=""
+     Visibility="Collapsed" />
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="2"
+   Margin="12,0,12,12"
+       HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <ui:Button
+          x:Name="SaveButton"
+ Margin="0,0,6,0"
+        Appearance="Primary"
+       Click="SaveButton_Click"
+    Content="Save"
+     IsEnabled="False" />
+   <ui:Button
+        Click="CancelButton_Click"
+                Content="Cancel" />
+        </StackPanel>
+ </Grid>
+</ui:FluentWindow>
