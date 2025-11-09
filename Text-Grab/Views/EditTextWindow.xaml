@@ -790,6 +790,7 @@
                         Background="Transparent"
                         BorderThickness="0"
                         Click="RegexPatternButton_Click"
+                        ContextMenuOpening="PatternContextOpening"
                         Cursor="Hand"
                         MouseWheel="PatternButton_MouseWheel"
                         ToolTip="Click to open Find and Replace with regex"
@@ -798,6 +799,18 @@
                             FontFamily="Cascadia Mono"
                             FontSize="12"
                             Text="Regex: " />
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem
+                                    x:Name="SavePatternMenuItem2"
+                                    Click="SavePatternMenuItem_Click"
+                                    Header="Save Pattern" />
+                                <MenuItem
+                                    x:Name="ExplainPatternMenuItem2"
+                                    Click="ExplainPatternMenuItem_Click"
+                                    Header="Explain Pattern" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
                     </Button>
                     <Button
                         x:Name="CharDetailsButton"
