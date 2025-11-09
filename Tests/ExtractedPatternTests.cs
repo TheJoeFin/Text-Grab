@@ -18,6 +18,23 @@ public class ExtractedPatternTests
         Assert.NotNull(extractedPattern);
         Assert.Equal(input, extractedPattern.OriginalText);
         Assert.Equal(6, extractedPattern.AllPatterns.Count); // 0-5 = 6 levels
+        Assert.False(extractedPattern.IgnoreCase); // Default should be case-sensitive
+    }
+
+    [Fact]
+    public void Constructor_WithIgnoreCase_GeneratesAllPrecisionLevels()
+    {
+        // Given
+        string input = "Abc123";
+
+        // When
+        ExtractedPattern extractedPattern = new(input, ignoreCase: true);
+
+        // Then
+        Assert.NotNull(extractedPattern);
+        Assert.Equal(input, extractedPattern.OriginalText);
+        Assert.Equal(6, extractedPattern.AllPatterns.Count); // 0-5 = 6 levels
+        Assert.True(extractedPattern.IgnoreCase);
     }
 
     [Theory]
@@ -368,5 +385,409 @@ DATA001 data001 DaTa001 INFO999
         Assert.True(matchCounts[3] <= matchCounts[2], "Level 3 should be <= Level 2");
         Assert.True(matchCounts[4] <= matchCounts[3], "Level 4 should be <= Level 3");
         Assert.True(matchCounts[5] <= matchCounts[4], "Level 5 should be <= Level 4");
+    }
+
+    // DetermineStartingLevel Tests
+
+    [Theory]
+    [InlineData("a", 5)]           // Single character -> exact match
+    [InlineData("AB", 4)]          // 2-4 characters -> per-character
+    [InlineData("xyz", 4)]         // 2-4 characters -> per-character
+    [InlineData("test", 4)]        // 2-4 characters -> per-character
+    public void DetermineStartingLevel_ShortText_ReturnsHighPrecision(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Fact]
+    public void DetermineStartingLevel_LongText_ReturnsLowerPrecision()
+    {
+        // Given - Text longer than 25 characters
+        string longText = "This is a very long string that exceeds the limit";
+
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(longText);
+
+        // Then
+        Assert.Equal(2, actualLevel); // Should return length-based pattern
+    }
+
+    [Theory]
+    [InlineData("123", 2)]          // Pure numbers
+    [InlineData("4567", 2)]         // Pure numbers
+    [InlineData("999", 2)]          // Pure numbers
+    [InlineData("12345", 2)]        // Pure numbers (5 digits, not too long)
+    public void DetermineStartingLevel_PureNumbers_ReturnsLengthFlexible(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Theory]
+    [InlineData("ABC-123", 3)]      // Has delimiter
+    [InlineData("user_456", 3)]     // Has delimiter
+    [InlineData("ID:789", 3)]       // Has delimiter
+    [InlineData("file.txt", 3)]     // Has delimiter
+    public void DetermineStartingLevel_AlphanumericWithDelimiters_ReturnsSeparatorAgnostic(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Theory]
+    [InlineData("the quick brown", 1)]      // 3 words
+    [InlineData("one two three four", 1)]   // 4 words
+    [InlineData("hello world again", 1)]    // 3 words
+    public void DetermineStartingLevel_MultipleWords_ReturnsStructureOnly(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Theory]
+    [InlineData("user123", 3)]      // Mixed letters and numbers, no spaces
+    [InlineData("AB12CD", 3)]       // Mixed letters and numbers, no spaces
+    [InlineData("test456", 3)]      // Mixed letters and numbers, no spaces
+    public void DetermineStartingLevel_AlphanumericMixed_ReturnsCharacterClass(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Theory]
+    [InlineData("Hello", 4)]        // Simple word
+    [InlineData("World", 4)]        // Simple word
+    [InlineData("Test", 4)]         // Simple word (2-4 chars, but all letters so treated as simple word)
+    [InlineData("Testing", 4)]      // Simple word (longer than 4 chars)
+    public void DetermineStartingLevel_SimpleWord_ReturnsCaseInsensitive(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Theory]
+    [InlineData("#42", 4)]          // Has special chars, but 2-4 char range (3 chars) -> per-character
+    [InlineData("@joe", 4)]         // Has special chars, but 2-4 char range (4 chars) -> per-character  
+    [InlineData("v1.2", 3)]         // Has multiple delimiters (2 dots) -> separator-agnostic
+    [InlineData("$USD", 4)]         // Has special chars, but 2-4 char range (4 chars) -> per-character
+    [InlineData("#hashtag", 3)]     // Has special chars, longer than 4 chars -> separator-agnostic
+    public void DetermineStartingLevel_SpecialCharsShort_ReturnsSeparatorAgnostic(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Theory]
+    [InlineData("", 3)]             // Empty string
+    [InlineData("   ", 3)]          // Whitespace only
+    [InlineData(null, 3)]           // Null
+    public void DetermineStartingLevel_EmptyOrWhitespace_ReturnsDefault(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Theory]
+    [InlineData("123-456-7890", 3)] // Phone number pattern (has delimiters)
+    [InlineData("XX-YY-ZZ", 3)]     // Repeating pattern with delimiters
+    [InlineData("ID_001_ABC", 3)]   // Multiple delimiters
+    public void DetermineStartingLevel_RepeatingPatterns_ReturnsCharacterClass(string input, int expectedLevel)
+    {
+        // When
+        int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
+
+        // Then
+        Assert.Equal(expectedLevel, actualLevel);
+    }
+
+    [Fact]
+    public void DetermineStartingLevel_RealWorldExamples_ProduceSensibleDefaults()
+    {
+        // Given - Various real-world examples
+        var testCases = new Dictionary<string, int>
+        {
+            // Short exact matches
+            { "5", 5 },                             // Single char
+            { "OK", 4 },                            // Very short (2 chars)
+            
+            // IDs and codes
+            { "USR123", 3 },                        // User ID (mixed alphanumeric)
+            { "ABC-DEF", 3 },                       // Code with delimiter
+            { "item_42", 3 },                       // Underscore-separated
+            
+            // Numbers
+            { "42", 2 },                            // Short number (2 chars, all digits)
+            { "12345", 2 },                         // Longer number sequence
+            
+            // Words
+            { "name", 4 },                          // Simple word (4 chars)
+            { "hello world", 3 },                   // Two words with space delimiter (11 chars total, simple)
+            { "one two three", 1 },                 // Three words
+            
+            // Long strings
+            { "This is a longer string that exceeds the limit", 2 }, // > 25 chars
+            
+            // Special characters
+            { "@user", 3 },                         // Symbol prefix (5 chars, has special char)
+            { "v2.0.1", 3 },                        // Version number (multiple delimiters)
+            { "#tag", 4 },                          // Hashtag (4 chars, in 2-4 range)
+        };
+
+        // When/Then
+        foreach (var testCase in testCases)
+        {
+            int actualLevel = ExtractedPattern.DetermineStartingLevel(testCase.Key);
+            Assert.Equal(testCase.Value, actualLevel);
+        }
+    }
+
+    [Fact]
+    public void DetermineStartingLevel_EdgeCases_HandledGracefully()
+    {
+        // Given - Edge cases
+        Assert.Equal(3, ExtractedPattern.DetermineStartingLevel(""));       // Empty -> default
+        Assert.Equal(3, ExtractedPattern.DetermineStartingLevel(null));     // Null -> default
+        Assert.Equal(3, ExtractedPattern.DetermineStartingLevel("   "));    // Whitespace only -> default (trims to empty)
+        Assert.Equal(3, ExtractedPattern.DetermineStartingLevel("\t"));     // Single tab -> default (whitespace-only)
+        Assert.Equal(5, ExtractedPattern.DetermineStartingLevel(" a "));    // Single char with spaces (trims to 1 char)
+    }
+
+    // Case Sensitivity Tests
+
+    [Theory]
+    [InlineData("Abc123", 0, false, @"\S+")]
+    [InlineData("Abc123", 0, true, @"(?i)\S+")]
+    [InlineData("Abc123", 1, false, @"\w+")]
+    [InlineData("Abc123", 1, true, @"(?i)\w+")]
+    [InlineData("Abc123", 2, false, @"\w{3}\w{3}")]
+    [InlineData("Abc123", 2, true, @"(?i)\w{3}\w{3}")]
+    [InlineData("Abc123", 3, false, @"[A-z]{3}\d{3}")]
+    [InlineData("Abc123", 3, true, @"(?i)[A-z]{3}\d{3}")]
+    [InlineData("Abc123", 4, false, @"[Aa][Bb][Cc][1][2][3]")]
+    [InlineData("Abc123", 4, true, @"(?i)[Aa][Bb][Cc][1][2][3]")]
+    [InlineData("Abc123", 5, false, @"Abc123")]
+    [InlineData("Abc123", 5, true, @"(?i)Abc123")]
+    public void ExtractSimplePattern_WithCaseSensitivity_IncludesCorrectFlag(
+        string input, int level, bool ignoreCase, string expectedPattern)
+    {
+        // When
+        string actualPattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, level, ignoreCase);
+
+        // Then
+        Assert.Equal(expectedPattern, actualPattern);
+    }
+
+    [Fact]
+    public void ExtractSimplePattern_CaseInsensitive_MatchesDifferentCases()
+    {
+        // Given
+        string input = "Test";
+        string text = "test TEST TeSt Test testing";
+
+        // When - Generate case-insensitive pattern
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 5, ignoreCase: true);
+        MatchCollection matches = Regex.Matches(text, pattern);
+
+        // Then - Should match all case variations
+        Assert.Equal(5, matches.Count); // test, TEST, TeSt, Test (not "testing")
+        Assert.Contains("(?i)", pattern); // Verify inline flag is present
+    }
+
+    [Fact]
+    public void ExtractSimplePattern_CaseSensitive_MatchesExactCase()
+    {
+        // Given
+        string input = "Test";
+        string text = "test TEST TeSt Test testing";
+
+        // When - Generate case-sensitive pattern (default)
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 5, ignoreCase: false);
+        MatchCollection matches = Regex.Matches(text, pattern);
+
+        // Then - Should match only exact case
+        Assert.Equal(1, matches.Count); // Only "Test"
+        Assert.DoesNotContain("(?i)", pattern); // Verify inline flag is NOT present
+    }
+
+    [Theory]
+    [InlineData("Hello", 0, true)]
+    [InlineData("World123", 1, true)]
+    [InlineData("Test42", 2, true)]
+    [InlineData("ABC", 3, true)]
+    [InlineData("xyz", 4, true)]
+    [InlineData("Pattern", 5, true)]
+    public void ExtractSimplePattern_AllLevels_SupportCaseInsensitiveFlag(string input, int level, bool ignoreCase)
+    {
+        // When
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, level, ignoreCase);
+
+        // Then
+        if (ignoreCase)
+        {
+            Assert.StartsWith("(?i)", pattern);
+        }
+        else
+        {
+            Assert.DoesNotContain("(?i)", pattern);
+        }
+    }
+
+    [Fact]
+    public void ExtractSimplePattern_DefaultCaseSensitivity_IsFalse()
+    {
+        // Given
+        string input = "Test";
+
+        // When - Call without specifying ignoreCase (using default)
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 3);
+
+        // Then - Default should be case-sensitive (no flag)
+        Assert.DoesNotContain("(?i)", pattern);
+    }
+
+    [Fact]
+    public void ExtractSimplePattern_CaseInsensitive_CrossPlatformCompatible()
+    {
+        // Given
+        string input = "Test123";
+        string text = "test123 TEST123 TeSt123 Test123";
+
+        // When - Generate pattern with inline flag
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 5, ignoreCase: true);
+
+        // Create regex without RegexOptions to verify inline flag works standalone
+        Regex regex = new Regex(pattern);
+        MatchCollection matches = regex.Matches(text);
+
+        // Then - Inline flag should make it case-insensitive without needing RegexOptions
+        Assert.Equal(4, matches.Count);
+        Assert.Contains("(?i)", pattern);
+    }
+
+    [Theory]
+    [InlineData("ABC", "abc ABC aBc", 3, true)] // Level 3: character types with counts
+    [InlineData("ABC", "abc ABC aBc", 3, false)] // Level 3: character types with counts
+    [InlineData("123", "123 456", 2, true)] // Level 2: length-based
+    [InlineData("Test", "test TEST", 4, true)] // Level 4: per-character
+    public void ExtractSimplePattern_CaseFlag_AffectsMatchBehavior(
+        string input, string text, int level, bool ignoreCase)
+    {
+        // When
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, level, ignoreCase);
+        Regex regex = new Regex(pattern);
+        int matchCount = regex.Matches(text).Count;
+
+        // Then - Case-insensitive should find more or equal matches
+        if (ignoreCase)
+        {
+            Assert.True(matchCount > 0, "Case-insensitive pattern should find matches");
+        }
+
+        // Verify flag presence
+        Assert.Equal(ignoreCase, pattern.Contains("(?i)"));
+    }
+
+    [Fact]
+    public void ExtractSimplePattern_ComplexPattern_WithCaseInsensitivity()
+    {
+        // Given
+        string input = "Hello World!";
+        string text = "hello world! HELLO WORLD! HeLLo WoRLd!";
+
+        // When - Level 3 with case insensitivity
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 3, ignoreCase: true);
+        Regex regex = new Regex(pattern);
+        MatchCollection matches = regex.Matches(text);
+
+        // Then
+        Assert.Contains("(?i)", pattern);
+        Assert.Equal(3, matches.Count); // All three variations should match
+    }
+
+    [Fact]
+    public void ExtractedPattern_IgnoreCaseProperty_RegeneratesPatterns()
+    {
+        // Given
+        string input = "Test";
+        ExtractedPattern extractedPattern = new(input, ignoreCase: false);
+
+        // When - Get pattern before changing case sensitivity
+        string caseSensitivePattern = extractedPattern.GetPattern(5);
+        Assert.DoesNotContain("(?i)", caseSensitivePattern);
+
+        // Change to case-insensitive
+        extractedPattern.IgnoreCase = true;
+        string caseInsensitivePattern = extractedPattern.GetPattern(5);
+
+        // Then
+        Assert.Contains("(?i)", caseInsensitivePattern);
+        Assert.NotEqual(caseSensitivePattern, caseInsensitivePattern);
+
+        // Change back to case-sensitive
+        extractedPattern.IgnoreCase = false;
+        string backToCaseSensitive = extractedPattern.GetPattern(5);
+
+        Assert.DoesNotContain("(?i)", backToCaseSensitive);
+        Assert.Equal(caseSensitivePattern, backToCaseSensitive);
+    }
+
+    [Fact]
+    public void ExtractedPattern_WithIgnoreCase_AllPatternsHaveFlag()
+    {
+        // Given
+        string input = "Abc123";
+        ExtractedPattern extractedPattern = new(input, ignoreCase: true);
+
+        // When/Then - All patterns should have the (?i) flag
+        for (int level = 0; level <= 5; level++)
+        {
+            string pattern = extractedPattern.GetPattern(level);
+            Assert.StartsWith("(?i)", pattern);
+        }
+    }
+
+    [Fact]
+    public void ExtractedPattern_DefaultIgnoreCase_IsFalse()
+    {
+        // Given
+        string input = "Test";
+
+        // When
+        ExtractedPattern extractedPattern = new(input);
+
+        // Then
+        Assert.False(extractedPattern.IgnoreCase);
+
+        // Verify no patterns have the flag
+        for (int level = 0; level <= 5; level++)
+        {
+            string pattern = extractedPattern.GetPattern(level);
+            Assert.DoesNotContain("(?i)", pattern);
+        }
     }
 }
