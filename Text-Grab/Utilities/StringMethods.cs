@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Text_Grab.Utilities;
 
-public static class StringMethods
+public static partial class StringMethods
 {
     public static readonly List<Char> specialCharList = [
         '\\', ' ', '.', ',', '$', '^', '{', '[', '(', '|', ')',
@@ -300,7 +300,7 @@ public static class StringMethods
         workingString.Replace('\n', ' ');
         workingString.Replace('\r', ' ');
 
-        Regex regex = new("[ ]{2,}");
+        Regex regex = MultiSpaces();
         string temp = regex.Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
@@ -387,7 +387,7 @@ public static class StringMethods
         foreach (char reservedChar in ReservedChars)
             sb.Replace(reservedChar, '-');
 
-        return Regex.Replace(sb.ToString(), @"-+", "-");
+        return MultiDashes().Replace(sb.ToString(), "-");
     }
 
     public static string EscapeSpecialRegexChars(this string stringToEscape, bool matchExactly)
@@ -406,7 +406,7 @@ public static class StringMethods
         return sb.ToString();
     }
 
-    public static string ExtractSimplePattern(this string stringToExtract, int precisionLevel = 3)
+    public static string ExtractSimplePattern(this string stringToExtract, int precisionLevel = 3, bool ignoreCase = false)
     {
         // precisionLevel ranges from 0 (least precise) to 5 (most precise)
         // 0: \S+ (non-whitespace)
@@ -419,13 +419,16 @@ public static class StringMethods
         if (string.IsNullOrEmpty(stringToExtract))
             return string.Empty;
 
+        // Inline regex flag for case insensitivity
+        string caseFlag = ignoreCase ? "(?i)" : string.Empty;
+
         // Level 0: Just match any non-whitespace
         if (precisionLevel == 0)
-            return @"\S+";
+            return $@"{caseFlag}\S+";
 
         // Level 1: Match word characters
         if (precisionLevel == 1)
-            return @"\w+";
+            return $@"{caseFlag}\w+";
 
         List<CharRun> charRunList = [];
 
@@ -494,7 +497,7 @@ public static class StringMethods
                     sb.Append('{').Append(ct.NumberOfRun).Append('}');
                 }
             }
-            return sb.ToString().ShortenRegexPattern();
+            return $"{caseFlag}{sb.ToString().ShortenRegexPattern()}";
         }
 
         // Level 3: Character types with counts (DEFAULT - original behavior)
@@ -526,11 +529,11 @@ public static class StringMethods
                     sb.Append('{').Append(ct.NumberOfRun).Append('}');
                 }
             }
-            return sb.ToString().ShortenRegexPattern();
+            return $"{caseFlag}{sb.ToString().ShortenRegexPattern()}";
         }
 
         // Level 4: Individual character class per position (each position matches one specific character)
-        // For Latin letters, include both upper and lower case variants
+        // When ignoreCase is true, use (?i) flag instead of [Aa] character classes
         if (precisionLevel == 4)
         {
             foreach (char c in stringToExtract)
@@ -545,34 +548,27 @@ public static class StringMethods
                 }
                 else if (char.IsLetter(c) && c.IsBasicLatin())
                 {
-                    // For Latin letters, include both upper and lower case
-                    char upper = char.ToUpper(c);
-                    char lower = char.ToLower(c);
-
-                    if (upper != lower)
-                    {
-                        // Letter has both cases, include both
-                        sb.Append('[').Append(upper).Append(lower).Append(']');
-                    }
-                    else
-                    {
-                        // No case distinction (shouldn't normally happen for letters)
-                        sb.Append('[').Append(Regex.Escape(c.ToString())).Append(']');
-                    }
+                    sb.Append(Regex.Escape(c.ToString()));
+                }
+                else if (char.IsDigit(c))
+                {
+                    // Digits don't need brackets - match exact digit
+                    sb.Append(Regex.Escape(c.ToString()));
                 }
                 else
                 {
-                    // Non-Latin letters, numbers, and other characters - exact match
-                    sb.Append('[').Append(Regex.Escape(c.ToString())).Append(']');
+                    // Non-Latin letters and other characters - exact match with escaping
+                    sb.Append(Regex.Escape(c.ToString()));
                 }
             }
-            return sb.ToString();
+            return $"{caseFlag}{sb}";
         }
 
         // Level 5: Exact escaped string (most precise - exact match)
         if (precisionLevel == 5)
         {
-            return Regex.Escape(stringToExtract);
+            // no ignore case flag here for exact match
+            return $"{Regex.Escape(stringToExtract)}";
         }
 
         // Default to level 3
@@ -603,7 +599,7 @@ public static class StringMethods
             }
         }
 
-        return sb.ToString().ShortenRegexPattern();
+        return $"{caseFlag}{sb.ToString().ShortenRegexPattern()}";
     }
 
     private static string ShortenRegexPattern(this string pattern)
@@ -620,7 +616,7 @@ public static class StringMethods
 
         for (int i = 4; i < maxRepSegCheckLen; i++)
         {
-            List<string> chunkLists = Split(originalPattern, i).ToList();
+            List<string> chunkLists = [.. Split(originalPattern, i)];
             //int chunkID = 0;
             //while (chunkID * (i+ 1) < originalPattern.Length)
             //{
@@ -670,9 +666,9 @@ public static class StringMethods
     {
         StringBuilder sbUnstacked = new();
 
-        stringToUnstack = Regex.Replace(stringToUnstack, @"(\r\n|\n|\r)", Environment.NewLine);
+        stringToUnstack = NewlineRegex().Replace(stringToUnstack, Environment.NewLine);
 
-        string[] splitString = stringToUnstack.Split(new string[] { Environment.NewLine }, StringSplitOptions.TrimEntries);
+        string[] splitString = stringToUnstack.Split([Environment.NewLine], StringSplitOptions.TrimEntries);
 
         int columnIterator = 0;
 
@@ -699,9 +695,9 @@ public static class StringMethods
     {
         StringBuilder sbUnstacked = new();
 
-        stringGroupedToUnstack = Regex.Replace(stringGroupedToUnstack, @"(\r\n|\n|\r)", Environment.NewLine);
+        stringGroupedToUnstack = NewlineRegex().Replace(stringGroupedToUnstack, Environment.NewLine);
 
-        string[] splitInputString = stringGroupedToUnstack.Split(new string[] { Environment.NewLine }, StringSplitOptions.TrimEntries);
+        string[] splitInputString = stringGroupedToUnstack.Split([Environment.NewLine], StringSplitOptions.TrimEntries);
 
         int numberOfColumns = splitInputString.Length / numberOfRows;
 
@@ -729,7 +725,7 @@ public static class StringMethods
 
     public static string RemoveDuplicateLines(this string stringToDeduplicate)
     {
-        string[] splitString = stringToDeduplicate.Split(new string[] { Environment.NewLine }, StringSplitOptions.TrimEntries);
+        string[] splitString = stringToDeduplicate.Split([Environment.NewLine], StringSplitOptions.TrimEntries);
         List<string> uniqueLines = [];
 
         foreach (string originalLine in splitString)
@@ -747,7 +743,7 @@ public static class StringMethods
 
     public static string RemoveFromEachLine(this string stringToEdit, int numberOfChars, SpotInLine spotInLine)
     {
-        string[] splitString = stringToEdit.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+        string[] splitString = stringToEdit.Split([Environment.NewLine], StringSplitOptions.None);
 
         StringBuilder sb = new();
         foreach (string line in splitString)
@@ -777,7 +773,7 @@ public static class StringMethods
 
     public static string AddCharsToEachLine(this string stringToEdit, string stringToAdd, SpotInLine spotInLine)
     {
-        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+        string[] splitString = stringToEdit.Split([System.Environment.NewLine], StringSplitOptions.None);
 
         if (splitString.Length > 1)
             if (splitString.LastOrDefault() == "")
@@ -804,7 +800,7 @@ public static class StringMethods
 
     public static string LimitCharactersPerLine(this string stringToEdit, int characterLimit, SpotInLine spotInLine)
     {
-        string[] splitString = stringToEdit.Split(new string[] { System.Environment.NewLine }, StringSplitOptions.None);
+        string[] splitString = stringToEdit.Split([System.Environment.NewLine], StringSplitOptions.None);
         StringBuilder returnStringBuilder = new();
         foreach (string line in splitString)
         {
@@ -828,7 +824,7 @@ public static class StringMethods
     {
         // Generated from ChatGPT
         // Use a regular expression to match the input against a pattern for a valid email address.
-        Regex regex = new(@"^[\w!#$%&'*+\-/=?\^_`{|}~]+(\.[\w!#$%&'*+\-/=?\^_`{|}~]+)*" + "@" + @"((([\-\w]+\.)+[a-zA-Z]{2,4})|(([0-9]{1,3}\.){3}[0-9]{1,3}))$");
+        Regex regex = Email();
         return regex.IsMatch(input);
     }
 
@@ -899,7 +895,7 @@ public static class StringMethods
 
     public static bool EndsWithNewline(this string s)
     {
-        return Regex.IsMatch(s, @"\n$");
+        return NewlineEnding().IsMatch(s);
     }
 
     public static string RemoveNonWordChars(this string strIn)
@@ -917,4 +913,19 @@ public static class StringMethods
             return String.Empty;
         }
     }
+
+    [GeneratedRegex(@"(\r\n|\n|\r)")]
+    private static partial Regex NewlineRegex();
+
+    [GeneratedRegex(@"\n$")]
+    private static partial Regex NewlineEnding();
+
+    [GeneratedRegex(@"^[\w!#$%&'*+\-/=?\^_`{|}~]+(\.[\w!#$%&'*+\-/=?\^_`{|}~]+)*@((([\-\w]+\.)+[a-zA-Z]{2,4})|(([0-9]{1,3}\.){3}[0-9]{1,3}))$")]
+    private static partial Regex Email();
+
+    [GeneratedRegex("[ ]{2,}")]
+    private static partial Regex MultiSpaces();
+
+    [GeneratedRegex(@"-+")]
+    private static partial Regex MultiDashes();
 }
