@@ -209,9 +209,11 @@
                 HorizontalAlignment="Right"
                 Orientation="Horizontal">
                 <StackPanel
+                    x:Name="PrecisionSliderPanel"
                     Margin="6,-4,12,0"
                     VerticalAlignment="Center"
-                    Orientation="Vertical">
+                    Orientation="Vertical"
+                    Visibility="Collapsed">
                     <TextBlock
                         Margin="0,0,0,2"
                         HorizontalAlignment="Center"
