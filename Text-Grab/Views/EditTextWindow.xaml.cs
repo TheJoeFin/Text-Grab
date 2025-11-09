@@ -2489,7 +2489,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Generate and store the ExtractedPattern if the selection changed
             if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
             {
-                currentExtractedPattern = new ExtractedPattern(selectedText);
+                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
                 currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
             }
 
@@ -2514,7 +2514,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Generate and store the ExtractedPattern if the selection changed
             if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
             {
-                currentExtractedPattern = new ExtractedPattern(selectedText);
+                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
                 currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
             }
 
@@ -2522,7 +2522,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (RegexPatternButton.Content is TextBlock regexButton)
             {
                 regexButton.Text = regexPattern.Length > 30
-                    ? $"Regex: {regexPattern.Substring(0, 27)}..."
+                    ? $"Regex: {regexPattern[..27]}..."
                     : $"Regex: {regexPattern}";
             }
             string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
@@ -2641,15 +2641,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         else
         {
-            extractedPattern = new ExtractedPattern(selectedText);
+            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
         }
 
-        // Launch Find and Replace with regex enabled
+        // Launch Find and Replace with regex enabled and execute search
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findAndReplaceWindow.FindTextBox.Text = extractedPattern.GetPattern(currentPrecisionLevel);
-        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindByPattern(extractedPattern);
         findAndReplaceWindow.Show();
     }
 
@@ -2667,15 +2666,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         else
         {
-            extractedPattern = new ExtractedPattern(selectedText);
+            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
         }
 
-        // Launch Find and Replace with regex enabled
+        // Launch Find and Replace with regex enabled and execute search
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findAndReplaceWindow.FindTextBox.Text = extractedPattern.GetPattern(currentPrecisionLevel);
-        findAndReplaceWindow.UsePaternCheckBox.IsChecked = true;
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindByPattern(extractedPattern);
         findAndReplaceWindow.Show();
     }
 
@@ -3244,12 +3242,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (storedPattern is null)
             return;
 
-        // Open Find and Replace window with this pattern
+        // Open Find and Replace window with this pattern and execute search
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findWindow.FindTextBox.Text = storedPattern.Pattern;
         findWindow.UsePaternCheckBox.IsChecked = true;
         findWindow.TextEditWindow = this;
         findWindow.StringFromWindow = PassedTextControl.Text;
+        findWindow.SearchForText();
         findWindow.Show();
     }
 
@@ -3305,6 +3304,28 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         StringBuilder explanation = new();
         explanation.AppendLine($"Pattern: {pattern}");
+        explanation.AppendLine();
+
+        // Determine and explain overall case sensitivity
+        bool hasCaseInsensitiveFlag = pattern.Contains("(?i)");
+        bool hasCaseSensitiveFlag = pattern.Contains("(?-i)");
+
+        if (hasCaseInsensitiveFlag && !hasCaseSensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: CASE-INSENSITIVE (matches regardless of uppercase/lowercase)");
+        }
+        else if (hasCaseSensitiveFlag && !hasCaseInsensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: CASE-SENSITIVE (uppercase and lowercase must match exactly)");
+        }
+        else if (hasCaseInsensitiveFlag && hasCaseSensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: MIXED (some parts case-insensitive, some case-sensitive)");
+        }
+        else
+        {
+            explanation.AppendLine("📋 Case Sensitivity: DEFAULT (typically case-sensitive unless configured otherwise)");
+        }
         explanation.AppendLine();
 
         int i = 0;
@@ -3381,7 +3402,36 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 if (closeParen > i)
                 {
                     string group = pattern.Substring(i, closeParen - i + 1);
-                    explanation.AppendLine($"{group} - Capturing group");
+
+                    // Check if this is an inline modifier group
+                    if (group.StartsWith("(?i)"))
+                    {
+                        explanation.AppendLine($"{group} - Case-insensitive flag: following pattern ignores case (A matches a)");
+                    }
+                    else if (group.StartsWith("(?-i)"))
+                    {
+                        explanation.AppendLine($"{group} - Case-sensitive flag: following pattern is case-sensitive (A only matches A)");
+                    }
+                    else if (group.StartsWith("(?"))
+                    {
+                        // Other inline modifiers
+                        if (group.Contains('i'))
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier (includes 'i' for case-insensitive matching)");
+                        }
+                        else if (group.Contains("-i"))
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier (includes '-i' for case-sensitive matching)");
+                        }
+                        else
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier group");
+                        }
+                    }
+                    else
+                    {
+                        explanation.AppendLine($"{group} - Capturing group");
+                    }
                     i = closeParen + 1;
                 }
                 else
@@ -3444,11 +3494,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     }
 
-    private void UsePatternMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-
-    }
-
     private void PatternContextOpening(object sender, ContextMenuEventArgs e)
     {
         // sender should be a button if not return
@@ -3464,7 +3509,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Clear existing dynamic items (keep original static items)
         // Find if "Use Pattern" menu item already exists, remove it to rebuild
         MenuItem? existingUsePatternItem = null;
-        foreach (var item in contextMenu.Items)
+        foreach (object? item in contextMenu.Items)
         {
             if (item is MenuItem mi && mi.Header?.ToString() == "Use Pattern")
             {
@@ -3517,7 +3562,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                             : selectedPattern.Description;
 
                         // Override the current extracted pattern with the selected stored pattern
-                        currentExtractedPattern = new ExtractedPattern(sourceText);
+                        currentExtractedPattern = new ExtractedPattern(sourceText, ignoreCase: true);
                         currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
 
                         // Update the UI to reflect the new pattern
@@ -3534,7 +3579,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Add separator before the "Use Pattern" item
         contextMenu.Items.Add(new Separator());
-        
+
         // Add the "Use Pattern" menu item to the context menu
         contextMenu.Items.Add(usePatternMenuItem);
     }

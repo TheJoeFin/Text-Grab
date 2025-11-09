@@ -28,6 +28,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     public static RoutedCommand ReplaceOneCmd = new();
     public static RoutedCommand TextSearchCmd = new();
     private DispatcherTimer ChangeFindTextTimer = new();
+    private DispatcherTimer PrecisionSliderTimer = new();
     private MatchCollection? Matches;
     private string stringFromWindow = "";
     private EditTextWindow? textEditWindow;
@@ -44,6 +45,10 @@ public partial class FindAndReplaceWindow : FluentWindow
         ChangeFindTextTimer.Interval = TimeSpan.FromMilliseconds(400);
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
         ChangeFindTextTimer.Tick += ChangeFindText_Tick;
+
+        PrecisionSliderTimer.Interval = TimeSpan.FromMilliseconds(300);
+        PrecisionSliderTimer.Tick -= PrecisionSlider_Tick;
+        PrecisionSliderTimer.Tick += PrecisionSlider_Tick;
     }
 
     #endregion Constructors
@@ -87,9 +92,18 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         try
         {
-            if (ExactMatchCheckBox.IsChecked is true)
+            // When using pattern mode with inline flags, rely on the inline flags for case sensitivity
+            // Otherwise, use RegexOptions for backward compatibility
+            bool usingPatternMode = UsePaternCheckBox.IsChecked is true;
+            bool exactMatch = ExactMatchCheckBox.IsChecked is true;
+
+            if (exactMatch)
                 Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline);
+            else if (usingPatternMode)
+                // Pattern mode with inline (?i) flags - don't add redundant RegexOptions
+                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace);
             else
+                // Non-pattern mode - use RegexOptions for case insensitivity
                 Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
         }
         catch (Exception ex)
@@ -149,6 +163,12 @@ public partial class FindAndReplaceWindow : FluentWindow
     private void ChangeFindText_Tick(object? sender, EventArgs? e)
     {
         ChangeFindTextTimer.Stop();
+        SearchForText();
+    }
+
+    private void PrecisionSlider_Tick(object? sender, EventArgs? e)
+    {
+        PrecisionSliderTimer.Stop();
         SearchForText();
     }
 
@@ -248,7 +268,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         string? selection = textEditWindow.PassedTextControl.SelectedText;
 
         // Generate all precision levels from the selected text
-        extractedPattern = new ExtractedPattern(selection);
+        // Use inverse of ExactMatchCheckBox: when exact match is OFF, ignore case
+        bool ignoreCase = ExactMatchCheckBox.IsChecked is not true;
+        extractedPattern = new ExtractedPattern(selection, ignoreCase);
 
         int precisionLevel = (int)PrecisionSlider.Value;
         string simplePattern = extractedPattern.GetPattern(precisionLevel);
@@ -256,8 +278,8 @@ public partial class FindAndReplaceWindow : FluentWindow
         UsePaternCheckBox.IsChecked = true;
         FindTextBox.Text = simplePattern;
 
-        // Enable the slider now that we have an extracted pattern
-        PrecisionSlider.IsEnabled = true;
+        // Show the slider now that we have an extracted pattern
+        PrecisionSliderPanel.Visibility = Visibility.Visible;
 
         SearchForText();
     }
@@ -279,8 +301,8 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (extractedPattern is not null)
         {
             extractedPattern = null;
-            // Disable slider when there's no extracted pattern
-            PrecisionSlider.IsEnabled = false;
+            // Hide slider when there's no extracted pattern
+            PrecisionSliderPanel.Visibility = Visibility.Collapsed;
         }
 
         if (e.Key == Key.Enter)
@@ -306,6 +328,48 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void OptionsChangedRefresh(object sender, RoutedEventArgs e)
     {
+        bool ignoreCase = ExactMatchCheckBox.IsChecked is not true;
+
+        // If we have an extracted pattern and the case sensitivity changed, update it
+        if (extractedPattern is not null)
+        {
+            if (extractedPattern.IgnoreCase != ignoreCase)
+            {
+                extractedPattern.IgnoreCase = ignoreCase;
+
+                // Update the FindTextBox with the regenerated pattern
+                int precisionLevel = (int)PrecisionSlider.Value;
+                FindTextBox.Text = extractedPattern.GetPattern(precisionLevel);
+            }
+        }
+        else if (UsePaternCheckBox.IsChecked is true && !string.IsNullOrWhiteSpace(FindTextBox.Text))
+        {
+            // No extracted pattern, but we're in pattern mode - manually toggle (?i) flag
+            string currentPattern = FindTextBox.Text;
+            bool hasIgnoreCaseFlag = currentPattern.StartsWith("(?i)");
+            bool hasCaseSensitiveFlag = currentPattern.StartsWith("(?-i)");
+
+            if (ignoreCase && !hasIgnoreCaseFlag)
+            {
+                // Need case-insensitive: add (?i) flag
+                if (hasCaseSensitiveFlag)
+                {
+                    // Replace (?-i) with (?i)
+                    FindTextBox.Text = "(?i)" + currentPattern.Substring(5);
+                }
+                else
+                {
+                    // Add (?i) at the beginning
+                    FindTextBox.Text = $"(?i){currentPattern}";
+                }
+            }
+            else if (!ignoreCase && hasIgnoreCaseFlag)
+            {
+                // Need case-sensitive: remove (?i) flag
+                FindTextBox.Text = currentPattern.Substring(4);
+            }
+        }
+
         SearchForText();
     }
 
@@ -423,6 +487,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     private void Window_Closed(object? sender, EventArgs e)
     {
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
+        PrecisionSliderTimer.Tick -= PrecisionSlider_Tick;
         if (textEditWindow is not null)
             textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
     }
@@ -457,7 +522,10 @@ public partial class FindAndReplaceWindow : FluentWindow
         string pattern = extractedPattern.GetPattern(precisionLevel);
 
         FindTextBox.Text = pattern;
-        SearchForText();
+
+        // Use debounced search instead of immediate search
+        PrecisionSliderTimer.Stop();
+        PrecisionSliderTimer.Start();
     }
 
     private void ManageRegexButton_Click(object sender, RoutedEventArgs e)
@@ -472,14 +540,18 @@ public partial class FindAndReplaceWindow : FluentWindow
         // Store the ExtractedPattern so the slider can use it
         extractedPattern = pattern;
 
+        // Ensure the pattern's case sensitivity matches the current checkbox state
+        bool ignoreCase = ExactMatchCheckBox.IsChecked is not true;
+        extractedPattern.IgnoreCase = ignoreCase;
+
         // Get the pattern at the current slider position
         int precisionLevel = (int)PrecisionSlider.Value;
         FindTextBox.Text = pattern.GetPattern(precisionLevel);
 
         UsePaternCheckBox.IsChecked = true;
 
-        // Enable the slider now that we have an extracted pattern
-        PrecisionSlider.IsEnabled = true;
+        // Show the slider now that we have an extracted pattern
+        PrecisionSliderPanel.Visibility = Visibility.Visible;
 
         SearchForText();
     }
