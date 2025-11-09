@@ -15,6 +15,7 @@
     Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
     KeyUp="Window_KeyUp"
     Loaded="FindAndReplacedLoaded"
+    WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.CommandBindings>
         <CommandBinding
@@ -68,6 +69,7 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
@@ -189,8 +191,25 @@
                     </TextBlock>
                 </ui:ToggleSwitch>
 
+
+
+                <local:CollapsibleButton
+                    x:Name="MatchesToEditWindow"
+                    Width="130"
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    ButtonSymbol="WindowEdit20"
+                    ButtonText="Edit Matches"
+                    Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}" />
+            </StackPanel>
+            <StackPanel
+                Grid.Row="4"
+                Grid.Column="1"
+                Grid.ColumnSpan="2"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
                 <StackPanel
-                    Margin="6,0,12,0"
+                    Margin="6,-4,12,0"
                     VerticalAlignment="Center"
                     Orientation="Vertical">
                     <TextBlock
@@ -214,17 +233,7 @@
                 </StackPanel>
 
                 <local:CollapsibleButton
-                    x:Name="ExtractSimplePattern"
-                    Width="140"
-                    Margin="0,0,6,0"
-                    VerticalAlignment="Center"
-                    ButtonSymbol="LightbulbFilament24"
-                    ButtonText="Extract Regex"
-                    Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}" />
-
-                <local:CollapsibleButton
                     x:Name="ManageRegexButton"
-                    Width="130"
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="Book24"
@@ -232,13 +241,13 @@
                     Click="ManageRegexButton_Click" />
 
                 <local:CollapsibleButton
-                    x:Name="MatchesToEditWindow"
+                    x:Name="ExtractSimplePattern"
                     Width="130"
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
-                    ButtonSymbol="WindowEdit20"
-                    ButtonText="Edit Matches"
-                    Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}" />
+                    ButtonSymbol="LightbulbFilament24"
+                    ButtonText="Extract Regex"
+                    Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}" />
             </StackPanel>
 
         </Grid>

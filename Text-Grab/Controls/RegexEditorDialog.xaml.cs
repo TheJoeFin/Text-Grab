@@ -13,16 +13,16 @@ public partial class RegexEditorDialog : FluentWindow
 
     public RegexEditorDialog()
     {
- InitializeComponent();
-   _originalRegex = null;
+        InitializeComponent();
+        _originalRegex = null;
     }
 
     public RegexEditorDialog(StoredRegex regexToEdit)
     {
- InitializeComponent();
+        InitializeComponent();
         _originalRegex = regexToEdit;
 
-     // Populate fields
+        // Populate fields
         NameTextBox.Text = regexToEdit.Name;
         PatternTextBox.Text = regexToEdit.Pattern;
         DescriptionTextBox.Text = regexToEdit.Description;
@@ -39,72 +39,72 @@ public partial class RegexEditorDialog : FluentWindow
         // Validate name
         if (string.IsNullOrWhiteSpace(NameTextBox.Text))
         {
- isValid = false;
-          errorMessage = "Name is required";
+            isValid = false;
+            errorMessage = "Name is required";
         }
         // Validate pattern
         else if (string.IsNullOrWhiteSpace(PatternTextBox.Text))
         {
             isValid = false;
             errorMessage = "Pattern is required";
-   }
+        }
         else
         {
             // Test if pattern is valid regex
-    try
+            try
             {
-   _ = new Regex(PatternTextBox.Text);
-  }
-     catch (ArgumentException)
+                _ = new Regex(PatternTextBox.Text);
+            }
+            catch (ArgumentException)
             {
-  isValid = false;
-    errorMessage = "Invalid regular expression pattern";
-   }
+                isValid = false;
+                errorMessage = "Invalid regular expression pattern";
+            }
         }
 
-     SaveButton.IsEnabled = isValid;
+        SaveButton.IsEnabled = isValid;
 
-    if (!isValid && !string.IsNullOrEmpty(errorMessage))
+        if (!isValid && !string.IsNullOrEmpty(errorMessage))
         {
             ErrorText.Text = errorMessage;
-       ErrorText.Visibility = Visibility.Visible;
-  }
+            ErrorText.Visibility = Visibility.Visible;
+        }
         else
         {
-         ErrorText.Visibility = Visibility.Collapsed;
+            ErrorText.Visibility = Visibility.Collapsed;
         }
     }
 
-  private void SaveButton_Click(object sender, RoutedEventArgs e)
+    private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         if (_originalRegex is not null)
         {
-      // Editing existing pattern
-      EditedRegex = new StoredRegex
-          {
-   Id = _originalRegex.Id,
-         Name = NameTextBox.Text.Trim(),
-            Pattern = PatternTextBox.Text.Trim(),
-        Description = DescriptionTextBox.Text.Trim(),
-          IsDefault = _originalRegex.IsDefault,
-     CreatedDate = _originalRegex.CreatedDate,
-         LastUsedDate = _originalRegex.LastUsedDate
-        };
-}
-     else
-     {
+            // Editing existing pattern
+            EditedRegex = new StoredRegex
+            {
+                Id = _originalRegex.Id,
+                Name = NameTextBox.Text.Trim(),
+                Pattern = PatternTextBox.Text.Trim(),
+                Description = DescriptionTextBox.Text.Trim(),
+                IsDefault = _originalRegex.IsDefault,
+                CreatedDate = _originalRegex.CreatedDate,
+                LastUsedDate = _originalRegex.LastUsedDate
+            };
+        }
+        else
+        {
             // Creating new pattern
             EditedRegex = new StoredRegex
-         {
-       Name = NameTextBox.Text.Trim(),
-      Pattern = PatternTextBox.Text.Trim(),
-    Description = DescriptionTextBox.Text.Trim(),
-    IsDefault = false
-     };
+            {
+                Name = NameTextBox.Text.Trim(),
+                Pattern = PatternTextBox.Text.Trim(),
+                Description = DescriptionTextBox.Text.Trim(),
+                IsDefault = false
+            };
         }
 
         DialogResult = true;
-     Close();
+        Close();
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)

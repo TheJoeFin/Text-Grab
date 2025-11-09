@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Humanizer;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json;
@@ -8,7 +9,6 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
-using Humanizer;
 
 namespace Text_Grab.Controls;
 
@@ -79,10 +79,9 @@ public partial class RegexManager : FluentWindow
     private void RegexDataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         bool hasSelection = RegexDataGrid.SelectedItem is not null;
-        bool canEdit = hasSelection && RegexDataGrid.SelectedItem is StoredRegex selectedRegex && !selectedRegex.IsDefault;
 
-        EditButton.IsEnabled = canEdit;
-        DeleteButton.IsEnabled = canEdit;
+        EditButton.IsEnabled = hasSelection;
+        DeleteButton.IsEnabled = hasSelection;
         UseButton.IsEnabled = hasSelection;
 
         if (hasSelection)
@@ -106,7 +105,7 @@ public partial class RegexManager : FluentWindow
 
     private void EditButton_Click(object sender, RoutedEventArgs e)
     {
-        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex || selectedRegex.IsDefault)
+        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
             return;
 
         RegexEditorDialog dialog = new(selectedRegex)
@@ -128,7 +127,7 @@ public partial class RegexManager : FluentWindow
 
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
-        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex || selectedRegex.IsDefault)
+        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
             return;
 
         Wpf.Ui.Controls.MessageBoxResult result = new Wpf.Ui.Controls.MessageBox
@@ -161,6 +160,7 @@ public partial class RegexManager : FluentWindow
         findWindow.UsePaternCheckBox.IsChecked = true;
         findWindow.Show();
         findWindow.Activate();
+        findWindow.SearchForText();
     }
 
     /// <summary>
@@ -217,5 +217,10 @@ public partial class RegexManager : FluentWindow
         {
             MatchCountText.Text = "Invalid Pattern";
         }
+    }
+
+    private void FluentWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        SaveRegexPatterns();
     }
 }

@@ -18,67 +18,65 @@
 
     <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
-       <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
- <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-      <ui:TitleBar
-Title="Edit Regular Expression"
-    Height="32"
-    Margin="2,2,2,0"
+        <ui:TitleBar
+            Title="Edit Regular Expression"
+            Height="32"
+            Margin="2,2,2,0"
             Padding="8,2"
-       Icon="{StaticResource TextGrabIcon}" />
+            Icon="{StaticResource TextGrabIcon}" />
 
         <StackPanel Grid.Row="1" Margin="12">
-  <TextBlock Margin="0,0,0,4" Text="Name:" />
+            <TextBlock Margin="0,0,0,4" Text="Name:" />
             <TextBox
-         x:Name="NameTextBox"
-       Margin="0,0,0,12"
-      TextChanged="ValidateInput" />
+                x:Name="NameTextBox"
+                Margin="0,0,0,12"
+                TextChanged="ValidateInput" />
 
             <TextBlock Margin="0,0,0,4" Text="Pattern:" />
             <TextBox
-        x:Name="PatternTextBox"
-       Height="80"
-     Margin="0,0,0,12"
-            AcceptsReturn="True"
-         TextWrapping="Wrap"
-      VerticalScrollBarVisibility="Auto"
-   TextChanged="ValidateInput" />
-
-        <TextBlock Margin="0,0,0,4" Text="Description:" />
-            <TextBox
-   x:Name="DescriptionTextBox"
-    Height="60"
-     Margin="0,0,0,12"
-          AcceptsReturn="True"
+                x:Name="PatternTextBox"
+                Height="80"
+                Margin="0,0,0,12"
+                AcceptsReturn="True"
+                TextChanged="ValidateInput"
                 TextWrapping="Wrap"
-          VerticalScrollBarVisibility="Auto" />
+                VerticalScrollBarVisibility="Auto" />
 
-         <TextBlock
-       x:Name="ErrorText"
-    Margin="0,0,0,6"
-       Foreground="Red"
+            <TextBlock Margin="0,0,0,4" Text="Description:" />
+            <TextBox
+                x:Name="DescriptionTextBox"
+                Height="60"
+                Margin="0,0,0,12"
+                AcceptsReturn="True"
+                TextWrapping="Wrap"
+                VerticalScrollBarVisibility="Auto" />
+
+            <TextBlock
+                x:Name="ErrorText"
+                Margin="0,0,0,6"
+                Foreground="Red"
                 Text=""
-     Visibility="Collapsed" />
+                Visibility="Collapsed" />
         </StackPanel>
 
         <StackPanel
             Grid.Row="2"
-   Margin="12,0,12,12"
-       HorizontalAlignment="Right"
+            Margin="12,0,12,12"
+            HorizontalAlignment="Right"
             Orientation="Horizontal">
             <ui:Button
-          x:Name="SaveButton"
- Margin="0,0,6,0"
-        Appearance="Primary"
-       Click="SaveButton_Click"
-    Content="Save"
-     IsEnabled="False" />
-   <ui:Button
-        Click="CancelButton_Click"
-                Content="Cancel" />
+                x:Name="SaveButton"
+                Margin="0,0,6,0"
+                Appearance="Primary"
+                Click="SaveButton_Click"
+                Content="Save"
+                IsEnabled="False" />
+            <ui:Button Click="CancelButton_Click" Content="Cancel" />
         </StackPanel>
- </Grid>
+    </Grid>
 </ui:FluentWindow>
