@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Models;
@@ -20,6 +21,11 @@ public class ExtractedPattern
     private readonly Dictionary<int, string> _patternsByLevel = [];
 
     /// <summary>
+    /// Whether patterns should use case-insensitive inline flags.
+    /// </summary>
+    private bool _ignoreCase;
+
+    /// <summary>
     /// Total number of precision levels supported.
     /// </summary>
     public const int MaxPrecisionLevel = 5;
@@ -30,10 +36,29 @@ public class ExtractedPattern
     /// Creates a new ExtractedPattern by generating all precision levels from the input text.
     /// </summary>
     /// <param name="text">The text to extract patterns from</param>
-    public ExtractedPattern(string text)
+    /// <param name="ignoreCase">Whether to generate case-insensitive patterns with (?i) flag</param>
+    public ExtractedPattern(string text, bool ignoreCase = false)
     {
         OriginalText = text;
+        _ignoreCase = ignoreCase;
         GenerateAllPrecisionLevels();
+    }
+
+    /// <summary>
+    /// Gets or sets whether patterns use case-insensitive inline flags.
+    /// When changed, all patterns are regenerated.
+    /// </summary>
+    public bool IgnoreCase
+    {
+        get => _ignoreCase;
+        set
+        {
+            if (_ignoreCase != value)
+            {
+                _ignoreCase = value;
+                GenerateAllPrecisionLevels();
+            }
+        }
     }
 
     /// <summary>
@@ -64,7 +89,7 @@ public class ExtractedPattern
     {
         for (int level = MinPrecisionLevel; level <= MaxPrecisionLevel; level++)
         {
-            string pattern = OriginalText.ExtractSimplePattern(level);
+            string pattern = OriginalText.ExtractSimplePattern(level, _ignoreCase);
             _patternsByLevel[level] = pattern;
         }
     }
@@ -105,5 +130,119 @@ public class ExtractedPattern
             5 => "Exact",
             _ => $"Level {level}"
         };
+    }
+
+    /// <summary>
+    /// Determines the optimal starting precision level based on text characteristics.
+    /// Analyzes length, content type, and structure to suggest the most useful level.
+    /// </summary>
+    /// <param name="selection">The text to analyze</param>
+    /// <returns>Recommended precision level (0-5)</returns>
+    public static int DetermineStartingLevel(string selection)
+    {
+        if (string.IsNullOrWhiteSpace(selection))
+            return DefaultPrecisionLevel;
+
+        string trimmed = selection.Trim();
+        int length = trimmed.Length;
+
+        // Very short text - prefer exact or near-exact matching
+        if (length == 1)
+            return 5; // Exact match for single character
+
+        // Very long text - prefer structure-only to avoid over-specification
+        if (length > 25)
+            return 2; // Length-based pattern for long strings
+
+        // Content-based analysis (check in priority order)
+        
+        // Pure numbers (123, 4567) - likely want similar number sequences
+        if (IsAllDigits(trimmed))
+            return 2; // Length-flexible for number sequences
+
+        // Has 3+ words with spaces ("the quick brown fox") - capturing phrase structure
+        int wordCnt = WordCount(trimmed);
+        if (wordCnt >= 3)
+            return 1; // Structure-only for multi-word phrases
+
+        // Alphanumeric ID pattern (ABC-123, user_456, ID:789) - structural delimiters are noise
+        if (HasMultipleDelimiters(trimmed))
+            return 3; // Character-class pattern, ignoring specific delimiters
+
+        // Mixed letters+numbers, no spaces (user123, AB12CD) - IDs, codes, usernames
+        if (IsAlphanumericMixed(trimmed))
+            return 3; // Character-class for mixed content
+
+        // Short text (2-4 chars) - prefer per-character for small variations
+        if (length >= 2 && length <= 4)
+            return 4; // Per-character for 2-4 chars
+
+        // Single word, all letters ("Hello") - names, simple words
+        if (IsSimpleWord(trimmed))
+            return 4; // Case-insensitive per-character
+
+        // Has special chars but short (#42, @joe, v1.2) - symbols are separators
+        if (HasSpecialChars(trimmed) && length <= 10)
+            return 3; // Separator-agnostic pattern
+
+        // Default middle level for everything else
+        return DefaultPrecisionLevel;
+    }
+
+    /// <summary>
+    /// Checks if the string contains only digits.
+    /// </summary>
+    private static bool IsAllDigits(string text)
+    {
+        string trimmed = text.Trim();
+        return trimmed.Length > 0 && trimmed.All(char.IsDigit);
+    }
+
+    /// <summary>
+    /// Checks if the string has multiple delimiter/separator characters.
+    /// </summary>
+    private static bool HasMultipleDelimiters(string text)
+    {
+        char[] delimiters = ['-', '_', ':', '.', '/', '\\', '|'];
+        int delimiterCount = text.Count(c => delimiters.Contains(c));
+        return delimiterCount >= 2;
+    }
+
+    /// <summary>
+    /// Counts the number of words (whitespace-separated sequences).
+    /// </summary>
+    private static int WordCount(string text)
+    {
+        return text.Split((char[]?)null, System.StringSplitOptions.RemoveEmptyEntries).Length;
+    }
+
+    /// <summary>
+    /// Checks if the string contains both letters and digits (mixed alphanumeric).
+    /// </summary>
+    private static bool IsAlphanumericMixed(string text)
+    {
+        bool hasLetters = text.Any(char.IsLetter);
+        bool hasDigits = text.Any(char.IsDigit);
+        bool hasSpaces = text.Any(char.IsWhiteSpace);
+        return hasLetters && hasDigits && !hasSpaces;
+    }
+
+    /// <summary>
+    /// Checks if the string is a simple word (only letters, no spaces or digits).
+    /// </summary>
+    private static bool IsSimpleWord(string text)
+    {
+        string trimmed = text.Trim();
+        return trimmed.Length > 0 
+            && trimmed.All(char.IsLetter) 
+            && !trimmed.Any(char.IsWhiteSpace);
+    }
+
+    /// <summary>
+    /// Checks if the string contains special characters from the regex special char list.
+    /// </summary>
+    private static bool HasSpecialChars(string text)
+    {
+        return text.Any(c => StringMethods.specialCharList.Contains(c) || !char.IsLetterOrDigit(c));
     }
 }
