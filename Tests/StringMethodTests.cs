@@ -161,11 +161,11 @@ Another Line";
 
     [Theory]
     [InlineData("", @"", 3)]
-    [InlineData("Hello World!", @"[A-z]{5}\s[A-z]{5}!", 3)]
+    [InlineData("Hello World!", @"[A-Za-z]{5}\s[A-Za-z]{5}!", 3)]
     [InlineData("123-555-6789", @"\d{3}-\d{3}-\d{4}", 3)]
     [InlineData("(123)-555-6789", @"(\()\d{3}(\))-\d{3}-\d{4}", 3)]
-    [InlineData("Abc123456-99", @"[A-z]{3}\d{6}-\d{2}", 3)]
-    [InlineData("ab12ab12ab12ab12ab12", @"([A-z]{2}\d{2}){5}", 3)]
+    [InlineData("Abc123456-99", @"[A-Za-z]{3}\d{6}-\d{2}", 3)]
+    [InlineData("ab12ab12ab12ab12ab12", @"([A-Za-z]{2}\d{2}){5}", 3)]
     // Precision level 0 tests (least precise - non-whitespace)
     [InlineData("Abc123", @"\S+", 0)]
     [InlineData("Hello World", @"\S+", 0)]

@@ -41,7 +41,7 @@ public class ExtractedPatternTests
     [InlineData("Abc123", 0, @"\S+")]
     [InlineData("Abc123", 1, @"\w+")]
     [InlineData("Abc123", 2, @"\w{3}\w{3}")]
-    [InlineData("Abc123", 3, @"[A-z]{3}\d{3}")]
+    [InlineData("Abc123", 3, @"[A-Za-z]{3}\d{3}")]
     [InlineData("Abc123", 4, @"(?i)Abc123")]
     [InlineData("Abc123", 5, @"Abc123")]
     public void GetPattern_ReturnsCorrectPatternForEachLevel(string input, int level, string expectedPattern)
@@ -163,8 +163,8 @@ public class ExtractedPatternTests
 
     [Theory]
     [InlineData("(123)-555-6789", 3, @"(\()\d{3}(\))-\d{3}-\d{4}")]
-    [InlineData("Hello World!", 3, @"[A-z]{5}\s[A-z]{5}!")]
-    [InlineData("ab12ab12ab12ab12ab12", 3, @"([A-z]{2}\d{2}){5}")]
+    [InlineData("Hello World!", 3, @"[A-Za-z]{5}\s[A-Za-z]{5}!")]
+    [InlineData("ab12ab12ab12ab12ab12", 3, @"([A-Za-z]{2}\d{2}){5}")]
     [InlineData("Test", 4, @"(?i)Test")]
     [InlineData("ABC", 4, @"(?i)ABC")]
     [InlineData("A.B", 5, @"A\.B")]
@@ -369,8 +369,8 @@ DATA001 data001 DaTa001 INFO999
         // Note: \w{4} finds the first 4 chars in words >= 4 chars long
         Assert.Equal(8, matchCounts[2]);
 
-        // Level 3: [A-z]{4} - matches exactly 4 letters (test, Test, TEST, teST, test from test123, test from testing, best, rest) = 8
-        // Note: [A-z]{4} finds 4 letters even in longer words
+        // Level 3: [A-Za-z]{4} - matches exactly 4 letters (test, Test, TEST, teST, test from test123, test from testing, best, rest) = 8
+        // Note: [A-Za-z]{4} finds 4 letters even in longer words
         Assert.Equal(8, matchCounts[3]);
 
         // Level 4: [Tt][Ee][Ss][Tt] - case-insensitive "test" specifically (test, Test, TEST, teST, test from test123, test from testing) = 6
@@ -586,8 +586,8 @@ DATA001 data001 DaTa001 INFO999
     [InlineData("Abc123", 1, true, @"(?i)\w+")]
     [InlineData("Abc123", 2, false, @"\w{3}\w{3}")]
     [InlineData("Abc123", 2, true, @"(?i)\w{3}\w{3}")]
-    [InlineData("Abc123", 3, false, @"[A-z]{3}\d{3}")]
-    [InlineData("Abc123", 3, true, @"(?i)[A-z]{3}\d{3}")]
+    [InlineData("Abc123", 3, false, @"[A-Za-z]{3}\d{3}")]
+    [InlineData("Abc123", 3, true, @"(?i)[A-Za-z]{3}\d{3}")]
     [InlineData("Abc123", 4, false, @"(?i)Abc123")]
     [InlineData("Abc123", 4, true, @"(?i)Abc123")]
     [InlineData("Abc123", 5, false, @"Abc123")]

@@ -412,8 +412,8 @@ public static partial class StringMethods
         // 0: \S+ (non-whitespace)
         // 1: \w+ (word characters)
         // 2: \w{count} (word characters with count)
-        // 3: [A-z]{3}\d{3} (character types with counts) - DEFAULT
-        // 4: [A][b][c][1][2][3] (individual character class per position)
+        // 3: [A-Za-z]{3}\d{3} (character types with counts) - DEFAULT
+        // 4: (?i)Abc123 (individual character class per position)
         // 5: Abc123 (exact escaped string) - most precise
 
         if (string.IsNullOrEmpty(stringToExtract))
@@ -508,7 +508,7 @@ public static partial class StringMethods
                 switch (ct.TypeOfChar)
                 {
                     case CharType.Letter:
-                        sb.Append("[A-z]");
+                        sb.Append("[A-Za-z]");
                         break;
                     case CharType.Number:
                         sb.Append(@"\d");
@@ -577,7 +577,7 @@ public static partial class StringMethods
             switch (ct.TypeOfChar)
             {
                 case CharType.Letter:
-                    sb.Append("[A-z]");
+                    sb.Append("[A-Za-z]");
                     break;
                 case CharType.Number:
                     sb.Append(@"\d");
