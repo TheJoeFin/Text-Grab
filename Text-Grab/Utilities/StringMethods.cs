@@ -561,7 +561,7 @@ public static partial class StringMethods
                     sb.Append(Regex.Escape(c.ToString()));
                 }
             }
-            return $"{caseFlag}{sb}";
+            return $"(?i){sb}";
         }
 
         // Level 5: Exact escaped string (most precise - exact match)

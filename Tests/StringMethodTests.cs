@@ -176,9 +176,9 @@ Another Line";
     [InlineData("Abc123", @"\w{3}\w{3}", 2)]
     [InlineData("Hello", @"\w{5}", 2)]
     // Precision level 4 tests (individual character class per position with case variants)
-    [InlineData("Abc", @"[Aa][Bb][Cc]", 4)]
-    [InlineData("123", @"[1][2][3]", 4)]
-    [InlineData("Test", @"[Tt][Ee][Ss][Tt]", 4)]
+    [InlineData("Abc", @"(?i)Abc", 4)]
+    [InlineData("123", @"(?i)123", 4)]
+    [InlineData("Test", @"(?i)Test", 4)]
     // Precision level 5 tests (exact escaped string - most precise)
     [InlineData("Abc123", @"Abc123", 5)]
     [InlineData("Test", @"Test", 5)]

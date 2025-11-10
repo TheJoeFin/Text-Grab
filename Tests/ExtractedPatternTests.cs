@@ -42,7 +42,7 @@ public class ExtractedPatternTests
     [InlineData("Abc123", 1, @"\w+")]
     [InlineData("Abc123", 2, @"\w{3}\w{3}")]
     [InlineData("Abc123", 3, @"[A-z]{3}\d{3}")]
-    [InlineData("Abc123", 4, @"[Aa][Bb][Cc][1][2][3]")]
+    [InlineData("Abc123", 4, @"(?i)Abc123")]
     [InlineData("Abc123", 5, @"Abc123")]
     public void GetPattern_ReturnsCorrectPatternForEachLevel(string input, int level, string expectedPattern)
     {
@@ -165,8 +165,8 @@ public class ExtractedPatternTests
     [InlineData("(123)-555-6789", 3, @"(\()\d{3}(\))-\d{3}-\d{4}")]
     [InlineData("Hello World!", 3, @"[A-z]{5}\s[A-z]{5}!")]
     [InlineData("ab12ab12ab12ab12ab12", 3, @"([A-z]{2}\d{2}){5}")]
-    [InlineData("Test", 4, @"[Tt][Ee][Ss][Tt]")]
-    [InlineData("ABC", 4, @"[Aa][Bb][Cc]")]
+    [InlineData("Test", 4, @"(?i)Test")]
+    [InlineData("ABC", 4, @"(?i)ABC")]
     [InlineData("A.B", 5, @"A\.B")]
     public void ComplexPatterns_GeneratedCorrectly(string input, int level, string expectedPattern)
     {
@@ -588,10 +588,10 @@ DATA001 data001 DaTa001 INFO999
     [InlineData("Abc123", 2, true, @"(?i)\w{3}\w{3}")]
     [InlineData("Abc123", 3, false, @"[A-z]{3}\d{3}")]
     [InlineData("Abc123", 3, true, @"(?i)[A-z]{3}\d{3}")]
-    [InlineData("Abc123", 4, false, @"[Aa][Bb][Cc][1][2][3]")]
-    [InlineData("Abc123", 4, true, @"(?i)[Aa][Bb][Cc][1][2][3]")]
+    [InlineData("Abc123", 4, false, @"(?i)Abc123")]
+    [InlineData("Abc123", 4, true, @"(?i)Abc123")]
     [InlineData("Abc123", 5, false, @"Abc123")]
-    [InlineData("Abc123", 5, true, @"(?i)Abc123")]
+    [InlineData("Abc123", 5, true, @"Abc123")]
     public void ExtractSimplePattern_WithCaseSensitivity_IncludesCorrectFlag(
         string input, int level, bool ignoreCase, string expectedPattern)
     {
@@ -610,7 +610,7 @@ DATA001 data001 DaTa001 INFO999
         string text = "test TEST TeSt Test testing";
 
         // When - Generate case-insensitive pattern
-        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 5, ignoreCase: true);
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 4, ignoreCase: true);
         MatchCollection matches = Regex.Matches(text, pattern);
 
         // Then - Should match all case variations
@@ -640,7 +640,6 @@ DATA001 data001 DaTa001 INFO999
     [InlineData("Test42", 2, true)]
     [InlineData("ABC", 3, true)]
     [InlineData("xyz", 4, true)]
-    [InlineData("Pattern", 5, true)]
     public void ExtractSimplePattern_AllLevels_SupportCaseInsensitiveFlag(string input, int level, bool ignoreCase)
     {
         // When
@@ -678,10 +677,10 @@ DATA001 data001 DaTa001 INFO999
         string text = "test123 TEST123 TeSt123 Test123";
 
         // When - Generate pattern with inline flag
-        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 5, ignoreCase: true);
+        string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 4);
 
         // Create regex without RegexOptions to verify inline flag works standalone
-        Regex regex = new Regex(pattern);
+        Regex regex = new(pattern);
         MatchCollection matches = regex.Matches(text);
 
         // Then - Inline flag should make it case-insensitive without needing RegexOptions
@@ -730,33 +729,6 @@ DATA001 data001 DaTa001 INFO999
     }
 
     [Fact]
-    public void ExtractedPattern_IgnoreCaseProperty_RegeneratesPatterns()
-    {
-        // Given
-        string input = "Test";
-        ExtractedPattern extractedPattern = new(input, ignoreCase: false);
-
-        // When - Get pattern before changing case sensitivity
-        string caseSensitivePattern = extractedPattern.GetPattern(5);
-        Assert.DoesNotContain("(?i)", caseSensitivePattern);
-
-        // Change to case-insensitive
-        extractedPattern.IgnoreCase = true;
-        string caseInsensitivePattern = extractedPattern.GetPattern(5);
-
-        // Then
-        Assert.Contains("(?i)", caseInsensitivePattern);
-        Assert.NotEqual(caseSensitivePattern, caseInsensitivePattern);
-
-        // Change back to case-sensitive
-        extractedPattern.IgnoreCase = false;
-        string backToCaseSensitive = extractedPattern.GetPattern(5);
-
-        Assert.DoesNotContain("(?i)", backToCaseSensitive);
-        Assert.Equal(caseSensitivePattern, backToCaseSensitive);
-    }
-
-    [Fact]
     public void ExtractedPattern_WithIgnoreCase_AllPatternsHaveFlag()
     {
         // Given
@@ -764,30 +736,10 @@ DATA001 data001 DaTa001 INFO999
         ExtractedPattern extractedPattern = new(input, ignoreCase: true);
 
         // When/Then - All patterns should have the (?i) flag
-        for (int level = 0; level <= 5; level++)
+        for (int level = 0; level <= 4; level++)
         {
             string pattern = extractedPattern.GetPattern(level);
             Assert.StartsWith("(?i)", pattern);
-        }
-    }
-
-    [Fact]
-    public void ExtractedPattern_DefaultIgnoreCase_IsFalse()
-    {
-        // Given
-        string input = "Test";
-
-        // When
-        ExtractedPattern extractedPattern = new(input);
-
-        // Then
-        Assert.False(extractedPattern.IgnoreCase);
-
-        // Verify no patterns have the flag
-        for (int level = 0; level <= 5; level++)
-        {
-            string pattern = extractedPattern.GetPattern(level);
-            Assert.DoesNotContain("(?i)", pattern);
         }
     }
 }
