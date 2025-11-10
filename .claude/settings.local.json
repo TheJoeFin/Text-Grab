@@ -10,7 +10,8 @@
       "Bash(dotnet --version)",
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
-      "Bash(gh pr list:*)"
+      "Bash(gh pr list:*)",
+      "Bash(\"/mnt/c/Program Files/dotnet/dotnet.exe\" test Tests/Tests.csproj --filter \"FullyQualifiedName~OcrJapaneseImage\" --logger \"console;verbosity=detailed\")"
     ],
     "deny": []
   }

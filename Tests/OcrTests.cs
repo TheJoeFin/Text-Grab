@@ -94,14 +94,14 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
     private const string jaWordBorders = @".\TextFiles\ja-word-borders.json";
     private const string jaExpectedResult = """
         くろ　からだ　しつ
-        黒ごまは体にいいです。タンバク質やカルシウムが
+        黒ごまは体にいいです。タンパク質やカルシウムが
         かみ　くろ　こうか
         たくさんあります。髪を黒くする効果もあります。
-        くろ　あぶら　はだ　かみ　りようり
+        くろ　あぶら　はだ　かみ　りょうり
         黒ごま油は肌や髪に使います。料理にも使います。
         かゆ　た　からだ
-        お粥やデサートに入れます。でも、食べすきると体 た
-        によくないです。少しすつ食べましよう。
+        お粥やデザートに入れます。でも、食べすぎると体 た
+        によくないです。少しずつ食べましょう。
         """;
 
     private const string jaTestImagePath = @".\Images\ja-黒くろごまのちから.png";
