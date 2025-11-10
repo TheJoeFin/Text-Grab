@@ -71,6 +71,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Update="TextFiles\ja-word-borders.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
       <None Update="TextFiles\Table-Complex-WordBorders.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
