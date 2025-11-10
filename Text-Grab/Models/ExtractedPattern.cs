@@ -27,6 +27,12 @@ public class ExtractedPattern
 
     /// <summary>
     /// Total number of precision levels supported.
+    /// Level 0: Any Text - Matches any non-whitespace (\S+)
+    /// Level 1: Words - Matches word characters (\w+)
+    /// Level 2: Length - Preserves character count
+    /// Level 3: Types - Matches character types (letters, digits, etc.)
+    /// Level 4: Per Char - Character classes for each position
+    /// Level 5: Exact - Literal match
     /// </summary>
     public const int MaxPrecisionLevel = 5;
     public const int MinPrecisionLevel = 0;

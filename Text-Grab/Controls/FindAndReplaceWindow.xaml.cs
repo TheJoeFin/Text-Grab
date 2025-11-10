@@ -535,7 +535,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         regexManager.Show();
     }
 
-    internal void FindByPattern(ExtractedPattern pattern)
+    internal void FindByPattern(ExtractedPattern pattern, int? precisionLevel = null)
     {
         // Store the ExtractedPattern so the slider can use it
         extractedPattern = pattern;
@@ -544,9 +544,13 @@ public partial class FindAndReplaceWindow : FluentWindow
         bool ignoreCase = ExactMatchCheckBox.IsChecked is not true;
         extractedPattern.IgnoreCase = ignoreCase;
 
-        // Get the pattern at the current slider position
-        int precisionLevel = (int)PrecisionSlider.Value;
-        FindTextBox.Text = pattern.GetPattern(precisionLevel);
+        // If a precision level was provided, use it; otherwise use the current slider value
+        int levelToUse = precisionLevel ?? (int)PrecisionSlider.Value;
+
+        // Update the slider to reflect the precision level being used
+        PrecisionSlider.Value = levelToUse;
+
+        FindTextBox.Text = pattern.GetPattern(levelToUse);
 
         UsePaternCheckBox.IsChecked = true;
 

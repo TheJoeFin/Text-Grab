@@ -2500,7 +2500,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
             }
             string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
-            SimilarMatchesButton.ToolTip = $"Click to Find and Replace with pattern (Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
+            SimilarMatchesButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
             SimilarMatchesButton.Visibility = similarCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else
@@ -2648,7 +2648,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
-        findAndReplaceWindow.FindByPattern(extractedPattern);
+        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
         findAndReplaceWindow.Show();
     }
 
@@ -2673,7 +2673,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
-        findAndReplaceWindow.FindByPattern(extractedPattern);
+        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
         findAndReplaceWindow.Show();
     }
 
@@ -2683,8 +2683,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (currentExtractedPattern is null)
             return;
 
+        // Determine scroll direction for animation
+        bool scrollingUp = e.Delta > 0;
+
         // Adjust precision level based on scroll direction
-        if (e.Delta > 0)
+        if (scrollingUp)
         {
             // Scroll up = increase precision (more specific pattern)
             currentPrecisionLevel = Math.Min(currentPrecisionLevel + 1, ExtractedPattern.MaxPrecisionLevel);
@@ -2698,8 +2701,42 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Update the UI to reflect the new precision level
         UpdateSelectionSpecificUI();
 
+        // Add visual feedback animation to make the precision change more obvious
+        AnimatePrecisionChange(sender, scrollingUp);
+
         // Mark the event as handled so it doesn't bubble up
         e.Handled = true;
+    }
+
+    private void AnimatePrecisionChange(object sender, bool scrollingUp)
+    {
+        if (sender is not System.Windows.Controls.Button button)
+            return;
+
+        // Ensure the button has a RenderTransform for translation
+        if (button.RenderTransform is not TranslateTransform)
+        {
+            button.RenderTransform = new TranslateTransform(0, 0);
+        }
+
+        TranslateTransform translateTransform = (TranslateTransform)button.RenderTransform;
+
+        // Create a slide animation based on scroll direction
+        // Scrolling up (increasing precision) = slide text up (negative Y)
+        // Scrolling down (decreasing precision) = slide text down (positive Y)
+        double slideDistance = 10;
+        double startY = scrollingUp ? slideDistance : -slideDistance;
+
+        System.Windows.Media.Animation.DoubleAnimation slideAnimation = new()
+        {
+            From = startY,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+        };
+
+        // Apply the animation to Y translation
+        translateTransform.BeginAnimation(TranslateTransform.YProperty, slideAnimation);
     }
 
     private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
