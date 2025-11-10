@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -72,6 +73,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     // Remember last non-collapsed width for the calc column
     private GridLength _lastCalcColumnWidth = new(1, GridUnitType.Star);
+
+    // Store extracted pattern and precision for mouse wheel adjustment
+    private ExtractedPattern? currentExtractedPattern = null;
+    private int currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
 
     #endregion Fields
 
@@ -999,7 +1004,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private static class DoubleUtil
     {
-        public static bool AreClose(double a, double b, double epsilon = 0.25) => Math.Abs(a - b) < epsilon;
+        public static bool AreClose(double a, double b, double epsilon = 0.25)
+        {
+            return Math.Abs(a - b) < epsilon;
+        }
     }
 
     private void SyncCalcScrollToMain()
@@ -2383,8 +2391,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
             int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
+            string text = DefaultSettings.EtwShowWordCount
+                ? $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}"
+                : $"Ln {lineNumber + 1}, Col {columnNumber}";
 
-            BottomBarText.Text = $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}";
+            BottomBarText.Text = text;
+
+            // Hide selection-specific UI elements
+            MatchCountButton.Visibility = Visibility.Collapsed;
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
+            CharDetailsButton.Visibility = Visibility.Collapsed;
         }
         else
         {
@@ -2410,7 +2427,439 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
             else
                 BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
+
+            // Update selection-specific UI elements
+            UpdateSelectionSpecificUI();
         }
+    }
+
+    private void UpdateSelectionSpecificUI()
+    {
+        string selectedText = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(selectedText))
+        {
+            MatchCountButton.Visibility = Visibility.Collapsed;
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+            CharDetailsButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Show character details for single character selection
+        if (DefaultSettings.EtwShowCharDetails && selectedText.Length == 1)
+        {
+            char selectedChar = selectedText[0];
+            int codePoint = char.ConvertToUtf32(selectedText, 0);
+            string unicodeHex = $"U+{codePoint:X4}";
+
+            CharDetailsButtonText.Text = unicodeHex;
+            CharDetailsButton.ToolTip = $"{unicodeHex}: {GetUnicodeCategory(selectedChar)}";
+            CharDetailsButton.Visibility = Visibility.Visible;
+        }
+        else if (DefaultSettings.EtwShowCharDetails && selectedText.Length > 1)
+        {
+            CharDetailsButtonText.Text = $"{selectedText.Length} chars";
+            CharDetailsButton.ToolTip = "Click to see character details";
+            CharDetailsButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            CharDetailsButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show match count
+        if (DefaultSettings.EtwShowMatchCount && !string.IsNullOrEmpty(selectedText))
+        {
+            int matchCount = CountMatches(PassedTextControl.Text, selectedText);
+            if (MatchCountButton.Content is TextBlock matchButton)
+            {
+                matchButton.Text = matchCount == 1 ? "1 match" : $"{matchCount} matches";
+            }
+            MatchCountButton.Visibility = matchCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            MatchCountButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show similar matches count using regex pattern
+        if (DefaultSettings.EtwShowSimilarMatches && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
+        {
+            // Generate and store the ExtractedPattern if the selection changed
+            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
+            {
+                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+            }
+
+            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+            int similarCount = CountRegexMatches(PassedTextControl.Text, regexPattern);
+            if (SimilarMatchesButton.Content is TextBlock similarButton)
+            {
+                similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
+            }
+            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
+            SimilarMatchesButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
+            SimilarMatchesButton.Visibility = similarCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show regex pattern
+        if (DefaultSettings.EtwShowRegexPattern && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
+        {
+            // Generate and store the ExtractedPattern if the selection changed
+            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
+            {
+                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+            }
+
+            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+            if (RegexPatternButton.Content is TextBlock regexButton)
+            {
+                regexButton.Text = regexPattern.Length > 30
+                    ? $"Regex: {regexPattern[..27]}..."
+                    : $"Regex: {regexPattern}";
+            }
+            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
+            RegexPatternButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
+            RegexPatternButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private string GetUnicodeCategory(char c)
+    {
+        UnicodeCategory category = char.GetUnicodeCategory(c);
+        return category switch
+        {
+            UnicodeCategory.UppercaseLetter => "Uppercase Letter",
+            UnicodeCategory.LowercaseLetter => "Lowercase Letter",
+            UnicodeCategory.TitlecaseLetter => "Titlecase Letter",
+            UnicodeCategory.ModifierLetter => "Modifier Letter",
+            UnicodeCategory.OtherLetter => "Other Letter",
+            UnicodeCategory.NonSpacingMark => "Non-Spacing Mark",
+            UnicodeCategory.SpacingCombiningMark => "Spacing Mark",
+            UnicodeCategory.EnclosingMark => "Enclosing Mark",
+            UnicodeCategory.DecimalDigitNumber => "Decimal Digit",
+            UnicodeCategory.LetterNumber => "Letter Number",
+            UnicodeCategory.OtherNumber => "Other Number",
+            UnicodeCategory.SpaceSeparator => "Space Separator",
+            UnicodeCategory.LineSeparator => "Line Separator",
+            UnicodeCategory.ParagraphSeparator => "Paragraph Separator",
+            UnicodeCategory.Control => "Control Character",
+            UnicodeCategory.Format => "Format Character",
+            UnicodeCategory.Surrogate => "Surrogate",
+            UnicodeCategory.PrivateUse => "Private Use",
+            UnicodeCategory.ConnectorPunctuation => "Connector Punctuation",
+            UnicodeCategory.DashPunctuation => "Dash Punctuation",
+            UnicodeCategory.OpenPunctuation => "Open Punctuation",
+            UnicodeCategory.ClosePunctuation => "Close Punctuation",
+            UnicodeCategory.InitialQuotePunctuation => "Initial Quote",
+            UnicodeCategory.FinalQuotePunctuation => "Final Quote",
+            UnicodeCategory.OtherPunctuation => "Other Punctuation",
+            UnicodeCategory.MathSymbol => "Math Symbol",
+            UnicodeCategory.CurrencySymbol => "Currency Symbol",
+            UnicodeCategory.ModifierSymbol => "Modifier Symbol",
+            UnicodeCategory.OtherSymbol => "Other Symbol",
+            UnicodeCategory.OtherNotAssigned => "Not Assigned",
+            _ => "Unknown"
+        };
+    }
+
+    private int CountMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        int count = 0;
+        int index = 0;
+
+        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+
+        return count;
+    }
+
+    private int CountRegexMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        try
+        {
+            MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
+            return matches.Count;
+        }
+        catch (Exception)
+        {
+            // If regex is invalid, return 0
+            return 0;
+        }
+    }
+
+    private string GenerateRegexPattern(string text)
+    {
+        // Use the stored ExtractedPattern if available and matches current text
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == text)
+        {
+            return currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        }
+
+        // Otherwise create new pattern at default precision
+        ExtractedPattern extractedPattern = new(text);
+        return extractedPattern.GetPattern(ExtractedPattern.DefaultPrecisionLevel);
+    }
+
+    private void MatchCountButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Open find and replace with the selection pre-loaded
+        LaunchFindAndReplace();
+    }
+
+    private void SimilarMatchesButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+
+        // Use the stored ExtractedPattern if available, otherwise create new one
+        ExtractedPattern extractedPattern;
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
+        {
+            extractedPattern = currentExtractedPattern;
+        }
+        else
+        {
+            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+        }
+
+        // Launch Find and Replace with regex enabled and execute search
+        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findAndReplaceWindow.TextEditWindow = this;
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
+        findAndReplaceWindow.Show();
+    }
+
+    private void RegexPatternButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+
+        // Use the stored ExtractedPattern if available, otherwise create new one
+        ExtractedPattern extractedPattern;
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
+        {
+            extractedPattern = currentExtractedPattern;
+        }
+        else
+        {
+            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+        }
+
+        // Launch Find and Replace with regex enabled and execute search
+        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findAndReplaceWindow.TextEditWindow = this;
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
+        findAndReplaceWindow.Show();
+    }
+
+    private void PatternButton_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Only handle if we have a valid ExtractedPattern
+        if (currentExtractedPattern is null)
+            return;
+
+        // Determine scroll direction for animation
+        bool scrollingUp = e.Delta > 0;
+
+        // Adjust precision level based on scroll direction
+        if (scrollingUp)
+        {
+            // Scroll up = increase precision (more specific pattern)
+            currentPrecisionLevel = Math.Min(currentPrecisionLevel + 1, ExtractedPattern.MaxPrecisionLevel);
+        }
+        else if (e.Delta < 0)
+        {
+            // Scroll down = decrease precision (more general pattern)
+            currentPrecisionLevel = Math.Max(currentPrecisionLevel - 1, ExtractedPattern.MinPrecisionLevel);
+        }
+
+        // Update the UI to reflect the new precision level
+        UpdateSelectionSpecificUI();
+
+        // Add visual feedback animation to make the precision change more obvious
+        AnimatePrecisionChange(sender, scrollingUp);
+
+        // Mark the event as handled so it doesn't bubble up
+        e.Handled = true;
+    }
+
+    private void AnimatePrecisionChange(object sender, bool scrollingUp)
+    {
+        if (sender is not System.Windows.Controls.Button button)
+            return;
+
+        // Ensure the button has a RenderTransform for translation
+        if (button.RenderTransform is not TranslateTransform)
+        {
+            button.RenderTransform = new TranslateTransform(0, 0);
+        }
+
+        TranslateTransform translateTransform = (TranslateTransform)button.RenderTransform;
+
+        // Create a slide animation based on scroll direction
+        // Scrolling up (increasing precision) = slide text up (negative Y)
+        // Scrolling down (decreasing precision) = slide text down (positive Y)
+        double slideDistance = 10;
+        double startY = scrollingUp ? slideDistance : -slideDistance;
+
+        System.Windows.Media.Animation.DoubleAnimation slideAnimation = new()
+        {
+            From = startY,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+        };
+
+        // Apply the animation to Y translation
+        translateTransform.BeginAnimation(TranslateTransform.YProperty, slideAnimation);
+    }
+
+    private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+
+        CharDetailsPopupContent.Children.Clear();
+
+        if (selectedText.Length == 1)
+        {
+            // Show details for single character in multi-line TextBox
+            char c = selectedText[0];
+            string details = GetCharacterDetailsText(c);
+
+            System.Windows.Controls.TextBox detailsTextBox = new()
+            {
+                Text = details,
+                FontSize = 12,
+                IsReadOnly = true,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                TextWrapping = TextWrapping.Wrap,
+                Cursor = System.Windows.Input.Cursors.Arrow,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+            CharDetailsPopupContent.Children.Add(detailsTextBox);
+        }
+        else
+        {
+            // Show details for multiple characters in one multi-line TextBox
+            StringBuilder allDetails = new();
+            allDetails.AppendLine($"Character Details ({selectedText.Length} characters)");
+            allDetails.AppendLine();
+
+            // Limit to first 10 characters to avoid huge popup
+            int charLimit = Math.Min(selectedText.Length, 10);
+            for (int i = 0; i < charLimit; i++)
+            {
+                char c = selectedText[i];
+                allDetails.AppendLine(GetCharacterDetailsText(c));
+
+                if (i < charLimit - 1)
+                    allDetails.AppendLine(); // Add blank line between characters
+            }
+
+            if (selectedText.Length > charLimit)
+            {
+                allDetails.AppendLine();
+                allDetails.AppendLine($"... and {selectedText.Length - charLimit} more");
+            }
+
+            System.Windows.Controls.TextBox detailsTextBox = new()
+            {
+                Text = allDetails.ToString(),
+                FontSize = 12,
+                IsReadOnly = true,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                TextWrapping = TextWrapping.Wrap,
+                Cursor = System.Windows.Input.Cursors.Arrow,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = 400
+            };
+            CharDetailsPopupContent.Children.Add(detailsTextBox);
+        }
+
+        CharDetailsPopup.IsOpen = true;
+    }
+
+    private string GetCharacterDetailsText(char c)
+    {
+        int codePoint = char.ConvertToUtf32(c.ToString(), 0);
+        string unicodeHex = $"U+{codePoint:X4}";
+        string category = GetUnicodeCategory(c);
+
+        StringBuilder details = new();
+        details.AppendLine($"Character: '{c}'");
+        details.AppendLine($"Unicode: {unicodeHex} (decimal: {codePoint})");
+        details.AppendLine($"Category: {category}");
+
+        // UTF-8 encoding
+        byte[] utf8Bytes = Encoding.UTF8.GetBytes(c.ToString());
+        string utf8Hex = string.Join(" ", utf8Bytes.Select(b => $"0x{b:X2}"));
+        details.AppendLine($"UTF-8: {utf8Hex}");
+
+        // HTML entity if applicable
+        if (codePoint < 128 || IsCommonHtmlEntity(c))
+        {
+            string htmlEntity = GetHtmlEntity(c, codePoint);
+            if (!string.IsNullOrEmpty(htmlEntity))
+            {
+                details.AppendLine($"HTML: {htmlEntity}");
+            }
+        }
+
+        return details.ToString().TrimEnd();
+    }
+
+
+    private bool IsCommonHtmlEntity(char c)
+    {
+        return c switch
+        {
+            '<' or '>' or '&' or '"' or '\'' or ' ' => true,
+            _ => false
+        };
+    }
+
+    private string GetHtmlEntity(char c, int codePoint)
+    {
+        return c switch
+        {
+            '<' => "&lt; or &#60;",
+            '>' => "&gt; or &#62;",
+            '&' => "&amp; or &#38;",
+            '"' => "&quot; or &#34;",
+            '\'' => "&apos; or &#39;",
+            ' ' when codePoint == 160 => "&nbsp; or &#160;",
+            _ => $"&#{codePoint};"
+        };
     }
 
     private void Window_Activated(object sender, EventArgs e)
@@ -2418,7 +2867,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Focus();
     }
 
-    private void Window_Closed(object? sender, EventArgs e)
+    private void Window_Closed(object sender, EventArgs e)
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
         DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
@@ -2806,8 +3255,403 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private void RegexManagerMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.Show();
+    }
+
+    private void SaveCurrentPatternToRegexManager()
+    {
+        if (currentExtractedPattern is null)
+            return;
+
+        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        string sourceText = currentExtractedPattern.OriginalText;
+
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.AddPatternFromText(pattern, sourceText);
+        regexManager.Show();
+    }
+
+    private void LoadStoredPatternToSelection(StoredRegex storedPattern)
+    {
+        if (storedPattern is null)
+            return;
+
+        // Open Find and Replace window with this pattern and execute search
+        FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findWindow.FindTextBox.Text = storedPattern.Pattern;
+        findWindow.UsePaternCheckBox.IsChecked = true;
+        findWindow.TextEditWindow = this;
+        findWindow.StringFromWindow = PassedTextControl.Text;
+        findWindow.SearchForText();
+        findWindow.Show();
+    }
+
+    private void ShowRegexExplanation()
+    {
+        if (currentExtractedPattern is null)
+            return;
+
+        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        string explanation = ExplainRegexPattern(pattern);
+
+        Wpf.Ui.Controls.MessageBox messageBox = new()
+        {
+            Title = "Regex Pattern Explanation",
+            Content = explanation,
+            CloseButtonText = "Close"
+        };
+        _ = messageBox.ShowDialogAsync();
+    }
+
+    private void ExplainPatternMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
+
+        if (string.IsNullOrEmpty(pattern))
+            return;
+
+        // Clear previous content
+        CharDetailsPopupContent.Children.Clear();
+
+        // Create explanation text
+        string explanation = ExplainRegexPattern(pattern);
+
+        System.Windows.Controls.TextBox explanationTextBox = new()
+        {
+            Text = explanation,
+            FontSize = 12,
+            IsReadOnly = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            TextWrapping = TextWrapping.Wrap,
+            Cursor = System.Windows.Input.Cursors.Arrow,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MaxHeight = 400,
+            Padding = new Thickness(8)
+        };
+
+        CharDetailsPopupContent.Children.Add(explanationTextBox);
+        CharDetailsPopup.IsOpen = true;
+    }
+
+    private string ExplainRegexPattern(string pattern)
+    {
+        StringBuilder explanation = new();
+        explanation.AppendLine($"Pattern: {pattern}");
+        explanation.AppendLine();
+
+        // Determine and explain overall case sensitivity
+        bool hasCaseInsensitiveFlag = pattern.Contains("(?i)");
+        bool hasCaseSensitiveFlag = pattern.Contains("(?-i)");
+
+        if (hasCaseInsensitiveFlag && !hasCaseSensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: CASE-INSENSITIVE (matches regardless of uppercase/lowercase)");
+        }
+        else if (hasCaseSensitiveFlag && !hasCaseInsensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: CASE-SENSITIVE (uppercase and lowercase must match exactly)");
+        }
+        else if (hasCaseInsensitiveFlag && hasCaseSensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: MIXED (some parts case-insensitive, some case-sensitive)");
+        }
+        else
+        {
+            explanation.AppendLine("📋 Case Sensitivity: DEFAULT (typically case-sensitive unless configured otherwise)");
+        }
+        explanation.AppendLine();
+
+        int i = 0;
+        while (i < pattern.Length)
+        {
+            char c = pattern[i];
+
+            if (c == '\\' && i + 1 < pattern.Length)
+            {
+                char next = pattern[i + 1];
+                switch (next)
+                {
+                    case 'd':
+                        explanation.AppendLine($"\\d - Matches any digit (0-9)");
+                        i += 2;
+                        break;
+                    case 's':
+                        explanation.AppendLine($"\\s - Matches any whitespace character");
+                        i += 2;
+                        break;
+                    case 'w':
+                        explanation.AppendLine($"\\w - Matches any word character (letter, digit, or underscore)");
+                        i += 2;
+                        break;
+                    case 'S':
+                        explanation.AppendLine($"\\S - Matches any non-whitespace character");
+                        i += 2;
+                        break;
+                    case 'W':
+                        explanation.AppendLine($"\\W - Matches any non-word character");
+                        i += 2;
+                        break;
+                    case 'D':
+                        explanation.AppendLine($"\\D - Matches any non-digit");
+                        i += 2;
+                        break;
+                    default:
+                        explanation.AppendLine($"\\{next} - Escaped special character '{next}'");
+                        i += 2;
+                        break;
+                }
+            }
+            else if (c == '[')
+            {
+                int closeBracket = pattern.IndexOf(']', i);
+                if (closeBracket > i)
+                {
+                    string charClass = pattern.Substring(i, closeBracket - i + 1);
+                    explanation.AppendLine($"{charClass} - Character class: matches one of these characters");
+                    i = closeBracket + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '{' && i + 1 < pattern.Length)
+            {
+                int closeBrace = pattern.IndexOf('}', i);
+                if (closeBrace > i)
+                {
+                    string quantifier = pattern.Substring(i, closeBrace - i + 1);
+                    explanation.AppendLine($"{quantifier} - Quantifier: repeat the previous element exactly this many times");
+                    i = closeBrace + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '(')
+            {
+                int closeParen = pattern.IndexOf(')', i);
+                if (closeParen > i)
+                {
+                    string group = pattern.Substring(i, closeParen - i + 1);
+
+                    // Check if this is an inline modifier group
+                    if (group.StartsWith("(?i)"))
+                    {
+                        explanation.AppendLine($"{group} - Case-insensitive flag: following pattern ignores case (A matches a)");
+                    }
+                    else if (group.StartsWith("(?-i)"))
+                    {
+                        explanation.AppendLine($"{group} - Case-sensitive flag: following pattern is case-sensitive (A only matches A)");
+                    }
+                    else if (group.StartsWith("(?"))
+                    {
+                        // Other inline modifiers
+                        if (group.Contains('i'))
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier (includes 'i' for case-insensitive matching)");
+                        }
+                        else if (group.Contains("-i"))
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier (includes '-i' for case-sensitive matching)");
+                        }
+                        else
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier group");
+                        }
+                    }
+                    else
+                    {
+                        explanation.AppendLine($"{group} - Capturing group");
+                    }
+                    i = closeParen + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '+')
+            {
+                explanation.AppendLine($"+ - One or more of the previous element");
+                i++;
+            }
+            else if (c == '*')
+            {
+                explanation.AppendLine($"* - Zero or more of the previous element");
+                i++;
+            }
+            else if (c == '?')
+            {
+                explanation.AppendLine($"? - Zero or one of the previous element (optional)");
+                i++;
+            }
+            else if (c == '.')
+            {
+                explanation.AppendLine($". - Matches any single character");
+                i++;
+            }
+            else if (c == '^')
+            {
+                explanation.AppendLine($"^ - Start of line/string");
+                i++;
+            }
+            else if (c == '$')
+            {
+                explanation.AppendLine($"$ - End of line/string");
+                i++;
+            }
+            else
+            {
+                i++;
+            }
+        }
+
+        return explanation.ToString();
+    }
+
     [GeneratedRegex(@"(\r\n|\n|\r)")]
     private static partial Regex NewlineReturns();
 
     #endregion Methods
+
+    private void SavePatternMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
+
+        if (string.IsNullOrEmpty(pattern))
+            return;
+
+        // open the RegexManager and save this pattern
+
+    }
+
+    private void PatternContextOpening(object sender, ContextMenuEventArgs e)
+    {
+        // sender should be a button if not return
+        if (sender is not System.Windows.Controls.Button button)
+            return;
+
+        // get the context menu
+        if (button.ContextMenu is null)
+            return;
+
+        ContextMenu contextMenu = button.ContextMenu;
+
+        // Clear existing dynamic items (keep original static items)
+        // Find if "Use Pattern" menu item already exists, remove it to rebuild
+        MenuItem? existingUsePatternItem = null;
+        foreach (object? item in contextMenu.Items)
+        {
+            if (item is MenuItem mi && mi.Header?.ToString() == "Use Pattern")
+            {
+                existingUsePatternItem = mi;
+                break;
+            }
+        }
+
+        if (existingUsePatternItem is not null)
+            contextMenu.Items.Remove(existingUsePatternItem);
+
+        // make a context menu item for "use this pattern"
+        MenuItem usePatternMenuItem = new()
+        {
+            Header = "Use Pattern"
+        };
+
+        // add all patterns from regex manager as menu items as children to the new "use this pattern" item
+        List<StoredRegex> storedPatterns = LoadRegexPatterns();
+
+        if (storedPatterns.Count == 0)
+        {
+            MenuItem noPatternItem = new()
+            {
+                Header = "No saved patterns",
+                IsEnabled = false
+            };
+            usePatternMenuItem.Items.Add(noPatternItem);
+        }
+        else
+        {
+            foreach (StoredRegex storedPattern in storedPatterns)
+            {
+                MenuItem patternItem = new()
+                {
+                    Header = storedPattern.Name,
+                    ToolTip = storedPattern.Pattern,
+                    Tag = storedPattern
+                };
+
+                // wire up click event to override the currentExtractedPattern
+                patternItem.Click += (s, args) =>
+                {
+                    if (s is MenuItem clickedItem && clickedItem.Tag is StoredRegex selectedPattern)
+                    {
+                        // Create a new ExtractedPattern from the stored pattern
+                        // Use the pattern's description or name as the source text
+                        string sourceText = string.IsNullOrWhiteSpace(selectedPattern.Description)
+                            ? selectedPattern.Name
+                            : selectedPattern.Description;
+
+                        // Override the current extracted pattern with the selected stored pattern
+                        currentExtractedPattern = new ExtractedPattern(sourceText, ignoreCase: true);
+                        currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+
+                        // Update the UI to reflect the new pattern
+                        UpdateSelectionSpecificUI();
+
+                        // Optionally open Find and Replace with this pattern
+                        LoadStoredPatternToSelection(selectedPattern);
+                    }
+                };
+
+                usePatternMenuItem.Items.Add(patternItem);
+            }
+        }
+
+        // Add separator before the "Use Pattern" item
+        contextMenu.Items.Add(new Separator());
+
+        // Add the "Use Pattern" menu item to the context menu
+        contextMenu.Items.Add(usePatternMenuItem);
+    }
+
+    private List<StoredRegex> LoadRegexPatterns()
+    {
+        List<StoredRegex> returnRegexes = [];
+
+        // Load from settings
+        string regexListJson = DefaultSettings.RegexList;
+
+        if (!string.IsNullOrWhiteSpace(regexListJson))
+        {
+            try
+            {
+                StoredRegex[]? loadedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
+                if (loadedPatterns is not null)
+                {
+                    foreach (StoredRegex pattern in loadedPatterns)
+                        returnRegexes.Add(pattern);
+                }
+            }
+            catch (JsonException)
+            {
+                // If deserialization fails, start fresh
+            }
+        }
+
+        // Add default patterns if list is empty
+        if (returnRegexes.Count == 0)
+        {
+            foreach (StoredRegex defaultPattern in StoredRegex.GetDefaultPatterns())
+                returnRegexes.Add(defaultPattern);
+        }
+
+        return returnRegexes;
+    }
 }

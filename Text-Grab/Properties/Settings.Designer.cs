@@ -694,5 +694,77 @@ namespace Text_Grab.Properties {
                 this["CalcPaneWidth"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowWordCount {
+            get {
+                return ((bool)(this["EtwShowWordCount"]));
+            }
+            set {
+                this["EtwShowWordCount"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowCharDetails {
+            get {
+                return ((bool)(this["EtwShowCharDetails"]));
+            }
+            set {
+                this["EtwShowCharDetails"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowMatchCount {
+            get {
+                return ((bool)(this["EtwShowMatchCount"]));
+            }
+            set {
+                this["EtwShowMatchCount"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowRegexPattern {
+            get {
+                return ((bool)(this["EtwShowRegexPattern"]));
+            }
+            set {
+                this["EtwShowRegexPattern"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowSimilarMatches {
+            get {
+                return ((bool)(this["EtwShowSimilarMatches"]));
+            }
+            set {
+                this["EtwShowSimilarMatches"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string RegexList {
+            get {
+                return ((string)(this["RegexList"]));
+            }
+            set {
+                this["RegexList"] = value;
+            }
+        }
     }
 }

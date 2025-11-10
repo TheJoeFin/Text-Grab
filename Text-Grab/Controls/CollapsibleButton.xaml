@@ -16,23 +16,29 @@
     Loaded="CollapsibleButton_Loaded"
     Style="{StaticResource TealColor}"
     mc:Ignorable="d">
-    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Grid
+        MinWidth="18"
+        Margin="8,0"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="auto" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
         <ui:SymbolIcon
-            Margin="12,2"
+            Margin="0"
+            HorizontalAlignment="Center"
             d:Symbol="Diamond24"
             Symbol="{Binding Path=ButtonSymbol, Mode=TwoWay, ElementName=CollapsibleButtonUserControl}" />
 
         <TextBlock
             x:Name="ButtonTextBlock"
             Grid.Column="1"
-            Margin="0,0,12,0"
+            Margin="8,0,0,0"
             VerticalAlignment="Center"
             d:Text="Design Text"
             Text="{Binding ElementName=CollapsibleButtonUserControl, Path=ButtonText, Mode=TwoWay}" />
+
     </Grid>
     <Button.ContextMenu>
         <ContextMenu>

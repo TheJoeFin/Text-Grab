@@ -1,0 +1,165 @@
+﻿<ui:FluentWindow
+    x:Class="Text_Grab.Controls.RegexManager"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Regular Expression Manager"
+    Width="900"
+    Height="600"
+    MinWidth="700"
+    MinHeight="450"
+    Closing="FluentWindow_Closing"
+    Loaded="Window_Loaded"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="200" MinHeight="150" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar
+            Title="Regular Expression Manager"
+            Height="32"
+            Margin="2,2,2,0"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+
+        <!--  Main DataGrid  -->
+        <Border
+            Grid.Row="1"
+            Margin="6"
+            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
+            <DataGrid
+                x:Name="RegexDataGrid"
+                AutoGenerateColumns="False"
+                CanUserAddRows="True"
+                CanUserDeleteRows="True"
+                HeadersVisibility="Column"
+                HorizontalScrollBarVisibility="Disabled"
+                SelectionChanged="RegexDataGrid_SelectionChanged"
+                SelectionMode="Single">
+                <DataGrid.Columns>
+                    <DataGridTextColumn
+                        Width="auto"
+                        Binding="{Binding Name}"
+                        Header="Name"
+                        IsReadOnly="False" />
+                    <DataGridTextColumn
+                        Width="*"
+                        Binding="{Binding Pattern}"
+                        Header="Pattern"
+                        IsReadOnly="False" />
+                    <DataGridTextColumn
+                        Width="*"
+                        Binding="{Binding Description}"
+                        Header="Description"
+                        IsReadOnly="False" />
+                    <DataGridCheckBoxColumn
+                        Width="70"
+                        Binding="{Binding IsDefault}"
+                        Header="Default"
+                        IsReadOnly="True"
+                        Visibility="Collapsed" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!--  Action Buttons  -->
+        <StackPanel
+            Grid.Row="2"
+            Margin="6,0,6,6"
+            Orientation="Horizontal">
+            <ui:Button
+                x:Name="AddButton"
+                Margin="0,0,6,0"
+                Click="AddButton_Click"
+                Content="Add New"
+                Icon="{ui:SymbolIcon Add24}" />
+            <ui:Button
+                x:Name="EditButton"
+                Margin="0,0,6,0"
+                Click="EditButton_Click"
+                Content="Edit"
+                Icon="{ui:SymbolIcon Edit24}"
+                IsEnabled="False" />
+            <ui:Button
+                x:Name="DeleteButton"
+                Margin="0,0,6,0"
+                Appearance="Danger"
+                Click="DeleteButton_Click"
+                Content="Delete"
+                Icon="{ui:SymbolIcon Delete24}"
+                IsEnabled="False" />
+            <ui:Button
+                x:Name="UseButton"
+                Margin="0,0,6,0"
+                Appearance="Primary"
+                Click="UseButton_Click"
+                Content="Use in Find &amp; Replace"
+                Icon="{ui:SymbolIcon Search24}"
+                IsEnabled="False" />
+        </StackPanel>
+
+        <!--  Test Panel  -->
+        <GridSplitter
+            Grid.Row="2"
+            Height="4"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Bottom" />
+
+        <Border
+            Grid.Row="3"
+            Margin="6"
+            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                    Grid.Row="0"
+                    Margin="6"
+                    FontSize="14"
+                    FontWeight="SemiBold"
+                    Text="Test Pattern" />
+
+                <TextBox
+                    x:Name="TestTextBox"
+                    Grid.Row="1"
+                    Margin="6,0,6,6"
+                    AcceptsReturn="True"
+                    Text="Enter test text here..."
+                    TextChanged="TestTextBox_TextChanged"
+                    TextWrapping="Wrap"
+                    VerticalScrollBarVisibility="Auto" />
+
+                <StackPanel
+                    Grid.Row="2"
+                    Margin="6,0,6,6"
+                    Orientation="Horizontal">
+                    <TextBlock
+                        Margin="0,0,6,0"
+                        VerticalAlignment="Center"
+                        Text="Matches:" />
+                    <TextBlock
+                        x:Name="MatchCountText"
+                        VerticalAlignment="Center"
+                        FontWeight="Bold"
+                        Text="0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
