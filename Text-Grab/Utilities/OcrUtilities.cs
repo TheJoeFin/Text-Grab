@@ -91,13 +91,13 @@ public static partial class OcrUtilities
             return words;
 
         // Calculate the median height of all words
-        List<double> heights = words.Select(w => w.BoundingBox.Height).OrderBy(h => h).ToList();
+        List<double> heights = [.. words.Select(w => w.BoundingBox.Height).OrderBy(h => h)];
         double medianHeight = heights.Count > 0 ? heights[heights.Count / 2] : 0;
         
         // Furigana is typically 30-50% the height of main text
         double furiganaThreshold = medianHeight * 0.6;
         
-        List<IOcrWord> filteredWords = new();
+        List<IOcrWord> filteredWords = [];
         
         for (int i = 0; i < words.Count; i++)
         {
@@ -396,8 +396,11 @@ public static partial class OcrUtilities
 
         bool isSpaceJoiningOCRLang = language.IsSpaceJoining();
 
-        foreach (IOcrLine ocrLine in ocrResult.Lines)
-            ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
+        if (isSpaceJoiningOCRLang)
+            text.Append(PostOcrUtilities.GetTextFromOcrResult(ocrResult, language));
+        else
+            foreach (IOcrLine ocrLine in ocrResult.Lines)
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
 
         if (language.IsRightToLeft())
             text.ReverseWordsForRightToLeft();
