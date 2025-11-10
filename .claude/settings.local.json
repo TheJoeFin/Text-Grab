@@ -9,7 +9,8 @@
       "Bash(./Tests.exe --help)",
       "Bash(dotnet --version)",
       "Bash(dotnet build:*)",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Bash(gh pr list:*)"
     ],
     "deny": []
   }
