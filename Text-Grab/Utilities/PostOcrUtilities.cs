@@ -9,6 +9,35 @@ namespace Text_Grab.Utilities;
 
 public static class PostOcrUtilities
 {
+    public static string GetTextFromOcrResult(IOcrLinesWords ocrResult, ILanguage language)
+    {
+        // Convert OCR result to WordBorderInfo objects for each individual word
+        List<WordBorderInfo> wordBorderInfos = [];
+
+        foreach (IOcrLine ocrLine in ocrResult.Lines)
+        {
+            foreach (IOcrWord ocrWord in ocrLine.Words)
+            {
+                WordBorderInfo wordInfo = new()
+                {
+                    BorderRect = new System.Windows.Rect(
+                        ocrWord.BoundingBox.X,
+                        ocrWord.BoundingBox.Y,
+                        ocrWord.BoundingBox.Width,
+                        ocrWord.BoundingBox.Height),
+                    Word = ocrWord.Text,
+                    ResultRowID = 0,
+                    ResultColumnID = 0
+                };
+
+                wordBorderInfos.Add(wordInfo);
+            }
+        }
+
+        // Use the existing word border processing logic
+        return GetTextFromWordBorderInfo(wordBorderInfos, language);
+    }
+
     public static string GetTextFromWordBorderInfo(IEnumerable<WordBorderInfo> wordBorderInfos, ILanguage language)
     {
         if (language.LanguageTag.StartsWith("ja"))
