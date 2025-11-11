@@ -62,12 +62,18 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Update="Images\ja-黒くろごまのちから.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Content Update="Images\Table-Complex.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
 
     <ItemGroup>
+      <None Update="TextFiles\ja-word-borders.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
       <None Update="TextFiles\Table-Complex-WordBorders.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>

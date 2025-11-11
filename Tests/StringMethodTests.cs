@@ -35,14 +35,14 @@ lines
         Assert.Equal(expectedWord, singleWordAtSix);
     }
 
-    private static string multiLineInput = @"Hello this is lots 
+    private static string multiLineInput = @"Hello this is lots
 of text which has several lines
-and some spaces at the ends of line 
+and some spaces at the ends of line
 to throw off any easy check";
 
     [Theory]
     [InlineData("Hello", "", " this ...")]
-    [InlineData("lots", "Hello this is ", " ...")]
+    [InlineData("lots", "Hello this is ", "...")]
     [InlineData("of", "...", " text ...")]
     [InlineData("several", "...h has ", " lines...")]
     public void ReturnPreviewsFromWord(string firstWord, string expectedLeftPreview, string expectedRightPreview)

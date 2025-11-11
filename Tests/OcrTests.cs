@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -89,6 +89,21 @@ SUBTOTAL	656,675	1,086,840	430,165	40%
 TRANSFER PAYMENTS TO SUBRECIPIENTS	360,009	978,780	618,771	63%
 TOTAL EXPENDITURES	1,016,684	2,065,620	1,048,936	51%
 REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
+
+    private const string jaWordBorders = @".\TextFiles\ja-word-borders.json";
+    private const string jaExpectedResult = """
+        くろ　からだ　しつ
+        黒ごまは体にいいです。タンパク質やカルシウムが
+        かみ　くろ　こうか
+        たくさんあります。髪を黒くする効果もあります。
+        くろ　あぶら　はだ　かみ　りょうり
+        黒ごま油は肌や髪に使います。料理にも使います。
+        かゆ　た　からだ
+        お粥やデザートに入れます。でも、食べすぎると体 た
+        によくないです。少しずつ食べましょう。
+        """;
+
+    private const string jaTestImagePath = @".\Images\ja-黒くろごまのちから.png";
 
     [WpfFact]
     public async Task OcrFontSampleImage()
@@ -361,5 +376,27 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         Assert.True(new FileInfo(tempFilePath).Length > 0);
 
         File.Delete(tempFilePath);
+    }
+
+    [WpfFact]
+    public async Task OcrJapaneseImage()
+    {
+        // Given
+        //string testImagePath = jaTestImagePath;
+        string rawOutputFromOCR = await File.ReadAllTextAsync(jaWordBorders);
+
+        HistoryInfo jaHistoryInfo = JsonSerializer.Deserialize<HistoryInfo>(rawOutputFromOCR ?? "[]")
+            ?? throw new Exception("Failed to deserialize HistoryInfo");
+        string expectedResult = jaExpectedResult;
+
+        List<WordBorderInfo> wordBorders = JsonSerializer.Deserialize<List<WordBorderInfo>>(jaHistoryInfo.WordBorderInfoJson ?? "[]")
+            ?? throw new Exception("Failed to deserialize WordBorderInfo list");
+
+        // When
+        GlobalLang japaneseLanguage = new("ja-JP");
+        string ocrTextResult = PostOcrUtilities.GetTextFromWordBorderInfo(wordBorders, japaneseLanguage);
+
+        // Then
+        Assert.Equal(expectedResult, ocrTextResult);
     }
 }
