@@ -396,7 +396,7 @@ public static partial class OcrUtilities
 
         bool isSpaceJoiningOCRLang = language.IsSpaceJoining();
 
-        if (isSpaceJoiningOCRLang)
+        if (!isSpaceJoiningOCRLang)
             text.Append(PostOcrUtilities.GetTextFromOcrResult(ocrResult, language));
         else
             foreach (IOcrLine ocrLine in ocrResult.Lines)

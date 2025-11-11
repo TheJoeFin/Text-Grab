@@ -9,7 +9,6 @@ using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Windows.Globalization;
-using Windows.Media.Ocr;
 
 namespace Tests;
 
