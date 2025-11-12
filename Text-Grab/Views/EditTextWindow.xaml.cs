@@ -1266,6 +1266,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             IsFromETW = true
         };
         qsl.Show();
+
+        // If this ETW is empty, close it to avoid clutter
+        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+        {
+            this.Close();
+        }
     }
 
     private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)

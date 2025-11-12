@@ -928,4 +928,182 @@ public static partial class StringMethods
 
     [GeneratedRegex(@"-+")]
     private static partial Regex MultiDashes();
+
+    public static string ExplainRegexPattern(string pattern)
+    {
+        StringBuilder explanation = new();
+        explanation.AppendLine($"Pattern: {pattern}");
+        explanation.AppendLine();
+
+        // Determine and explain overall case sensitivity
+        bool hasCaseInsensitiveFlag = pattern.Contains("(?i)");
+        bool hasCaseSensitiveFlag = pattern.Contains("(?-i)");
+
+        if (hasCaseInsensitiveFlag && !hasCaseSensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: CASE-INSENSITIVE (matches regardless of uppercase/lowercase)");
+        }
+        else if (hasCaseSensitiveFlag && !hasCaseInsensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: CASE-SENSITIVE (uppercase and lowercase must match exactly)");
+        }
+        else if (hasCaseInsensitiveFlag && hasCaseSensitiveFlag)
+        {
+            explanation.AppendLine("📋 Case Sensitivity: MIXED (some parts case-insensitive, some case-sensitive)");
+        }
+        else
+        {
+            explanation.AppendLine("📋 Case Sensitivity: DEFAULT (typically case-sensitive unless configured otherwise)");
+        }
+        explanation.AppendLine();
+
+        int i = 0;
+        while (i < pattern.Length)
+        {
+            char c = pattern[i];
+
+            if (c == '\\' && i + 1 < pattern.Length)
+            {
+                char next = pattern[i + 1];
+                switch (next)
+                {
+                    case 'd':
+                        explanation.AppendLine($"\\d - Matches any digit (0-9)");
+                        i += 2;
+                        break;
+                    case 's':
+                        explanation.AppendLine($"\\s - Matches any whitespace character");
+                        i += 2;
+                        break;
+                    case 'w':
+                        explanation.AppendLine($"\\w - Matches any word character (letter, digit, or underscore)");
+                        i += 2;
+                        break;
+                    case 'S':
+                        explanation.AppendLine($"\\S - Matches any non-whitespace character");
+                        i += 2;
+                        break;
+                    case 'W':
+                        explanation.AppendLine($"\\W - Matches any non-word character");
+                        i += 2;
+                        break;
+                    case 'D':
+                        explanation.AppendLine($"\\D - Matches any non-digit");
+                        i += 2;
+                        break;
+                    default:
+                        explanation.AppendLine($"\\{next} - Escaped special character '{next}'");
+                        i += 2;
+                        break;
+                }
+            }
+            else if (c == '[')
+            {
+                int closeBracket = pattern.IndexOf(']', i);
+                if (closeBracket > i)
+                {
+                    string charClass = pattern.Substring(i, closeBracket - i + 1);
+                    explanation.AppendLine($"{charClass} - Character class: matches one of these characters");
+                    i = closeBracket + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '{' && i + 1 < pattern.Length)
+            {
+                int closeBrace = pattern.IndexOf('}', i);
+                if (closeBrace > i)
+                {
+                    string quantifier = pattern.Substring(i, closeBrace - i + 1);
+                    explanation.AppendLine($"{quantifier} - Quantifier: repeat the previous element exactly this many times");
+                    i = closeBrace + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '(')
+            {
+                int closeParen = pattern.IndexOf(')', i);
+                if (closeParen > i)
+                {
+                    string group = pattern.Substring(i, closeParen - i + 1);
+
+                    // Check if this is an inline modifier group
+                    if (group.StartsWith("(?i)"))
+                    {
+                        explanation.AppendLine($"{group} - Case-insensitive flag: following pattern ignores case (A matches a)");
+                    }
+                    else if (group.StartsWith("(?-i)"))
+                    {
+                        explanation.AppendLine($"{group} - Case-sensitive flag: following pattern is case-sensitive (A only matches A)");
+                    }
+                    else if (group.StartsWith("(?"))
+                    {
+                        // Other inline modifiers
+                        if (group.Contains('i'))
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier (includes 'i' for case-insensitive matching)");
+                        }
+                        else if (group.Contains("-i"))
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier (includes '-i' for case-sensitive matching)");
+                        }
+                        else
+                        {
+                            explanation.AppendLine($"{group} - Inline modifier group");
+                        }
+                    }
+                    else
+                    {
+                        explanation.AppendLine($"{group} - Capturing group");
+                    }
+                    i = closeParen + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (c == '+')
+            {
+                explanation.AppendLine($"+ - One or more of the previous element");
+                i++;
+            }
+            else if (c == '*')
+            {
+                explanation.AppendLine($"* - Zero or more of the previous element");
+                i++;
+            }
+            else if (c == '?')
+            {
+                explanation.AppendLine($"? - Zero or one of the previous element (optional)");
+                i++;
+            }
+            else if (c == '.')
+            {
+                explanation.AppendLine($". - Matches any single character");
+                i++;
+            }
+            else if (c == '^')
+            {
+                explanation.AppendLine($"^ - Start of line/string");
+                i++;
+            }
+            else if (c == '$')
+            {
+                explanation.AppendLine($"$ - End of line/string");
+                i++;
+            }
+            else
+            {
+                i++;
+            }
+        }
+
+        return explanation.ToString();
+    }
 }

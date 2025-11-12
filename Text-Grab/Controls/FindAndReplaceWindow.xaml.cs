@@ -96,15 +96,28 @@ public partial class FindAndReplaceWindow : FluentWindow
             // Otherwise, use RegexOptions for backward compatibility
             bool usingPatternMode = UsePaternCheckBox.IsChecked is true;
             bool exactMatch = ExactMatchCheckBox.IsChecked is true;
+            TimeSpan timeout = TimeSpan.FromSeconds(5);
 
             if (exactMatch)
-                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline);
+                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline, timeout);
             else if (usingPatternMode)
                 // Pattern mode with inline (?i) flags - don't add redundant RegexOptions
-                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace);
+                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace, timeout);
             else
                 // Non-pattern mode - use RegexOptions for case insensitivity
-                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace, timeout);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            MatchesText.Text = "Regex timeout - pattern too complex";
+            Wpf.Ui.Controls.MessageBox messageBox = new()
+            {
+                Title = "Regex Timeout",
+                Content = "The regular expression took too long to execute (>5 seconds). Please simplify your pattern or reduce the amount of text being searched.",
+                CloseButtonText = "OK"
+            };
+            _ = messageBox.ShowDialogAsync();
+            return;
         }
         catch (Exception ex)
         {
@@ -469,6 +482,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         ReplaceAllButton.Visibility = optionsVisibility;
         MoreOptionsHozStack.Visibility = optionsVisibility;
         EvenMoreOptionsHozStack.Visibility = optionsVisibility;
+        PatternButtonsStack.Visibility = optionsVisibility;
     }
 
     private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)

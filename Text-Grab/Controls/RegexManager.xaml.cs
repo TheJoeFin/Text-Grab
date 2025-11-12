@@ -82,6 +82,7 @@ public partial class RegexManager : FluentWindow
 
         EditButton.IsEnabled = hasSelection;
         DeleteButton.IsEnabled = hasSelection;
+        ExplainButton.IsEnabled = hasSelection;
         UseButton.IsEnabled = hasSelection;
 
         if (hasSelection)
@@ -187,6 +188,12 @@ public partial class RegexManager : FluentWindow
 
     private void TestTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
+        // Hide placeholder when there's text
+        if (TestTextBox.Text.Length > 0)
+            TestTextPlaceholder.Visibility = Visibility.Collapsed;
+        else
+            TestTextPlaceholder.Visibility = Visibility.Visible;
+
         TestPattern();
     }
 
@@ -216,6 +223,38 @@ public partial class RegexManager : FluentWindow
         catch (ArgumentException)
         {
             MatchCountText.Text = "Invalid Pattern";
+        }
+    }
+
+    private void ExplainButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
+            return;
+
+        string explanation = StringMethods.ExplainRegexPattern(selectedRegex.Pattern);
+
+        Wpf.Ui.Controls.MessageBox messageBox = new()
+        {
+            Title = "Regex Pattern Explanation",
+            Content = explanation,
+            CloseButtonText = "Close"
+        };
+        _ = messageBox.ShowDialogAsync();
+    }
+
+    private void ShowTestToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (ShowTestToggle.IsChecked == true)
+        {
+            TestPanel.Visibility = Visibility.Visible;
+            TestPanelSplitter.Visibility = Visibility.Visible;
+            ShowTestToggle.Content = "Hide Test";
+        }
+        else
+        {
+            TestPanel.Visibility = Visibility.Collapsed;
+            TestPanelSplitter.Visibility = Visibility.Collapsed;
+            ShowTestToggle.Content = "Show Test";
         }
     }
 

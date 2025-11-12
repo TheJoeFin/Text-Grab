@@ -79,6 +79,14 @@
             Grid.Row="2"
             Margin="6,0,6,6"
             Orientation="Horizontal">
+            <ToggleButton
+                x:Name="ShowTestToggle"
+                Margin="0,0,6,0"
+                Padding="10,6"
+                Click="ShowTestToggle_Click"
+                Content="Show Test"
+                IsChecked="True"
+                Style="{DynamicResource ToggleSymbolButton}" />
             <ui:Button
                 x:Name="AddButton"
                 Margin="0,0,6,0"
@@ -101,6 +109,13 @@
                 Icon="{ui:SymbolIcon Delete24}"
                 IsEnabled="False" />
             <ui:Button
+                x:Name="ExplainButton"
+                Margin="0,0,6,0"
+                Click="ExplainButton_Click"
+                Content="Explain"
+                Icon="{ui:SymbolIcon Info24}"
+                IsEnabled="False" />
+            <ui:Button
                 x:Name="UseButton"
                 Margin="0,0,6,0"
                 Appearance="Primary"
@@ -112,12 +127,14 @@
 
         <!--  Test Panel  -->
         <GridSplitter
+            x:Name="TestPanelSplitter"
             Grid.Row="2"
             Height="4"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Bottom" />
 
         <Border
+            x:Name="TestPanel"
             Grid.Row="3"
             Margin="6"
             Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
@@ -135,15 +152,25 @@
                     FontWeight="SemiBold"
                     Text="Test Pattern" />
 
-                <TextBox
-                    x:Name="TestTextBox"
-                    Grid.Row="1"
-                    Margin="6,0,6,6"
-                    AcceptsReturn="True"
-                    Text="Enter test text here..."
-                    TextChanged="TestTextBox_TextChanged"
-                    TextWrapping="Wrap"
-                    VerticalScrollBarVisibility="Auto" />
+                <Grid Grid.Row="1">
+                    <TextBox
+                        x:Name="TestTextBox"
+                        Margin="6,0,6,6"
+                        AcceptsReturn="True"
+                        TextChanged="TestTextBox_TextChanged"
+                        TextWrapping="Wrap"
+                        VerticalScrollBarVisibility="Auto" />
+                    <Label
+                        x:Name="TestTextPlaceholder"
+                        Margin="12,6,6,6"
+                        Padding="4"
+                        VerticalAlignment="Top"
+                        Content="Enter test text here..."
+                        FontSize="14"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        IsHitTestVisible="False"
+                        Opacity="0.5" />
+                </Grid>
 
                 <StackPanel
                     Grid.Row="2"
