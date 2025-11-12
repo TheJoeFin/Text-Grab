@@ -482,6 +482,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                     {
                         case LookupItemKind.EditWindow when lItem.HistoryItem is not null:
                             {
+                                if (IsFromETW && DestinationTextBox is not null && string.IsNullOrWhiteSpace(DestinationTextBox.Text))
+                                {
+                                    DestinationTextBox.Text = lItem.HistoryItem.TextContent;
+                                    openedHistoryItemOrLink = true;
+                                    break;
+                                }
+
                                 EditTextWindow editTextWindow = new(lItem.HistoryItem);
                                 editTextWindow.Show();
                                 openedHistoryItemOrLink = true;

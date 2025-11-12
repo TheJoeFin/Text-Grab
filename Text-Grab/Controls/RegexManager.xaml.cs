@@ -247,13 +247,11 @@ public partial class RegexManager : FluentWindow
         if (ShowTestToggle.IsChecked == true)
         {
             TestPanel.Visibility = Visibility.Visible;
-            TestPanelSplitter.Visibility = Visibility.Visible;
             ShowTestToggle.Content = "Hide Test";
         }
         else
         {
             TestPanel.Visibility = Visibility.Collapsed;
-            TestPanelSplitter.Visibility = Visibility.Collapsed;
             ShowTestToggle.Content = "Show Test";
         }
     }

@@ -24,7 +24,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="200" MinHeight="150" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
         <ui:TitleBar
@@ -125,19 +125,12 @@
                 IsEnabled="False" />
         </StackPanel>
 
-        <!--  Test Panel  -->
-        <GridSplitter
-            x:Name="TestPanelSplitter"
-            Grid.Row="2"
-            Height="4"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Bottom" />
-
         <Border
             x:Name="TestPanel"
             Grid.Row="3"
             Margin="6"
-            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
+            Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
+            Visibility="Collapsed">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -155,6 +148,7 @@
                 <Grid Grid.Row="1">
                     <TextBox
                         x:Name="TestTextBox"
+                        MinHeight="160"
                         Margin="6,0,6,6"
                         AcceptsReturn="True"
                         TextChanged="TestTextBox_TextChanged"
