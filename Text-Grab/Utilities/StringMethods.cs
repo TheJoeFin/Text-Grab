@@ -929,7 +929,7 @@ public static partial class StringMethods
     [GeneratedRegex(@"-+")]
     private static partial Regex MultiDashes();
 
-    public static string ExplainRegexPattern(string pattern)
+    public static string ExplainRegexPattern(this string pattern)
     {
         StringBuilder explanation = new();
         explanation.AppendLine($"Pattern: {pattern}");
