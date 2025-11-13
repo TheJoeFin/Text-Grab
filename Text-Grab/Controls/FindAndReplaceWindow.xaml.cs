@@ -90,6 +90,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (UsePaternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
             Pattern = Pattern.EscapeSpecialRegexChars(matchExactly);
 
+        if (string.IsNullOrEmpty(StringFromWindow) && TextEditWindow is not null)
+            StringFromWindow = TextEditWindow.GetSelectedTextOrAllText();
+
         try
         {
             // When using pattern mode with inline flags, rely on the inline flags for case sensitivity

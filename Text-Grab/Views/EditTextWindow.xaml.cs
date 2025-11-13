@@ -936,7 +936,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
-    private string GetSelectedTextOrAllText()
+    public string GetSelectedTextOrAllText()
     {
         string textToModify;
         if (PassedTextControl.SelectionLength == 0)
@@ -3270,7 +3270,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string sourceText = currentExtractedPattern.OriginalText;
 
         RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
-        regexManager.AddPatternFromText(pattern, sourceText);
+        regexManager.AddPatternFromText(pattern, sourceText, this);
         regexManager.Show();
     }
 
@@ -3295,7 +3295,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
 
         string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
-        string explanation = ExplainRegexPattern(pattern);
+        string explanation = pattern.ExplainRegexPattern();
 
         Wpf.Ui.Controls.MessageBox messageBox = new()
         {
@@ -3350,6 +3350,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
 
         // open the RegexManager and save this pattern
+        RegexManager manager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        manager.AddPatternFromText(pattern, GetSelectedTextOrAllText(), this);
+        manager.Show();
 
     }
 

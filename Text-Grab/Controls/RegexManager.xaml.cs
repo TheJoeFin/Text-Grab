@@ -15,6 +15,8 @@ namespace Text_Grab.Controls;
 public partial class RegexManager : FluentWindow
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
+    public EditTextWindow? SourceEditTextWindow;
     private ObservableCollection<StoredRegex> RegexPatterns { get; set; } = [];
 
     public RegexManager()
@@ -157,6 +159,7 @@ public partial class RegexManager : FluentWindow
 
         // Open Find and Replace window with this pattern
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findWindow.TextEditWindow ??= SourceEditTextWindow;
         findWindow.FindTextBox.Text = selectedRegex.Pattern;
         findWindow.UsePaternCheckBox.IsChecked = true;
         findWindow.Show();
@@ -167,8 +170,9 @@ public partial class RegexManager : FluentWindow
     /// <summary>
     /// Opens the Regex Manager in "add mode" with a pre-filled pattern
     /// </summary>
-    public void AddPatternFromText(string pattern, string sourceText)
+    public void AddPatternFromText(string pattern, string sourceText, EditTextWindow? source = null)
     {
+        SourceEditTextWindow = source;
         RegexEditorDialog dialog = new()
         {
             Owner = this
