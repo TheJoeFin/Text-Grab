@@ -1038,7 +1038,7 @@ area";
     {
         // Arrange
         CalculationService service = new();
-        string input = "Sum(-10, -20, -30)";
+        string input = "Sum(-10; -20; -30)";
 
         // Act
         CalculationResult result = await service.EvaluateExpressionsAsync(input);

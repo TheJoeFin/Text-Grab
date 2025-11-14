@@ -18,8 +18,11 @@ public class CalculationService
 
     /// <summary>
     /// Gets the culture info used for number formatting and parsing.
+    /// Defaults to de-DE (German) for consistent semicolon-based argument separators.
+    /// German culture uses comma (,) for decimal separator and semicolon (;) for function arguments.
+    /// Change to en-US if you prefer comma (,) for function arguments.
     /// </summary>
-    public CultureInfo CultureInfo { get; set; } = CultureInfo.CurrentCulture;
+    public CultureInfo CultureInfo { get; set; } = new CultureInfo("de-DE");
 
     /// <summary>
     /// Gets or sets whether to show error messages in results.
