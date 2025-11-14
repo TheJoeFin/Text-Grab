@@ -1,4 +1,5 @@
 using NCalc;
+using NCalc.Parser;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -267,7 +268,7 @@ public class CalculationService
         line = StandardizeDecimalAndGroupSeparators(line);
         AsyncExpression expression = new(line, option)
         {
-            CultureInfo = CultureInfo ?? CultureInfo.CurrentCulture
+            CultureInfo = CultureInfo ?? CultureInfo.CurrentCulture,
         };
 
         // Set up parameter handler

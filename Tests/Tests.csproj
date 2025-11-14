@@ -17,17 +17,17 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250916003" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
         <PackageReference Include="NCalcAsync" Version="5.6.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Xunit.StaFact" Version="3.0.13" />
-        <PackageReference Include="xunit.v3" Version="3.1.0" />
-        <PackageReference Include="BenchmarkDotNet" Version="0.15.4" />
-        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.0.36525.3" />
+        <PackageReference Include="xunit.v3" Version="3.2.0" />
+        <PackageReference Include="BenchmarkDotNet" Version="0.15.6" />
+        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36714.1" />
     </ItemGroup>
 
     <ItemGroup>
