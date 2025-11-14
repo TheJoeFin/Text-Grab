@@ -26,7 +26,7 @@ public static partial class HotKeyManager
     public static int RegisterHotKey(Keys key, KeyModifiers modifiers)
     {
         _windowReadyEvent?.WaitOne();
-        int id = System.Threading.Interlocked.Increment(ref _id);
+        int id = Interlocked.Increment(ref _id);
         _wnd?.Invoke(new RegisterHotKeyDelegate(RegisterHotKeyInternal), _hwnd, id, (uint)modifiers, (uint)key);
         return id;
     }
@@ -52,27 +52,26 @@ public static partial class HotKeyManager
 
     private static void OnHotKeyPressed(HotKeyEventArgs e)
     {
-        if (HotKeyManager.HotKeyPressed != null)
-        {
-            HotKeyManager.HotKeyPressed(null, e);
-        }
+        HotKeyManager.HotKeyPressed?.Invoke(null, e);
     }
 
     private static volatile MessageWindow? _wnd;
     private static volatile IntPtr _hwnd;
-    private static ManualResetEvent? _windowReadyEvent = new(false);
+    private static readonly ManualResetEvent? _windowReadyEvent = new(false);
     static HotKeyManager()
     {
         Thread messageLoop = new(delegate ()
           {
               Application.Run(new MessageWindow());
-          });
-        messageLoop.Name = "MessageLoopThread";
-        messageLoop.IsBackground = true;
+          })
+        {
+            Name = "MessageLoopThread",
+            IsBackground = true
+        };
         messageLoop.Start();
     }
 
-    private class MessageWindow : Form
+    private partial class MessageWindow : Form
     {
         public MessageWindow()
         {
