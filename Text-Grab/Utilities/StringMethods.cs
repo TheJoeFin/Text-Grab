@@ -941,19 +941,19 @@ public static partial class StringMethods
 
         if (hasCaseInsensitiveFlag && !hasCaseSensitiveFlag)
         {
-            explanation.AppendLine("📋 Case Sensitivity: CASE-INSENSITIVE (matches regardless of uppercase/lowercase)");
+            explanation.AppendLine("Case Sensitivity: CASE-INSENSITIVE (matches regardless of uppercase/lowercase)");
         }
         else if (hasCaseSensitiveFlag && !hasCaseInsensitiveFlag)
         {
-            explanation.AppendLine("📋 Case Sensitivity: CASE-SENSITIVE (uppercase and lowercase must match exactly)");
+            explanation.AppendLine("Case Sensitivity: CASE-SENSITIVE (uppercase and lowercase must match exactly)");
         }
         else if (hasCaseInsensitiveFlag && hasCaseSensitiveFlag)
         {
-            explanation.AppendLine("📋 Case Sensitivity: MIXED (some parts case-insensitive, some case-sensitive)");
+            explanation.AppendLine("Case Sensitivity: MIXED (some parts case-insensitive, some case-sensitive)");
         }
         else
         {
-            explanation.AppendLine("📋 Case Sensitivity: DEFAULT (typically case-sensitive unless configured otherwise)");
+            explanation.AppendLine("Case Sensitivity: DEFAULT (typically case-sensitive unless configured otherwise)");
         }
         explanation.AppendLine();
 
@@ -967,6 +967,10 @@ public static partial class StringMethods
                 char next = pattern[i + 1];
                 switch (next)
                 {
+                    case 'b':
+                        explanation.AppendLine($"\\b - Word boundary");
+                        i += 2;
+                        break;
                     case 'd':
                         explanation.AppendLine($"\\d - Matches any digit (0-9)");
                         i += 2;
