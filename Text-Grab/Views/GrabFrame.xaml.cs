@@ -1,5 +1,4 @@
 ﻿using Fasetto.Word;
-using Microsoft.Windows.AI.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -233,7 +232,7 @@ public partial class GrabFrame : Window
 
     public TextBox? DestinationTextBox
     {
-        get { return destinationTextBox; }
+        get => destinationTextBox;
         set
         {
             destinationTextBox = value;
@@ -257,7 +256,10 @@ public partial class GrabFrame : Window
 
     #region Methods
 
-    public static bool CheckKey(VirtualKeyCodes code) => (GetKeyState(code) & 0xFF00) == 0xFF00;
+    public static bool CheckKey(VirtualKeyCodes code)
+    {
+        return (GetKeyState(code) & 0xFF00) == 0xFF00;
+    }
 
     public HistoryInfo AsHistoryItem()
     {

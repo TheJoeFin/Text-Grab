@@ -15,6 +15,8 @@ namespace Text_Grab.Controls;
 public partial class RegexManager : FluentWindow
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+
+    public EditTextWindow? SourceEditTextWindow;
     private ObservableCollection<StoredRegex> RegexPatterns { get; set; } = [];
 
     public RegexManager()
@@ -82,6 +84,7 @@ public partial class RegexManager : FluentWindow
 
         EditButton.IsEnabled = hasSelection;
         DeleteButton.IsEnabled = hasSelection;
+        ExplainButton.IsEnabled = hasSelection;
         UseButton.IsEnabled = hasSelection;
 
         if (hasSelection)
@@ -156,6 +159,7 @@ public partial class RegexManager : FluentWindow
 
         // Open Find and Replace window with this pattern
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findWindow.TextEditWindow ??= SourceEditTextWindow;
         findWindow.FindTextBox.Text = selectedRegex.Pattern;
         findWindow.UsePaternCheckBox.IsChecked = true;
         findWindow.Show();
@@ -166,8 +170,9 @@ public partial class RegexManager : FluentWindow
     /// <summary>
     /// Opens the Regex Manager in "add mode" with a pre-filled pattern
     /// </summary>
-    public void AddPatternFromText(string pattern, string sourceText)
+    public void AddPatternFromText(string pattern, string sourceText, EditTextWindow? source = null)
     {
+        SourceEditTextWindow = source;
         RegexEditorDialog dialog = new()
         {
             Owner = this
@@ -187,6 +192,12 @@ public partial class RegexManager : FluentWindow
 
     private void TestTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
+        // Hide placeholder when there's text
+        if (TestTextBox.Text.Length > 0)
+            TestTextPlaceholder.Visibility = Visibility.Collapsed;
+        else
+            TestTextPlaceholder.Visibility = Visibility.Visible;
+
         TestPattern();
     }
 
@@ -216,6 +227,36 @@ public partial class RegexManager : FluentWindow
         catch (ArgumentException)
         {
             MatchCountText.Text = "Invalid Pattern";
+        }
+    }
+
+    private void ExplainButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
+            return;
+
+        string explanation = StringMethods.ExplainRegexPattern(selectedRegex.Pattern);
+
+        Wpf.Ui.Controls.MessageBox messageBox = new()
+        {
+            Title = "Regex Pattern Explanation",
+            Content = explanation,
+            CloseButtonText = "Close"
+        };
+        _ = messageBox.ShowDialogAsync();
+    }
+
+    private void ShowTestToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (ShowTestToggle.IsChecked == true)
+        {
+            TestPanel.Visibility = Visibility.Visible;
+            ShowTestToggle.Content = "Hide Test";
+        }
+        else
+        {
+            TestPanel.Visibility = Visibility.Collapsed;
+            ShowTestToggle.Content = "Show Test";
         }
     }
 

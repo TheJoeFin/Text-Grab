@@ -460,6 +460,10 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.G, isActive);
         SelectSingleToggleButton(sender);
+
+        // null out any zoom/scaling because it does not translate into GF Size
+        // TODO: when placing the Grab Frame consider zoom
+        BackgroundImage.RenderTransform = null;
     }
 
     private void PanSelection(System.Windows.Point movingPoint)
@@ -503,6 +507,10 @@ public partial class FullscreenGrab : Window
         // Add space around the window to account for Titlebar
         // bottom bar and width of GrabFrame
         GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
+
+        // TODO: The Grab Frame does not get the background image and position it.
+        // BackgroundImage should be passed to the GF and used as the image
+        // it would need to be positioned/cropped to the bounds of the GF
 
         GrabFrame grabFrame = new()
         {
@@ -959,4 +967,50 @@ public partial class FullscreenGrab : Window
         CheckIfAnyPostActionsSelected();
     }
     #endregion Methods
+
+    private void RegionClickCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (NewGrabFrameMenuItem.IsChecked)
+        {
+            BackgroundImage.RenderTransform = null;
+            return;
+        }
+
+        
+        System.Windows.Point point = Mouse.GetPosition(this);
+
+        if (BackgroundImage.RenderTransform is ScaleTransform scaleTransform)
+        {
+            double changingScale = scaleTransform.ScaleX;
+            if (e.Delta > 0)
+                changingScale *= 1.1;
+            else
+                changingScale *= 0.9;
+
+            if (changingScale < 1.2)
+                BackgroundImage.RenderTransform = null;
+
+            scaleTransform.ScaleX = changingScale;
+            scaleTransform.ScaleY = changingScale;
+        }
+        else
+        {
+            double scale = 1;
+            if (e.Delta > 0)
+                scale = 1.1;
+
+
+            ScaleTransform newTransform = new()
+            {
+                ScaleX = scale,
+                ScaleY = scale,
+                CenterX = point.X,
+                CenterY = point.Y
+            };
+
+            BackgroundImage.RenderTransform = newTransform;
+        }
+
+        e.Handled = true;
+    }
 }
