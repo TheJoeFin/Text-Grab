@@ -6,7 +6,7 @@ public class WindowsAiLang : ILanguage
 {
     public string AbbreviatedName => "WinAI";
 
-    public string DisplayName => "Windows AI OCR 🆕";
+    public string DisplayName => "Windows AI OCR";
 
     public string CurrentInputMethodLanguageTag => string.Empty;
 
