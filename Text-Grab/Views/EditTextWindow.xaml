@@ -579,15 +579,35 @@
                 IsReadOnly="True"
                 Style="{DynamicResource TextBoxStyle2}"
                 TextWrapping="NoWrap"
-                VerticalScrollBarVisibility="Hidden">
+                VerticalScrollBarVisibility="Hidden"
+                ContextMenuOpening="CalcResultsTextControl_ContextMenuOpening">
                 <TextBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem Name="HideCalcPaneContextItem" Header="Hide Pane" />
                         <MenuItem Name="ShowCalcErrorsContextItem" Header="Show Errors" />
                         <MenuItem Name="CopyAllContextItem" Header="Copy All" />
+                        <Separator />
+                        <MenuItem Name="ShowSumContextItem" Header="Sum: -" />
+                        <MenuItem Name="ShowAverageContextItem" Header="Average: -" />
+                        <MenuItem Name="ShowMedianContextItem" Header="Median: -" />
+                        <MenuItem Name="ShowCountContextItem" Header="Count: -" />
+                        <MenuItem Name="ShowMinContextItem" Header="Min: -" />
+                        <MenuItem Name="ShowMaxContextItem" Header="Max: -" />
+                        <MenuItem Name="ShowProductContextItem" Header="Product: -" />
                     </ContextMenu>
                 </TextBox.ContextMenu>
             </TextBox>
+
+            <TextBlock
+                x:Name="CalcAggregateStatusText"
+                Grid.Column="1"
+                Margin="8,0,0,8"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                FontSize="12"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text=""
+                Visibility="Collapsed" />
 
             <StackPanel
                 Grid.Column="1"

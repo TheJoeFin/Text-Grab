@@ -1675,6 +1675,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private const int DEBOUNCE_DELAY_MS = 300;
     private readonly CalculationService _calculationService = new();
 
+    // Aggregate tracking for calc pane status display
+    private enum AggregateType { None, Sum, Average, Count, Min, Max, Median, Product }
+    private AggregateType _selectedAggregate = AggregateType.None;
+
     private void InitializeExpressionEvaluator()
     {
         // Set up debounce timer to avoid excessive calculations
@@ -1706,6 +1710,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             CalcResultsTextControl.Text = "";
             _calculationService.ClearParameters();
+            UpdateAggregateStatusDisplay();
             // Keep scrolls aligned even when clearing
             Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
             return;
@@ -1720,6 +1725,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Update the text control with results
         CalcResultsTextControl.Text = result.Output;
+
+        // Update the aggregate status display if an aggregate is selected
+        UpdateAggregateStatusDisplay();
+
         // After updating calc text, its ScrollViewer resets; resync to main scroll
         Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
 
@@ -2994,6 +3003,260 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
         }
+    }
+
+    private void CalcResultsTextControl_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+    {
+        UpdateCalcAggregates();
+    }
+
+    private void UpdateCalcAggregates()
+    {
+        // Get the text to analyze - selected text if available, otherwise all results
+        string textToAnalyze = !string.IsNullOrEmpty(CalcResultsTextControl.SelectedText)
+            ? CalcResultsTextControl.SelectedText
+            : CalcResultsTextControl.Text;
+
+        // Extract numeric values from the text
+        List<double> numbers = ExtractNumericValues(textToAnalyze);
+
+        // Update menu items based on whether we have numbers
+        if (numbers.Count == 0)
+        {
+            ShowSumContextItem.Header = "Sum: -";
+            ShowAverageContextItem.Header = "Average: -";
+            ShowMedianContextItem.Header = "Median: -";
+            ShowCountContextItem.Header = "Count: 0";
+            ShowMinContextItem.Header = "Min: -";
+            ShowMaxContextItem.Header = "Max: -";
+            ShowProductContextItem.Header = "Product: -";
+
+            ShowSumContextItem.IsEnabled = false;
+            ShowAverageContextItem.IsEnabled = false;
+            ShowMedianContextItem.IsEnabled = false;
+            ShowCountContextItem.IsEnabled = false;
+            ShowMinContextItem.IsEnabled = false;
+            ShowMaxContextItem.IsEnabled = false;
+            ShowProductContextItem.IsEnabled = false;
+        }
+        else
+        {
+            double sum = numbers.Sum();
+            double average = numbers.Average();
+            double median = CalculateMedian(numbers);
+            int count = numbers.Count;
+            double min = numbers.Min();
+            double max = numbers.Max();
+            double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
+
+            ShowSumContextItem.Header = $"Sum: {FormatNumber(sum)}";
+            ShowAverageContextItem.Header = $"Average: {FormatNumber(average)}";
+            ShowMedianContextItem.Header = $"Median: {FormatNumber(median)}";
+            ShowCountContextItem.Header = $"Count: {count}";
+            ShowMinContextItem.Header = $"Min: {FormatNumber(min)}";
+            ShowMaxContextItem.Header = $"Max: {FormatNumber(max)}";
+            ShowProductContextItem.Header = $"Product: {FormatNumber(product)}";
+
+            ShowSumContextItem.IsEnabled = true;
+            ShowAverageContextItem.IsEnabled = true;
+            ShowMedianContextItem.IsEnabled = true;
+            ShowCountContextItem.IsEnabled = true;
+            ShowMinContextItem.IsEnabled = true;
+            ShowMaxContextItem.IsEnabled = true;
+            ShowProductContextItem.IsEnabled = true;
+
+            // Wire up click handlers to copy values and track selection
+            ShowSumContextItem.Click -= SelectAggregate_Click;
+            ShowSumContextItem.Click += SelectAggregate_Click;
+            ShowSumContextItem.Tag = (AggregateType.Sum, sum);
+
+            ShowAverageContextItem.Click -= SelectAggregate_Click;
+            ShowAverageContextItem.Click += SelectAggregate_Click;
+            ShowAverageContextItem.Tag = (AggregateType.Average, average);
+
+            ShowMedianContextItem.Click -= SelectAggregate_Click;
+            ShowMedianContextItem.Click += SelectAggregate_Click;
+            ShowMedianContextItem.Tag = (AggregateType.Median, median);
+
+            ShowCountContextItem.Click -= SelectAggregate_Click;
+            ShowCountContextItem.Click += SelectAggregate_Click;
+            ShowCountContextItem.Tag = (AggregateType.Count, (double)count);
+
+            ShowMinContextItem.Click -= SelectAggregate_Click;
+            ShowMinContextItem.Click += SelectAggregate_Click;
+            ShowMinContextItem.Tag = (AggregateType.Min, min);
+
+            ShowMaxContextItem.Click -= SelectAggregate_Click;
+            ShowMaxContextItem.Click += SelectAggregate_Click;
+            ShowMaxContextItem.Tag = (AggregateType.Max, max);
+
+            ShowProductContextItem.Click -= SelectAggregate_Click;
+            ShowProductContextItem.Click += SelectAggregate_Click;
+            ShowProductContextItem.Tag = (AggregateType.Product, product);
+        }
+    }
+
+    private List<double> ExtractNumericValues(string text)
+    {
+        List<double> numbers = [];
+
+        if (string.IsNullOrWhiteSpace(text))
+            return numbers;
+
+        // Split by lines and process each line
+        string[] lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string line in lines)
+        {
+            string trimmedLine = line.Trim();
+
+            // Skip empty lines, errors, and comments
+            if (string.IsNullOrWhiteSpace(trimmedLine) ||
+                trimmedLine.StartsWith("Error:", StringComparison.OrdinalIgnoreCase) ||
+                trimmedLine.StartsWith("//") ||
+                trimmedLine.StartsWith("#"))
+                continue;
+
+            // Try to parse the line as a number
+            // Remove common formatting characters
+            string cleaned = trimmedLine
+                .Replace(",", "")  // Remove thousand separators
+                .Replace(" ", "")  // Remove spaces
+                .Trim();
+
+            if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.CurrentCulture, out double value))
+            {
+                numbers.Add(value);
+            }
+        }
+
+        return numbers;
+    }
+
+    private double CalculateMedian(List<double> numbers)
+    {
+        if (numbers.Count == 0)
+            return 0;
+
+        var sorted = numbers.OrderBy(n => n).ToList();
+        int count = sorted.Count;
+
+        if (count % 2 == 0)
+        {
+            // Even number of elements - average the two middle values
+            return (sorted[count / 2 - 1] + sorted[count / 2]) / 2.0;
+        }
+        else
+        {
+            // Odd number of elements - return the middle value
+            return sorted[count / 2];
+        }
+    }
+
+    private string FormatNumber(double value)
+    {
+        // Use the same formatting logic as the calculation service, with group separators
+        if (Math.Abs(value) >= 1e15 || (Math.Abs(value) < 1e-4 && value != 0))
+        {
+            return value.ToString("E6", CultureInfo.CurrentCulture);
+        }
+        else if (value % 1 == 0 && Math.Abs(value) < 1e10)
+        {
+            return value.ToString("N0", CultureInfo.CurrentCulture);  // N0 includes group separators
+        }
+        else
+        {
+            return value.ToString("N", CultureInfo.CurrentCulture);  // N includes group separators and decimals
+        }
+    }
+
+    private void SelectAggregate_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is ValueTuple<AggregateType, double> tagData)
+        {
+            try
+            {
+                var (aggregateType, value) = tagData;
+
+                // Store the selected aggregate type
+                _selectedAggregate = aggregateType;
+
+                // Copy value to clipboard
+                string valueToCopy = FormatNumber(value);
+                System.Windows.Clipboard.SetDataObject(valueToCopy, true);
+
+                // Update the status display
+                UpdateAggregateStatusDisplay();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to copy aggregate value to clipboard: {ex.Message}");
+            }
+        }
+    }
+
+    private void UpdateAggregateStatusDisplay()
+    {
+        if (_selectedAggregate == AggregateType.None)
+        {
+            CalcAggregateStatusText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Get the text to analyze - all results
+        string textToAnalyze = CalcResultsTextControl.Text;
+
+        // Extract numeric values
+        List<double> numbers = ExtractNumericValues(textToAnalyze);
+
+        if (numbers.Count == 0)
+        {
+            CalcAggregateStatusText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Calculate the selected aggregate
+        double value;
+        string aggregateName;
+
+        switch (_selectedAggregate)
+        {
+            case AggregateType.Sum:
+                value = numbers.Sum();
+                aggregateName = "Sum";
+                break;
+            case AggregateType.Average:
+                value = numbers.Average();
+                aggregateName = "Average";
+                break;
+            case AggregateType.Median:
+                value = CalculateMedian(numbers);
+                aggregateName = "Median";
+                break;
+            case AggregateType.Count:
+                value = numbers.Count;
+                aggregateName = "Count";
+                break;
+            case AggregateType.Min:
+                value = numbers.Min();
+                aggregateName = "Min";
+                break;
+            case AggregateType.Max:
+                value = numbers.Max();
+                aggregateName = "Max";
+                break;
+            case AggregateType.Product:
+                value = numbers.Aggregate(1.0, (acc, val) => acc * val);
+                aggregateName = "Product";
+                break;
+            default:
+                CalcAggregateStatusText.Visibility = Visibility.Collapsed;
+                return;
+        }
+
+        // Update the status text
+        CalcAggregateStatusText.Text = $"{aggregateName}: {FormatNumber(value)}";
+        CalcAggregateStatusText.Visibility = Visibility.Visible;
     }
 
     private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e)
