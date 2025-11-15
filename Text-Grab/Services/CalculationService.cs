@@ -155,34 +155,48 @@ public partial class CalculationService
         cultureInfo ??= CultureInfo.InvariantCulture;
 
         // Dictionary of quantity words and their multipliers
-        // Note: Using decimal for precision, max value is ~7.9 x 10^28
-        Dictionary<string, decimal> quantityMultipliers = new(StringComparer.OrdinalIgnoreCase)
+        // Note: Using double for range, supports up to ~10^308
+        Dictionary<string, double> quantityMultipliers = new(StringComparer.OrdinalIgnoreCase)
         {
-            // Large orders of magnitude (within decimal range)
-            { "octillion", 1_000_000_000_000_000_000_000_000_000M },              // 10^27
-            { "septillion", 1_000_000_000_000_000_000_000_000M },                 // 10^24
-            { "sextillion", 1_000_000_000_000_000_000_000M },                     // 10^21
-            { "quintillion", 1_000_000_000_000_000_000M },                        // 10^18
-            { "quadrillion", 1_000_000_000_000_000M },                            // 10^15
-            { "trillion", 1_000_000_000_000M },                                   // 10^12
-            { "billion", 1_000_000_000M },                                        // 10^9
-            { "million", 1_000_000M },                                            // 10^6
-            { "thousand", 1_000M },                                               // 10^3
-            { "hundred", 100M },                                                  // 10^2
+            // Extremely large orders of magnitude
+            { "googol", 1e100 },                                                  // 10^100
+            { "decillion", 1e33 },                                                // 10^33
+            { "nonillion", 1e30 },                                                // 10^30
+            { "octillion", 1e27 },                                                // 10^27
+            { "yotta", 1e24 },                                                    // 10^24 (SI prefix)
+            { "septillion", 1e24 },                                               // 10^24
+            { "zetta", 1e21 },                                                    // 10^21 (SI prefix)
+            { "sextillion", 1e21 },                                               // 10^21
+            { "exa", 1e18 },                                                      // 10^18 (SI prefix)
+            { "quintillion", 1e18 },                                              // 10^18
+            { "peta", 1e15 },                                                     // 10^15 (SI prefix)
+            { "quadrillion", 1e15 },                                              // 10^15
+            { "tera", 1e12 },                                                     // 10^12 (SI prefix)
+            { "trillion", 1e12 },                                                 // 10^12
+            { "giga", 1e9 },                                                      // 10^9 (SI prefix)
+            { "billion", 1e9 },                                                   // 10^9
+            { "mega", 1e6 },                                                      // 10^6 (SI prefix)
+            { "million", 1e6 },                                                   // 10^6
+            { "kilo", 1e3 },                                                      // 10^3 (SI prefix)
+            { "thousand", 1e3 },                                                  // 10^3
+            { "hecto", 1e2 },                                                     // 10^2 (SI prefix)
+            { "hundred", 1e2 },                                                   // 10^2
+            { "deca", 1e1 },                                                      // 10^1 (SI prefix)
+            { "deka", 1e1 },                                                      // 10^1 (SI prefix, alternate spelling)
             // Special quantities
-            { "dozen", 12M },
-            { "score", 20M },
-            { "gross", 144M },
+            { "dozen", 12.0 },
+            { "score", 20.0 },
+            { "gross", 144.0 },
             // Abbreviations
-            { "k", 1_000M },
-            { "m", 1_000_000M },
-            { "b", 1_000_000_000M },
-            { "t", 1_000_000_000_000M },
-            { "q", 1_000_000_000_000_000M }  // Quadrillion
+            { "k", 1e3 }
+            // { "m", 1e6 }, // Ambiguous: could be meter or million
+            // { "b", 1e9 },
+            // { "t", 1e12 },
+            // { "q", 1e15 }  // Quadrillion
         };
 
         // Process each quantity word
-        foreach ((string? word, decimal multiplier) in quantityMultipliers)
+        foreach ((string? word, double multiplier) in quantityMultipliers)
         {
             // Use regex to find patterns like "5 million", "2.5 thousand", "-3 dozen", "5million", etc.
             // Pattern matches: optional negative sign, digits with optional decimal point, optional whitespace, and the quantity word
@@ -194,22 +208,22 @@ public partial class CalculationService
                 match =>
                 {
                     string numberStr = match.Groups[1].Value;
-                    if (decimal.TryParse(numberStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number))
+                    if (double.TryParse(numberStr, NumberStyles.Any, CultureInfo.InvariantCulture, out double number))
                     {
-                        decimal result = number * multiplier;
+                        double result = number * multiplier;
 
                         // Create a NumberFormatInfo without group separators to avoid thousand separators
                         NumberFormatInfo nfi = (NumberFormatInfo)cultureInfo.NumberFormat.Clone();
                         nfi.NumberGroupSeparator = "";
 
-                        // For large numbers (> 100k), add decimal separator to ensure double/decimal evaluation in NCalc
+                        // For large numbers (> 100k), add decimal separator to ensure double evaluation in NCalc
                         // This prevents int32 overflow issues. Use "G" format for very large numbers to preserve precision.
                         if (Math.Abs(result) > 100000 && result % 1 == 0)
                         {
                             // For very large numbers (>10^15), use "G" format to preserve precision
-                            if (Math.Abs(result) > 1000000000000000M)
+                            if (Math.Abs(result) > 1e15)
                             {
-                                string resultStr = result.ToString("G29", CultureInfo.InvariantCulture);
+                                string resultStr = result.ToString("G17", CultureInfo.InvariantCulture);
                                 // Add decimal point if not already present
                                 if (!resultStr.Contains('.') && !resultStr.Contains('E'))
                                     resultStr += nfi.NumberDecimalSeparator + "0";
