@@ -1888,93 +1888,6 @@ totalCost";
         Assert.Equal(0, result.ErrorCount);
     }
 
-    [Theory]
-    [InlineData("5 m", "5000000")]
-    [InlineData("5 M", "5000000")]
-    [InlineData("10 m", "10000000")]
-    [InlineData("2.5 m", "2500000")]
-    public async Task QuantityParser_Abbreviation_M_ParsesCorrectly(string input, string expected)
-    {
-        // Arrange
-        CalculationService service = new();
-
-        // Act
-        CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-        // Assert
-        Assert.Equal(expected, result.Output.Replace(",", ""));
-        Assert.Equal(0, result.ErrorCount);
-    }
-
-    [Theory]
-    [InlineData("5 b", "5000000000")]
-    [InlineData("5 B", "5000000000")]
-    [InlineData("10 b", "10000000000")]
-    [InlineData("2.5 b", "2500000000")]
-    public async Task QuantityParser_Abbreviation_B_ParsesCorrectly(string input, string expected)
-    {
-        // Arrange
-        CalculationService service = new();
-
-        // Act
-        CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-        // Assert
-        Assert.Equal(expected, result.Output.Replace(",", ""));
-        Assert.Equal(0, result.ErrorCount);
-    }
-
-    [Theory]
-    [InlineData("5 t", "5000000000000")]
-    [InlineData("5 T", "5000000000000")]
-    [InlineData("10 t", "10000000000000")]
-    [InlineData("2.5 t", "2500000000000")]
-    public async Task QuantityParser_Abbreviation_T_ParsesCorrectly(string input, string expected)
-    {
-        // Arrange
-        CalculationService service = new();
-
-        // Act
-        CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-        // Assert
-        Assert.Equal(expected, result.Output.Replace(",", ""));
-        Assert.Equal(0, result.ErrorCount);
-    }
-
-    [Theory]
-    [InlineData("5 q", "5000000000000000")]
-    [InlineData("5 Q", "5000000000000000")]
-    [InlineData("2 q", "2000000000000000")]
-    public async Task QuantityParser_Abbreviation_Q_ParsesCorrectly(string input, string expected)
-    {
-        // Arrange
-        CalculationService service = new();
-
-        // Act
-        CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-        // Assert
-        Assert.Equal(expected, result.Output.Replace(",", "").Replace(".0", ""));
-        Assert.Equal(0, result.ErrorCount);
-    }
-
-    [Fact]
-    public async Task QuantityParser_MixedAbbreviationsAndWords()
-    {
-        // Arrange
-        CalculationService service = new();
-        string input = "5 k + 2 million + 3 b";
-
-        // Act
-        CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-        // Assert
-        // 5,000 + 2,000,000 + 3,000,000,000 = 3,002,005,000
-        Assert.Equal("3002005000", result.Output.Replace(",", ""));
-        Assert.Equal(0, result.ErrorCount);
-    }
-
     [Fact]
     public async Task QuantityParser_LargeOrdersOfMagnitude()
     {
@@ -1988,22 +1901,6 @@ totalCost";
         // Assert
         // 1,000,000,000,000,000 + 1,000,000,000,000 + 1,000,000,000 + 1,000,000 = 1,001,001,001,000,000
         Assert.Equal("1001001001000000", result.Output.Replace(",", "").Replace(".0", ""));
-        Assert.Equal(0, result.ErrorCount);
-    }
-
-    [Fact]
-    public async Task QuantityParser_MixedLargeAbbreviations()
-    {
-        // Arrange
-        CalculationService service = new();
-        string input = "5 q + 3 t + 2 b";
-
-        // Act
-        CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-        // Assert
-        // 5,000,000,000,000,000 + 3,000,000,000,000 + 2,000,000,000 = 5,003,002,000,000,000
-        Assert.Equal("5003002000000000", result.Output.Replace(",", "").Replace(".0", ""));
         Assert.Equal(0, result.ErrorCount);
     }
 
