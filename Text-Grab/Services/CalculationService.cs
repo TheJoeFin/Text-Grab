@@ -184,9 +184,9 @@ public partial class CalculationService
         // Process each quantity word
         foreach ((string? word, decimal multiplier) in quantityMultipliers)
         {
-            // Use regex to find patterns like "5 million", "2.5 thousand", "-3 dozen", etc.
-            // Pattern matches: optional negative sign, digits with optional decimal point, whitespace, and the quantity word
-            string pattern = @"(-?\d+\.?\d*)\s+" + System.Text.RegularExpressions.Regex.Escape(word) + @"\b";
+            // Use regex to find patterns like "5 million", "2.5 thousand", "-3 dozen", "5million", etc.
+            // Pattern matches: optional negative sign, digits with optional decimal point, optional whitespace, and the quantity word
+            string pattern = @"(-?\d+\.?\d*)\s*" + System.Text.RegularExpressions.Regex.Escape(word) + @"\b";
 
             expression = System.Text.RegularExpressions.Regex.Replace(
                 expression,
