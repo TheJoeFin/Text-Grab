@@ -529,7 +529,7 @@ public class CalculatorTests
         Assert.True(service.IsParameterAssignment("x = 10"));
         Assert.True(service.IsParameterAssignment("result = 5 + 5"));
         Assert.True(service.IsParameterAssignment("_var = 100"));
-        
+
         // Should not detect comparison operators
         Assert.False(service.IsParameterAssignment("x == 10"));
         Assert.False(service.IsParameterAssignment("x != 10"));
@@ -607,7 +607,7 @@ public class CalculatorTests
         Assert.True(CalculationService.TryGetMathConstant("PI", out double pi1));
         Assert.True(CalculationService.TryGetMathConstant("Pi", out double pi2));
         Assert.True(CalculationService.TryGetMathConstant("pi", out double pi3));
-        
+
         Assert.Equal(pi1, pi2);
         Assert.Equal(pi2, pi3);
         Assert.Equal(Math.PI, pi1, 10);
@@ -655,7 +655,7 @@ public class CalculatorTests
 
         // Act
         service.ClearParameters();
-        var parameters = service.GetParameters();
+        IReadOnlyDictionary<string, object> parameters = service.GetParameters();
 
         // Assert
         Assert.Empty(parameters);
@@ -669,7 +669,7 @@ public class CalculatorTests
         await service.EvaluateExpressionsAsync("x = 10\ny = 20\nz = 30");
 
         // Act
-        var parameters = service.GetParameters();
+        IReadOnlyDictionary<string, object> parameters = service.GetParameters();
 
         // Assert
         Assert.Equal(3, parameters.Count);
@@ -731,7 +731,7 @@ public class CalculatorTests
 
         // Assert
         // Should return infinity or handle gracefully
-        Assert.True(result.Output.Contains("∞") || result.Output == "");
+        Assert.True(result.Output.Contains('∞') || result.Output == "");
     }
 
     [Fact]
@@ -919,8 +919,8 @@ savingsPercent";
         Assert.Equal(0, result.ErrorCount);
         string[] lines = result.Output.Split('\n');
         // Should have savings = 2300 and savingsPercent = 46
-        Assert.Contains("2,300", lines[lines.Length - 2]);
-        Assert.Contains("46", lines[lines.Length - 1]);
+        Assert.Contains("2,300", lines[^2]);
+        Assert.Contains("46", lines[^1]);
     }
 
     [Fact]
@@ -951,7 +951,7 @@ interest";
         Assert.Equal(0, result.ErrorCount);
         string[] lines = result.Output.Split('\n');
         // Interest should be approximately 6288.9
-        Assert.Contains("6,", lines[lines.Length - 1]);
+        Assert.Contains("6,", lines[^1]);
     }
 
     [Fact]
@@ -979,9 +979,9 @@ area";
         Assert.Equal(0, result.ErrorCount);
         string[] lines = result.Output.Split('\n');
         // Circumference should be ~31.42
-        Assert.Contains("31", lines[lines.Length - 2]);
+        Assert.Contains("31", lines[^2]);
         // Area should be ~78.54
-        Assert.Contains("78", lines[lines.Length - 1]);
+        Assert.Contains("78", lines[^1]);
     }
 
     #endregion CalculationService Tests
@@ -1250,7 +1250,7 @@ totalExpenses";
 
         // Assert
         string[] lines = result.Output.Split('\n');
-        Assert.Contains("2,850", lines[lines.Length - 1]);
+        Assert.Contains("2,850", lines[^1]);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -1277,8 +1277,8 @@ averageScore";
 
         // Assert
         string[] lines = result.Output.Split('\n');
-        Assert.Contains("350", lines[lines.Length - 2]); // Total
-        Assert.Contains("87.5", lines[lines.Length - 1]); // Average
+        Assert.Contains("350", lines[^2]); // Total
+        Assert.Contains("87.5", lines[^1]); // Average
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -1501,7 +1501,7 @@ grandTotal";
         // For very large numbers like septillion (10^24), expect some precision loss
         // Just verify we get a number in the right ballpark (starts with 1, 2, or 9 due to rounding)
         string cleanResult = result.Output.Replace(",", "").Replace(".0", "");
-        Assert.True(cleanResult.StartsWith("1") || cleanResult.StartsWith("2") || cleanResult.StartsWith("9"),
+        Assert.True(cleanResult.StartsWith('1') || cleanResult.StartsWith('2') || cleanResult.StartsWith('9'),
             $"Expected result to start with 1, 2, or 9, got: {cleanResult}");
         Assert.True(cleanResult.Length >= 24,
             $"Expected at least 24 digits for septillion, got: {cleanResult.Length}");
@@ -1523,9 +1523,9 @@ grandTotal";
         // For very large numbers like octillion (10^27), expect some precision loss
         // Just verify we get a number in the right ballpark (starts with 1 or 2)
         string cleanResult = result.Output.Replace(",", "").Replace(".0", "");
-        Assert.True(cleanResult.StartsWith("1") || cleanResult.StartsWith("2"), 
+        Assert.True(cleanResult.StartsWith("1") || cleanResult.StartsWith("2"),
             $"Expected result to start with 1 or 2, got: {cleanResult}");
-        Assert.True(cleanResult.Length >= 27, 
+        Assert.True(cleanResult.Length >= 27,
             $"Expected at least 27 digits for octillion, got: {cleanResult.Length}");
         Assert.Equal(0, result.ErrorCount);
     }
@@ -1649,7 +1649,7 @@ grandTotal";
         // Assert
         string[] lines = result.Output.Split('\n');
         Assert.Contains("5000000", lines[0].Replace(",", "")); // Check without commas
-        Assert.Equal("5200000", lines[lines.Length - 1].Replace(",", ""));
+        Assert.Equal("5200000", lines[^1].Replace(",", ""));
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -1752,8 +1752,8 @@ profitMargin";
 
         // Assert
         string[] lines = result.Output.Split('\n');
-        Assert.Contains("15", lines[lines.Length - 2]); // 15 million profit
-        Assert.Contains("30", lines[lines.Length - 1]); // 30% profit margin
+        Assert.Contains("15", lines[^2]); // 15 million profit
+        Assert.Contains("30", lines[^1]); // 30% profit margin
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -1774,7 +1774,7 @@ debtPerPerson";
         // Assert
         string[] lines = result.Output.Split('\n');
         // 31 trillion / 330 million ≈ 93,939
-        Assert.Contains("93", lines[lines.Length - 1]);
+        Assert.Contains("93", lines[^1]);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -1797,7 +1797,7 @@ usShare";
         // Assert
         string[] lines = result.Output.Split('\n');
         // US share should be around 52-53%
-        Assert.Contains("5", lines[lines.Length - 1]);
+        Assert.Contains("5", lines[^1]);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -1818,7 +1818,7 @@ totalPopulation";
 
         // Assert
         string[] lines = result.Output.Split('\n');
-        Assert.Equal("4250000", lines[lines.Length - 1].Replace(",", ""));
+        Assert.Equal("4250000", lines[^1].Replace(",", ""));
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -1840,8 +1840,8 @@ totalCost";
 
         // Assert
         string[] lines = result.Output.Split('\n');
-        Assert.Equal("60", lines[lines.Length - 2].Replace(",", "")); // 60 eggs
-        Assert.Contains("17.5", lines[lines.Length - 1]); // $17.50
+        Assert.Equal("60", lines[^2].Replace(",", "")); // 60 eggs
+        Assert.Contains("17.5", lines[^1]); // $17.50
         Assert.Equal(0, result.ErrorCount);
     }
 

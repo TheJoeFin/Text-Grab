@@ -39,8 +39,8 @@ public class SettingsImportExportTests
         string jsonContent = await File.ReadAllTextAsync(settingsJsonPath);
         Assert.False(string.IsNullOrEmpty(jsonContent));
         // Check that JSON contains some setting keys (any of the common settings)
-        bool containsSettings = jsonContent.Contains("ShowToast") || 
-                                jsonContent.Contains("FirstRun") || 
+        bool containsSettings = jsonContent.Contains("ShowToast") ||
+                                jsonContent.Contains("FirstRun") ||
                                 jsonContent.Contains("CorrectErrors");
         Assert.True(containsSettings, "Exported JSON should contain at least one settings property");
 
@@ -56,7 +56,7 @@ public class SettingsImportExportTests
     {
         // Step 1: Export current settings to get baseline
         string originalZipPath = await SettingsImportExportUtilities.ExportSettingsToZipAsync(includeHistory: false);
-        
+
         // Step 2: Extract and read the original JSON
         string originalTempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Original_{Guid.NewGuid()}");
         System.IO.Compression.ZipFile.ExtractToDirectory(originalZipPath, originalTempDir);
@@ -69,13 +69,13 @@ public class SettingsImportExportTests
         Assert.NotEmpty(originalSettings);
 
         // Step 4: Modify one value in the JSON to simulate a change
-        Dictionary<string, JsonElement> modifiedSettings = new Dictionary<string, JsonElement>(originalSettings);
-        
+        Dictionary<string, JsonElement> modifiedSettings = new(originalSettings);
+
         // Find a boolean setting to flip (e.g., ShowToast or FirstRun)
-        string keyToModify = originalSettings.Keys.FirstOrDefault(k => 
-            k.Equals("ShowToast", StringComparison.OrdinalIgnoreCase) || 
+        string keyToModify = originalSettings.Keys.FirstOrDefault(k =>
+            k.Equals("ShowToast", StringComparison.OrdinalIgnoreCase) ||
             k.Equals("FirstRun", StringComparison.OrdinalIgnoreCase)) ?? originalSettings.Keys.First();
-        
+
         // If it's a boolean, flip it; otherwise just ensure it has a different value
         if (originalSettings[keyToModify].ValueKind == JsonValueKind.True)
         {
@@ -96,7 +96,7 @@ public class SettingsImportExportTests
         Directory.CreateDirectory(modifiedTempDir);
         string modifiedJsonPath = Path.Combine(modifiedTempDir, "settings.json");
         await File.WriteAllTextAsync(modifiedJsonPath, modifiedJson);
-        
+
         string modifiedZipPath = Path.Combine(Path.GetTempPath(), $"TextGrab_Modified_{Guid.NewGuid()}.zip");
         System.IO.Compression.ZipFile.CreateFromDirectory(modifiedTempDir, modifiedZipPath);
 
@@ -105,7 +105,7 @@ public class SettingsImportExportTests
 
         // Step 7: Export again to get the imported settings
         string reimportedZipPath = await SettingsImportExportUtilities.ExportSettingsToZipAsync(includeHistory: false);
-        
+
         // Step 8: Extract and compare
         string reimportedTempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Reimported_{Guid.NewGuid()}");
         System.IO.Compression.ZipFile.ExtractToDirectory(reimportedZipPath, reimportedTempDir);
@@ -118,19 +118,19 @@ public class SettingsImportExportTests
         // Step 9: Compare element by element - the modified value should match what we set
         foreach (KeyValuePair<string, JsonElement> kvp in modifiedSettings)
         {
-            Assert.True(reimportedSettings.ContainsKey(kvp.Key), 
+            Assert.True(reimportedSettings.ContainsKey(kvp.Key),
                 $"Reimported settings missing key: {kvp.Key}");
-            
+
             // Compare the JSON elements
             string expectedValue = kvp.Value.ToString();
             string actualValue = reimportedSettings[kvp.Key].ToString();
-            
+
             Assert.Equal(expectedValue,
                          actualValue);
         }
 
         // Verify the modified key specifically has the new value
-        Assert.True(reimportedSettings.ContainsKey(keyToModify), 
+        Assert.True(reimportedSettings.ContainsKey(keyToModify),
             $"Modified key '{keyToModify}' should exist in reimported settings");
         Assert.Equal(modifiedSettings[keyToModify].ToString(), reimportedSettings[keyToModify].ToString());
 

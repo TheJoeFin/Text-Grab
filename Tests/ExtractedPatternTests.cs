@@ -529,7 +529,7 @@ DATA001 data001 DaTa001 INFO999
     public void DetermineStartingLevel_RealWorldExamples_ProduceSensibleDefaults()
     {
         // Given - Various real-world examples
-        var testCases = new Dictionary<string, int>
+        Dictionary<string, int> testCases = new()
         {
             // Short exact matches
             { "5", 5 },                             // Single char
@@ -559,7 +559,7 @@ DATA001 data001 DaTa001 INFO999
         };
 
         // When/Then
-        foreach (var testCase in testCases)
+        foreach (KeyValuePair<string, int> testCase in testCases)
         {
             int actualLevel = ExtractedPattern.DetermineStartingLevel(testCase.Key);
             Assert.Equal(testCase.Value, actualLevel);
@@ -698,7 +698,7 @@ DATA001 data001 DaTa001 INFO999
     {
         // When
         string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, level, ignoreCase);
-        Regex regex = new Regex(pattern);
+        Regex regex = new(pattern);
         int matchCount = regex.Matches(text).Count;
 
         // Then - Case-insensitive should find more or equal matches
@@ -720,7 +720,7 @@ DATA001 data001 DaTa001 INFO999
 
         // When - Level 3 with case insensitivity
         string pattern = Text_Grab.Utilities.StringMethods.ExtractSimplePattern(input, 3, ignoreCase: true);
-        Regex regex = new Regex(pattern);
+        Regex regex = new(pattern);
         MatchCollection matches = regex.Matches(text);
 
         // Then
