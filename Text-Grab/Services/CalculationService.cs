@@ -1,5 +1,4 @@
 using NCalc;
-using NCalc.Parser;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,17 +11,17 @@ namespace Text_Grab.Services;
 /// Service for evaluating mathematical expressions from text input.
 /// Supports variable assignments, mathematical constants, and multi-line expressions.
 /// </summary>
-public class CalculationService
+public partial class CalculationService
 {
     private readonly Dictionary<string, object> _parameters = [];
 
     /// <summary>
     /// Gets the culture info used for number formatting and parsing.
-    /// Defaults to de-DE (German) for consistent semicolon-based argument separators.
-    /// German culture uses comma (,) for decimal separator and semicolon (;) for function arguments.
-    /// Change to en-US if you prefer comma (,) for function arguments.
+    /// Defaults to InvariantCulture for consistent parsing with period (.) as decimal separator
+    /// and comma (,) as function argument separator in NCalc.
+    /// Change to de-DE if you prefer comma (,) for decimal and semicolon (;) for arguments.
     /// </summary>
-    public CultureInfo CultureInfo { get; set; } = new CultureInfo("de-DE");
+    public CultureInfo CultureInfo { get; set; } = CultureInfo.InvariantCulture;
 
     /// <summary>
     /// Gets or sets whether to show error messages in results.
@@ -109,6 +108,8 @@ public class CalculationService
 
     /// <summary>
     /// Standardizes decimal and group separators based on the current culture.
+    /// Handles user input that may contain thousand separators (like "1,000,000")
+    /// and converts them to the format expected by NCalc for the current culture.
     /// </summary>
     public string StandardizeDecimalAndGroupSeparators(string expression)
     {
@@ -118,10 +119,23 @@ public class CalculationService
         string decimalSep = CultureInfo.NumberFormat.NumberDecimalSeparator;
         string groupSep = CultureInfo.NumberFormat.NumberGroupSeparator;
 
-        if (!string.IsNullOrEmpty(groupSep))
-            expression = expression.Replace(groupSep, "");
-        if (decimalSep != ".")
-            expression = expression.Replace(".", decimalSep);
+        // For cultures like de-DE where comma is decimal and period is thousands
+        if (decimalSep == "," && groupSep == ".")
+        {
+            // Remove periods that are clearly thousand separators (followed by exactly 3 digits and another separator or digit group)
+            expression = DigitGroupSeparator().Replace(expression, "$1");
+
+            // Convert remaining periods to commas (these are decimal points)
+            expression = expression.Replace(".", ",");
+        }
+        // For InvariantCulture and en-US where comma is used for thousands (like "1,000,000")
+        // Remove commas that are thousand separators, but NOT commas used as function argument separators
+        else if (decimalSep == "." && groupSep == ",")
+        {
+            // Remove commas that are clearly thousand separators (between digits, followed by exactly 3 digits)
+            // Pattern: digit, comma, exactly 3 digits, then either another comma, non-digit, or end
+            expression = CommaGroupSeparator().Replace(expression, "$1");
+        }
 
         return expression;
     }
@@ -131,11 +145,14 @@ public class CalculationService
     /// Examples: "5 million" -> "5000000.0", "3 dozen" -> "36", "2.5 k" -> "2500"
     /// </summary>
     /// <param name="expression">The expression to parse</param>
+    /// <param name="cultureInfo">The culture to use for formatting output numbers (default: InvariantCulture)</param>
     /// <returns>The expression with quantity words replaced by numeric values</returns>
-    public static string ParseQuantityWords(string expression)
+    public static string ParseQuantityWords(string expression, CultureInfo? cultureInfo = null)
     {
         if (string.IsNullOrWhiteSpace(expression))
             return expression;
+
+        cultureInfo ??= CultureInfo.InvariantCulture;
 
         // Dictionary of quantity words and their multipliers
         // Note: Using decimal for precision, max value is ~7.9 x 10^28
@@ -180,16 +197,30 @@ public class CalculationService
                     if (decimal.TryParse(numberStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal number))
                     {
                         decimal result = number * multiplier;
-                        // For large numbers (> 100k), add .0 to ensure double/decimal evaluation in NCalc
-                        // This prevents int32 overflow issues
+
+                        // Create a NumberFormatInfo without group separators to avoid thousand separators
+                        NumberFormatInfo nfi = (NumberFormatInfo)cultureInfo.NumberFormat.Clone();
+                        nfi.NumberGroupSeparator = "";
+
+                        // For large numbers (> 100k), add decimal separator to ensure double/decimal evaluation in NCalc
+                        // This prevents int32 overflow issues. Use "G" format for very large numbers to preserve precision.
                         if (Math.Abs(result) > 100000 && result % 1 == 0)
                         {
-                            return result.ToString("F1", CultureInfo.InvariantCulture);
+                            // For very large numbers (>10^15), use "G" format to preserve precision
+                            if (Math.Abs(result) > 1000000000000000M)
+                            {
+                                string resultStr = result.ToString("G29", CultureInfo.InvariantCulture);
+                                // Add decimal point if not already present
+                                if (!resultStr.Contains('.') && !resultStr.Contains('E'))
+                                    resultStr += nfi.NumberDecimalSeparator + "0";
+                                return resultStr;
+                            }
+                            return result.ToString("F1", nfi);
                         }
                         // Format without decimal places if it's a whole number and small
                         return result % 1 == 0
-                            ? result.ToString("F0", CultureInfo.InvariantCulture)
-                            : result.ToString(CultureInfo.InvariantCulture);
+                            ? result.ToString("F0", nfi)
+                            : result.ToString(nfi);
                     }
                     return match.Value;
                 },
@@ -215,7 +246,7 @@ public class CalculationService
         }
 
         // Parse quantity words first
-        expression = ParseQuantityWords(expression);
+        expression = ParseQuantityWords(expression, CultureInfo);
 
         // Evaluate the expression to get the value
         expression = StandardizeDecimalAndGroupSeparators(expression);
@@ -265,7 +296,7 @@ public class CalculationService
     private async Task<string> EvaluateStandardExpressionAsync(string line)
     {
         // Parse quantity words first
-        line = ParseQuantityWords(line);
+        line = ParseQuantityWords(line, CultureInfo);
 
         ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
         line = StandardizeDecimalAndGroupSeparators(line);
@@ -425,10 +456,15 @@ public class CalculationService
             }
         };
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(\d)\.(?=\d{3}(?:\.|,|\D|$))")]
+    private static partial System.Text.RegularExpressions.Regex DigitGroupSeparator();
+    [System.Text.RegularExpressions.GeneratedRegex(@"(\d),(?=\d{3}(?:,|\D|$))")]
+    private static partial System.Text.RegularExpressions.Regex CommaGroupSeparator();
 }
 
 /// <summary>
-/// Represents the result of a calculation evaluation.
+/// Represents the result of a calculation evaluation
 /// </summary>
 public class CalculationResult
 {
