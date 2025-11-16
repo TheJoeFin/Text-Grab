@@ -1,5 +1,5 @@
-﻿using CliWrap.Buffered;
-using CliWrap;
+﻿using CliWrap;
+using CliWrap.Buffered;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +18,6 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
-using System.Text.RegularExpressions;
 
 namespace Text_Grab.Views;
 
@@ -482,6 +482,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                     {
                         case LookupItemKind.EditWindow when lItem.HistoryItem is not null:
                             {
+                                if (IsFromETW && DestinationTextBox is not null && string.IsNullOrWhiteSpace(DestinationTextBox.Text))
+                                {
+                                    DestinationTextBox.Text = lItem.HistoryItem.TextContent;
+                                    openedHistoryItemOrLink = true;
+                                    break;
+                                }
+
                                 EditTextWindow editTextWindow = new(lItem.HistoryItem);
                                 editTextWindow.Show();
                                 openedHistoryItemOrLink = true;

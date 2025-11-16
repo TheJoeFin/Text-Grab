@@ -39,6 +39,10 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public LanguageKind LanguageKind { get; set; } = LanguageKind.Global;
 
+    public bool HasCalcPaneOpen { get; set; } = false;
+
+    public int CalcPaneWidth { get; set; } = 0;
+
     [JsonIgnore]
     public ILanguage OcrLanguage
     {

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
@@ -69,6 +72,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
+    // Remember last non-collapsed width for the calc column
+    private GridLength _lastCalcColumnWidth = new(1, GridUnitType.Star);
+
+    // Store extracted pattern and precision for mouse wheel adjustment
+    private ExtractedPattern? currentExtractedPattern = null;
+    private int currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+
     #endregion Fields
 
     #region Constructors
@@ -107,6 +117,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             this.Top = historyInfo.PositionRect.Y;
             this.Width = historyInfo.PositionRect.Width;
             this.Height = historyInfo.PositionRect.Height;
+        }
+
+        if (historyInfo.HasCalcPaneOpen)
+        {
+            // use the tag to track that it was set from history item
+            ShowCalcPaneMenuItem.Tag = true;
+            ShowCalcPaneMenuItem.IsChecked = true;
+
+            // Set the width to restore - use history width if valid, otherwise use default
+            int widthToRestore = historyInfo.CalcPaneWidth > 0 ? historyInfo.CalcPaneWidth : DefaultSettings.CalcPaneWidth;
+            if (widthToRestore <= 0)
+                widthToRestore = 400; // Fallback to default
+
+            CalcColumn.Width = new GridLength(widthToRestore, GridUnitType.Pixel);
+            _lastCalcColumnWidth = new GridLength(widthToRestore, GridUnitType.Pixel);
         }
     }
 
@@ -290,11 +315,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         cancellationTokenForDirOCR = null;
     }
 
-    public void OpenMostRecentTextHistoryItem()
-    {
-        PassedTextControl.Text = Singleton<HistoryService>.Instance.GetLastTextHistory();
-    }
-
     public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
         PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
@@ -367,6 +387,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     internal HistoryInfo AsHistoryItem()
     {
+        int calcPaneWidth = 0;
+        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
+        {
+            if (CalcColumn.Width.IsStar)
+                calcPaneWidth = (int)CalcColumn.ActualWidth;
+            else
+                calcPaneWidth = (int)CalcColumn.Width.Value;
+        }
+
         HistoryInfo historyInfo = new()
         {
             ID = historyId,
@@ -375,6 +404,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CaptureDateTime = DateTimeOffset.Now,
             TextContent = PassedTextControl.Text,
             SourceMode = TextGrabMode.EditText,
+            CalcPaneWidth = calcPaneWidth,
+            HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true
         };
 
         if (string.IsNullOrWhiteSpace(historyInfo.ID))
@@ -409,10 +440,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         StringBuilder listOfNames = new();
         listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
         foreach (string folder in folders)
-            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, (folder.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, folder.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
 
         foreach (string file in files)
-            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, (file.Length - 1) - chosenFolderPath.Length)}{Environment.NewLine}");
+            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, file.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
         return listOfNames.ToString();
     }
 
@@ -876,7 +907,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void FontMenuItem_Click(object sender, RoutedEventArgs e)
     {
         using FontDialog fd = new();
-        System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)((PassedTextControl.FontSize * 72.0) / 96.0));
+        System.Drawing.Font currentFont = new(PassedTextControl.FontFamily.ToString(), (float)(PassedTextControl.FontSize * 72.0 / 96.0));
         fd.Font = currentFont;
         DialogResult result = fd.ShowDialog();
         if (result != System.Windows.Forms.DialogResult.OK)
@@ -885,7 +916,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Debug.WriteLine(fd.Font);
 
         DefaultSettings.FontFamilySetting = fd.Font.Name;
-        DefaultSettings.FontSizeSetting = (fd.Font.Size * 96.0 / 72.0);
+        DefaultSettings.FontSizeSetting = fd.Font.Size * 96.0 / 72.0;
         DefaultSettings.IsFontBold = fd.Font.Bold;
         DefaultSettings.IsFontItalic = fd.Font.Italic;
         DefaultSettings.IsFontUnderline = fd.Font.Underline;
@@ -906,7 +937,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
-    private string GetSelectedTextOrAllText()
+    public string GetSelectedTextOrAllText()
     {
         string textToModify;
         if (PassedTextControl.SelectionLength == 0)
@@ -938,6 +969,64 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (PassedTextControl.FontSize > 4)
                 PassedTextControl.FontSize -= 4;
         }
+    }
+
+    // Keep calc pane scroll in sync with main text box
+    private void PassedTextControl_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        try
+        {
+            if (CalcResultsTextControl.Visibility != Visibility.Visible)
+                return;
+
+            // Obtain internal ScrollViewers for both text boxes
+            if (GetScrollViewer(PassedTextControl) is ScrollViewer mainSv &&
+                GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv)
+            {
+                // Mirror vertical offset only (horizontal can differ due to content widths)
+                if (!DoubleUtil.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
+                    calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
+            }
+        }
+        catch { /* no-op */ }
+    }
+
+    private static ScrollViewer? GetScrollViewer(DependencyObject obj)
+    {
+        if (obj is ScrollViewer sv) return sv;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(obj, i);
+            ScrollViewer? result = GetScrollViewer(child);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    private static class DoubleUtil
+    {
+        public static bool AreClose(double a, double b, double epsilon = 0.25)
+        {
+            return Math.Abs(a - b) < epsilon;
+        }
+    }
+
+    private void SyncCalcScrollToMain()
+    {
+        try
+        {
+            if (CalcResultsTextControl.Visibility != Visibility.Visible)
+                return;
+
+            ScrollViewer? mainSv = GetScrollViewer(PassedTextControl);
+            ScrollViewer? calcSv = GetScrollViewer(CalcResultsTextControl);
+            if (mainSv is null || calcSv is null)
+                return;
+
+            if (!DoubleUtil.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
+                calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
+        }
+        catch { /* no-op */ }
     }
 
     private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
@@ -994,7 +1083,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 if (line.Length > selectionPositionInLine)
                     sb.Append(line.Insert(selectionPositionInLine, selectionText));
                 else
-                    sb.Append(line).Append(selectionText.PadLeft((selectionPositionInLine + selectionLength) - line.Length));
+                    sb.Append(line).Append(selectionText.PadLeft(selectionPositionInLine + selectionLength - line.Length));
             }
             sb.Append(Environment.NewLine);
         }
@@ -1091,6 +1180,28 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void KeyedEscape(object sender, ExecutedRoutedEventArgs e)
     {
         cancellationTokenForDirOCR?.Cancel();
+    }
+
+    private void OpenRecentEditWindowExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        string currentText = PassedTextControl.Text;
+
+        HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
+
+        if (historyInfo is null)
+        {
+            // No history available, just open a new window
+            EditTextWindow etw = new();
+            etw.Show();
+            return;
+        }
+
+        EditTextWindow etwHistory = new(historyInfo);
+        etwHistory.Show();
+        etwHistory.Activate();
+
+        if (string.IsNullOrWhiteSpace(currentText))
+            Close();
     }
 
     private void LanguageMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1490,7 +1601,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             // Set filter for file extension and default file extension 
             DefaultExt = ".txt",
-            Filter = "Text documents (.txt)|*.txt"
+            Filter = "Text documents (.txt)|*.txt|All files (*.*)|*.*",
+            DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         };
 
         bool? result = dlg.ShowDialog();
@@ -1551,6 +1663,90 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         UpdateLineAndColumnText();
+
+        // Reset the debounce timer
+        _debounceTimer?.Stop();
+        _debounceTimer?.Start();
+        // If a newline append auto-scrolls the main box, ensure calc scroll follows too
+        // Schedule after layout so offsets are accurate
+        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
+    }
+
+    private DispatcherTimer? _debounceTimer = null;
+    private const int DEBOUNCE_DELAY_MS = 300;
+    private readonly CalculationService _calculationService = new();
+
+    // Aggregate tracking for calc pane status display
+    private enum AggregateType { None, Sum, Average, Count, Min, Max, Median, Product }
+    private AggregateType _selectedAggregate = AggregateType.None;
+
+    private void InitializeExpressionEvaluator()
+    {
+        // Set up debounce timer to avoid excessive calculations
+        _debounceTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(DEBOUNCE_DELAY_MS)
+        };
+        _debounceTimer.Tick += DebounceTimer_Tick;
+    }
+
+    private async void DebounceTimer_Tick(object? sender, EventArgs e)
+    {
+        _debounceTimer?.Stop();
+
+        if (CalcResultsTextControl.Visibility != Visibility.Visible)
+            return;
+
+        await EvaluateExpressions();
+    }
+
+    private async Task EvaluateExpressions()
+    {
+        // Don't waste cycles if the pane isn't visible
+        if (CalcResultsTextControl.Visibility != Visibility.Visible)
+            return;
+
+        string input = PassedTextControl.Text;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            CalcResultsTextControl.Text = "";
+            _calculationService.ClearParameters();
+            UpdateAggregateStatusDisplay();
+            // Keep scrolls aligned even when clearing
+            Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
+            return;
+        }
+
+        // Update calculation service settings
+        _calculationService.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
+        _calculationService.ShowErrors = ShowErrorsMenuItem.IsChecked == true;
+
+        // Evaluate expressions using the service
+        CalculationResult result = await _calculationService.EvaluateExpressionsAsync(input);
+
+        // Update the text control with results
+        CalcResultsTextControl.Text = result.Output;
+
+        // Update the aggregate status display if an aggregate is selected
+        UpdateAggregateStatusDisplay();
+
+        // After updating calc text, its ScrollViewer resets; resync to main scroll
+        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Render);
+
+        // Optional status (kept commented)
+        // if (result.ErrorCount == 0) { } else { }
+    }
+
+    private async void ShowErrorsCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        // Re-evaluate expressions when toggle changes
+        await EvaluateExpressions();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _debounceTimer?.Stop();
+        base.OnClosed(e);
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -2004,6 +2200,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = duplicateLine.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(duplicateLine, DuplicateSelectedLine));
 
+        RoutedCommand toggleCalcPane = new();
+        _ = toggleCalcPane.InputGestures.Add(new KeyGesture(Key.P, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(toggleCalcPane, ToggleCalcPaneExecuted));
+
+        RoutedCommand openRecentEditWindow = new();
+        _ = openRecentEditWindow.InputGestures.Add(new KeyGesture(Key.T, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(openRecentEditWindow, OpenRecentEditWindowExecuted));
+
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
@@ -2197,8 +2401,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
             int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
+            string text = DefaultSettings.EtwShowWordCount
+                ? $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}"
+                : $"Ln {lineNumber + 1}, Col {columnNumber}";
 
-            BottomBarText.Text = $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}";
+            BottomBarText.Text = text;
+
+            // Hide selection-specific UI elements
+            MatchCountButton.Visibility = Visibility.Collapsed;
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
+            CharDetailsButton.Visibility = Visibility.Collapsed;
         }
         else
         {
@@ -2224,7 +2437,439 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
             else
                 BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
+
+            // Update selection-specific UI elements
+            UpdateSelectionSpecificUI();
         }
+    }
+
+    private void UpdateSelectionSpecificUI()
+    {
+        string selectedText = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(selectedText))
+        {
+            MatchCountButton.Visibility = Visibility.Collapsed;
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+            CharDetailsButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Show character details for single character selection
+        if (DefaultSettings.EtwShowCharDetails && selectedText.Length == 1)
+        {
+            char selectedChar = selectedText[0];
+            int codePoint = char.ConvertToUtf32(selectedText, 0);
+            string unicodeHex = $"U+{codePoint:X4}";
+
+            CharDetailsButtonText.Text = unicodeHex;
+            CharDetailsButton.ToolTip = $"{unicodeHex}: {GetUnicodeCategory(selectedChar)}";
+            CharDetailsButton.Visibility = Visibility.Visible;
+        }
+        else if (DefaultSettings.EtwShowCharDetails && selectedText.Length > 1)
+        {
+            CharDetailsButtonText.Text = $"{selectedText.Length} chars";
+            CharDetailsButton.ToolTip = "Click to see character details";
+            CharDetailsButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            CharDetailsButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show match count
+        if (DefaultSettings.EtwShowMatchCount && !string.IsNullOrEmpty(selectedText))
+        {
+            int matchCount = CountMatches(PassedTextControl.Text, selectedText);
+            if (MatchCountButton.Content is TextBlock matchButton)
+            {
+                matchButton.Text = matchCount == 1 ? "1 match" : $"{matchCount} matches";
+            }
+            MatchCountButton.Visibility = matchCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            MatchCountButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show similar matches count using regex pattern
+        if (DefaultSettings.EtwShowSimilarMatches && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
+        {
+            // Generate and store the ExtractedPattern if the selection changed
+            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
+            {
+                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+            }
+
+            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+            int similarCount = CountRegexMatches(PassedTextControl.Text, regexPattern);
+            if (SimilarMatchesButton.Content is TextBlock similarButton)
+            {
+                similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
+            }
+            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
+            SimilarMatchesButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
+            SimilarMatchesButton.Visibility = similarCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            SimilarMatchesButton.Visibility = Visibility.Collapsed;
+        }
+
+        // Show regex pattern
+        if (DefaultSettings.EtwShowRegexPattern && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
+        {
+            // Generate and store the ExtractedPattern if the selection changed
+            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
+            {
+                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+            }
+
+            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+            if (RegexPatternButton.Content is TextBlock regexButton)
+            {
+                regexButton.Text = regexPattern.Length > 30
+                    ? $"Regex: {regexPattern[..27]}..."
+                    : $"Regex: {regexPattern}";
+            }
+            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
+            RegexPatternButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
+            RegexPatternButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            RegexPatternButton.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private string GetUnicodeCategory(char c)
+    {
+        UnicodeCategory category = char.GetUnicodeCategory(c);
+        return category switch
+        {
+            UnicodeCategory.UppercaseLetter => "Uppercase Letter",
+            UnicodeCategory.LowercaseLetter => "Lowercase Letter",
+            UnicodeCategory.TitlecaseLetter => "Titlecase Letter",
+            UnicodeCategory.ModifierLetter => "Modifier Letter",
+            UnicodeCategory.OtherLetter => "Other Letter",
+            UnicodeCategory.NonSpacingMark => "Non-Spacing Mark",
+            UnicodeCategory.SpacingCombiningMark => "Spacing Mark",
+            UnicodeCategory.EnclosingMark => "Enclosing Mark",
+            UnicodeCategory.DecimalDigitNumber => "Decimal Digit",
+            UnicodeCategory.LetterNumber => "Letter Number",
+            UnicodeCategory.OtherNumber => "Other Number",
+            UnicodeCategory.SpaceSeparator => "Space Separator",
+            UnicodeCategory.LineSeparator => "Line Separator",
+            UnicodeCategory.ParagraphSeparator => "Paragraph Separator",
+            UnicodeCategory.Control => "Control Character",
+            UnicodeCategory.Format => "Format Character",
+            UnicodeCategory.Surrogate => "Surrogate",
+            UnicodeCategory.PrivateUse => "Private Use",
+            UnicodeCategory.ConnectorPunctuation => "Connector Punctuation",
+            UnicodeCategory.DashPunctuation => "Dash Punctuation",
+            UnicodeCategory.OpenPunctuation => "Open Punctuation",
+            UnicodeCategory.ClosePunctuation => "Close Punctuation",
+            UnicodeCategory.InitialQuotePunctuation => "Initial Quote",
+            UnicodeCategory.FinalQuotePunctuation => "Final Quote",
+            UnicodeCategory.OtherPunctuation => "Other Punctuation",
+            UnicodeCategory.MathSymbol => "Math Symbol",
+            UnicodeCategory.CurrencySymbol => "Currency Symbol",
+            UnicodeCategory.ModifierSymbol => "Modifier Symbol",
+            UnicodeCategory.OtherSymbol => "Other Symbol",
+            UnicodeCategory.OtherNotAssigned => "Not Assigned",
+            _ => "Unknown"
+        };
+    }
+
+    private int CountMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        int count = 0;
+        int index = 0;
+
+        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+
+        return count;
+    }
+
+    private int CountRegexMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        try
+        {
+            MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
+            return matches.Count;
+        }
+        catch (Exception)
+        {
+            // If regex is invalid, return 0
+            return 0;
+        }
+    }
+
+    private string GenerateRegexPattern(string text)
+    {
+        // Use the stored ExtractedPattern if available and matches current text
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == text)
+        {
+            return currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        }
+
+        // Otherwise create new pattern at default precision
+        ExtractedPattern extractedPattern = new(text);
+        return extractedPattern.GetPattern(ExtractedPattern.DefaultPrecisionLevel);
+    }
+
+    private void MatchCountButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Open find and replace with the selection pre-loaded
+        LaunchFindAndReplace();
+    }
+
+    private void SimilarMatchesButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+
+        // Use the stored ExtractedPattern if available, otherwise create new one
+        ExtractedPattern extractedPattern;
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
+        {
+            extractedPattern = currentExtractedPattern;
+        }
+        else
+        {
+            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+        }
+
+        // Launch Find and Replace with regex enabled and execute search
+        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findAndReplaceWindow.TextEditWindow = this;
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
+        findAndReplaceWindow.Show();
+    }
+
+    private void RegexPatternButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+
+        // Use the stored ExtractedPattern if available, otherwise create new one
+        ExtractedPattern extractedPattern;
+        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
+        {
+            extractedPattern = currentExtractedPattern;
+        }
+        else
+        {
+            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
+        }
+
+        // Launch Find and Replace with regex enabled and execute search
+        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findAndReplaceWindow.TextEditWindow = this;
+        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
+        findAndReplaceWindow.Show();
+    }
+
+    private void PatternButton_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Only handle if we have a valid ExtractedPattern
+        if (currentExtractedPattern is null)
+            return;
+
+        // Determine scroll direction for animation
+        bool scrollingUp = e.Delta > 0;
+
+        // Adjust precision level based on scroll direction
+        if (scrollingUp)
+        {
+            // Scroll up = increase precision (more specific pattern)
+            currentPrecisionLevel = Math.Min(currentPrecisionLevel + 1, ExtractedPattern.MaxPrecisionLevel);
+        }
+        else if (e.Delta < 0)
+        {
+            // Scroll down = decrease precision (more general pattern)
+            currentPrecisionLevel = Math.Max(currentPrecisionLevel - 1, ExtractedPattern.MinPrecisionLevel);
+        }
+
+        // Update the UI to reflect the new precision level
+        UpdateSelectionSpecificUI();
+
+        // Add visual feedback animation to make the precision change more obvious
+        AnimatePrecisionChange(sender, scrollingUp);
+
+        // Mark the event as handled so it doesn't bubble up
+        e.Handled = true;
+    }
+
+    private void AnimatePrecisionChange(object sender, bool scrollingUp)
+    {
+        if (sender is not System.Windows.Controls.Button button)
+            return;
+
+        // Ensure the button has a RenderTransform for translation
+        if (button.RenderTransform is not TranslateTransform)
+        {
+            button.RenderTransform = new TranslateTransform(0, 0);
+        }
+
+        TranslateTransform translateTransform = (TranslateTransform)button.RenderTransform;
+
+        // Create a slide animation based on scroll direction
+        // Scrolling up (increasing precision) = slide text up (negative Y)
+        // Scrolling down (decreasing precision) = slide text down (positive Y)
+        double slideDistance = 10;
+        double startY = scrollingUp ? slideDistance : -slideDistance;
+
+        System.Windows.Media.Animation.DoubleAnimation slideAnimation = new()
+        {
+            From = startY,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+        };
+
+        // Apply the animation to Y translation
+        translateTransform.BeginAnimation(TranslateTransform.YProperty, slideAnimation);
+    }
+
+    private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
+    {
+        string selectedText = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(selectedText))
+            return;
+
+        CharDetailsPopupContent.Children.Clear();
+
+        if (selectedText.Length == 1)
+        {
+            // Show details for single character in multi-line TextBox
+            char c = selectedText[0];
+            string details = GetCharacterDetailsText(c);
+
+            System.Windows.Controls.TextBox detailsTextBox = new()
+            {
+                Text = details,
+                FontSize = 12,
+                IsReadOnly = true,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                TextWrapping = TextWrapping.Wrap,
+                Cursor = System.Windows.Input.Cursors.Arrow,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+            CharDetailsPopupContent.Children.Add(detailsTextBox);
+        }
+        else
+        {
+            // Show details for multiple characters in one multi-line TextBox
+            StringBuilder allDetails = new();
+            allDetails.AppendLine($"Character Details ({selectedText.Length} characters)");
+            allDetails.AppendLine();
+
+            // Limit to first 10 characters to avoid huge popup
+            int charLimit = Math.Min(selectedText.Length, 10);
+            for (int i = 0; i < charLimit; i++)
+            {
+                char c = selectedText[i];
+                allDetails.AppendLine(GetCharacterDetailsText(c));
+
+                if (i < charLimit - 1)
+                    allDetails.AppendLine(); // Add blank line between characters
+            }
+
+            if (selectedText.Length > charLimit)
+            {
+                allDetails.AppendLine();
+                allDetails.AppendLine($"... and {selectedText.Length - charLimit} more");
+            }
+
+            System.Windows.Controls.TextBox detailsTextBox = new()
+            {
+                Text = allDetails.ToString(),
+                FontSize = 12,
+                IsReadOnly = true,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                TextWrapping = TextWrapping.Wrap,
+                Cursor = System.Windows.Input.Cursors.Arrow,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = 400
+            };
+            CharDetailsPopupContent.Children.Add(detailsTextBox);
+        }
+
+        CharDetailsPopup.IsOpen = true;
+    }
+
+    private string GetCharacterDetailsText(char c)
+    {
+        int codePoint = char.ConvertToUtf32(c.ToString(), 0);
+        string unicodeHex = $"U+{codePoint:X4}";
+        string category = GetUnicodeCategory(c);
+
+        StringBuilder details = new();
+        details.AppendLine($"Character: '{c}'");
+        details.AppendLine($"Unicode: {unicodeHex} (decimal: {codePoint})");
+        details.AppendLine($"Category: {category}");
+
+        // UTF-8 encoding
+        byte[] utf8Bytes = Encoding.UTF8.GetBytes(c.ToString());
+        string utf8Hex = string.Join(" ", utf8Bytes.Select(b => $"0x{b:X2}"));
+        details.AppendLine($"UTF-8: {utf8Hex}");
+
+        // HTML entity if applicable
+        if (codePoint < 128 || IsCommonHtmlEntity(c))
+        {
+            string htmlEntity = GetHtmlEntity(c, codePoint);
+            if (!string.IsNullOrEmpty(htmlEntity))
+            {
+                details.AppendLine($"HTML: {htmlEntity}");
+            }
+        }
+
+        return details.ToString().TrimEnd();
+    }
+
+
+    private bool IsCommonHtmlEntity(char c)
+    {
+        return c switch
+        {
+            '<' or '>' or '&' or '"' or '\'' or ' ' => true,
+            _ => false
+        };
+    }
+
+    private string GetHtmlEntity(char c, int codePoint)
+    {
+        return c switch
+        {
+            '<' => "&lt; or &#60;",
+            '>' => "&gt; or &#62;",
+            '&' => "&amp; or &#38;",
+            '"' => "&quot; or &#34;",
+            '\'' => "&apos; or &#39;",
+            ' ' when codePoint == 160 => "&nbsp; or &#160;",
+            _ => $"&#{codePoint};"
+        };
     }
 
     private void Window_Activated(object sender, EventArgs e)
@@ -2232,10 +2877,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Focus();
     }
 
-    private void Window_Closed(object? sender, EventArgs e)
+    private void Window_Closed(object sender, EventArgs e)
     {
         string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
         DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+
+        // Save calc pane width to settings when closing with pane open
+        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
+        {
+            if (CalcColumn.Width.IsStar)
+                DefaultSettings.CalcPaneWidth = (int)CalcColumn.ActualWidth;
+            else
+                DefaultSettings.CalcPaneWidth = (int)CalcColumn.Width.Value;
+        }
+
         DefaultSettings.Save();
 
         Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
@@ -2288,10 +2943,522 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Interval = TimeSpan.FromMilliseconds(700);
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
 
+        InitializeExpressionEvaluator();
+
+        // Restore calc pane width from settings if not loading from history
+        if (ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
+        {
+            _lastCalcColumnWidth = new GridLength(DefaultSettings.CalcPaneWidth, GridUnitType.Pixel);
+        }
+
+        if (ShowCalcPaneMenuItem.Tag is not true)
+            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+
+        ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
+        SetCalcPaneVisibility();
+
+        // Wire up calc pane context menu
+        HideCalcPaneContextItem.Click += HideCalcPaneContextItem_Click;
+        ShowCalcErrorsContextItem.Click += ShowCalcErrorsContextItem_Click;
+        CopyAllContextItem.Click += CopyAllContextItem_Click;
+
+        // Attach scrolling synchronization
+        try
+        {
+            PassedTextControl.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(PassedTextControl_ScrollChanged), true);
+            CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
+            CalcResultsTextControl.PreviewMouseWheel += CalcResultsTextControl_PreviewMouseWheel;
+        }
+        catch { /* ignore if not ready yet */ }
+
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
             AiMenuItem.Visibility = Visibility.Visible;
         }
+    }
+
+    private void HideCalcPaneContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = false;
+        DefaultSettings.CalcShowPane = false;
+        SetCalcPaneVisibility();
+    }
+
+    private void ShowCalcErrorsContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowErrorsMenuItem.IsChecked = !ShowErrorsMenuItem.IsChecked;
+        DefaultSettings.CalcShowErrors = ShowErrorsMenuItem.IsChecked;
+        _ = EvaluateExpressions();
+    }
+
+    private void CopyAllContextItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
+            return;
+
+        try
+        {
+            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
+        }
+    }
+
+    private void CalcResultsTextControl_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+    {
+        UpdateCalcAggregates();
+    }
+
+    private void UpdateCalcAggregates()
+    {
+        // Get the text to analyze - selected text if available, otherwise all results
+        string textToAnalyze = !string.IsNullOrEmpty(CalcResultsTextControl.SelectedText)
+            ? CalcResultsTextControl.SelectedText
+            : CalcResultsTextControl.Text;
+
+        // Extract numeric values from the text
+        List<double> numbers = ExtractNumericValues(textToAnalyze);
+
+        // Update menu items based on whether we have numbers
+        if (numbers.Count == 0)
+        {
+            ShowSumContextItem.Header = "Sum: -";
+            ShowAverageContextItem.Header = "Average: -";
+            ShowMedianContextItem.Header = "Median: -";
+            ShowCountContextItem.Header = "Count: 0";
+            ShowMinContextItem.Header = "Min: -";
+            ShowMaxContextItem.Header = "Max: -";
+            ShowProductContextItem.Header = "Product: -";
+
+            ShowSumContextItem.IsEnabled = false;
+            ShowAverageContextItem.IsEnabled = false;
+            ShowMedianContextItem.IsEnabled = false;
+            ShowCountContextItem.IsEnabled = false;
+            ShowMinContextItem.IsEnabled = false;
+            ShowMaxContextItem.IsEnabled = false;
+            ShowProductContextItem.IsEnabled = false;
+        }
+        else
+        {
+            double sum = numbers.Sum();
+            double average = numbers.Average();
+            double median = CalculateMedian(numbers);
+            int count = numbers.Count;
+            double min = numbers.Min();
+            double max = numbers.Max();
+            double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
+
+            ShowSumContextItem.Header = $"Sum: {FormatNumber(sum)}";
+            ShowAverageContextItem.Header = $"Average: {FormatNumber(average)}";
+            ShowMedianContextItem.Header = $"Median: {FormatNumber(median)}";
+            ShowCountContextItem.Header = $"Count: {count}";
+            ShowMinContextItem.Header = $"Min: {FormatNumber(min)}";
+            ShowMaxContextItem.Header = $"Max: {FormatNumber(max)}";
+            ShowProductContextItem.Header = $"Product: {FormatNumber(product)}";
+
+            ShowSumContextItem.IsEnabled = true;
+            ShowAverageContextItem.IsEnabled = true;
+            ShowMedianContextItem.IsEnabled = true;
+            ShowCountContextItem.IsEnabled = true;
+            ShowMinContextItem.IsEnabled = true;
+            ShowMaxContextItem.IsEnabled = true;
+            ShowProductContextItem.IsEnabled = true;
+
+            // Wire up click handlers to copy values and track selection
+            ShowSumContextItem.Click -= SelectAggregate_Click;
+            ShowSumContextItem.Click += SelectAggregate_Click;
+            ShowSumContextItem.Tag = (AggregateType.Sum, sum);
+
+            ShowAverageContextItem.Click -= SelectAggregate_Click;
+            ShowAverageContextItem.Click += SelectAggregate_Click;
+            ShowAverageContextItem.Tag = (AggregateType.Average, average);
+
+            ShowMedianContextItem.Click -= SelectAggregate_Click;
+            ShowMedianContextItem.Click += SelectAggregate_Click;
+            ShowMedianContextItem.Tag = (AggregateType.Median, median);
+
+            ShowCountContextItem.Click -= SelectAggregate_Click;
+            ShowCountContextItem.Click += SelectAggregate_Click;
+            ShowCountContextItem.Tag = (AggregateType.Count, (double)count);
+
+            ShowMinContextItem.Click -= SelectAggregate_Click;
+            ShowMinContextItem.Click += SelectAggregate_Click;
+            ShowMinContextItem.Tag = (AggregateType.Min, min);
+
+            ShowMaxContextItem.Click -= SelectAggregate_Click;
+            ShowMaxContextItem.Click += SelectAggregate_Click;
+            ShowMaxContextItem.Tag = (AggregateType.Max, max);
+
+            ShowProductContextItem.Click -= SelectAggregate_Click;
+            ShowProductContextItem.Click += SelectAggregate_Click;
+            ShowProductContextItem.Tag = (AggregateType.Product, product);
+
+            // Update checked states based on current selection
+            ShowSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
+            ShowAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
+            ShowMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
+            ShowCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
+            ShowMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
+            ShowMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
+            ShowProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
+        }
+    }
+
+    private List<double> ExtractNumericValues(string text)
+    {
+        List<double> numbers = [];
+
+        if (string.IsNullOrWhiteSpace(text))
+            return numbers;
+
+        // Split by lines and process each line
+        string[] lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string line in lines)
+        {
+            string trimmedLine = line.Trim();
+
+            // Skip empty lines, errors, and comments
+            if (string.IsNullOrWhiteSpace(trimmedLine) ||
+                trimmedLine.StartsWith("Error:", StringComparison.OrdinalIgnoreCase) ||
+                trimmedLine.StartsWith("//") ||
+                trimmedLine.StartsWith("#"))
+                continue;
+
+            // Try to parse the line as a number
+            // Remove common formatting characters
+            string cleaned = trimmedLine
+                .Replace(",", "")  // Remove thousand separators
+                .Replace(" ", "")  // Remove spaces
+                .Trim();
+
+            if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.CurrentCulture, out double value))
+            {
+                numbers.Add(value);
+            }
+        }
+
+        return numbers;
+    }
+
+    private double CalculateMedian(List<double> numbers)
+    {
+        if (numbers.Count == 0)
+            return 0;
+
+        List<double> sorted = numbers.OrderBy(n => n).ToList();
+        int count = sorted.Count;
+
+        if (count % 2 == 0)
+        {
+            // Even number of elements - average the two middle values
+            return (sorted[count / 2 - 1] + sorted[count / 2]) / 2.0;
+        }
+        else
+        {
+            // Odd number of elements - return the middle value
+            return sorted[count / 2];
+        }
+    }
+
+    private string FormatNumber(double value)
+    {
+        // Use the same formatting logic as the calculation service, with group separators
+        if (Math.Abs(value) >= 1e15 || (Math.Abs(value) < 1e-4 && value != 0))
+        {
+            return value.ToString("E6", CultureInfo.CurrentCulture);
+        }
+        else if (value % 1 == 0 && Math.Abs(value) < 1e10)
+        {
+            return value.ToString("N0", CultureInfo.CurrentCulture);  // N0 includes group separators
+        }
+        else
+        {
+            return value.ToString("N", CultureInfo.CurrentCulture);  // N includes group separators and decimals
+        }
+    }
+
+    private void SelectAggregate_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is ValueTuple<AggregateType, double> tagData)
+        {
+            try
+            {
+                var (aggregateType, value) = tagData;
+
+                // If clicking a checked item, uncheck it and clear selection
+                if (menuItem.IsChecked && _selectedAggregate == aggregateType)
+                {
+                    menuItem.IsChecked = false;
+                    _selectedAggregate = AggregateType.None;
+                    UpdateAggregateStatusDisplay();
+                    return;
+                }
+
+                // Uncheck all other aggregate menu items (both context menus)
+                ShowSumContextItem.IsChecked = false;
+                ShowAverageContextItem.IsChecked = false;
+                ShowMedianContextItem.IsChecked = false;
+                ShowCountContextItem.IsChecked = false;
+                ShowMinContextItem.IsChecked = false;
+                ShowMaxContextItem.IsChecked = false;
+                ShowProductContextItem.IsChecked = false;
+
+                AggregateSumContextItem.IsChecked = false;
+                AggregateAverageContextItem.IsChecked = false;
+                AggregateMedianContextItem.IsChecked = false;
+                AggregateCountContextItem.IsChecked = false;
+                AggregateMinContextItem.IsChecked = false;
+                AggregateMaxContextItem.IsChecked = false;
+                AggregateProductContextItem.IsChecked = false;
+
+                // Check the clicked item
+                menuItem.IsChecked = true;
+
+                // Store the selected aggregate type
+                _selectedAggregate = aggregateType;
+
+                // Copy value to clipboard
+                string valueToCopy = FormatNumber(value);
+                System.Windows.Clipboard.SetDataObject(valueToCopy, true);
+
+                // Update the status display
+                UpdateAggregateStatusDisplay();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to process aggregate selection: {ex.Message}");
+            }
+        }
+    }
+
+    private void UpdateAggregateStatusDisplay()
+    {
+        if (_selectedAggregate == AggregateType.None)
+        {
+            CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Get the text to analyze - all results
+        string textToAnalyze = CalcResultsTextControl.Text;
+
+        // Extract numeric values
+        List<double> numbers = ExtractNumericValues(textToAnalyze);
+
+        if (numbers.Count == 0)
+        {
+            CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Calculate the selected aggregate
+        double value;
+        string aggregateName;
+
+        switch (_selectedAggregate)
+        {
+            case AggregateType.Sum:
+                value = numbers.Sum();
+                aggregateName = "Sum";
+                break;
+            case AggregateType.Average:
+                value = numbers.Average();
+                aggregateName = "Average";
+                break;
+            case AggregateType.Median:
+                value = CalculateMedian(numbers);
+                aggregateName = "Median";
+                break;
+            case AggregateType.Count:
+                value = numbers.Count;
+                aggregateName = "Count";
+                break;
+            case AggregateType.Min:
+                value = numbers.Min();
+                aggregateName = "Min";
+                break;
+            case AggregateType.Max:
+                value = numbers.Max();
+                aggregateName = "Max";
+                break;
+            case AggregateType.Product:
+                value = numbers.Aggregate(1.0, (acc, val) => acc * val);
+                aggregateName = "Product";
+                break;
+            default:
+                CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
+                return;
+        }
+
+        // Update the status text
+        CalcAggregateStatusText.Text = $"{aggregateName}: {FormatNumber(value)}";
+        CalcAggregateStatusBorder.Visibility = Visibility.Visible;
+    }
+
+    private void CalcAggregateStatusBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcAggregateStatusText.Text))
+            return;
+
+        try
+        {
+            // Extract just the numeric value from the text (e.g., "Sum: 123.45" -> "123.45")
+            string fullText = CalcAggregateStatusText.Text;
+            int colonIndex = fullText.IndexOf(':');
+            if (colonIndex >= 0 && colonIndex < fullText.Length - 1)
+            {
+                string valueToCopy = fullText.Substring(colonIndex + 1).Trim();
+                System.Windows.Clipboard.SetDataObject(valueToCopy, true);
+            }
+            else
+            {
+                System.Windows.Clipboard.SetDataObject(fullText, true);
+            }
+
+            // Animate the copy action
+            AnimateAggregateCopy();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy aggregate value: {ex.Message}");
+        }
+
+        e.Handled = true;
+    }
+
+    private void CalcAggregateStatusBorder_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+    {
+        UpdateAggregateContextMenu();
+    }
+
+    private void UpdateAggregateContextMenu()
+    {
+        // Get the text to analyze - all results
+        string textToAnalyze = CalcResultsTextControl.Text;
+
+        // Extract numeric values from the text
+        List<double> numbers = ExtractNumericValues(textToAnalyze);
+
+        // Update menu items based on whether we have numbers
+        if (numbers.Count == 0)
+        {
+            AggregateSumContextItem.Header = "Sum: -";
+            AggregateAverageContextItem.Header = "Average: -";
+            AggregateMedianContextItem.Header = "Median: -";
+            AggregateCountContextItem.Header = "Count: 0";
+            AggregateMinContextItem.Header = "Min: -";
+            AggregateMaxContextItem.Header = "Max: -";
+            AggregateProductContextItem.Header = "Product: -";
+
+            AggregateSumContextItem.IsEnabled = false;
+            AggregateAverageContextItem.IsEnabled = false;
+            AggregateMedianContextItem.IsEnabled = false;
+            AggregateCountContextItem.IsEnabled = false;
+            AggregateMinContextItem.IsEnabled = false;
+            AggregateMaxContextItem.IsEnabled = false;
+            AggregateProductContextItem.IsEnabled = false;
+        }
+        else
+        {
+            double sum = numbers.Sum();
+            double average = numbers.Average();
+            double median = CalculateMedian(numbers);
+            int count = numbers.Count;
+            double min = numbers.Min();
+            double max = numbers.Max();
+            double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
+
+            AggregateSumContextItem.Header = $"Sum: {FormatNumber(sum)}";
+            AggregateAverageContextItem.Header = $"Average: {FormatNumber(average)}";
+            AggregateMedianContextItem.Header = $"Median: {FormatNumber(median)}";
+            AggregateCountContextItem.Header = $"Count: {count}";
+            AggregateMinContextItem.Header = $"Min: {FormatNumber(min)}";
+            AggregateMaxContextItem.Header = $"Max: {FormatNumber(max)}";
+            AggregateProductContextItem.Header = $"Product: {FormatNumber(product)}";
+
+            AggregateSumContextItem.IsEnabled = true;
+            AggregateAverageContextItem.IsEnabled = true;
+            AggregateMedianContextItem.IsEnabled = true;
+            AggregateCountContextItem.IsEnabled = true;
+            AggregateMinContextItem.IsEnabled = true;
+            AggregateMaxContextItem.IsEnabled = true;
+            AggregateProductContextItem.IsEnabled = true;
+
+            // Wire up click handlers
+            AggregateSumContextItem.Click -= SelectAggregate_Click;
+            AggregateSumContextItem.Click += SelectAggregate_Click;
+            AggregateSumContextItem.Tag = (AggregateType.Sum, sum);
+
+            AggregateAverageContextItem.Click -= SelectAggregate_Click;
+            AggregateAverageContextItem.Click += SelectAggregate_Click;
+            AggregateAverageContextItem.Tag = (AggregateType.Average, average);
+
+            AggregateMedianContextItem.Click -= SelectAggregate_Click;
+            AggregateMedianContextItem.Click += SelectAggregate_Click;
+            AggregateMedianContextItem.Tag = (AggregateType.Median, median);
+
+            AggregateCountContextItem.Click -= SelectAggregate_Click;
+            AggregateCountContextItem.Click += SelectAggregate_Click;
+            AggregateCountContextItem.Tag = (AggregateType.Count, (double)count);
+
+            AggregateMinContextItem.Click -= SelectAggregate_Click;
+            AggregateMinContextItem.Click += SelectAggregate_Click;
+            AggregateMinContextItem.Tag = (AggregateType.Min, min);
+
+            AggregateMaxContextItem.Click -= SelectAggregate_Click;
+            AggregateMaxContextItem.Click += SelectAggregate_Click;
+            AggregateMaxContextItem.Tag = (AggregateType.Max, max);
+
+            AggregateProductContextItem.Click -= SelectAggregate_Click;
+            AggregateProductContextItem.Click += SelectAggregate_Click;
+            AggregateProductContextItem.Tag = (AggregateType.Product, product);
+
+            // Update checked states based on current selection
+            AggregateSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
+            AggregateAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
+            AggregateMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
+            AggregateCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
+            AggregateMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
+            AggregateMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
+            AggregateProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
+        }
+    }
+
+    private void AnimateAggregateCopy()
+    {
+        // Flash the copy icon to indicate the copy action
+        DoubleAnimation fadeInOutAnim = new()
+        {
+            From = 0.0,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(300),
+            AutoReverse = true
+        };
+
+        CalcAggregateCopyIcon.BeginAnimation(OpacityProperty, fadeInOutAnim);
+    }
+
+    private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
+            return;
+
+        try
+        {
+            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
+        }
+    }
+
+    private void CalcInfoButton_Click(object sender, RoutedEventArgs e)
+    {
+        CalcInfoPopup.IsOpen = !CalcInfoPopup.IsOpen;
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
@@ -2304,12 +3471,35 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimerCount = 0;
     }
 
+    private void CalcResultsTextControl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Forward scrolling intent to the main text box so both stay aligned
+        if (Keyboard.Modifiers == ModifierKeys.Control)
+            return; // let zoom handler take it
+
+        try
+        {
+            if (GetScrollViewer(PassedTextControl) is ScrollViewer mainSv)
+            {
+                // Roughly match WPF default: 3 lines per notch; use a small pixel offset
+                double delta = -e.Delta; // positive means scroll down
+                double lines = delta / 120.0 * 3.0;
+
+                // Estimate line height from font size; 1em ~ FontSize pixels, add padding
+                double lineHeight = Math.Max(12, PassedTextControl.FontSize * 1.35);
+                mainSv.ScrollToVerticalOffset(mainSv.VerticalOffset + (lines * lineHeight));
+                e.Handled = true;
+            }
+        }
+        catch { /* no-op */ }
+    }
+
     private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
     }
 
-    private void WrapTextCHBOX_Checked(object sender, RoutedEventArgs e)
+    private void WrapTextCHBX_Checked(object sender, RoutedEventArgs e)
     {
         if (!IsLoaded)
             return;
@@ -2333,10 +3523,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else
             PassedTextControl.SelectedText = workingString;
     }
-
-    [GeneratedRegex(@"(\r\n|\n|\r)")]
-    private static partial Regex NewlineReturns();
-    #endregion Methods
 
     private async void SummarizeMenuItem_Click(object sender, RoutedEventArgs e)
     {
@@ -2423,5 +3609,319 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         IsEnabled = true;
         LoadingStack.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowCalcPaneMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+            return;
+
+        DefaultSettings.CalcShowPane = menuItem.IsChecked;
+
+        SetCalcPaneVisibility();
+    }
+
+    private void CalcToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
+        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
+        SetCalcPaneVisibility();
+    }
+
+    private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
+        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
+        SetCalcPaneVisibility();
+    }
+
+    private void SetCalcPaneVisibility()
+    {
+        // Check if we're loading from history and should ignore default settings
+        if (ShowCalcPaneMenuItem.Tag is bool fromHistory && fromHistory)
+        {
+            ShowCalcPaneMenuItem.Tag = null; // Clear the flag after first use
+            // Use ShowCalcPaneMenuItem.IsChecked which was set from history
+        }
+        else
+        {
+            // Not from history, apply user's default setting
+            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+        }
+
+        if (ShowCalcPaneMenuItem.IsChecked)
+        {
+            CalcResultsTextControl.Visibility = Visibility.Visible;
+            TextBoxSplitter.Visibility = Visibility.Visible;
+            CalcPaneShadow.Visibility = Visibility.Visible;
+
+            // Restore previous width if it was collapsed
+            if (CalcColumn.Width.Value == 0)
+                CalcColumn.Width = _lastCalcColumnWidth;
+            _debounceTimer?.Start();
+        }
+        else
+        {
+            CalcResultsTextControl.Visibility = Visibility.Collapsed;
+            TextBoxSplitter.Visibility = Visibility.Collapsed;
+            CalcPaneShadow.Visibility = Visibility.Collapsed;
+
+            // Remember current width, then collapse column to remove pane area
+            if (CalcColumn.Width.Value > 0)
+                _lastCalcColumnWidth = CalcColumn.Width;
+            CalcColumn.Width = new GridLength(0);
+        }
+    }
+
+    private void ShowErrorsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+            return;
+
+        DefaultSettings.CalcShowErrors = menuItem.IsChecked;
+        _ = EvaluateExpressions();
+    }
+
+    private void TextBoxSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        // Toggle between equal split (star) and collapsed
+        if (CalcColumn.Width.IsStar)
+        {
+            // If already star-sized, collapse the pane
+            ShowCalcPaneMenuItem.IsChecked = false;
+            DefaultSettings.CalcShowPane = false;
+            SetCalcPaneVisibility();
+        }
+        else
+        {
+            // If collapsed or pixel-sized, set to equal split (1 star = 50% of available space)
+            CalcColumn.Width = new GridLength(1, GridUnitType.Star);
+            _lastCalcColumnWidth = new GridLength(1, GridUnitType.Star);
+        }
+    }
+
+    private void RegexManagerMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.Show();
+    }
+
+    private void SaveCurrentPatternToRegexManager()
+    {
+        if (currentExtractedPattern is null)
+            return;
+
+        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        string sourceText = currentExtractedPattern.OriginalText;
+
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.AddPatternFromText(pattern, sourceText, this);
+        regexManager.Show();
+    }
+
+    private void LoadStoredPatternToSelection(StoredRegex storedPattern)
+    {
+        if (storedPattern is null)
+            return;
+
+        // Open Find and Replace window with this pattern and execute search
+        FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
+        findWindow.FindTextBox.Text = storedPattern.Pattern;
+        findWindow.UsePaternCheckBox.IsChecked = true;
+        findWindow.TextEditWindow = this;
+        findWindow.StringFromWindow = PassedTextControl.Text;
+        findWindow.SearchForText();
+        findWindow.Show();
+    }
+
+    private void ShowRegexExplanation()
+    {
+        if (currentExtractedPattern is null)
+            return;
+
+        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
+        string explanation = pattern.ExplainRegexPattern();
+
+        Wpf.Ui.Controls.MessageBox messageBox = new()
+        {
+            Title = "Regex Pattern Explanation",
+            Content = explanation,
+            CloseButtonText = "Close"
+        };
+        _ = messageBox.ShowDialogAsync();
+    }
+
+    private void ExplainPatternMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
+
+        if (string.IsNullOrEmpty(pattern))
+            return;
+
+        // Clear previous content
+        CharDetailsPopupContent.Children.Clear();
+
+        // Create explanation text
+        string explanation = pattern.ExplainRegexPattern();
+
+        System.Windows.Controls.TextBox explanationTextBox = new()
+        {
+            Text = explanation,
+            FontSize = 12,
+            IsReadOnly = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            TextWrapping = TextWrapping.Wrap,
+            Cursor = System.Windows.Input.Cursors.Arrow,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MaxHeight = 400,
+            Padding = new Thickness(8)
+        };
+
+        CharDetailsPopupContent.Children.Add(explanationTextBox);
+        CharDetailsPopup.IsOpen = true;
+    }
+
+    [GeneratedRegex(@"(\r\n|\n|\r)")]
+    private static partial Regex NewlineReturns();
+
+    #endregion Methods
+
+    private void SavePatternMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
+
+        if (string.IsNullOrEmpty(pattern))
+            return;
+
+        // open the RegexManager and save this pattern
+        RegexManager manager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        manager.AddPatternFromText(pattern, GetSelectedTextOrAllText(), this);
+        manager.Show();
+
+    }
+
+    private void PatternContextOpening(object sender, ContextMenuEventArgs e)
+    {
+        // sender should be a button if not return
+        if (sender is not System.Windows.Controls.Button button)
+            return;
+
+        // get the context menu
+        if (button.ContextMenu is null)
+            return;
+
+        ContextMenu contextMenu = button.ContextMenu;
+
+        // Clear existing dynamic items (keep original static items)
+        // Find if "Use Pattern" menu item already exists, remove it to rebuild
+        MenuItem? existingUsePatternItem = null;
+        foreach (object? item in contextMenu.Items)
+        {
+            if (item is MenuItem mi && mi.Header?.ToString() == "Use Pattern")
+            {
+                existingUsePatternItem = mi;
+                break;
+            }
+        }
+
+        if (existingUsePatternItem is not null)
+            contextMenu.Items.Remove(existingUsePatternItem);
+
+        // make a context menu item for "use this pattern"
+        MenuItem usePatternMenuItem = new()
+        {
+            Header = "Use Pattern"
+        };
+
+        // add all patterns from regex manager as menu items as children to the new "use this pattern" item
+        List<StoredRegex> storedPatterns = LoadRegexPatterns();
+
+        if (storedPatterns.Count == 0)
+        {
+            MenuItem noPatternItem = new()
+            {
+                Header = "No saved patterns",
+                IsEnabled = false
+            };
+            usePatternMenuItem.Items.Add(noPatternItem);
+        }
+        else
+        {
+            foreach (StoredRegex storedPattern in storedPatterns)
+            {
+                MenuItem patternItem = new()
+                {
+                    Header = storedPattern.Name,
+                    ToolTip = storedPattern.Pattern,
+                    Tag = storedPattern
+                };
+
+                // wire up click event to override the currentExtractedPattern
+                patternItem.Click += (s, args) =>
+                {
+                    if (s is MenuItem clickedItem && clickedItem.Tag is StoredRegex selectedPattern)
+                    {
+                        // Create a new ExtractedPattern from the stored pattern
+                        // Use the pattern's description or name as the source text
+                        string sourceText = string.IsNullOrWhiteSpace(selectedPattern.Description)
+                            ? selectedPattern.Name
+                            : selectedPattern.Description;
+
+                        // Override the current extracted pattern with the selected stored pattern
+                        currentExtractedPattern = new ExtractedPattern(sourceText, ignoreCase: true);
+                        currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+
+                        // Update the UI to reflect the new pattern
+                        UpdateSelectionSpecificUI();
+
+                        // Optionally open Find and Replace with this pattern
+                        LoadStoredPatternToSelection(selectedPattern);
+                    }
+                };
+
+                usePatternMenuItem.Items.Add(patternItem);
+            }
+        }
+
+        // Add separator before the "Use Pattern" item
+        contextMenu.Items.Add(new Separator());
+
+        // Add the "Use Pattern" menu item to the context menu
+        contextMenu.Items.Add(usePatternMenuItem);
+    }
+
+    private List<StoredRegex> LoadRegexPatterns()
+    {
+        List<StoredRegex> returnRegexes = [];
+
+        // Load from settings
+        string regexListJson = DefaultSettings.RegexList;
+
+        if (!string.IsNullOrWhiteSpace(regexListJson))
+        {
+            try
+            {
+                StoredRegex[]? loadedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
+                if (loadedPatterns is not null)
+                {
+                    foreach (StoredRegex pattern in loadedPatterns)
+                        returnRegexes.Add(pattern);
+                }
+            }
+            catch (JsonException)
+            {
+                // If deserialization fails, start fresh
+            }
+        }
+
+        // Add default patterns if list is empty
+        if (returnRegexes.Count == 0)
+        {
+            foreach (StoredRegex defaultPattern in StoredRegex.GetDefaultPatterns())
+                returnRegexes.Add(defaultPattern);
+        }
+
+        return returnRegexes;
     }
 }

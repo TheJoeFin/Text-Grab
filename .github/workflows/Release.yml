@@ -1,0 +1,200 @@
+name: Release CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name for the release (e.g., v1.0.0). If empty, a tag will be generated from the run number.'
+        required: false
+        default: ''
+      name:
+        description: 'Release title (optional). If empty, a title will be generated using the tag.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT: 'Text-Grab'
+  PROJECT_PATH: 'Text-Grab/Text-Grab.csproj'
+  TEST_PATH: 'Tests/Tests.csproj'
+  BUILD_X64: 'bld/x64'
+  BUILD_X64_SC: 'bld/x64/Text-Grab-Self-Contained'
+  BUILD_ARM64: 'bld/arm64'
+  BUILD_ARM64_SC: 'bld/arm64/Text-Grab-Self-Contained'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Run tests
+        run: dotnet test ${{ env.TEST_PATH }} -r win-x64
+
+      - name: Compute build version, archive paths, and release metadata
+        id: compute
+        shell: pwsh
+        run: |
+          $version = Get-Date -Format 'yyyy-MM-dd'
+          $archiveX64SC = "${{ env.BUILD_X64 }}/${{ env.PROJECT }}-x64-Self-Contained-$version.zip"
+          $archiveArm64SC = "${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}-Self-Contained-$version.zip"
+
+          $tag = "${{ github.event.inputs.tag }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v${{ github.run_number }}" }
+
+          $name = "${{ github.event.inputs.name }}"
+          if ([string]::IsNullOrWhiteSpace($name)) { $name = "Text Grab $tag" }
+
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "archive_x64_sc=$archiveX64SC" >> $env:GITHUB_OUTPUT
+          echo "archive_arm64_sc=$archiveArm64SC" >> $env:GITHUB_OUTPUT
+          echo "release_tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "release_name=$name" >> $env:GITHUB_OUTPUT
+
+      - name: Clean build directories
+        shell: pwsh
+        run: |
+          if (Test-Path '${{ env.BUILD_X64 }}') { Remove-Item '${{ env.BUILD_X64 }}' -Recurse -Force }
+          if (Test-Path '${{ env.BUILD_ARM64 }}') { Remove-Item '${{ env.BUILD_ARM64 }}' -Recurse -Force }
+          New-Item -ItemType Directory -Path '${{ env.BUILD_X64 }}' -Force | Out-Null
+          New-Item -ItemType Directory -Path '${{ env.BUILD_ARM64 }}' -Force | Out-Null
+
+      - name: Build x64 framework-dependent
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-x64
+          --self-contained false
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_X64 }}
+          -p:EnableMsixTooling=true
+          -p:PublishReadyToRun=false
+          -p:PublishSingleFile=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Build x64 self-contained
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-x64
+          --self-contained true
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_X64_SC }}
+          -p:EnableMsixTooling=true
+          -p:PublishReadyToRun=true
+          -p:PublishSingleFile=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Build ARM64 framework-dependent
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-arm64
+          --self-contained false
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_ARM64 }}
+          -p:PublishSingleFile=true
+          -p:EnableMsixTooling=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Build ARM64 self-contained
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-arm64
+          --self-contained true
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_ARM64_SC }}
+          -p:PublishSingleFile=true
+          -p:EnableMsixTooling=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Rename ARM64 executables
+        shell: pwsh
+        run: |
+          if (Test-Path "${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}.exe") {
+            Rename-Item "${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}.exe" 'Text-Grab-arm64.exe'
+          }
+          if (Test-Path "${{ env.BUILD_ARM64_SC }}/${{ env.PROJECT }}.exe") {
+            Rename-Item "${{ env.BUILD_ARM64_SC }}/${{ env.PROJECT }}.exe" 'Text-Grab-arm64.exe'
+          }
+
+      - name: Create self-contained archives
+        shell: pwsh
+        run: |
+          $x64SCZip = "${{ steps.compute.outputs.archive_x64_sc }}"
+          $arm64SCZip = "${{ steps.compute.outputs.archive_arm64_sc }}"
+          
+          if (Test-Path $x64SCZip) { Remove-Item -Force $x64SCZip }
+          if (Test-Path $arm64SCZip) { Remove-Item -Force $arm64SCZip }
+          
+          Compress-Archive -Path "${{ env.BUILD_X64_SC }}\*" -DestinationPath $x64SCZip -Force
+          Compress-Archive -Path "${{ env.BUILD_ARM64_SC }}\*" -DestinationPath $arm64SCZip -Force
+
+      - name: Version information
+        shell: pwsh
+        run: |
+          $exe = Join-Path '${{ env.BUILD_X64 }}' '${{ env.PROJECT }}.exe'
+          if (Test-Path $exe) {
+            $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+            Write-Host "Product Version: $($vi.ProductVersion)"
+            Write-Host "File Version: $($vi.FileVersion)"
+          }
+
+      - name: Upload build artifact (x64 framework-dependent)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Text-Grab-win-x64-framework-dependent
+          path: ${{ env.BUILD_X64 }}
+
+      - name: Upload build artifact (x64 self-contained)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Text-Grab-win-x64-self-contained
+          path: ${{ steps.compute.outputs.archive_x64_sc }}
+
+      - name: Upload build artifact (ARM64 framework-dependent)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Text-Grab-win-arm64-framework-dependent
+          path: ${{ env.BUILD_ARM64 }}
+
+      - name: Upload build artifact (ARM64 self-contained)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Text-Grab-win-arm64-self-contained
+          path: ${{ steps.compute.outputs.archive_arm64_sc }}
+
+      - name: Create draft GitHub release and upload assets
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.compute.outputs.release_tag }}
+          name: ${{ steps.compute.outputs.release_name }}
+          target_commitish: ${{ github.sha }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            ${{ steps.compute.outputs.archive_x64_sc }}
+            ${{ steps.compute.outputs.archive_arm64_sc }}

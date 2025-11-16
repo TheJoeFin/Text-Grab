@@ -8,7 +8,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Bottom Bar Settings"
     Width="950"
-    Height="500"
+    Height="800"
     Background="{DynamicResource ApplicationBackgroundBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     WindowStartupLocation="CenterOwner"
@@ -74,8 +74,7 @@
                                             Margin="0,0,8,0"
                                             d:Symbol="Diamond24"
                                             FontSize="24"
-                                            Symbol="{Binding Path=SymbolIcon,
-                                                             Mode=TwoWay}" />
+                                            Symbol="{Binding Path=SymbolIcon, Mode=TwoWay}" />
                                     </Viewbox>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
@@ -174,8 +173,7 @@
                                                 Margin="0,0,8,0"
                                                 d:Symbol="Diamond24"
                                                 FontSize="24"
-                                                Symbol="{Binding Path=SymbolIcon,
-                                                                 Mode=TwoWay}" />
+                                                Symbol="{Binding Path=SymbolIcon, Mode=TwoWay}" />
                                         </Viewbox>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
@@ -236,6 +234,46 @@
                     VerticalContentAlignment="Center">
                     <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
                         Show Language picker
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowWordCountToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Word Count
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowCharDetailsToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Character Details
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowMatchCountToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Match Count
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowRegexPatternToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Regex of Selection
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
+                    x:Name="ShowSimilarMatchesToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Similar Matches
                     </TextBlock>
                 </ui:ToggleSwitch>
 

@@ -27,7 +27,7 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }} -p:EnableMsixTooling=true
       - name: Test
-        run: dotnet test ${{ env.TEST_PATH }} -r win-x64  -p:EnableMsixTooling=true
+        run: dotnet test ${{ env.TEST_PATH }} -r win-x64
 
       - name: Build for release and Publish
         run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -p:EnableMsixTooling=true -o publish

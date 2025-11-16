@@ -38,9 +38,7 @@
     </Window.Resources>
 
     <Grid d:Background="NavajoWhite">
-        <Viewbox>
-            <Image x:Name="BackgroundImage" Stretch="UniformToFill" />
-        </Viewbox>
+        <Image x:Name="BackgroundImage" Stretch="UniformToFill" />
         <Canvas
             Name="RegionClickCanvas"
             ContextMenuOpening="RegionClickCanvas_ContextMenuOpening"
@@ -49,7 +47,8 @@
             MouseEnter="RegionClickCanvas_MouseEnter"
             MouseLeave="RegionClickCanvas_MouseLeave"
             MouseMove="RegionClickCanvas_MouseMove"
-            MouseUp="RegionClickCanvas_MouseUp">
+            MouseUp="RegionClickCanvas_MouseUp"
+            PreviewMouseWheel="RegionClickCanvas_PreviewMouseWheel">
             <Canvas.Clip>
                 <CombinedGeometry GeometryCombineMode="Exclude">
                     <CombinedGeometry.Geometry1>

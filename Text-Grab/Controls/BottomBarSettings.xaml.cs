@@ -35,6 +35,11 @@ public partial class BottomBarSettings : FluentWindow
         ShowCursorTextCheckBox.IsChecked = DefaultSettings.ShowCursorText;
         ShowScrollbarCheckBox.IsChecked = DefaultSettings.ScrollBottomBar;
         ShowLanguagePickerToggle.IsChecked = DefaultSettings.EtwShowLangPicker;
+        ShowWordCountToggle.IsChecked = DefaultSettings.EtwShowWordCount;
+        ShowCharDetailsToggle.IsChecked = DefaultSettings.EtwShowCharDetails;
+        ShowMatchCountToggle.IsChecked = DefaultSettings.EtwShowMatchCount;
+        ShowRegexPatternToggle.IsChecked = DefaultSettings.EtwShowRegexPattern;
+        ShowSimilarMatchesToggle.IsChecked = DefaultSettings.EtwShowSimilarMatches;
     }
 
     #endregion Constructors
@@ -121,6 +126,11 @@ public partial class BottomBarSettings : FluentWindow
         DefaultSettings.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
         DefaultSettings.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
         DefaultSettings.EtwShowLangPicker = ShowLanguagePickerToggle.IsChecked ?? true;
+        DefaultSettings.EtwShowWordCount = ShowWordCountToggle.IsChecked ?? true;
+        DefaultSettings.EtwShowCharDetails = ShowCharDetailsToggle.IsChecked ?? true;
+        DefaultSettings.EtwShowMatchCount = ShowMatchCountToggle.IsChecked ?? true;
+        DefaultSettings.EtwShowRegexPattern = ShowRegexPatternToggle.IsChecked ?? true;
+        DefaultSettings.EtwShowSimilarMatches = ShowSimilarMatchesToggle.IsChecked ?? true;
         DefaultSettings.Save();
 
         CustomBottomBarUtilities.SaveCustomBottomBarItemsSetting(ButtonsInRightList.ToList());
