@@ -587,27 +587,60 @@
                         <MenuItem Name="ShowCalcErrorsContextItem" Header="Show Errors" />
                         <MenuItem Name="CopyAllContextItem" Header="Copy All" />
                         <Separator />
-                        <MenuItem Name="ShowSumContextItem" Header="Sum: -" />
-                        <MenuItem Name="ShowAverageContextItem" Header="Average: -" />
-                        <MenuItem Name="ShowMedianContextItem" Header="Median: -" />
-                        <MenuItem Name="ShowCountContextItem" Header="Count: -" />
-                        <MenuItem Name="ShowMinContextItem" Header="Min: -" />
-                        <MenuItem Name="ShowMaxContextItem" Header="Max: -" />
-                        <MenuItem Name="ShowProductContextItem" Header="Product: -" />
+                        <MenuItem Name="ShowSumContextItem" Header="Sum: -" IsCheckable="True" />
+                        <MenuItem Name="ShowAverageContextItem" Header="Average: -" IsCheckable="True" />
+                        <MenuItem Name="ShowMedianContextItem" Header="Median: -" IsCheckable="True" />
+                        <MenuItem Name="ShowCountContextItem" Header="Count: -" IsCheckable="True" />
+                        <MenuItem Name="ShowMinContextItem" Header="Min: -" IsCheckable="True" />
+                        <MenuItem Name="ShowMaxContextItem" Header="Max: -" IsCheckable="True" />
+                        <MenuItem Name="ShowProductContextItem" Header="Product: -" IsCheckable="True" />
                     </ContextMenu>
                 </TextBox.ContextMenu>
             </TextBox>
 
-            <TextBlock
-                x:Name="CalcAggregateStatusText"
+            <Border
+                x:Name="CalcAggregateStatusBorder"
                 Grid.Column="1"
                 Margin="8,0,0,8"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
-                FontSize="12"
-                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                Text=""
-                Visibility="Collapsed" />
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                ContextMenuOpening="CalcAggregateStatusBorder_ContextMenuOpening"
+                CornerRadius="4"
+                Cursor="Hand"
+                MouseLeftButtonDown="CalcAggregateStatusBorder_MouseLeftButtonDown"
+                Padding="6,3"
+                ToolTip="Click to copy, right-click to change aggregate"
+                Visibility="Collapsed">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Name="AggregateSumContextItem" Header="Sum: -" IsCheckable="True" />
+                        <MenuItem Name="AggregateAverageContextItem" Header="Average: -" IsCheckable="True" />
+                        <MenuItem Name="AggregateMedianContextItem" Header="Median: -" IsCheckable="True" />
+                        <MenuItem Name="AggregateCountContextItem" Header="Count: -" IsCheckable="True" />
+                        <MenuItem Name="AggregateMinContextItem" Header="Min: -" IsCheckable="True" />
+                        <MenuItem Name="AggregateMaxContextItem" Header="Max: -" IsCheckable="True" />
+                        <MenuItem Name="AggregateProductContextItem" Header="Product: -" IsCheckable="True" />
+                    </ContextMenu>
+                </Border.ContextMenu>
+                <Grid>
+                    <TextBlock
+                        x:Name="CalcAggregateStatusText"
+                        FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="" />
+                    <ui:SymbolIcon
+                        x:Name="CalcAggregateCopyIcon"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        Opacity="0"
+                        Symbol="Copy24" />
+                </Grid>
+            </Border>
 
             <StackPanel
                 Grid.Column="1"

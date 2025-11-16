@@ -17,6 +17,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
@@ -3093,6 +3094,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             ShowProductContextItem.Click -= SelectAggregate_Click;
             ShowProductContextItem.Click += SelectAggregate_Click;
             ShowProductContextItem.Tag = (AggregateType.Product, product);
+
+            // Update checked states based on current selection
+            ShowSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
+            ShowAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
+            ShowMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
+            ShowCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
+            ShowMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
+            ShowMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
+            ShowProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
         }
     }
 
@@ -3138,7 +3148,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (numbers.Count == 0)
             return 0;
 
-        var sorted = numbers.OrderBy(n => n).ToList();
+        List<double> sorted = numbers.OrderBy(n => n).ToList();
         int count = sorted.Count;
 
         if (count % 2 == 0)
@@ -3178,6 +3188,35 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 var (aggregateType, value) = tagData;
 
+                // If clicking a checked item, uncheck it and clear selection
+                if (menuItem.IsChecked && _selectedAggregate == aggregateType)
+                {
+                    menuItem.IsChecked = false;
+                    _selectedAggregate = AggregateType.None;
+                    UpdateAggregateStatusDisplay();
+                    return;
+                }
+
+                // Uncheck all other aggregate menu items (both context menus)
+                ShowSumContextItem.IsChecked = false;
+                ShowAverageContextItem.IsChecked = false;
+                ShowMedianContextItem.IsChecked = false;
+                ShowCountContextItem.IsChecked = false;
+                ShowMinContextItem.IsChecked = false;
+                ShowMaxContextItem.IsChecked = false;
+                ShowProductContextItem.IsChecked = false;
+
+                AggregateSumContextItem.IsChecked = false;
+                AggregateAverageContextItem.IsChecked = false;
+                AggregateMedianContextItem.IsChecked = false;
+                AggregateCountContextItem.IsChecked = false;
+                AggregateMinContextItem.IsChecked = false;
+                AggregateMaxContextItem.IsChecked = false;
+                AggregateProductContextItem.IsChecked = false;
+
+                // Check the clicked item
+                menuItem.IsChecked = true;
+
                 // Store the selected aggregate type
                 _selectedAggregate = aggregateType;
 
@@ -3190,7 +3229,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to copy aggregate value to clipboard: {ex.Message}");
+                Debug.WriteLine($"Failed to process aggregate selection: {ex.Message}");
             }
         }
     }
@@ -3199,7 +3238,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (_selectedAggregate == AggregateType.None)
         {
-            CalcAggregateStatusText.Visibility = Visibility.Collapsed;
+            CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
             return;
         }
 
@@ -3211,7 +3250,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (numbers.Count == 0)
         {
-            CalcAggregateStatusText.Visibility = Visibility.Collapsed;
+            CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
             return;
         }
 
@@ -3250,13 +3289,156 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 aggregateName = "Product";
                 break;
             default:
-                CalcAggregateStatusText.Visibility = Visibility.Collapsed;
+                CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
                 return;
         }
 
         // Update the status text
         CalcAggregateStatusText.Text = $"{aggregateName}: {FormatNumber(value)}";
-        CalcAggregateStatusText.Visibility = Visibility.Visible;
+        CalcAggregateStatusBorder.Visibility = Visibility.Visible;
+    }
+
+    private void CalcAggregateStatusBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(CalcAggregateStatusText.Text))
+            return;
+
+        try
+        {
+            // Extract just the numeric value from the text (e.g., "Sum: 123.45" -> "123.45")
+            string fullText = CalcAggregateStatusText.Text;
+            int colonIndex = fullText.IndexOf(':');
+            if (colonIndex >= 0 && colonIndex < fullText.Length - 1)
+            {
+                string valueToCopy = fullText.Substring(colonIndex + 1).Trim();
+                System.Windows.Clipboard.SetDataObject(valueToCopy, true);
+            }
+            else
+            {
+                System.Windows.Clipboard.SetDataObject(fullText, true);
+            }
+
+            // Animate the copy action
+            AnimateAggregateCopy();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to copy aggregate value: {ex.Message}");
+        }
+
+        e.Handled = true;
+    }
+
+    private void CalcAggregateStatusBorder_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+    {
+        UpdateAggregateContextMenu();
+    }
+
+    private void UpdateAggregateContextMenu()
+    {
+        // Get the text to analyze - all results
+        string textToAnalyze = CalcResultsTextControl.Text;
+
+        // Extract numeric values from the text
+        List<double> numbers = ExtractNumericValues(textToAnalyze);
+
+        // Update menu items based on whether we have numbers
+        if (numbers.Count == 0)
+        {
+            AggregateSumContextItem.Header = "Sum: -";
+            AggregateAverageContextItem.Header = "Average: -";
+            AggregateMedianContextItem.Header = "Median: -";
+            AggregateCountContextItem.Header = "Count: 0";
+            AggregateMinContextItem.Header = "Min: -";
+            AggregateMaxContextItem.Header = "Max: -";
+            AggregateProductContextItem.Header = "Product: -";
+
+            AggregateSumContextItem.IsEnabled = false;
+            AggregateAverageContextItem.IsEnabled = false;
+            AggregateMedianContextItem.IsEnabled = false;
+            AggregateCountContextItem.IsEnabled = false;
+            AggregateMinContextItem.IsEnabled = false;
+            AggregateMaxContextItem.IsEnabled = false;
+            AggregateProductContextItem.IsEnabled = false;
+        }
+        else
+        {
+            double sum = numbers.Sum();
+            double average = numbers.Average();
+            double median = CalculateMedian(numbers);
+            int count = numbers.Count;
+            double min = numbers.Min();
+            double max = numbers.Max();
+            double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
+
+            AggregateSumContextItem.Header = $"Sum: {FormatNumber(sum)}";
+            AggregateAverageContextItem.Header = $"Average: {FormatNumber(average)}";
+            AggregateMedianContextItem.Header = $"Median: {FormatNumber(median)}";
+            AggregateCountContextItem.Header = $"Count: {count}";
+            AggregateMinContextItem.Header = $"Min: {FormatNumber(min)}";
+            AggregateMaxContextItem.Header = $"Max: {FormatNumber(max)}";
+            AggregateProductContextItem.Header = $"Product: {FormatNumber(product)}";
+
+            AggregateSumContextItem.IsEnabled = true;
+            AggregateAverageContextItem.IsEnabled = true;
+            AggregateMedianContextItem.IsEnabled = true;
+            AggregateCountContextItem.IsEnabled = true;
+            AggregateMinContextItem.IsEnabled = true;
+            AggregateMaxContextItem.IsEnabled = true;
+            AggregateProductContextItem.IsEnabled = true;
+
+            // Wire up click handlers
+            AggregateSumContextItem.Click -= SelectAggregate_Click;
+            AggregateSumContextItem.Click += SelectAggregate_Click;
+            AggregateSumContextItem.Tag = (AggregateType.Sum, sum);
+
+            AggregateAverageContextItem.Click -= SelectAggregate_Click;
+            AggregateAverageContextItem.Click += SelectAggregate_Click;
+            AggregateAverageContextItem.Tag = (AggregateType.Average, average);
+
+            AggregateMedianContextItem.Click -= SelectAggregate_Click;
+            AggregateMedianContextItem.Click += SelectAggregate_Click;
+            AggregateMedianContextItem.Tag = (AggregateType.Median, median);
+
+            AggregateCountContextItem.Click -= SelectAggregate_Click;
+            AggregateCountContextItem.Click += SelectAggregate_Click;
+            AggregateCountContextItem.Tag = (AggregateType.Count, (double)count);
+
+            AggregateMinContextItem.Click -= SelectAggregate_Click;
+            AggregateMinContextItem.Click += SelectAggregate_Click;
+            AggregateMinContextItem.Tag = (AggregateType.Min, min);
+
+            AggregateMaxContextItem.Click -= SelectAggregate_Click;
+            AggregateMaxContextItem.Click += SelectAggregate_Click;
+            AggregateMaxContextItem.Tag = (AggregateType.Max, max);
+
+            AggregateProductContextItem.Click -= SelectAggregate_Click;
+            AggregateProductContextItem.Click += SelectAggregate_Click;
+            AggregateProductContextItem.Tag = (AggregateType.Product, product);
+
+            // Update checked states based on current selection
+            AggregateSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
+            AggregateAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
+            AggregateMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
+            AggregateCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
+            AggregateMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
+            AggregateMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
+            AggregateProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
+        }
+    }
+
+    private void AnimateAggregateCopy()
+    {
+        // Flash the copy icon to indicate the copy action
+        DoubleAnimation fadeInOutAnim = new()
+        {
+            From = 0.0,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(300),
+            AutoReverse = true
+        };
+
+        CalcAggregateCopyIcon.BeginAnimation(OpacityProperty, fadeInOutAnim);
     }
 
     private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e)
