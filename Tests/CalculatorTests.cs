@@ -1338,6 +1338,324 @@ grandTotal";
 
     #endregion Sum Function Tests
 
+    #region Min/Max/Average Function Tests
+
+    [Fact]
+    public async Task Min_WithLiteralNumbers_ReturnsMinimum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Min(10, 5, 20, 3, 15)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("3", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Max_WithLiteralNumbers_ReturnsMaximum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Max(10, 5, 20, 3, 15)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("20", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Min_WithVariables_ReturnsMinimumWithVariableName()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "a = 10\nb = 5\nc = 20\nMin(a, b, c)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(4, lines.Length);
+        // Should include variable name in result like "5 (b)"
+        Assert.Contains("5", lines[3]);
+        Assert.Contains("b", lines[3]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Max_WithVariables_ReturnsMaximumWithVariableName()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "a = 10\nb = 5\nc = 20\nMax(a, b, c)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(4, lines.Length);
+        // Should include variable name in result like "20 (c)"
+        Assert.Contains("20", lines[3]);
+        Assert.Contains("c", lines[3]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Average_WithLiteralNumbers_ReturnsAverage()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Average(10, 20, 30)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("20", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Average_WithVariables_ReturnsAverage()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "a = 10\nb = 20\nc = 30\nAverage(a, b, c)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(4, lines.Length);
+        Assert.Equal("20", lines[3]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Min_WithMixedVariablesAndLiterals_ReturnsMinimum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "x = 15\nMin(10, x, 20)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Contains("10", lines[1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Max_WithMixedVariablesAndLiterals_ReturnsMaximum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "x = 25\nMax(10, x, 20)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Contains("25", lines[1]);
+        Assert.Contains("x", lines[1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Min_WithSingleValue_ReturnsThatValue()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Min(42)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("42", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Max_WithSingleValue_ReturnsThatValue()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Max(42)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("42", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Average_WithSingleValue_ReturnsThatValue()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Average(42)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("42", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Min_WithNegativeNumbers_ReturnsCorrectMinimum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Min(-10, -5, 0, 5, 10)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("-10", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Max_WithNegativeNumbers_ReturnsCorrectMaximum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Max(-10, -5, 0, 5, 10)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("10", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Average_WithDecimalNumbers_ReturnsCorrectAverage()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Average(1.5, 2.5, 3.0)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Contains("2.3", result.Output); // 7/3 ≈ 2.333
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Avg_AliasForAverage_Works()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Avg(10, 20, 30)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("20", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Min_CaseInsensitive_Works()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "min(5, 10)\nMIN(3, 7)\nMin(2, 8)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Contains("5", lines[0]);
+        Assert.Contains("3", lines[1]);
+        Assert.Contains("2", lines[2]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Max_CaseInsensitive_Works()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "max(5, 10)\nMAX(3, 7)\nMax(2, 8)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Contains("10", lines[0]);
+        Assert.Contains("7", lines[1]);
+        Assert.Contains("8", lines[2]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Aggregates_RealWorldExample_TestScores()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"// Test scores
+math = 85
+english = 92
+science = 78
+history = 95
+
+// Calculate statistics
+total = Sum(math, english, science, history)
+average = Average(math, english, science, history)
+lowest = Min(math, english, science, history)
+highest = Max(math, english, science, history)
+
+total
+average
+lowest
+highest";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Contains("350", lines[^4]); // Total
+        Assert.Contains("87.5", lines[^3]); // Average
+        Assert.Contains("78", lines[^2]); // Lowest (science)
+        Assert.Contains("science", lines[^2]); // Should show variable name
+        Assert.Contains("95", lines[^1]); // Highest (history)
+        Assert.Contains("history", lines[^1]); // Should show variable name
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion Min/Max/Average Function Tests
+
     #region Quantity Word Parser Tests
 
     [Theory]

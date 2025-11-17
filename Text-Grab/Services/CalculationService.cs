@@ -401,11 +401,12 @@ public partial class CalculationService
 
         return result switch
         {
+            MinMaxResult minMax => minMax.ToString(),
             double d when double.IsNaN(d) => "NaN",
             double d when double.IsPositiveInfinity(d) => "∞",
             double d when double.IsNegativeInfinity(d) => "-∞",
             double d => Math.Abs(d % 1) < double.Epsilon ? d.ToString("N0") : d.ToString("#,##0.###"),
-            decimal m => m.ToString("#,##0.###"),
+            decimal m => Math.Abs(m % 1) < 0.0000001m ? m.ToString("N0") : m.ToString("#,##0.###"),
             int i => i.ToString("N0"),
             long l => l.ToString("N0"),
             float f => f.ToString("#,##0.###"),
@@ -468,13 +469,219 @@ public partial class CalculationService
 
                 args.Result = sum;
             }
+            // Register Min function
+            else if (name.Equals("Min", StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Parameters.Length == 0)
+                {
+                    args.Result = null;
+                    return;
+                }
+
+                decimal? minValue = null;
+                string? minVariableName = null;
+                int minIndex = -1;
+
+                for (int i = 0; i < args.Parameters.Length; i++)
+                {
+                    AsyncExpression parameter = args.Parameters[i];
+                    object? value = await parameter.EvaluateAsync();
+
+                    if (value is null)
+                        continue;
+
+                    try
+                    {
+                        decimal decimalValue = Convert.ToDecimal(value);
+                        
+                        if (!minValue.HasValue || decimalValue < minValue.Value)
+                        {
+                            minValue = decimalValue;
+                            minIndex = i;
+                            // Try to extract variable name from the parameter expression
+                            minVariableName = GetParameterName(parameter);
+                        }
+                    }
+                    catch
+                    {
+                        // If conversion fails, skip this value
+                        continue;
+                    }
+                }
+
+                if (minValue.HasValue)
+                {
+                    // If we found a variable name, format as "value (variableName)"
+                    if (!string.IsNullOrEmpty(minVariableName))
+                    {
+                        args.Result = new MinMaxResult { Value = minValue.Value, VariableName = minVariableName };
+                    }
+                    else
+                    {
+                        args.Result = minValue.Value;
+                    }
+                }
+                else
+                {
+                    args.Result = null;
+                }
+            }
+            // Register Max function
+            else if (name.Equals("Max", StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Parameters.Length == 0)
+                {
+                    args.Result = null;
+                    return;
+                }
+
+                decimal? maxValue = null;
+                string? maxVariableName = null;
+                int maxIndex = -1;
+
+                for (int i = 0; i < args.Parameters.Length; i++)
+                {
+                    AsyncExpression parameter = args.Parameters[i];
+                    object? value = await parameter.EvaluateAsync();
+
+                    if (value is null)
+                        continue;
+
+                    try
+                    {
+                        decimal decimalValue = Convert.ToDecimal(value);
+                        
+                        if (!maxValue.HasValue || decimalValue > maxValue.Value)
+                        {
+                            maxValue = decimalValue;
+                            maxIndex = i;
+                            // Try to extract variable name from the parameter expression
+                            maxVariableName = GetParameterName(parameter);
+                        }
+                    }
+                    catch
+                    {
+                        // If conversion fails, skip this value
+                        continue;
+                    }
+                }
+
+                if (maxValue.HasValue)
+                {
+                    // If we found a variable name, format as "value (variableName)"
+                    if (!string.IsNullOrEmpty(maxVariableName))
+                    {
+                        args.Result = new MinMaxResult { Value = maxValue.Value, VariableName = maxVariableName };
+                    }
+                    else
+                    {
+                        args.Result = maxValue.Value;
+                    }
+                }
+                else
+                {
+                    args.Result = null;
+                }
+            }
+            // Register Average and Avg functions
+            else if (name.Equals("Average", StringComparison.OrdinalIgnoreCase) || 
+                     name.Equals("Avg", StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Parameters.Length == 0)
+                {
+                    args.Result = 0;
+                    return;
+                }
+
+                decimal sum = 0m;
+                int count = 0;
+                
+                foreach (AsyncExpression parameter in args.Parameters)
+                {
+                    object? value = await parameter.EvaluateAsync();
+
+                    if (value is null)
+                        continue;
+
+                    try
+                    {
+                        sum += Convert.ToDecimal(value);
+                        count++;
+                    }
+                    catch
+                    {
+                        // If conversion fails, skip this value
+                        continue;
+                    }
+                }
+
+                if (count > 0)
+                {
+                    args.Result = sum / count;
+                }
+                else
+                {
+                    args.Result = 0;
+                }
+            }
         };
+    }
+
+    /// <summary>
+    /// Attempts to extract the parameter name from an AsyncExpression.
+    /// Returns the variable name if the expression is a simple identifier, otherwise null.
+    /// </summary>
+    private static string? GetParameterName(AsyncExpression parameter)
+    {
+        try
+        {
+            // Try to get the expression text by converting to string
+            // The AsyncExpression.ToString() should return the expression text
+            string expressionText = parameter.ToString()?.Trim() ?? "";
+            
+            // Check if it's a simple identifier (variable name)
+            // Must start with letter or underscore and contain only letters, digits, or underscores
+            if (!string.IsNullOrEmpty(expressionText) &&
+                (char.IsLetter(expressionText[0]) || expressionText[0] == '_') &&
+                expressionText.All(c => char.IsLetterOrDigit(c) || c == '_'))
+            {
+                return expressionText;
+            }
+        }
+        catch
+        {
+            // If we can't extract the name, return null
+        }
+        
+        return null;
     }
 
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d)\.(?=\d{3}(?:\.|,|\D|$))")]
     private static partial System.Text.RegularExpressions.Regex DigitGroupSeparator();
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d),(?=\d{3}(?:,|\D|$))")]
     private static partial System.Text.RegularExpressions.Regex CommaGroupSeparator();
+
+    /// <summary>
+    /// Helper class to store min/max results with their associated variable names.
+    /// </summary>
+    private class MinMaxResult
+    {
+        public decimal Value { get; set; }
+        public string? VariableName { get; set; }
+        
+        public override string ToString()
+        {
+            if (!string.IsNullOrEmpty(VariableName))
+            {
+                // Format the value using the standard formatting
+                string formattedValue = Math.Abs(Value % 1) < 0.0000001m 
+                    ? Value.ToString("N0") 
+                    : Value.ToString("#,##0.###");
+                return $"{formattedValue} ({VariableName})";
+            }
+            return Value.ToString();
+        }
+    }
 }
 
 /// <summary>
