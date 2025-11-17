@@ -480,7 +480,6 @@ public partial class CalculationService
 
                 decimal? minValue = null;
                 string? minVariableName = null;
-                int minIndex = -1;
 
                 for (int i = 0; i < args.Parameters.Length; i++)
                 {
@@ -497,7 +496,6 @@ public partial class CalculationService
                         if (!minValue.HasValue || decimalValue < minValue.Value)
                         {
                             minValue = decimalValue;
-                            minIndex = i;
                             // Try to extract variable name from the parameter expression
                             minVariableName = GetParameterName(parameter);
                         }
@@ -537,7 +535,6 @@ public partial class CalculationService
 
                 decimal? maxValue = null;
                 string? maxVariableName = null;
-                int maxIndex = -1;
 
                 for (int i = 0; i < args.Parameters.Length; i++)
                 {
@@ -554,7 +551,6 @@ public partial class CalculationService
                         if (!maxValue.HasValue || decimalValue > maxValue.Value)
                         {
                             maxValue = decimalValue;
-                            maxIndex = i;
                             // Try to extract variable name from the parameter expression
                             maxVariableName = GetParameterName(parameter);
                         }
