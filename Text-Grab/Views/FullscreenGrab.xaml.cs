@@ -43,6 +43,8 @@ public partial class FullscreenGrab : Window
     private readonly bool usingTesseract;
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
+    private const double MaxZoomScale = 16.0;
+
     #endregion Fields
 
     #region Constructors
@@ -60,7 +62,7 @@ public partial class FullscreenGrab : Window
 
     public TextBox? DestinationTextBox
     {
-        get { return destinationTextBox; }
+        get => destinationTextBox;
         set
         {
             destinationTextBox = value;
@@ -976,7 +978,6 @@ public partial class FullscreenGrab : Window
             return;
         }
 
-        
         System.Windows.Point point = Mouse.GetPosition(this);
 
         if (BackgroundImage.RenderTransform is ScaleTransform scaleTransform)
@@ -987,8 +988,17 @@ public partial class FullscreenGrab : Window
             else
                 changingScale *= 0.9;
 
+            // Reset transform if zooming back below minimum threshold
             if (changingScale < 1.2)
+            {
                 BackgroundImage.RenderTransform = null;
+                e.Handled = true;
+                return;
+            }
+
+            // Enforce maximum zoom level
+            if (changingScale > MaxZoomScale)
+                changingScale = MaxZoomScale;
 
             scaleTransform.ScaleX = changingScale;
             scaleTransform.ScaleY = changingScale;
@@ -998,7 +1008,6 @@ public partial class FullscreenGrab : Window
             double scale = 1;
             if (e.Delta > 0)
                 scale = 1.1;
-
 
             ScaleTransform newTransform = new()
             {
