@@ -289,28 +289,60 @@ public static partial class StringMethods
 
     public static string MakeStringSingleLine(this string textToEdit)
     {
-        if (!textToEdit.Contains('\n')
-            && !textToEdit.Contains('\r'))
+        if (string.IsNullOrEmpty(textToEdit))
             return textToEdit;
 
-        StringBuilder workingString = new(textToEdit);
+        if (textToEdit.IndexOfAny(new char[] { '\r', '\n' }) == -1)
+            return textToEdit;
 
-        workingString.Replace("\r\n", " ");
-        workingString.Replace(Environment.NewLine, " ");
-        workingString.Replace('\n', ' ');
-        workingString.Replace('\r', ' ');
+        // Build result without regex to reduce CPU allocations
+        StringBuilder sb = new(textToEdit.Length);
+        bool lastWasSpace = false;
 
-        Regex regex = MultiSpaces();
-        string temp = regex.Replace(workingString.ToString(), " ");
-        workingString.Clear();
-        workingString.Append(temp);
-        if (workingString[0] == ' ')
-            workingString.Remove(0, 1);
+        for (int i = 0; i < textToEdit.Length; i++)
+        {
+            char c = textToEdit[i];
 
-        if (workingString[^1] == ' ')
-            workingString.Remove(workingString.Length - 1, 1);
+            if (c == '\r')
+            {
+                // If windows newline, skip the '\r' and let '\n' handle spacing
+                if (i + 1 < textToEdit.Length && textToEdit[i + 1] == '\n')
+                    continue;
 
-        return workingString.ToString();
+                if (!lastWasSpace && sb.Length > 0)
+                {
+                    sb.Append(' ');
+                    lastWasSpace = true;
+                }
+            }
+            else if (c == '\n')
+            {
+                if (!lastWasSpace && sb.Length > 0)
+                {
+                    sb.Append(' ');
+                    lastWasSpace = true;
+                }
+            }
+            else if (c == ' ')
+            {
+                if (!lastWasSpace && sb.Length > 0)
+                {
+                    sb.Append(' ');
+                    lastWasSpace = true;
+                }
+            }
+            else
+            {
+                sb.Append(c);
+                lastWasSpace = false;
+            }
+        }
+
+        // Trim possible trailing space
+        if (sb.Length > 0 && sb[sb.Length - 1] == ' ')
+            sb.Length--;
+
+        return sb.ToString();
     }
 
     public static string ToCamel(this string stringToCamel)
@@ -842,16 +874,18 @@ public static partial class StringMethods
         if (newLineIndex < 1)
             return mainString[..index];
 
-        newLineIndex++;
+        // move past the newline character
+        int start = newLineIndex + 1;
 
-        if (newLineIndex > mainString.Length)
-            return mainString.Substring(mainString.Length, 0);
+        if (start > mainString.Length)
+            return string.Empty;
 
-        if (index - newLineIndex < 0)
-            return mainString.Substring(newLineIndex, 0);
+        int available = index - start;
+        if (available <= 0)
+            return string.Empty;
 
-        if (index - newLineIndex < numberOfCharacters)
-            return string.Concat("...", mainString.AsSpan(newLineIndex, index - newLineIndex));
+        if (available < numberOfCharacters)
+            return string.Concat("...", mainString.AsSpan(start, available));
 
         return string.Concat("...", mainString.AsSpan(index - numberOfCharacters, numberOfCharacters));
     }
@@ -859,38 +893,44 @@ public static partial class StringMethods
     public static string GetCharactersToRightOfNewLine(ref string mainString, int index, int numberOfCharacters)
     {
         int newLineIndex = GetNewLineIndexToRight(ref mainString, index);
+
         if (newLineIndex < 1)
             return mainString[index..];
-
-        if (newLineIndex - index > numberOfCharacters)
-            return string.Concat(mainString.AsSpan(index, numberOfCharacters), "...");
 
         if (newLineIndex == mainString.Length)
             return mainString[index..];
 
-        return string.Concat(mainString.AsSpan(index, newLineIndex - index), "...");
+        int remaining = newLineIndex - index;
+        if (remaining > numberOfCharacters)
+            return string.Concat(mainString.AsSpan(index, numberOfCharacters), "...");
+
+        return string.Concat(mainString.AsSpan(index, remaining), "...");
     }
 
     public static int GetNewLineIndexToLeft(ref string mainString, int index)
     {
-        char newLineChar = Environment.NewLine.ToArray().Last();
+        if (string.IsNullOrEmpty(mainString))
+            return 0;
 
-        int newLineIndex = index;
-        while (newLineIndex > 0 && newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
-            newLineIndex--;
+        int clamped = Math.Clamp(index, 0, Math.Max(0, mainString.Length - 1));
+        int idx = mainString.LastIndexOf('\n', clamped);
+        if (idx < 0)
+            return 0; // mimic original behavior returning 0 when none found
 
-        return newLineIndex;
+        return idx;
     }
 
     public static int GetNewLineIndexToRight(ref string mainString, int index)
     {
-        char newLineChar = Environment.NewLine.ToArray().First();
+        if (string.IsNullOrEmpty(mainString))
+            return 0;
 
-        int newLineIndex = index;
-        while (newLineIndex < mainString.Length && mainString[newLineIndex] != newLineChar)
-            newLineIndex++;
+        int clamped = Math.Clamp(index, 0, mainString.Length);
+        int idx = mainString.IndexOf('\n', clamped);
+        if (idx < 0)
+            return mainString.Length; // mimic original which advanced to end
 
-        return newLineIndex;
+        return idx;
     }
 
     public static bool EndsWithNewline(this string s)

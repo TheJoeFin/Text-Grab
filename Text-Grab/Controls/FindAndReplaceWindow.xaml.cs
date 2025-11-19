@@ -140,6 +140,14 @@ public partial class FindAndReplaceWindow : FluentWindow
             MatchesText.Text = $"{Matches.Count} Matches";
 
         ResultsListView.IsEnabled = true;
+        
+        // Pre-allocate capacity for better performance
+        if (FindResults.Capacity < Matches.Count)
+            FindResults.Capacity = Matches.Count;
+        
+        // Cache the string reference to avoid repeated field access
+        string searchText = stringFromWindow;
+        
         int count = 1;
         foreach (Match m in Matches)
         {
@@ -147,8 +155,8 @@ public partial class FindAndReplaceWindow : FluentWindow
             {
                 Index = m.Index,
                 Text = m.Value.MakeStringSingleLine(),
-                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12),
-                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12),
+                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref searchText, m.Index, 12),
+                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref searchText, m.Index + m.Length, 12),
                 Count = count
             };
             FindResults.Add(fr);
