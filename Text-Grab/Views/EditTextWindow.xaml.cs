@@ -78,6 +78,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     // Store extracted pattern and precision for mouse wheel adjustment
     private ExtractedPattern? currentExtractedPattern = null;
     private int currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
+    private CalculationResult? calculationResult;
 
     #endregion Fields
 
@@ -1722,10 +1723,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _calculationService.ShowErrors = ShowErrorsMenuItem.IsChecked == true;
 
         // Evaluate expressions using the service
-        CalculationResult result = await _calculationService.EvaluateExpressionsAsync(input);
+        calculationResult = await _calculationService.EvaluateExpressionsAsync(input);
 
         // Update the text control with results
-        CalcResultsTextControl.Text = result.Output;
+        CalcResultsTextControl.Text = calculationResult.Output;
 
         // Update the aggregate status display if an aggregate is selected
         UpdateAggregateStatusDisplay();
@@ -3019,10 +3020,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             : CalcResultsTextControl.Text;
 
         // Extract numeric values from the text
-        List<double> numbers = ExtractNumericValues(textToAnalyze);
+        List<double>? numbers = calculationResult?.OutputNumbers;
 
         // Update menu items based on whether we have numbers
-        if (numbers.Count == 0)
+        if (numbers is null || numbers.Count == 0)
         {
             ShowSumContextItem.Header = "Sum: -";
             ShowAverageContextItem.Header = "Average: -";
@@ -3106,49 +3107,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private List<double> ExtractNumericValues(string text)
-    {
-        List<double> numbers = [];
-
-        if (string.IsNullOrWhiteSpace(text))
-            return numbers;
-
-        // Split by lines and process each line
-        string[] lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (string line in lines)
-        {
-            string trimmedLine = line.Trim();
-
-            // Skip empty lines, errors, and comments
-            if (string.IsNullOrWhiteSpace(trimmedLine) ||
-                trimmedLine.StartsWith("Error:", StringComparison.OrdinalIgnoreCase) ||
-                trimmedLine.StartsWith("//") ||
-                trimmedLine.StartsWith("#"))
-                continue;
-
-            // Try to parse the line as a number
-            // Remove common formatting characters
-            string cleaned = trimmedLine
-                .Replace(",", "")  // Remove thousand separators
-                .Replace(" ", "")  // Remove spaces
-                .Trim();
-
-            if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.CurrentCulture, out double value))
-            {
-                numbers.Add(value);
-            }
-        }
-
-        return numbers;
-    }
-
     private double CalculateMedian(List<double> numbers)
     {
         if (numbers.Count == 0)
             return 0;
 
-        List<double> sorted = numbers.OrderBy(n => n).ToList();
+        List<double> sorted = [.. numbers.OrderBy(n => n)];
         int count = sorted.Count;
 
         if (count % 2 == 0)
@@ -3182,61 +3146,63 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SelectAggregate_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem menuItem && menuItem.Tag is ValueTuple<AggregateType, double> tagData)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not ValueTuple<AggregateType, double> tagData)
         {
-            try
+            return;
+        }
+
+        try
+        {
+            (AggregateType aggregateType, double value) = tagData;
+
+            // If clicking a checked item, uncheck it and clear selection
+            if (menuItem.IsChecked && _selectedAggregate == aggregateType)
             {
-                var (aggregateType, value) = tagData;
-
-                // If clicking a checked item, uncheck it and clear selection
-                if (menuItem.IsChecked && _selectedAggregate == aggregateType)
-                {
-                    menuItem.IsChecked = false;
-                    _selectedAggregate = AggregateType.None;
-                    UpdateAggregateStatusDisplay();
-                    return;
-                }
-
-                // Uncheck all other aggregate menu items (both context menus)
-                ShowSumContextItem.IsChecked = false;
-                ShowAverageContextItem.IsChecked = false;
-                ShowMedianContextItem.IsChecked = false;
-                ShowCountContextItem.IsChecked = false;
-                ShowMinContextItem.IsChecked = false;
-                ShowMaxContextItem.IsChecked = false;
-                ShowProductContextItem.IsChecked = false;
-
-                AggregateSumContextItem.IsChecked = false;
-                AggregateAverageContextItem.IsChecked = false;
-                AggregateMedianContextItem.IsChecked = false;
-                AggregateCountContextItem.IsChecked = false;
-                AggregateMinContextItem.IsChecked = false;
-                AggregateMaxContextItem.IsChecked = false;
-                AggregateProductContextItem.IsChecked = false;
-
-                // Check the clicked item
-                menuItem.IsChecked = true;
-
-                // Store the selected aggregate type
-                _selectedAggregate = aggregateType;
-
-                // Copy value to clipboard
-                string valueToCopy = FormatNumber(value);
-                System.Windows.Clipboard.SetDataObject(valueToCopy, true);
-
-                // Update the status display
+                menuItem.IsChecked = false;
+                _selectedAggregate = AggregateType.None;
                 UpdateAggregateStatusDisplay();
+                return;
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to process aggregate selection: {ex.Message}");
-            }
+
+            // Uncheck all other aggregate menu items (both context menus)
+            ShowSumContextItem.IsChecked = false;
+            ShowAverageContextItem.IsChecked = false;
+            ShowMedianContextItem.IsChecked = false;
+            ShowCountContextItem.IsChecked = false;
+            ShowMinContextItem.IsChecked = false;
+            ShowMaxContextItem.IsChecked = false;
+            ShowProductContextItem.IsChecked = false;
+
+            AggregateSumContextItem.IsChecked = false;
+            AggregateAverageContextItem.IsChecked = false;
+            AggregateMedianContextItem.IsChecked = false;
+            AggregateCountContextItem.IsChecked = false;
+            AggregateMinContextItem.IsChecked = false;
+            AggregateMaxContextItem.IsChecked = false;
+            AggregateProductContextItem.IsChecked = false;
+
+            // Check the clicked item
+            menuItem.IsChecked = true;
+
+            // Store the selected aggregate type
+            _selectedAggregate = aggregateType;
+
+            // Copy value to clipboard
+            string valueToCopy = FormatNumber(value);
+            System.Windows.Clipboard.SetDataObject(valueToCopy, true);
+
+            // Update the status display
+            UpdateAggregateStatusDisplay();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to process aggregate selection: {ex.Message}");
         }
     }
 
     private void UpdateAggregateStatusDisplay()
     {
-        if (_selectedAggregate == AggregateType.None)
+        if (_selectedAggregate == AggregateType.None || calculationResult is null)
         {
             CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
             return;
@@ -3246,7 +3212,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string textToAnalyze = CalcResultsTextControl.Text;
 
         // Extract numeric values
-        List<double> numbers = ExtractNumericValues(textToAnalyze);
+        List<double> numbers = calculationResult.OutputNumbers;
 
         if (numbers.Count == 0)
         {
@@ -3310,7 +3276,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             int colonIndex = fullText.IndexOf(':');
             if (colonIndex >= 0 && colonIndex < fullText.Length - 1)
             {
-                string valueToCopy = fullText.Substring(colonIndex + 1).Trim();
+                string valueToCopy = fullText[(colonIndex + 1)..].Trim();
                 System.Windows.Clipboard.SetDataObject(valueToCopy, true);
             }
             else
@@ -3336,14 +3302,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void UpdateAggregateContextMenu()
     {
-        // Get the text to analyze - all results
-        string textToAnalyze = CalcResultsTextControl.Text;
-
         // Extract numeric values from the text
-        List<double> numbers = ExtractNumericValues(textToAnalyze);
+        List<double>? numbers = calculationResult?.OutputNumbers;
 
         // Update menu items based on whether we have numbers
-        if (numbers.Count == 0)
+        if (numbers is null || numbers.Count == 0)
         {
             AggregateSumContextItem.Header = "Sum: -";
             AggregateAverageContextItem.Header = "Average: -";
