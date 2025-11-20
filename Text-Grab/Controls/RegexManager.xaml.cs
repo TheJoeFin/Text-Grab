@@ -165,6 +165,9 @@ public partial class RegexManager : FluentWindow
         findWindow.Show();
         findWindow.Activate();
         findWindow.SearchForText();
+
+        // Close the Regex Manager after opening Find and Replace
+        Close();
     }
 
     /// <summary>

@@ -182,17 +182,27 @@
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Visible">
+                <ui:Button
+                    x:Name="SavePatternButton"
+                    Width="32"
+                    Height="32"
+                    Margin="0,0,6,0"
+                    Padding="4"
+                    Click="SavePatternButton_Click"
+                    Icon="{ui:SymbolIcon Save24}"
+                    ToolTip="Save pattern to Regex Manager"
+                    Visibility="Collapsed" />
                 <ui:ToggleSwitch
                     x:Name="UsePaternCheckBox"
                     Margin="6"
                     VerticalAlignment="Center"
-                    VerticalContentAlignment="Center">
+                    VerticalContentAlignment="Center"
+                    Checked="UsePaternCheckBox_CheckedChanged"
+                    Unchecked="UsePaternCheckBox_CheckedChanged">
                     <TextBlock Style="{StaticResource TextBodyNormal}">
                         Use Regex
                     </TextBlock>
                 </ui:ToggleSwitch>
-
-
 
                 <local:CollapsibleButton
                     x:Name="MatchesToEditWindow"
