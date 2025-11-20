@@ -147,8 +147,8 @@ public partial class FindAndReplaceWindow : FluentWindow
             {
                 Index = m.Index,
                 Text = m.Value.MakeStringSingleLine(),
-                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12),
-                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12),
+                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12).MakeStringSingleLine(),
+                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12).MakeStringSingleLine(),
                 Count = count
             };
             FindResults.Add(fr);

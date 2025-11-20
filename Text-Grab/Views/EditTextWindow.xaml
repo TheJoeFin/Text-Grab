@@ -351,7 +351,7 @@
                     <MenuItem
                         x:Name="LearnAiMenuItem"
                         Click="LearnAiMenuItem_Click"
-                        Header="_Learn About Local AI Features" />
+                        Header="_Learn About Local AI Features..." />
                 </MenuItem>
                 <MenuItem Header="F_ormat">
                     <MenuItem
