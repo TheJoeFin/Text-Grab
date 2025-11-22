@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Text_Grab.Extensions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -44,6 +45,9 @@ public partial class FullscreenGrab : Window
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     private const double MaxZoomScale = 16.0;
+    private const double EdgePanThresholdPercent = 0.10;
+    private const double EdgePanSpeed = 8.0;
+    private readonly DispatcherTimer edgePanTimer;
 
     #endregion Fields
 
@@ -54,6 +58,12 @@ public partial class FullscreenGrab : Window
         InitializeComponent();
         App.SetTheme();
         usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+
+        edgePanTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(16)
+        };
+        edgePanTimer.Tick += EdgePanTimer_Tick;
     }
 
     #endregion Constructors
@@ -886,6 +896,9 @@ public partial class FullscreenGrab : Window
 
     private void Window_Unloaded(object sender, RoutedEventArgs e)
     {
+        edgePanTimer.Stop();
+        edgePanTimer.Tick -= EdgePanTimer_Tick;
+
         BackgroundImage.Source = null;
         BackgroundImage.UpdateLayout();
         CurrentScreen = null;
@@ -970,55 +983,203 @@ public partial class FullscreenGrab : Window
     }
     #endregion Methods
 
+    private void EdgePanTimer_Tick(object? sender, EventArgs e)
+    {
+        if (BackgroundImage.RenderTransform is not TransformGroup transformGroup)
+        {
+            edgePanTimer.Stop();
+            return;
+        }
+
+        ScaleTransform? scaleTransform = null;
+        foreach (Transform? transform in transformGroup.Children)
+        {
+            if (transform is ScaleTransform st)
+            {
+                scaleTransform = st;
+                break;
+            }
+        }
+
+        if (scaleTransform == null || scaleTransform.ScaleX <= 1.0)
+        {
+            edgePanTimer.Stop();
+            return;
+        }
+
+        if (!WindowUtilities.GetMousePosition(out System.Windows.Point mousePos))
+            return;
+
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        System.Windows.Point absPosPoint = this.GetAbsolutePosition();
+
+        Rect windowRect = new(
+            absPosPoint.X,
+            absPosPoint.Y,
+            ActualWidth * dpi.DpiScaleX,
+            ActualHeight * dpi.DpiScaleY);
+
+        if (!windowRect.Contains(mousePos))
+            return;
+
+        double relativeX = mousePos.X - windowRect.Left;
+        double relativeY = mousePos.Y - windowRect.Top;
+
+        double edgeThresholdX = windowRect.Width * EdgePanThresholdPercent;
+        double edgeThresholdY = windowRect.Height * EdgePanThresholdPercent;
+
+        double panX = 0;
+        double panY = 0;
+
+        if (relativeX < edgeThresholdX)
+            panX = EdgePanSpeed * (1.0 - (relativeX / edgeThresholdX));
+        else if (relativeX > windowRect.Width - edgeThresholdX)
+            panX = -EdgePanSpeed * (1.0 - ((windowRect.Width - relativeX) / edgeThresholdX));
+
+        if (relativeY < edgeThresholdY)
+            panY = EdgePanSpeed * (1.0 - (relativeY / edgeThresholdY));
+        else if (relativeY > windowRect.Height - edgeThresholdY)
+            panY = -EdgePanSpeed * (1.0 - ((windowRect.Height - relativeY) / edgeThresholdY));
+
+        if (panX != 0 || panY != 0)
+            PanBackgroundImage(panX, panY, transformGroup);
+    }
+
+    private void PanBackgroundImage(double deltaX, double deltaY, TransformGroup transformGroup)
+    {
+        ScaleTransform? scaleTransform = null;
+        TranslateTransform? translateTransform = null;
+
+        foreach (Transform? transform in transformGroup.Children)
+        {
+            if (transform is ScaleTransform st)
+                scaleTransform = st;
+            else if (transform is TranslateTransform tt)
+                translateTransform = tt;
+        }
+
+        if (scaleTransform == null)
+            return;
+
+        if (translateTransform == null)
+        {
+            translateTransform = new TranslateTransform();
+            transformGroup.Children.Add(translateTransform);
+        }
+
+        double imageWidth = BackgroundImage.ActualWidth;
+        double imageHeight = BackgroundImage.ActualHeight;
+        double scale = scaleTransform.ScaleX;
+
+        double centerX = scaleTransform.CenterX;
+        double centerY = scaleTransform.CenterY;
+
+        // Calculate new translation values
+        double newX = translateTransform.X + deltaX;
+        double newY = translateTransform.Y + deltaY;
+
+        // The image is scaled around centerX, centerY
+        // Calculate where the image edges would be after applying the translation
+
+        // Left edge position = -centerX * (scale - 1) + newX
+        // Right edge position = imageWidth + (imageWidth - centerX) * (scale - 1) + newX
+        // Top edge position = -centerY * (scale - 1) + newY
+        // Bottom edge position = imageHeight + (imageHeight - centerY) * (scale - 1) + newY
+
+        double leftEdge = -centerX * (scale - 1) + newX;
+        double rightEdge = imageWidth + (imageWidth - centerX) * (scale - 1) + newX;
+        double topEdge = -centerY * (scale - 1) + newY;
+        double bottomEdge = imageHeight + (imageHeight - centerY) * (scale - 1) + newY;
+
+        // Clamp so edges never go past window bounds (0 to imageWidth/imageHeight)
+        // Left edge must be <= 0 (can't see past left side)
+        // Right edge must be >= imageWidth (can't see past right side)
+        // Top edge must be <= 0 (can't see past top side)
+        // Bottom edge must be >= imageHeight (can't see past bottom side)
+
+        if (leftEdge > 0)
+            newX -= leftEdge;
+        if (rightEdge < imageWidth)
+            newX += (imageWidth - rightEdge);
+        if (topEdge > 0)
+            newY -= topEdge;
+        if (bottomEdge < imageHeight)
+            newY += (imageHeight - bottomEdge);
+
+        translateTransform.X = newX;
+        translateTransform.Y = newY;
+    }
+
     private void RegionClickCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (NewGrabFrameMenuItem.IsChecked)
         {
             BackgroundImage.RenderTransform = null;
+            edgePanTimer.Stop();
             return;
         }
 
         System.Windows.Point point = Mouse.GetPosition(this);
 
-        if (BackgroundImage.RenderTransform is ScaleTransform scaleTransform)
+        if (BackgroundImage.RenderTransform is TransformGroup transformGroup)
         {
-            double changingScale = scaleTransform.ScaleX;
-            if (e.Delta > 0)
-                changingScale *= 1.1;
-            else
-                changingScale *= 0.9;
-
-            // Reset transform if zooming back below minimum threshold
-            if (changingScale < 1.2)
+            ScaleTransform? scaleTransform = null;
+            foreach (Transform? transform in transformGroup.Children)
             {
-                BackgroundImage.RenderTransform = null;
+                if (transform is ScaleTransform st)
+                {
+                    scaleTransform = st;
+                    break;
+                }
+            }
+
+            if (scaleTransform != null)
+            {
+                double changingScale = scaleTransform.ScaleX;
+                if (e.Delta > 0)
+                    changingScale *= 1.1;
+                else
+                    changingScale *= 0.9;
+
+                if (changingScale < 1.2)
+                {
+                    BackgroundImage.RenderTransform = null;
+                    edgePanTimer.Stop();
+                    e.Handled = true;
+                    return;
+                }
+
+                if (changingScale > MaxZoomScale)
+                    changingScale = MaxZoomScale;
+
+                scaleTransform.ScaleX = changingScale;
+                scaleTransform.ScaleY = changingScale;
+
+                if (!edgePanTimer.IsEnabled)
+                    edgePanTimer.Start();
+
                 e.Handled = true;
                 return;
             }
-
-            // Enforce maximum zoom level
-            if (changingScale > MaxZoomScale)
-                changingScale = MaxZoomScale;
-
-            scaleTransform.ScaleX = changingScale;
-            scaleTransform.ScaleY = changingScale;
         }
-        else
+
+        double scale = 1;
+        if (e.Delta > 0)
+            scale = 1.1;
+
+        TransformGroup newGroup = new();
+        ScaleTransform newScaleTransform = new()
         {
-            double scale = 1;
-            if (e.Delta > 0)
-                scale = 1.1;
+            ScaleX = scale,
+            ScaleY = scale,
+            CenterX = point.X,
+            CenterY = point.Y
+        };
+        newGroup.Children.Add(newScaleTransform);
+        newGroup.Children.Add(new TranslateTransform());
 
-            ScaleTransform newTransform = new()
-            {
-                ScaleX = scale,
-                ScaleY = scale,
-                CenterX = point.X,
-                CenterY = point.Y
-            };
-
-            BackgroundImage.RenderTransform = newTransform;
-        }
+        BackgroundImage.RenderTransform = newGroup;
+        edgePanTimer.Start();
 
         e.Handled = true;
     }
