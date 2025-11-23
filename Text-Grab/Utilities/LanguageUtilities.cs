@@ -12,6 +12,11 @@ namespace Text_Grab.Utilities;
 
 public static class LanguageUtilities
 {
+    // Simple cache to avoid repeated wrapping allocations
+    private static IList<ILanguage>? _cachedAllLanguages;
+    private static DateTime _cachedAllLanguagesAt = DateTime.MinValue;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(5);
+
     public static ILanguage GetCurrentInputLanguage()
     {
         // use currently selected Language
@@ -21,7 +26,10 @@ public static class LanguageUtilities
 
     public static IList<ILanguage> GetAllLanguages()
     {
-        List<ILanguage> languages = [];
+        if (_cachedAllLanguages is not null && (DateTime.UtcNow - _cachedAllLanguagesAt) < CacheDuration)
+            return _cachedAllLanguages;
+
+        List<ILanguage> languages = new();
 
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
@@ -35,7 +43,10 @@ public static class LanguageUtilities
             languages.Add(new GlobalLang(lang));
         }
 
-        return languages;
+        _cachedAllLanguages = languages;
+        _cachedAllLanguagesAt = DateTime.UtcNow;
+
+        return _cachedAllLanguages;
     }
 
     public static string GetLanguageTag(object language)
@@ -88,7 +99,7 @@ public static class LanguageUtilities
             }
         }
 
-        List<ILanguage> possibleOCRLanguages = [.. GetAllLanguages()];
+        List<ILanguage> possibleOCRLanguages = new(GetAllLanguages());
 
         if (possibleOCRLanguages.Count == 0)
             return new GlobalLang("en-US");
@@ -96,10 +107,10 @@ public static class LanguageUtilities
         // check to see if the selected language is in the list of available OCR languages
         if (possibleOCRLanguages.All(l => l.LanguageTag != selectedLanguage.LanguageTag))
         {
-            List<ILanguage>? similarLanguages = [.. possibleOCRLanguages.Where(
+            List<ILanguage>? similarLanguages = new(possibleOCRLanguages.Where(
                 la => la.LanguageTag.Contains(selectedLanguage.LanguageTag)
                 || selectedLanguage.LanguageTag.Contains(la.LanguageTag)
-            )];
+            ));
 
             if (similarLanguages is not null && similarLanguages.Count > 0)
                 return new GlobalLang(similarLanguages.First().LanguageTag);

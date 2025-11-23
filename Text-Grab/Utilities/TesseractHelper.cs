@@ -32,29 +32,44 @@ public static class TesseractHelper
 
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
+    // Cached values to avoid repeated disk IO and process spawns
+    private static string? _cachedTesseractPath;
+    private static bool? _canLocateCached;
 
     public static bool CanLocateTesseractExe()
     {
-        string tesseractPath = string.Empty;
+        if (_canLocateCached.HasValue)
+            return _canLocateCached.Value;
+
         try
         {
-            tesseractPath = GetTesseractPath();
+            string path = GetTesseractPath();
+            bool result = !string.IsNullOrEmpty(path);
+            _canLocateCached = result;
+            return result;
         }
         catch (Exception)
         {
-            tesseractPath = string.Empty;
+            _canLocateCached = false;
 #if DEBUG
             throw;
 #endif
+            return false;
         }
-        return !string.IsNullOrEmpty(tesseractPath);
     }
 
     private static string GetTesseractPath()
     {
+        // Return cached value when available
+        if (!string.IsNullOrWhiteSpace(_cachedTesseractPath))
+            return _cachedTesseractPath!;
+
         if (!string.IsNullOrWhiteSpace(DefaultSettings.TesseractPath)
             && File.Exists(DefaultSettings.TesseractPath))
-            return DefaultSettings.TesseractPath;
+        {
+            _cachedTesseractPath = DefaultSettings.TesseractPath;
+            return _cachedTesseractPath;
+        }
 
         string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
         string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
@@ -63,6 +78,7 @@ public static class TesseractHelper
         {
             DefaultSettings.TesseractPath = tesExePath;
             DefaultSettings.Save();
+            _cachedTesseractPath = tesExePath;
             return tesExePath;
         }
 
@@ -70,6 +86,7 @@ public static class TesseractHelper
         {
             DefaultSettings.TesseractPath = programsPath;
             DefaultSettings.Save();
+            _cachedTesseractPath = programsPath;
             return programsPath;
         }
 
@@ -77,9 +94,11 @@ public static class TesseractHelper
         {
             DefaultSettings.TesseractPath = basicPath;
             DefaultSettings.Save();
+            _cachedTesseractPath = basicPath;
             return basicPath;
         }
 
+        _cachedTesseractPath = string.Empty;
         return string.Empty;
     }
 

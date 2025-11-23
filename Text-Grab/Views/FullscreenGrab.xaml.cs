@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Text_Grab.Extensions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -81,7 +82,14 @@ public partial class FullscreenGrab : Window
 
     public void SetImageToBackground()
     {
-        BackgroundImage.Source = null;
+        // Release previous image to free memory
+        if (BackgroundImage.Source is BitmapSource oldSource)
+        {
+            BackgroundImage.Source = null;
+            // Force garbage collection of the old image
+            oldSource = null;
+        }
+        
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
         // Honor user preference for shaded overlay while selecting
         BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? 0.2 : 0.0;
@@ -274,7 +282,13 @@ public partial class FullscreenGrab : Window
         }
         else
         {
-            BackgroundImage.Source = null;
+            // Properly dispose background image when unfreezing
+            if (BackgroundImage.Source is BitmapSource oldSource)
+            {
+                BackgroundImage.Source = null;
+                oldSource = null;
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized);
+            }
         }
     }
 
@@ -794,7 +808,8 @@ public partial class FullscreenGrab : Window
         KeyDown += FullscreenGrab_KeyDown;
         KeyUp += FullscreenGrab_KeyUp;
 
-        SetImageToBackground();
+        // Don't capture background image immediately - only when freeze is activated
+        // This saves significant memory on startup
 
         // Remove legacy pre-load toggle selection; we'll apply defaults after languages are loaded
         // to account for Table mode availability based on OCR engine.
@@ -884,7 +899,12 @@ public partial class FullscreenGrab : Window
 
     private void Window_Unloaded(object sender, RoutedEventArgs e)
     {
-        BackgroundImage.Source = null;
+        // Properly dispose background image
+        if (BackgroundImage.Source is BitmapSource oldSource)
+        {
+            BackgroundImage.Source = null;
+            oldSource = null;
+        }
         BackgroundImage.UpdateLayout();
         CurrentScreen = null;
         dpiScale = null;

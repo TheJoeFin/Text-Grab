@@ -71,6 +71,55 @@ public static class ImageMethods
         return bitmapImage;
     }
 
+    /// <summary>
+    /// Converts a Bitmap to BitmapImage with optional quality reduction for memory efficiency.
+    /// Use lowerQuality=true for temporary background images that don't need perfect fidelity.
+    /// </summary>
+    public static BitmapImage BitmapToImageSource(Bitmap bitmap, bool lowerQuality)
+    {
+        if (!lowerQuality)
+            return BitmapToImageSource(bitmap);
+
+        using MemoryStream memory = new();
+        using WrappingStream wrapper = new(memory);
+
+        // Use JPEG with 70% quality for significant memory savings on large screenshots
+        EncoderParameters encoderParams = new(1);
+        encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 70L);
+        ImageCodecInfo jpegCodec = GetEncoderInfo("image/jpeg");
+        
+        if (jpegCodec != null)
+            bitmap.Save(wrapper, jpegCodec, encoderParams);
+        else
+            bitmap.Save(wrapper, ImageFormat.Jpeg);
+
+        wrapper.Position = 0;
+        BitmapImage bitmapImage = new();
+        bitmapImage.BeginInit();
+        bitmapImage.StreamSource = wrapper;
+        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+        bitmapImage.DecodePixelWidth = (int)(bitmap.Width * 0.75); // Scale down 25% for even more memory savings
+        bitmapImage.EndInit();
+        bitmapImage.StreamSource = null;
+        bitmapImage.Freeze();
+
+        memory.Flush();
+        wrapper.Flush();
+
+        return bitmapImage;
+    }
+
+    private static ImageCodecInfo? GetEncoderInfo(string mimeType)
+    {
+        ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
+        foreach (ImageCodecInfo codec in codecs)
+        {
+            if (codec.MimeType == mimeType)
+                return codec;
+        }
+        return null;
+    }
+
     public static BitmapImage CachedBitmapToBitmapImage(System.Windows.Media.Imaging.CachedBitmap cachedBitmap)
     {
         BitmapImage bitmapImage = new();
@@ -147,7 +196,17 @@ public static class ImageMethods
     public static ImageSource GetWindowBoundsImage(Window passedWindow)
     {
         Bitmap bmp = GetWindowsBoundsBitmap(passedWindow);
-        return BitmapToImageSource(bmp);
+        
+        // Use lower quality for FSG background images to save memory
+        // These are temporary visual aids and don't need perfect quality
+        bool useLowerQuality = passedWindow is FullscreenGrab;
+        
+        BitmapImage result = BitmapToImageSource(bmp, useLowerQuality);
+        
+        // Dispose the bitmap now that we've converted it
+        bmp.Dispose();
+        
+        return result;
     }
 
     public static Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)

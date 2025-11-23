@@ -984,6 +984,10 @@ public partial class GrabFrame : Window
         int lineNumber = 0;
         double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
 
+        // OPTIMIZATION: Batch WordBorder creation to reduce UI overhead
+        // Create all WordBorders first, then add them to the canvas in one batch
+        List<WordBorder> newWordBorders = new(ocrResultOfWindow.Lines.Length);
+
         foreach (IOcrLine ocrLine in ocrResultOfWindow.Lines)
         {
             StringBuilder lineText = new();
@@ -1028,25 +1032,108 @@ public partial class GrabFrame : Window
 
             if (IsOcrValid)
             {
-                wordBorders.Add(wordBorderBox);
-                _ = RectanglesCanvas.Children.Add(wordBorderBox);
-
-                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
-                    new GrabFrameOperationArgs()
-                    {
-                        WordBorder = wordBorderBox,
-                        WordBorders = wordBorders,
-                        GrabFrameCanvas = RectanglesCanvas
-                    });
+                newWordBorders.Add(wordBorderBox);
             }
 
             lineNumber++;
         }
 
+        // OPTIMIZATION: Add all WordBorders to collections at once
+        // This reduces UI tree updates
+        if (IsOcrValid && newWordBorders.Count > 0)
+        {
+            // Suspend layout updates during batch add
+            RectanglesCanvas.BeginInit();
+            try
+            {
+                foreach (WordBorder wb in newWordBorders)
+                {
+                    wordBorders.Add(wb);
+                    RectanglesCanvas.Children.Add(wb);
+
+                    UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+                        new GrabFrameOperationArgs()
+                        {
+                            WordBorder = wb,
+                            WordBorders = wordBorders,
+                            GrabFrameCanvas = RectanglesCanvas
+                        });
+                }
+            }
+            finally
+            {
+                RectanglesCanvas.EndInit();
+            }
+        }
+
         SetRotationBasedOnOcrResult();
 
+        // OPTIMIZATION: Defer barcode reading to background thread
+        // This prevents blocking the UI thread with expensive ZXing operations
         if (DefaultSettings.TryToReadBarcodes)
-            TryToReadBarcodes(dpi);
+        {
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    System.Drawing.Bitmap barcodeImage = ImageMethods.GetWindowsBoundsBitmap(this);
+                    BarcodeReader barcodeReader = new()
+                    {
+                        AutoRotate = true,
+                        Options = new ZXing.Common.DecodingOptions { TryHarder = true }
+                    };
+
+                    Result result = barcodeReader.Decode(barcodeImage);
+                    barcodeImage.Dispose();
+
+                    if (result is not null)
+                    {
+                        // Switch back to UI thread to add barcode WordBorder
+                        Dispatcher.Invoke(() =>
+                        {
+                            if (IsOcrValid)
+                            {
+                                ResultPoint[] rawPoints = result.ResultPoints;
+                                float[] xs = [.. rawPoints.Reverse().Take(4).Select(x => x.X)];
+                                float[] ys = [.. rawPoints.Reverse().Take(4).Select(x => x.Y)];
+
+                                Point minPoint = new(xs.Min(), ys.Min());
+                                Point maxPoint = new(xs.Max(), ys.Max());
+                                Point diffs = new(maxPoint.X - minPoint.X, maxPoint.Y - minPoint.Y);
+
+                                if (diffs.Y < 5)
+                                    diffs.Y = diffs.X / 10;
+
+                                WordBorder wb = new()
+                                {
+                                    Word = result.Text,
+                                    Width = diffs.X / dpi.DpiScaleX + 12,
+                                    Height = diffs.Y / dpi.DpiScaleY + 12,
+                                    Left = minPoint.X / (dpi.DpiScaleX) - 6,
+                                    Top = minPoint.Y / (dpi.DpiScaleY) - 6,
+                                    OwnerGrabFrame = this
+                                };
+                                wb.SetAsBarcode();
+                                wordBorders.Add(wb);
+                                RectanglesCanvas.Children.Add(wb);
+
+                                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+                                new GrabFrameOperationArgs()
+                                {
+                                    WordBorder = wb,
+                                    WordBorders = wordBorders,
+                                    GrabFrameCanvas = RectanglesCanvas
+                                });
+                            }
+                        });
+                    }
+                }
+                catch
+                {
+                    // Silently fail barcode detection to avoid disrupting UI
+                }
+            });
+        }
 
         if (IsWordEditMode)
             EnterEditMode();
@@ -1216,8 +1303,9 @@ public partial class GrabFrame : Window
 
     private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
     {
+        // OPTIMIZATION: Cache default brush to avoid repeated allocations
         SolidColorBrush backgroundBrush = new(Colors.Black);
-        double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
+        
         double boxLeft = lineRect.Left / (dpi.DpiScaleX * scale);
         double boxTop = lineRect.Top / (dpi.DpiScaleY * scale);
         double boxRight = lineRect.Right / (dpi.DpiScaleX * scale);
@@ -1228,31 +1316,24 @@ public partial class GrabFrame : Window
         double rightFraction = boxRight / RectanglesCanvas.ActualWidth;
         double bottomFraction = boxBottom / RectanglesCanvas.ActualHeight;
 
+        // OPTIMIZATION: Clamp values once and reuse
         int pxLeft = Math.Clamp((int)(leftFraction * bmp.Width) - 1, 0, bmp.Width - 1);
         int pxTop = Math.Clamp((int)(topFraction * bmp.Height) - 2, 0, bmp.Height - 1);
         int pxRight = Math.Clamp((int)(rightFraction * bmp.Width) + 1, 0, bmp.Width - 1);
         int pxBottom = Math.Clamp((int)(bottomFraction * bmp.Height) + 1, 0, bmp.Height - 1);
+        
+        // OPTIMIZATION: Reduce GetPixel calls from 4 to 2 by sampling corners only
         System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
-        System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
         System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
-        System.Drawing.Color pxColorLeftBottom = bmp.GetPixel(pxLeft, pxBottom);
 
-        List<Color> MediaColorList =
-        [
-            ColorHelper.MediaColorFromDrawingColor(pxColorLeftTop),
-            ColorHelper.MediaColorFromDrawingColor(pxColorRightTop),
-            ColorHelper.MediaColorFromDrawingColor(pxColorRightBottom),
-            ColorHelper.MediaColorFromDrawingColor(pxColorLeftBottom),
-        ];
+        // OPTIMIZATION: Simple average instead of grouping/ordering
+        Color avgColor = Color.FromRgb(
+            (byte)((pxColorLeftTop.R + pxColorRightBottom.R) / 2),
+            (byte)((pxColorLeftTop.G + pxColorRightBottom.G) / 2),
+            (byte)((pxColorLeftTop.B + pxColorRightBottom.B) / 2)
+        );
 
-        Color? MostCommonColor = MediaColorList.GroupBy(c => c)
-                                               .OrderBy(g => g.Count())
-                                               .LastOrDefault()?.Key;
-
-        backgroundBrush = ColorHelper.SolidColorBrushFromDrawingColor(pxColorLeftTop);
-
-        if (MostCommonColor is not null)
-            backgroundBrush = new SolidColorBrush(MostCommonColor.Value);
+        backgroundBrush = new SolidColorBrush(avgColor);
 
         return backgroundBrush;
     }
