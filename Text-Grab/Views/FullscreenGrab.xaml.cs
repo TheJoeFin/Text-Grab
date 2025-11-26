@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Text_Grab.Extensions;
 using Text_Grab.Interfaces;
@@ -93,7 +94,10 @@ public partial class FullscreenGrab : Window
 
     public void SetImageToBackground()
     {
+        // Dispose old image source if it exists
         BackgroundImage.Source = null;
+        BackgroundImage.UpdateLayout();
+
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
         // Honor user preference for shaded overlay while selecting
         BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? 0.2 : 0.0;
@@ -286,7 +290,12 @@ public partial class FullscreenGrab : Window
         }
         else
         {
-            BackgroundImage.Source = null;
+            // Dispose old image source before nulling
+            if (BackgroundImage.Source is BitmapSource oldSource)
+            {
+                BackgroundImage.Source = null;
+                BackgroundImage.UpdateLayout();
+            }
         }
     }
 
@@ -476,6 +485,7 @@ public partial class FullscreenGrab : Window
         // null out any zoom/scaling because it does not translate into GF Size
         // TODO: when placing the Grab Frame consider zoom
         BackgroundImage.RenderTransform = null;
+        edgePanTimer.Stop();
     }
 
     private void PanSelection(System.Windows.Point movingPoint)
@@ -544,6 +554,14 @@ public partial class FullscreenGrab : Window
         }
         grabFrame.Show();
         grabFrame.Activate();
+
+        // Clean up background image before closing to free memory immediately
+        if (BackgroundImage.Source is BitmapSource oldSource)
+        {
+            BackgroundImage.Source = null;
+            BackgroundImage.UpdateLayout();
+        }
+
         WindowUtilities.CloseAllFullscreenGrabs();
     }
 
@@ -793,7 +811,7 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (historyInfo is not null)
             Singleton<HistoryService>.Instance.SaveToHistory(historyInfo);
@@ -901,9 +919,19 @@ public partial class FullscreenGrab : Window
 
         BackgroundImage.Source = null;
         BackgroundImage.UpdateLayout();
+
+        // Clear transform to release any scaled/transformed images
+        BackgroundImage.RenderTransform = null;
+
+        // Remove select border from canvas
+        if (RegionClickCanvas.Children.Contains(selectBorder))
+            RegionClickCanvas.Children.Remove(selectBorder);
+
         CurrentScreen = null;
         dpiScale = null;
         TextFromOCR = null;
+        destinationTextBox = null;
+        historyInfo = null;
 
         Loaded -= Window_Loaded;
         Unloaded -= Window_Unloaded;
@@ -911,6 +939,10 @@ public partial class FullscreenGrab : Window
         RegionClickCanvas.MouseDown -= RegionClickCanvas_MouseDown;
         RegionClickCanvas.MouseMove -= RegionClickCanvas_MouseMove;
         RegionClickCanvas.MouseUp -= RegionClickCanvas_MouseUp;
+        RegionClickCanvas.MouseEnter -= RegionClickCanvas_MouseEnter;
+        RegionClickCanvas.MouseLeave -= RegionClickCanvas_MouseLeave;
+        RegionClickCanvas.PreviewMouseWheel -= RegionClickCanvas_PreviewMouseWheel;
+        RegionClickCanvas.ContextMenuOpening -= RegionClickCanvas_ContextMenuOpening;
 
         SingleLineMenuItem.Click -= SingleLineMenuItem_Click;
         FreezeMenuItem.Click -= FreezeMenuItem_Click;
@@ -918,18 +950,23 @@ public partial class FullscreenGrab : Window
         SendToEtwMenuItem.Click -= NewEditTextMenuItem_Click;
         SettingsMenuItem.Click -= SettingsMenuItem_Click;
         CancelMenuItem.Click -= CancelMenuItem_Click;
+        EditLastGrabMenuItem.Click -= EditLastGrab_Click;
 
         LanguagesComboBox.SelectionChanged -= LanguagesComboBox_SelectionChanged;
+        LanguagesComboBox.PreviewMouseDown -= LanguagesComboBox_PreviewMouseDown;
 
         SingleLineToggleButton.Click -= SingleLineMenuItem_Click;
         FreezeToggleButton.Click -= FreezeMenuItem_Click;
         NewGrabFrameToggleButton.Click -= NewGrabFrameMenuItem_Click;
-        SendToEditTextToggleButton.Click -= NewEditTextMenuItem_Click;
+        SendToEditTextToggleButton.Click -= SendToEditTextToggleButton_Click;
+        TableToggleButton.Click -= TableToggleButton_Click;
+        StandardModeToggleButton.Click -= StandardModeToggleButton_Click;
         SettingsButton.Click -= SettingsMenuItem_Click;
         CancelButton.Click -= CancelMenuItem_Click;
 
         KeyDown -= FullscreenGrab_KeyDown;
         KeyUp -= FullscreenGrab_KeyUp;
+        Closing -= Window_Closing;
     }
 
     private void StandardModeToggleButton_Click(object sender, RoutedEventArgs e)

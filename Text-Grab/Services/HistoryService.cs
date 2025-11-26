@@ -42,6 +42,7 @@ public class HistoryService
     #region Properties
 
     public Bitmap? CachedBitmap { get; set; }
+    private nint? _cachedBitmapHandle;
 
     #endregion Properties
 
@@ -49,14 +50,28 @@ public class HistoryService
 
     public void CacheLastBitmap(Bitmap bmp)
     {
+        if (_cachedBitmapHandle is nint bmpH)
+        {
+            NativeMethods.DeleteObject(bmpH);
+            _cachedBitmapHandle = null;
+        }
+
         CachedBitmap = null;
         CachedBitmap = bmp;
+        _cachedBitmapHandle = bmp.GetHbitmap();
     }
 
     public void DeleteHistory()
     {
         HistoryWithImage.Clear();
         HistoryTextOnly.Clear();
+
+        if (_cachedBitmapHandle is nint bmpH)
+        {
+            NativeMethods.DeleteObject(bmpH);
+            CachedBitmap = null;
+            _cachedBitmapHandle = null;
+        }
 
         FileUtilities.TryDeleteHistoryDirectory();
     }
@@ -198,10 +213,11 @@ public class HistoryService
 
         HistoryWithImage.Add(infoFromFullscreenGrab);
 
-        if (CachedBitmap is not null)
+        if (_cachedBitmapHandle is nint bmpH)
         {
-            NativeMethods.DeleteObject(CachedBitmap.GetHbitmap());
+            NativeMethods.DeleteObject(bmpH);
             CachedBitmap = null;
+            _cachedBitmapHandle = null;
         }
 
         saveTimer.Stop();
@@ -309,7 +325,7 @@ public class HistoryService
         if (numberToRemove < 1)
             return;
 
-        List<HistoryInfo> imagesToRemove = HistoryWithImage.Take(numberToRemove).ToList();
+        List<HistoryInfo> imagesToRemove = [.. HistoryWithImage.Take(numberToRemove)];
 
         for (int i = 0; i < numberToRemove; i++)
             HistoryWithImage.RemoveAt(0);
@@ -325,6 +341,12 @@ public class HistoryService
     {
         saveTimer.Stop();
         WriteHistory();
+
+        if (_cachedBitmapHandle is nint bmpH)
+        {
+            NativeMethods.DeleteObject(bmpH);
+            _cachedBitmapHandle = null;
+        }
         CachedBitmap = null;
     }
 
