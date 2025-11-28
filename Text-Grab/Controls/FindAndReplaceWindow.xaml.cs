@@ -577,10 +577,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         string sourceText = string.Empty;
         if (textEditWindow is not null)
         {
-            if (!string.IsNullOrWhiteSpace(textEditWindow.PassedTextControl.SelectedText))
-                sourceText = textEditWindow.PassedTextControl.SelectedText.MakeStringSingleLine().Truncate(30);
-            else
-                sourceText = textEditWindow.PassedTextControl.Text.MakeStringSingleLine().Truncate(30);
+            sourceText = !string.IsNullOrWhiteSpace(textEditWindow.PassedTextControl.SelectedText)
+                ? textEditWindow.PassedTextControl.SelectedText.MakeStringSingleLine().Truncate(30)
+                : textEditWindow.PassedTextControl.Text.MakeStringSingleLine().Truncate(30);
         }
 
         // Open the RegexManager and start adding the pattern
@@ -603,16 +602,12 @@ public partial class FindAndReplaceWindow : FluentWindow
         // 1. Using regex mode
         // 2. Find text is not empty
         // 3. Pattern doesn't already exist in saved patterns
-        if (UsePaternCheckBox.IsChecked is true && 
-            !string.IsNullOrWhiteSpace(FindTextBox.Text) &&
-            !IsPatternAlreadySaved(FindTextBox.Text))
-        {
-            SavePatternButton.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            SavePatternButton.Visibility = Visibility.Collapsed;
-        }
+        SavePatternButton.Visibility =
+            (UsePaternCheckBox.IsChecked is true &&
+             !string.IsNullOrWhiteSpace(FindTextBox.Text) &&
+             !IsPatternAlreadySaved(FindTextBox.Text))
+                ? Visibility.Visible
+                : Visibility.Collapsed;
     }
 
     private bool IsPatternAlreadySaved(string pattern)
