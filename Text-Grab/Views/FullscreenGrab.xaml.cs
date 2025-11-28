@@ -95,8 +95,7 @@ public partial class FullscreenGrab : Window
     public void SetImageToBackground()
     {
         // Dispose old image source if it exists
-        BackgroundImage.Source = null;
-        BackgroundImage.UpdateLayout();
+        DisposeBitmapSource(BackgroundImage);
 
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
         // Honor user preference for shaded overlay while selecting
@@ -290,12 +289,7 @@ public partial class FullscreenGrab : Window
         }
         else
         {
-            // Dispose old image source before nulling
-            if (BackgroundImage.Source is BitmapSource oldSource)
-            {
-                BackgroundImage.Source = null;
-                BackgroundImage.UpdateLayout();
-            }
+            DisposeBitmapSource(BackgroundImage);
         }
     }
 
@@ -556,11 +550,7 @@ public partial class FullscreenGrab : Window
         grabFrame.Activate();
 
         // Clean up background image before closing to free memory immediately
-        if (BackgroundImage.Source is BitmapSource oldSource)
-        {
-            BackgroundImage.Source = null;
-            BackgroundImage.UpdateLayout();
-        }
+        DisposeBitmapSource(BackgroundImage);
 
         WindowUtilities.CloseAllFullscreenGrabs();
     }
@@ -912,13 +902,29 @@ public partial class FullscreenGrab : Window
             TopButtonsStackPanel.Visibility = Visibility.Visible;
     }
 
+    private void DisposeBitmapSource(System.Windows.Controls.Image image)
+    {
+        if (image.Source is not BitmapSource oldSource)
+            return;
+
+        image.Source = null;
+        image.UpdateLayout();
+
+        // Force garbage collection for large bitmaps (> 1 megapixel)
+        if (oldSource.PixelWidth * oldSource.PixelHeight <= 1_000_000)
+            return;
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+
     private void Window_Unloaded(object sender, RoutedEventArgs e)
     {
         edgePanTimer.Stop();
         edgePanTimer.Tick -= EdgePanTimer_Tick;
 
-        BackgroundImage.Source = null;
-        BackgroundImage.UpdateLayout();
+        DisposeBitmapSource(BackgroundImage);
 
         // Clear transform to release any scaled/transformed images
         BackgroundImage.RenderTransform = null;
