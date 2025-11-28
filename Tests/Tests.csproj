@@ -27,7 +27,7 @@
         <PackageReference Include="Xunit.StaFact" Version="3.0.13" />
         <PackageReference Include="xunit.v3" Version="3.2.0" />
         <PackageReference Include="BenchmarkDotNet" Version="0.15.6" />
-        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36714.1" />
+        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36726.2" />
     </ItemGroup>
 
     <ItemGroup>

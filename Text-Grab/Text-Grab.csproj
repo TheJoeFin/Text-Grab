@@ -51,9 +51,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CliWrap" Version="3.9.0" />
+        <PackageReference Include="CliWrap" Version="3.10.0" />
         <PackageReference Include="Dapplo.Windows.User32" Version="1.0.28" />
-        <PackageReference Include="Humanizer.Core" Version="2.14.1" />
+        <PackageReference Include="Humanizer.Core" Version="3.0.1" />
         <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.9.1" />
         <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.12" />
         <PackageReference Include="Magick.NET.SystemWindowsMedia" Version="8.0.12" />
