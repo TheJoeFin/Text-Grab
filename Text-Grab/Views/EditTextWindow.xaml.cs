@@ -31,6 +31,8 @@ using Windows.Globalization;
 using Windows.Media.Ocr;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using ContextMenu = System.Windows.Controls.ContextMenu;
+using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace Text_Grab;
 
