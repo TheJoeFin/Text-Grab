@@ -77,6 +77,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     // Remember last non-collapsed width for the calc column
     private GridLength _lastCalcColumnWidth = new(1, GridUnitType.Star);
 
+    // Remember text wrapping state before showing calc pane
+    private TextWrapping? _previousTextWrapping = null;
+
     // Store extracted pattern and precision for mouse wheel adjustment
     private ExtractedPattern? currentExtractedPattern = null;
     private int currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
@@ -3623,6 +3626,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Restore previous width if it was collapsed
             if (CalcColumn.Width.Value == 0)
                 CalcColumn.Width = _lastCalcColumnWidth;
+            
+            // Disable text wrapping when calc pane is visible to maintain vertical alignment
+            // Store the previous wrapping state to restore later
+            if (PassedTextControl.TextWrapping != TextWrapping.NoWrap)
+            {
+                _previousTextWrapping = PassedTextControl.TextWrapping;
+                PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+            }
+            
             _debounceTimer?.Start();
         }
         else
@@ -3635,6 +3647,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (CalcColumn.Width.Value > 0)
                 _lastCalcColumnWidth = CalcColumn.Width;
             CalcColumn.Width = new GridLength(0);
+            
+            // Restore previous text wrapping setting when calc pane is hidden
+            if (_previousTextWrapping.HasValue)
+            {
+                PassedTextControl.TextWrapping = _previousTextWrapping.Value;
+                _previousTextWrapping = null;
+            }
         }
     }
 

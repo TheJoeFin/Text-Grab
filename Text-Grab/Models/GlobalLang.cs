@@ -25,9 +25,9 @@ public class GlobalLang : ILanguage
         {
             language = new(inputLang);
         }
-        catch (System.ArgumentException)
+        catch (System.ArgumentException ex)
         {
-
+            System.Diagnostics.Debug.WriteLine($"Failed to initialize language '{inputLang}': {ex.Message}");
         }
         AbbreviatedName = language.AbbreviatedName;
         CultureDisplayName = language.DisplayName;

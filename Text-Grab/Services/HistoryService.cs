@@ -56,7 +56,7 @@ public class HistoryService
             _cachedBitmapHandle = null;
         }
 
-        CachedBitmap = null;
+        CachedBitmap?.Dispose();
         CachedBitmap = bmp;
         _cachedBitmapHandle = bmp.GetHbitmap();
     }

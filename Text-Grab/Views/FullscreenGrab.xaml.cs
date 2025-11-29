@@ -909,14 +909,6 @@ public partial class FullscreenGrab : Window
 
         image.Source = null;
         image.UpdateLayout();
-
-        // Force garbage collection for large bitmaps (> 1 megapixel)
-        if (oldSource.PixelWidth * oldSource.PixelHeight <= 1_000_000)
-            return;
-
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
     }
 
     private void Window_Unloaded(object sender, RoutedEventArgs e)
@@ -1084,7 +1076,8 @@ public partial class FullscreenGrab : Window
         else if (relativeY > windowRect.Height - edgeThresholdY)
             panY = -EdgePanSpeed * (1.0 - ((windowRect.Height - relativeY) / edgeThresholdY));
 
-        if (panX != 0 || panY != 0)
+        const double Epsilon = 1e-6;
+        if (Math.Abs(panX) > Epsilon || Math.Abs(panY) > Epsilon)
             PanBackgroundImage(panX, panY, transformGroup);
     }
 
@@ -1206,9 +1199,15 @@ public partial class FullscreenGrab : Window
             }
         }
 
-        double scale = 1;
-        if (e.Delta > 0)
-            scale = 1.1;
+        // Only create a new transform when zooming in (e.Delta > 0)
+        // Skip when zooming out at base scale since there's nothing to zoom out from
+        if (e.Delta <= 0)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        double scale = 1.1;
 
         TransformGroup newGroup = new();
         ScaleTransform newScaleTransform = new()
