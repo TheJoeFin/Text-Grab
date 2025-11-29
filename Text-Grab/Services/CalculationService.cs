@@ -372,11 +372,11 @@ public partial class CalculationService
         }
         catch (Exception)
         {
-            Debug.WriteLine($"Error evaluating expression: {line}");
+            throw new Exception($"Error evaluating expression: {line}");
         }
 
         if (result is null)
-            return "null";
+            return "Error: result is null";
 
         string formattedResult = FormatResult(result);
         return formattedResult;
