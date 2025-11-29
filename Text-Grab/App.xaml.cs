@@ -104,8 +104,12 @@ public partial class App : System.Windows.Application
 #endif
         }
 
-        Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
+        Color teal = (Color)ColorConverter.ConvertFromString("#FF308E98");
         ApplicationAccentColorManager.Apply(teal);
+        // ApplicationAccentColorManager.ApplySystemAccent();
+
+        // does not work:
+        //themeService.SetAccent(teal);
     }
 
     public static void WatchTheme()
