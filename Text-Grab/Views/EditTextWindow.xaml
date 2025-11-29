@@ -536,7 +536,7 @@
                 Background="Transparent"
                 BorderThickness="0"
                 Click="CalcToggleButton_Click"
-                ToolTip="Toggle Calculation Pane (Ctrl+P)">
+                ToolTip="Toggle Calculation Pane (Ctrl+P)&#x0a;Note: Text wrapping is disabled when calc pane is visible for better vertical alignment">
                 <ui:SymbolIcon FontSize="16" Symbol="Calculator24" />
             </Button>
         </Grid>
@@ -727,7 +727,21 @@
                             <Run Text="sqrt(x * y)" />
                         </TextBlock>
                         <TextBlock
-                            Margin="0,8,0,0"
+                            Margin="0,8,0,4"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="Note:"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="11"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap">
+                            <Run Text="Text wrapping is automatically disabled when the calculation pane is visible to ensure calculation results align vertically with their corresponding input lines." />
+                        </TextBlock>
+                        <TextBlock
+                            Margin="0,0,0,0"
                             FontSize="11"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             TextWrapping="Wrap">
