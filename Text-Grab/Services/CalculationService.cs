@@ -1,6 +1,7 @@
 using NCalc;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -362,17 +363,23 @@ public partial class CalculationService
         // Register custom functions
         RegisterCustomFunctions(expression);
 
-        object? result = await expression.EvaluateAsync();
 
-        if (result != null)
+        object? result = null;
+
+        try
         {
-            string formattedResult = FormatResult(result);
-            return formattedResult;
+            result = await expression.EvaluateAsync();
         }
-        else
+        catch (Exception)
         {
+            Debug.WriteLine($"Error evaluating expression: {line}");
+        }
+
+        if (result is null)
             return "null";
-        }
+
+        string formattedResult = FormatResult(result);
+        return formattedResult;
     }
 
     /// <summary>
