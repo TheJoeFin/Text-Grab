@@ -17,7 +17,18 @@ public class GlobalLang : ILanguage
 
     public GlobalLang(string inputLang)
     {
-        Windows.Globalization.Language language = new(inputLang);
+        if (inputLang == "English")
+            inputLang = "en-US";
+
+        Windows.Globalization.Language language = new(System.Globalization.CultureInfo.CurrentCulture.Name);
+        try
+        {
+            language = new(inputLang);
+        }
+        catch (System.ArgumentException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to initialize language '{inputLang}': {ex.Message}");
+        }
         AbbreviatedName = language.AbbreviatedName;
         CultureDisplayName = language.DisplayName;
         LanguageTag = language.LanguageTag;

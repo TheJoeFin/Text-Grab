@@ -1,6 +1,7 @@
 using NCalc;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -38,11 +39,12 @@ public partial class CalculationService
         if (string.IsNullOrWhiteSpace(input))
         {
             _parameters.Clear();
-            return new CalculationResult { Output = string.Empty, ErrorCount = 0 };
+            return new CalculationResult { Output = string.Empty, ErrorCount = 0, OutputNumbers = [] };
         }
 
         string[] lines = input.Split('\n');
         List<string> results = [];
+        List<double> outputNumbers = [];
         int errorCount = 0;
 
         // Clear parameters and rebuild from scratch for each evaluation
@@ -63,11 +65,35 @@ public partial class CalculationService
                 {
                     string resultLine = await HandleParameterAssignmentAsync(trimmedLine);
                     results.Add(resultLine);
+                    
+                    // Extract variable name and add its value to output numbers
+                    int equalIndex = trimmedLine.IndexOf('=');
+                    string variableName = trimmedLine[..equalIndex].Trim();
+                    if (_parameters.TryGetValue(variableName, out object? value))
+                    {
+                        try
+                        {
+                            double numValue = Convert.ToDouble(value);
+                            outputNumbers.Add(numValue);
+                        }
+                        catch
+                        {
+                            // Skip non-numeric values
+                        }
+                    }
                 }
                 else
                 {
                     string resultLine = await EvaluateStandardExpressionAsync(trimmedLine);
                     results.Add(resultLine);
+                    
+                    // Try to parse the result as a number and add to output numbers
+                    // Remove formatting characters before parsing
+                    string cleanedResult = resultLine.Replace(",", "").Replace(" ", "").Trim();
+                    if (double.TryParse(cleanedResult, NumberStyles.Any, CultureInfo.InvariantCulture, out double numValue))
+                    {
+                        outputNumbers.Add(numValue);
+                    }
                 }
             }
             catch (Exception ex)
@@ -87,7 +113,8 @@ public partial class CalculationService
         return new CalculationResult
         {
             Output = string.Join("\n", results),
-            ErrorCount = errorCount
+            ErrorCount = errorCount,
+            OutputNumbers = outputNumbers
         };
     }
 
@@ -336,17 +363,23 @@ public partial class CalculationService
         // Register custom functions
         RegisterCustomFunctions(expression);
 
-        object? result = await expression.EvaluateAsync();
 
-        if (result != null)
+        object? result = null;
+
+        try
         {
-            string formattedResult = FormatResult(result);
-            return formattedResult;
+            result = await expression.EvaluateAsync();
         }
-        else
+        catch (Exception)
         {
-            return "null";
+            throw new Exception($"Error evaluating expression: {line}");
         }
+
+        if (result is null)
+            return "Error: result is null";
+
+        string formattedResult = FormatResult(result);
+        return formattedResult;
     }
 
     /// <summary>
@@ -491,4 +524,10 @@ public class CalculationResult
     /// Gets or sets the number of errors encountered.
     /// </summary>
     public int ErrorCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of numeric output values from evaluated expressions.
+    /// Includes both direct expression results and variable assignment values.
+    /// </summary>
+    public List<double> OutputNumbers { get; set; } = [];
 }

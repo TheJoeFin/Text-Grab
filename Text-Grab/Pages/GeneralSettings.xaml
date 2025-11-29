@@ -36,6 +36,7 @@
                 Margin="12,0,0,0"
                 VerticalAlignment="Bottom"
                 Click="OpenExeFolderButton_Click"
+                Foreground="{StaticResource Teal}"
                 Visibility="Collapsed">
                 <TextBlock Text="Open EXE Containing Folder" />
             </ui:HyperlinkButton>
@@ -66,10 +67,10 @@
                     HorizontalAlignment="Left"
                     Style="{StaticResource TextBodyNormal}"
                     Text="- Joe" />
-                <ui:HyperlinkButton NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues">
+                <ui:HyperlinkButton Foreground="{StaticResource Teal}" NavigateUri="https://github.com/TheJoeFin/Text-Grab/issues">
                     🌐 https://github.com/TheJoeFin/Text-Grab/issues
                 </ui:HyperlinkButton>
-                <ui:HyperlinkButton NavigateUri="mailto:joe@JoeFinApps.com">
+                <ui:HyperlinkButton Foreground="{StaticResource Teal}" NavigateUri="mailto:joe@JoeFinApps.com">
                     📧 joe@JoeFinApps.com
                 </ui:HyperlinkButton>
             </StackPanel>

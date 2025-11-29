@@ -147,7 +147,9 @@ public static class ImageMethods
     public static ImageSource GetWindowBoundsImage(Window passedWindow)
     {
         Bitmap bmp = GetWindowsBoundsBitmap(passedWindow);
-        return BitmapToImageSource(bmp);
+        ImageSource imageSource = BitmapToImageSource(bmp);
+        bmp.Dispose();
+        return imageSource;
     }
 
     public static Bitmap ScaleBitmapUniform(Bitmap passedBitmap, double scale)
