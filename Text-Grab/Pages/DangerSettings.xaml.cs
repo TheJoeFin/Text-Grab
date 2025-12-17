@@ -169,4 +169,14 @@ public partial class DangerSettings : Page
             }.ShowDialogAsync();
         }
     }
+
+    private void ShutdownButton_Click(object sender, RoutedEventArgs e)
+    {
+        Application.Current.Shutdown();
+    }
+
+    private void RetrySettingTrayButton_Click(object sender, RoutedEventArgs e)
+    {
+        NotifyIconUtilities.ResetNotifyIcon();
+    }
 }

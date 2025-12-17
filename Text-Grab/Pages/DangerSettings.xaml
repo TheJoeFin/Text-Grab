@@ -16,6 +16,25 @@
         <TextBlock Style="{StaticResource TextHeader}" Text="Dangerous Options" />
 
         <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Shutdown Text Grab.
+        </TextBlock>
+        <controls:CollapsibleButton
+            x:Name="ShutdownButton"
+            HorizontalAlignment="Left"
+            ButtonText="Shutdown Text Grab"
+            Click="ShutdownButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Reset Tray icon.
+        </TextBlock>
+        <controls:CollapsibleButton
+            x:Name="RetrySettingTrayButton"
+            HorizontalAlignment="Left"
+            ButtonSymbol="TrayItemAdd24"
+            ButtonText="Reset Tray Icon"
+            Click="RetrySettingTrayButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
             Generate bug report with app diagnostic information.
         </TextBlock>
         <controls:CollapsibleButton

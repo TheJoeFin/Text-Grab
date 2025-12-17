@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Services;
@@ -18,6 +20,20 @@ public static class NotifyIconUtilities
         {
             return;
         }
+        RegisterHotKeys(app);
+
+        app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
+    }
+
+    public static async Task ResetNotifyIcon()
+    {
+        App app = (App)App.Current;
+        app.TextGrabIcon = null;
+
+        UnregisterHotkeys(app);
+        NotifyIconWindow existingIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
+        existingIcon.Close();
+
         RegisterHotKeys(app);
 
         app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
