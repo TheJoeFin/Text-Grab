@@ -1,8 +1,8 @@
-﻿using Microsoft.Win32;
+﻿using Microsoft.UI.Xaml.Controls;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -12,13 +12,18 @@ namespace Text_Grab.Pages;
 /// <summary>
 /// Interaction logic for DangerSettings.xaml
 /// </summary>
-public partial class DangerSettings : Page
+public partial class DangerSettings : System.Windows.Controls.Page
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
     public DangerSettings()
     {
         InitializeComponent();
+    }
+
+    private void Page_Loaded(object sender, RoutedEventArgs e)
+    {
+        OverrideArchCheckWinAI.IsChecked = DefaultSettings.OverrideAiArchCheck;
     }
 
     private async void ExportBugReportButton_Click(object sender, RoutedEventArgs e)
@@ -175,8 +180,17 @@ public partial class DangerSettings : Page
         Application.Current.Shutdown();
     }
 
-    private void RetrySettingTrayButton_Click(object sender, RoutedEventArgs e)
+    private async void RetrySettingTrayButton_Click(object sender, RoutedEventArgs e)
     {
-        NotifyIconUtilities.ResetNotifyIcon();
+        await NotifyIconUtilities.ResetNotifyIcon();
+    }
+
+    private void OverrideArchCheckWinAI_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Wpf.Ui.Controls.ToggleSwitch ts)
+            return;
+
+        DefaultSettings.OverrideAiArchCheck = ts.IsChecked ?? false;
+        DefaultSettings.Save();
     }
 }
