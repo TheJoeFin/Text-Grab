@@ -1,6 +1,4 @@
-﻿using Microsoft.Windows.AI;
-using Microsoft.Windows.AI.Imaging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;

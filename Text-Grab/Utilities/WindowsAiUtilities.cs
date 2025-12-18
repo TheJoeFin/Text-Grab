@@ -9,8 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Text_Grab.Models;
+using Text_Grab.Properties;
 using Windows.Graphics.Imaging;
-using ZXing;
 
 namespace Text_Grab.Utilities;
 
@@ -24,7 +24,7 @@ public static class WindowsAiUtilities
 
         // Today, Windows AI Text Recognition is only supported on ARM64
         Architecture arch = RuntimeInformation.ProcessArchitecture;
-        if (arch != Architecture.Arm64)
+        if (arch != Architecture.Arm64 && !Settings.Default.OverrideAiArchCheck)
             return false;
 
         // After checking for Arm64 the remainder checks should be good to catch supporting devices
