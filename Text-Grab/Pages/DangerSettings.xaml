@@ -7,10 +7,10 @@
     xmlns:local="clr-namespace:Text_Grab.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Loaded="Page_Loaded"
     Title="DangerSettings"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    Loaded="Page_Loaded"
     mc:Ignorable="d">
 
     <StackPanel Margin="20,12,40,40" Orientation="Vertical">
