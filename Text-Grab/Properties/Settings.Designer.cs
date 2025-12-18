@@ -766,5 +766,17 @@ namespace Text_Grab.Properties {
                 this["RegexList"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool OverrideAiArchCheck {
+            get {
+                return ((bool)(this["OverrideAiArchCheck"]));
+            }
+            set {
+                this["OverrideAiArchCheck"] = value;
+            }
+        }
     }
 }

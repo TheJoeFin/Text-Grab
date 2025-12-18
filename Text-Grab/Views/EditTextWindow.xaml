@@ -573,27 +573,48 @@
                 AcceptsReturn="True"
                 AcceptsTab="True"
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                ContextMenuOpening="CalcResultsTextControl_ContextMenuOpening"
                 FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
                 HorizontalScrollBarVisibility="Auto"
                 IsInactiveSelectionHighlightEnabled="True"
                 IsReadOnly="True"
                 Style="{DynamicResource TextBoxStyle2}"
                 TextWrapping="NoWrap"
-                VerticalScrollBarVisibility="Hidden"
-                ContextMenuOpening="CalcResultsTextControl_ContextMenuOpening">
+                VerticalScrollBarVisibility="Hidden">
                 <TextBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem Name="HideCalcPaneContextItem" Header="Hide Pane" />
                         <MenuItem Name="ShowCalcErrorsContextItem" Header="Show Errors" />
                         <MenuItem Name="CopyAllContextItem" Header="Copy All" />
                         <Separator />
-                        <MenuItem Name="ShowSumContextItem" Header="Sum: -" IsCheckable="True" />
-                        <MenuItem Name="ShowAverageContextItem" Header="Average: -" IsCheckable="True" />
-                        <MenuItem Name="ShowMedianContextItem" Header="Median: -" IsCheckable="True" />
-                        <MenuItem Name="ShowCountContextItem" Header="Count: -" IsCheckable="True" />
-                        <MenuItem Name="ShowMinContextItem" Header="Min: -" IsCheckable="True" />
-                        <MenuItem Name="ShowMaxContextItem" Header="Max: -" IsCheckable="True" />
-                        <MenuItem Name="ShowProductContextItem" Header="Product: -" IsCheckable="True" />
+                        <MenuItem
+                            Name="ShowSumContextItem"
+                            Header="Sum: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="ShowAverageContextItem"
+                            Header="Average: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="ShowMedianContextItem"
+                            Header="Median: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="ShowCountContextItem"
+                            Header="Count: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="ShowMinContextItem"
+                            Header="Min: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="ShowMaxContextItem"
+                            Header="Max: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="ShowProductContextItem"
+                            Header="Product: -"
+                            IsCheckable="True" />
                     </ContextMenu>
                 </TextBox.ContextMenu>
             </TextBox>
@@ -602,6 +623,7 @@
                 x:Name="CalcAggregateStatusBorder"
                 Grid.Column="1"
                 Margin="8,0,0,8"
+                Padding="6,3"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
@@ -611,18 +633,38 @@
                 CornerRadius="4"
                 Cursor="Hand"
                 MouseLeftButtonDown="CalcAggregateStatusBorder_MouseLeftButtonDown"
-                Padding="6,3"
                 ToolTip="Click to copy, right-click to change aggregate"
                 Visibility="Collapsed">
                 <Border.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Name="AggregateSumContextItem" Header="Sum: -" IsCheckable="True" />
-                        <MenuItem Name="AggregateAverageContextItem" Header="Average: -" IsCheckable="True" />
-                        <MenuItem Name="AggregateMedianContextItem" Header="Median: -" IsCheckable="True" />
-                        <MenuItem Name="AggregateCountContextItem" Header="Count: -" IsCheckable="True" />
-                        <MenuItem Name="AggregateMinContextItem" Header="Min: -" IsCheckable="True" />
-                        <MenuItem Name="AggregateMaxContextItem" Header="Max: -" IsCheckable="True" />
-                        <MenuItem Name="AggregateProductContextItem" Header="Product: -" IsCheckable="True" />
+                        <MenuItem
+                            Name="AggregateSumContextItem"
+                            Header="Sum: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="AggregateAverageContextItem"
+                            Header="Average: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="AggregateMedianContextItem"
+                            Header="Median: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="AggregateCountContextItem"
+                            Header="Count: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="AggregateMinContextItem"
+                            Header="Min: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="AggregateMaxContextItem"
+                            Header="Max: -"
+                            IsCheckable="True" />
+                        <MenuItem
+                            Name="AggregateProductContextItem"
+                            Header="Product: -"
+                            IsCheckable="True" />
                     </ContextMenu>
                 </Border.ContextMenu>
                 <Grid>

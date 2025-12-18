@@ -10,10 +10,30 @@
     Title="DangerSettings"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    Loaded="Page_Loaded"
     mc:Ignorable="d">
 
     <StackPanel Margin="20,12,40,40" Orientation="Vertical">
         <TextBlock Style="{StaticResource TextHeader}" Text="Dangerous Options" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Shutdown Text Grab.
+        </TextBlock>
+        <controls:CollapsibleButton
+            x:Name="ShutdownButton"
+            HorizontalAlignment="Left"
+            ButtonText="Shutdown Text Grab"
+            Click="ShutdownButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Reset Tray icon.
+        </TextBlock>
+        <controls:CollapsibleButton
+            x:Name="RetrySettingTrayButton"
+            HorizontalAlignment="Left"
+            ButtonSymbol="TrayItemAdd24"
+            ButtonText="Reset Tray Icon"
+            Click="RetrySettingTrayButton_Click" />
 
         <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
             Generate bug report with app diagnostic information.
@@ -49,6 +69,16 @@
             ButtonSymbol="ArrowImport24"
             ButtonText="Import Settings"
             Click="ImportSettingsButton_Click" />
+
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
+            Check CPU Architecture before enabling Windows Local AI model features
+        </TextBlock>
+        <ui:ToggleSwitch
+            x:Name="OverrideArchCheckWinAI"
+            HorizontalAlignment="Left"
+            Click="OverrideArchCheckWinAI_Click"
+            OffContent="ARM CPU only"
+            OnContent="No CPU Arch is checked" />
 
         <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
             Reset All settings to default settings.
