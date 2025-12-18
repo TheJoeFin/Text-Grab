@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0-windows10.0.22621</TargetFramework>
+        <TargetFramework>net10.0-windows10.0.22621</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Platforms>x64;x86;ARM64</Platforms>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
@@ -18,16 +18,15 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
-        <PackageReference Include="NCalcAsync" Version="5.8.0" />
+        <PackageReference Include="NCalcAsync" Version="5.9.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Xunit.StaFact" Version="3.0.13" />
-        <PackageReference Include="xunit.v3" Version="3.2.0" />
-        <PackageReference Include="BenchmarkDotNet" Version="0.15.6" />
-        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36714.1" />
+        <PackageReference Include="xunit.v3" Version="3.2.1" />
+        <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36726.2" />
     </ItemGroup>
 
     <ItemGroup>

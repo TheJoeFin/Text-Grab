@@ -709,7 +709,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool EtwShowCharDetails {
             get {
                 return ((bool)(this["EtwShowCharDetails"]));
@@ -721,7 +721,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool EtwShowMatchCount {
             get {
                 return ((bool)(this["EtwShowMatchCount"]));
@@ -733,7 +733,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool EtwShowRegexPattern {
             get {
                 return ((bool)(this["EtwShowRegexPattern"]));
@@ -745,7 +745,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool EtwShowSimilarMatches {
             get {
                 return ((bool)(this["EtwShowSimilarMatches"]));
@@ -764,6 +764,18 @@ namespace Text_Grab.Properties {
             }
             set {
                 this["RegexList"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool OverrideAiArchCheck {
+            get {
+                return ((bool)(this["OverrideAiArchCheck"]));
+            }
+            set {
+                this["OverrideAiArchCheck"] = value;
             }
         }
     }

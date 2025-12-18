@@ -2,7 +2,6 @@
 using Fasetto.Word;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
@@ -211,24 +210,32 @@ public static partial class WindowUtilities
         TryInjectModifierKeyUp(ref inputs, VirtualKeyShort.RSHIFT);
 
         // send Ctrl+V (key downs and key ups)
-        INPUT ctrlDown = new();
-        ctrlDown.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        INPUT ctrlDown = new()
+        {
+            Type = OSInterop.InputType.INPUT_KEYBOARD
+        };
         ctrlDown.U.Ki.WVk = VirtualKeyShort.CONTROL;
         inputs.Add(ctrlDown);
 
-        INPUT vDown = new();
-        vDown.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        INPUT vDown = new()
+        {
+            Type = OSInterop.InputType.INPUT_KEYBOARD
+        };
         vDown.U.Ki.WVk = VirtualKeyShort.KEY_V;
         inputs.Add(vDown);
 
-        INPUT vUp = new();
-        vUp.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        INPUT vUp = new()
+        {
+            Type = OSInterop.InputType.INPUT_KEYBOARD
+        };
         vUp.U.Ki.WVk = VirtualKeyShort.KEY_V;
         vUp.U.Ki.DwFlags = KEYEVENTF.KEYUP;
         inputs.Add(vUp);
 
-        INPUT ctrlUp = new();
-        ctrlUp.Type = OSInterop.InputType.INPUT_KEYBOARD;
+        INPUT ctrlUp = new()
+        {
+            Type = OSInterop.InputType.INPUT_KEYBOARD
+        };
         ctrlUp.U.Ki.WVk = VirtualKeyShort.CONTROL;
         ctrlUp.U.Ki.DwFlags = KEYEVENTF.KEYUP;
         inputs.Add(ctrlUp);

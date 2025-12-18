@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Humanizer;
 using Text_Grab.Models;
+using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
 
@@ -147,8 +151,8 @@ public partial class FindAndReplaceWindow : FluentWindow
             {
                 Index = m.Index,
                 Text = m.Value.MakeStringSingleLine(),
-                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12),
-                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12),
+                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12).MakeStringSingleLine(),
+                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12).MakeStringSingleLine(),
                 Count = count
             };
             FindResults.Add(fr);
@@ -305,6 +309,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
             SearchForText();
 
+        // Update save button visibility on load
+        UpdateSaveButtonVisibility();
+
         FindTextBox.Focus();
     }
 
@@ -320,6 +327,9 @@ public partial class FindAndReplaceWindow : FluentWindow
             // Hide slider when there's no extracted pattern
             PrecisionSliderPanel.Visibility = Visibility.Collapsed;
         }
+
+        // Update save button visibility when text changes
+        UpdateSaveButtonVisibility();
 
         if (e.Key == Key.Enter)
         {
@@ -385,6 +395,9 @@ public partial class FindAndReplaceWindow : FluentWindow
                 FindTextBox.Text = currentPattern.Substring(4);
             }
         }
+
+        // Update save button visibility
+        UpdateSaveButtonVisibility();
 
         SearchForText();
     }
@@ -552,6 +565,79 @@ public partial class FindAndReplaceWindow : FluentWindow
         regexManager.Show();
     }
 
+    private void SavePatternButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Get the current pattern from the FindTextBox
+        string pattern = FindTextBox.Text;
+
+        if (string.IsNullOrWhiteSpace(pattern))
+            return;
+
+        // Get a short description from the source text if available
+        string sourceText = string.Empty;
+        if (textEditWindow is not null)
+        {
+            sourceText = !string.IsNullOrWhiteSpace(textEditWindow.PassedTextControl.SelectedText)
+                ? textEditWindow.PassedTextControl.SelectedText.MakeStringSingleLine().Truncate(30)
+                : textEditWindow.PassedTextControl.Text.MakeStringSingleLine().Truncate(30);
+        }
+
+        // Open the RegexManager and start adding the pattern
+        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
+        regexManager.Owner = this;
+        regexManager.SourceEditTextWindow = textEditWindow;
+        regexManager.Show();
+        regexManager.AddPatternFromText(pattern, sourceText, textEditWindow);
+    }
+
+    private void UsePaternCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        // Update save button visibility when regex mode is toggled
+        UpdateSaveButtonVisibility();
+    }
+
+    private void UpdateSaveButtonVisibility()
+    {
+        // Show save button only when:
+        // 1. Using regex mode
+        // 2. Find text is not empty
+        // 3. Pattern doesn't already exist in saved patterns
+        SavePatternButton.Visibility =
+            (UsePaternCheckBox.IsChecked is true &&
+             !string.IsNullOrWhiteSpace(FindTextBox.Text) &&
+             !IsPatternAlreadySaved(FindTextBox.Text))
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+    }
+
+    private bool IsPatternAlreadySaved(string pattern)
+    {
+        if (string.IsNullOrWhiteSpace(pattern))
+            return false;
+
+        try
+        {
+            Settings settings = AppUtilities.TextGrabSettings;
+            string regexListJson = settings.RegexList;
+
+            if (string.IsNullOrWhiteSpace(regexListJson))
+                return false;
+
+            StoredRegex[]? savedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
+            
+            if (savedPatterns is null || savedPatterns.Length == 0)
+                return false;
+
+            // Check if any saved pattern matches the current pattern exactly
+            return savedPatterns.Any(p => p.Pattern == pattern);
+        }
+        catch (Exception)
+        {
+            // If there's any error loading patterns, assume it's not saved
+            return false;
+        }
+    }
+
     internal void FindByPattern(ExtractedPattern pattern, int? precisionLevel = null)
     {
         // Store the ExtractedPattern so the slider can use it
@@ -573,6 +659,9 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         // Show the slider now that we have an extracted pattern
         PrecisionSliderPanel.Visibility = Visibility.Visible;
+
+        // Update save button visibility
+        UpdateSaveButtonVisibility();
 
         SearchForText();
     }

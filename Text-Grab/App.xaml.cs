@@ -2,11 +2,13 @@
 using Microsoft.Win32;
 using RegistryUtils;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Controls;
@@ -17,6 +19,7 @@ using Text_Grab.Utilities;
 using Text_Grab.Views;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
+using Wpf.Ui.Extensions;
 
 namespace Text_Grab;
 
@@ -33,7 +36,7 @@ public partial class App : System.Windows.Application
 
     #region Properties
 
-    public List<int> HotKeyIds { get; set; } = new();
+    public List<int> HotKeyIds { get; set; } = [];
     public int NumberOfRunningInstances { get; set; } = 0;
     public NotifyIconWindow? TextGrabIcon { get; set; }
     #endregion Properties
@@ -67,7 +70,10 @@ public partial class App : System.Windows.Application
                 editTextWindow.Show();
                 break;
         }
+
+        SetTheme();
     }
+
     public static void SetTheme(object? sender = null, EventArgs? e = null)
     {
         bool gotTheme = Enum.TryParse(_defaultSettings.AppTheme.ToString(), true, out AppTheme currentAppTheme);
@@ -104,8 +110,54 @@ public partial class App : System.Windows.Application
 #endif
         }
 
-        Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
-        ApplicationAccentColorManager.Apply(teal);
+        // for now this is best but... not ideal
+        ApplicationAccentColorManager.ApplySystemAccent();
+
+        // TODO: try to apply the teal color again, maybe something in WPFUI is broken
+        // Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
+
+        // SolidColorBrush tealBrush = new(teal);
+        // themeService.SetAccent(tealBrush);
+
+        // This does not work either
+        // ApplicationAccentColorManager.Apply(teal);
+
+        //ResourceReferenceExpressionConverter converter = new();
+        //Dictionary<string, SolidColorBrush> brushes = new()
+        //{
+        //    ["SystemAccentColor"] = tealBrush,
+        //    ["SystemAccentColorPrimary"] = tealBrush,
+        //    ["SystemAccentColorSecondary"] = tealBrush,
+        //    ["SystemAccentColorTertiary"] = tealBrush
+        //};
+        //Dictionary<string, SolidColorBrush> brushes = new()
+        //{
+        //    ["SystemAccentColor"] = ((Color)UiApplication.Current.Resources["SystemAccentColor"]).ToBrush(),
+        //    ["SystemAccentColorPrimary"] = ((Color)UiApplication.Current.Resources["SystemAccentColorPrimary"]).ToBrush(),
+        //    ["SystemAccentColorSecondary"] = ((Color)UiApplication.Current.Resources["SystemAccentColorSecondary"]).ToBrush(),
+        //    ["SystemAccentColorTertiary"] = ((Color)UiApplication.Current.Resources["SystemAccentColorTertiary"]).ToBrush()
+        //};
+        //ResourceDictionary themeDictionary = UiApplication.Current.Resources.MergedDictionaries[0];
+        //try
+        //{
+        //    foreach (DictionaryEntry entry in themeDictionary)
+        //    {
+        //        if (entry.Value is SolidColorBrush brush)
+        //        {
+        //            object dynamicColor = brush.ReadLocalValue(SolidColorBrush.ColorProperty);
+        //            if (dynamicColor is not Color &&
+        //                converter.ConvertTo(dynamicColor, typeof(MarkupExtension)) is DynamicResourceExtension dynamicResource &&
+        //                brushes.ContainsKey((string)dynamicResource.ResourceKey))
+        //            {
+        //                themeDictionary[entry.Key] = brushes[(string)dynamicResource.ResourceKey];
+        //            }
+        //        }
+        //    }
+        //}
+        //catch (Exception)
+        //{
+        //    Debug.WriteLine($"Failed to apply accent color");
+        //}
     }
 
     public static void WatchTheme()
@@ -116,6 +168,7 @@ public partial class App : System.Windows.Application
         RegistryMonitor monitor = new(key);
         monitor.RegChanged += new EventHandler(SetTheme);
         monitor.Start();
+        SetTheme();
     }
 
     private static async Task<bool> CheckForOcringFolder(string currentArgument)
