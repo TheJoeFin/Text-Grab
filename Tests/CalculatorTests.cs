@@ -1960,5 +1960,393 @@ totalCost";
         Assert.Equal(expected, result);
     }
 
-    #endregion ParseQuantityWords Direct Tests
-}
+        #endregion ParseQuantityWords Direct Tests
+
+        #region Percentage Tests
+
+        [Theory]
+        [InlineData("4 * 25%", "1")]
+        [InlineData("4*25%", "1")]
+        [InlineData("100 * 15%", "15")]
+        [InlineData("200 * 50%", "100")]
+        [InlineData("80 * 10%", "8")]
+        public async Task Percentage_BasicMultiplication_ReturnsCorrectResult(string input, string expected)
+        {
+            // Arrange
+            CalculationService service = new();
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal(expected, result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Theory]
+        [InlineData("25%", "0.25")]
+        [InlineData("50%", "0.5")]
+        [InlineData("100%", "1")]
+        [InlineData("10%", "0.1")]
+        [InlineData("1%", "0.01")]
+        [InlineData("0.5%", "0.005")]
+        public async Task Percentage_Standalone_ConvertsToDecimal(string input, string expected)
+        {
+            // Arrange
+            CalculationService service = new();
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal(expected, result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Theory]
+        [InlineData("25 %", "0.25")]
+        [InlineData("50 %", "0.5")]
+        [InlineData("15.5 %", "0.155")]
+        [InlineData("0.5 %", "0.005")]
+        public async Task Percentage_WithWhitespace_ConvertsCorrectly(string input, string expected)
+        {
+            // Arrange
+            CalculationService service = new();
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal(expected, result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Theory]
+        [InlineData("1000 + 20%", "1,000.2")]
+        [InlineData("100 - 10%", "99.9")]
+        [InlineData("50 / 25%", "200")]
+        public async Task Percentage_WithDifferentOperators_WorksCorrectly(string input, string expected)
+        {
+            // Arrange
+            CalculationService service = new();
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal(expected, result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_RealWorldExample_SalesTax()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"price = 100
+    taxRate = 8.5%
+    tax = price * taxRate
+    total = price + tax
+    total";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            Assert.Equal("108.5", lines[^1]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_RealWorldExample_Discount()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"originalPrice = 200
+    discount = 25%
+    discountAmount = originalPrice * discount
+    finalPrice = originalPrice - discountAmount
+    finalPrice";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            Assert.Equal("150", lines[^1]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_RealWorldExample_TipCalculation()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"billAmount = 85
+    tipRate = 18%
+    tip = billAmount * tipRate
+    totalWithTip = billAmount + tip
+    totalWithTip";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            Assert.Equal("100.3", lines[^1]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_MultiplePercentages_WorksCorrectly()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"100 * 10%
+    200 * 15%
+    500 * 5%";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            Assert.Equal(3, lines.Length);
+            Assert.Equal("10", lines[0]);
+            Assert.Equal("30", lines[1]);
+            Assert.Equal("25", lines[2]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_WithVariables_WorksCorrectly()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"base = 1000
+    rate = 15%
+    result = base * rate
+    result";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            Assert.Equal("150", lines[^1]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_ComplexExpression_PercentageOfSum()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = "(100 + 200) * 10%";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal("30", result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_CompoundPercentages_WorksCorrectly()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"initial = 1000
+    afterFirst = initial * (1 - 20%)
+    afterSecond = afterFirst * (1 + 15%)
+    afterSecond";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            // 1000 * 0.8 = 800, then 800 * 1.15 = 920
+            Assert.Equal("920", lines[^1]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Theory]
+        [InlineData("-10%", "-0.1")]
+        [InlineData("4 * -25%", "-1")]
+        [InlineData("-100 * 10%", "-10")]
+        public async Task Percentage_NegativePercentages_WorksCorrectly(string input, string expected)
+        {
+            // Arrange
+            CalculationService service = new();
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal(expected, result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Theory]
+        [InlineData("150%", "1.5")]
+        [InlineData("200%", "2")]
+        [InlineData("500%", "5")]
+        [InlineData("100 * 150%", "150")]
+        public async Task Percentage_OverHundredPercent_WorksCorrectly(string input, string expected)
+        {
+            // Arrange
+            CalculationService service = new();
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal(expected, result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_WithDecimalBase_WorksCorrectly()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = "45.50 * 15%";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal("6.825", result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_WithDecimalPercentage_WorksCorrectly()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = "100 * 12.5%";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal("12.5", result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Theory]
+        [InlineData("25%", "0.25")]
+        [InlineData("25 %", "0.25")]
+        [InlineData("4 * 25%", "0.25")]
+        [InlineData("4 * 25 %", "0.25")]
+        public void ParsePercentages_DirectCall_ConvertsCorrectly(string input, string expectedContains)
+        {
+            // Arrange & Act
+            string result = CalculationService.ParsePercentages(input);
+
+            // Assert
+            Assert.Contains(expectedContains, result);
+        }
+
+        [Fact]
+        public void ParsePercentages_EmptyInput_ReturnsEmpty()
+        {
+            // Arrange
+            string input = "";
+
+            // Act
+            string result = CalculationService.ParsePercentages(input);
+
+            // Assert
+            Assert.Equal("", result);
+        }
+
+        [Fact]
+        public void ParsePercentages_NoPercentages_ReturnsUnchanged()
+        {
+            // Arrange
+            string input = "100 + 50";
+
+            // Act
+            string result = CalculationService.ParsePercentages(input);
+
+            // Assert
+            Assert.Equal("100 + 50", result);
+        }
+
+        [Fact]
+        public async Task Percentage_RealWorldExample_InterestCalculation()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"principal = 10000
+    annualRate = 5%
+    interest = principal * annualRate
+    totalAmount = principal + interest
+    totalAmount";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            Assert.Equal("10,500", lines[^1]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_RealWorldExample_GradeCalculation()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = @"totalQuestions = 50
+    correctAnswers = 42
+    percentage = (correctAnswers / totalQuestions) * 100%
+    percentage";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            string[] lines = result.Output.Split('\n');
+            // (42/50) * 1 = 0.84 (since 100% = 1.0)
+            Assert.Equal("0.84", lines[^1]);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_WithMathFunctions_WorksCorrectly()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = "Sqrt(100) * 25%";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal("2.5", result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        [Fact]
+        public async Task Percentage_WithSum_WorksCorrectly()
+        {
+            // Arrange
+            CalculationService service = new();
+            string input = "Sum(100, 200, 300) * 10%";
+
+            // Act
+            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+            // Assert
+            Assert.Equal("60", result.Output);
+            Assert.Equal(0, result.ErrorCount);
+        }
+
+        #endregion Percentage Tests
+    }

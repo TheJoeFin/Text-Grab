@@ -168,6 +168,48 @@ public partial class CalculationService
     }
 
     /// <summary>
+    /// Parses percentage notation in expressions, converting them to decimal format.
+    /// Examples: "25%" -> "0.25", "4 * 25%" -> "4 * 0.25", "100 * 15%" -> "100 * 0.15"
+    /// </summary>
+    /// <param name="expression">The expression to parse</param>
+    /// <param name="cultureInfo">The culture to use for number formatting (default: InvariantCulture)</param>
+    /// <returns>The expression with percentages converted to decimal format</returns>
+    public static string ParsePercentages(string expression, CultureInfo? cultureInfo = null)
+    {
+        if (string.IsNullOrWhiteSpace(expression))
+            return expression;
+
+        cultureInfo ??= CultureInfo.InvariantCulture;
+
+        // Pattern matches: number (integer or decimal) followed by optional whitespace and %
+        // Examples: "25%", "15.5%", "0.5 %", "-10%"
+        string pattern = @"(-?\d+\.?\d*)\s*%";
+
+        expression = System.Text.RegularExpressions.Regex.Replace(
+            expression,
+            pattern,
+            match =>
+            {
+                string numberStr = match.Groups[1].Value;
+                if (double.TryParse(numberStr, NumberStyles.Any, CultureInfo.InvariantCulture, out double number))
+                {
+                    double result = number / 100.0;
+
+                    // Create a NumberFormatInfo without group separators
+                    NumberFormatInfo nfi = (NumberFormatInfo)cultureInfo.NumberFormat.Clone();
+                    nfi.NumberGroupSeparator = "";
+
+                    // Always format with sufficient decimal places to avoid precision loss
+                    // Use G format for clean representation without trailing zeros
+                    return result.ToString("G", nfi);
+                }
+                return match.Value;
+            });
+
+        return expression;
+    }
+
+    /// <summary>
     /// Parses quantity words and abbreviations in expressions, converting them to numeric values.
     /// Examples: "5 million" -> "5000000.0", "3 dozen" -> "36", "2.5 k" -> "2500"
     /// </summary>
@@ -286,7 +328,8 @@ public partial class CalculationService
             throw new ArgumentException($"Invalid variable name: {variableName}");
         }
 
-        // Parse quantity words first
+        // Parse percentages and quantity words first
+        expression = ParsePercentages(expression, CultureInfo);
         expression = ParseQuantityWords(expression, CultureInfo);
 
         // Evaluate the expression to get the value
@@ -336,7 +379,8 @@ public partial class CalculationService
     /// </summary>
     private async Task<string> EvaluateStandardExpressionAsync(string line)
     {
-        // Parse quantity words first
+        // Parse percentages and quantity words first
+        line = ParsePercentages(line, CultureInfo);
         line = ParseQuantityWords(line, CultureInfo);
 
         ExpressionOptions option = ExpressionOptions.IgnoreCaseAtBuiltInFunctions;
