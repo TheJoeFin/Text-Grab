@@ -1,13 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0-windows10.0.22621</TargetFramework>
+        <TargetFramework>net10.0-windows10.0.22621</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Platforms>x64;x86;ARM64</Platforms>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
         <Nullable>enable</Nullable>
         <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
         <IsPackable>false</IsPackable>
+        <MsixToolingEnabled>true</MsixToolingEnabled>
+        <UseWPF>true</UseWPF>
     </PropertyGroup>
 
     <ItemGroup>
@@ -15,14 +17,16 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250909003" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+        <PackageReference Include="NCalcAsync" Version="5.9.0" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Xunit.StaFact" Version="3.0.13" />
-        <PackageReference Include="xunit.v3" Version="3.0.1" />
+        <PackageReference Include="xunit.v3" Version="3.2.1" />
+        <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36726.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -54,6 +58,18 @@
         <Content Include="Images\font_sample.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="Images\Table-Complex.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="TextFiles\Table-Complex-WordBorders.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

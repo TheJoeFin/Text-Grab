@@ -658,5 +658,125 @@ namespace Text_Grab.Properties {
                 this["FsgShadeOverlay"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool CalcShowErrors {
+            get {
+                return ((bool)(this["CalcShowErrors"]));
+            }
+            set {
+                this["CalcShowErrors"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool CalcShowPane {
+            get {
+                return ((bool)(this["CalcShowPane"]));
+            }
+            set {
+                this["CalcShowPane"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("400")]
+        public int CalcPaneWidth {
+            get {
+                return ((int)(this["CalcPaneWidth"]));
+            }
+            set {
+                this["CalcPaneWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowWordCount {
+            get {
+                return ((bool)(this["EtwShowWordCount"]));
+            }
+            set {
+                this["EtwShowWordCount"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EtwShowCharDetails {
+            get {
+                return ((bool)(this["EtwShowCharDetails"]));
+            }
+            set {
+                this["EtwShowCharDetails"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EtwShowMatchCount {
+            get {
+                return ((bool)(this["EtwShowMatchCount"]));
+            }
+            set {
+                this["EtwShowMatchCount"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EtwShowRegexPattern {
+            get {
+                return ((bool)(this["EtwShowRegexPattern"]));
+            }
+            set {
+                this["EtwShowRegexPattern"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EtwShowSimilarMatches {
+            get {
+                return ((bool)(this["EtwShowSimilarMatches"]));
+            }
+            set {
+                this["EtwShowSimilarMatches"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string RegexList {
+            get {
+                return ((string)(this["RegexList"]));
+            }
+            set {
+                this["RegexList"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool OverrideAiArchCheck {
+            get {
+                return ((bool)(this["OverrideAiArchCheck"]));
+            }
+            set {
+                this["OverrideAiArchCheck"] = value;
+            }
+        }
     }
 }

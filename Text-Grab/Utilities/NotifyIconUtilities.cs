@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Services;
@@ -17,6 +19,20 @@ public static class NotifyIconUtilities
         {
             return;
         }
+        RegisterHotKeys(app);
+
+        app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
+    }
+
+    public static async Task ResetNotifyIcon()
+    {
+        App app = (App)App.Current;
+        app.TextGrabIcon = null;
+
+        UnregisterHotkeys(app);
+        NotifyIconWindow existingIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
+        existingIcon.Close();
+
         RegisterHotKeys(app);
 
         app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
@@ -104,10 +120,17 @@ public static class NotifyIconUtilities
             case ShortcutKeyActions.PreviousEditWindow:
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
                 {
-                    EditTextWindow etw = new();
-                    etw.OpenMostRecentTextHistoryItem();
-                    etw.Show();
-                    etw.Activate();
+                    HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
+
+                    if (historyInfo is null)
+                    {
+                        EditTextWindow etw = new();
+                        etw.Show();
+                        return;
+                    }
+
+                    EditTextWindow etwHistory = new(historyInfo);
+                    etwHistory.Show();
                 }));
                 break;
             case ShortcutKeyActions.PreviousGrabFrame:

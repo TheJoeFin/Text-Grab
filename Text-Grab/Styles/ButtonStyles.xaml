@@ -1,5 +1,5 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="Menu.Static.Background" Color="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" />
+    <SolidColorBrush x:Key="Menu.Static.Background" Color="{DynamicResource SolidBackgroundFillColorSecondaryColor}" />
     <SolidColorBrush x:Key="Menu.Static.Border" Color="#308E98" />
     <SolidColorBrush x:Key="Menu.Static.Foreground" Color="White" />
     <SolidColorBrush x:Key="Menu.Static.Separator" Color="#18474C" />

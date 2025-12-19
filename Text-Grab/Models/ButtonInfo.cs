@@ -193,6 +193,14 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 1.61,
+            ButtonText = "Regex Manager",
+            SymbolText = "",
+            ClickEvent = "RegexManagerMenuItem_Click",
+            SymbolIcon = SymbolRegular.Book24
+        },
+        new()
+        {
             OrderNumber = 1.7,
             ButtonText = "Web Search",
             SymbolText = "",

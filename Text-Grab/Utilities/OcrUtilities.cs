@@ -12,10 +12,10 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Controls;
+using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
-using Text_Grab.Interfaces;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
@@ -110,8 +110,24 @@ public static partial class OcrUtilities
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
         DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
         IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, objLang);
-        List<WordBorder> wordBorders = ResultTable.ParseOcrResultIntoWordBorders(ocrResult, dpiScale);
-        return ResultTable.GetWordsAsTable(wordBorders, dpiScale, objLang.IsSpaceJoining());
+
+        // New model-only flow
+        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, dpiScale);
+
+        Rectangle rectCanvasSize = new()
+        {
+            Width = scaledBitmap.Width,
+            Height = scaledBitmap.Height,
+            X = 0,
+            Y = 0
+        };
+
+        ResultTable table = new();
+        table.AnalyzeAsTable(wordBorderInfos, rectCanvasSize);
+
+        StringBuilder sb = new();
+        ResultTable.GetTextFromTabledWordBorders(sb, wordBorderInfos, objLang.IsSpaceJoining());
+        return sb.ToString();
     }
 
     public static async Task<(IOcrLinesWords?, double)> GetOcrResultFromRegionAsync(Rectangle region, ILanguage language)

@@ -1,6 +1,4 @@
-﻿using Microsoft.Windows.AI;
-using Microsoft.Windows.AI.Imaging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -68,8 +66,7 @@ public partial class LanguageSettings : Page
 
         try
         {
-            AIFeatureReadyState readyState = TextRecognizer.GetReadyState();
-            if (readyState == AIFeatureReadyState.NotSupportedOnCurrentSystem)
+            if (!WindowsAiUtilities.CanDeviceUseWinAI())
             {
                 StatusTextBlock.Text = "Not supported";
                 ReasonTextBlock.Text = "Windows AI is not supported on this system.";

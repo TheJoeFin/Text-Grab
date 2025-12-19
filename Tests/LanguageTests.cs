@@ -1,9 +1,9 @@
-﻿using Text_Grab;
-using System.Globalization;
-using Text_Grab.Interfaces;
+﻿using System.Globalization;
+using Text_Grab;
 using Text_Grab.Models;
 
 namespace Tests;
+
 public class LanguageTests
 {
     [Theory]

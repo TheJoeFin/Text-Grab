@@ -3,6 +3,7 @@ using System.Windows;
 using Text_Grab;
 
 namespace Tests;
+
 public class ScreenLayoutTests
 {
     /*
