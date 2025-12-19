@@ -13,6 +13,11 @@
   </a>
 </p>
 
+<p align="center">
+    <img src="https://img.shields.io/github/downloads/thejoefin/text-grab/total" alt="GitHub Downloads (all assets, all releases)" />
+    <img src="https://img.shields.io/github/v/release/thejoefin/text-grab" alt="GitHub Release" />
+</p>
+
 ### Overview
 ![All Modes In Light Mode](images/All-Modes-Light.png)
 

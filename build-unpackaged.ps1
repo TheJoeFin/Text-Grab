@@ -33,7 +33,7 @@ Write-Host "`n=== Building x64 Versions ===" -ForegroundColor Magenta
 Write-Host "Building x64 framework-dependent..." -ForegroundColor Yellow
 dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
     --runtime win-x64 `
-    --self-contained false `
+    --no-self-contained `
     -c Release `
     -v minimal `
     -o $BuildPathX64 `
@@ -47,7 +47,7 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 Write-Host "Building x64 self-contained..." -ForegroundColor Yellow
 dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
     --runtime win-x64 `
-    --self-contained true `
+    --self-contained `
     -c Release `
     -v minimal `
     -o $BuildPathX64SC `
@@ -63,7 +63,7 @@ Write-Host "`n=== Building ARM64 Versions ===" -ForegroundColor Magenta
 Write-Host "Building ARM64 framework-dependent..." -ForegroundColor Yellow
 dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
     --runtime win-arm64 `
-    --self-contained false `
+    --no-self-contained `
     -c Release `
     -v minimal `
     -o $BuildPathArm64 `
@@ -76,7 +76,7 @@ dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
 Write-Host "Building ARM64 self-contained..." -ForegroundColor Yellow
 dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
     --runtime win-arm64 `
-    --self-contained true `
+    --self-contained `
     -c Release `
     -v minimal `
     -o $BuildPathArm64SC `
