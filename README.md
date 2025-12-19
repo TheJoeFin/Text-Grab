@@ -13,11 +13,13 @@
   </a>
 </p>
 
+<p align="center">
+    <img src="https://img.shields.io/github/downloads/thejoefin/text-grab/total" alt="GitHub Downloads (all assets, all releases)" />
+    <img src="https://img.shields.io/github/v/release/thejoefin/text-grab" alt="GitHub Release" />
+</p>
+
 ### Overview
 ![All Modes In Light Mode](images/All-Modes-Light.png)
-
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/thejoefin/text-grab/total)
-![GitHub Release](https://img.shields.io/github/v/release/thejoefin/text-grab)
 
 This is a minimal optical character recognition (OCR) utility for Windows 10/11 which makes all visible text available to be copied. 
 
