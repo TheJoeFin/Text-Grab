@@ -96,6 +96,18 @@ public static class ImageMethods
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        
+        // Check if HDR is enabled and convert to SDR if needed
+        if (HdrUtilities.IsHdrEnabledAtPoint(region.Left + region.Width / 2, region.Top + region.Height / 2))
+        {
+            Bitmap sdrBitmap = HdrUtilities.ConvertHdrToSdr(bmp);
+            if (sdrBitmap != bmp)
+            {
+                bmp.Dispose();
+                bmp = sdrBitmap;
+            }
+        }
+        
         bmp = PadImage(bmp);
 
         Singleton<HistoryService>.Instance.CacheLastBitmap(bmp);
@@ -141,6 +153,18 @@ public static class ImageMethods
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        
+        // Check if HDR is enabled and convert to SDR if needed
+        if (HdrUtilities.IsHdrEnabledAtPoint(thisCorrectedLeft + windowWidth / 2, thisCorrectedTop + windowHeight / 2))
+        {
+            Bitmap sdrBitmap = HdrUtilities.ConvertHdrToSdr(bmp);
+            if (sdrBitmap != bmp)
+            {
+                bmp.Dispose();
+                bmp = sdrBitmap;
+            }
+        }
+        
         return bmp;
     }
 
