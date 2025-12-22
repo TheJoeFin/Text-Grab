@@ -42,7 +42,13 @@ internal static partial class NativeMethods
     internal static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
 
     public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+    /// <summary>
+    /// Device capability index for GetDeviceCaps to query color management capabilities.
+    /// </summary>
     public const int COLORMGMTCAPS = 121;
+    /// <summary>
+    /// Flag indicating that the device supports HDR (High Dynamic Range).
+    /// </summary>
     public const int CM_HDR_SUPPORT = 0x00000001;
 
     [StructLayout(LayoutKind.Sequential)]

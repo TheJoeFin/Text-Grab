@@ -56,11 +56,11 @@ public static class HdrUtilities
     /// This fixes the overly bright appearance of screenshots taken on HDR displays.
     /// </summary>
     /// <param name="bitmap">The bitmap to convert</param>
-    /// <returns>A new bitmap with SDR color values, or the original if conversion fails</returns>
-    public static Bitmap ConvertHdrToSdr(Bitmap bitmap)
+    /// <returns>A new bitmap with SDR color values, or null if the input is null</returns>
+    public static Bitmap? ConvertHdrToSdr(Bitmap? bitmap)
     {
         if (bitmap == null)
-            return bitmap!;
+            return null;
 
         try
         {
@@ -159,13 +159,11 @@ public static class HdrUtilities
 
     /// <summary>
     /// Applies tone mapping to compress HDR values to SDR range.
-    /// Uses a modified Reinhard operator that preserves mid-tones while compressing highlights.
+    /// Uses a modified Reinhard operator with exposure adjustment to preserve mid-tones while compressing highlights.
+    /// Formula: L_out = (L_in * exposure) / (1 + L_in * exposure)
     /// </summary>
     private static double ToneMap(double value)
     {
-        // Reinhard tone mapping: L_out = L_in / (1 + L_in)
-        // This compresses high values while preserving lower values
-        // For HDR screenshots, we need a more aggressive compression
         const double exposure = 0.8; // Adjust exposure to darken the image slightly
         value *= exposure;
         

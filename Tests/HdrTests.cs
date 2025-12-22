@@ -14,7 +14,7 @@ public class HdrTests
         Bitmap? nullBitmap = null;
 
         // Act
-        Bitmap? result = HdrUtilities.ConvertHdrToSdr(nullBitmap!);
+        Bitmap? result = HdrUtilities.ConvertHdrToSdr(nullBitmap);
 
         // Assert
         Assert.Null(result);
