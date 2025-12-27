@@ -2756,6 +2756,13 @@ new GrabFrameOperationArgs()
                     return;
                 }
 
+                // Freeze the frame if not already frozen to ensure static content for translation
+                if (!IsFreezeMode)
+                {
+                    FreezeToggleButton.IsChecked = true;
+                    FreezeGrabFrame();
+                }
+
                 // Store original texts before translation
                 foreach (WordBorder wb in wordBorders)
                 {
@@ -2822,6 +2829,8 @@ new GrabFrameOperationArgs()
         if (!isTranslationEnabled || !WindowsAiUtilities.CanDeviceUseWinAI())
             return;
 
+        // Translate all word borders in parallel for better performance
+        List<Task> translationTasks = [];
         foreach (WordBorder wb in wordBorders)
         {
             // Store original text if not already stored
@@ -2831,10 +2840,18 @@ new GrabFrameOperationArgs()
             string originalText = originalTexts[wb];
             if (!string.IsNullOrWhiteSpace(originalText))
             {
-                string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
-                wb.Word = translatedText;
+                Task translationTask = Task.Run(async () =>
+                {
+                    string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
+                    // Update on UI thread
+                    await Dispatcher.InvokeAsync(() => wb.Word = translatedText);
+                });
+                translationTasks.Add(translationTask);
             }
         }
+
+        // Wait for all translations to complete
+        await Task.WhenAll(translationTasks);
 
         UpdateFrameText();
     }
