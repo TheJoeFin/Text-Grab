@@ -17,6 +17,8 @@ namespace Text_Grab.Utilities;
 
 public static class WindowsAiUtilities
 {
+    private const string TranslationPromptTemplate = "Translate the following text to {0}:\n\n{1}";
+
     public static bool CanDeviceUseWinAI()
     {
         // Check if the app is packaged and if the AI feature is supported
@@ -230,7 +232,7 @@ public static class WindowsAiUtilities
             // For more accurate translation, consider using Microsoft.Extensions.AI
             // with IChatClient as shown in the AI Dev Gallery examples.
             TextRewriter textRewriter = new(languageModel);
-            string translationPrompt = $"Translate the following text to {targetLanguage}:\n\n{textToTranslate}";
+            string translationPrompt = string.Format(TranslationPromptTemplate, targetLanguage, textToTranslate);
             
             LanguageModelResponseResult result = await textRewriter.RewriteAsync(translationPrompt);
 
