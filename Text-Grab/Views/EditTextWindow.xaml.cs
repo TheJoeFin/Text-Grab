@@ -3581,6 +3581,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             else
                 PassedTextControl.SelectedText = translatedText;
         }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Translation failed: {ex.Message}", 
+                "Translation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
         finally
         {
             SetToLoaded();
