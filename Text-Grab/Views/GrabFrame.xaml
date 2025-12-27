@@ -136,13 +136,9 @@
                             x:Name="IsTopmostMenuItem"
                             Header="Keep Grab Frame On Top"
                             IsCheckable="True"
-                            IsChecked="{Binding Topmost,
-                                                ElementName=GrabFrameWindow,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}" />
                         <Separator />
-                        <MenuItem
-                            x:Name="TranslationMenuItem"
-                            Header="Translation">
+                        <MenuItem x:Name="TranslationMenuItem" Header="Translation to...">
                             <MenuItem
                                 x:Name="EnableTranslationMenuItem"
                                 Click="EnableTranslationMenuItem_Click"
@@ -296,41 +292,31 @@
                             Checked="AspectRationMI_Checked"
                             Header="Maintain Aspect Ratio"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=AspectRationMI,
-                                                Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked, ElementName=AspectRationMI, Mode=TwoWay}"
                             Unchecked="AspectRationMI_Checked" />
                         <MenuItem
                             Click="FreezeToggleButton_Click"
                             Header="Freeze Image In Frame"
                             InputGestureText="F"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=FreezeToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="TableToggleButton_Click"
                             Header="Analyze as a Table"
                             InputGestureText="T"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=TableToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="EditToggleButton_Click"
                             Header="Allow recognized words to be edited"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=EditToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=EditToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="EditTextBTN_Click"
                             Header="Send results to an Edit Text Window"
                             InputGestureText="E"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=EditTextToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
                         <Separator />
                         <MenuItem
                             x:Name="InvertSelectionMenuItem"
@@ -609,9 +595,7 @@
                         Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                         IsHitTestVisible="False"
                         Opacity="0.5"
-                        Visibility="{Binding Visibility,
-                                             ElementName=SearchBox,
-                                             Mode=OneWay}" />
+                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
                     <controls:CollapsibleButton
                         x:Name="ClearBTN"
                         Grid.Column="1"
