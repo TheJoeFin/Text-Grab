@@ -3,6 +3,7 @@ using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.Imaging;
 using Microsoft.Windows.AI.Text;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -223,10 +224,18 @@ public static class WindowsAiUtilities
                 return result.Text;
             }
             else
+            {
+                // Log the error if debugging is enabled
+                Debug.WriteLine($"Translation failed with status: {result.Status}");
+                if (result.ExtendedError != null)
+                    Debug.WriteLine($"Translation error: {result.ExtendedError.Message}");
                 return textToTranslate; // Return original text on error
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            // Log the exception for debugging
+            Debug.WriteLine($"Translation exception: {ex.Message}");
             return textToTranslate; // Return original text on error
         }
     }
