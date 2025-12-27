@@ -17,7 +17,8 @@ namespace Text_Grab.Utilities;
 
 public static class WindowsAiUtilities
 {
-    private const string TranslationPromptTemplate = "Translate the following text to {0}:\n\n{1}";
+    private const string TranslationPromptTemplate = "You translate user provided text. Do not reply with any extraneous content besides the translated text itself." + "Translate the following text to {0}:\n\n{1}";
+    private const string TranslationSystemPrompt = "You translate user provided text. Do not reply with any extraneous content besides the translated text itself.";
 
     public static bool CanDeviceUseWinAI()
     {
@@ -213,10 +214,6 @@ public static class WindowsAiUtilities
     /// This implementation uses TextRewriter with a custom prompt as a workaround
     /// since Microsoft.Windows.AI.Text doesn't include a dedicated translation API.
     /// Translation quality may vary compared to dedicated translation services.
-    /// For production use, consider:
-    /// - Adding Microsoft.Extensions.AI with proper translation models
-    /// - Using cloud translation APIs (e.g., Azure Translator)
-    /// - Validating translation quality for critical use cases
     /// </remarks>
     internal static async Task<string> TranslateText(string textToTranslate, string targetLanguage)
     {
