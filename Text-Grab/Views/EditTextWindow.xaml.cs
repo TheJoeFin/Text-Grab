@@ -3576,24 +3576,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             string translatedText = await WindowsAiUtilities.TranslateText(textToTranslate, targetLanguage);
 
-            if (string.IsNullOrWhiteSpace(translatedText) || translatedText == textToTranslate)
-            {
-                // Translation failed or returned original text - show message
-                MessageBox.Show($"Translation to {targetLanguage} was not successful. The text remains unchanged.", 
-                    "Translation Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = translatedText;
             else
-            {
-                if (PassedTextControl.SelectionLength == 0)
-                    PassedTextControl.Text = translatedText;
-                else
-                    PassedTextControl.SelectedText = translatedText;
-            }
+                PassedTextControl.SelectedText = translatedText;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"An error occurred during translation: {ex.Message}", 
-                "Translation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Translation failed: {ex.Message}", 
+                "Translation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally
         {
