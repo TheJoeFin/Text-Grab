@@ -2804,6 +2804,9 @@ new GrabFrameOperationArgs()
         DefaultSettings.GrabFrameTranslationLanguage = language;
         DefaultSettings.Save();
 
+        // Update the tooltip to show the current target language
+        TranslateToggleButton.ToolTip = $"Enable real-time translation to {language}";
+
         // Uncheck all language menu items and check only the selected one
         if (menuItem.Parent is MenuItem parentMenu)
         {
@@ -2860,8 +2863,23 @@ new GrabFrameOperationArgs()
     {
         isTranslationEnabled = DefaultSettings.GrabFrameTranslationEnabled;
         translationTargetLanguage = DefaultSettings.GrabFrameTranslationLanguage;
-        TranslateToggleButton.IsChecked = isTranslationEnabled;
-        EnableTranslationMenuItem.IsChecked = isTranslationEnabled;
+        
+        // Hide translation button if Windows AI is not available
+        bool canUseWinAI = WindowsAiUtilities.CanDeviceUseWinAI();
+        TranslateToggleButton.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+        TranslationMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+        
+        if (canUseWinAI)
+        {
+            TranslateToggleButton.IsChecked = isTranslationEnabled;
+            EnableTranslationMenuItem.IsChecked = isTranslationEnabled;
+            TranslateToggleButton.ToolTip = $"Enable real-time translation to {translationTargetLanguage}";
+        }
+        else
+        {
+            // Disable translation if Windows AI is not available
+            isTranslationEnabled = false;
+        }
 
         // Set the checked state for the translation language menu item
         if (TranslationMenuItem.Items[1] is MenuItem targetLangMenu)
