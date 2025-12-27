@@ -201,6 +201,21 @@ public static class WindowsAiUtilities
         }
     }
 
+    /// <summary>
+    /// Translates text to a target language using Windows AI LanguageModel.
+    /// </summary>
+    /// <param name="textToTranslate">The text to translate</param>
+    /// <param name="targetLanguage">The target language (e.g., "English", "Spanish")</param>
+    /// <returns>The translated text, or the original text if translation fails</returns>
+    /// <remarks>
+    /// This implementation uses TextRewriter with a custom prompt as a workaround
+    /// since Microsoft.Windows.AI.Text doesn't include a dedicated translation API.
+    /// Translation quality may vary compared to dedicated translation services.
+    /// For production use, consider:
+    /// - Adding Microsoft.Extensions.AI with proper translation models
+    /// - Using cloud translation APIs (e.g., Azure Translator)
+    /// - Validating translation quality for critical use cases
+    /// </remarks>
     internal static async Task<string> TranslateText(string textToTranslate, string targetLanguage)
     {
         if (!CanDeviceUseWinAI())

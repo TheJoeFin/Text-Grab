@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -78,6 +79,8 @@ public partial class GrabFrame : Window
     private string translationTargetLanguage = "English";
     private readonly DispatcherTimer translationTimer = new();
     private readonly Dictionary<WordBorder, string> originalTexts = [];
+    private readonly SemaphoreSlim translationSemaphore = new(3); // Limit to 3 concurrent translations
+    private const string TargetLanguageMenuHeader = "Target Language";
 
     #endregion Fields
 
@@ -448,6 +451,7 @@ public partial class GrabFrame : Window
 
         translationTimer.Stop();
         translationTimer.Tick -= TranslationTimer_Tick;
+        translationSemaphore.Dispose();
 
         MinimizeButton.Click -= OnMinimizeButtonClick;
         RestoreButton.Click -= OnRestoreButtonClick;
@@ -2832,8 +2836,14 @@ new GrabFrameOperationArgs()
         if (!isTranslationEnabled || !WindowsAiUtilities.CanDeviceUseWinAI())
             return;
 
-        // Translate all word borders sequentially to avoid overwhelming the API
-        // The translation method itself is async so this won't block the UI
+        await PerformTranslationAsync();
+    }
+
+    private async Task PerformTranslationAsync()
+    {
+        // Translate all word borders with controlled concurrency (max 3 at a time)
+        List<Task> translationTasks = [];
+        
         foreach (WordBorder wb in wordBorders)
         {
             // Store original text if not already stored
@@ -2843,12 +2853,27 @@ new GrabFrameOperationArgs()
             string originalText = originalTexts[wb];
             if (!string.IsNullOrWhiteSpace(originalText))
             {
-                string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
-                wb.Word = translatedText;
+                translationTasks.Add(TranslateWordBorderAsync(wb, originalText));
             }
         }
 
+        // Wait for all translations to complete
+        await Task.WhenAll(translationTasks);
         UpdateFrameText();
+    }
+
+    private async Task TranslateWordBorderAsync(WordBorder wordBorder, string originalText)
+    {
+        await translationSemaphore.WaitAsync();
+        try
+        {
+            string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
+            wordBorder.Word = translatedText;
+        }
+        finally
+        {
+            translationSemaphore.Release();
+        }
     }
 
     private void GetGrabFrameTranslationSettings()
@@ -2877,7 +2902,7 @@ new GrabFrameOperationArgs()
         // Find the "Target Language" submenu by searching through items
         foreach (var item in TranslationMenuItem.Items)
         {
-            if (item is MenuItem menuItem && menuItem.Header.ToString() == "Target Language")
+            if (item is MenuItem menuItem && menuItem.Header.ToString() == TargetLanguageMenuHeader)
             {
                 foreach (var langItem in menuItem.Items)
                 {
