@@ -74,6 +74,10 @@ public partial class GrabFrame : Window
     private readonly ObservableCollection<WordBorder> wordBorders = [];
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private ScrollBehavior scrollBehavior = ScrollBehavior.Resize;
+    private bool isTranslationEnabled = false;
+    private string translationTargetLanguage = "English";
+    private readonly DispatcherTimer translationTimer = new();
+    private readonly Dictionary<WordBorder, string> originalTexts = [];
 
     #endregion Fields
 
@@ -198,6 +202,9 @@ public partial class GrabFrame : Window
 
         reSearchTimer.Interval = new(0, 0, 0, 0, 300);
         reSearchTimer.Tick += ReSearchTimer_Tick;
+
+        translationTimer.Interval = new(0, 0, 0, 0, 1000);
+        translationTimer.Tick += TranslationTimer_Tick;
 
         _ = UndoRedo.HasUndoOperations();
         _ = UndoRedo.HasRedoOperations();
@@ -438,6 +445,9 @@ public partial class GrabFrame : Window
 
         reDrawTimer.Stop();
         reDrawTimer.Tick -= ReDrawTimer_Tick;
+
+        translationTimer.Stop();
+        translationTimer.Tick -= TranslationTimer_Tick;
 
         MinimizeButton.Click -= OnMinimizeButtonClick;
         RestoreButton.Click -= OnRestoreButtonClick;
@@ -1055,6 +1065,13 @@ public partial class GrabFrame : Window
 
         bmp?.Dispose();
         reSearchTimer.Start();
+
+        // Trigger translation if enabled
+        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            translationTimer.Stop();
+            translationTimer.Start();
+        }
     }
 
     private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1263,6 +1280,7 @@ public partial class GrabFrame : Window
         AlwaysUpdateEtwCheckBox.IsChecked = DefaultSettings.GrabFrameUpdateEtw;
         CloseOnGrabMenuItem.IsChecked = DefaultSettings.CloseFrameOnGrab;
         ReadBarcodesMenuItem.IsChecked = DefaultSettings.GrabFrameReadBarcodes;
+        GetGrabFrameTranslationSettings();
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
         SetScrollBehaviorMenuItems();
     }
@@ -2716,6 +2734,127 @@ new GrabFrameOperationArgs()
 
         DefaultSettings.GrabFrameReadBarcodes = barcodeMenuItem.IsChecked is true;
         DefaultSettings.Save();
+    }
+
+    private void TranslateToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (TranslateToggleButton.IsChecked is bool isChecked)
+        {
+            isTranslationEnabled = isChecked;
+            EnableTranslationMenuItem.IsChecked = isChecked;
+            DefaultSettings.GrabFrameTranslationEnabled = isChecked;
+            DefaultSettings.Save();
+
+            if (isChecked)
+            {
+                if (!WindowsAiUtilities.CanDeviceUseWinAI())
+                {
+                    MessageBox.Show("Windows AI is not available on this device. Translation requires Windows AI support.", 
+                        "Translation Not Available", MessageBoxButton.OK, MessageBoxImage.Information);
+                    TranslateToggleButton.IsChecked = false;
+                    isTranslationEnabled = false;
+                    return;
+                }
+
+                // Store original texts before translation
+                foreach (WordBorder wb in wordBorders)
+                {
+                    if (!originalTexts.ContainsKey(wb))
+                        originalTexts[wb] = wb.Word;
+                }
+
+                translationTimer.Start();
+            }
+            else
+            {
+                translationTimer.Stop();
+                // Restore original texts
+                foreach (WordBorder wb in wordBorders)
+                {
+                    if (originalTexts.TryGetValue(wb, out string? originalText))
+                        wb.Word = originalText;
+                }
+                originalTexts.Clear();
+            }
+        }
+    }
+
+    private void EnableTranslationMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem)
+        {
+            TranslateToggleButton.IsChecked = menuItem.IsChecked;
+            TranslateToggleButton_Click(TranslateToggleButton, e);
+        }
+    }
+
+    private void TranslationLanguageMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string language)
+            return;
+
+        translationTargetLanguage = language;
+        DefaultSettings.GrabFrameTranslationLanguage = language;
+        DefaultSettings.Save();
+
+        // Uncheck all language menu items and check only the selected one
+        if (menuItem.Parent is MenuItem parentMenu)
+        {
+            foreach (var item in parentMenu.Items)
+            {
+                if (item is MenuItem langMenuItem && langMenuItem.Tag is string)
+                    langMenuItem.IsChecked = langMenuItem.Tag.ToString() == language;
+            }
+        }
+
+        // Re-translate if translation is currently enabled
+        if (isTranslationEnabled)
+        {
+            translationTimer.Stop();
+            translationTimer.Start();
+        }
+    }
+
+    private async void TranslationTimer_Tick(object? sender, EventArgs e)
+    {
+        translationTimer.Stop();
+
+        if (!isTranslationEnabled || !WindowsAiUtilities.CanDeviceUseWinAI())
+            return;
+
+        foreach (WordBorder wb in wordBorders)
+        {
+            // Store original text if not already stored
+            if (!originalTexts.ContainsKey(wb))
+                originalTexts[wb] = wb.Word;
+
+            string originalText = originalTexts[wb];
+            if (!string.IsNullOrWhiteSpace(originalText))
+            {
+                string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
+                wb.Word = translatedText;
+            }
+        }
+
+        UpdateFrameText();
+    }
+
+    private void GetGrabFrameTranslationSettings()
+    {
+        isTranslationEnabled = DefaultSettings.GrabFrameTranslationEnabled;
+        translationTargetLanguage = DefaultSettings.GrabFrameTranslationLanguage;
+        TranslateToggleButton.IsChecked = isTranslationEnabled;
+        EnableTranslationMenuItem.IsChecked = isTranslationEnabled;
+
+        // Set the checked state for the translation language menu item
+        if (TranslationMenuItem.Items[1] is MenuItem targetLangMenu)
+        {
+            foreach (var item in targetLangMenu.Items)
+            {
+                if (item is MenuItem langMenuItem && langMenuItem.Tag is string tag)
+                    langMenuItem.IsChecked = tag == translationTargetLanguage;
+            }
+        }
     }
 
     #endregion Methods

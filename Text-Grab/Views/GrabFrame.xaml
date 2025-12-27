@@ -141,6 +141,79 @@
                                                 Mode=TwoWay}" />
                         <Separator />
                         <MenuItem
+                            x:Name="TranslationMenuItem"
+                            Header="Translation">
+                            <MenuItem
+                                x:Name="EnableTranslationMenuItem"
+                                Click="EnableTranslationMenuItem_Click"
+                                Header="Enable Real-time Translation"
+                                IsCheckable="True" />
+                            <Separator />
+                            <MenuItem Header="Target Language">
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="English"
+                                    IsCheckable="True"
+                                    Tag="English" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Spanish"
+                                    IsCheckable="True"
+                                    Tag="Spanish" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="French"
+                                    IsCheckable="True"
+                                    Tag="French" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="German"
+                                    IsCheckable="True"
+                                    Tag="German" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Italian"
+                                    IsCheckable="True"
+                                    Tag="Italian" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Portuguese"
+                                    IsCheckable="True"
+                                    Tag="Portuguese" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Russian"
+                                    IsCheckable="True"
+                                    Tag="Russian" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Japanese"
+                                    IsCheckable="True"
+                                    Tag="Japanese" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Chinese (Simplified)"
+                                    IsCheckable="True"
+                                    Tag="Chinese (Simplified)" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Korean"
+                                    IsCheckable="True"
+                                    Tag="Korean" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Arabic"
+                                    IsCheckable="True"
+                                    Tag="Arabic" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Hindi"
+                                    IsCheckable="True"
+                                    Tag="Hindi" />
+                            </MenuItem>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem
                             Command="{x:Static local:GrabFrame.PasteCommand}"
                             Header="Paste Image"
                             InputGestureText="Ctrl + Shift + V" />
@@ -643,6 +716,17 @@
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) Analyze content as tables">
                             <ui:SymbolIcon Symbol="Table24" />
+                        </ToggleButton>
+
+                        <ToggleButton
+                            x:Name="TranslateToggleButton"
+                            Width="30"
+                            Height="30"
+                            Margin="6,0,0,0"
+                            Click="TranslateToggleButton_Click"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Enable real-time translation">
+                            <ui:SymbolIcon Symbol="LocalLanguage24" />
                         </ToggleButton>
 
                         <ToggleButton
