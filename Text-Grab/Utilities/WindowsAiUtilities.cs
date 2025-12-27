@@ -209,10 +209,14 @@ public static class WindowsAiUtilities
         {
             using LanguageModel languageModel = await LanguageModel.CreateAsync();
 
-            string systemPrompt = "You translate user provided text. Do not reply with any extraneous content besides the translated text itself.";
-            string userPrompt = $"Translate the following text to {targetLanguage}: '{textToTranslate}'";
-
-            LanguageModelResponseResult result = await languageModel.CompleteAsync(systemPrompt + "\n\n" + userPrompt);
+            // Note: This uses TextRewriter as a workaround since Microsoft.Windows.AI.Text
+            // doesn't have a dedicated TextTranslator class in WindowsAppSDK 1.8.
+            // For more accurate translation, consider using Microsoft.Extensions.AI
+            // with IChatClient as shown in the AI Dev Gallery examples.
+            TextRewriter textRewriter = new(languageModel);
+            string translationPrompt = $"Translate the following text to {targetLanguage}:\n\n{textToTranslate}";
+            
+            LanguageModelResponseResult result = await textRewriter.RewriteAsync(translationPrompt);
 
             if (result.Status == LanguageModelResponseStatus.Complete)
             {
