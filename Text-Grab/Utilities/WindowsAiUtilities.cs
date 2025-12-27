@@ -199,4 +199,31 @@ public static class WindowsAiUtilities
             return $"ERROR: Failed to Rewrite: {ex.Message}";
         }
     }
+
+    internal static async Task<string> TranslateText(string textToTranslate, string targetLanguage)
+    {
+        if (!CanDeviceUseWinAI())
+            return textToTranslate; // Return original text if Windows AI is not available
+
+        try
+        {
+            using LanguageModel languageModel = await LanguageModel.CreateAsync();
+
+            string systemPrompt = "You translate user provided text. Do not reply with any extraneous content besides the translated text itself.";
+            string userPrompt = $"Translate the following text to {targetLanguage}: '{textToTranslate}'";
+
+            LanguageModelResponseResult result = await languageModel.CompleteAsync(systemPrompt + "\n\n" + userPrompt);
+
+            if (result.Status == LanguageModelResponseStatus.Complete)
+            {
+                return result.Text;
+            }
+            else
+                return textToTranslate; // Return original text on error
+        }
+        catch (Exception)
+        {
+            return textToTranslate; // Return original text on error
+        }
+    }
 }
