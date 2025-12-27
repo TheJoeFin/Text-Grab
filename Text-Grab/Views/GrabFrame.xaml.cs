@@ -2832,8 +2832,8 @@ new GrabFrameOperationArgs()
         if (!isTranslationEnabled || !WindowsAiUtilities.CanDeviceUseWinAI())
             return;
 
-        // Translate all word borders in parallel for better performance
-        List<Task> translationTasks = [];
+        // Translate all word borders sequentially to avoid overwhelming the API
+        // The translation method itself is async so this won't block the UI
         foreach (WordBorder wb in wordBorders)
         {
             // Store original text if not already stored
@@ -2843,18 +2843,10 @@ new GrabFrameOperationArgs()
             string originalText = originalTexts[wb];
             if (!string.IsNullOrWhiteSpace(originalText))
             {
-                Task translationTask = Task.Run(async () =>
-                {
-                    string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
-                    // Update on UI thread
-                    await Dispatcher.InvokeAsync(() => wb.Word = translatedText);
-                });
-                translationTasks.Add(translationTask);
+                string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
+                wb.Word = translatedText;
             }
         }
-
-        // Wait for all translations to complete
-        await Task.WhenAll(translationTasks);
 
         UpdateFrameText();
     }
@@ -2882,12 +2874,17 @@ new GrabFrameOperationArgs()
         }
 
         // Set the checked state for the translation language menu item
-        if (TranslationMenuItem.Items[1] is MenuItem targetLangMenu)
+        // Find the "Target Language" submenu by searching through items
+        foreach (var item in TranslationMenuItem.Items)
         {
-            foreach (var item in targetLangMenu.Items)
+            if (item is MenuItem menuItem && menuItem.Header.ToString() == "Target Language")
             {
-                if (item is MenuItem langMenuItem && langMenuItem.Tag is string tag)
-                    langMenuItem.IsChecked = tag == translationTargetLanguage;
+                foreach (var langItem in menuItem.Items)
+                {
+                    if (langItem is MenuItem langMenuItem && langMenuItem.Tag is string tag)
+                        langMenuItem.IsChecked = tag == translationTargetLanguage;
+                }
+                break;
             }
         }
     }
