@@ -3563,6 +3563,30 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private async void TranslateMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string targetLanguage)
+            return;
+
+        string textToTranslate = GetSelectedTextOrAllText();
+
+        SetToLoading($"Translating to {targetLanguage}...");
+
+        try
+        {
+            string translatedText = await WindowsAiUtilities.TranslateText(textToTranslate, targetLanguage);
+
+            if (PassedTextControl.SelectionLength == 0)
+                PassedTextControl.Text = translatedText;
+            else
+                PassedTextControl.SelectedText = translatedText;
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+    }
+
     private void SetToLoading(string message = "")
     {
         IsEnabled = false;
