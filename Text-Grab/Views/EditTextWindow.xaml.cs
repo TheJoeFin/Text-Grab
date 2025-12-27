@@ -3583,7 +3583,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Translation failed: {ex.Message}", 
+            System.Windows.MessageBox.Show($"Translation failed: {ex.Message}", 
                 "Translation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally
