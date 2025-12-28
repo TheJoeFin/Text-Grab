@@ -80,6 +80,10 @@ public partial class GrabFrame : Window
     private readonly DispatcherTimer translationTimer = new();
     private readonly Dictionary<WordBorder, string> originalTexts = [];
     private readonly SemaphoreSlim translationSemaphore = new(3); // Limit to 3 concurrent translations
+    private bool isTranslating = false;
+    private int totalWordsToTranslate = 0;
+    private int translatedWordsCount = 0;
+    private CancellationTokenSource? translationCancellationTokenSource;
     private const string TargetLanguageMenuHeader = "Target Language";
 
     #endregion Fields
@@ -452,6 +456,12 @@ public partial class GrabFrame : Window
         translationTimer.Stop();
         translationTimer.Tick -= TranslationTimer_Tick;
         translationSemaphore.Dispose();
+        translationCancellationTokenSource?.Cancel();
+        translationCancellationTokenSource?.Dispose();
+
+        // Dispose the shared translation model when translation is disabled
+        if (!isTranslationEnabled)
+            WindowsAiUtilities.DisposeTranslationModel();
 
         MinimizeButton.Click -= OnMinimizeButtonClick;
         RestoreButton.Click -= OnRestoreButtonClick;
@@ -2760,7 +2770,7 @@ new GrabFrameOperationArgs()
                     return;
                 }
 
-                // Freeze the frame if not already frozen to ensure static content for translation
+                // ALWAYS freeze the frame before translation to ensure static content
                 if (!IsFreezeMode)
                 {
                     FreezeToggleButton.IsChecked = true;
@@ -2774,11 +2784,20 @@ new GrabFrameOperationArgs()
                         originalTexts[wb] = wb.Word;
                 }
 
+                // Create new cancellation token source
+                translationCancellationTokenSource?.Cancel();
+                translationCancellationTokenSource?.Dispose();
+                translationCancellationTokenSource = new CancellationTokenSource();
+
                 translationTimer.Start();
             }
             else
             {
                 translationTimer.Stop();
+
+                // Cancel any ongoing translation
+                translationCancellationTokenSource?.Cancel();
+
                 // Restore original texts
                 foreach (WordBorder wb in wordBorders)
                 {
@@ -2786,6 +2805,9 @@ new GrabFrameOperationArgs()
                         wb.Word = originalText;
                 }
                 originalTexts.Clear();
+
+                // Dispose the translation model to free resources when not in use
+                WindowsAiUtilities.DisposeTranslationModel();
             }
         }
     }
@@ -2841,34 +2863,134 @@ new GrabFrameOperationArgs()
 
     private async Task PerformTranslationAsync()
     {
+        if (translationCancellationTokenSource == null || translationCancellationTokenSource.IsCancellationRequested)
+            return;
+
+        ShowTranslationProgress();
+
+        totalWordsToTranslate = wordBorders.Count;
+        translatedWordsCount = 0;
+
+        CancellationToken cancellationToken = translationCancellationTokenSource.Token;
+
         // Translate all word borders with controlled concurrency (max 3 at a time)
         List<Task> translationTasks = [];
-        
-        foreach (WordBorder wb in wordBorders)
-        {
-            // Store original text if not already stored
-            if (!originalTexts.ContainsKey(wb))
-                originalTexts[wb] = wb.Word;
 
-            string originalText = originalTexts[wb];
-            if (!string.IsNullOrWhiteSpace(originalText))
-            {
-                translationTasks.Add(TranslateWordBorderAsync(wb, originalText));
-            }
-        }
-
-        // Wait for all translations to complete
-        await Task.WhenAll(translationTasks);
-        UpdateFrameText();
-    }
-
-    private async Task TranslateWordBorderAsync(WordBorder wordBorder, string originalText)
-    {
-        await translationSemaphore.WaitAsync();
         try
         {
+            foreach (WordBorder wb in wordBorders)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                // Store original text if not already stored
+                if (!originalTexts.ContainsKey(wb))
+                    originalTexts[wb] = wb.Word;
+
+                string originalText = originalTexts[wb];
+                if (!string.IsNullOrWhiteSpace(originalText))
+                {
+                    translationTasks.Add(TranslateWordBorderAsync(wb, originalText, cancellationToken));
+                }
+                else
+                {
+                    translatedWordsCount++;
+                    UpdateTranslationProgress();
+                }
+            }
+
+            // Wait for all translations to complete or cancellation
+            // Use WhenAll with exception handling to gracefully handle cancellations
+            try
+            {
+                await Task.WhenAll(translationTasks);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+                Debug.WriteLine("Translation tasks cancelled during WhenAll");
+            }
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                UpdateFrameText();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("Translation was cancelled");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Translation error: {ex.Message}");
+        }
+        finally
+        {
+            HideTranslationProgress();
+        }
+    }
+
+    private void ShowTranslationProgress()
+    {
+        isTranslating = true;
+        TranslationProgressBorder.Visibility = Visibility.Visible;
+        TranslationProgressBar.Value = 0;
+        TranslationProgressText.Text = "Translating...";
+        TranslationCountText.Text = "0/0";
+    }
+
+    private void HideTranslationProgress()
+    {
+        isTranslating = false;
+        TranslationProgressBorder.Visibility = Visibility.Collapsed;
+    }
+
+    private void UpdateTranslationProgress()
+    {
+        if (totalWordsToTranslate == 0)
+            return;
+
+        double progress = (double)translatedWordsCount / totalWordsToTranslate * 100;
+        TranslationProgressBar.Value = progress;
+        TranslationCountText.Text = $"{translatedWordsCount}/{totalWordsToTranslate}";
+    }
+
+    private async Task TranslateWordBorderAsync(WordBorder wordBorder, string originalText, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await translationSemaphore.WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Semaphore wait was cancelled - exit gracefully
+            return;
+        }
+
+        try
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
-            wordBorder.Word = translatedText;
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                wordBorder.Word = translatedText;
+
+                translatedWordsCount++;
+                await Dispatcher.InvokeAsync(() => UpdateTranslationProgress());
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected during cancellation - don't propagate
+            Debug.WriteLine($"Translation cancelled for word: {originalText}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Translation failed for '{originalText}': {ex.Message}");
+            // On error, keep original text (don't update word border)
         }
         finally
         {
@@ -2914,5 +3036,20 @@ new GrabFrameOperationArgs()
         }
     }
 
-    #endregion Methods
-}
+        private void CancelTranslationButton_Click(object sender, RoutedEventArgs e)
+        {
+            translationCancellationTokenSource?.Cancel();
+            HideTranslationProgress();
+
+            // Restore original texts
+            foreach (WordBorder wb in wordBorders)
+            {
+                if (originalTexts.TryGetValue(wb, out string? originalText))
+                    wb.Word = originalText;
+            }
+
+            UpdateFrameText();
+        }
+
+        #endregion Methods
+    }
