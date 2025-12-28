@@ -267,17 +267,26 @@
                                 IsCheckable="True"
                                 StaysOpenOnClick="False"
                                 ToolTip="Search the web using the default web search engine" />
-                            <MenuItem
-                                Name="InsertPostCapture"
-                                Click="PostActionMenuItem_Click"
-                                Header="Try to insert text"
-                                InputGestureText="CTRL + 5"
-                                IsCheckable="True"
-                                StaysOpenOnClick="False"
-                                ToolTip="Try to insert the copied text into the current caret position" />
-                        </ContextMenu>
-                    </wpfui:DropDownButton.Flyout>
-                </wpfui:DropDownButton>
+                                        <MenuItem
+                                            Name="InsertPostCapture"
+                                            Click="PostActionMenuItem_Click"
+                                            Header="Try to insert text"
+                                            InputGestureText="CTRL + 5"
+                                            IsCheckable="True"
+                                            StaysOpenOnClick="False"
+                                            ToolTip="Try to insert the copied text into the current caret position" />
+                                            <MenuItem
+                                                Name="TranslatePostCapture"
+                                                Click="PostActionMenuItem_Click"
+                                                Header="Translate to system language"
+                                                InputGestureText="CTRL + 6"
+                                                IsCheckable="True"
+                                                StaysOpenOnClick="False"
+                                                ToolTip="Translate the grabbed text to your system language using Windows AI"
+                                                Visibility="Collapsed" />
+                                        </ContextMenu>
+                                </wpfui:DropDownButton.Flyout>
+                            </wpfui:DropDownButton>
                 <ToggleButton
                     x:Name="SendToEditTextToggleButton"
                     Width="34"

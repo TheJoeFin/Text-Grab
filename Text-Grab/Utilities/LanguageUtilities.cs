@@ -110,9 +110,51 @@ public static class LanguageUtilities
         return selectedLanguage ?? new GlobalLang("en-US");
     }
 
-    public static bool IsCurrentLanguageLatinBased()
-    {
-        ILanguage lang = GetCurrentInputLanguage();
-        return lang.IsLatinBased();
+        public static bool IsCurrentLanguageLatinBased()
+        {
+            ILanguage lang = GetCurrentInputLanguage();
+            return lang.IsLatinBased();
+        }
+
+        /// <summary>
+        /// Gets the system language name suitable for Windows AI translation.
+        /// Returns a user-friendly language name like "English", "Spanish", etc.
+        /// </summary>
+        /// <returns>Language name for translation, defaults to "English" if unable to determine</returns>
+        public static string GetSystemLanguageForTranslation()
+        {
+            try
+            {
+                ILanguage currentLang = GetCurrentInputLanguage();
+                string displayName = currentLang.DisplayName;
+
+                // Extract base language name (before any parenthetical region info)
+                if (displayName.Contains('('))
+                    displayName = displayName[..displayName.IndexOf('(')].Trim();
+
+                // Map common language tags to translation-friendly names
+                string languageTag = currentLang.LanguageTag.ToLowerInvariant();
+                return languageTag switch
+                {
+                    var tag when tag.StartsWith("en") => "English",
+                    var tag when tag.StartsWith("es") => "Spanish",
+                    var tag when tag.StartsWith("fr") => "French",
+                    var tag when tag.StartsWith("de") => "German",
+                    var tag when tag.StartsWith("it") => "Italian",
+                    var tag when tag.StartsWith("pt") => "Portuguese",
+                    var tag when tag.StartsWith("ru") => "Russian",
+                    var tag when tag.StartsWith("ja") => "Japanese",
+                    var tag when tag.StartsWith("zh") => "Chinese",
+                    var tag when tag.StartsWith("ko") => "Korean",
+                    var tag when tag.StartsWith("ar") => "Arabic",
+                    var tag when tag.StartsWith("hi") => "Hindi",
+                    _ => displayName // Use display name as fallback
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to get system language for translation: {ex.Message}");
+                return "English"; // Safe default
+            }
+        }
     }
-}
