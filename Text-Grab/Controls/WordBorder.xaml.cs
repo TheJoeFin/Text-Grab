@@ -246,6 +246,42 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             textBoxContextMenu.Items.RemoveAt(contextMenuBaseSize);
         }
 
+        // Show/hide translate menu item based on Windows AI availability
+        // Find the translate menu items in the context menu
+        MenuItem? translateMenuItem = null;
+        Separator? translateSeparator = null;
+
+        foreach (object item in textBoxContextMenu.Items)
+        {
+            if (item is MenuItem menuItem && menuItem.Name == "TranslateWordMenuItem")
+                translateMenuItem = menuItem;
+            else if (item is Separator separator && separator.Name == "TranslateSeparator")
+                translateSeparator = separator;
+        }
+
+        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            if (translateMenuItem != null)
+            {
+                translateMenuItem.Visibility = Visibility.Visible;
+
+                // Get system language for the menu item header
+                string systemLanguage = GetSystemLanguageName();
+                translateMenuItem.Header = $"Translate to {systemLanguage}";
+            }
+
+            if (translateSeparator != null)
+                translateSeparator.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            if (translateMenuItem != null)
+                translateMenuItem.Visibility = Visibility.Collapsed;
+
+            if (translateSeparator != null)
+                translateSeparator.Visibility = Visibility.Collapsed;
+        }
+
         if (Uri.TryCreate(Word, UriKind.Absolute, out Uri? uri))
         {
             string headerText = $"Try to go to: {Word}";
@@ -387,11 +423,90 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         else
             Select();
     }
-    private void WordBorderControl_Unloaded(object sender, RoutedEventArgs e)
-    {
-        this.MouseDoubleClick -= WordBorderControl_MouseDoubleClick;
-        this.MouseDown -= WordBorderControl_MouseDown;
-        this.Unloaded -= WordBorderControl_Unloaded;
+        private void WordBorderControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            this.MouseDoubleClick -= WordBorderControl_MouseDoubleClick;
+            this.MouseDown -= WordBorderControl_MouseDown;
+            this.Unloaded -= WordBorderControl_Unloaded;
+        }
+
+        private async void TranslateWordMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(Word))
+                return;
+
+            if (!WindowsAiUtilities.CanDeviceUseWinAI())
+            {
+                MessageBox.Show("Windows AI is not available on this device.", 
+                    "Translation Not Available", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Store original text
+            string originalWord = Word;
+
+            try
+            {
+                // Get system language
+                string targetLanguage = GetSystemLanguageName();
+
+                // Translate the word
+                string translatedText = await WindowsAiUtilities.TranslateText(originalWord, targetLanguage);
+
+                // Update the word with translation
+                if (!string.IsNullOrWhiteSpace(translatedText) && translatedText != originalWord)
+                {
+                    // Notify the owner GrabFrame of the change for undo support
+                    if (OwnerGrabFrame != null)
+                    {
+                        OwnerGrabFrame.UndoableWordChange(this, originalWord, true);
+                    }
+
+                    Word = translatedText;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Translation failed: {ex.Message}");
+                MessageBox.Show($"Translation failed: {ex.Message}", 
+                    "Translation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Gets the system's display language name (e.g., "English", "Spanish", "French")
+        /// Falls back to "English" if the system language is not recognized.
+        /// </summary>
+        private static string GetSystemLanguageName()
+        {
+            try
+            {
+                // Get the current UI culture
+                string cultureName = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+
+                // Map ISO language codes to friendly names
+                return cultureName.ToLowerInvariant() switch
+                {
+                    "en" => "English",
+                    "es" => "Spanish",
+                    "fr" => "French",
+                    "de" => "German",
+                    "it" => "Italian",
+                    "pt" => "Portuguese",
+                    "ru" => "Russian",
+                    "ja" => "Japanese",
+                    "zh" => "Chinese (Simplified)",
+                    "ko" => "Korean",
+                    "ar" => "Arabic",
+                    "hi" => "Hindi",
+                    _ => "English" // Default fallback
+                };
+            }
+            catch
+            {
+                return "English"; // Safe fallback
+            }
+        }
+
+        #endregion Methods
     }
-    #endregion Methods
-}
