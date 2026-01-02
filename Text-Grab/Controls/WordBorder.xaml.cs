@@ -479,33 +479,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         /// </summary>
         private static string GetSystemLanguageName()
         {
-            try
-            {
-                // Get the current UI culture
-                string cultureName = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-
-                // Map ISO language codes to friendly names
-                return cultureName.ToLowerInvariant() switch
-                {
-                    "en" => "English",
-                    "es" => "Spanish",
-                    "fr" => "French",
-                    "de" => "German",
-                    "it" => "Italian",
-                    "pt" => "Portuguese",
-                    "ru" => "Russian",
-                    "ja" => "Japanese",
-                    "zh" => "Chinese (Simplified)",
-                    "ko" => "Korean",
-                    "ar" => "Arabic",
-                    "hi" => "Hindi",
-                    _ => "English" // Default fallback
-                };
-            }
-            catch
-            {
-                return "English"; // Safe fallback
-            }
+            // Use the shared utility method from LanguageUtilities
+            return LanguageUtilities.GetSystemLanguageForTranslation();
         }
 
         #endregion Methods
