@@ -10,11 +10,19 @@ public class WinAiOcrLinesWords : IOcrLinesWords
     {
         OriginalRecognizedText = recognizedText;
         Angle = recognizedText.TextAngle;
-        Lines = Array.ConvertAll(recognizedText.Lines, line => new WinAiOcrLine(line));
-
         StringBuilder sb = new();
-        foreach (RecognizedLine recognizedLine in recognizedText.Lines)
-            sb.AppendLine(recognizedLine.Text);
+
+        if (recognizedText.Lines is not null)
+        {
+            Lines = Array.ConvertAll(recognizedText.Lines, line => new WinAiOcrLine(line));
+
+            foreach (RecognizedLine recognizedLine in recognizedText.Lines)
+                sb.AppendLine(recognizedLine.Text);
+        }
+        else
+        {
+            Lines = [];
+        }
 
         Text = sb.ToString().Trim();
     }
