@@ -348,6 +348,10 @@
                         x:Name="ConvertTableMenuItem"
                         Click="ConvertTableMenuItem_Click"
                         Header="_Convert to Table" />
+                    <MenuItem
+                        x:Name="TranslateToSystemLanguageMenuItem"
+                        Click="TranslateToSystemLanguageMenuItem_Click"
+                        Header="Translate to System Language" />
                     <MenuItem x:Name="TranslateMenuItem" Header="_Translate to...">
                         <MenuItem
                             Click="TranslateMenuItem_Click"
