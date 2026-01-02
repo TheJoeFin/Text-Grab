@@ -23,6 +23,7 @@ public static class WindowsAiUtilities
     private const string TranslationPromptTemplate = "Translate to {0}:\n\n{1}";
     private static LanguageModel? _translationLanguageModel;
     private static readonly SemaphoreSlim _modelInitializationLock = new(1, 1);
+    private static bool _disposed;
 
     // Language code mapping for quick lookup
     private static readonly Dictionary<string, string> LanguageCodeMap = new(StringComparer.OrdinalIgnoreCase)
@@ -82,18 +83,15 @@ public static class WindowsAiUtilities
                 if (hasCJK || hasArabic || hasCyrillic || hasDevanagari)
                     return false;
                 // If has Latin characters, might be in target language
-                if (hasLatin && text.Length > 10)
+                if (hasLatin && text.Length > 10 && targetCode == "en")
                 {
                     // Check for common English words as additional heuristic
-                    if (targetCode == "en")
-                    {
-                        string lowerText = text.ToLowerInvariant();
-                        string[] commonEnglishWords = { " the ", " and ", " or ", " is ", " are ", " was ", " were ", " in ", " on ", " at ", " to ", " of ", " for ", " with " };
-                        int englishWordCount = commonEnglishWords.Count(w => lowerText.Contains(w));
-                        // If text contains multiple common English words, likely already English
-                        if (englishWordCount >= 2)
-                            return true;
-                    }
+                    string lowerText = text.ToLowerInvariant();
+                    string[] commonEnglishWords = { " the ", " and ", " or ", " is ", " are ", " was ", " were ", " in ", " on ", " at ", " to ", " of ", " for ", " with " };
+                    int englishWordCount = commonEnglishWords.Count(w => lowerText.Contains(w));
+                    // If text contains multiple common English words, likely already English
+                    if (englishWordCount >= 2)
+                        return true;
                 }
                 break;
 
@@ -379,12 +377,9 @@ public static class WindowsAiUtilities
                 "output: ",
             ];
 
-            foreach (string prefix in commonPrefixes)
+            foreach (string prefix in commonPrefixes.Where(prefix => cleaned.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
             {
-                if (cleaned.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    cleaned = cleaned[prefix.Length..].Trim();
-                }
+                cleaned = cleaned[prefix.Length..].Trim();
             }
 
             // If cleaned result is suspiciously short or empty, return original
@@ -403,13 +398,13 @@ public static class WindowsAiUtilities
         /// </summary>
         private static async Task EnsureTranslationModelInitializedAsync()
         {
-            if (_translationLanguageModel != null)
+            if (!object.ReferenceEquals(_translationLanguageModel, null))
                 return;
 
             await _modelInitializationLock.WaitAsync();
             try
             {
-                if (_translationLanguageModel == null)
+                if (object.ReferenceEquals(_translationLanguageModel, null))
                 {
                     _translationLanguageModel = await LanguageModel.CreateAsync();
                 }
@@ -430,69 +425,82 @@ public static class WindowsAiUtilities
             _translationLanguageModel = null;
         }
 
-                /// <summary>
-                /// Translates text to a target language using Windows AI LanguageModel.
-                /// Reuses a shared LanguageModel instance for improved performance.
-                /// Includes fast language detection to skip translation if text is already in target language.
-                /// Filters out instruction echoes from AI responses.
-                /// </summary>
-                /// <param name="textToTranslate">The text to translate</param>
-                /// <param name="targetLanguage">The target language (e.g., "English", "Spanish")</param>
-                /// <returns>The translated text, or the original text if translation fails or is unnecessary</returns>
-                /// <remarks>
-                /// This implementation uses TextRewriter with a custom prompt as a workaround
-                /// since Microsoft.Windows.AI.Text doesn't include a dedicated translation API.
-                /// Translation quality may vary compared to dedicated translation services.
-                /// The LanguageModel is reused across calls for better performance.
-                /// Fast language detection is performed first to avoid unnecessary API calls.
-                /// Result is cleaned to remove any instruction echoes from the AI response.
-                /// </remarks>
-                internal static async Task<string> TranslateText(string textToTranslate, string targetLanguage)
-                {
-                    if (!CanDeviceUseWinAI())
-                        return textToTranslate; // Return original text if Windows AI is not available
 
-                    // Quick check: if text appears to already be in target language, skip translation
-                    if (IsLikelyInTargetLanguage(textToTranslate, targetLanguage))
-                    {
-                        Debug.WriteLine($"Skipping translation - text appears to already be in {targetLanguage}");
-                        return textToTranslate;
-                    }
+    /// <summary>
+    /// Releases resources held by static members of <see cref="WindowsAiUtilities"/>.
+    /// Should be called once during application shutdown.
+    /// </summary>
+    public static void Cleanup()
+    {
+        if (_disposed)
+            return;
 
-                    try
-                    {
-                        await EnsureTranslationModelInitializedAsync();
+        DisposeTranslationModel();
+        _modelInitializationLock.Dispose();
+        _disposed = true;
+    }
+    /// <summary>
+    /// Translates text to a target language using Windows AI LanguageModel.
+    /// Reuses a shared LanguageModel instance for improved performance.
+    /// Includes fast language detection to skip translation if text is already in target language.
+    /// Filters out instruction echoes from AI responses.
+    /// </summary>
+    /// <param name="textToTranslate">The text to translate</param>
+    /// <param name="targetLanguage">The target language (e.g., "English", "Spanish")</param>
+    /// <returns>The translated text, or the original text if translation fails or is unnecessary</returns>
+    /// <remarks>
+    /// This implementation uses TextRewriter with a custom prompt as a workaround
+    /// since Microsoft.Windows.AI.Text doesn't include a dedicated translation API.
+    /// Translation quality may vary compared to dedicated translation services.
+    /// The LanguageModel is reused across calls for better performance.
+    /// Fast language detection is performed first to avoid unnecessary API calls.
+    /// Result is cleaned to remove any instruction echoes from the AI response.
+    /// </remarks>
+    internal static async Task<string> TranslateText(string textToTranslate, string targetLanguage)
+    {
+    if (!CanDeviceUseWinAI())
+        return textToTranslate; // Return original text if Windows AI is not available
 
-                        if (_translationLanguageModel == null)
-                            return textToTranslate;
+    // Quick check: if text appears to already be in target language, skip translation
+    if (IsLikelyInTargetLanguage(textToTranslate, targetLanguage))
+    {
+        Debug.WriteLine($"Skipping translation - text appears to already be in {targetLanguage}");
+        return textToTranslate;
+    }
 
-                        // Note: This uses TextRewriter with a simple prompt
-                        // We use a minimal prompt to reduce the chance of instruction echoes
-                        TextRewriter textRewriter = new(_translationLanguageModel);
-                        string translationPrompt = string.Format(TranslationPromptTemplate, targetLanguage, textToTranslate);
+    try
+    {
+        await EnsureTranslationModelInitializedAsync();
 
-                        LanguageModelResponseResult result = await textRewriter.RewriteAsync(translationPrompt);
+        if (_translationLanguageModel == null)
+        return textToTranslate;
 
-                        if (result.Status == LanguageModelResponseStatus.Complete)
-                        {
-                            // Clean the result to remove any instruction echoes
-                            string cleanedResult = CleanTranslationResult(result.Text, textToTranslate);
-                            return cleanedResult;
-                        }
-                        else
-                        {
-                            // Log the error if debugging is enabled
-                            Debug.WriteLine($"Translation failed with status: {result.Status}");
-                            if (result.ExtendedError != null)
-                                Debug.WriteLine($"Translation error: {result.ExtendedError.Message}");
-                            return textToTranslate; // Return original text on error
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log the exception for debugging
-                        Debug.WriteLine($"Translation exception: {ex.Message}");
-                        return textToTranslate; // Return original text on error
-                    }
-                }
-            }
+        // Note: This uses TextRewriter with a simple prompt
+        // We use a minimal prompt to reduce the chance of instruction echoes
+        TextRewriter textRewriter = new(_translationLanguageModel);
+        string translationPrompt = string.Format(TranslationPromptTemplate, targetLanguage, textToTranslate);
+
+        LanguageModelResponseResult result = await textRewriter.RewriteAsync(translationPrompt);
+
+        if (result.Status == LanguageModelResponseStatus.Complete)
+        {
+        // Clean the result to remove any instruction echoes
+        string cleanedResult = CleanTranslationResult(result.Text, textToTranslate);
+        return cleanedResult;
+        }
+        else
+        {
+        // Log the error if debugging is enabled
+        Debug.WriteLine($"Translation failed with status: {result.Status}");
+        if (result.ExtendedError != null)
+        Debug.WriteLine($"Translation error: {result.ExtendedError.Message}");
+        return textToTranslate; // Return original text on error
+        }
+        catch (Exception ex)
+        {
+        // Log the exception for debugging
+        Debug.WriteLine($"Translation exception: {ex.Message}");
+        return textToTranslate; // Return original text on error
+        }
+        }
+        }

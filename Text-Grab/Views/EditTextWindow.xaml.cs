@@ -3576,6 +3576,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (sender is not MenuItem menuItem || menuItem.Tag is not string targetLanguage)
             return;
 
+        await PerformTranslationAsync(targetLanguage);
+    }
+
+    private async void TranslateToSystemLanguageMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        // Get system language using the helper from LanguageUtilities
+        string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
+        await PerformTranslationAsync(systemLanguage);
+    }
+
+    private async Task PerformTranslationAsync(string targetLanguage)
+    {
         string textToTranslate = GetSelectedTextOrAllText();
 
         SetToLoading($"Translating to {targetLanguage}...");
@@ -3585,38 +3597,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             string translatedText = await WindowsAiUtilities.TranslateText(textToTranslate, targetLanguage);
 
             if (PassedTextControl.SelectionLength == 0)
+            {
                 PassedTextControl.Text = translatedText;
+            }
             else
+            {
                 PassedTextControl.SelectedText = translatedText;
-        }
-        catch (Exception ex)
-        {
-            System.Windows.MessageBox.Show($"Translation failed: {ex.Message}",
-                "Translation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-        finally
-        {
-            SetToLoaded();
-        }
-    }
-
-    private async void TranslateToSystemLanguageMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string textToTranslate = GetSelectedTextOrAllText();
-
-        // Get system language using the helper from LanguageUtilities
-        string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
-
-        SetToLoading($"Translating to {systemLanguage}...");
-
-        try
-        {
-            string translatedText = await WindowsAiUtilities.TranslateText(textToTranslate, systemLanguage);
-
-            if (PassedTextControl.SelectionLength == 0)
-                PassedTextControl.Text = translatedText;
-            else
-                PassedTextControl.SelectedText = translatedText;
+            }
         }
         catch (Exception ex)
         {
