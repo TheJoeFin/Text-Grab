@@ -1993,7 +1993,7 @@ new GrabFrameOperationArgs()
         {
             foreach (WordBorder wb in wordBorders)
             {
-                int numberOfMatchesInWord = regex.Matches(wb.Word).Count;
+                int numberOfMatchesInWord = regex.Count(wb.Word);
                 numberOfMatches += numberOfMatchesInWord;
 
                 if (numberOfMatchesInWord > 0)
@@ -2761,7 +2761,7 @@ new GrabFrameOperationArgs()
             {
                 if (!WindowsAiUtilities.CanDeviceUseWinAI())
                 {
-                    MessageBox.Show("Windows AI is not available on this device. Translation requires Windows AI support.", 
+                    MessageBox.Show("Windows AI is not available on this device. Translation requires Windows AI support.",
                         "Translation Not Available", MessageBoxButton.OK, MessageBoxImage.Information);
                     TranslateToggleButton.IsChecked = false;
                     isTranslationEnabled = false;
@@ -2833,7 +2833,7 @@ new GrabFrameOperationArgs()
         // Uncheck all language menu items and check only the selected one
         if (menuItem.Parent is MenuItem parentMenu)
         {
-            foreach (var item in parentMenu.Items)
+            foreach (object? item in parentMenu.Items)
             {
                 if (item is MenuItem langMenuItem && langMenuItem.Tag is string)
                     langMenuItem.IsChecked = langMenuItem.Tag.ToString() == language;
@@ -2929,7 +2929,6 @@ new GrabFrameOperationArgs()
 
     private void ShowTranslationProgress()
     {
-        isTranslating = true;
         TranslationProgressBorder.Visibility = Visibility.Visible;
         TranslationProgressBar.Value = 0;
         TranslationProgressText.Text = "Translating...";
@@ -2938,7 +2937,6 @@ new GrabFrameOperationArgs()
 
     private void HideTranslationProgress()
     {
-        isTranslating = false;
         TranslationProgressBorder.Visibility = Visibility.Collapsed;
     }
 
@@ -2999,12 +2997,12 @@ new GrabFrameOperationArgs()
     {
         isTranslationEnabled = DefaultSettings.GrabFrameTranslationEnabled;
         translationTargetLanguage = DefaultSettings.GrabFrameTranslationLanguage;
-        
+
         // Hide translation button if Windows AI is not available
         bool canUseWinAI = WindowsAiUtilities.CanDeviceUseWinAI();
         TranslateToggleButton.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
         TranslationMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
-        
+
         if (canUseWinAI)
         {
             TranslateToggleButton.IsChecked = isTranslationEnabled;
@@ -3021,11 +3019,11 @@ new GrabFrameOperationArgs()
         // Find the "Target Language" submenu by searching through items
         if (canUseWinAI && TranslationMenuItem != null)
         {
-            foreach (var item in TranslationMenuItem.Items)
+            foreach (object? item in TranslationMenuItem.Items)
             {
                 if (item is MenuItem menuItem && menuItem.Header.ToString() == TargetLanguageMenuHeader)
                 {
-                    foreach (var langItem in menuItem.Items)
+                    foreach (object? langItem in menuItem.Items)
                     {
                         if (langItem is MenuItem langMenuItem && langMenuItem.Tag is string tag)
                             langMenuItem.IsChecked = tag == translationTargetLanguage;
