@@ -839,9 +839,10 @@ public partial class FullscreenGrab : Window
         await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
         isComboBoxReady = true;
 
+        // TODO Find a more graceful async way to do this. Translation takes too long
         // Show translation option only if Windows AI is available
-        if (WindowsAiUtilities.CanDeviceUseWinAI())
-            TranslatePostCapture.Visibility = Visibility.Visible;
+        // if (WindowsAiUtilities.CanDeviceUseWinAI())
+        //     TranslatePostCapture.Visibility = Visibility.Visible;
 
         // Apply default mode based on new FsgDefaultMode setting, with fallback to legacy SingleLine flag
         try
