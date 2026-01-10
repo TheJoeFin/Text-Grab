@@ -2980,7 +2980,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
             AiMenuItem.Visibility = Visibility.Visible;
+
+            // Set dynamic header text for TranslateToSystemLanguageMenuItem
+            string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
+            TranslateToSystemLanguageMenuItem.Header = $"Translate to {systemLanguage}";
         }
+
+        // Initialize selectedILanguage with the last used OCR language from settings
+        // This ensures that when images are dropped or pasted, the correct language is used
+        selectedILanguage = LanguageUtilities.GetOCRLanguage();
     }
 
     private void HideCalcPaneContextItem_Click(object sender, RoutedEventArgs e)
@@ -3563,6 +3571,51 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private async void TranslateMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string targetLanguage)
+            return;
+
+        await PerformTranslationAsync(targetLanguage);
+    }
+
+    private async void TranslateToSystemLanguageMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        // Get system language using the helper from LanguageUtilities
+        string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
+        await PerformTranslationAsync(systemLanguage);
+    }
+
+    private async Task PerformTranslationAsync(string targetLanguage)
+    {
+        string textToTranslate = GetSelectedTextOrAllText();
+
+        SetToLoading($"Translating to {targetLanguage}...");
+
+        try
+        {
+            string translatedText = await WindowsAiUtilities.TranslateText(textToTranslate, targetLanguage);
+
+            if (PassedTextControl.SelectionLength == 0)
+            {
+                PassedTextControl.Text = translatedText;
+            }
+            else
+            {
+                PassedTextControl.SelectedText = translatedText;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Translation failed: {ex.Message}",
+                "Translation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+    }
+
     private void SetToLoading(string message = "")
     {
         IsEnabled = false;
@@ -3626,7 +3679,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Restore previous width if it was collapsed
             if (CalcColumn.Width.Value == 0)
                 CalcColumn.Width = _lastCalcColumnWidth;
-            
+
             // Disable text wrapping when calc pane is visible to maintain vertical alignment
             // Store the previous wrapping state to restore later
             if (PassedTextControl.TextWrapping != TextWrapping.NoWrap)
@@ -3634,7 +3687,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 _previousTextWrapping = PassedTextControl.TextWrapping;
                 PassedTextControl.TextWrapping = TextWrapping.NoWrap;
             }
-            
+
             _debounceTimer?.Start();
         }
         else
@@ -3647,7 +3700,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (CalcColumn.Width.Value > 0)
                 _lastCalcColumnWidth = CalcColumn.Width;
             CalcColumn.Width = new GridLength(0);
-            
+
             // Restore previous text wrapping setting when calc pane is hidden
             if (_previousTextWrapping.HasValue)
             {

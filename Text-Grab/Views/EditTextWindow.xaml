@@ -349,6 +349,60 @@
                         Click="ConvertTableMenuItem_Click"
                         Header="_Convert to Table" />
                     <MenuItem
+                        x:Name="TranslateToSystemLanguageMenuItem"
+                        Click="TranslateToSystemLanguageMenuItem_Click"
+                        Header="Translate to System Language" />
+                    <MenuItem x:Name="TranslateMenuItem" Header="_Translate to...">
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="English"
+                            Tag="English" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Spanish"
+                            Tag="Spanish" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="French"
+                            Tag="French" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="German"
+                            Tag="German" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Italian"
+                            Tag="Italian" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Portuguese"
+                            Tag="Portuguese" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Russian"
+                            Tag="Russian" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Japanese"
+                            Tag="Japanese" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Chinese (Simplified)"
+                            Tag="Chinese (Simplified)" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Korean"
+                            Tag="Korean" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Arabic"
+                            Tag="Arabic" />
+                        <MenuItem
+                            Click="TranslateMenuItem_Click"
+                            Header="Hindi"
+                            Tag="Hindi" />
+                    </MenuItem>
+                    <MenuItem
                         x:Name="LearnAiMenuItem"
                         Click="LearnAiMenuItem_Click"
                         Header="_Learn About Local AI Features..." />

@@ -778,5 +778,29 @@ namespace Text_Grab.Properties {
                 this["OverrideAiArchCheck"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GrabFrameTranslationEnabled {
+            get {
+                return ((bool)(this["GrabFrameTranslationEnabled"]));
+            }
+            set {
+                this["GrabFrameTranslationEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("English")]
+        public string GrabFrameTranslationLanguage {
+            get {
+                return ((string)(this["GrabFrameTranslationLanguage"]));
+            }
+            set {
+                this["GrabFrameTranslationLanguage"] = value;
+            }
+        }
     }
 }

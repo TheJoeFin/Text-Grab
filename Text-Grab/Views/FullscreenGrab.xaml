@@ -275,6 +275,15 @@
                                 IsCheckable="True"
                                 StaysOpenOnClick="False"
                                 ToolTip="Try to insert the copied text into the current caret position" />
+                            <MenuItem
+                                Name="TranslatePostCapture"
+                                Click="PostActionMenuItem_Click"
+                                Header="Translate to system language"
+                                InputGestureText="CTRL + 6"
+                                IsCheckable="True"
+                                StaysOpenOnClick="False"
+                                ToolTip="Translate the grabbed text to your system language using Windows AI"
+                                Visibility="Collapsed" />
                         </ContextMenu>
                     </wpfui:DropDownButton.Flyout>
                 </wpfui:DropDownButton>
