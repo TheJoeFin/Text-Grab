@@ -203,10 +203,11 @@ public class PostGrabActionManager
                 string[] stringSplit = text.Split(Environment.NewLine);
                 var trimmedLines = stringSplit
                     .Where(line => !string.IsNullOrWhiteSpace(line))
-                    .Select(line => line.Trim());
+                    .Select(line => line.Trim())
+                    .ToArray();
 
-                result = string.IsNullOrEmpty(text) 
-                    ? string.Empty 
+                result = trimmedLines.Length == 0
+                    ? string.Empty
                     : string.Join(Environment.NewLine, trimmedLines) + Environment.NewLine;
                 break;
 
