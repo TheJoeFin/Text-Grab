@@ -22,7 +22,7 @@ public class PostGrabActionManager
         List<ButtonInfo> allPostGrabActions = [.. GetDefaultPostGrabActions()];
 
         // Add other relevant actions from AllButtons that are marked as relevant for FullscreenGrab
-        var relevantActions = ButtonInfo.AllButtons
+        IEnumerable<ButtonInfo> relevantActions = ButtonInfo.AllButtons
             .Where(button => button.IsRelevantForFullscreenGrab && !allPostGrabActions.Any(b => b.ButtonText == button.ButtonText));
         
         allPostGrabActions.AddRange(relevantActions);
@@ -200,7 +200,7 @@ public class PostGrabActionManager
 
             case "TrimEachLine_Click":
                 string[] stringSplit = text.Split(Environment.NewLine);
-                var trimmedLines = stringSplit
+                string[] trimmedLines = stringSplit
                     .Where(line => !string.IsNullOrWhiteSpace(line))
                     .Select(line => line.Trim())
                     .ToArray();
