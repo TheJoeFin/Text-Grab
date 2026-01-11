@@ -51,7 +51,34 @@ public partial class FullscreenGrabSettings : Page
             DefaultModeRadio.IsChecked = true;
         }
 
+        // Load post-grab action defaults
+        LoadPostGrabActionDefault(DefaultSettings.FsgGuidFixDefault, GuidFixOffRadio, GuidFixLastUsedRadio, GuidFixOnRadio);
+        LoadPostGrabActionDefault(DefaultSettings.FsgTrimEachLineDefault, TrimEachLineOffRadio, TrimEachLineLastUsedRadio, TrimEachLineOnRadio);
+        LoadPostGrabActionDefault(DefaultSettings.FsgRemoveDuplicatesDefault, RemoveDuplicatesOffRadio, RemoveDuplicatesLastUsedRadio, RemoveDuplicatesOnRadio);
+        LoadPostGrabActionDefault(DefaultSettings.FsgWebSearchDefault, WebSearchOffRadio, WebSearchLastUsedRadio, WebSearchOnRadio);
+        LoadPostGrabActionDefault(DefaultSettings.FsgInsertTextDefault, InsertTextOffRadio, InsertTextLastUsedRadio, InsertTextOnRadio);
+        LoadPostGrabActionDefault(DefaultSettings.FsgTranslateDefault, TranslateOffRadio, TranslateLastUsedRadio, TranslateOnRadio);
+
         _loaded = true;
+    }
+
+    private void LoadPostGrabActionDefault(string settingValue, RadioButton offRadio, RadioButton lastUsedRadio, RadioButton onRadio)
+    {
+        if (!Enum.TryParse<PostGrabActionDefault>(settingValue, true, out PostGrabActionDefault mode))
+            mode = PostGrabActionDefault.Off;
+
+        switch (mode)
+        {
+            case PostGrabActionDefault.Off:
+                offRadio.IsChecked = true;
+                break;
+            case PostGrabActionDefault.LastUsed:
+                lastUsedRadio.IsChecked = true;
+                break;
+            case PostGrabActionDefault.On:
+                onRadio.IsChecked = true;
+                break;
+        }
     }
 
     private void DefaultModeRadio_Click(object sender, RoutedEventArgs e)
@@ -110,5 +137,59 @@ public partial class FullscreenGrabSettings : Page
         DefaultSettings.InsertDelay = newVal;
         DefaultSettings.Save();
         InsertDelayValueText.Text = newVal.ToString("0.0", CultureInfo.InvariantCulture);
+    }
+
+    private void GuidFixRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SavePostGrabActionDefault(GuidFixOffRadio, GuidFixLastUsedRadio, GuidFixOnRadio, 
+            value => DefaultSettings.FsgGuidFixDefault = value);
+    }
+
+    private void TrimEachLineRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SavePostGrabActionDefault(TrimEachLineOffRadio, TrimEachLineLastUsedRadio, TrimEachLineOnRadio,
+            value => DefaultSettings.FsgTrimEachLineDefault = value);
+    }
+
+    private void RemoveDuplicatesRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SavePostGrabActionDefault(RemoveDuplicatesOffRadio, RemoveDuplicatesLastUsedRadio, RemoveDuplicatesOnRadio,
+            value => DefaultSettings.FsgRemoveDuplicatesDefault = value);
+    }
+
+    private void WebSearchRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SavePostGrabActionDefault(WebSearchOffRadio, WebSearchLastUsedRadio, WebSearchOnRadio,
+            value => DefaultSettings.FsgWebSearchDefault = value);
+    }
+
+    private void InsertTextRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SavePostGrabActionDefault(InsertTextOffRadio, InsertTextLastUsedRadio, InsertTextOnRadio,
+            value => DefaultSettings.FsgInsertTextDefault = value);
+    }
+
+    private void TranslateRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SavePostGrabActionDefault(TranslateOffRadio, TranslateLastUsedRadio, TranslateOnRadio,
+            value => DefaultSettings.FsgTranslateDefault = value);
+    }
+
+    private void SavePostGrabActionDefault(RadioButton offRadio, RadioButton lastUsedRadio, RadioButton onRadio, Action<string> saveSetting)
+    {
+        PostGrabActionDefault mode = PostGrabActionDefault.Off;
+        if (lastUsedRadio.IsChecked == true)
+            mode = PostGrabActionDefault.LastUsed;
+        else if (onRadio.IsChecked == true)
+            mode = PostGrabActionDefault.On;
+
+        saveSetting(mode.ToString());
+        DefaultSettings.Save();
     }
 }

@@ -909,8 +909,37 @@ public partial class FullscreenGrab : Window
             }
         }
 
+        // Initialize post-grab action menu items based on settings
+        InitializePostGrabAction(GuidFixMenuItem, DefaultSettings.FsgGuidFixDefault, DefaultSettings.FsgGuidFixLastUsed);
+        InitializePostGrabAction(TrimEachLineMenuItem, DefaultSettings.FsgTrimEachLineDefault, DefaultSettings.FsgTrimEachLineLastUsed);
+        InitializePostGrabAction(RemoveDuplicatesMenuItem, DefaultSettings.FsgRemoveDuplicatesDefault, DefaultSettings.FsgRemoveDuplicatesLastUsed);
+        InitializePostGrabAction(WebSearchPostCapture, DefaultSettings.FsgWebSearchDefault, DefaultSettings.FsgWebSearchLastUsed);
+        InitializePostGrabAction(InsertPostCapture, DefaultSettings.FsgInsertTextDefault, DefaultSettings.FsgInsertTextLastUsed);
+        InitializePostGrabAction(TranslatePostCapture, DefaultSettings.FsgTranslateDefault, DefaultSettings.FsgTranslateLastUsed);
+
+        CheckIfAnyPostActionsSelected();
+
         if (IsMouseOver)
             TopButtonsStackPanel.Visibility = Visibility.Visible;
+    }
+
+    private void InitializePostGrabAction(MenuItem menuItem, string defaultSetting, bool lastUsedState)
+    {
+        if (!Enum.TryParse<PostGrabActionDefault>(defaultSetting, true, out PostGrabActionDefault mode))
+            mode = PostGrabActionDefault.Off;
+
+        switch (mode)
+        {
+            case PostGrabActionDefault.Off:
+                menuItem.IsChecked = false;
+                break;
+            case PostGrabActionDefault.LastUsed:
+                menuItem.IsChecked = lastUsedState;
+                break;
+            case PostGrabActionDefault.On:
+                menuItem.IsChecked = true;
+                break;
+        }
     }
 
     private void DisposeBitmapSource(System.Windows.Controls.Image image)
@@ -1026,6 +1055,72 @@ public partial class FullscreenGrab : Window
     private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
     {
         CheckIfAnyPostActionsSelected();
+
+        // Save last used state if the action is in LastUsed mode
+        if (sender is MenuItem menuItem)
+        {
+            SaveLastUsedStateIfNeeded(menuItem);
+        }
+    }
+
+    private void SaveLastUsedStateIfNeeded(MenuItem menuItem)
+    {
+        bool isChecked = menuItem.IsChecked;
+
+        if (menuItem == GuidFixMenuItem)
+        {
+            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgGuidFixDefault, true, out var mode) 
+                && mode == PostGrabActionDefault.LastUsed)
+            {
+                DefaultSettings.FsgGuidFixLastUsed = isChecked;
+                DefaultSettings.Save();
+            }
+        }
+        else if (menuItem == TrimEachLineMenuItem)
+        {
+            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgTrimEachLineDefault, true, out var mode) 
+                && mode == PostGrabActionDefault.LastUsed)
+            {
+                DefaultSettings.FsgTrimEachLineLastUsed = isChecked;
+                DefaultSettings.Save();
+            }
+        }
+        else if (menuItem == RemoveDuplicatesMenuItem)
+        {
+            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgRemoveDuplicatesDefault, true, out var mode) 
+                && mode == PostGrabActionDefault.LastUsed)
+            {
+                DefaultSettings.FsgRemoveDuplicatesLastUsed = isChecked;
+                DefaultSettings.Save();
+            }
+        }
+        else if (menuItem == WebSearchPostCapture)
+        {
+            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgWebSearchDefault, true, out var mode) 
+                && mode == PostGrabActionDefault.LastUsed)
+            {
+                DefaultSettings.FsgWebSearchLastUsed = isChecked;
+                DefaultSettings.Save();
+            }
+        }
+        else if (menuItem == InsertPostCapture)
+        {
+            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgInsertTextDefault, true, out var mode) 
+                && mode == PostGrabActionDefault.LastUsed)
+            {
+                DefaultSettings.FsgInsertTextLastUsed = isChecked;
+                DefaultSettings.Save();
+            }
+        }
+        else if (menuItem == TranslatePostCapture)
+        {
+            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgTranslateDefault, true, out var mode) 
+                && mode == PostGrabActionDefault.LastUsed)
+            {
+                DefaultSettings.FsgTranslateLastUsed = isChecked;
+                DefaultSettings.Save();
+            }
+        }
     }
     #endregion Methods
 

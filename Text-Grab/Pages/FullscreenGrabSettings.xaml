@@ -102,6 +102,79 @@
                 Opacity="0.75"
                 Style="{StaticResource TextBodyNormal}"
                 Text="How long to wait before simulating paste (Ctrl+V)."></TextBlock>
+
+            <TextBlock
+                Margin="0,16,0,6"
+                FontSize="18"
+                FontWeight="Bold"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Post-grab action defaults"></TextBlock>
+
+            <TextBlock
+                Margin="0,0,0,8"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Configure default behavior for post-grab actions. Off: always unchecked, Last Used: remember previous state, On: always checked."></TextBlock>
+
+            <!-- Fix GUIDs -->
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Fix GUIDs:"></TextBlock>
+                <StackPanel Margin="12,6,0,0">
+                    <RadioButton x:Name="GuidFixOffRadio" GroupName="GuidFix" Click="GuidFixRadio_Click">Off</RadioButton>
+                    <RadioButton x:Name="GuidFixLastUsedRadio" GroupName="GuidFix" Click="GuidFixRadio_Click">Last Used</RadioButton>
+                    <RadioButton x:Name="GuidFixOnRadio" GroupName="GuidFix" Click="GuidFixRadio_Click">On</RadioButton>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Trim Each Line -->
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Trim each line:"></TextBlock>
+                <StackPanel Margin="12,6,0,0">
+                    <RadioButton x:Name="TrimEachLineOffRadio" GroupName="TrimEachLine" Click="TrimEachLineRadio_Click">Off</RadioButton>
+                    <RadioButton x:Name="TrimEachLineLastUsedRadio" GroupName="TrimEachLine" Click="TrimEachLineRadio_Click">Last Used</RadioButton>
+                    <RadioButton x:Name="TrimEachLineOnRadio" GroupName="TrimEachLine" Click="TrimEachLineRadio_Click">On</RadioButton>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Remove Duplicates -->
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Remove duplicate lines:"></TextBlock>
+                <StackPanel Margin="12,6,0,0">
+                    <RadioButton x:Name="RemoveDuplicatesOffRadio" GroupName="RemoveDuplicates" Click="RemoveDuplicatesRadio_Click">Off</RadioButton>
+                    <RadioButton x:Name="RemoveDuplicatesLastUsedRadio" GroupName="RemoveDuplicates" Click="RemoveDuplicatesRadio_Click">Last Used</RadioButton>
+                    <RadioButton x:Name="RemoveDuplicatesOnRadio" GroupName="RemoveDuplicates" Click="RemoveDuplicatesRadio_Click">On</RadioButton>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Web Search -->
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Web Search:"></TextBlock>
+                <StackPanel Margin="12,6,0,0">
+                    <RadioButton x:Name="WebSearchOffRadio" GroupName="WebSearch" Click="WebSearchRadio_Click">Off</RadioButton>
+                    <RadioButton x:Name="WebSearchLastUsedRadio" GroupName="WebSearch" Click="WebSearchRadio_Click">Last Used</RadioButton>
+                    <RadioButton x:Name="WebSearchOnRadio" GroupName="WebSearch" Click="WebSearchRadio_Click">On</RadioButton>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Insert Text -->
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Try to insert text:"></TextBlock>
+                <StackPanel Margin="12,6,0,0">
+                    <RadioButton x:Name="InsertTextOffRadio" GroupName="InsertText" Click="InsertTextRadio_Click">Off</RadioButton>
+                    <RadioButton x:Name="InsertTextLastUsedRadio" GroupName="InsertText" Click="InsertTextRadio_Click">Last Used</RadioButton>
+                    <RadioButton x:Name="InsertTextOnRadio" GroupName="InsertText" Click="InsertTextRadio_Click">On</RadioButton>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Translate -->
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Translate to system language:"></TextBlock>
+                <StackPanel Margin="12,6,0,0">
+                    <RadioButton x:Name="TranslateOffRadio" GroupName="Translate" Click="TranslateRadio_Click">Off</RadioButton>
+                    <RadioButton x:Name="TranslateLastUsedRadio" GroupName="Translate" Click="TranslateRadio_Click">Last Used</RadioButton>
+                    <RadioButton x:Name="TranslateOnRadio" GroupName="Translate" Click="TranslateRadio_Click">On</RadioButton>
+                </StackPanel>
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </Page>

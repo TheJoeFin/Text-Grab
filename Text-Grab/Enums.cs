@@ -98,3 +98,10 @@ public enum FsgDefaultMode
     SingleLine = 1,
     Table = 2,
 }
+
+public enum PostGrabActionDefault
+{
+    Off = 0,
+    LastUsed = 1,
+    On = 2,
+}

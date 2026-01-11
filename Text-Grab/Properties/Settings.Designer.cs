@@ -802,5 +802,149 @@ namespace Text_Grab.Properties {
                 this["GrabFrameTranslationLanguage"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Off")]
+        public string FsgGuidFixDefault {
+            get {
+                return ((string)(this["FsgGuidFixDefault"]));
+            }
+            set {
+                this["FsgGuidFixDefault"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FsgGuidFixLastUsed {
+            get {
+                return ((bool)(this["FsgGuidFixLastUsed"]));
+            }
+            set {
+                this["FsgGuidFixLastUsed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Off")]
+        public string FsgTrimEachLineDefault {
+            get {
+                return ((string)(this["FsgTrimEachLineDefault"]));
+            }
+            set {
+                this["FsgTrimEachLineDefault"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FsgTrimEachLineLastUsed {
+            get {
+                return ((bool)(this["FsgTrimEachLineLastUsed"]));
+            }
+            set {
+                this["FsgTrimEachLineLastUsed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Off")]
+        public string FsgRemoveDuplicatesDefault {
+            get {
+                return ((string)(this["FsgRemoveDuplicatesDefault"]));
+            }
+            set {
+                this["FsgRemoveDuplicatesDefault"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FsgRemoveDuplicatesLastUsed {
+            get {
+                return ((bool)(this["FsgRemoveDuplicatesLastUsed"]));
+            }
+            set {
+                this["FsgRemoveDuplicatesLastUsed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Off")]
+        public string FsgWebSearchDefault {
+            get {
+                return ((string)(this["FsgWebSearchDefault"]));
+            }
+            set {
+                this["FsgWebSearchDefault"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FsgWebSearchLastUsed {
+            get {
+                return ((bool)(this["FsgWebSearchLastUsed"]));
+            }
+            set {
+                this["FsgWebSearchLastUsed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Off")]
+        public string FsgInsertTextDefault {
+            get {
+                return ((string)(this["FsgInsertTextDefault"]));
+            }
+            set {
+                this["FsgInsertTextDefault"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FsgInsertTextLastUsed {
+            get {
+                return ((bool)(this["FsgInsertTextLastUsed"]));
+            }
+            set {
+                this["FsgInsertTextLastUsed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Off")]
+        public string FsgTranslateDefault {
+            get {
+                return ((string)(this["FsgTranslateDefault"]));
+            }
+            set {
+                this["FsgTranslateDefault"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FsgTranslateLastUsed {
+            get {
+                return ((bool)(this["FsgTranslateLastUsed"]));
+            }
+            set {
+                this["FsgTranslateLastUsed"] = value;
+            }
+        }
     }
 }
