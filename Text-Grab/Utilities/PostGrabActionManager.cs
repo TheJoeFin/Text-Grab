@@ -22,13 +22,10 @@ public class PostGrabActionManager
         List<ButtonInfo> allPostGrabActions = [.. GetDefaultPostGrabActions()];
 
         // Add other relevant actions from AllButtons that are marked as relevant for FullscreenGrab
-        foreach (ButtonInfo button in ButtonInfo.AllButtons)
-        {
-            if (button.IsRelevantForFullscreenGrab && !allPostGrabActions.Any(b => b.ButtonText == button.ButtonText))
-            {
-                allPostGrabActions.Add(button);
-            }
-        }
+        IEnumerable<ButtonInfo> relevantActions = ButtonInfo.AllButtons
+            .Where(button => button.IsRelevantForFullscreenGrab && !allPostGrabActions.Any(b => b.ButtonText == button.ButtonText));
+        
+        allPostGrabActions.AddRange(relevantActions);
 
         return [.. allPostGrabActions.OrderBy(b => b.OrderNumber)];
     }
@@ -144,11 +141,12 @@ public class PostGrabActionManager
             try
             {
                 Dictionary<string, bool>? checkStates = JsonSerializer.Deserialize<Dictionary<string, bool>>(statesJson);
-                if (checkStates is not null && checkStates.TryGetValue(action.ButtonText, out bool storedState))
+                if (checkStates is not null 
+                    && checkStates.TryGetValue(action.ButtonText, out bool storedState)
+                    && action.DefaultCheckState == DefaultCheckState.LastUsed)
                 {
                     // If the action is set to LastUsed, use the stored state
-                    if (action.DefaultCheckState == DefaultCheckState.LastUsed)
-                        return storedState;
+                    return storedState;
                 }
             }
             catch (JsonException)
@@ -202,11 +200,14 @@ public class PostGrabActionManager
 
             case "TrimEachLine_Click":
                 string[] stringSplit = text.Split(Environment.NewLine);
-                string finalString = "";
-                foreach (string line in stringSplit)
-                    if (!string.IsNullOrWhiteSpace(line))
-                        finalString += line.Trim() + Environment.NewLine;
-                result = finalString;
+                string[] trimmedLines = stringSplit
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .Select(line => line.Trim())
+                    .ToArray();
+
+                result = trimmedLines.Length == 0
+                    ? string.Empty
+                    : string.Join(Environment.NewLine, trimmedLines) + Environment.NewLine;
                 break;
 
             case "RemoveDuplicateLines_Click":
