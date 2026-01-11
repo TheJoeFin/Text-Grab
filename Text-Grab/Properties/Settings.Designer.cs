@@ -826,5 +826,17 @@ namespace Text_Grab.Properties {
                 this["PostGrabCheckStates"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PostGrabStayOpen {
+            get {
+                return ((bool)(this["PostGrabStayOpen"]));
+            }
+            set {
+                this["PostGrabStayOpen"] = value;
+            }
+        }
     }
 }
