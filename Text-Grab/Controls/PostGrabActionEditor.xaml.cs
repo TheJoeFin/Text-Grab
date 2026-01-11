@@ -68,6 +68,9 @@ public partial class PostGrabActionEditor : FluentWindow
         }
         AvailableActionsListBox.ItemsSource = AvailableActions;
 
+        // Load PostGrabStayOpen setting
+        StayOpenToggle.IsChecked = AppUtilities.TextGrabSettings.PostGrabStayOpen;
+
         // Update empty state visibility
         UpdateEmptyStateVisibility();
     }
@@ -169,6 +172,10 @@ public partial class PostGrabActionEditor : FluentWindow
     {
         // Save the enabled actions
         PostGrabActionManager.SavePostGrabActions([.. EnabledActions]);
+
+        // Save the PostGrabStayOpen setting
+        AppUtilities.TextGrabSettings.PostGrabStayOpen = StayOpenToggle.IsChecked ?? false;
+        AppUtilities.TextGrabSettings.Save();
 
         Close();
     }

@@ -210,6 +210,13 @@
                     </ListView.View>
                 </ui:ListView>
             </Border>
+
+            <!--  Stay Open Toggle  -->
+            <ui:ToggleSwitch
+                x:Name="StayOpenToggle"
+                Margin="0,16,0,0"
+                Content="Keep menu open after clicking an action"
+                ToolTip="When enabled, the post-grab menu stays open after clicking an action, allowing multiple actions to be selected" />
         </StackPanel>
 
         <!--  Bottom Buttons  -->

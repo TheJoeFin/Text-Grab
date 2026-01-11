@@ -267,6 +267,9 @@ public partial class FullscreenGrab : Window
         // Get enabled post-grab actions from settings
         List<ButtonInfo> enabledActions = PostGrabActionManager.GetEnabledPostGrabActions();
 
+        // Get the PostGrabStayOpen setting
+        bool stayOpen = DefaultSettings.PostGrabStayOpen;
+
         int index = 1;
         foreach (ButtonInfo action in enabledActions)
         {
@@ -275,7 +278,8 @@ public partial class FullscreenGrab : Window
                 Header = action.ButtonText,
                 IsCheckable = true,
                 Tag = action,
-                IsChecked = PostGrabActionManager.GetCheckState(action)
+                IsChecked = PostGrabActionManager.GetCheckState(action),
+                StaysOpenOnClick = stayOpen
             };
 
             // Wire up click handler
