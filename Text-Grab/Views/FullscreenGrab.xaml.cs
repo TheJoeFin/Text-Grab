@@ -279,7 +279,8 @@ public partial class FullscreenGrab : Window
                 IsCheckable = true,
                 Tag = action,
                 IsChecked = PostGrabActionManager.GetCheckState(action),
-                StaysOpenOnClick = stayOpen
+                StaysOpenOnClick = stayOpen,
+                InputGestureText = $"Ctrl+{index}"
             };
 
             // Wire up click handler

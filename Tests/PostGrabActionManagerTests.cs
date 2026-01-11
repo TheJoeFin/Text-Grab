@@ -72,20 +72,6 @@ public class PostGrabActionManagerTests
     }
 
     [Fact]
-    public void GetDefaultPostGrabActions_AllHaveInputGestureText()
-    {
-        // Arrange & Act
-        List<ButtonInfo> actions = PostGrabActionManager.GetDefaultPostGrabActions();
-
-        // Assert
-        Assert.All(actions, action =>
-        {
-            Assert.False(string.IsNullOrEmpty(action.InputGestureText));
-            Assert.StartsWith("CTRL +", action.InputGestureText);
-        });
-    }
-
-    [Fact]
     public async Task ExecutePostGrabAction_CorrectGuid_TransformsText()
     {
         // Arrange

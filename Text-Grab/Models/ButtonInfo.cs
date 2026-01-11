@@ -27,7 +27,6 @@ public class ButtonInfo
     public bool IsRelevantForFullscreenGrab { get; set; } = false;
     public bool IsRelevantForEditWindow { get; set; } = true; // Default to true for backward compatibility
     public DefaultCheckState DefaultCheckState { get; set; } = DefaultCheckState.Off;
-    public string InputGestureText { get; set; } = "";
 
     public ButtonInfo()
     {
@@ -82,7 +81,7 @@ public class ButtonInfo
     }
 
     // Constructor for post-grab actions
-    public ButtonInfo(string buttonText, string clickEvent, SymbolRegular symbolIcon, DefaultCheckState defaultCheckState, string inputGestureText = "")
+    public ButtonInfo(string buttonText, string clickEvent, SymbolRegular symbolIcon, DefaultCheckState defaultCheckState)
     {
         ButtonText = buttonText;
         ClickEvent = clickEvent;
@@ -91,7 +90,6 @@ public class ButtonInfo
         IsRelevantForFullscreenGrab = true;
         IsRelevantForEditWindow = false;
         DefaultCheckState = defaultCheckState;
-        InputGestureText = inputGestureText;
     }
 
     public static List<ButtonInfo> DefaultButtonList { get; set; } =
