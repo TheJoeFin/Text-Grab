@@ -122,6 +122,7 @@ public partial class GeneralSettings : Page
 
         List<WebSearchUrlModel> searcherSettings = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
+        WebSearchersComboBox.Items.Clear();
         foreach (WebSearchUrlModel searcher in searcherSettings)
             WebSearchersComboBox.Items.Add(searcher);
 

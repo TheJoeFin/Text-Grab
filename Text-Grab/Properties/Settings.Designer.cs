@@ -802,5 +802,29 @@ namespace Text_Grab.Properties {
                 this["GrabFrameTranslationLanguage"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PostGrabJSON {
+            get {
+                return ((string)(this["PostGrabJSON"]));
+            }
+            set {
+                this["PostGrabJSON"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PostGrabCheckStates {
+            get {
+                return ((string)(this["PostGrabCheckStates"]));
+            }
+            set {
+                this["PostGrabCheckStates"] = value;
+            }
+        }
     }
 }

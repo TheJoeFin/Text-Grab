@@ -10,98 +10,139 @@
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="20,12,40,40" Orientation="Vertical">
-            <TextBlock Style="{StaticResource TextHeader}" Text="Fullscreen Grab Settings"></TextBlock>
+    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource TextHeader}" Text="Fullscreen Grab Settings" />
 
-            <TextBlock
-                Margin="0,12,0,6"
-                FontSize="18"
-                FontWeight="Bold"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Defaults"></TextBlock>
+        <TextBlock
+            Margin="0,12,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Defaults" />
 
-            <StackPanel Margin="0,4,0,8">
-                <TextBlock Style="{StaticResource TextBodyNormal}" Text="Start mode:"></TextBlock>
-                <StackPanel Margin="12,6,0,0">
-                    <RadioButton x:Name="DefaultModeRadio" GroupName="FsgStartMode" Click="DefaultModeRadio_Click">Default (Standard)</RadioButton>
-                    <RadioButton x:Name="SingleLineModeRadio" GroupName="FsgStartMode" Click="SingleLineModeRadio_Click">Single Line</RadioButton>
-                    <RadioButton x:Name="TableModeRadio" GroupName="FsgStartMode" Click="TableModeRadio_Click">Table</RadioButton>
-                </StackPanel>
-                <TextBlock
-                    Margin="24,6,0,0"
-                    Opacity="0.75"
-                    Style="{StaticResource TextBodyNormal}"
-                    Text="Single Line outputs captures as a single line (same as pressing S). Table mode requires Windows OCR/AI languages."></TextBlock>
+        <StackPanel Margin="0,4,0,8">
+            <TextBlock Style="{StaticResource TextBodyNormal}" Text="Start mode:" />
+            <StackPanel Margin="12,6,0,0">
+                <RadioButton
+                    x:Name="DefaultModeRadio"
+                    Click="DefaultModeRadio_Click"
+                    GroupName="FsgStartMode">
+                    Default (Standard)
+                </RadioButton>
+                <RadioButton
+                    x:Name="SingleLineModeRadio"
+                    Click="SingleLineModeRadio_Click"
+                    GroupName="FsgStartMode">
+                    Single Line
+                </RadioButton>
+                <RadioButton
+                    x:Name="TableModeRadio"
+                    Click="TableModeRadio_Click"
+                    GroupName="FsgStartMode">
+                    Table
+                </RadioButton>
             </StackPanel>
-
-            <CheckBox
-                x:Name="SendToEtwCheckBox"
-                Margin="0,4,0,0"
-                Click="SendToEtwCheckBox_Click"
-                Content="Send output to Edit Text Window by default"></CheckBox>
             <TextBlock
-                Margin="24,0,0,8"
-                Opacity="0.75"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Automatically route capture text into the Edit Text Window (same as pressing E)."></TextBlock>
-
-            <!-- Shade overlay option -->
-            <CheckBox
-                x:Name="ShadeOverlayCheckBox"
-                Margin="0,8,0,0"
-                Click="ShadeOverlayCheckBox_Click"
-                Content="Dim screen with translucent overlay while selecting"></CheckBox>
-            <TextBlock
-                Margin="24,0,0,8"
-                Opacity="0.75"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Controls the transparent overlay shown during Fullscreen Grab selection. Turn off to disable screen dimming."></TextBlock>
-
-            <TextBlock
-                Margin="0,16,0,6"
-                FontSize="18"
-                FontWeight="Bold"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Post-capture insert"></TextBlock>
-
-            <CheckBox
-                x:Name="TryInsertCheckBox"
-                Margin="0,4,0,0"
-                Click="TryInsertCheckBox_Click"
-                Content="Insert captured text into the focused app after closing Fullscreen Grab"></CheckBox>
-
-            <StackPanel
                 Margin="24,6,0,0"
-                VerticalAlignment="Center"
-                Orientation="Horizontal">
-                <TextBlock
-                    VerticalAlignment="Center"
-                    Style="{StaticResource TextBodyNormal}"
-                    Text="Insert delay (seconds):"></TextBlock>
-                <Slider
-                    x:Name="InsertDelaySlider"
-                    Width="200"
-                    Margin="12,0,0,0"
-                    IsSnapToTickEnabled="True"
-                    Maximum="5"
-                    Minimum="0"
-                    SmallChange="0.1"
-                    TickFrequency="0.1"
-                    ValueChanged="InsertDelaySlider_ValueChanged"></Slider>
-                <TextBlock
-                    x:Name="InsertDelayValueText"
-                    Width="40"
-                    Margin="12,0,0,0"
-                    HorizontalAlignment="Left"
-                    Style="{StaticResource TextBodyNormal}"></TextBlock>
-            </StackPanel>
-
-            <TextBlock
-                Margin="24,2,0,0"
                 Opacity="0.75"
                 Style="{StaticResource TextBodyNormal}"
-                Text="How long to wait before simulating paste (Ctrl+V)."></TextBlock>
+                Text="Single Line outputs captures as a single line (same as pressing S). Table mode requires Windows OCR/AI languages." />
         </StackPanel>
-    </ScrollViewer>
+
+        <CheckBox
+            x:Name="SendToEtwCheckBox"
+            Margin="0,4,0,0"
+            Click="SendToEtwCheckBox_Click"
+            Content="Send output to Edit Text Window by default" />
+        <TextBlock
+            Margin="24,0,0,8"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Automatically route capture text into the Edit Text Window (same as pressing E)." />
+
+        <!--  Shade overlay option  -->
+        <CheckBox
+            x:Name="ShadeOverlayCheckBox"
+            Margin="0,8,0,0"
+            Click="ShadeOverlayCheckBox_Click"
+            Content="Dim screen with translucent overlay while selecting" />
+        <TextBlock
+            Margin="24,0,0,8"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Controls the transparent overlay shown during Fullscreen Grab selection. Turn off to disable screen dimming." />
+
+        <TextBlock
+            Margin="0,16,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Post-capture insert" />
+
+        <CheckBox
+            x:Name="TryInsertCheckBox"
+            Margin="0,4,0,0"
+            Click="TryInsertCheckBox_Click"
+            Content="Insert captured text into the focused app after closing Fullscreen Grab" />
+
+        <StackPanel
+            Margin="24,6,0,0"
+            VerticalAlignment="Center"
+            Orientation="Horizontal">
+            <TextBlock
+                VerticalAlignment="Center"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Insert delay (seconds):" />
+            <Slider
+                x:Name="InsertDelaySlider"
+                Width="200"
+                Margin="12,0,0,0"
+                IsSnapToTickEnabled="True"
+                Maximum="5"
+                Minimum="0"
+                SmallChange="0.1"
+                TickFrequency="0.1"
+                ValueChanged="InsertDelaySlider_ValueChanged" />
+            <TextBlock
+                x:Name="InsertDelayValueText"
+                Width="40"
+                Margin="12,0,0,0"
+                HorizontalAlignment="Left"
+                Style="{StaticResource TextBodyNormal}" />
+        </StackPanel>
+
+        <TextBlock
+            Margin="24,2,0,0"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="How long to wait before simulating paste (Ctrl+V)." />
+
+        <TextBlock
+            Margin="0,16,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Post-capture actions" />
+
+        <TextBlock
+            Margin="0,0,0,8"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Configure which actions are performed automatically after text is captured (Fix GUIDs, Trim lines, Remove duplicates, etc.)." />
+
+        <Button
+            x:Name="CustomizeActionsButton"
+            Margin="0,0,0,8"
+            HorizontalAlignment="Left"
+            Click="CustomizeActionsButton_Click"
+            Content="Customize Post-Capture Actions..."
+            ToolTip="Open editor to add, remove, and reorder post-capture actions" />
+
+        <TextBlock
+            x:Name="ActionsCountText"
+            Margin="0,0,0,16"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Current actions: Loading..." />
+    </StackPanel>
 </Page>
