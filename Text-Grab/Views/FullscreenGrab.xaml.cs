@@ -48,6 +48,8 @@ public partial class FullscreenGrab : Window
     private const double MaxZoomScale = 16.0;
     private const double EdgePanThresholdPercent = 0.10;
     private const double EdgePanSpeed = 8.0;
+    private const string EditPostGrabActionsTag = "EditPostGrabActions";
+    private const string ClosePostGrabMenuTag = "ClosePostGrabMenu";
     private readonly DispatcherTimer edgePanTimer;
 
     #endregion Fields
@@ -302,7 +304,7 @@ public partial class FullscreenGrab : Window
         MenuItem editPostGrabMenuItem = new()
         {
             Header = "Edit this list...",
-            Tag = "EditPostGrabActions"
+            Tag = EditPostGrabActionsTag
         };
         editPostGrabMenuItem.Click += EditPostGrabActions_Click;
         contextMenu.Items.Add(editPostGrabMenuItem);
@@ -311,7 +313,7 @@ public partial class FullscreenGrab : Window
         MenuItem hidePostGrabMenuItem = new()
         {
             Header = "Close this menu",
-            Tag = "ClosePostGrabMenu"
+            Tag = ClosePostGrabMenuTag
         };
         hidePostGrabMenuItem.Click += HidePostGrabActions_Click;
         contextMenu.Items.Add(hidePostGrabMenuItem);
@@ -1030,11 +1032,11 @@ public partial class FullscreenGrab : Window
                     }
                     else if (menuItem.Tag is string tag)
                     {
-                        if (tag == "EditPostGrabActions")
+                        if (tag == EditPostGrabActionsTag)
                         {
                             menuItem.Click -= EditPostGrabActions_Click;
                         }
-                        else if (tag == "ClosePostGrabMenu")
+                        else if (tag == ClosePostGrabMenuTag)
                         {
                             menuItem.Click -= HidePostGrabActions_Click;
                         }
