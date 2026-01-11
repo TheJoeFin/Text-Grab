@@ -44,8 +44,7 @@ public class PostGrabActionManager
                 buttonText: "Fix GUIDs",
                 clickEvent: "CorrectGuid_Click",
                 symbolIcon: SymbolRegular.Braces24,
-                defaultCheckState: DefaultCheckState.Off,
-                inputGestureText: "CTRL + 1"
+                defaultCheckState: DefaultCheckState.Off
             )
             {
                 OrderNumber = 6.1
@@ -54,8 +53,7 @@ public class PostGrabActionManager
                 buttonText: "Trim each line",
                 clickEvent: "TrimEachLine_Click",
                 symbolIcon: SymbolRegular.TextCollapse24,
-                defaultCheckState: DefaultCheckState.Off,
-                inputGestureText: "CTRL + 2"
+                defaultCheckState: DefaultCheckState.Off
             )
             {
                 OrderNumber = 6.2
@@ -64,8 +62,7 @@ public class PostGrabActionManager
                 buttonText: "Remove duplicate lines",
                 clickEvent: "RemoveDuplicateLines_Click",
                 symbolIcon: SymbolRegular.MultiselectLtr24,
-                defaultCheckState: DefaultCheckState.Off,
-                inputGestureText: "CTRL + 3"
+                defaultCheckState: DefaultCheckState.Off
             )
             {
                 OrderNumber = 6.3
@@ -74,8 +71,7 @@ public class PostGrabActionManager
                 buttonText: "Web Search",
                 clickEvent: "WebSearch_Click",
                 symbolIcon: SymbolRegular.GlobeSearch24,
-                defaultCheckState: DefaultCheckState.Off,
-                inputGestureText: "CTRL + 4"
+                defaultCheckState: DefaultCheckState.Off
             )
             {
                 OrderNumber = 6.4
@@ -84,8 +80,7 @@ public class PostGrabActionManager
                 buttonText: "Try to insert text",
                 clickEvent: "Insert_Click",
                 symbolIcon: SymbolRegular.ClipboardTaskAdd24,
-                defaultCheckState: DefaultCheckState.Off,
-                inputGestureText: "CTRL + 5"
+                defaultCheckState: DefaultCheckState.Off
             )
             {
                 OrderNumber = 6.5
@@ -94,8 +89,7 @@ public class PostGrabActionManager
                 buttonText: "Translate to system language",
                 clickEvent: "Translate_Click",
                 symbolIcon: SymbolRegular.LocalLanguage24,
-                defaultCheckState: DefaultCheckState.Off,
-                inputGestureText: "CTRL + 6"
+                defaultCheckState: DefaultCheckState.Off
             )
             {
                 OrderNumber = 6.6
