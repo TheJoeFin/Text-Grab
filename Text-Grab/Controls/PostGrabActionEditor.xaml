@@ -8,7 +8,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Post-Grab Actions Settings"
     Width="900"
-    Height="700"
+    Height="550"
     Background="{DynamicResource ApplicationBackgroundBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     WindowStartupLocation="CenterOwner"
@@ -66,6 +66,7 @@
                         x:Name="AvailableActionsListBox"
                         MinHeight="300"
                         d:ItemsSource="{d:SampleData ItemCount=5}"
+                        ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                         ScrollViewer.VerticalScrollBarVisibility="Visible">
                         <ListView.View>
                             <GridView>

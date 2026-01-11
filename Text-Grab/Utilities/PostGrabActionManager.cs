@@ -81,16 +81,17 @@ public class PostGrabActionManager
             )
             {
                 OrderNumber = 6.5
-            },
-            new ButtonInfo(
-                buttonText: "Translate to system language",
-                clickEvent: "Translate_Click",
-                symbolIcon: SymbolRegular.LocalLanguage24,
-                defaultCheckState: DefaultCheckState.Off
-            )
-            {
-                OrderNumber = 6.6
             }
+            //,
+            //new ButtonInfo(
+            //    buttonText: "Translate to system language",
+            //    clickEvent: "Translate_Click",
+            //    symbolIcon: SymbolRegular.LocalLanguage24,
+            //    defaultCheckState: DefaultCheckState.Off
+            //)
+            //{
+            //    OrderNumber = 6.6
+            //}
         ];
     }
 
