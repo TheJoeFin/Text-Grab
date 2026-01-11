@@ -301,7 +301,8 @@ public partial class FullscreenGrab : Window
         // Add "Edit this list..." menu item
         MenuItem editPostGrabMenuItem = new()
         {
-            Header = "Edit this list..."
+            Header = "Edit this list...",
+            Tag = "EditPostGrabActions"
         };
         editPostGrabMenuItem.Click += EditPostGrabActions_Click;
         contextMenu.Items.Add(editPostGrabMenuItem);
@@ -309,7 +310,8 @@ public partial class FullscreenGrab : Window
         // Add "Close this menu" menu item
         MenuItem hidePostGrabMenuItem = new()
         {
-            Header = "Close this menu"
+            Header = "Close this menu",
+            Tag = "ClosePostGrabMenu"
         };
         hidePostGrabMenuItem.Click += HidePostGrabActions_Click;
         contextMenu.Items.Add(hidePostGrabMenuItem);
@@ -1020,17 +1022,23 @@ public partial class FullscreenGrab : Window
             
             foreach (object item in contextMenu.Items)
             {
-                if (item is MenuItem menuItem && menuItem.Tag is ButtonInfo)
+                if (item is MenuItem menuItem)
                 {
-                    menuItem.Click -= PostActionMenuItem_Click;
-                }
-                else if (item is MenuItem editMenuItem && editMenuItem.Header?.ToString() == "Edit this list...")
-                {
-                    editMenuItem.Click -= EditPostGrabActions_Click;
-                }
-                else if (item is MenuItem hideMenuItem && hideMenuItem.Header?.ToString() == "Close this menu")
-                {
-                    hideMenuItem.Click -= HidePostGrabActions_Click;
+                    if (menuItem.Tag is ButtonInfo)
+                    {
+                        menuItem.Click -= PostActionMenuItem_Click;
+                    }
+                    else if (menuItem.Tag is string tag)
+                    {
+                        if (tag == "EditPostGrabActions")
+                        {
+                            menuItem.Click -= EditPostGrabActions_Click;
+                        }
+                        else if (tag == "ClosePostGrabMenu")
+                        {
+                            menuItem.Click -= HidePostGrabActions_Click;
+                        }
+                    }
                 }
             }
             
