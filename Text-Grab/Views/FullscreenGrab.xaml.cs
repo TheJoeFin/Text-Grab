@@ -1066,61 +1066,53 @@ public partial class FullscreenGrab : Window
     private void SaveLastUsedStateIfNeeded(MenuItem menuItem)
     {
         bool isChecked = menuItem.IsChecked;
+        bool needsSave = false;
 
         if (menuItem == GuidFixMenuItem)
         {
-            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgGuidFixDefault, true, out var mode) 
-                && mode == PostGrabActionDefault.LastUsed)
-            {
-                DefaultSettings.FsgGuidFixLastUsed = isChecked;
-                DefaultSettings.Save();
-            }
+            needsSave = TrySaveLastUsedState(DefaultSettings.FsgGuidFixDefault, isChecked, 
+                value => DefaultSettings.FsgGuidFixLastUsed = value);
         }
         else if (menuItem == TrimEachLineMenuItem)
         {
-            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgTrimEachLineDefault, true, out var mode) 
-                && mode == PostGrabActionDefault.LastUsed)
-            {
-                DefaultSettings.FsgTrimEachLineLastUsed = isChecked;
-                DefaultSettings.Save();
-            }
+            needsSave = TrySaveLastUsedState(DefaultSettings.FsgTrimEachLineDefault, isChecked,
+                value => DefaultSettings.FsgTrimEachLineLastUsed = value);
         }
         else if (menuItem == RemoveDuplicatesMenuItem)
         {
-            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgRemoveDuplicatesDefault, true, out var mode) 
-                && mode == PostGrabActionDefault.LastUsed)
-            {
-                DefaultSettings.FsgRemoveDuplicatesLastUsed = isChecked;
-                DefaultSettings.Save();
-            }
+            needsSave = TrySaveLastUsedState(DefaultSettings.FsgRemoveDuplicatesDefault, isChecked,
+                value => DefaultSettings.FsgRemoveDuplicatesLastUsed = value);
         }
         else if (menuItem == WebSearchPostCapture)
         {
-            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgWebSearchDefault, true, out var mode) 
-                && mode == PostGrabActionDefault.LastUsed)
-            {
-                DefaultSettings.FsgWebSearchLastUsed = isChecked;
-                DefaultSettings.Save();
-            }
+            needsSave = TrySaveLastUsedState(DefaultSettings.FsgWebSearchDefault, isChecked,
+                value => DefaultSettings.FsgWebSearchLastUsed = value);
         }
         else if (menuItem == InsertPostCapture)
         {
-            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgInsertTextDefault, true, out var mode) 
-                && mode == PostGrabActionDefault.LastUsed)
-            {
-                DefaultSettings.FsgInsertTextLastUsed = isChecked;
-                DefaultSettings.Save();
-            }
+            needsSave = TrySaveLastUsedState(DefaultSettings.FsgInsertTextDefault, isChecked,
+                value => DefaultSettings.FsgInsertTextLastUsed = value);
         }
         else if (menuItem == TranslatePostCapture)
         {
-            if (Enum.TryParse<PostGrabActionDefault>(DefaultSettings.FsgTranslateDefault, true, out var mode) 
-                && mode == PostGrabActionDefault.LastUsed)
-            {
-                DefaultSettings.FsgTranslateLastUsed = isChecked;
-                DefaultSettings.Save();
-            }
+            needsSave = TrySaveLastUsedState(DefaultSettings.FsgTranslateDefault, isChecked,
+                value => DefaultSettings.FsgTranslateLastUsed = value);
         }
+
+        // Only save once after checking all conditions
+        if (needsSave)
+            DefaultSettings.Save();
+    }
+
+    private bool TrySaveLastUsedState(string defaultSetting, bool isChecked, Action<bool> setLastUsed)
+    {
+        if (Enum.TryParse<PostGrabActionDefault>(defaultSetting, true, out var mode)
+            && mode == PostGrabActionDefault.LastUsed)
+        {
+            setLastUsed(isChecked);
+            return true;
+        }
+        return false;
     }
     #endregion Methods
 
