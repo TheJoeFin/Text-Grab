@@ -43,7 +43,15 @@ public class ButtonInfo
 
     public override int GetHashCode()
     {
-        return System.HashCode.Combine(ButtonText, SymbolText, Background, Command, ClickEvent, IsRelevantForFullscreenGrab, IsRelevantForEditWindow);
+        return System.HashCode.Combine(
+            ButtonText, 
+            SymbolText, 
+            Background, 
+            Command, 
+            ClickEvent, 
+            IsRelevantForFullscreenGrab, 
+            IsRelevantForEditWindow,
+            DefaultCheckState);
     }
 
     // a constructor which takes a collapsible button
