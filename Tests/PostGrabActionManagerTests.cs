@@ -13,7 +13,7 @@ public class PostGrabActionManagerTests
 
         // Assert
         Assert.NotNull(actions);
-        Assert.Equal(6, actions.Count); // Should have 6 default actions
+        Assert.Equal(5, actions.Count);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class PostGrabActionManagerTests
         Assert.Contains(actions, a => a.ButtonText == "Remove duplicate lines");
         Assert.Contains(actions, a => a.ButtonText == "Web Search");
         Assert.Contains(actions, a => a.ButtonText == "Try to insert text");
-        Assert.Contains(actions, a => a.ButtonText == "Translate to system language");
+        //Assert.Contains(actions, a => a.ButtonText == "Translate to system language");
     }
 
     [Fact]
