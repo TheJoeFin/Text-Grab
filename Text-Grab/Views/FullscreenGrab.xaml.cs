@@ -270,6 +270,12 @@ public partial class FullscreenGrab : Window
         // Get the PostGrabStayOpen setting
         bool stayOpen = DefaultSettings.PostGrabStayOpen;
 
+        // Remove any existing keyboard handler to avoid duplicates
+        contextMenu.PreviewKeyDown -= FullscreenGrab_KeyDown;
+        
+        // Add keyboard handling once for the entire context menu
+        contextMenu.PreviewKeyDown += FullscreenGrab_KeyDown;
+
         int index = 1;
         foreach (ButtonInfo action in enabledActions)
         {
@@ -285,9 +291,6 @@ public partial class FullscreenGrab : Window
 
             // Wire up click handler
             menuItem.Click += PostActionMenuItem_Click;
-
-            // Add keyboard handling
-            contextMenu.PreviewKeyDown += FullscreenGrab_KeyDown;
 
             contextMenu.Items.Add(menuItem);
             index++;
@@ -1010,6 +1013,30 @@ public partial class FullscreenGrab : Window
         if (RegionClickCanvas.Children.Contains(selectBorder))
             RegionClickCanvas.Children.Remove(selectBorder);
 
+        // Clean up dynamically created post-grab action menu items
+        if (NextStepDropDownButton.Flyout is ContextMenu contextMenu)
+        {
+            contextMenu.PreviewKeyDown -= FullscreenGrab_KeyDown;
+            
+            foreach (object item in contextMenu.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.Tag is ButtonInfo)
+                {
+                    menuItem.Click -= PostActionMenuItem_Click;
+                }
+                else if (item is MenuItem editMenuItem && editMenuItem.Header?.ToString() == "Edit this list...")
+                {
+                    editMenuItem.Click -= EditPostGrabActions_Click;
+                }
+                else if (item is MenuItem hideMenuItem && hideMenuItem.Header?.ToString() == "Close this menu")
+                {
+                    hideMenuItem.Click -= HidePostGrabActions_Click;
+                }
+            }
+            
+            contextMenu.Items.Clear();
+        }
+
         CurrentScreen = null;
         dpiScale = null;
         TextFromOCR = null;
@@ -1100,12 +1127,11 @@ public partial class FullscreenGrab : Window
     private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Save check state for LastUsed tracking
-        if (sender is MenuItem menuItem && menuItem.Tag is ButtonInfo action)
+        if (sender is MenuItem menuItem 
+            && menuItem.Tag is ButtonInfo action
+            && action.DefaultCheckState == DefaultCheckState.LastUsed)
         {
-            if (action.DefaultCheckState == DefaultCheckState.LastUsed)
-            {
-                PostGrabActionManager.SaveCheckState(action, menuItem.IsChecked);
-            }
+            PostGrabActionManager.SaveCheckState(action, menuItem.IsChecked);
         }
 
         CheckIfAnyPostActionsSelected();
