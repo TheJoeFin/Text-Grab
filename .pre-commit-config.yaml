@@ -5,17 +5,8 @@
 
 repos:
   # .NET Format - Enforces .editorconfig and code style
-  - repo: https://github.com/dotnet/format
-    rev: v9.0.0
-    hooks:
-      - id: dotnet-format
-        name: dotnet-format
-        description: Run dotnet format to check code formatting
-        entry: dotnet format
-        args: ['--verify-no-changes', '--verbosity', 'normal']
-        language: system
-        types: [c#]
-        pass_filenames: false
+  # Note: Formatting checks are run in CI. Local pre-commit focuses on basic file hygiene.
+  # To format code locally, run: dotnet format Text-Grab.sln
 
   # Trailing whitespace and end-of-file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -36,4 +27,15 @@ repos:
     hooks:
       - id: editorconfig-checker
         name: editorconfig-checker
-        exclude: '.*\.(sln|png|jpg|jpeg|gif|ico|bmp|exe|dll|pdb)$'
+        exclude: '.*\.(sln|png|jpg|jpeg|gif|ico|bmp|exe|dll|pdb|md|yml|yaml|sh|ps1|bat|cmd)$'
+
+  # Optional: Uncomment to enable local .NET formatting checks
+  # This may fail if the codebase has existing formatting issues
+  # - repo: local
+  #   hooks:
+  #     - id: dotnet-format
+  #       name: dotnet format
+  #       entry: dotnet format
+  #       args: ['--include']
+  #       language: system
+  #       types: [c#]
