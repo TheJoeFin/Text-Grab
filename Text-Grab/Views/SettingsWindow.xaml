@@ -58,7 +58,10 @@
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:GeneralSettings}">
                     <ui:NavigationViewItem.Content>
-                        <TextBlock Style="{StaticResource NavMenuContent}" Text="General" />
+                        <TextBlock
+                            Style="{StaticResource NavMenuContent}"
+                            Text="General"
+                            TextWrapping="Wrap" />
                     </ui:NavigationViewItem.Content>
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Home24" />
@@ -66,7 +69,11 @@
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:FullscreenGrabSettings}">
                     <ui:NavigationViewItem.Content>
-                        <TextBlock Style="{StaticResource NavMenuContent}" Text="Fullscreen Grab" />
+                        <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
+                            <Run>Fullscreen</Run>
+                            <LineBreak />
+                            <Run>Grab</Run>
+                        </TextBlock>
                     </ui:NavigationViewItem.Content>
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="SlideAdd24" />
@@ -74,7 +81,10 @@
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:LanguageSettings}">
                     <ui:NavigationViewItem.Content>
-                        <TextBlock Style="{StaticResource NavMenuContent}" Text="Languages" />
+                        <TextBlock
+                            Style="{StaticResource NavMenuContent}"
+                            Text="Languages"
+                            TextWrapping="Wrap" />
                     </ui:NavigationViewItem.Content>
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="LocalLanguage24" />
@@ -82,7 +92,11 @@
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:KeysSettings}">
                     <ui:NavigationViewItem.Content>
-                        <TextBlock Style="{StaticResource NavMenuContent}" Text="Keyboard Shortcuts" />
+                        <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
+                            <Run>Keyboard</Run>
+                            <LineBreak />
+                            <Run>Shortcuts</Run>
+                        </TextBlock>
                     </ui:NavigationViewItem.Content>
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="DesktopKeyboard24" />
@@ -90,7 +104,10 @@
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:TesseractSettings}">
                     <ui:NavigationViewItem.Content>
-                        <TextBlock Style="{StaticResource NavMenuContent}" Text="Tesseract" />
+                        <TextBlock
+                            Style="{StaticResource NavMenuContent}"
+                            Text="Tesseract"
+                            TextWrapping="Wrap" />
                     </ui:NavigationViewItem.Content>
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Globe24" />
@@ -98,7 +115,10 @@
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:DangerSettings}">
                     <ui:NavigationViewItem.Content>
-                        <TextBlock Style="{StaticResource NavMenuContent}" Text="Danger" />
+                        <TextBlock
+                            Style="{StaticResource NavMenuContent}"
+                            Text="Danger"
+                            TextWrapping="Wrap" />
                     </ui:NavigationViewItem.Content>
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Warning24" />
