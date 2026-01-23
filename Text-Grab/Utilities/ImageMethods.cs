@@ -18,6 +18,27 @@ namespace Text_Grab;
 
 public static class ImageMethods
 {
+    /// <summary>
+    /// Converts a bitmap from HDR to SDR if HDR is detected at the specified location.
+    /// </summary>
+    /// <param name="bitmap">The bitmap to potentially convert</param>
+    /// <param name="centerX">X coordinate of the center of the captured region</param>
+    /// <param name="centerY">Y coordinate of the center of the captured region</param>
+    /// <returns>The SDR-converted bitmap if HDR was detected, otherwise the original bitmap</returns>
+    private static Bitmap ConvertHdrToSdrIfNeeded(Bitmap bitmap, int centerX, int centerY)
+    {
+        if (HdrUtilities.IsHdrEnabledAtPoint(centerX, centerY))
+        {
+            Bitmap? sdrBitmap = HdrUtilities.ConvertHdrToSdr(bitmap);
+            if (sdrBitmap != null && sdrBitmap != bitmap)
+            {
+                bitmap.Dispose();
+                return sdrBitmap;
+            }
+        }
+        return bitmap;
+    }
+
     public static Bitmap PadImage(Bitmap image, int minW = 64, int minH = 64)
     {
         if (image.Height >= minH && image.Width >= minW)
@@ -96,6 +117,10 @@ public static class ImageMethods
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        
+        // Convert HDR to SDR if needed
+        bmp = ConvertHdrToSdrIfNeeded(bmp, region.Left + region.Width / 2, region.Top + region.Height / 2);
+        
         bmp = PadImage(bmp);
 
         Singleton<HistoryService>.Instance.CacheLastBitmap(bmp);
@@ -141,6 +166,10 @@ public static class ImageMethods
         using Graphics g = Graphics.FromImage(bmp);
 
         g.CopyFromScreen(thisCorrectedLeft, thisCorrectedTop, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        
+        // Convert HDR to SDR if needed
+        bmp = ConvertHdrToSdrIfNeeded(bmp, thisCorrectedLeft + windowWidth / 2, thisCorrectedTop + windowHeight / 2);
+        
         return bmp;
     }
 
