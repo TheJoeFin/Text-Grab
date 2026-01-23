@@ -14,13 +14,13 @@ echo "Formatting staged C# files:"
 echo "$STAGED_FILES"
 
 # Format each file individually
-for FILE in $STAGED_FILES; do
+while IFS= read -r FILE; do
     if [ -f "$FILE" ]; then
         echo "Formatting: $FILE"
         dotnet format Text-Grab.sln --include "$FILE" --verbosity quiet
         # Re-stage the file after formatting
         git add "$FILE"
     fi
-done
+done <<< "$STAGED_FILES"
 
 echo "Formatting complete!"

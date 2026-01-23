@@ -18,9 +18,9 @@ $stagedFiles | ForEach-Object { Write-Host "  - $_" }
 foreach ($file in $stagedFiles) {
     if (Test-Path $file) {
         Write-Host "Formatting: $file" -ForegroundColor Cyan
-        dotnet format Text-Grab.sln --include $file --verbosity quiet
+        dotnet format Text-Grab.sln --include "$file" --verbosity quiet
         # Re-stage the file after formatting
-        git add $file
+        git add "$file"
     }
 }
 
