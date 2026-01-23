@@ -35,6 +35,8 @@
             <Setter Property="Width" Value="30" />
             <Setter Property="Height" Value="30" />
         </Style>
+
+
     </Window.Resources>
 
     <Grid d:Background="NavajoWhite">
@@ -235,7 +237,7 @@
                             MouseEnter="RegionClickCanvas_MouseEnter"
                             MouseLeave="RegionClickCanvas_MouseLeave"
                             PreviewKeyDown="FullscreenGrab_KeyDown">
-                            <MenuItem
+                            <!--<MenuItem
                                 Name="GuidFixMenuItem"
                                 Click="PostActionMenuItem_Click"
                                 Header="Fix GUIDs"
@@ -283,7 +285,7 @@
                                 IsCheckable="True"
                                 StaysOpenOnClick="False"
                                 ToolTip="Translate the grabbed text to your system language using Windows AI"
-                                Visibility="Collapsed" />
+                                Visibility="Collapsed" />-->
                         </ContextMenu>
                     </wpfui:DropDownButton.Flyout>
                 </wpfui:DropDownButton>

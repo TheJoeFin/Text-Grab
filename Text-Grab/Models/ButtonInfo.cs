@@ -4,6 +4,13 @@ using Wpf.Ui.Controls;
 
 namespace Text_Grab.Models;
 
+public enum DefaultCheckState
+{
+    Off = 0,
+    LastUsed = 1,
+    On = 2
+}
+
 public class ButtonInfo
 {
     public double OrderNumber { get; set; } = 0.1;
@@ -15,6 +22,11 @@ public class ButtonInfo
     public bool IsSymbol { get; set; } = false;
 
     public SymbolRegular SymbolIcon { get; set; } = SymbolRegular.Diamond24;
+
+    // Post-grab action properties
+    public bool IsRelevantForFullscreenGrab { get; set; } = false;
+    public bool IsRelevantForEditWindow { get; set; } = true; // Default to true for backward compatibility
+    public DefaultCheckState DefaultCheckState { get; set; } = DefaultCheckState.Off;
 
     public ButtonInfo()
     {
@@ -31,7 +43,15 @@ public class ButtonInfo
 
     public override int GetHashCode()
     {
-        return System.HashCode.Combine(ButtonText, SymbolText, Background, Command, ClickEvent);
+        return System.HashCode.Combine(
+            ButtonText, 
+            SymbolText, 
+            Background, 
+            Command, 
+            ClickEvent, 
+            IsRelevantForFullscreenGrab, 
+            IsRelevantForEditWindow,
+            DefaultCheckState);
     }
 
     // a constructor which takes a collapsible button
@@ -45,6 +65,9 @@ public class ButtonInfo
             Command = button.CustomButton.Command;
             ClickEvent = button.CustomButton.ClickEvent;
             IsSymbol = button.CustomButton.IsSymbol;
+            IsRelevantForFullscreenGrab = button.CustomButton.IsRelevantForFullscreenGrab;
+            IsRelevantForEditWindow = button.CustomButton.IsRelevantForEditWindow;
+            DefaultCheckState = button.CustomButton.DefaultCheckState;
         }
         else
         {
@@ -63,6 +86,18 @@ public class ButtonInfo
         Command = command;
         ClickEvent = clickEvent;
         IsSymbol = isSymbol;
+    }
+
+    // Constructor for post-grab actions
+    public ButtonInfo(string buttonText, string clickEvent, SymbolRegular symbolIcon, DefaultCheckState defaultCheckState)
+    {
+        ButtonText = buttonText;
+        ClickEvent = clickEvent;
+        SymbolIcon = symbolIcon;
+        IsSymbol = true;
+        IsRelevantForFullscreenGrab = true;
+        IsRelevantForEditWindow = false;
+        DefaultCheckState = defaultCheckState;
     }
 
     public static List<ButtonInfo> DefaultButtonList { get; set; } =
