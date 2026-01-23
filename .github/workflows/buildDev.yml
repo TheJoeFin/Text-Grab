@@ -17,6 +17,8 @@ jobs:
   code-style:
     name: Check code style
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v5
       - name: Setup .NET
@@ -31,6 +33,8 @@ jobs:
   build:
     needs: code-style
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v5
       - name: Setup .NET
