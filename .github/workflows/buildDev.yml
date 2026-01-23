@@ -14,7 +14,22 @@ env:
   TEST_PATH: "Tests/Tests.csproj"
 
 jobs:
+  code-style:
+    name: Check code style
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.0.x"
+      - name: Restore dependencies
+        run: dotnet restore Text-Grab.sln
+      - name: Check code formatting
+        run: dotnet format Text-Grab.sln --verify-no-changes --verbosity normal
+
   build:
+    needs: code-style
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5

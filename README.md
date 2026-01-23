@@ -130,6 +130,15 @@ Text Grab is designed to have multiple modes, from minimal to fully featured; al
 - CliWrap: https://github.com/Tyrrrz/CliWrap
 - Microsoft Community Toolkit: https://github.com/CommunityToolkit
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Setting up the development environment
+- Code style and formatting requirements
+- Using pre-commit hooks for automated style checks
+- Running tests and building the project
+- Pull request process
+
 ### Thanks for using Text Grab
 Hopefully this simple app makes you more productive and saves you time from transcribing text.
 If you have any questions or feedback reach out on Twitter [@TheJoeFin](http://www.twitter.com/thejoefin) or by email joe@textgrab.net

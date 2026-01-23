@@ -1,0 +1,39 @@
+# Pre-commit hooks for Text-Grab
+# Install pre-commit: pip install pre-commit
+# Install hooks: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # .NET Format - Enforces .editorconfig and code style
+  - repo: https://github.com/dotnet/format
+    rev: v9.0.0
+    hooks:
+      - id: dotnet-format
+        name: dotnet-format
+        description: Run dotnet format to check code formatting
+        entry: dotnet format
+        args: ['--verify-no-changes', '--verbosity', 'normal']
+        language: system
+        types: [c#]
+        pass_filenames: false
+
+  # Trailing whitespace and end-of-file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '.*\.(md|sln)$'
+      - id: end-of-file-fixer
+        exclude: '.*\.sln$'
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+
+  # EditorConfig validation
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
+    rev: 3.0.3
+    hooks:
+      - id: editorconfig-checker
+        name: editorconfig-checker
+        exclude: '.*\.(sln|png|jpg|jpeg|gif|ico|bmp|exe|dll|pdb)$'
