@@ -403,6 +403,10 @@
                             Tag="Hindi" />
                     </MenuItem>
                     <MenuItem
+                        x:Name="ExtractRegexMenuItem"
+                        Click="ExtractRegexMenuItem_Click"
+                        Header="E_xtract RegEx" />
+                    <MenuItem
                         x:Name="LearnAiMenuItem"
                         Click="LearnAiMenuItem_Click"
                         Header="_Learn About Local AI Features..." />

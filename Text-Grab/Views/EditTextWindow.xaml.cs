@@ -3616,6 +3616,69 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private async void ExtractRegexMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string textDescription = GetSelectedTextOrAllText();
+
+        if (string.IsNullOrWhiteSpace(textDescription))
+        {
+            System.Windows.MessageBox.Show("Please enter or select text to extract a regex pattern from.",
+                "No Text", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        SetToLoading("Extracting RegEx pattern...");
+
+        string regexPattern;
+        try
+        {
+            regexPattern = await WindowsAiUtilities.ExtractRegex(textDescription);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Regex extraction exception: {ex.Message}");
+            System.Windows.MessageBox.Show($"An error occurred while extracting regex: {ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            SetToLoaded();
+            return;
+        }
+
+        SetToLoaded();
+
+        if (string.IsNullOrWhiteSpace(regexPattern))
+        {
+            System.Windows.MessageBox.Show("Failed to extract a regex pattern. The AI service may not be available or could not generate a pattern.",
+                "Extraction Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Create detailed explanation using the ExplainRegexPattern extension method
+        string explanation = regexPattern.ExplainRegexPattern();
+
+        // Show message box with Copy and Cancel buttons
+        Wpf.Ui.Controls.MessageBoxResult result = await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "RegEx Pattern Extracted",
+            Content = explanation,
+            PrimaryButtonText = "Copy",
+            CloseButtonText = "Cancel"
+        }.ShowDialogAsync();
+
+        if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+        {
+            try
+            {
+                System.Windows.Clipboard.SetDataObject(regexPattern, true);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to copy regex to clipboard: {ex.Message}");
+                System.Windows.MessageBox.Show("Failed to copy regex pattern to clipboard.",
+                    "Copy Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
     private void SetToLoading(string message = "")
     {
         IsEnabled = false;
