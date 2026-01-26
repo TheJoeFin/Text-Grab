@@ -91,6 +91,13 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         Pattern = FindTextBox.Text;
 
+        // Auto-detect regex pattern: if starts with ^ and ends with $, enable regex mode and strip anchors
+        if (Pattern.StartsWith("^") && Pattern.EndsWith("$") && Pattern.Length > 2)
+        {
+            UsePaternCheckBox.IsChecked = true;
+            Pattern = Pattern.Substring(1, Pattern.Length - 2); // Strip ^ from start and $ from end
+        }
+
         if (UsePaternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
             Pattern = Pattern.EscapeSpecialRegexChars(matchExactly);
 

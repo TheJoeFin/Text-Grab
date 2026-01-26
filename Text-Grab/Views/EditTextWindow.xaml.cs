@@ -3424,14 +3424,30 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
+        // Clean up any model artifacts like <\/PRED> tags
+        regexPattern = regexPattern.Replace("<\\/PRED>", "").Replace("</PRED>", "").Trim();
+
         // Create detailed explanation using the ExplainRegexPattern extension method
         string explanation = regexPattern.ExplainRegexPattern();
+
+        // Create a selectable TextBox for the message box content
+        System.Windows.Controls.TextBox explanationTextBox = new()
+        {
+            Text = explanation,
+            IsReadOnly = true,
+            TextWrapping = TextWrapping.Wrap,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            Padding = new Thickness(8),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MaxHeight = 400
+        };
 
         // Show message box with Copy and Cancel buttons
         Wpf.Ui.Controls.MessageBoxResult result = await new Wpf.Ui.Controls.MessageBox
         {
             Title = "RegEx Pattern Extracted",
-            Content = explanation,
+            Content = explanationTextBox,
             PrimaryButtonText = "Copy",
             CloseButtonText = "Cancel"
         }.ShowDialogAsync();
