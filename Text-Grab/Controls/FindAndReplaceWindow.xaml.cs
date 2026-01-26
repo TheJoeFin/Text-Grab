@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Humanizer;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
-using Humanizer;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -31,8 +31,8 @@ public partial class FindAndReplaceWindow : FluentWindow
     public static RoutedCommand ReplaceAllCmd = new();
     public static RoutedCommand ReplaceOneCmd = new();
     public static RoutedCommand TextSearchCmd = new();
-    private DispatcherTimer ChangeFindTextTimer = new();
-    private DispatcherTimer PrecisionSliderTimer = new();
+    private readonly DispatcherTimer ChangeFindTextTimer = new();
+    private readonly DispatcherTimer PrecisionSliderTimer = new();
     private MatchCollection? Matches;
     private string stringFromWindow = "";
     private EditTextWindow? textEditWindow;
@@ -74,8 +74,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         {
             textEditWindow = value;
 
-            if (textEditWindow is not null)
-                textEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+            textEditWindow?.PassedTextControl.TextChanged += EditTextBoxChanged;
         }
     }
     private string? Pattern { get; set; }
@@ -92,13 +91,13 @@ public partial class FindAndReplaceWindow : FluentWindow
         Pattern = FindTextBox.Text;
 
         // Auto-detect regex pattern: if starts with ^ and ends with $, enable regex mode and strip anchors
-        if (Pattern.StartsWith("^") && Pattern.EndsWith("$") && Pattern.Length > 2)
+        if (Pattern.StartsWith('^') && Pattern.EndsWith('$') && Pattern.Length > 2)
         {
-            UsePaternCheckBox.IsChecked = true;
-            Pattern = Pattern.Substring(1, Pattern.Length - 2); // Strip ^ from start and $ from end
+            UsePatternCheckBox.IsChecked = true;
+            Pattern = Pattern[1..^1]; // Strip ^ from start and $ from end
         }
 
-        if (UsePaternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
+        if (UsePatternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
             Pattern = Pattern.EscapeSpecialRegexChars(matchExactly);
 
         if (string.IsNullOrEmpty(StringFromWindow) && TextEditWindow is not null)
@@ -108,7 +107,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         {
             // When using pattern mode with inline flags, rely on the inline flags for case sensitivity
             // Otherwise, use RegexOptions for backward compatibility
-            bool usingPatternMode = UsePaternCheckBox.IsChecked is true;
+            bool usingPatternMode = UsePatternCheckBox.IsChecked is true;
             bool exactMatch = ExactMatchCheckBox.IsChecked is true;
             TimeSpan timeout = TimeSpan.FromSeconds(5);
 
@@ -302,7 +301,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         int precisionLevel = (int)PrecisionSlider.Value;
         string simplePattern = extractedPattern.GetPattern(precisionLevel);
 
-        UsePaternCheckBox.IsChecked = true;
+        UsePatternCheckBox.IsChecked = true;
         FindTextBox.Text = simplePattern;
 
         // Show the slider now that we have an extracted pattern
@@ -375,7 +374,7 @@ public partial class FindAndReplaceWindow : FluentWindow
                 FindTextBox.Text = extractedPattern.GetPattern(precisionLevel);
             }
         }
-        else if (UsePaternCheckBox.IsChecked is true && !string.IsNullOrWhiteSpace(FindTextBox.Text))
+        else if (UsePatternCheckBox.IsChecked is true && !string.IsNullOrWhiteSpace(FindTextBox.Text))
         {
             // No extracted pattern, but we're in pattern mode - manually toggle (?i) flag
             string currentPattern = FindTextBox.Text;
@@ -388,7 +387,7 @@ public partial class FindAndReplaceWindow : FluentWindow
                 if (hasCaseSensitiveFlag)
                 {
                     // Replace (?-i) with (?i)
-                    FindTextBox.Text = "(?i)" + currentPattern.Substring(5);
+                    FindTextBox.Text = "(?i)" + currentPattern[5..];
                 }
                 else
                 {
@@ -399,7 +398,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             else if (!ignoreCase && hasIgnoreCaseFlag)
             {
                 // Need case-sensitive: remove (?i) flag
-                FindTextBox.Text = currentPattern.Substring(4);
+                FindTextBox.Text = currentPattern[4..];
             }
         }
 
@@ -525,8 +524,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
         PrecisionSliderTimer.Tick -= PrecisionSlider_Tick;
-        if (textEditWindow is not null)
-            textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
+        textEditWindow?.PassedTextControl.TextChanged -= EditTextBoxChanged;
     }
     private void Window_KeyUp(object sender, KeyEventArgs e)
     {
@@ -550,7 +548,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             return;
 
         // Only update if regex mode is enabled
-        if (UsePaternCheckBox?.IsChecked is not true)
+        if (UsePatternCheckBox?.IsChecked is not true)
             return;
 
         int precisionLevel = (int)e.NewValue;
@@ -597,7 +595,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         regexManager.AddPatternFromText(pattern, sourceText, textEditWindow);
     }
 
-    private void UsePaternCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    private void UsePatternCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
     {
         // Update save button visibility when regex mode is toggled
         UpdateSaveButtonVisibility();
@@ -610,7 +608,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         // 2. Find text is not empty
         // 3. Pattern doesn't already exist in saved patterns
         SavePatternButton.Visibility =
-            (UsePaternCheckBox.IsChecked is true &&
+            (UsePatternCheckBox.IsChecked is true &&
              !string.IsNullOrWhiteSpace(FindTextBox.Text) &&
              !IsPatternAlreadySaved(FindTextBox.Text))
                 ? Visibility.Visible
@@ -631,7 +629,7 @@ public partial class FindAndReplaceWindow : FluentWindow
                 return false;
 
             StoredRegex[]? savedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
-            
+
             if (savedPatterns is null || savedPatterns.Length == 0)
                 return false;
 
@@ -662,7 +660,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         FindTextBox.Text = pattern.GetPattern(levelToUse);
 
-        UsePaternCheckBox.IsChecked = true;
+        UsePatternCheckBox.IsChecked = true;
 
         // Show the slider now that we have an extracted pattern
         PrecisionSliderPanel.Visibility = Visibility.Visible;

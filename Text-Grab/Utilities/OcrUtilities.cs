@@ -433,53 +433,53 @@ public static partial class OcrUtilities
         return scaleFactor;
     }
 
-        public static Rect GetBoundingRect(this OcrLine ocrLine)
+    public static Rect GetBoundingRect(this OcrLine ocrLine)
+    {
+        double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
+        double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
+        double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
+        double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
+
+        return new()
         {
-            double top = ocrLine.Words.Select(x => x.BoundingRect.Top).Min();
-            double bottom = ocrLine.Words.Select(x => x.BoundingRect.Bottom).Max();
-            double left = ocrLine.Words.Select(x => x.BoundingRect.Left).Min();
-            double right = ocrLine.Words.Select(x => x.BoundingRect.Right).Max();
-
-            return new()
-            {
-                X = left,
-                Y = top,
-                Width = Math.Abs(right - left),
-                Height = Math.Abs(bottom - top)
-            };
-        }
-
-        public static async Task<string> OcrFile(string path, ILanguage? selectedLanguage, OcrDirectoryOptions options)
-        {
-            StringBuilder returnString = new();
-            if (options.OutputFileNames)
-                returnString.AppendLine(Path.GetFileName(path));
-            try
-            {
-                string ocrText = await OcrAbsoluteFilePathAsync(path, selectedLanguage);
-
-                if (!string.IsNullOrWhiteSpace(ocrText))
-                {
-                    returnString.AppendLine(ocrText);
-
-                    if (options.WriteTxtFiles && Path.GetDirectoryName(path) is string dir)
-                    {
-                        using StreamWriter outputFile = new(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
-                        outputFile.WriteLine(ocrText);
-                    }
-                }
-                else
-                    returnString.AppendLine($"----- No Text Extracted{Environment.NewLine}");
-
-            }
-            catch (Exception ex)
-            {
-                returnString.AppendLine($"Failed to read {path}: {ex.Message}{Environment.NewLine}");
-            }
-
-            return returnString.ToString();
-        }
-
-        [GeneratedRegex(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}")]
-        private static partial Regex SpaceJoiningWordRegex();
+            X = left,
+            Y = top,
+            Width = Math.Abs(right - left),
+            Height = Math.Abs(bottom - top)
+        };
     }
+
+    public static async Task<string> OcrFile(string path, ILanguage? selectedLanguage, OcrDirectoryOptions options)
+    {
+        StringBuilder returnString = new();
+        if (options.OutputFileNames)
+            returnString.AppendLine(Path.GetFileName(path));
+        try
+        {
+            string ocrText = await OcrAbsoluteFilePathAsync(path, selectedLanguage);
+
+            if (!string.IsNullOrWhiteSpace(ocrText))
+            {
+                returnString.AppendLine(ocrText);
+
+                if (options.WriteTxtFiles && Path.GetDirectoryName(path) is string dir)
+                {
+                    using StreamWriter outputFile = new(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
+                    outputFile.WriteLine(ocrText);
+                }
+            }
+            else
+                returnString.AppendLine($"----- No Text Extracted{Environment.NewLine}");
+
+        }
+        catch (Exception ex)
+        {
+            returnString.AppendLine($"Failed to read {path}: {ex.Message}{Environment.NewLine}");
+        }
+
+        return returnString.ToString();
+    }
+
+    [GeneratedRegex(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}")]
+    private static partial Regex SpaceJoiningWordRegex();
+}

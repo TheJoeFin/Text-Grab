@@ -3615,7 +3615,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Open Find and Replace window with this pattern and execute search
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findWindow.FindTextBox.Text = storedPattern.Pattern;
-        findWindow.UsePaternCheckBox.IsChecked = true;
+        findWindow.UsePatternCheckBox.IsChecked = true;
         findWindow.TextEditWindow = this;
         findWindow.StringFromWindow = PassedTextControl.Text;
         findWindow.SearchForText();

@@ -241,7 +241,7 @@ public static partial class WindowUtilities
         ctrlUp.U.Ki.DwFlags = KEYEVENTF.KEYUP;
         inputs.Add(ctrlUp);
 
-        _ = SendInput((uint)inputs.Count, inputs.ToArray(), INPUT.Size);
+        _ = SendInput((uint)inputs.Count, [.. inputs], INPUT.Size);
         await Task.CompletedTask;
     }
 
@@ -250,7 +250,7 @@ public static partial class WindowUtilities
         // Most significant bit is set if key is down
         if ((GetAsyncKeyState((int)modifier) & 0x8000) != 0)
         {
-            INPUT inputEvent = default(INPUT);
+            INPUT inputEvent = default;
             inputEvent.Type = OSInterop.InputType.INPUT_KEYBOARD;
             inputEvent.U.Ki.WVk = modifier;
             inputEvent.U.Ki.DwFlags = KEYEVENTF.KEYUP;
@@ -324,35 +324,35 @@ public static partial class WindowUtilities
         return false;
     }
 
-        public static bool IsMouseInWindow(this Window window)
-        {
-            GetMousePosition(out Point mousePosition);
+    public static bool IsMouseInWindow(this Window window)
+    {
+        GetMousePosition(out Point mousePosition);
 
-            DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(window);
-            Point absPosPoint = window.GetAbsolutePosition();
-            Rect windowRect = new(absPosPoint.X, absPosPoint.Y,
-                window.ActualWidth * dpi.DpiScaleX,
-                window.ActualHeight * dpi.DpiScaleY);
-            return windowRect.Contains(mousePosition);
-        }
-
-        public static ScrollViewer? GetScrollViewer(DependencyObject obj)
-        {
-            if (obj is ScrollViewer sv) return sv;
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
-            {
-                DependencyObject child = VisualTreeHelper.GetChild(obj, i);
-                ScrollViewer? result = GetScrollViewer(child);
-                if (result != null) return result;
-            }
-            return null;
-        }
-
-        #region DLLImport
-
-        [LibraryImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool GetCursorPos(out POINT lpPoint);
-
-        #endregion
+        DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(window);
+        Point absPosPoint = window.GetAbsolutePosition();
+        Rect windowRect = new(absPosPoint.X, absPosPoint.Y,
+            window.ActualWidth * dpi.DpiScaleX,
+            window.ActualHeight * dpi.DpiScaleY);
+        return windowRect.Contains(mousePosition);
     }
+
+    public static ScrollViewer? GetScrollViewer(DependencyObject obj)
+    {
+        if (obj is ScrollViewer sv) return sv;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(obj, i);
+            ScrollViewer? result = GetScrollViewer(child);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    #region DLLImport
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetCursorPos(out POINT lpPoint);
+
+    #endregion
+}
