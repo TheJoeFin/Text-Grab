@@ -173,7 +173,7 @@ public class LanguageService
                     || selectedLanguage.LanguageTag.Contains(la.LanguageTag)
                 )];
 
-                if (similarLanguages is not null && similarLanguages.Count > 0)
+                if (similarLanguages.Count > 0)
                 {
                     _cachedOcrLanguage = new GlobalLang(similarLanguages.First().LanguageTag);
                     return _cachedOcrLanguage;
