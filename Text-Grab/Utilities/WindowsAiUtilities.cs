@@ -525,7 +525,7 @@ public static class WindowsAiUtilities
             using LanguageModel languageModel = await LanguageModel.CreateAsync();
             TextRewriter textRewriter = new(languageModel);
 
-            string regexPrompt = $"Generate only a regular expression pattern (regex) for: {textDescription}\n\nDo not make it overly constrained on the exact text.\n\nReturn only the regex pattern, nothing else. No explanations, no code blocks, no markdown, no formatting, just the raw regex pattern.";
+            string regexPrompt = $"Generate a general regular expression pattern (regex) for: {textDescription}\n\nDo not make it overly constrained on the exact text.\n\nReturn ONLY the regex pattern, nothing else.";
 
             LanguageModelResponseResult result = await textRewriter.RewriteAsync(regexPrompt);
 
