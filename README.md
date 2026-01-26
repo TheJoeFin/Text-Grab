@@ -133,9 +133,9 @@ Text Grab is designed to have multiple modes, from minimal to fully featured; al
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
-- Setting up the development environment
+- Setting up the development environment (Windows required)
 - Code style and formatting requirements
-- Using pre-commit hooks for automated style checks
+- Using dotnet format and optional pre-commit hooks
 - Running tests and building the project
 - Pull request process
 

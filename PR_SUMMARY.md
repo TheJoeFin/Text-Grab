@@ -27,9 +27,9 @@ This PR adds automated code style checks to the Text-Grab repository using pre-c
 - Pull request process documentation
 
 ### 4. Helper Scripts
-- **`format-staged.ps1`** (Windows/PowerShell): Formats only staged C# files
-- **`format-staged.sh`** (Linux/macOS/Bash): Cross-platform alternative
+- **`format-staged.ps1`** (Windows PowerShell): Formats only staged C# files
 - Helps developers fix formatting issues without reformatting entire codebase
+- Windows-only tooling for a Windows-only application
 
 ### 5. Updated README.md
 - Added "Contributing" section
@@ -39,20 +39,26 @@ This PR adds automated code style checks to the Text-Grab repository using pre-c
 
 ### For Contributors
 
-**Option 1: Automated (Recommended)**
-```bash
+**Option 1: Automated (Optional)**
+
+Pre-commit hooks are optional since Text-Grab is Windows-only. If you want to use them:
+
+1. Install Python for Windows
+2. Run:
+```powershell
 pip install pre-commit
 pre-commit install
 ```
+
 Now pre-commit checks run automatically on `git commit`
 
-**Option 2: Manual Formatting**
-```bash
-# Windows
+**Option 2: Manual Formatting (Recommended for Windows)**
+```powershell
+# Format only your staged changes
 .\format-staged.ps1
 
-# Linux/macOS
-./format-staged.sh
+# Or format the entire solution
+dotnet format Text-Grab.sln
 ```
 
 **Option 3: IDE Integration**
@@ -84,7 +90,7 @@ The CI pipeline automatically checks code style on all PRs to the `dev` branch. 
 - ✅ Flexible local development (pre-commit optional)
 - ✅ Clear documentation for new contributors
 - ✅ Minimal disruption to existing workflow
-- ✅ Cross-platform support (Windows, Linux, macOS)
+- ✅ Windows-focused tooling for a Windows-only application
 
 ## Testing
 

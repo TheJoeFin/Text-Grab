@@ -1,7 +1,8 @@
-# Pre-commit hooks for Text-Grab
-# Install pre-commit: pip install pre-commit
+# Pre-commit hooks for Text-Grab (Windows-only application)
+# Install pre-commit: pip install pre-commit (requires Python on Windows)
 # Install hooks: pre-commit install
 # Run manually: pre-commit run --all-files
+# Note: Pre-commit is optional. CI enforcement via dotnet format is mandatory.
 
 repos:
   # .NET Format - Enforces .editorconfig and code style

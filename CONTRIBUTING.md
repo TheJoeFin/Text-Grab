@@ -40,30 +40,9 @@ Text-Grab uses **EditorConfig** (`.editorconfig`) to define code style rules. Al
 
 ### Automatic Code Formatting
 
-#### Option 1: Using Pre-commit Hooks (Recommended)
+#### Option 1: Using dotnet format (Recommended for Windows)
 
-Pre-commit hooks automatically check code formatting before each commit. To set up:
-
-1. **Install pre-commit** (requires Python):
-   ```bash
-   pip install pre-commit
-   ```
-
-2. **Install the git hooks**:
-   ```bash
-   pre-commit install
-   ```
-
-3. **Run manually** (optional, to check all files):
-   ```bash
-   pre-commit run --all-files
-   ```
-
-Once installed, pre-commit will automatically run on `git commit` and prevent commits with formatting issues.
-
-#### Option 2: Using dotnet format Manually
-
-You can manually check and fix formatting without pre-commit hooks:
+You can manually check and fix formatting using dotnet format:
 
 1. **Check formatting** (verify only, no changes):
    ```bash
@@ -74,6 +53,33 @@ You can manually check and fix formatting without pre-commit hooks:
    ```bash
    dotnet format Text-Grab.sln
    ```
+
+3. **Format only changed files** (PowerShell script):
+   ```powershell
+   .\format-staged.ps1
+   ```
+   
+   This helper script formats only the C# files you've staged for commit, avoiding reformatting the entire codebase.
+
+#### Option 2: Using Pre-commit Hooks (Optional)
+
+If you prefer automated checks, you can use pre-commit hooks (requires Python on Windows):
+
+1. **Install Python** for Windows from [python.org](https://www.python.org/downloads/)
+
+2. **Install pre-commit**:
+   ```powershell
+   pip install pre-commit
+   ```
+
+3. **Install the git hooks**:
+   ```powershell
+   pre-commit install
+   ```
+
+Once installed, basic file hygiene checks (whitespace, line endings) will run automatically on `git commit`.
+
+**Note**: Pre-commit is optional. The CI pipeline enforces code formatting, so you can also use Visual Studio or `dotnet format` directly.
 
 ### IDE Integration
 
