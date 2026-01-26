@@ -1110,4 +1110,38 @@ public static partial class StringMethods
 
         return explanation.ToString();
     }
+
+    public static int CountMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        int count = 0;
+        int index = 0;
+
+        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+
+        return count;
+    }
+
+    public static int CountRegexMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        try
+        {
+            MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
+            return matches.Count;
+        }
+        catch (Exception)
+        {
+            // If regex is invalid, return 0
+            return 0;
+        }
+    }
 }

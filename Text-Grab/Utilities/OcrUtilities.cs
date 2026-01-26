@@ -449,6 +449,37 @@ public static partial class OcrUtilities
         };
     }
 
+    public static async Task<string> OcrFile(string path, ILanguage? selectedLanguage, OcrDirectoryOptions options)
+    {
+        StringBuilder returnString = new();
+        if (options.OutputFileNames)
+            returnString.AppendLine(Path.GetFileName(path));
+        try
+        {
+            string ocrText = await OcrAbsoluteFilePathAsync(path, selectedLanguage);
+
+            if (!string.IsNullOrWhiteSpace(ocrText))
+            {
+                returnString.AppendLine(ocrText);
+
+                if (options.WriteTxtFiles && Path.GetDirectoryName(path) is string dir)
+                {
+                    using StreamWriter outputFile = new(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
+                    outputFile.WriteLine(ocrText);
+                }
+            }
+            else
+                returnString.AppendLine($"----- No Text Extracted{Environment.NewLine}");
+
+        }
+        catch (Exception ex)
+        {
+            returnString.AppendLine($"Failed to read {path}: {ex.Message}{Environment.NewLine}");
+        }
+
+        return returnString.ToString();
+    }
+
     [GeneratedRegex(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}")]
     private static partial Regex SpaceJoiningWordRegex();
 }

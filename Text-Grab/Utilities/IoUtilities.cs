@@ -61,4 +61,18 @@ public class IoUtilities
             System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
         }
     }
+
+    public static string ListFilesFoldersInDirectory(string chosenFolderPath)
+    {
+        IEnumerable<string> files = Directory.EnumerateFiles(chosenFolderPath);
+        IEnumerable<string> folders = Directory.EnumerateDirectories(chosenFolderPath);
+        StringBuilder listOfNames = new();
+        listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+        foreach (string folder in folders)
+            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, folder.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
+
+        foreach (string file in files)
+            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, file.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
+        return listOfNames.ToString();
+    }
 }
