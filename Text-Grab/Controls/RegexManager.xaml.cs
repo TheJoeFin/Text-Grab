@@ -161,7 +161,7 @@ public partial class RegexManager : FluentWindow
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findWindow.TextEditWindow ??= SourceEditTextWindow;
         findWindow.FindTextBox.Text = selectedRegex.Pattern;
-        findWindow.UsePaternCheckBox.IsChecked = true;
+        findWindow.UsePatternCheckBox.IsChecked = true;
         findWindow.Show();
         findWindow.Activate();
         findWindow.SearchForText();

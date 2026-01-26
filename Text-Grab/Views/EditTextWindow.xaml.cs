@@ -941,12 +941,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 return;
 
             // Obtain internal ScrollViewers for both text boxes
-            if (WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer mainSv &&
-                WindowUtilities.GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv)
+            if (WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer mainSv
+                && WindowUtilities.GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv
+                && !NumericUtilities.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
             {
                 // Mirror vertical offset only (horizontal can differ due to content widths)
-                if (!NumericUtilities.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
-                    calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
+                calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
             }
         }
         catch { /* no-op */ }

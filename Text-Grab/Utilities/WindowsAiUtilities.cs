@@ -404,10 +404,7 @@ public static class WindowsAiUtilities
         await _modelInitializationLock.WaitAsync();
         try
         {
-            if (_translationLanguageModel is null)
-            {
-                _translationLanguageModel = await LanguageModel.CreateAsync();
-            }
+            _translationLanguageModel ??= await LanguageModel.CreateAsync();
         }
         finally
         {
@@ -556,7 +553,7 @@ public static class WindowsAiUtilities
     /// </summary>
     /// <param name="regexText">The raw AI response containing the regex pattern</param>
     /// <returns>The cleaned regex pattern string</returns>
-    private static string CleanRegexResult(string regexText)
+    public static string CleanRegexResult(string regexText)
     {
         if (string.IsNullOrWhiteSpace(regexText))
             return string.Empty;
@@ -581,41 +578,32 @@ public static class WindowsAiUtilities
         // Remove backticks
         cleaned = cleaned.Trim('`');
 
-        // Split by newlines and take only the first line that looks like a regex
+        // Split by newlines and process lines
         string[] lines = cleaned.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        foreach (string line in lines)
-        {
-            string trimmedLine = line.Trim();
-
-            // Skip empty lines and lines that look like explanations
-            if (string.IsNullOrWhiteSpace(trimmedLine))
-                continue;
-
-            if (trimmedLine.StartsWith("//", StringComparison.Ordinal) ||
-                trimmedLine.StartsWith("#", StringComparison.Ordinal) ||
-                trimmedLine.StartsWith("Regex:", StringComparison.OrdinalIgnoreCase) ||
-                trimmedLine.StartsWith("Pattern:", StringComparison.OrdinalIgnoreCase) ||
-                trimmedLine.StartsWith("Expression:", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            // Remove common prefixes
-            if (trimmedLine.StartsWith("regex:", StringComparison.OrdinalIgnoreCase))
-                trimmedLine = trimmedLine[6..].Trim();
-            else if (trimmedLine.StartsWith("pattern:", StringComparison.OrdinalIgnoreCase))
-                trimmedLine = trimmedLine[8..].Trim();
-
-            // If the line looks like it could be a regex (contains regex-typical characters), return it
-            if (trimmedLine.Length > 0 && (trimmedLine.Contains('[') || trimmedLine.Contains('(') ||
-                trimmedLine.Contains('\\') || trimmedLine.Contains('^') || trimmedLine.Contains('$') ||
-                trimmedLine.Contains('+') || trimmedLine.Contains('*') || trimmedLine.Contains('?') ||
-                trimmedLine.Contains('|') || trimmedLine.Contains('.')))
+        // Find the first line that looks like a regex pattern
+        string? regexPattern = lines
+            .Select(line => line.Trim())
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Where(line => !line.StartsWith("//", StringComparison.Ordinal) &&
+                          !line.StartsWith('#') &&
+                          !line.StartsWith("Expression:", StringComparison.OrdinalIgnoreCase))
+            .Select(line =>
             {
-                return trimmedLine;
-            }
-        }
+                // Remove common prefixes
+                if (line.StartsWith("regex:", StringComparison.OrdinalIgnoreCase))
+                    return line[6..].Trim();
+                else if (line.StartsWith("pattern:", StringComparison.OrdinalIgnoreCase))
+                    return line[8..].Trim();
+                return line;
+            })
+            .FirstOrDefault(line => line.Length > 0 && 
+                                   (line.Contains('[') || line.Contains('(') ||
+                                    line.Contains('\\') || line.Contains('^') || line.Contains('$') ||
+                                    line.Contains('+') || line.Contains('*') || line.Contains('?') ||
+                                    line.Contains('|') || line.Contains('.')));
 
-        // If no obvious regex pattern found, return the cleaned text as-is
-        return cleaned;
+        // If a regex pattern was found, return it; otherwise return the cleaned text as-is
+        return regexPattern ?? cleaned;
     }
 }

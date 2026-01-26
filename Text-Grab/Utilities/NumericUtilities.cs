@@ -29,18 +29,36 @@ public static class NumericUtilities
 
     public static string FormatNumber(double value)
     {
-        // Use the same formatting logic as the calculation service, with group separators
-        if (Math.Abs(value) >= 1e15 || (Math.Abs(value) < 1e-4 && value != 0))
+        // Handle special floating-point values first
+        if (double.IsNaN(value))
+            return "NaN";
+        
+        if (double.IsPositiveInfinity(value))
+            return "∞";
+        
+        if (double.IsNegativeInfinity(value))
+            return "-∞";
+        
+        double absValue = Math.Abs(value);
+        
+        // Use scientific notation for very large or very small numbers
+        if (absValue >= 1e15 || (absValue < 1e-4 && absValue > 0))
         {
             return value.ToString("E6", CultureInfo.CurrentCulture);
         }
-        else if (value % 1 == 0 && Math.Abs(value) < 1e10)
+        
+        // Check if value is "close enough" to an integer using epsilon comparison
+        // Use a small tolerance to account for floating-point precision
+        double fractionalPart = Math.Abs(value - Math.Round(value));
+        bool isEffectivelyInteger = fractionalPart < 1e-10 && absValue < 1e10;
+        
+        if (isEffectivelyInteger)
         {
-            return value.ToString("N0", CultureInfo.CurrentCulture);  // N0 includes group separators
+            return Math.Round(value).ToString("N0", CultureInfo.CurrentCulture);
         }
         else
         {
-            return value.ToString("N", CultureInfo.CurrentCulture);  // N includes group separators and decimals
+            return value.ToString("N", CultureInfo.CurrentCulture);
         }
     }
 
