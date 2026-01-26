@@ -439,51 +439,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.AppendText(TextContent);
     }
 
-    private static string ListFilesFoldersInDirectory(string chosenFolderPath)
-    {
-        IEnumerable<string> files = Directory.EnumerateFiles(chosenFolderPath);
-        IEnumerable<string> folders = Directory.EnumerateDirectories(chosenFolderPath);
-        StringBuilder listOfNames = new();
-        listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
-        foreach (string folder in folders)
-            listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, folder.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
-
-        foreach (string file in files)
-            listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, file.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
-        return listOfNames.ToString();
-    }
-
-    private static async Task<string> OcrFile(string path, ILanguage? selectedLanguage, OcrDirectoryOptions options)
-    {
-        StringBuilder returnString = new();
-        if (options.OutputFileNames)
-            returnString.AppendLine(Path.GetFileName(path));
-        try
-        {
-            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(path, selectedLanguage);
-
-            if (!string.IsNullOrWhiteSpace(ocrText))
-            {
-                returnString.AppendLine(ocrText);
-
-                if (options.WriteTxtFiles && Path.GetDirectoryName(path) is string dir)
-                {
-                    using StreamWriter outputFile = new(Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(path)}.txt"));
-                    outputFile.WriteLine(ocrText);
-                }
-            }
-            else
-                returnString.AppendLine($"----- No Text Extracted{Environment.NewLine}");
-
-        }
-        catch (Exception ex)
-        {
-            returnString.AppendLine($"Failed to read {path}: {ex.Message}{Environment.NewLine}");
-        }
-
-        return returnString.ToString();
-    }
-
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.OpenOrActivateWindow<FirstRunWindow>();
@@ -847,7 +802,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (correspondingButton.Command is ICommand buttonCommand)
             buttonCommand.Execute(null);
         else
-            correspondingButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+            correspondingButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
     }
 
     private void ETWindow_DragOver(object sender, System.Windows.DragEventArgs e)
@@ -986,35 +941,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 return;
 
             // Obtain internal ScrollViewers for both text boxes
-            if (GetScrollViewer(PassedTextControl) is ScrollViewer mainSv &&
-                GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv)
+            if (WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer mainSv &&
+                WindowUtilities.GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv)
             {
                 // Mirror vertical offset only (horizontal can differ due to content widths)
-                if (!DoubleUtil.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
+                if (!NumericUtilities.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
                     calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
             }
         }
         catch { /* no-op */ }
-    }
-
-    private static ScrollViewer? GetScrollViewer(DependencyObject obj)
-    {
-        if (obj is ScrollViewer sv) return sv;
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
-        {
-            DependencyObject child = VisualTreeHelper.GetChild(obj, i);
-            ScrollViewer? result = GetScrollViewer(child);
-            if (result != null) return result;
-        }
-        return null;
-    }
-
-    private static class DoubleUtil
-    {
-        public static bool AreClose(double a, double b, double epsilon = 0.25)
-        {
-            return Math.Abs(a - b) < epsilon;
-        }
     }
 
     private void SyncCalcScrollToMain()
@@ -1024,12 +959,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (CalcResultsTextControl.Visibility != Visibility.Visible)
                 return;
 
-            ScrollViewer? mainSv = GetScrollViewer(PassedTextControl);
-            ScrollViewer? calcSv = GetScrollViewer(CalcResultsTextControl);
+            ScrollViewer? mainSv = WindowUtilities.GetScrollViewer(PassedTextControl);
+            ScrollViewer? calcSv = WindowUtilities.GetScrollViewer(CalcResultsTextControl);
             if (mainSv is null || calcSv is null)
                 return;
 
-            if (!DoubleUtil.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
+            if (!NumericUtilities.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
                 calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
         }
         catch { /* no-op */ }
@@ -1295,7 +1230,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string chosenFolderPath = folderBrowserDialog1.SelectedPath;
         try
         {
-            PassedTextControl.AppendText(ListFilesFoldersInDirectory(chosenFolderPath));
+            PassedTextControl.AppendText(IoUtilities.ListFilesFoldersInDirectory(chosenFolderPath));
         }
         catch (Exception ex)
         {
@@ -1585,7 +1520,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrFile(ocrFile.FilePath, selectedLanguage, options);
+            ocrFile.OcrResult = await OcrUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
             if (!options.WriteTxtFiles)
@@ -1831,8 +1766,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         IsAccessingClipboard = false;
 
-        if (e is not null)
-            e.Handled = true;
+        e?.Handled = true;
     }
 
     private async void PreviousRegion_Click(object sender, RoutedEventArgs e)
@@ -1869,6 +1803,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.Text += ex.Message;
         }
     }
+
     private async void ReadFolderOfImages_Click(object sender, RoutedEventArgs e)
     {
         FolderBrowserDialog folderBrowserDialog = new();
@@ -2092,7 +2027,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SetFontFromSettings()
     {
-        PassedTextControl.FontFamily = new System.Windows.Media.FontFamily(DefaultSettings.FontFamilySetting);
+        PassedTextControl.FontFamily = new FontFamily(DefaultSettings.FontFamilySetting);
         PassedTextControl.FontSize = DefaultSettings.FontSizeSetting;
         if (DefaultSettings.IsFontBold)
             PassedTextControl.FontWeight = FontWeights.Bold;
@@ -2470,7 +2405,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             string unicodeHex = $"U+{codePoint:X4}";
 
             CharDetailsButtonText.Text = unicodeHex;
-            CharDetailsButton.ToolTip = $"{unicodeHex}: {GetUnicodeCategory(selectedChar)}";
+            CharDetailsButton.ToolTip = $"{unicodeHex}: {CharacterUtilities.GetUnicodeCategory(selectedChar)}";
             CharDetailsButton.Visibility = Visibility.Visible;
         }
         else if (DefaultSettings.EtwShowCharDetails && selectedText.Length > 1)
@@ -2487,7 +2422,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Show match count
         if (DefaultSettings.EtwShowMatchCount && !string.IsNullOrEmpty(selectedText))
         {
-            int matchCount = CountMatches(PassedTextControl.Text, selectedText);
+            int matchCount = StringMethods.CountMatches(PassedTextControl.Text, selectedText);
             if (MatchCountButton.Content is TextBlock matchButton)
             {
                 matchButton.Text = matchCount == 1 ? "1 match" : $"{matchCount} matches";
@@ -2510,7 +2445,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
 
             string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
-            int similarCount = CountRegexMatches(PassedTextControl.Text, regexPattern);
+            int similarCount = StringMethods.CountRegexMatches(PassedTextControl.Text, regexPattern);
             if (SimilarMatchesButton.Content is TextBlock similarButton)
             {
                 similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
@@ -2548,79 +2483,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else
         {
             RegexPatternButton.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    private string GetUnicodeCategory(char c)
-    {
-        UnicodeCategory category = char.GetUnicodeCategory(c);
-        return category switch
-        {
-            UnicodeCategory.UppercaseLetter => "Uppercase Letter",
-            UnicodeCategory.LowercaseLetter => "Lowercase Letter",
-            UnicodeCategory.TitlecaseLetter => "Titlecase Letter",
-            UnicodeCategory.ModifierLetter => "Modifier Letter",
-            UnicodeCategory.OtherLetter => "Other Letter",
-            UnicodeCategory.NonSpacingMark => "Non-Spacing Mark",
-            UnicodeCategory.SpacingCombiningMark => "Spacing Mark",
-            UnicodeCategory.EnclosingMark => "Enclosing Mark",
-            UnicodeCategory.DecimalDigitNumber => "Decimal Digit",
-            UnicodeCategory.LetterNumber => "Letter Number",
-            UnicodeCategory.OtherNumber => "Other Number",
-            UnicodeCategory.SpaceSeparator => "Space Separator",
-            UnicodeCategory.LineSeparator => "Line Separator",
-            UnicodeCategory.ParagraphSeparator => "Paragraph Separator",
-            UnicodeCategory.Control => "Control Character",
-            UnicodeCategory.Format => "Format Character",
-            UnicodeCategory.Surrogate => "Surrogate",
-            UnicodeCategory.PrivateUse => "Private Use",
-            UnicodeCategory.ConnectorPunctuation => "Connector Punctuation",
-            UnicodeCategory.DashPunctuation => "Dash Punctuation",
-            UnicodeCategory.OpenPunctuation => "Open Punctuation",
-            UnicodeCategory.ClosePunctuation => "Close Punctuation",
-            UnicodeCategory.InitialQuotePunctuation => "Initial Quote",
-            UnicodeCategory.FinalQuotePunctuation => "Final Quote",
-            UnicodeCategory.OtherPunctuation => "Other Punctuation",
-            UnicodeCategory.MathSymbol => "Math Symbol",
-            UnicodeCategory.CurrencySymbol => "Currency Symbol",
-            UnicodeCategory.ModifierSymbol => "Modifier Symbol",
-            UnicodeCategory.OtherSymbol => "Other Symbol",
-            UnicodeCategory.OtherNotAssigned => "Not Assigned",
-            _ => "Unknown"
-        };
-    }
-
-    private int CountMatches(string text, string pattern)
-    {
-        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
-            return 0;
-
-        int count = 0;
-        int index = 0;
-
-        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
-        {
-            count++;
-            index += pattern.Length;
-        }
-
-        return count;
-    }
-
-    private int CountRegexMatches(string text, string pattern)
-    {
-        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
-            return 0;
-
-        try
-        {
-            MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
-            return matches.Count;
-        }
-        catch (Exception)
-        {
-            // If regex is invalid, return 0
-            return 0;
         }
     }
 
@@ -2743,12 +2605,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         double slideDistance = 10;
         double startY = scrollingUp ? slideDistance : -slideDistance;
 
-        System.Windows.Media.Animation.DoubleAnimation slideAnimation = new()
+        DoubleAnimation slideAnimation = new()
         {
             From = startY,
             To = 0,
             Duration = TimeSpan.FromMilliseconds(200),
-            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
 
         // Apply the animation to Y translation
@@ -2768,7 +2630,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             // Show details for single character in multi-line TextBox
             char c = selectedText[0];
-            string details = GetCharacterDetailsText(c);
+            string details = CharacterUtilities.GetCharacterDetailsText(c);
 
             System.Windows.Controls.TextBox detailsTextBox = new()
             {
@@ -2795,7 +2657,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             for (int i = 0; i < charLimit; i++)
             {
                 char c = selectedText[i];
-                allDetails.AppendLine(GetCharacterDetailsText(c));
+                allDetails.AppendLine(CharacterUtilities.GetCharacterDetailsText(c));
 
                 if (i < charLimit - 1)
                     allDetails.AppendLine(); // Add blank line between characters
@@ -2823,59 +2685,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         CharDetailsPopup.IsOpen = true;
-    }
-
-    private string GetCharacterDetailsText(char c)
-    {
-        int codePoint = char.ConvertToUtf32(c.ToString(), 0);
-        string unicodeHex = $"U+{codePoint:X4}";
-        string category = GetUnicodeCategory(c);
-
-        StringBuilder details = new();
-        details.AppendLine($"Character: '{c}'");
-        details.AppendLine($"Unicode: {unicodeHex} (decimal: {codePoint})");
-        details.AppendLine($"Category: {category}");
-
-        // UTF-8 encoding
-        byte[] utf8Bytes = Encoding.UTF8.GetBytes(c.ToString());
-        string utf8Hex = string.Join(" ", utf8Bytes.Select(b => $"0x{b:X2}"));
-        details.AppendLine($"UTF-8: {utf8Hex}");
-
-        // HTML entity if applicable
-        if (codePoint < 128 || IsCommonHtmlEntity(c))
-        {
-            string htmlEntity = GetHtmlEntity(c, codePoint);
-            if (!string.IsNullOrEmpty(htmlEntity))
-            {
-                details.AppendLine($"HTML: {htmlEntity}");
-            }
-        }
-
-        return details.ToString().TrimEnd();
-    }
-
-
-    private bool IsCommonHtmlEntity(char c)
-    {
-        return c switch
-        {
-            '<' or '>' or '&' or '"' or '\'' or ' ' => true,
-            _ => false
-        };
-    }
-
-    private string GetHtmlEntity(char c, int codePoint)
-    {
-        return c switch
-        {
-            '<' => "&lt; or &#60;",
-            '>' => "&gt; or &#62;",
-            '&' => "&amp; or &#38;",
-            '"' => "&quot; or &#34;",
-            '\'' => "&apos; or &#39;",
-            ' ' when codePoint == 160 => "&nbsp; or &#160;",
-            _ => $"&#{codePoint};"
-        };
     }
 
     private void Window_Activated(object sender, EventArgs e)
@@ -3020,7 +2829,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private void CalcResultsTextControl_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+    private void CalcResultsTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         UpdateCalcAggregates();
     }
@@ -3058,19 +2867,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             double sum = numbers.Sum();
             double average = numbers.Average();
-            double median = CalculateMedian(numbers);
+            double median = NumericUtilities.CalculateMedian(numbers);
             int count = numbers.Count;
             double min = numbers.Min();
             double max = numbers.Max();
             double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
 
-            ShowSumContextItem.Header = $"Sum: {FormatNumber(sum)}";
-            ShowAverageContextItem.Header = $"Average: {FormatNumber(average)}";
-            ShowMedianContextItem.Header = $"Median: {FormatNumber(median)}";
+            ShowSumContextItem.Header = $"Sum: {NumericUtilities.FormatNumber(sum)}";
+            ShowAverageContextItem.Header = $"Average: {NumericUtilities.FormatNumber(average)}";
+            ShowMedianContextItem.Header = $"Median: {NumericUtilities.FormatNumber(median)}";
             ShowCountContextItem.Header = $"Count: {count}";
-            ShowMinContextItem.Header = $"Min: {FormatNumber(min)}";
-            ShowMaxContextItem.Header = $"Max: {FormatNumber(max)}";
-            ShowProductContextItem.Header = $"Product: {FormatNumber(product)}";
+            ShowMinContextItem.Header = $"Min: {NumericUtilities.FormatNumber(min)}";
+            ShowMaxContextItem.Header = $"Max: {NumericUtilities.FormatNumber(max)}";
+            ShowProductContextItem.Header = $"Product: {NumericUtilities.FormatNumber(product)}";
 
             ShowSumContextItem.IsEnabled = true;
             ShowAverageContextItem.IsEnabled = true;
@@ -3120,43 +2929,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private double CalculateMedian(List<double> numbers)
-    {
-        if (numbers.Count == 0)
-            return 0;
-
-        List<double> sorted = [.. numbers.OrderBy(n => n)];
-        int count = sorted.Count;
-
-        if (count % 2 == 0)
-        {
-            // Even number of elements - average the two middle values
-            return (sorted[count / 2 - 1] + sorted[count / 2]) / 2.0;
-        }
-        else
-        {
-            // Odd number of elements - return the middle value
-            return sorted[count / 2];
-        }
-    }
-
-    private string FormatNumber(double value)
-    {
-        // Use the same formatting logic as the calculation service, with group separators
-        if (Math.Abs(value) >= 1e15 || (Math.Abs(value) < 1e-4 && value != 0))
-        {
-            return value.ToString("E6", CultureInfo.CurrentCulture);
-        }
-        else if (value % 1 == 0 && Math.Abs(value) < 1e10)
-        {
-            return value.ToString("N0", CultureInfo.CurrentCulture);  // N0 includes group separators
-        }
-        else
-        {
-            return value.ToString("N", CultureInfo.CurrentCulture);  // N includes group separators and decimals
-        }
-    }
-
     private void SelectAggregate_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem || menuItem.Tag is not ValueTuple<AggregateType, double> tagData)
@@ -3201,7 +2973,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             _selectedAggregate = aggregateType;
 
             // Copy value to clipboard
-            string valueToCopy = FormatNumber(value);
+            string valueToCopy = NumericUtilities.FormatNumber(value);
             System.Windows.Clipboard.SetDataObject(valueToCopy, true);
 
             // Update the status display
@@ -3248,7 +3020,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 aggregateName = "Average";
                 break;
             case AggregateType.Median:
-                value = CalculateMedian(numbers);
+                value = NumericUtilities.CalculateMedian(numbers);
                 aggregateName = "Median";
                 break;
             case AggregateType.Count:
@@ -3273,7 +3045,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         // Update the status text
-        CalcAggregateStatusText.Text = $"{aggregateName}: {FormatNumber(value)}";
+        CalcAggregateStatusText.Text = $"{aggregateName}: {NumericUtilities.FormatNumber(value)}";
         CalcAggregateStatusBorder.Visibility = Visibility.Visible;
     }
 
@@ -3308,7 +3080,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         e.Handled = true;
     }
 
-    private void CalcAggregateStatusBorder_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+    private void CalcAggregateStatusBorder_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         UpdateAggregateContextMenu();
     }
@@ -3341,19 +3113,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             double sum = numbers.Sum();
             double average = numbers.Average();
-            double median = CalculateMedian(numbers);
+            double median = NumericUtilities.CalculateMedian(numbers);
             int count = numbers.Count;
             double min = numbers.Min();
             double max = numbers.Max();
             double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
 
-            AggregateSumContextItem.Header = $"Sum: {FormatNumber(sum)}";
-            AggregateAverageContextItem.Header = $"Average: {FormatNumber(average)}";
-            AggregateMedianContextItem.Header = $"Median: {FormatNumber(median)}";
+            AggregateSumContextItem.Header = $"Sum: {NumericUtilities.FormatNumber(sum)}";
+            AggregateAverageContextItem.Header = $"Average: {NumericUtilities.FormatNumber(average)}";
+            AggregateMedianContextItem.Header = $"Median: {NumericUtilities.FormatNumber(median)}";
             AggregateCountContextItem.Header = $"Count: {count}";
-            AggregateMinContextItem.Header = $"Min: {FormatNumber(min)}";
-            AggregateMaxContextItem.Header = $"Max: {FormatNumber(max)}";
-            AggregateProductContextItem.Header = $"Product: {FormatNumber(product)}";
+            AggregateMinContextItem.Header = $"Min: {NumericUtilities.FormatNumber(min)}";
+            AggregateMaxContextItem.Header = $"Max: {NumericUtilities.FormatNumber(max)}";
+            AggregateProductContextItem.Header = $"Product: {NumericUtilities.FormatNumber(product)}";
 
             AggregateSumContextItem.IsEnabled = true;
             AggregateAverageContextItem.IsEnabled = true;
@@ -3406,7 +3178,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void AnimateAggregateCopy()
     {
         // Flash the copy icon to indicate the copy action
-        DoubleAnimation fadeInOutAnim = new()
+        DoubleAnimation fadeInOutAnimation = new()
         {
             From = 0.0,
             To = 1.0,
@@ -3414,7 +3186,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             AutoReverse = true
         };
 
-        CalcAggregateCopyIcon.BeginAnimation(OpacityProperty, fadeInOutAnim);
+        CalcAggregateCopyIcon.BeginAnimation(OpacityProperty, fadeInOutAnimation);
     }
 
     private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e)
@@ -3455,7 +3227,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            if (GetScrollViewer(PassedTextControl) is ScrollViewer mainSv)
+            if (WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer mainSv)
             {
                 // Roughly match WPF default: 3 lines per notch; use a small pixel offset
                 double delta = -e.Delta; // positive means scroll down

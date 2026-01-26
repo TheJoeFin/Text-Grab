@@ -46,19 +46,33 @@ public class IoUtilities
         return (stringBuilder.ToString(), openContentKind);
     }
 
-    public static async Task TryToOpenTextFile(string pathOfFileToOpen, bool isMultipleFiles, StringBuilder stringBuilder)
-    {
-        try
+        public static async Task TryToOpenTextFile(string pathOfFileToOpen, bool isMultipleFiles, StringBuilder stringBuilder)
         {
-            using StreamReader sr = File.OpenText(pathOfFileToOpen);
+            try
+            {
+                using StreamReader sr = File.OpenText(pathOfFileToOpen);
 
-            string s = await sr.ReadToEndAsync();
+                string s = await sr.ReadToEndAsync();
 
-            stringBuilder.Append(s);
+                stringBuilder.Append(s);
+            }
+            catch (System.Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+            }
         }
-        catch (System.Exception ex)
+
+        public static string ListFilesFoldersInDirectory(string chosenFolderPath)
         {
-            System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+            IEnumerable<string> files = Directory.EnumerateFiles(chosenFolderPath);
+            IEnumerable<string> folders = Directory.EnumerateDirectories(chosenFolderPath);
+            StringBuilder listOfNames = new();
+            listOfNames.Append(chosenFolderPath).Append(Environment.NewLine).Append(Environment.NewLine);
+            foreach (string folder in folders)
+                listOfNames.Append($"{folder.AsSpan(1 + chosenFolderPath.Length, folder.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
+
+            foreach (string file in files)
+                listOfNames.Append($"{file.AsSpan(1 + chosenFolderPath.Length, file.Length - 1 - chosenFolderPath.Length)}{Environment.NewLine}");
+            return listOfNames.ToString();
         }
     }
-}

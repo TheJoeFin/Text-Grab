@@ -1081,33 +1081,67 @@ public static partial class StringMethods
             {
                 explanation.AppendLine($"* - Zero or more of the previous element");
                 i++;
-            }
-            else if (c == '?')
-            {
-                explanation.AppendLine($"? - Zero or one of the previous element (optional)");
-                i++;
-            }
-            else if (c == '.')
-            {
-                explanation.AppendLine($". - Matches any single character");
-                i++;
-            }
-            else if (c == '^')
-            {
-                explanation.AppendLine($"^ - Start of line/string");
-                i++;
-            }
-            else if (c == '$')
-            {
-                explanation.AppendLine($"$ - End of line/string");
-                i++;
-            }
-            else
-            {
-                i++;
-            }
-        }
+                        }
+                        else if (c == '?')
+                        {
+                            explanation.AppendLine($"? - Zero or one of the previous element (optional)");
+                            i++;
+                        }
+                        else if (c == '.')
+                        {
+                            explanation.AppendLine($". - Matches any single character");
+                            i++;
+                        }
+                        else if (c == '^')
+                        {
+                            explanation.AppendLine($"^ - Start of line/string");
+                            i++;
+                        }
+                        else if (c == '$')
+                        {
+                            explanation.AppendLine($"$ - End of line/string");
+                            i++;
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
 
-        return explanation.ToString();
-    }
-}
+                    return explanation.ToString();
+                }
+
+                public static int CountMatches(string text, string pattern)
+                {
+                    if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+                        return 0;
+
+                    int count = 0;
+                    int index = 0;
+
+                    while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+                    {
+                        count++;
+                        index += pattern.Length;
+                    }
+
+                    return count;
+                }
+
+                public static int CountRegexMatches(string text, string pattern)
+                {
+                    if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+                        return 0;
+
+                    try
+                    {
+                        MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
+                        return matches.Count;
+                    }
+                    catch (Exception)
+                    {
+                        // If regex is invalid, return 0
+                        return 0;
+                    }
+                }
+            }
