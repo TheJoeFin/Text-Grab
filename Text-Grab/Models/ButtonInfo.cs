@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Text_Grab.Controls;
 using Wpf.Ui.Controls;
 
@@ -21,6 +22,7 @@ public class ButtonInfo
     public string ClickEvent { get; set; } = "";
     public bool IsSymbol { get; set; } = false;
 
+    [JsonIgnore]
     public SymbolRegular SymbolIcon { get; set; } = SymbolRegular.Diamond24;
 
     // Post-grab action properties
@@ -44,12 +46,12 @@ public class ButtonInfo
     public override int GetHashCode()
     {
         return System.HashCode.Combine(
-            ButtonText, 
-            SymbolText, 
-            Background, 
-            Command, 
-            ClickEvent, 
-            IsRelevantForFullscreenGrab, 
+            ButtonText,
+            SymbolText,
+            Background,
+            Command,
+            ClickEvent,
+            IsRelevantForFullscreenGrab,
             IsRelevantForEditWindow,
             DefaultCheckState);
     }
@@ -100,8 +102,16 @@ public class ButtonInfo
         DefaultCheckState = defaultCheckState;
     }
 
-    public static List<ButtonInfo> DefaultButtonList { get; set; } =
-    [
+    private static List<ButtonInfo>? _defaultButtonList;
+    public static List<ButtonInfo> DefaultButtonList
+    {
+        get
+        {
+            if (_defaultButtonList is not null)
+                return _defaultButtonList;
+
+            _defaultButtonList =
+            [
         new()
         {
             ButtonText = "Copy and Close",
@@ -154,12 +164,24 @@ public class ButtonInfo
             SymbolText = "",
             ClickEvent = "EditBottomBarMenuItem_Click",
             IsSymbol = true,
-            SymbolIcon = SymbolRegular.CalendarSettings24
-        },
-    ];
+                    SymbolIcon = SymbolRegular.CalendarSettings24
+                },
+                    ];
 
-    public static List<ButtonInfo> AllButtons { get; set; } =
-    [
+            return _defaultButtonList;
+        }
+    }
+
+    private static List<ButtonInfo>? _allButtons;
+    public static List<ButtonInfo> AllButtons
+    {
+        get
+        {
+            if (_allButtons is not null)
+                return _allButtons;
+
+            _allButtons =
+            [
         new()
         {
             OrderNumber = 1.1,
@@ -482,11 +504,13 @@ public class ButtonInfo
         },
         new()
         {
-            ButtonText = "Settings",
-            ClickEvent = "SettingsMenuItem_Click",
-            SymbolIcon = SymbolRegular.Settings24
-        },
-    ];
+                        ButtonText = "Settings",
+                        ClickEvent = "SettingsMenuItem_Click",
+                        SymbolIcon = SymbolRegular.Settings24
+                    },
+                        ];
+
+            return _allButtons;
+        }
+    }
 }
-
-

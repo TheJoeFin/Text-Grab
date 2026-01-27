@@ -1,3 +1,4 @@
+using Text_Grab;
 using Text_Grab.Models;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -128,8 +129,8 @@ public class LanguageServiceTests
     public void LanguageService_IsSingleton()
     {
         // Act
-        var instance1 = Singleton<LanguageService>.Instance;
-        var instance2 = Singleton<LanguageService>.Instance;
+        LanguageService instance1 = Singleton<LanguageService>.Instance;
+        LanguageService instance2 = Singleton<LanguageService>.Instance;
 
         // Assert
         Assert.Same(instance1, instance2);
@@ -140,7 +141,7 @@ public class LanguageServiceTests
     {
         // This test ensures backward compatibility - static methods should work
         // Arrange & Act
-        var globalLang = new GlobalLang("en-US");
+        GlobalLang globalLang = new("en-US");
         string tag = LanguageUtilities.GetLanguageTag(globalLang);
         LanguageKind kind = LanguageUtilities.GetLanguageKind(globalLang);
 
