@@ -300,8 +300,7 @@ public static partial class StringMethods
         workingString.Replace('\n', ' ');
         workingString.Replace('\r', ' ');
 
-        Regex regex = MultiSpaces();
-        string temp = regex.Replace(workingString.ToString(), " ");
+        string temp = MultiSpaces().Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
         if (workingString[0] == ' ')
