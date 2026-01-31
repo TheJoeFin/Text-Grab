@@ -113,6 +113,20 @@ public partial class GrabFrame : Window
         StandardInitialize();
 
         ShouldSaveOnClose = true;
+        
+        // Validate the path before loading
+        if (string.IsNullOrEmpty(imagePath))
+        {
+            Debug.WriteLine("GrabFrame: Empty image path provided");
+            return;
+        }
+
+        if (!File.Exists(imagePath))
+        {
+            Debug.WriteLine($"GrabFrame: Image file not found: {imagePath}");
+            return;
+        }
+
         Loaded += async (s, e) => await TryLoadImageFromPath(imagePath);
     }
 

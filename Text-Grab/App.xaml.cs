@@ -183,6 +183,8 @@ public partial class App : System.Windows.Application
         return true;
     }
 
+    private static readonly HashSet<string> KnownFlags = ["--windowless", "--grabframe"];
+
     private static async Task<bool> HandleStartupArgs(string[] args)
     {
         string currentArgument = args[0];
@@ -207,11 +209,11 @@ public partial class App : System.Windows.Application
         // Handle --grabframe flag: open the next argument (file path) in GrabFrame
         if (openInGrabFrame)
         {
-            // Find the file path argument (skip flags starting with --)
+            // Find the file path argument (skip known flags)
             string? filePath = null;
             foreach (string arg in args)
             {
-                if (!arg.StartsWith("--") && File.Exists(arg))
+                if (!KnownFlags.Contains(arg) && File.Exists(arg))
                 {
                     filePath = arg;
                     break;
@@ -223,6 +225,11 @@ public partial class App : System.Windows.Application
                 GrabFrame gf = new(filePath);
                 gf.Show();
                 return true;
+            }
+            else
+            {
+                Debug.WriteLine("--grabframe flag specified but no valid image file path provided");
+                // Fall through to default launch behavior
             }
         }
 
