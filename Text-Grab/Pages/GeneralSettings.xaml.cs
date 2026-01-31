@@ -412,7 +412,7 @@ public partial class GeneralSettings : Page
             System.Windows.MessageBox.Show(
                 errorMessage ?? "Failed to add Text Grab to the context menu.",
                 "Context Menu Registration Failed",
-                MessageBoxButton.OK,
+                System.Windows.MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
     }
@@ -439,7 +439,7 @@ public partial class GeneralSettings : Page
             System.Windows.MessageBox.Show(
                 errorMessage ?? "Some context menu entries could not be removed.",
                 "Context Menu Removal Failed",
-                MessageBoxButton.OK,
+                System.Windows.MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
     }
