@@ -422,16 +422,23 @@ public partial class GeneralSettings : Page
         if (!settingsSet)
             return;
 
-        bool success = ContextMenuUtilities.RemoveFromContextMenu();
-        DefaultSettings.AddToContextMenu = false;
-        DefaultSettings.Save();
-
-        if (!success)
+        bool success = ContextMenuUtilities.RemoveFromContextMenu(out string? errorMessage);
+        
+        if (success)
         {
-            // Show warning but don't revert - the setting should still be saved as disabled
+            DefaultSettings.AddToContextMenu = false;
+            DefaultSettings.Save();
+        }
+        else
+        {
+            // Revert the checkbox since removal failed - the context menu is still registered
+            settingsSet = false;
+            AddToContextMenuCheckBox.IsChecked = true;
+            settingsSet = true;
+
             System.Windows.MessageBox.Show(
-                "Some context menu entries could not be removed. They may be cleaned up manually in the Windows Registry.",
-                "Context Menu Removal Warning",
+                errorMessage ?? "Some context menu entries could not be removed.",
+                "Context Menu Removal Failed",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }

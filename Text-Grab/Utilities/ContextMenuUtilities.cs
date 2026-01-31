@@ -69,9 +69,11 @@ internal static class ContextMenuUtilities
     /// <summary>
     /// Removes Text Grab from the Windows context menu for image files.
     /// </summary>
+    /// <param name="errorMessage">When the method returns false, contains an error message describing the failure.</param>
     /// <returns>True if removal was successful, false otherwise.</returns>
-    public static bool RemoveFromContextMenu()
+    public static bool RemoveFromContextMenu(out string? errorMessage)
     {
+        errorMessage = null;
         try
         {
             foreach (string extension in ImageExtensions)
@@ -80,9 +82,16 @@ internal static class ContextMenuUtilities
             }
             return true;
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            Debug.WriteLine($"Context menu unregistration failed due to permissions: {ex.Message}");
+            errorMessage = "Permission denied. Some context menu entries could not be removed.";
+            return false;
+        }
         catch (Exception ex)
         {
             Debug.WriteLine($"Context menu unregistration failed: {ex.Message}");
+            errorMessage = $"Failed to remove context menu entries: {ex.Message}";
             return false;
         }
     }
