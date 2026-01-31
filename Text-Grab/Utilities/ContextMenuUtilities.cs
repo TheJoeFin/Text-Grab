@@ -129,7 +129,10 @@ internal static class ContextMenuUtilities
         using (RegistryKey? shellKey = Registry.CurrentUser.CreateSubKey(shellKeyPath))
         {
             if (shellKey is null)
-                return;
+            {
+                Debug.WriteLine($"Failed to create registry key: {shellKeyPath}");
+                throw new InvalidOperationException($"Could not create registry key for {extension}");
+            }
 
             shellKey.SetValue(string.Empty, ContextMenuDisplayText);
             shellKey.SetValue("Icon", $"\"{executablePath}\"");
@@ -139,7 +142,10 @@ internal static class ContextMenuUtilities
         using (RegistryKey? commandKey = Registry.CurrentUser.CreateSubKey(commandKeyPath))
         {
             if (commandKey is null)
-                return;
+            {
+                Debug.WriteLine($"Failed to create registry key: {commandKeyPath}");
+                throw new InvalidOperationException($"Could not create command registry key for {extension}");
+            }
 
             // %1 is replaced by Windows with the path to the file that was right-clicked
             commandKey.SetValue(string.Empty, $"\"{executablePath}\" \"%1\"");
@@ -171,7 +177,7 @@ internal static class ContextMenuUtilities
     /// </summary>
     /// <param name="extension">The file extension (e.g., ".png")</param>
     /// <returns>The registry key path</returns>
-    private static string GetShellKeyPath(string extension)
+    internal static string GetShellKeyPath(string extension)
     {
         // Using SystemFileAssociations allows the context menu to work regardless of
         // which application is associated with the file type

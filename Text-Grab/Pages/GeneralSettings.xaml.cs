@@ -422,8 +422,18 @@ public partial class GeneralSettings : Page
         if (!settingsSet)
             return;
 
-        ContextMenuUtilities.RemoveFromContextMenu();
+        bool success = ContextMenuUtilities.RemoveFromContextMenu();
         DefaultSettings.AddToContextMenu = false;
         DefaultSettings.Save();
+
+        if (!success)
+        {
+            // Show warning but don't revert - the setting should still be saved as disabled
+            System.Windows.MessageBox.Show(
+                "Some context menu entries could not be removed. They may be cleaned up manually in the Windows Registry.",
+                "Context Menu Removal Warning",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 }

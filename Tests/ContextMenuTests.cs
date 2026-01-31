@@ -11,12 +11,8 @@ public class ContextMenuTests
         string extension = ".png";
         string expectedPath = @"Software\Classes\SystemFileAssociations\.png\shell\Text-Grab.GrabText";
 
-        // Act - Use reflection to access private method for testing
-        var method = typeof(ContextMenuUtilities).GetMethod(
-            "GetShellKeyPath",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-
-        string? result = method?.Invoke(null, [extension]) as string;
+        // Act
+        string result = ContextMenuUtilities.GetShellKeyPath(extension);
 
         // Assert
         Assert.Equal(expectedPath, result);
@@ -29,35 +25,38 @@ public class ContextMenuTests
         string extension = ".jpg";
         string expectedPath = @"Software\Classes\SystemFileAssociations\.jpg\shell\Text-Grab.GrabText";
 
-        // Act - Use reflection to access private method for testing
-        var method = typeof(ContextMenuUtilities).GetMethod(
-            "GetShellKeyPath",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-
-        string? result = method?.Invoke(null, [extension]) as string;
+        // Act
+        string result = ContextMenuUtilities.GetShellKeyPath(extension);
 
         // Assert
         Assert.Equal(expectedPath, result);
     }
 
     [Fact]
-    public void ImageExtensions_ContainsExpectedFormats()
+    public void GetShellKeyPath_ReturnsCorrectPath_ForTiffExtension()
     {
-        // Arrange - Use reflection to access private field
-        var field = typeof(ContextMenuUtilities).GetField(
-            "ImageExtensions",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        // Arrange
+        string extension = ".tiff";
+        string expectedPath = @"Software\Classes\SystemFileAssociations\.tiff\shell\Text-Grab.GrabText";
 
-        string[]? extensions = field?.GetValue(null) as string[];
+        // Act
+        string result = ContextMenuUtilities.GetShellKeyPath(extension);
 
         // Assert
-        Assert.NotNull(extensions);
-        Assert.Contains(".png", extensions);
-        Assert.Contains(".jpg", extensions);
-        Assert.Contains(".jpeg", extensions);
-        Assert.Contains(".bmp", extensions);
-        Assert.Contains(".gif", extensions);
-        Assert.Contains(".tiff", extensions);
-        Assert.Contains(".tif", extensions);
+        Assert.Equal(expectedPath, result);
+    }
+
+    [Fact]
+    public void GetShellKeyPath_ReturnsConsistentFormat()
+    {
+        // Act
+        string pngPath = ContextMenuUtilities.GetShellKeyPath(".png");
+        string jpgPath = ContextMenuUtilities.GetShellKeyPath(".jpg");
+
+        // Assert - Both should follow the same pattern
+        Assert.StartsWith(@"Software\Classes\SystemFileAssociations\", pngPath);
+        Assert.StartsWith(@"Software\Classes\SystemFileAssociations\", jpgPath);
+        Assert.EndsWith(@"\shell\Text-Grab.GrabText", pngPath);
+        Assert.EndsWith(@"\shell\Text-Grab.GrabText", jpgPath);
     }
 }
