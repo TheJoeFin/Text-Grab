@@ -23,7 +23,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
         <EnableMsixTooling>false</EnableMsixTooling>
-        <Version>4.11.2</Version>
+        <Version>4.12.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -52,7 +52,7 @@
 
     <ItemGroup>
         <PackageReference Include="CliWrap" Version="3.10.0" />
-        <PackageReference Include="Dapplo.Windows.User32" Version="2.0.5" />
+        <PackageReference Include="Dapplo.Windows.User32" Version="2.0.15" />
         <PackageReference Include="Humanizer.Core" Version="3.0.1" />
         <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.10.2" />
         <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.15" />
