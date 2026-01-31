@@ -29,6 +29,9 @@ public static partial class OcrUtilities
 {
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
 
+    // Cache the SpaceJoiningWordRegex to avoid creating it on every method call
+    private static readonly Regex _cachedSpaceJoiningWordRegex = SpaceJoiningWordRegex();
+
     public static void GetTextFromOcrLine(this IOcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
         // (when OCR language is zh or ja)
@@ -51,13 +54,11 @@ public static partial class OcrUtilities
             bool isFirstWord = true;
             bool isPrevWordSpaceJoining = false;
 
-            Regex regexSpaceJoiningWord = SpaceJoiningWordRegex();
-
             foreach (IOcrWord ocrWord in ocrLine.Words)
             {
                 string wordString = ocrWord.Text;
 
-                bool isThisWordSpaceJoining = regexSpaceJoiningWord.IsMatch(wordString);
+                bool isThisWordSpaceJoining = _cachedSpaceJoiningWordRegex.IsMatch(wordString);
 
                 if (DefaultSettings.CorrectErrors)
                     wordString = wordString.TryFixNumberLetterErrors();
