@@ -213,10 +213,22 @@ public partial class App : System.Windows.Application
             string? filePath = null;
             foreach (string arg in args)
             {
-                if (!KnownFlags.Contains(arg) && File.Exists(arg))
+                if (!KnownFlags.Contains(arg))
                 {
-                    filePath = arg;
-                    break;
+                    // Convert to absolute path to handle relative paths correctly
+                    try
+                    {
+                        string absolutePath = Path.GetFullPath(arg);
+                        if (File.Exists(absolutePath))
+                        {
+                            filePath = absolutePath;
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Invalid path argument: {arg}, error: {ex.Message}");
+                    }
                 }
             }
 
