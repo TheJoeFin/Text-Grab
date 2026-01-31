@@ -113,6 +113,8 @@
                         <ui:SymbolIcon Symbol="Globe24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+            <ui:NavigationView.FooterMenuItems>F
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:DangerSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock
@@ -124,7 +126,7 @@
                         <ui:SymbolIcon Symbol="Warning24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-            </ui:NavigationView.MenuItems>
+            </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
     </Grid>
 </ui:FluentWindow>
