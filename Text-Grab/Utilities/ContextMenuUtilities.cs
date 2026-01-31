@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System;
+using System.Diagnostics;
 
 namespace Text_Grab.Utilities;
 
@@ -30,13 +31,18 @@ internal static class ContextMenuUtilities
     /// Adds Text Grab to the Windows context menu for image files.
     /// This allows users to right-click on an image and select "Grab text with Text Grab".
     /// </summary>
+    /// <param name="errorMessage">When the method returns false, contains an error message describing the failure.</param>
     /// <returns>True if registration was successful, false otherwise.</returns>
-    public static bool AddToContextMenu()
+    public static bool AddToContextMenu(out string? errorMessage)
     {
+        errorMessage = null;
         string executablePath = FileUtilities.GetExePath();
 
         if (string.IsNullOrEmpty(executablePath))
+        {
+            errorMessage = "Could not determine the application executable path.";
             return false;
+        }
 
         try
         {
@@ -46,8 +52,16 @@ internal static class ContextMenuUtilities
             }
             return true;
         }
-        catch (Exception)
+        catch (UnauthorizedAccessException ex)
         {
+            Debug.WriteLine($"Context menu registration failed due to permissions: {ex.Message}");
+            errorMessage = "Permission denied. Please run Text Grab as administrator or check your registry permissions.";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Context menu registration failed: {ex.Message}");
+            errorMessage = $"Failed to register context menu: {ex.Message}";
             return false;
         }
     }
@@ -66,8 +80,9 @@ internal static class ContextMenuUtilities
             }
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Debug.WriteLine($"Context menu unregistration failed: {ex.Message}");
             return false;
         }
     }
@@ -90,8 +105,9 @@ internal static class ContextMenuUtilities
             }
             return false;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Debug.WriteLine($"Context menu registration check failed: {ex.Message}");
             return false;
         }
     }
@@ -126,7 +142,6 @@ internal static class ContextMenuUtilities
                 return;
 
             // %1 is replaced by Windows with the path to the file that was right-clicked
-            // --windowless flag will OCR and copy to clipboard without opening a window
             commandKey.SetValue(string.Empty, $"\"{executablePath}\" \"%1\"");
         }
     }
@@ -144,9 +159,10 @@ internal static class ContextMenuUtilities
             // Delete the entire shell key and its subkeys
             Registry.CurrentUser.DeleteSubKeyTree(shellKeyPath, throwOnMissingSubKey: false);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignore errors during unregistration
+            // Log but don't throw - we want to continue trying to remove other extensions
+            Debug.WriteLine($"Failed to unregister context menu for {extension}: {ex.Message}");
         }
     }
 

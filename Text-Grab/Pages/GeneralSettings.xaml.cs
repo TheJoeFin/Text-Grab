@@ -395,7 +395,7 @@ public partial class GeneralSettings : Page
         if (!settingsSet)
             return;
 
-        bool success = ContextMenuUtilities.AddToContextMenu();
+        bool success = ContextMenuUtilities.AddToContextMenu(out string? errorMessage);
         if (success)
         {
             DefaultSettings.AddToContextMenu = true;
@@ -404,7 +404,16 @@ public partial class GeneralSettings : Page
         else
         {
             // Revert the checkbox if registration failed
+            settingsSet = false;
             AddToContextMenuCheckBox.IsChecked = false;
+            settingsSet = true;
+
+            // Show error message to user
+            System.Windows.MessageBox.Show(
+                errorMessage ?? "Failed to add Text Grab to the context menu.",
+                "Context Menu Registration Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
     }
 
