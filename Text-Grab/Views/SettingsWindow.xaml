@@ -114,7 +114,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
-            <ui:NavigationView.FooterMenuItems>F
+            <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:DangerSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock

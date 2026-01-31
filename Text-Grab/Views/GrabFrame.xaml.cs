@@ -104,6 +104,37 @@ public partial class GrabFrame : Window
         historyItem = historyInfo;
     }
 
+    /// <summary>
+    /// Creates a GrabFrame and loads the specified image file.
+    /// </summary>
+    /// <param name="imagePath">The path to the image file to load.</param>
+    public GrabFrame(string imagePath)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = true;
+        
+        // Validate the path before loading
+        if (string.IsNullOrEmpty(imagePath))
+        {
+            Debug.WriteLine("GrabFrame: Empty image path provided");
+            Loaded += (s, e) => MessageBox.Show("No image file path was provided.", "Text Grab", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Convert to absolute path to handle relative paths correctly
+        string absolutePath = Path.GetFullPath(imagePath);
+
+        if (!File.Exists(absolutePath))
+        {
+            Debug.WriteLine($"GrabFrame: Image file not found: {absolutePath}");
+            Loaded += (s, e) => MessageBox.Show($"Image file not found:\n{absolutePath}", "Text Grab", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        Loaded += async (s, e) => await TryLoadImageFromPath(absolutePath);
+    }
+
     private async Task LoadContentFromHistory(HistoryInfo history)
     {
         FrameText = history.TextContent;

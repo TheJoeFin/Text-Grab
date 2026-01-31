@@ -3,11 +3,13 @@
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
   xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
-  IgnorableNamespaces="uap rescap com systemai desktop">
+  IgnorableNamespaces="uap uap2 uap3 rescap com systemai desktop">
 
   <Identity
     Name="40087JoeFinApps.TextGrab"
@@ -58,6 +60,25 @@
               Enabled="false"
               DisplayName="Text Grab" />
           </desktop:Extension>
+
+      <!-- Context menu integration for image files -->
+      <uap3:Extension Category="windows.fileTypeAssociation">
+        <uap3:FileTypeAssociation Name="textgrab.images">
+          <uap:SupportedFileTypes>
+            <uap:FileType>.png</uap:FileType>
+            <uap:FileType>.jpg</uap:FileType>
+            <uap:FileType>.jpeg</uap:FileType>
+            <uap:FileType>.bmp</uap:FileType>
+            <uap:FileType>.gif</uap:FileType>
+            <uap:FileType>.tiff</uap:FileType>
+            <uap:FileType>.tif</uap:FileType>
+          </uap:SupportedFileTypes>
+          <uap2:SupportedVerbs>
+            <uap3:Verb Id="GrabText" Parameters="&quot;%1&quot;">Grab text with Text Grab</uap3:Verb>
+            <uap3:Verb Id="OpenInGrabFrame" Parameters="--grabframe &quot;%1&quot;">Open in Grab Frame</uap3:Verb>
+          </uap2:SupportedVerbs>
+        </uap3:FileTypeAssociation>
+      </uap3:Extension>
 
 		</Extensions>
 		

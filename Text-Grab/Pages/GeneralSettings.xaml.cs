@@ -140,6 +140,17 @@ public partial class GeneralSettings : Page
         InsertDelaySeconds = DefaultSettings.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
 
+        // Context menu integration - only available for unpackaged apps
+        if (!AppUtilities.IsPackaged())
+        {
+            AddToContextMenuCheckBox.IsChecked = ContextMenuUtilities.IsRegisteredInContextMenu();
+        }
+        else
+        {
+            AddToContextMenuCheckBox.IsEnabled = false;
+            AddToContextMenuCheckBox.IsChecked = false;
+        }
+
         settingsSet = true;
     }
 
@@ -377,5 +388,59 @@ public partial class GeneralSettings : Page
             return;
 
         Singleton<WebSearchUrlModel>.Instance.DefaultSearcher = newDefault;
+    }
+
+    private void AddToContextMenuCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        bool success = ContextMenuUtilities.AddToContextMenu(out string? errorMessage);
+        if (success)
+        {
+            DefaultSettings.AddToContextMenu = true;
+            DefaultSettings.Save();
+        }
+        else
+        {
+            // Revert the checkbox if registration failed
+            settingsSet = false;
+            AddToContextMenuCheckBox.IsChecked = false;
+            settingsSet = true;
+
+            // Show error message to user
+            System.Windows.MessageBox.Show(
+                errorMessage ?? "Failed to add Text Grab to the context menu.",
+                "Context Menu Registration Failed",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void AddToContextMenuCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        bool success = ContextMenuUtilities.RemoveFromContextMenu(out string? errorMessage);
+        
+        if (success)
+        {
+            DefaultSettings.AddToContextMenu = false;
+            DefaultSettings.Save();
+        }
+        else
+        {
+            // Revert the checkbox since removal failed - the context menu is still registered
+            settingsSet = false;
+            AddToContextMenuCheckBox.IsChecked = true;
+            settingsSet = true;
+
+            System.Windows.MessageBox.Show(
+                errorMessage ?? "Some context menu entries could not be removed.",
+                "Context Menu Removal Failed",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 }

@@ -225,6 +225,24 @@
             </TextBlock>
         </ui:ToggleSwitch>
 
+        <!--  Add to context menu  -->
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
+            Text="Context Menu Integration" />
+        <ui:ToggleSwitch
+            Name="AddToContextMenuCheckBox"
+            Checked="AddToContextMenuCheckBox_Checked"
+            Unchecked="AddToContextMenuCheckBox_Unchecked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Add "Grab text with Text Grab" to right-click menu for image files
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            Right-click on PNG, JPG, BMP, GIF, or TIFF files to quickly grab text.
+        </TextBlock>
+
         <TextBlock
             Margin="0,16,0,4"
             FontSize="16"
