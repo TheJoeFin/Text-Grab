@@ -838,5 +838,17 @@ namespace Text_Grab.Properties {
                 this["PostGrabStayOpen"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AddToContextMenu {
+            get {
+                return ((bool)(this["AddToContextMenu"]));
+            }
+            set {
+                this["AddToContextMenu"] = value;
+            }
+        }
     }
 }

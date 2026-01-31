@@ -140,6 +140,17 @@ public partial class GeneralSettings : Page
         InsertDelaySeconds = DefaultSettings.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
 
+        // Context menu integration - only available for unpackaged apps
+        if (!AppUtilities.IsPackaged())
+        {
+            AddToContextMenuCheckBox.IsChecked = ContextMenuUtilities.IsRegisteredInContextMenu();
+        }
+        else
+        {
+            AddToContextMenuCheckBox.IsEnabled = false;
+            AddToContextMenuCheckBox.IsChecked = false;
+        }
+
         settingsSet = true;
     }
 
@@ -377,5 +388,33 @@ public partial class GeneralSettings : Page
             return;
 
         Singleton<WebSearchUrlModel>.Instance.DefaultSearcher = newDefault;
+    }
+
+    private void AddToContextMenuCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        bool success = ContextMenuUtilities.AddToContextMenu();
+        if (success)
+        {
+            DefaultSettings.AddToContextMenu = true;
+            DefaultSettings.Save();
+        }
+        else
+        {
+            // Revert the checkbox if registration failed
+            AddToContextMenuCheckBox.IsChecked = false;
+        }
+    }
+
+    private void AddToContextMenuCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        ContextMenuUtilities.RemoveFromContextMenu();
+        DefaultSettings.AddToContextMenu = false;
+        DefaultSettings.Save();
     }
 }
