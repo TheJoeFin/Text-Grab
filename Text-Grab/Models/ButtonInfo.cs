@@ -1,8 +1,16 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Text_Grab.Controls;
 using Wpf.Ui.Controls;
 
 namespace Text_Grab.Models;
+
+public enum DefaultCheckState
+{
+    Off = 0,
+    LastUsed = 1,
+    On = 2
+}
 
 public class ButtonInfo
 {
@@ -14,7 +22,13 @@ public class ButtonInfo
     public string ClickEvent { get; set; } = "";
     public bool IsSymbol { get; set; } = false;
 
+    [JsonIgnore]
     public SymbolRegular SymbolIcon { get; set; } = SymbolRegular.Diamond24;
+
+    // Post-grab action properties
+    public bool IsRelevantForFullscreenGrab { get; set; } = false;
+    public bool IsRelevantForEditWindow { get; set; } = true; // Default to true for backward compatibility
+    public DefaultCheckState DefaultCheckState { get; set; } = DefaultCheckState.Off;
 
     public ButtonInfo()
     {
@@ -31,7 +45,15 @@ public class ButtonInfo
 
     public override int GetHashCode()
     {
-        return System.HashCode.Combine(ButtonText, SymbolText, Background, Command, ClickEvent);
+        return System.HashCode.Combine(
+            ButtonText,
+            SymbolText,
+            Background,
+            Command,
+            ClickEvent,
+            IsRelevantForFullscreenGrab,
+            IsRelevantForEditWindow,
+            DefaultCheckState);
     }
 
     // a constructor which takes a collapsible button
@@ -45,6 +67,9 @@ public class ButtonInfo
             Command = button.CustomButton.Command;
             ClickEvent = button.CustomButton.ClickEvent;
             IsSymbol = button.CustomButton.IsSymbol;
+            IsRelevantForFullscreenGrab = button.CustomButton.IsRelevantForFullscreenGrab;
+            IsRelevantForEditWindow = button.CustomButton.IsRelevantForEditWindow;
+            DefaultCheckState = button.CustomButton.DefaultCheckState;
         }
         else
         {
@@ -65,8 +90,28 @@ public class ButtonInfo
         IsSymbol = isSymbol;
     }
 
-    public static List<ButtonInfo> DefaultButtonList { get; set; } =
-    [
+    // Constructor for post-grab actions
+    public ButtonInfo(string buttonText, string clickEvent, SymbolRegular symbolIcon, DefaultCheckState defaultCheckState)
+    {
+        ButtonText = buttonText;
+        ClickEvent = clickEvent;
+        SymbolIcon = symbolIcon;
+        IsSymbol = true;
+        IsRelevantForFullscreenGrab = true;
+        IsRelevantForEditWindow = false;
+        DefaultCheckState = defaultCheckState;
+    }
+
+    private static List<ButtonInfo>? _defaultButtonList;
+    public static List<ButtonInfo> DefaultButtonList
+    {
+        get
+        {
+            if (_defaultButtonList is not null)
+                return _defaultButtonList;
+
+            _defaultButtonList =
+            [
         new()
         {
             ButtonText = "Copy and Close",
@@ -119,12 +164,24 @@ public class ButtonInfo
             SymbolText = "",
             ClickEvent = "EditBottomBarMenuItem_Click",
             IsSymbol = true,
-            SymbolIcon = SymbolRegular.CalendarSettings24
-        },
-    ];
+                    SymbolIcon = SymbolRegular.CalendarSettings24
+                },
+                    ];
 
-    public static List<ButtonInfo> AllButtons { get; set; } =
-    [
+            return _defaultButtonList;
+        }
+    }
+
+    private static List<ButtonInfo>? _allButtons;
+    public static List<ButtonInfo> AllButtons
+    {
+        get
+        {
+            if (_allButtons is not null)
+                return _allButtons;
+
+            _allButtons =
+            [
         new()
         {
             OrderNumber = 1.1,
@@ -447,11 +504,13 @@ public class ButtonInfo
         },
         new()
         {
-            ButtonText = "Settings",
-            ClickEvent = "SettingsMenuItem_Click",
-            SymbolIcon = SymbolRegular.Settings24
-        },
-    ];
+                        ButtonText = "Settings",
+                        ClickEvent = "SettingsMenuItem_Click",
+                        SymbolIcon = SymbolRegular.Settings24
+                    },
+                        ];
+
+            return _allButtons;
+        }
+    }
 }
-
-

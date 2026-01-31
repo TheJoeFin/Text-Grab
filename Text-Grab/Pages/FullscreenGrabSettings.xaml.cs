@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using Text_Grab;
+using Text_Grab.Controls;
+using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
@@ -50,6 +53,9 @@ public partial class FullscreenGrabSettings : Page
         {
             DefaultModeRadio.IsChecked = true;
         }
+
+        // Update post-grab actions count
+        UpdateActionsCountText();
 
         _loaded = true;
     }
@@ -110,5 +116,44 @@ public partial class FullscreenGrabSettings : Page
         DefaultSettings.InsertDelay = newVal;
         DefaultSettings.Save();
         InsertDelayValueText.Text = newVal.ToString("0.0", CultureInfo.InvariantCulture);
+    }
+
+    private void CustomizeActionsButton_Click(object sender, RoutedEventArgs e)
+    {
+        PostGrabActionEditor editor = new()
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        bool? result = editor.ShowDialog();
+
+        if (result == true)
+        {
+            // Update the count text after changes
+            UpdateActionsCountText();
+        }
+    }
+
+    private void UpdateActionsCountText()
+    {
+        List<ButtonInfo> enabledActions = PostGrabActionManager.GetEnabledPostGrabActions();
+        int count = enabledActions.Count;
+
+        if (count == 0)
+        {
+            ActionsCountText.Text = "No actions enabled";
+        }
+        else if (count == 1)
+        {
+            ActionsCountText.Text = $"1 action enabled: {enabledActions.First().ButtonText}";
+        }
+        else
+        {
+            string actionsList = string.Join(", ", enabledActions.Take(3).Select(a => a.ButtonText));
+            if (count > 3)
+                actionsList += $", and {count - 3} more";
+
+            ActionsCountText.Text = $"{count} actions enabled: {actionsList}";
+        }
     }
 }

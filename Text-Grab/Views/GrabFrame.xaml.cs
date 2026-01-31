@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -74,6 +75,15 @@ public partial class GrabFrame : Window
     private readonly ObservableCollection<WordBorder> wordBorders = [];
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private ScrollBehavior scrollBehavior = ScrollBehavior.Resize;
+    private bool isTranslationEnabled = false;
+    private string translationTargetLanguage = "English";
+    private readonly DispatcherTimer translationTimer = new();
+    private readonly Dictionary<WordBorder, string> originalTexts = [];
+    private readonly SemaphoreSlim translationSemaphore = new(3); // Limit to 3 concurrent translations
+    private int totalWordsToTranslate = 0;
+    private int translatedWordsCount = 0;
+    private CancellationTokenSource? translationCancellationTokenSource;
+    private const string TargetLanguageMenuHeader = "Target Language";
 
     #endregion Fields
 
@@ -198,6 +208,9 @@ public partial class GrabFrame : Window
 
         reSearchTimer.Interval = new(0, 0, 0, 0, 300);
         reSearchTimer.Tick += ReSearchTimer_Tick;
+
+        translationTimer.Interval = new(0, 0, 0, 0, 1000);
+        translationTimer.Tick += TranslationTimer_Tick;
 
         _ = UndoRedo.HasUndoOperations();
         _ = UndoRedo.HasRedoOperations();
@@ -438,6 +451,15 @@ public partial class GrabFrame : Window
 
         reDrawTimer.Stop();
         reDrawTimer.Tick -= ReDrawTimer_Tick;
+
+        translationTimer.Stop();
+        translationTimer.Tick -= TranslationTimer_Tick;
+        translationSemaphore.Dispose();
+        translationCancellationTokenSource?.Cancel();
+        translationCancellationTokenSource?.Dispose();
+
+        // Dispose the shared translation model during cleanup to prevent resource leaks
+        WindowsAiUtilities.DisposeTranslationModel();
 
         MinimizeButton.Click -= OnMinimizeButtonClick;
         RestoreButton.Click -= OnRestoreButtonClick;
@@ -1055,6 +1077,13 @@ public partial class GrabFrame : Window
 
         bmp?.Dispose();
         reSearchTimer.Start();
+
+        // Trigger translation if enabled
+        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            translationTimer.Stop();
+            translationTimer.Start();
+        }
     }
 
     private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1263,6 +1292,7 @@ public partial class GrabFrame : Window
         AlwaysUpdateEtwCheckBox.IsChecked = DefaultSettings.GrabFrameUpdateEtw;
         CloseOnGrabMenuItem.IsChecked = DefaultSettings.CloseFrameOnGrab;
         ReadBarcodesMenuItem.IsChecked = DefaultSettings.GrabFrameReadBarcodes;
+        GetGrabFrameTranslationSettings();
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
         SetScrollBehaviorMenuItems();
     }
@@ -1963,7 +1993,7 @@ new GrabFrameOperationArgs()
         {
             foreach (WordBorder wb in wordBorders)
             {
-                int numberOfMatchesInWord = regex.Matches(wb.Word).Count;
+                int numberOfMatchesInWord = regex.Count(wb.Word);
                 numberOfMatches += numberOfMatchesInWord;
 
                 if (numberOfMatchesInWord > 0)
@@ -2716,6 +2746,307 @@ new GrabFrameOperationArgs()
 
         DefaultSettings.GrabFrameReadBarcodes = barcodeMenuItem.IsChecked is true;
         DefaultSettings.Save();
+    }
+
+    private void TranslateToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (TranslateToggleButton.IsChecked is bool isChecked)
+        {
+            isTranslationEnabled = isChecked;
+            EnableTranslationMenuItem.IsChecked = isChecked;
+            DefaultSettings.GrabFrameTranslationEnabled = isChecked;
+            DefaultSettings.Save();
+
+            if (isChecked)
+            {
+                if (!WindowsAiUtilities.CanDeviceUseWinAI())
+                {
+                    MessageBox.Show("Windows AI is not available on this device. Translation requires Windows AI support.",
+                        "Translation Not Available", MessageBoxButton.OK, MessageBoxImage.Information);
+                    TranslateToggleButton.IsChecked = false;
+                    isTranslationEnabled = false;
+                    return;
+                }
+
+                // ALWAYS freeze the frame before translation to ensure static content
+                if (!IsFreezeMode)
+                {
+                    FreezeToggleButton.IsChecked = true;
+                    FreezeGrabFrame();
+                }
+
+                // Store original texts before translation
+                foreach (WordBorder wb in wordBorders.Where(wb => !originalTexts.ContainsKey(wb)))
+                {
+                    originalTexts[wb] = wb.Word;
+                }
+
+                // Create new cancellation token source
+                translationCancellationTokenSource?.Cancel();
+                translationCancellationTokenSource?.Dispose();
+                translationCancellationTokenSource = new CancellationTokenSource();
+
+                translationTimer.Start();
+            }
+            else
+            {
+                translationTimer.Stop();
+
+                // Cancel any ongoing translation
+                translationCancellationTokenSource?.Cancel();
+
+                // Restore original texts
+                foreach (WordBorder wb in wordBorders.Where(wb => originalTexts.ContainsKey(wb)))
+                {
+                    if (originalTexts.TryGetValue(wb, out string? originalText))
+                        wb.Word = originalText;
+                }
+                originalTexts.Clear();
+
+                // Dispose the translation model to free resources when not in use
+                WindowsAiUtilities.DisposeTranslationModel();
+            }
+        }
+    }
+
+    private void EnableTranslationMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem)
+        {
+            TranslateToggleButton.IsChecked = menuItem.IsChecked;
+            TranslateToggleButton_Click(TranslateToggleButton, e);
+        }
+    }
+
+    private void TranslationLanguageMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string language)
+            return;
+
+        translationTargetLanguage = language;
+        DefaultSettings.GrabFrameTranslationLanguage = language;
+        DefaultSettings.Save();
+
+        // Update the tooltip to show the current target language
+        TranslateToggleButton.ToolTip = $"Enable real-time translation to {language}";
+
+        // Uncheck all language menu items and check only the selected one
+        if (menuItem.Parent is MenuItem parentMenu)
+        {
+            foreach (object? item in parentMenu.Items)
+            {
+                if (item is MenuItem langMenuItem && langMenuItem.Tag is string)
+                    langMenuItem.IsChecked = langMenuItem.Tag.ToString() == language;
+            }
+        }
+
+        // Re-translate if translation is currently enabled
+        if (isTranslationEnabled)
+        {
+            translationTimer.Stop();
+            translationTimer.Start();
+        }
+    }
+
+    private async void TranslationTimer_Tick(object? sender, EventArgs e)
+    {
+        translationTimer.Stop();
+
+        if (!isTranslationEnabled || !WindowsAiUtilities.CanDeviceUseWinAI())
+            return;
+
+        await PerformTranslationAsync();
+    }
+
+    private async Task PerformTranslationAsync()
+    {
+        if (translationCancellationTokenSource == null || translationCancellationTokenSource.IsCancellationRequested)
+            return;
+
+        ShowTranslationProgress();
+
+        totalWordsToTranslate = wordBorders.Count;
+        translatedWordsCount = 0;
+
+        CancellationToken cancellationToken = translationCancellationTokenSource.Token;
+
+        // Translate all word borders with controlled concurrency (max 3 at a time)
+        List<Task> translationTasks = [];
+
+        try
+        {
+            foreach (WordBorder wb in wordBorders)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                // Store original text if not already stored
+                if (!originalTexts.ContainsKey(wb))
+                    originalTexts[wb] = wb.Word;
+
+                string originalText = originalTexts[wb];
+                if (!string.IsNullOrWhiteSpace(originalText))
+                {
+                    translationTasks.Add(TranslateWordBorderAsync(wb, originalText, cancellationToken));
+                }
+                else
+                {
+                    translatedWordsCount++;
+                    UpdateTranslationProgress();
+                }
+            }
+
+            // Wait for all translations to complete or cancellation
+            // Use WhenAll with exception handling to gracefully handle cancellations
+            try
+            {
+                await Task.WhenAll(translationTasks);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+                Debug.WriteLine("Translation tasks cancelled during WhenAll");
+            }
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                UpdateFrameText();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("Translation was cancelled");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Translation error: {ex.Message}");
+        }
+        finally
+        {
+            HideTranslationProgress();
+        }
+    }
+
+    private void ShowTranslationProgress()
+    {
+        TranslationProgressBorder.Visibility = Visibility.Visible;
+        TranslationProgressBar.Value = 0;
+        TranslationProgressText.Text = "Translating...";
+        TranslationCountText.Text = "0/0";
+    }
+
+    private void HideTranslationProgress()
+    {
+        TranslationProgressBorder.Visibility = Visibility.Collapsed;
+    }
+
+    private void UpdateTranslationProgress()
+    {
+        if (totalWordsToTranslate == 0)
+            return;
+
+        double progress = (double)translatedWordsCount / totalWordsToTranslate * 100;
+        TranslationProgressBar.Value = progress;
+        TranslationCountText.Text = $"{translatedWordsCount}/{totalWordsToTranslate}";
+    }
+
+    private async Task TranslateWordBorderAsync(WordBorder wordBorder, string originalText, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await translationSemaphore.WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Semaphore wait was cancelled - exit gracefully
+            return;
+        }
+
+        try
+        {
+            // Ensure cancellation is honored immediately before starting translation
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
+
+            // If cancellation was requested during translation, abort before updating UI state
+            cancellationToken.ThrowIfCancellationRequested();
+
+            wordBorder.Word = translatedText;
+
+            translatedWordsCount++;
+            await Dispatcher.InvokeAsync(() => UpdateTranslationProgress());
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected during cancellation - don't propagate
+            Debug.WriteLine($"Translation cancelled for word: {originalText}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Translation failed for '{originalText}': {ex.Message}");
+            // On error, keep original text (don't update word border)
+        }
+        finally
+        {
+            translationSemaphore.Release();
+        }
+    }
+
+    private void GetGrabFrameTranslationSettings()
+    {
+        isTranslationEnabled = DefaultSettings.GrabFrameTranslationEnabled;
+        translationTargetLanguage = DefaultSettings.GrabFrameTranslationLanguage;
+
+        // Hide translation button if Windows AI is not available
+        bool canUseWinAI = WindowsAiUtilities.CanDeviceUseWinAI();
+        TranslateToggleButton.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+        TranslationMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+
+        if (canUseWinAI)
+        {
+            TranslateToggleButton.IsChecked = isTranslationEnabled;
+            EnableTranslationMenuItem.IsChecked = isTranslationEnabled;
+            TranslateToggleButton.ToolTip = $"Enable real-time translation to {translationTargetLanguage}";
+        }
+        else
+        {
+            // Disable translation if Windows AI is not available
+            isTranslationEnabled = false;
+        }
+
+        // Set the checked state for the translation language menu item
+        // Find the "Target Language" submenu by searching through items
+        if (canUseWinAI && TranslationMenuItem != null)
+        {
+            foreach (object? item in TranslationMenuItem.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.Header.ToString() == TargetLanguageMenuHeader)
+                {
+                    foreach (object? langItem in menuItem.Items)
+                    {
+                        if (langItem is MenuItem langMenuItem && langMenuItem.Tag is string tag)
+                            langMenuItem.IsChecked = tag == translationTargetLanguage;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private void CancelTranslationButton_Click(object sender, RoutedEventArgs e)
+    {
+        translationCancellationTokenSource?.Cancel();
+        HideTranslationProgress();
+
+        // Restore original texts
+        foreach (WordBorder wb in wordBorders.Where(wb => originalTexts.ContainsKey(wb)))
+        {
+            if (originalTexts.TryGetValue(wb, out string? originalText))
+                wb.Word = originalText;
+        }
+
+        UpdateFrameText();
     }
 
     #endregion Methods

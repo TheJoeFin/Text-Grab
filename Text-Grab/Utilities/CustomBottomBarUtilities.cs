@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -13,6 +15,11 @@ namespace Text_Grab.Utilities;
 
 public class CustomBottomBarUtilities
 {
+    private static readonly JsonSerializerOptions ButtonInfoJsonOptions = new();
+    private static readonly Dictionary<Type, List<MethodInfo>> _methodCache = [];
+    private static readonly Lock _methodCacheLock = new();
+    private static readonly BrushConverter BrushConverter = new();
+
     public static List<ButtonInfo> GetCustomBottomBarItemsSetting()
     {
         string json = AppUtilities.TextGrabSettings.BottomButtonsJson;
@@ -22,20 +29,18 @@ public class CustomBottomBarUtilities
 
         List<ButtonInfo>? customBottomBarItems = [];
 
-        customBottomBarItems = JsonSerializer.Deserialize<List<ButtonInfo>>(json);
+        customBottomBarItems = JsonSerializer.Deserialize<List<ButtonInfo>>(json, ButtonInfoJsonOptions);
 
         if (customBottomBarItems is null || customBottomBarItems.Count == 0)
             return ButtonInfo.DefaultButtonList;
 
-        // check to see if the first element is using the default symbol of Diamond24
-        // which is unused by any button
-        if (customBottomBarItems.First().SymbolIcon == SymbolRegular.Diamond24)
-        {
-            // Migrate to the new SymbolRegular instead of the old symbols.
-            Dictionary<string, SymbolRegular> buttonDictionary = ButtonInfo.AllButtons.ToDictionary(button => button.ButtonText, button => button.SymbolIcon);
+        // SymbolIcon is not serialized (marked with [JsonIgnore]), so reconstruct it from ButtonText
+        Dictionary<string, SymbolRegular> buttonDictionary = ButtonInfo.AllButtons.ToDictionary(button => button.ButtonText, button => button.SymbolIcon);
 
-            foreach (ButtonInfo buttonInfo in customBottomBarItems)
-                buttonInfo.SymbolIcon = buttonDictionary[buttonInfo.ButtonText];
+        foreach (ButtonInfo buttonInfo in customBottomBarItems)
+        {
+            if (buttonDictionary.TryGetValue(buttonInfo.ButtonText, out SymbolRegular symbol))
+                buttonInfo.SymbolIcon = symbol;
         }
 
         return customBottomBarItems;
@@ -53,7 +58,7 @@ public class CustomBottomBarUtilities
 
     public static void SaveCustomBottomBarItemsSetting(List<ButtonInfo> bottomBarButtons)
     {
-        string json = JsonSerializer.Serialize(bottomBarButtons);
+        string json = JsonSerializer.Serialize(bottomBarButtons, ButtonInfoJsonOptions);
         AppUtilities.TextGrabSettings.BottomButtonsJson = json;
         AppUtilities.TextGrabSettings.Save();
     }
@@ -66,6 +71,7 @@ public class CustomBottomBarUtilities
         Dictionary<string, RoutedCommand> routedCommands = EditTextWindow.GetRoutedCommands();
 
         int index = 1;
+        BrushConverter _brushConverter = new();
 
         foreach (ButtonInfo buttonItem in GetCustomBottomBarItemsSetting())
         {
@@ -79,8 +85,7 @@ public class CustomBottomBarUtilities
             };
 
             if (buttonItem.Background != "Transparent"
-                && new BrushConverter()
-                .ConvertFromString(buttonItem.Background) is SolidColorBrush solidColorBrush)
+                && _brushConverter.ConvertFromString(buttonItem.Background) is SolidColorBrush solidColorBrush)
             {
                 button.Background = solidColorBrush;
             }
@@ -90,7 +95,7 @@ public class CustomBottomBarUtilities
                 button.Click += routedEventHandler;
             else
                 if (GetCommandBinding(buttonItem.Command, routedCommands) is RoutedCommand routedCommand)
-                button.Command = routedCommand;
+                    button.Command = routedCommand;
 
             bottomBarButtons.Add(button);
             index++;
@@ -101,7 +106,21 @@ public class CustomBottomBarUtilities
 
     private static List<MethodInfo> GetMethods(object obj)
     {
-        return [.. obj.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)];
+        Type type = obj.GetType();
+
+        if (_methodCache.TryGetValue(type, out List<MethodInfo>? cachedMethods))
+            return cachedMethods;
+
+        lock (_methodCacheLock)
+        {
+            // Double-check after acquiring lock
+            if (_methodCache.TryGetValue(type, out cachedMethods))
+                return cachedMethods;
+
+            List<MethodInfo> methods = [.. type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)];
+            _methodCache[type] = methods;
+            return methods;
+        }
     }
 
     private static MethodInfo? GetMethodInfoForName(string methodName, List<MethodInfo> methods)

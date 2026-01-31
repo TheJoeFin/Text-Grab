@@ -300,8 +300,7 @@ public static partial class StringMethods
         workingString.Replace('\n', ' ');
         workingString.Replace('\r', ' ');
 
-        Regex regex = MultiSpaces();
-        string temp = regex.Replace(workingString.ToString(), " ");
+        string temp = MultiSpaces().Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
         if (workingString[0] == ' ')
@@ -1109,5 +1108,39 @@ public static partial class StringMethods
         }
 
         return explanation.ToString();
+    }
+
+    public static int CountMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        int count = 0;
+        int index = 0;
+
+        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+
+        return count;
+    }
+
+    public static int CountRegexMatches(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        try
+        {
+            MatchCollection matches = Regex.Matches(text, pattern, RegexOptions.Multiline);
+            return matches.Count;
+        }
+        catch (Exception)
+        {
+            // If regex is invalid, return 0
+            return 0;
+        }
     }
 }

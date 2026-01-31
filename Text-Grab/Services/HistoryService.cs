@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,6 +24,12 @@ public class HistoryService
 
     private static readonly int maxHistoryTextOnly = 100;
     private static readonly int maxHistoryWithImages = 10;
+    private static readonly JsonSerializerOptions HistoryJsonOptions = new()
+    {
+        AllowTrailingCommas = true,
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
     private List<HistoryInfo> HistoryTextOnly = [];
     private List<HistoryInfo> HistoryWithImage = [];
     private readonly DispatcherTimer saveTimer = new();
@@ -287,7 +294,7 @@ public class HistoryService
 
         if (string.IsNullOrWhiteSpace(rawText)) return [];
 
-        List<HistoryInfo>? tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText);
+        List<HistoryInfo>? tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText, HistoryJsonOptions);
 
         if (tempHistory is List<HistoryInfo> jsonList && jsonList.Count > 0)
             return tempHistory;
@@ -297,17 +304,11 @@ public class HistoryService
 
     private static void WriteHistoryFiles(List<HistoryInfo> history, string fileName, int maxNumberToSave)
     {
-        JsonSerializerOptions options = new()
-        {
-            AllowTrailingCommas = true,
-            WriteIndented = true,
-        };
-
         string historyAsJson = JsonSerializer
             .Serialize(history
                 .OrderBy(x => x.CaptureDateTime)
                 .TakeLast(maxNumberToSave),
-            options);
+            HistoryJsonOptions);
 
         try
         {

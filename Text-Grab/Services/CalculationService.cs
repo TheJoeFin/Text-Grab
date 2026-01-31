@@ -209,6 +209,46 @@ public partial class CalculationService
         return expression;
     }
 
+    // Static field for quantity multipliers to avoid allocating Dictionary in every call
+    private static readonly Dictionary<string, double> _quantityMultipliers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Extremely large orders of magnitude
+        { "googol", 1e100 },                                                  // 10^100
+        { "decillion", 1e33 },                                                // 10^33
+        { "nonillion", 1e30 },                                                // 10^30
+        { "octillion", 1e27 },                                                // 10^27
+        { "yotta", 1e24 },                                                    // 10^24 (SI prefix)
+        { "septillion", 1e24 },                                               // 10^24
+        { "zetta", 1e21 },                                                    // 10^21 (SI prefix)
+        { "sextillion", 1e21 },                                               // 10^21
+        { "exa", 1e18 },                                                      // 10^18 (SI prefix)
+        { "quintillion", 1e18 },                                              // 10^18
+        { "peta", 1e15 },                                                     // 10^15 (SI prefix)
+        { "quadrillion", 1e15 },                                              // 10^15
+        { "tera", 1e12 },                                                     // 10^12 (SI prefix)
+        { "trillion", 1e12 },                                                 // 10^12
+        { "giga", 1e9 },                                                      // 10^9 (SI prefix)
+        { "billion", 1e9 },                                                   // 10^9
+        { "mega", 1e6 },                                                      // 10^6 (SI prefix)
+        { "million", 1e6 },                                                   // 10^6
+        { "kilo", 1e3 },                                                      // 10^3 (SI prefix)
+        { "thousand", 1e3 },                                                  // 10^3
+        { "hecto", 1e2 },                                                     // 10^2 (SI prefix)
+        { "hundred", 1e2 },                                                   // 10^2
+        { "deca", 1e1 },                                                      // 10^1 (SI prefix)
+        { "deka", 1e1 },                                                      // 10^1 (SI prefix, alternate spelling)
+        // Special quantities
+        { "dozen", 12.0 },
+        { "score", 20.0 },
+        { "gross", 144.0 },
+        // Abbreviations
+        { "k", 1e3 }
+        // { "m", 1e6 }, // Ambiguous: could be meter or million
+        // { "b", 1e9 },
+        // { "t", 1e12 },
+        // { "q", 1e15 }  // Quadrillion
+    };
+
     /// <summary>
     /// Parses quantity words and abbreviations in expressions, converting them to numeric values.
     /// Examples: "5 million" -> "5000000.0", "3 dozen" -> "36", "2.5 k" -> "2500"
@@ -223,49 +263,8 @@ public partial class CalculationService
 
         cultureInfo ??= CultureInfo.InvariantCulture;
 
-        // Dictionary of quantity words and their multipliers
-        // Note: Using double for range, supports up to ~10^308
-        Dictionary<string, double> quantityMultipliers = new(StringComparer.OrdinalIgnoreCase)
-        {
-            // Extremely large orders of magnitude
-            { "googol", 1e100 },                                                  // 10^100
-            { "decillion", 1e33 },                                                // 10^33
-            { "nonillion", 1e30 },                                                // 10^30
-            { "octillion", 1e27 },                                                // 10^27
-            { "yotta", 1e24 },                                                    // 10^24 (SI prefix)
-            { "septillion", 1e24 },                                               // 10^24
-            { "zetta", 1e21 },                                                    // 10^21 (SI prefix)
-            { "sextillion", 1e21 },                                               // 10^21
-            { "exa", 1e18 },                                                      // 10^18 (SI prefix)
-            { "quintillion", 1e18 },                                              // 10^18
-            { "peta", 1e15 },                                                     // 10^15 (SI prefix)
-            { "quadrillion", 1e15 },                                              // 10^15
-            { "tera", 1e12 },                                                     // 10^12 (SI prefix)
-            { "trillion", 1e12 },                                                 // 10^12
-            { "giga", 1e9 },                                                      // 10^9 (SI prefix)
-            { "billion", 1e9 },                                                   // 10^9
-            { "mega", 1e6 },                                                      // 10^6 (SI prefix)
-            { "million", 1e6 },                                                   // 10^6
-            { "kilo", 1e3 },                                                      // 10^3 (SI prefix)
-            { "thousand", 1e3 },                                                  // 10^3
-            { "hecto", 1e2 },                                                     // 10^2 (SI prefix)
-            { "hundred", 1e2 },                                                   // 10^2
-            { "deca", 1e1 },                                                      // 10^1 (SI prefix)
-            { "deka", 1e1 },                                                      // 10^1 (SI prefix, alternate spelling)
-            // Special quantities
-            { "dozen", 12.0 },
-            { "score", 20.0 },
-            { "gross", 144.0 },
-            // Abbreviations
-            { "k", 1e3 }
-            // { "m", 1e6 }, // Ambiguous: could be meter or million
-            // { "b", 1e9 },
-            // { "t", 1e12 },
-            // { "q", 1e15 }  // Quadrillion
-        };
-
         // Process each quantity word
-        foreach ((string? word, double multiplier) in quantityMultipliers)
+        foreach ((string? word, double multiplier) in _quantityMultipliers)
         {
             // Use regex to find patterns like "5 million", "2.5 thousand", "-3 dozen", "5million", etc.
             // Pattern matches: optional negative sign, digits with optional decimal point, optional whitespace, and the quantity word

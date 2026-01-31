@@ -136,9 +136,78 @@
                             x:Name="IsTopmostMenuItem"
                             Header="Keep Grab Frame On Top"
                             IsCheckable="True"
-                            IsChecked="{Binding Topmost,
-                                                ElementName=GrabFrameWindow,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}" />
+                        <Separator />
+                        <MenuItem x:Name="TranslationMenuItem" Header="Translation to...">
+                            <MenuItem
+                                x:Name="EnableTranslationMenuItem"
+                                Click="EnableTranslationMenuItem_Click"
+                                Header="Enable Real-time Translation"
+                                IsCheckable="True" />
+                            <Separator />
+                            <MenuItem Header="Target Language">
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="English"
+                                    IsCheckable="True"
+                                    Tag="English" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Spanish"
+                                    IsCheckable="True"
+                                    Tag="Spanish" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="French"
+                                    IsCheckable="True"
+                                    Tag="French" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="German"
+                                    IsCheckable="True"
+                                    Tag="German" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Italian"
+                                    IsCheckable="True"
+                                    Tag="Italian" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Portuguese"
+                                    IsCheckable="True"
+                                    Tag="Portuguese" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Russian"
+                                    IsCheckable="True"
+                                    Tag="Russian" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Japanese"
+                                    IsCheckable="True"
+                                    Tag="Japanese" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Chinese (Simplified)"
+                                    IsCheckable="True"
+                                    Tag="Chinese (Simplified)" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Korean"
+                                    IsCheckable="True"
+                                    Tag="Korean" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Arabic"
+                                    IsCheckable="True"
+                                    Tag="Arabic" />
+                                <MenuItem
+                                    Click="TranslationLanguageMenuItem_Click"
+                                    Header="Hindi"
+                                    IsCheckable="True"
+                                    Tag="Hindi" />
+                            </MenuItem>
+                        </MenuItem>
                         <Separator />
                         <MenuItem
                             Command="{x:Static local:GrabFrame.PasteCommand}"
@@ -223,41 +292,31 @@
                             Checked="AspectRationMI_Checked"
                             Header="Maintain Aspect Ratio"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=AspectRationMI,
-                                                Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked, ElementName=AspectRationMI, Mode=TwoWay}"
                             Unchecked="AspectRationMI_Checked" />
                         <MenuItem
                             Click="FreezeToggleButton_Click"
                             Header="Freeze Image In Frame"
                             InputGestureText="F"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=FreezeToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="TableToggleButton_Click"
                             Header="Analyze as a Table"
                             InputGestureText="T"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=TableToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="EditToggleButton_Click"
                             Header="Allow recognized words to be edited"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=EditToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=EditToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="EditTextBTN_Click"
                             Header="Send results to an Edit Text Window"
                             InputGestureText="E"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=EditTextToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
                         <Separator />
                         <MenuItem
                             x:Name="InvertSelectionMenuItem"
@@ -413,25 +472,26 @@
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
-                <controls:ZoomBorder x:Name="MainZoomBorder">
-                    <Viewbox Name="CanvasViewBox">
-                        <Grid>
-                            <Image
-                                x:Name="GrabFrameImage"
-                                Grid.Row="1"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Opacity="0"
-                                Stretch="Uniform" />
-                            <Canvas
-                                x:Name="RectanglesCanvas"
-                                Margin="-4,-2,0,0"
-                                Background="Transparent"
-                                Focusable="True"
-                                IsHitTestVisible="True"
-                                MouseDown="RectanglesCanvas_MouseDown"
-                                MouseMove="RectanglesCanvas_MouseMove"
-                                MouseUp="RectanglesCanvas_MouseUp">
+                <Grid>
+                    <controls:ZoomBorder x:Name="MainZoomBorder">
+                        <Viewbox Name="CanvasViewBox">
+                            <Grid>
+                                <Image
+                                    x:Name="GrabFrameImage"
+                                    Grid.Row="1"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Opacity="0"
+                                    Stretch="Uniform" />
+                                <Canvas
+                                    x:Name="RectanglesCanvas"
+                                    Margin="-4,-2,0,0"
+                                    Background="Transparent"
+                                    Focusable="True"
+                                    IsHitTestVisible="True"
+                                    MouseDown="RectanglesCanvas_MouseDown"
+                                    MouseMove="RectanglesCanvas_MouseMove"
+                                    MouseUp="RectanglesCanvas_MouseUp">
                                 <Canvas.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem
@@ -480,10 +540,86 @@
                                     </ContextMenu>
                                 </Canvas.ContextMenu>
                             </Canvas>
-                        </Grid>
-                    </Viewbox>
-                </controls:ZoomBorder>
-            </Border>
+                                        </Grid>
+                                    </Viewbox>
+                                    </controls:ZoomBorder>
+                                    <Border
+                                        x:Name="TranslationProgressBorder"
+                                        Height="40"
+                                        Margin="8"
+                                        VerticalAlignment="Bottom"
+                                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                                        BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Visibility="Collapsed">
+                                        <Border.Effect>
+                                            <DropShadowEffect
+                                                BlurRadius="8"
+                                                Direction="270"
+                                                Opacity="0.3"
+                                                ShadowDepth="2"
+                                                Color="Black" />
+                                        </Border.Effect>
+                                        <Grid Margin="8,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ui:SymbolIcon
+                                                Grid.Column="0"
+                                                Margin="0,0,12,0"
+                                                VerticalAlignment="Center"
+                                                Foreground="{ui:ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Symbol="LocalLanguage24" />
+                                            <StackPanel
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Orientation="Vertical">
+                                                <TextBlock
+                                                    x:Name="TranslationProgressText"
+                                                    Margin="0,0,0,2"
+                                                    FontSize="12"
+                                                    FontWeight="SemiBold"
+                                                    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+                                                    Text="Translating..." />
+                                                <ProgressBar
+                                                    x:Name="TranslationProgressBar"
+                                                    Height="6"
+                                                    Maximum="100"
+                                                    Minimum="0"
+                                                    Value="0" />
+                                            </StackPanel>
+                                            <TextBlock
+                                                x:Name="TranslationCountText"
+                                                Grid.Column="2"
+                                                Margin="12,0,8,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="11"
+                                                Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="0/0" />
+                                            <Button
+                                                x:Name="CancelTranslationButton"
+                                                Grid.Column="3"
+                                                Width="28"
+                                                Height="28"
+                                                Padding="0"
+                                                VerticalAlignment="Center"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Click="CancelTranslationButton_Click"
+                                                ToolTip="Cancel translation">
+                                                <ui:SymbolIcon
+                                                    FontSize="16"
+                                                    Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                    Symbol="Dismiss24" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                        </Border>
             <Border Grid.Row="2" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid
                     Height="30"
@@ -536,9 +672,7 @@
                         Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                         IsHitTestVisible="False"
                         Opacity="0.5"
-                        Visibility="{Binding Visibility,
-                                             ElementName=SearchBox,
-                                             Mode=OneWay}" />
+                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
                     <controls:CollapsibleButton
                         x:Name="ClearBTN"
                         Grid.Column="1"
@@ -643,6 +777,17 @@
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) Analyze content as tables">
                             <ui:SymbolIcon Symbol="Table24" />
+                        </ToggleButton>
+
+                        <ToggleButton
+                            x:Name="TranslateToggleButton"
+                            Width="30"
+                            Height="30"
+                            Margin="6,0,0,0"
+                            Click="TranslateToggleButton_Click"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Enable real-time translation">
+                            <ui:SymbolIcon Symbol="LocalLanguage24" />
                         </ToggleButton>
 
                         <ToggleButton

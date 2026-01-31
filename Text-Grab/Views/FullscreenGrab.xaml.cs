@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +10,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Text_Grab.Controls;
 using Text_Grab.Extensions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -48,6 +48,8 @@ public partial class FullscreenGrab : Window
     private const double MaxZoomScale = 16.0;
     private const double EdgePanThresholdPercent = 0.10;
     private const double EdgePanSpeed = 8.0;
+    private const string EditPostGrabActionsTag = "EditPostGrabActions";
+    private const string ClosePostGrabMenuTag = "ClosePostGrabMenu";
     private readonly DispatcherTimer edgePanTimer;
 
     #endregion Fields
@@ -254,6 +256,70 @@ public partial class FullscreenGrab : Window
         else if (sender is MenuItem mi)
             isActive = mi.IsChecked;
         return isActive;
+    }
+
+    private void LoadDynamicPostGrabActions()
+    {
+        if (NextStepDropDownButton.Flyout is not ContextMenu contextMenu)
+            return;
+
+        // Clear existing items
+        contextMenu.Items.Clear();
+
+        // Get enabled post-grab actions from settings
+        List<ButtonInfo> enabledActions = PostGrabActionManager.GetEnabledPostGrabActions();
+
+        // Get the PostGrabStayOpen setting
+        bool stayOpen = DefaultSettings.PostGrabStayOpen;
+
+        // Remove any existing keyboard handler to avoid duplicates
+        contextMenu.PreviewKeyDown -= FullscreenGrab_KeyDown;
+        
+        // Add keyboard handling once for the entire context menu
+        contextMenu.PreviewKeyDown += FullscreenGrab_KeyDown;
+
+        int index = 1;
+        foreach (ButtonInfo action in enabledActions)
+        {
+            MenuItem menuItem = new()
+            {
+                Header = action.ButtonText,
+                IsCheckable = true,
+                Tag = action,
+                IsChecked = PostGrabActionManager.GetCheckState(action),
+                StaysOpenOnClick = stayOpen,
+                InputGestureText = $"Ctrl+{index}"
+            };
+
+            // Wire up click handler
+            menuItem.Click += PostActionMenuItem_Click;
+
+            contextMenu.Items.Add(menuItem);
+            index++;
+        }
+
+        contextMenu.Items.Add(new Separator());
+
+        // Add "Edit this list..." menu item
+        MenuItem editPostGrabMenuItem = new()
+        {
+            Header = "Edit this list...",
+            Tag = EditPostGrabActionsTag
+        };
+        editPostGrabMenuItem.Click += EditPostGrabActions_Click;
+        contextMenu.Items.Add(editPostGrabMenuItem);
+
+        // Add "Close this menu" menu item
+        MenuItem hidePostGrabMenuItem = new()
+        {
+            Header = "Close this menu",
+            Tag = ClosePostGrabMenuTag
+        };
+        hidePostGrabMenuItem.Click += HidePostGrabActions_Click;
+        contextMenu.Items.Add(hidePostGrabMenuItem);
+
+        // Update the dropdown button appearance
+        CheckIfAnyPostActionsSelected();
     }
 
     private void CancelMenuItem_Click(object sender, RoutedEventArgs e)
@@ -725,41 +791,62 @@ public partial class FullscreenGrab : Window
             return;
         }
 
-        if (GuidFixMenuItem.IsChecked is true)
-            TextFromOCR = TextFromOCR.CorrectCommonGuidErrors();
-
-        if (TrimEachLineMenuItem.IsChecked is true)
+        // Execute enabled post-grab actions dynamically
+        if (NextStepDropDownButton.Flyout is ContextMenu contextMenu)
         {
-            string workingString = TextFromOCR;
-            string[] stringSplit = workingString.Split(Environment.NewLine);
+            bool shouldInsert = false;
 
-            string finalString = "";
-            foreach (string line in stringSplit)
-                if (!string.IsNullOrWhiteSpace(line))
-                    finalString += line.Trim() + Environment.NewLine;
+            foreach (object item in contextMenu.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.IsChecked && menuItem.Tag is ButtonInfo action)
+                {
+                    // Special handling for Insert action - defer until after window closes
+                    if (action.ClickEvent == "Insert_Click")
+                    {
+                        shouldInsert = true;
+                        continue;
+                    }
 
-            TextFromOCR = finalString;
-        }
+                    // Execute the action
+                    TextFromOCR = await PostGrabActionManager.ExecutePostGrabAction(action, TextFromOCR);
+                }
+            }
 
-        if (RemoveDuplicatesMenuItem.IsChecked is true)
-            TextFromOCR = TextFromOCR.RemoveDuplicateLines();
-
-        if (WebSearchPostCapture.IsChecked is true)
-        {
-            string searchStringUrlSafe = WebUtility.UrlEncode(TextFromOCR);
-
-            WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
-
-            Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
-            _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
+            // Handle insert after all other actions
+            if (shouldInsert && !DefaultSettings.TryInsert)
+            {
+                // Store for later execution after window closes
+                string textToInsert = TextFromOCR;
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(100); // Small delay to ensure window is closed
+                    await WindowUtilities.TryInsertString(textToInsert);
+                });
+            }
         }
 
         if (SendToEditTextToggleButton.IsChecked is true
-            && destinationTextBox is null
-            && WebSearchPostCapture.IsChecked is false)
+            && destinationTextBox is null)
         {
-            EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-            destinationTextBox = etw.PassedTextControl;
+            // Only open ETW if we're not doing a web search
+            bool isWebSearch = false;
+            if (NextStepDropDownButton.Flyout is ContextMenu cm)
+            {
+                foreach (object item in cm.Items)
+                {
+                    if (item is MenuItem mi && mi.IsChecked && mi.Tag is ButtonInfo act && act.ClickEvent == "WebSearch_Click")
+                    {
+                        isWebSearch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!isWebSearch)
+            {
+                EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
+                destinationTextBox = etw.PassedTextControl;
+            }
         }
 
         OutputUtilities.HandleTextFromOcr(
@@ -768,9 +855,6 @@ public partial class FullscreenGrab : Window
             isTable,
             destinationTextBox);
         WindowUtilities.CloseAllFullscreenGrabs();
-
-        if (InsertPostCapture.IsChecked is true && !DefaultSettings.TryInsert)
-            await WindowUtilities.TryInsertString(TextFromOCR);
     }
 
     private void SendToEditTextToggleButton_Click(object sender, RoutedEventArgs e)
@@ -832,6 +916,14 @@ public partial class FullscreenGrab : Window
         ];
         await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
         isComboBoxReady = true;
+
+        // Load dynamic post-grab actions
+        LoadDynamicPostGrabActions();
+
+        // TODO Find a more graceful async way to do this. Translation takes too long
+        // Show translation option only if Windows AI is available
+        // if (WindowsAiUtilities.CanDeviceUseWinAI())
+        //     TranslatePostCapture.Visibility = Visibility.Visible;
 
         // Apply default mode based on new FsgDefaultMode setting, with fallback to legacy SingleLine flag
         try
@@ -925,6 +1017,36 @@ public partial class FullscreenGrab : Window
         if (RegionClickCanvas.Children.Contains(selectBorder))
             RegionClickCanvas.Children.Remove(selectBorder);
 
+        // Clean up dynamically created post-grab action menu items
+        if (NextStepDropDownButton.Flyout is ContextMenu contextMenu)
+        {
+            contextMenu.PreviewKeyDown -= FullscreenGrab_KeyDown;
+            
+            foreach (object item in contextMenu.Items)
+            {
+                if (item is MenuItem menuItem)
+                {
+                    if (menuItem.Tag is ButtonInfo)
+                    {
+                        menuItem.Click -= PostActionMenuItem_Click;
+                    }
+                    else if (menuItem.Tag is string tag)
+                    {
+                        if (tag == EditPostGrabActionsTag)
+                        {
+                            menuItem.Click -= EditPostGrabActions_Click;
+                        }
+                        else if (tag == ClosePostGrabMenuTag)
+                        {
+                            menuItem.Click -= HidePostGrabActions_Click;
+                        }
+                    }
+                }
+            }
+            
+            contextMenu.Items.Clear();
+        }
+
         CurrentScreen = null;
         dpiScale = null;
         TextFromOCR = null;
@@ -1014,6 +1136,14 @@ public partial class FullscreenGrab : Window
 
     private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        // Save check state for LastUsed tracking
+        if (sender is MenuItem menuItem 
+            && menuItem.Tag is ButtonInfo action
+            && action.DefaultCheckState == DefaultCheckState.LastUsed)
+        {
+            PostGrabActionManager.SaveCheckState(action, menuItem.IsChecked);
+        }
+
         CheckIfAnyPostActionsSelected();
     }
     #endregion Methods
@@ -1224,5 +1354,19 @@ public partial class FullscreenGrab : Window
         edgePanTimer.Start();
 
         e.Handled = true;
+    }
+
+    private void HidePostGrabActions_Click(object sender, RoutedEventArgs e)
+    {
+        if (NextStepDropDownButton.Flyout is ContextMenu menu)
+            menu.IsOpen = false;
+    }
+
+    private void EditPostGrabActions_Click(object sender, RoutedEventArgs e)
+    {
+        PostGrabActionEditor postGrabActionEditor = new();
+        postGrabActionEditor.Show();
+
+        WindowUtilities.CloseAllFullscreenGrabs();
     }
 }

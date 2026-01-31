@@ -90,6 +90,13 @@
                 Header="Make Text _Single Line" />
             <Separator />
             <MenuItem
+                x:Name="TranslateWordMenuItem"
+                HorizontalAlignment="Left"
+                Click="TranslateWordMenuItem_Click"
+                Header="Translate to System Language"
+                Visibility="Collapsed" />
+            <Separator x:Name="TranslateSeparator" Visibility="Collapsed" />
+            <MenuItem
                 x:Name="MergeWordBordersMenuItem"
                 HorizontalAlignment="Left"
                 Command="{x:Static local:WordBorder.MergeWordsCommand}"

@@ -778,5 +778,65 @@ namespace Text_Grab.Properties {
                 this["OverrideAiArchCheck"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GrabFrameTranslationEnabled {
+            get {
+                return ((bool)(this["GrabFrameTranslationEnabled"]));
+            }
+            set {
+                this["GrabFrameTranslationEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("English")]
+        public string GrabFrameTranslationLanguage {
+            get {
+                return ((string)(this["GrabFrameTranslationLanguage"]));
+            }
+            set {
+                this["GrabFrameTranslationLanguage"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PostGrabJSON {
+            get {
+                return ((string)(this["PostGrabJSON"]));
+            }
+            set {
+                this["PostGrabJSON"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PostGrabCheckStates {
+            get {
+                return ((string)(this["PostGrabCheckStates"]));
+            }
+            set {
+                this["PostGrabCheckStates"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PostGrabStayOpen {
+            get {
+                return ((bool)(this["PostGrabStayOpen"]));
+            }
+            set {
+                this["PostGrabStayOpen"] = value;
+            }
+        }
     }
 }

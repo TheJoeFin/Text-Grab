@@ -193,12 +193,12 @@
                     ToolTip="Save pattern to Regex Manager"
                     Visibility="Collapsed" />
                 <ui:ToggleSwitch
-                    x:Name="UsePaternCheckBox"
+                    x:Name="UsePatternCheckBox"
                     Margin="6"
                     VerticalAlignment="Center"
                     VerticalContentAlignment="Center"
-                    Checked="UsePaternCheckBox_CheckedChanged"
-                    Unchecked="UsePaternCheckBox_CheckedChanged">
+                    Checked="UsePatternCheckBox_CheckedChanged"
+                    Unchecked="UsePatternCheckBox_CheckedChanged">
                     <TextBlock Style="{StaticResource TextBodyNormal}">
                         Use Regex
                     </TextBlock>
