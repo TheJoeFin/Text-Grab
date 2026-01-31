@@ -104,6 +104,18 @@ public partial class GrabFrame : Window
         historyItem = historyInfo;
     }
 
+    /// <summary>
+    /// Creates a GrabFrame and loads the specified image file.
+    /// </summary>
+    /// <param name="imagePath">The path to the image file to load.</param>
+    public GrabFrame(string imagePath)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = true;
+        Loaded += async (s, e) => await TryLoadImageFromPath(imagePath);
+    }
+
     private async Task LoadContentFromHistory(HistoryInfo history)
     {
         FrameText = history.TextContent;

@@ -188,14 +188,43 @@ public partial class App : System.Windows.Application
         string currentArgument = args[0];
 
         bool isQuiet = false;
+        bool openInGrabFrame = false;
 
         foreach (string arg in args)
+        {
             if (arg == "--windowless")
             {
                 isQuiet = true;
                 _defaultSettings.FirstRun = false;
                 _defaultSettings.Save();
             }
+            else if (arg == "--grabframe")
+            {
+                openInGrabFrame = true;
+            }
+        }
+
+        // Handle --grabframe flag: open the next argument (file path) in GrabFrame
+        if (openInGrabFrame)
+        {
+            // Find the file path argument (skip flags starting with --)
+            string? filePath = null;
+            foreach (string arg in args)
+            {
+                if (!arg.StartsWith("--") && File.Exists(arg))
+                {
+                    filePath = arg;
+                    break;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                GrabFrame gf = new(filePath);
+                gf.Show();
+                return true;
+            }
+        }
 
         if (currentArgument.Contains("ToastActivated"))
         {

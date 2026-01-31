@@ -6,12 +6,14 @@ namespace Text_Grab.Utilities;
 
 /// <summary>
 /// Utility class for managing Windows context menu integration.
-/// Adds "Grab text with Text Grab" option to the right-click context menu for image files.
+/// Adds "Grab text with Text Grab" and "Open in Grab Frame" options to the right-click context menu for image files.
 /// </summary>
 internal static class ContextMenuUtilities
 {
-    private const string ContextMenuRegistryKeyName = "Text-Grab.GrabText";
-    private const string ContextMenuDisplayText = "Grab text with Text Grab";
+    private const string GrabTextRegistryKeyName = "Text-Grab.GrabText";
+    private const string GrabTextDisplayText = "Grab text with Text Grab";
+    private const string GrabFrameRegistryKeyName = "Text-Grab.OpenInGrabFrame";
+    private const string GrabFrameDisplayText = "Open in Grab Frame";
 
     /// <summary>
     /// Supported image file extensions for context menu integration.
@@ -29,7 +31,7 @@ internal static class ContextMenuUtilities
 
     /// <summary>
     /// Adds Text Grab to the Windows context menu for image files.
-    /// This allows users to right-click on an image and select "Grab text with Text Grab".
+    /// This allows users to right-click on an image and select "Grab text with Text Grab" or "Open in Grab Frame".
     /// </summary>
     /// <param name="errorMessage">When the method returns false, contains an error message describing the failure.</param>
     /// <returns>True if registration was successful, false otherwise.</returns>
@@ -48,7 +50,8 @@ internal static class ContextMenuUtilities
         {
             foreach (string extension in ImageExtensions)
             {
-                RegisterContextMenuForExtension(extension, executablePath);
+                RegisterGrabTextContextMenu(extension, executablePath);
+                RegisterGrabFrameContextMenu(extension, executablePath);
             }
             return true;
         }
@@ -78,7 +81,8 @@ internal static class ContextMenuUtilities
         {
             foreach (string extension in ImageExtensions)
             {
-                UnregisterContextMenuForExtension(extension);
+                UnregisterContextMenuForExtension(extension, GrabTextRegistryKeyName);
+                UnregisterContextMenuForExtension(extension, GrabFrameRegistryKeyName);
             }
             return true;
         }
@@ -107,7 +111,7 @@ internal static class ContextMenuUtilities
             // Check if at least one extension has the context menu registered
             foreach (string extension in ImageExtensions)
             {
-                string keyPath = GetShellKeyPath(extension);
+                string keyPath = GetShellKeyPath(extension, GrabTextRegistryKeyName);
                 using RegistryKey? key = Registry.CurrentUser.OpenSubKey(keyPath);
                 if (key is not null)
                     return true;
@@ -122,19 +126,13 @@ internal static class ContextMenuUtilities
     }
 
     /// <summary>
-    /// Registers the context menu entry for a specific file extension.
-    /// Uses the Shell registration approach under HKEY_CURRENT_USER for per-user installation.
+    /// Registers the "Grab text with Text Grab" context menu entry for a specific file extension.
     /// </summary>
-    /// <param name="extension">The file extension (e.g., ".png")</param>
-    /// <param name="executablePath">The path to the Text Grab executable</param>
-    private static void RegisterContextMenuForExtension(string extension, string executablePath)
+    private static void RegisterGrabTextContextMenu(string extension, string executablePath)
     {
-        // Register under HKEY_CURRENT_USER\Software\Classes\
-        // This approach works for per-user installation without requiring admin rights
-        string shellKeyPath = GetShellKeyPath(extension);
+        string shellKeyPath = GetShellKeyPath(extension, GrabTextRegistryKeyName);
         string commandKeyPath = $@"{shellKeyPath}\command";
 
-        // Create the shell key with display name
         using (RegistryKey? shellKey = Registry.CurrentUser.CreateSubKey(shellKeyPath))
         {
             if (shellKey is null)
@@ -143,11 +141,10 @@ internal static class ContextMenuUtilities
                 throw new InvalidOperationException($"Could not create registry key for {extension}");
             }
 
-            shellKey.SetValue(string.Empty, ContextMenuDisplayText);
+            shellKey.SetValue(string.Empty, GrabTextDisplayText);
             shellKey.SetValue("Icon", $"\"{executablePath}\"");
         }
 
-        // Create the command key with the executable path
         using (RegistryKey? commandKey = Registry.CurrentUser.CreateSubKey(commandKeyPath))
         {
             if (commandKey is null)
@@ -162,34 +159,69 @@ internal static class ContextMenuUtilities
     }
 
     /// <summary>
-    /// Removes the context menu entry for a specific file extension.
+    /// Registers the "Open in Grab Frame" context menu entry for a specific file extension.
     /// </summary>
-    /// <param name="extension">The file extension (e.g., ".png")</param>
-    private static void UnregisterContextMenuForExtension(string extension)
+    private static void RegisterGrabFrameContextMenu(string extension, string executablePath)
     {
-        string shellKeyPath = GetShellKeyPath(extension);
+        string shellKeyPath = GetShellKeyPath(extension, GrabFrameRegistryKeyName);
+        string commandKeyPath = $@"{shellKeyPath}\command";
+
+        using (RegistryKey? shellKey = Registry.CurrentUser.CreateSubKey(shellKeyPath))
+        {
+            if (shellKey is null)
+            {
+                Debug.WriteLine($"Failed to create registry key: {shellKeyPath}");
+                throw new InvalidOperationException($"Could not create registry key for {extension}");
+            }
+
+            shellKey.SetValue(string.Empty, GrabFrameDisplayText);
+            shellKey.SetValue("Icon", $"\"{executablePath}\"");
+        }
+
+        using (RegistryKey? commandKey = Registry.CurrentUser.CreateSubKey(commandKeyPath))
+        {
+            if (commandKey is null)
+            {
+                Debug.WriteLine($"Failed to create registry key: {commandKeyPath}");
+                throw new InvalidOperationException($"Could not create command registry key for {extension}");
+            }
+
+            // --grabframe flag opens the image in GrabFrame instead of EditTextWindow
+            commandKey.SetValue(string.Empty, $"\"{executablePath}\" --grabframe \"%1\"");
+        }
+    }
+
+    /// <summary>
+    /// Removes a context menu entry for a specific file extension.
+    /// </summary>
+    private static void UnregisterContextMenuForExtension(string extension, string registryKeyName)
+    {
+        string shellKeyPath = GetShellKeyPath(extension, registryKeyName);
 
         try
         {
-            // Delete the entire shell key and its subkeys
             Registry.CurrentUser.DeleteSubKeyTree(shellKeyPath, throwOnMissingSubKey: false);
         }
         catch (Exception ex)
         {
-            // Log but don't throw - we want to continue trying to remove other extensions
             Debug.WriteLine($"Failed to unregister context menu for {extension}: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Gets the registry path for the shell context menu key for a given extension.
+    /// Gets the registry path for the shell context menu key for a given extension and registry key name.
     /// </summary>
-    /// <param name="extension">The file extension (e.g., ".png")</param>
-    /// <returns>The registry key path</returns>
+    internal static string GetShellKeyPath(string extension, string registryKeyName = GrabTextRegistryKeyName)
+    {
+        return $@"Software\Classes\SystemFileAssociations\{extension}\shell\{registryKeyName}";
+    }
+
+    /// <summary>
+    /// Gets the registry path for the shell context menu key for a given extension.
+    /// Uses the default GrabText registry key name for backward compatibility with tests.
+    /// </summary>
     internal static string GetShellKeyPath(string extension)
     {
-        // Using SystemFileAssociations allows the context menu to work regardless of
-        // which application is associated with the file type
-        return $@"Software\Classes\SystemFileAssociations\{extension}\shell\{ContextMenuRegistryKeyName}";
+        return GetShellKeyPath(extension, GrabTextRegistryKeyName);
     }
 }
