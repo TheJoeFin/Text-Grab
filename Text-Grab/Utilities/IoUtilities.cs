@@ -9,7 +9,23 @@ namespace Text_Grab.Utilities;
 
 public class IoUtilities
 {
-    public static readonly List<string> ImageExtensions = [".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif"];
+    public static readonly List<string> ImageExtensions = [".png", ".bmp", ".jpg", ".jpeg", ".tiff", ".gif", ".tif", ".webp", ".ico"];
+
+    public static bool IsImageFile(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return false;
+
+        return IsImageFileExtension(Path.GetExtension(path));
+    }
+
+    public static bool IsImageFileExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+            return false;
+
+        return ImageExtensions.Contains(extension.ToLowerInvariant());
+    }
 
     public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, ILanguage? language = null)
     {

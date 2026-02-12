@@ -850,5 +850,17 @@ namespace Text_Grab.Properties {
                 this["AddToContextMenu"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool RegisterOpenWith {
+            get {
+                return ((bool)(this["RegisterOpenWith"]));
+            }
+            set {
+                this["RegisterOpenWith"] = value;
+            }
+        }
     }
 }

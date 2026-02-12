@@ -144,11 +144,14 @@ public partial class GeneralSettings : Page
         if (!AppUtilities.IsPackaged())
         {
             AddToContextMenuCheckBox.IsChecked = ContextMenuUtilities.IsRegisteredInContextMenu();
+            RegisterOpenWithCheckBox.IsChecked = DefaultSettings.RegisterOpenWith;
         }
         else
         {
             AddToContextMenuCheckBox.IsEnabled = false;
             AddToContextMenuCheckBox.IsChecked = false;
+            RegisterOpenWithCheckBox.IsEnabled = false;
+            RegisterOpenWithCheckBox.IsChecked = false;
         }
 
         settingsSet = true;
@@ -423,7 +426,7 @@ public partial class GeneralSettings : Page
             return;
 
         bool success = ContextMenuUtilities.RemoveFromContextMenu(out string? errorMessage);
-        
+
         if (success)
         {
             DefaultSettings.AddToContextMenu = false;
@@ -442,5 +445,25 @@ public partial class GeneralSettings : Page
                 System.Windows.MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+    }
+
+    private void RegisterOpenWithCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        ImplementAppOptions.RegisterAsImageOpenWithApp();
+        DefaultSettings.RegisterOpenWith = true;
+        DefaultSettings.Save();
+    }
+
+    private void RegisterOpenWithCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        ImplementAppOptions.UnregisterAsImageOpenWithApp();
+        DefaultSettings.RegisterOpenWith = false;
+        DefaultSettings.Save();
     }
 }

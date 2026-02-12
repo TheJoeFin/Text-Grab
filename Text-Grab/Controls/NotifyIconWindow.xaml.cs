@@ -132,7 +132,7 @@ public partial class NotifyIconWindow : Window
         if (Clipboard.ContainsFileDropList())
         {
             StringCollection files = Clipboard.GetFileDropList();
-            string? imagePath = files.Cast<string>().FirstOrDefault(IsImageFile);
+            string? imagePath = files.Cast<string>().FirstOrDefault(IoUtilities.IsImageFile);
 
             if (imagePath is not null)
             {
@@ -188,7 +188,7 @@ public partial class NotifyIconWindow : Window
             if (Clipboard.ContainsFileDropList())
             {
                 StringCollection files = Clipboard.GetFileDropList();
-                hasClipboardImage = files.Cast<string>().Any(IsImageFile);
+                hasClipboardImage = files.Cast<string>().Any(IoUtilities.IsImageFile);
             }
 
             if (!hasClipboardImage)
@@ -200,14 +200,5 @@ public partial class NotifyIconWindow : Window
         }
 
         OpenClipboardImageGrabFrame.IsEnabled = hasClipboardImage;
-    }
-
-    private static bool IsImageFile(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-            return false;
-
-        string extension = Path.GetExtension(path).ToLowerInvariant();
-        return extension is ".png" or ".jpg" or ".jpeg" or ".bmp" or ".gif" or ".tiff" or ".tif" or ".webp" or ".ico";
     }
 }

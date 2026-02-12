@@ -61,24 +61,42 @@
               DisplayName="Text Grab" />
           </desktop:Extension>
 
-      <!-- Context menu integration for image files -->
-      <uap3:Extension Category="windows.fileTypeAssociation">
-        <uap3:FileTypeAssociation Name="textgrab.images">
-          <uap:SupportedFileTypes>
-            <uap:FileType>.png</uap:FileType>
-            <uap:FileType>.jpg</uap:FileType>
-            <uap:FileType>.jpeg</uap:FileType>
-            <uap:FileType>.bmp</uap:FileType>
-            <uap:FileType>.gif</uap:FileType>
-            <uap:FileType>.tiff</uap:FileType>
-            <uap:FileType>.tif</uap:FileType>
-          </uap:SupportedFileTypes>
-          <uap2:SupportedVerbs>
-            <uap3:Verb Id="GrabText" Parameters="&quot;%1&quot;">Grab text with Text Grab</uap3:Verb>
-            <uap3:Verb Id="OpenInGrabFrame" Parameters="--grabframe &quot;%1&quot;">Open in Grab Frame</uap3:Verb>
-          </uap2:SupportedVerbs>
-        </uap3:FileTypeAssociation>
-      </uap3:Extension>
+	  <!-- Context menu integration for image files -->
+	  <uap3:Extension Category="windows.fileTypeAssociation">
+		<uap3:FileTypeAssociation Name="textgrab.images">
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.png</uap:FileType>
+			<uap:FileType>.jpg</uap:FileType>
+			<uap:FileType>.jpeg</uap:FileType>
+			<uap:FileType>.bmp</uap:FileType>
+			<uap:FileType>.gif</uap:FileType>
+			<uap:FileType>.tiff</uap:FileType>
+			<uap:FileType>.tif</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap2:SupportedVerbs>
+			<uap3:Verb Id="GrabText" Parameters="&quot;%1&quot;">Grab text with Text Grab</uap3:Verb>
+			<uap3:Verb Id="OpenInGrabFrame" Parameters="--grabframe &quot;%1&quot;">Open in Grab Frame</uap3:Verb>
+		  </uap2:SupportedVerbs>
+		</uap3:FileTypeAssociation>
+	  </uap3:Extension>
+
+	  <!-- Share target integration -->
+	  <uap:Extension Category="windows.shareTarget">
+		<uap:ShareTarget Description="Grab text from shared content">
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.png</uap:FileType>
+			<uap:FileType>.jpg</uap:FileType>
+			<uap:FileType>.jpeg</uap:FileType>
+			<uap:FileType>.bmp</uap:FileType>
+			<uap:FileType>.gif</uap:FileType>
+			<uap:FileType>.tiff</uap:FileType>
+			<uap:FileType>.tif</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap:DataFormat>Text</uap:DataFormat>
+		  <uap:DataFormat>URI</uap:DataFormat>
+		  <uap:DataFormat>Bitmap</uap:DataFormat>
+		</uap:ShareTarget>
+	  </uap:Extension>
 
 		</Extensions>
 		

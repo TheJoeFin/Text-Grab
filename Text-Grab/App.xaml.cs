@@ -310,7 +310,6 @@ public partial class App : System.Windows.Application
         if (!File.Exists(possiblePath))
             return false;
 
-
         if (isQuiet)
         {
             (string pathContent, _) = await IoUtilities.GetContentFromPath(possiblePath);
@@ -318,6 +317,12 @@ public partial class App : System.Windows.Application
                 pathContent,
                 false,
                 false);
+        }
+        else if (IoUtilities.IsImageFile(possiblePath))
+        {
+            GrabFrame gf = new(possiblePath);
+            gf.Show();
+            gf.Activate();
         }
         else
         {
@@ -350,6 +355,9 @@ public partial class App : System.Windows.Application
         };
 
         handledArgument = HandleNotifyIcon();
+
+        if (!handledArgument)
+            handledArgument = await ShareTargetUtilities.HandleShareTargetActivationAsync();
 
         if (!handledArgument && e.Args.Length > 0)
             handledArgument = await HandleStartupArgs(e.Args);
