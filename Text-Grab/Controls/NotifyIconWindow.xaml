@@ -27,7 +27,7 @@
             LeftClick="NotifyIcon_LeftClick"
             TooltipText="Text Grab">
             <WpfUiIcon:NotifyIcon.Menu>
-                <ContextMenu>
+                <ContextMenu Opened="ContextMenu_Opened">
                     <MenuItem
                         x:Name="SettingsMenuItem"
                         Click="SettingsMenuItem_Click"
@@ -37,6 +37,15 @@
                         </MenuItem.Icon>
                     </MenuItem>
                     <Separator />
+                    <MenuItem
+                        x:Name="OpenClipboardImageGrabFrame"
+                        Click="OpenClipboardImageGrabFrame_Click"
+                        IsEnabled="False"
+                        Header="Paste in Grab Frame">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="ImageEdit24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
                     <MenuItem
                         x:Name="LastGrabMenuItem"
                         Click="LastGrabMenuItem_Click"
