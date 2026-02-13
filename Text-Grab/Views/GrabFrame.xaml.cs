@@ -2173,6 +2173,8 @@ new GrabFrameOperationArgs()
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
             FreezeToggleButton.Visibility = Visibility.Collapsed;
+
+            reDrawTimer.Start();
         }
         catch (Exception)
         {
