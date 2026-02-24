@@ -54,6 +54,7 @@ public partial class GrabFrame : Window
     private TextBox? destinationTextBox;
     private ImageSource? frameContentImageSource;
     private HistoryInfo? historyItem;
+    private bool hasLoadedImageSource = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
     private bool isLanguageBoxLoaded = false;
@@ -113,7 +114,7 @@ public partial class GrabFrame : Window
         StandardInitialize();
 
         ShouldSaveOnClose = true;
-        
+
         // Validate the path before loading
         if (string.IsNullOrEmpty(imagePath))
         {
@@ -154,6 +155,7 @@ public partial class GrabFrame : Window
         }
 
         frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
+        hasLoadedImageSource = true;
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
 
@@ -1739,6 +1741,7 @@ public partial class GrabFrame : Window
             frameContentImageSource = clipboardImage;
         }
 
+        hasLoadedImageSource = true;
         FreezeToggleButton.IsChecked = true;
         FreezeGrabFrame();
         FreezeToggleButton.Visibility = Visibility.Collapsed;
@@ -1949,18 +1952,38 @@ public partial class GrabFrame : Window
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
 new GrabFrameOperationArgs()
-{
-    RemovingWordBorders = [.. wordBorders],
-    WordBorders = wordBorders,
-    GrabFrameCanvas = RectanglesCanvas
-});
+        {
+            RemovingWordBorders = [.. wordBorders],
+            WordBorders = wordBorders,
+            GrabFrameCanvas = RectanglesCanvas
+        });
 
-        ResetGrabFrame();
+        if (hasLoadedImageSource)
+        {
+            // For loaded images, clear OCR results and re-run OCR on the same image.
+            // Zoom must be reset because the screen-capture-based OCR pipeline
+            // calculates word border positions assuming no zoom transform.
+            MainZoomBorder.Reset();
+            RectanglesCanvas.RenderTransform = Transform.Identity;
+            IsOcrValid = false;
+            ocrResultOfWindow = null;
+            RectanglesCanvas.Children.Clear();
+            wordBorders.Clear();
+            MatchesTXTBLK.Text = "- Matches";
+            UpdateFrameText();
 
-        await Task.Delay(200);
+            // Allow WPF to repaint the unzoomed view before screen-capture OCR
+            await Task.Delay(200);
+        }
+        else
+        {
+            ResetGrabFrame();
 
-        frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
-        GrabFrameImage.Source = frameContentImageSource;
+            await Task.Delay(200);
+
+            frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+            GrabFrameImage.Source = frameContentImageSource;
+        }
 
         if (AutoOcrCheckBox.IsChecked is false)
             FreezeGrabFrame();
@@ -2055,9 +2078,13 @@ new GrabFrameOperationArgs()
         SetRefreshOrOcrFrameBtnVis();
 
         MainZoomBorder.Reset();
+        RectanglesCanvas.RenderTransform = Transform.Identity;
         IsOcrValid = false;
         ocrResultOfWindow = null;
-        frameContentImageSource = null;
+
+        if (!hasLoadedImageSource)
+            frameContentImageSource = null;
+
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
         MatchesTXTBLK.Text = "- Matches";
@@ -2109,6 +2136,7 @@ new GrabFrameOperationArgs()
         DefaultSettings.GrabFrameUpdateEtw = AlwaysUpdateEtwCheckBox.IsChecked;
         DefaultSettings.Save();
     }
+
     private void SetRefreshOrOcrFrameBtnVis()
     {
         if (AutoOcrCheckBox.IsChecked is false)
@@ -2170,6 +2198,7 @@ new GrabFrameOperationArgs()
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
+            hasLoadedImageSource = true;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
             FreezeToggleButton.Visibility = Visibility.Collapsed;
@@ -2178,6 +2207,7 @@ new GrabFrameOperationArgs()
         }
         catch (Exception)
         {
+            hasLoadedImageSource = false;
             UnfreezeGrabFrame();
             MessageBox.Show("Not an image");
         }
@@ -2306,6 +2336,7 @@ new GrabFrameOperationArgs()
     private void UnfreezeGrabFrame()
     {
         reDrawTimer.Stop();
+        hasLoadedImageSource = false;
         ResetGrabFrame();
         Topmost = true;
         GrabFrameImage.Opacity = 0;
@@ -2498,7 +2529,6 @@ new GrabFrameOperationArgs()
         if (CloseOnGrabMenuItem.IsChecked)
             Close();
     }
-
 
     private void ScrollBehaviorMenuItem_Click(object sender, RoutedEventArgs e)
     {
