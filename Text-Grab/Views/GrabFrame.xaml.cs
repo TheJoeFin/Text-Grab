@@ -1952,11 +1952,11 @@ public partial class GrabFrame : Window
 
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
 new GrabFrameOperationArgs()
-        {
-            RemovingWordBorders = [.. wordBorders],
-            WordBorders = wordBorders,
-            GrabFrameCanvas = RectanglesCanvas
-        });
+{
+    RemovingWordBorders = [.. wordBorders],
+    WordBorders = wordBorders,
+    GrabFrameCanvas = RectanglesCanvas
+});
 
         if (hasLoadedImageSource)
         {
