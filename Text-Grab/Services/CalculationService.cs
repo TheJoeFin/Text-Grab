@@ -61,11 +61,15 @@ public partial class CalculationService
 
             try
             {
-                if (IsParameterAssignment(trimmedLine))
+                if (TryEvaluateDateTimeMath(trimmedLine, out string dateTimeResult))
+                {
+                    results.Add(dateTimeResult);
+                }
+                else if (IsParameterAssignment(trimmedLine))
                 {
                     string resultLine = await HandleParameterAssignmentAsync(trimmedLine);
                     results.Add(resultLine);
-                    
+
                     // Extract variable name and add its value to output numbers
                     int equalIndex = trimmedLine.IndexOf('=');
                     string variableName = trimmedLine[..equalIndex].Trim();
@@ -86,7 +90,7 @@ public partial class CalculationService
                 {
                     string resultLine = await EvaluateStandardExpressionAsync(trimmedLine);
                     results.Add(resultLine);
-                    
+
                     // Try to parse the result as a number and add to output numbers
                     // Remove formatting characters before parsing
                     string cleanedResult = resultLine.Replace(",", "").Replace(" ", "").Trim();
