@@ -183,19 +183,67 @@ public partial class App : System.Windows.Application
         return true;
     }
 
+    private static readonly HashSet<string> KnownFlags = ["--windowless", "--grabframe"];
+
     private static async Task<bool> HandleStartupArgs(string[] args)
     {
         string currentArgument = args[0];
 
         bool isQuiet = false;
+        bool openInGrabFrame = false;
 
         foreach (string arg in args)
+        {
             if (arg == "--windowless")
             {
                 isQuiet = true;
                 _defaultSettings.FirstRun = false;
                 _defaultSettings.Save();
             }
+            else if (arg == "--grabframe")
+            {
+                openInGrabFrame = true;
+            }
+        }
+
+        // Handle --grabframe flag: open the next argument (file path) in GrabFrame
+        if (openInGrabFrame)
+        {
+            // Find the file path argument (skip known flags)
+            string? filePath = null;
+            foreach (string arg in args)
+            {
+                if (!KnownFlags.Contains(arg))
+                {
+                    // Convert to absolute path to handle relative paths correctly
+                    try
+                    {
+                        string absolutePath = Path.GetFullPath(arg);
+                        if (File.Exists(absolutePath))
+                        {
+                            filePath = absolutePath;
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Invalid path argument: {arg}, error: {ex.Message}");
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                GrabFrame gf = new(filePath);
+                gf.Show();
+                return true;
+            }
+            else
+            {
+                Debug.WriteLine("--grabframe flag specified but no valid image file path provided");
+                // Fall through to default launch behavior
+            }
+        }
 
         if (currentArgument.Contains("ToastActivated"))
         {
@@ -262,7 +310,6 @@ public partial class App : System.Windows.Application
         if (!File.Exists(possiblePath))
             return false;
 
-
         if (isQuiet)
         {
             (string pathContent, _) = await IoUtilities.GetContentFromPath(possiblePath);
@@ -270,6 +317,12 @@ public partial class App : System.Windows.Application
                 pathContent,
                 false,
                 false);
+        }
+        else if (IoUtilities.IsImageFile(possiblePath))
+        {
+            GrabFrame gf = new(possiblePath);
+            gf.Show();
+            gf.Activate();
         }
         else
         {
@@ -302,6 +355,9 @@ public partial class App : System.Windows.Application
         };
 
         handledArgument = HandleNotifyIcon();
+
+        if (!handledArgument)
+            handledArgument = await ShareTargetUtilities.HandleShareTargetActivationAsync();
 
         if (!handledArgument && e.Args.Length > 0)
             handledArgument = await HandleStartupArgs(e.Args);

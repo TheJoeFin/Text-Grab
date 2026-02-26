@@ -54,6 +54,7 @@ public partial class GrabFrame : Window
     private TextBox? destinationTextBox;
     private ImageSource? frameContentImageSource;
     private HistoryInfo? historyItem;
+    private bool hasLoadedImageSource = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
     private bool isLanguageBoxLoaded = false;
@@ -104,6 +105,37 @@ public partial class GrabFrame : Window
         historyItem = historyInfo;
     }
 
+    /// <summary>
+    /// Creates a GrabFrame and loads the specified image file.
+    /// </summary>
+    /// <param name="imagePath">The path to the image file to load.</param>
+    public GrabFrame(string imagePath)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = true;
+
+        // Validate the path before loading
+        if (string.IsNullOrEmpty(imagePath))
+        {
+            Debug.WriteLine("GrabFrame: Empty image path provided");
+            Loaded += (s, e) => MessageBox.Show("No image file path was provided.", "Text Grab", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Convert to absolute path to handle relative paths correctly
+        string absolutePath = Path.GetFullPath(imagePath);
+
+        if (!File.Exists(absolutePath))
+        {
+            Debug.WriteLine($"GrabFrame: Image file not found: {absolutePath}");
+            Loaded += (s, e) => MessageBox.Show($"Image file not found:\n{absolutePath}", "Text Grab", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        Loaded += async (s, e) => await TryLoadImageFromPath(absolutePath);
+    }
+
     private async Task LoadContentFromHistory(HistoryInfo history)
     {
         FrameText = history.TextContent;
@@ -123,6 +155,7 @@ public partial class GrabFrame : Window
         }
 
         frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
+        hasLoadedImageSource = true;
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
 
@@ -1708,6 +1741,7 @@ public partial class GrabFrame : Window
             frameContentImageSource = clipboardImage;
         }
 
+        hasLoadedImageSource = true;
         FreezeToggleButton.IsChecked = true;
         FreezeGrabFrame();
         FreezeToggleButton.Visibility = Visibility.Collapsed;
@@ -1924,12 +1958,32 @@ new GrabFrameOperationArgs()
     GrabFrameCanvas = RectanglesCanvas
 });
 
-        ResetGrabFrame();
+        if (hasLoadedImageSource)
+        {
+            // For loaded images, clear OCR results and re-run OCR on the same image.
+            // Zoom must be reset because the screen-capture-based OCR pipeline
+            // calculates word border positions assuming no zoom transform.
+            MainZoomBorder.Reset();
+            RectanglesCanvas.RenderTransform = Transform.Identity;
+            IsOcrValid = false;
+            ocrResultOfWindow = null;
+            RectanglesCanvas.Children.Clear();
+            wordBorders.Clear();
+            MatchesTXTBLK.Text = "- Matches";
+            UpdateFrameText();
 
-        await Task.Delay(200);
+            // Allow WPF to repaint the unzoomed view before screen-capture OCR
+            await Task.Delay(200);
+        }
+        else
+        {
+            ResetGrabFrame();
 
-        frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
-        GrabFrameImage.Source = frameContentImageSource;
+            await Task.Delay(200);
+
+            frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
+            GrabFrameImage.Source = frameContentImageSource;
+        }
 
         if (AutoOcrCheckBox.IsChecked is false)
             FreezeGrabFrame();
@@ -2024,9 +2078,13 @@ new GrabFrameOperationArgs()
         SetRefreshOrOcrFrameBtnVis();
 
         MainZoomBorder.Reset();
+        RectanglesCanvas.RenderTransform = Transform.Identity;
         IsOcrValid = false;
         ocrResultOfWindow = null;
-        frameContentImageSource = null;
+
+        if (!hasLoadedImageSource)
+            frameContentImageSource = null;
+
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
         MatchesTXTBLK.Text = "- Matches";
@@ -2078,6 +2136,7 @@ new GrabFrameOperationArgs()
         DefaultSettings.GrabFrameUpdateEtw = AlwaysUpdateEtwCheckBox.IsChecked;
         DefaultSettings.Save();
     }
+
     private void SetRefreshOrOcrFrameBtnVis()
     {
         if (AutoOcrCheckBox.IsChecked is false)
@@ -2139,12 +2198,16 @@ new GrabFrameOperationArgs()
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
+            hasLoadedImageSource = true;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
             FreezeToggleButton.Visibility = Visibility.Collapsed;
+
+            reDrawTimer.Start();
         }
         catch (Exception)
         {
+            hasLoadedImageSource = false;
             UnfreezeGrabFrame();
             MessageBox.Show("Not an image");
         }
@@ -2273,6 +2336,7 @@ new GrabFrameOperationArgs()
     private void UnfreezeGrabFrame()
     {
         reDrawTimer.Stop();
+        hasLoadedImageSource = false;
         ResetGrabFrame();
         Topmost = true;
         GrabFrameImage.Opacity = 0;
@@ -2465,7 +2529,6 @@ new GrabFrameOperationArgs()
         if (CloseOnGrabMenuItem.IsChecked)
             Close();
     }
-
 
     private void ScrollBehaviorMenuItem_Click(object sender, RoutedEventArgs e)
     {

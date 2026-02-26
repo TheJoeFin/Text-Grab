@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -120,5 +124,81 @@ public partial class NotifyIconWindow : Window
         EditTextWindow etwHistory = new(historyInfo);
         etwHistory.Show();
         etwHistory.Activate();
+    }
+
+    private void OpenClipboardImageGrabFrame_Click(object sender, RoutedEventArgs e)
+    {
+        // Check for image file paths in clipboard first
+        if (Clipboard.ContainsFileDropList())
+        {
+            StringCollection files = Clipboard.GetFileDropList();
+            string? imagePath = files.Cast<string>().FirstOrDefault(IoUtilities.IsImageFile);
+
+            if (imagePath is not null)
+            {
+                GrabFrame gf = new(imagePath);
+                gf.Show();
+                gf.Activate();
+                return;
+            }
+        }
+
+        // Fall back to image content in clipboard (bitmap, base64, etc.)
+        (bool success, ImageSource? clipboardImage) = ClipboardUtilities.TryGetImageFromClipboard();
+
+        if (!success || clipboardImage is null)
+            return;
+
+        BitmapSource? bitmapSource = null;
+
+        if (clipboardImage is System.Windows.Interop.InteropBitmap interopBitmap)
+        {
+            System.Drawing.Bitmap bmp = ImageMethods.InteropBitmapToBitmap(interopBitmap);
+            bitmapSource = ImageMethods.BitmapToImageSource(bmp);
+            bmp.Dispose();
+        }
+        else if (clipboardImage is BitmapSource source)
+        {
+            bitmapSource = source;
+        }
+
+        if (bitmapSource is null)
+            return;
+
+        string tempPath = Path.Combine(Path.GetTempPath(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
+
+        using (FileStream fileStream = new(tempPath, FileMode.Create))
+        {
+            PngBitmapEncoder encoder = new();
+            encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+            encoder.Save(fileStream);
+        }
+
+        GrabFrame grabFrame = new(tempPath);
+        grabFrame.Show();
+        grabFrame.Activate();
+    }
+
+    private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        bool hasClipboardImage = false;
+
+        try
+        {
+            if (Clipboard.ContainsFileDropList())
+            {
+                StringCollection files = Clipboard.GetFileDropList();
+                hasClipboardImage = files.Cast<string>().Any(IoUtilities.IsImageFile);
+            }
+
+            if (!hasClipboardImage)
+                hasClipboardImage = Clipboard.ContainsImage() || ClipboardUtilities.TryGetImageFromClipboard().Item1;
+        }
+        catch
+        {
+            hasClipboardImage = false;
+        }
+
+        OpenClipboardImageGrabFrame.IsEnabled = hasClipboardImage;
     }
 }

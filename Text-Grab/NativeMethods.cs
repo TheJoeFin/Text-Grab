@@ -22,4 +22,7 @@ internal static partial class NativeMethods
 
     [LibraryImport("shcore.dll")]
     public static partial void GetScaleFactorForMonitor(IntPtr hMon, out uint pScale);
+
+    [LibraryImport("shell32.dll")]
+    public static partial void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
 }
