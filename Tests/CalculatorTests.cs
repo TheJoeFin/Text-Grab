@@ -2772,4 +2772,223 @@ totalCost";
     }
 
     #endregion DateTime Math Tests
+
+    #region Combined Duration Segment Tests
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WeeksDaysHours()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 5 weeks 3 days 8 hours
+        // = Jan 1 + 35 days + 3 days + 8 hours = Feb 8 2026 8:00am
+        string input = "January 1, 2026 + 5 weeks 3 days 8 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("2/8/2026", result.Output);
+        Assert.Contains("8:00am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_TodayKeyword()
+    {
+        CalculationService service = new();
+        string input = "today + 5 weeks 3 days 8 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        DateTime expected = DateTime.Today.AddDays(5 * 7 + 3).AddHours(8);
+        Assert.Contains(expected.ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("8:00am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_YearsMonths()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 1 year 6 months = July 1, 2027
+        string input = "January 1, 2026 + 1 year 6 months";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("7/1/2027", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WeeksDays()
+    {
+        CalculationService service = new();
+        // March 10, 2026 + 2 weeks 3 days = March 10 + 14 + 3 = March 27
+        string input = "March 10, 2026 + 2 weeks 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("3/27/2026", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_HoursMinutes()
+    {
+        CalculationService service = new();
+        // 1/1/2026 9:00am + 2 hours 30 mins = 11:30am
+        string input = "1/1/2026 9:00am + 2 hours 30 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("1/1/2026", result.Output);
+        Assert.Contains("11:30am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_ThreeUnits()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 1 month 2 weeks 3 days
+        // = Feb 1 + 14 days + 3 days = Feb 18
+        string input = "January 1, 2026 + 1 month 2 weeks 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("2/18/2026", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_FourUnits()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 1 year 2 months 1 week 3 days
+        // = Jan 1 2027 + 2 months = Mar 1 2027 + 7 days = Mar 8 + 3 days = Mar 11
+        string input = "January 1, 2026 + 1 year 2 months 1 week 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("3/11/2027", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WithOperatorChange()
+    {
+        CalculationService service = new();
+        // March 1, 2026 + 1 month 5 days - 2 hours
+        // = April 1 + 5 days = April 6, then - 2 hours crosses to April 5 10:00pm
+        string input = "March 1, 2026 + 1 month 5 days - 2 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("4/5/2026", result.Output);
+        Assert.Contains("10:00pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_SubtractMultiple()
+    {
+        CalculationService service = new();
+        // April 30, 2026 - 1 month 10 days
+        // = March 30 - 10 days = March 20
+        string input = "April 30, 2026 - 1 month 10 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("3/20/2026", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_OperatorInheritance()
+    {
+        CalculationService service = new();
+        // Implicit segments inherit the most recent operator.
+        // June 15, 2026 + 2 weeks 3 days - 1 week 2 days
+        // = June 15 + 14 + 3 = July 2, then - 7 - 2 = June 23
+        string input = "June 15, 2026 + 2 weeks 3 days - 1 week 2 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("6/23/2026", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_AllDateUnits()
+    {
+        CalculationService service = new();
+        // January 1, 2020 + 1 decade 2 years 3 months 2 weeks 5 days
+        // = Jan 1 2030 + 2 years = Jan 1 2032 + 3 months = Apr 1 2032 + 14 days = Apr 15 + 5 days = Apr 20
+        string input = "January 1, 2020 + 1 decade 2 years 3 months 2 weeks 5 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("4/20/2032", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WithTimeInput()
+    {
+        CalculationService service = new();
+        // 3/1/2026 8:00am + 1 day 4 hours 30 mins
+        // = 3/2/2026 8:00am + 4:30 = 12:30pm
+        string input = "3/1/2026 8:00am + 1 day 4 hours 30 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("3/2/2026", result.Output);
+        Assert.Contains("12:30pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_DoesNotBreakExplicitOperators()
+    {
+        CalculationService service = new();
+        // Existing explicit-operator style should still work identically
+        string input = "January 1, 2026 + 2 weeks + 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("1/18/2026", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_DoesNotBreakRegularMath()
+    {
+        CalculationService service = new();
+        string input = "5 + 3";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("8", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_DoesNotBreakQuantityWords()
+    {
+        CalculationService service = new();
+        string input = "5 million + 3 thousand";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("5003000", result.Output.Replace(",", ""));
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_RealWorld_Pregnancy()
+    {
+        CalculationService service = new();
+        // Due date calculation: conception + 9 months 1 week
+        string input = "June 15, 2026 + 9 months 1 week";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // June 15 + 9 months = March 15 2027, + 1 week = March 22 2027
+        Assert.Equal("3/22/2027", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_RealWorld_SprintPlanning()
+    {
+        CalculationService service = new();
+        // Sprint starts Monday 9am, lasts 2 weeks 3 days 6 hours
+        string input = "3/2/2026 9:00am + 2 weeks 3 days 6 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // March 2 + 14 + 3 = March 19, 9am + 6h = 3pm
+        Assert.Contains("3/19/2026", result.Output);
+        Assert.Contains("3:00pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_RealWorld_TravelItinerary()
+    {
+        CalculationService service = new();
+        // Depart Jan 10 at 6:30am, travel 1 day 14 hours 45 mins
+        string input = "1/10/2026 6:30am + 1 day 14 hours 45 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Jan 10 6:30am + 1d 14h 45m = Jan 11 6:30am + 14h 45m = Jan 11 9:15pm
+        Assert.Contains("1/11/2026", result.Output);
+        Assert.Contains("9:15pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion Combined Duration Segment Tests
     }

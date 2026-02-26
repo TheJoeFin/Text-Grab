@@ -10,6 +10,7 @@ public partial class CalculationService
     /// <summary>
     /// Attempts to evaluate a line as a date/time math expression.
     /// Supports expressions like "March 10th + 10 days", "2/25/26 11:02pm + 800 mins", etc.
+    /// Also supports combined duration segments: "today + 5 weeks 3 days 8 hours".
     /// Supported units: days, weeks, months, years, decades, hours, minutes.
     /// </summary>
     /// <param name="line">The input line to evaluate</param>
@@ -21,13 +22,13 @@ public partial class CalculationService
         if (string.IsNullOrWhiteSpace(line))
             return false;
 
-        // Find all arithmetic operations with time units
-        MatchCollection matches = DateTimeArithmeticPattern().Matches(line);
-        if (matches.Count == 0)
+        // Find the first explicit arithmetic operation (requires +/-) to anchor where arithmetic starts
+        Match anchorMatch = DateTimeArithmeticPattern().Match(line);
+        if (!anchorMatch.Success)
             return false;
 
         // Everything before the first arithmetic match is the date part
-        string datePart = line[..matches[0].Index].Trim();
+        string datePart = line[..anchorMatch.Index].Trim();
 
         // Parse the base date
         DateTime dateTime;
@@ -43,21 +44,32 @@ public partial class CalculationService
             return false;
         }
 
-        // First pass: collect operations and detect characteristics
+        // Parse all duration segments from the arithmetic portion.
+        // Supports both explicit operators (+ 5 days - 2 hours) and combined
+        // segments where implicit entries inherit the previous operator (+ 5 weeks 3 days 8 hours).
+        string arithmeticPortion = line[anchorMatch.Index..];
+        MatchCollection segments = DateTimeDurationSegmentPattern().Matches(arithmeticPortion);
+        if (segments.Count == 0)
+            return false;
+
         bool hasTimeUnits = false;
         bool hasFractionalDayOrLarger = false;
         List<(double Number, string Unit)> operations = [];
+        string currentOp = "+";
 
-        foreach (Match match in matches)
+        foreach (Match segment in segments)
         {
-            string op = match.Groups["op"].Value;
-            string numberStr = match.Groups["number"].Value;
-            string unit = match.Groups["unit"].Value.ToLowerInvariant();
+            string opValue = segment.Groups["op"].Value;
+            if (!string.IsNullOrEmpty(opValue))
+                currentOp = opValue;
+
+            string numberStr = segment.Groups["number"].Value;
+            string unit = segment.Groups["unit"].Value.ToLowerInvariant();
 
             if (!double.TryParse(numberStr, NumberStyles.Any, CultureInfo.InvariantCulture, out double number))
                 return false;
 
-            if (op == "-")
+            if (currentOp == "-")
                 number = -number;
 
             bool isTimeUnit = unit is "hour" or "hours" or "hr" or "hrs"
@@ -74,7 +86,7 @@ public partial class CalculationService
         if (hasFractionalDayOrLarger && !hasInputTime && dateTime.TimeOfDay == TimeSpan.Zero)
             dateTime = dateTime.AddHours(12);
 
-        // Second pass: apply all operations
+        // Apply all operations
         foreach ((double number, string unit) in operations)
             dateTime = ApplyDateTimeOffset(dateTime, number, unit);
 
@@ -210,6 +222,9 @@ public partial class CalculationService
 
     [System.Text.RegularExpressions.GeneratedRegex(@"(?<op>[+-])\s*(?<number>\d+\.?\d*)\s*(?<unit>decades?|years?|months?|weeks?|days?|hours?|hrs?|hr|minutes?|mins?|min)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
     private static partial System.Text.RegularExpressions.Regex DateTimeArithmeticPattern();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?<op>[+-])?\s*(?<number>\d+\.?\d*)\s*(?<unit>decades?|years?|months?|weeks?|days?|hours?|hrs?|hr|minutes?|mins?|min)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex DateTimeDurationSegmentPattern();
 
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d+)(?:st|nd|rd|th)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
     private static partial System.Text.RegularExpressions.Regex OrdinalSuffixPattern();
