@@ -46,6 +46,8 @@ public partial class CalculationService
         List<string> results = [];
         List<double> outputNumbers = [];
         int errorCount = 0;
+        double? previousLineResult = null;
+        DateTime? previousDateTimeResult = null;
 
         // Clear parameters and rebuild from scratch for each evaluation
         _parameters.Clear();
@@ -59,16 +61,27 @@ public partial class CalculationService
                 continue;
             }
 
+            // If the line starts with a binary operator and we have a previous numeric result,
+            // prepend the previous result to form a complete expression
+            if (previousLineResult.HasValue && !previousDateTimeResult.HasValue && StartsWithBinaryOperator(trimmedLine))
+            {
+                string previousValueStr = previousLineResult.Value.ToString(CultureInfo.InvariantCulture);
+                trimmedLine = previousValueStr + " " + trimmedLine;
+            }
+
             try
             {
-                if (TryEvaluateDateTimeMath(trimmedLine, out string dateTimeResult))
+                if (TryEvaluateDateTimeMath(trimmedLine, out string dateTimeResult, out DateTime? parsedDateTime, previousDateTimeResult))
                 {
                     results.Add(dateTimeResult);
+                    previousDateTimeResult = parsedDateTime;
+                    previousLineResult = null;
                 }
                 else if (IsParameterAssignment(trimmedLine))
                 {
                     string resultLine = await HandleParameterAssignmentAsync(trimmedLine);
                     results.Add(resultLine);
+                    previousDateTimeResult = null;
 
                     // Extract variable name and add its value to output numbers
                     int equalIndex = trimmedLine.IndexOf('=');
@@ -79,17 +92,24 @@ public partial class CalculationService
                         {
                             double numValue = Convert.ToDouble(value);
                             outputNumbers.Add(numValue);
+                            previousLineResult = numValue;
                         }
                         catch
                         {
                             // Skip non-numeric values
+                            previousLineResult = null;
                         }
+                    }
+                    else
+                    {
+                        previousLineResult = null;
                     }
                 }
                 else
                 {
                     string resultLine = await EvaluateStandardExpressionAsync(trimmedLine);
                     results.Add(resultLine);
+                    previousDateTimeResult = null;
 
                     // Try to parse the result as a number and add to output numbers
                     // Remove formatting characters before parsing
@@ -97,6 +117,11 @@ public partial class CalculationService
                     if (double.TryParse(cleanedResult, NumberStyles.Any, CultureInfo.InvariantCulture, out double numValue))
                     {
                         outputNumbers.Add(numValue);
+                        previousLineResult = numValue;
+                    }
+                    else
+                    {
+                        previousLineResult = null;
                     }
                 }
             }
@@ -111,6 +136,8 @@ public partial class CalculationService
                     results.Add(""); // Empty line when errors are hidden
                 }
                 errorCount++;
+                previousLineResult = null;
+                previousDateTimeResult = null;
             }
         }
 
@@ -549,6 +576,32 @@ public partial class CalculationService
                 args.Result = sum;
             }
         };
+    }
+
+    /// <summary>
+    /// Checks if a line starts with a binary operator that could continue from a previous result.
+    /// For * / (which cannot be unary), matches when followed by a space, digit, paren, or letter.
+    /// For + - (which can be unary), only matches when followed by a space to distinguish from
+    /// negative numbers like "-3" or unary plus like "+5".
+    /// </summary>
+    public static bool StartsWithBinaryOperator(string trimmedLine)
+    {
+        if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.Length < 2)
+            return false;
+
+        char first = trimmedLine[0];
+        char second = trimmedLine[1];
+
+        // * / always require a left operand — treat as continuation operator
+        if (first is '*' or '/')
+            return second == ' ' || char.IsDigit(second) || second == '(' || char.IsLetter(second);
+
+        // + - can be unary, so only treat as continuation when followed by a space
+        // This distinguishes "- 3" (continuation) from "-3" (negative number)
+        if (first is '+' or '-')
+            return second == ' ';
+
+        return false;
     }
 
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d)\.(?=\d{3}(?:\.|,|\D|$))")]
