@@ -48,6 +48,8 @@ public partial class CalculationService
         int errorCount = 0;
         double? previousLineResult = null;
         DateTime? previousDateTimeResult = null;
+        UnitResult? previousUnitResult = null;
+        Dictionary<string, int> unitCounts = [];
 
         // Clear parameters and rebuild from scratch for each evaluation
         _parameters.Clear();
@@ -62,8 +64,9 @@ public partial class CalculationService
             }
 
             // If the line starts with a binary operator and we have a previous numeric result,
-            // prepend the previous result to form a complete expression
-            if (previousLineResult.HasValue && !previousDateTimeResult.HasValue && StartsWithBinaryOperator(trimmedLine))
+            // prepend the previous result to form a complete expression.
+            // Skip when we have a previous unit result — unit continuation is handled separately.
+            if (previousLineResult.HasValue && !previousDateTimeResult.HasValue && previousUnitResult is null && StartsWithBinaryOperator(trimmedLine))
             {
                 string previousValueStr = previousLineResult.Value.ToString(CultureInfo.InvariantCulture);
                 trimmedLine = previousValueStr + " " + trimmedLine;
@@ -76,12 +79,34 @@ public partial class CalculationService
                     results.Add(dateTimeResult);
                     previousDateTimeResult = parsedDateTime;
                     previousLineResult = null;
+                    previousUnitResult = null;
+                }
+                else if (TryEvaluateUnitConversion(trimmedLine, out string unitResultStr, out UnitResult? newUnitResult, previousUnitResult))
+                {
+                    results.Add(unitResultStr);
+                    previousUnitResult = newUnitResult;
+                    previousDateTimeResult = null;
+
+                    if (newUnitResult is not null)
+                    {
+                        outputNumbers.Add(newUnitResult.Value);
+                        previousLineResult = newUnitResult.Value;
+
+                        // Track unit frequency for DominantUnit
+                        string unitKey = newUnitResult.Abbreviation;
+                        unitCounts[unitKey] = unitCounts.GetValueOrDefault(unitKey) + 1;
+                    }
+                    else
+                    {
+                        previousLineResult = null;
+                    }
                 }
                 else if (IsParameterAssignment(trimmedLine))
                 {
                     string resultLine = await HandleParameterAssignmentAsync(trimmedLine);
                     results.Add(resultLine);
                     previousDateTimeResult = null;
+                    previousUnitResult = null;
 
                     // Extract variable name and add its value to output numbers
                     int equalIndex = trimmedLine.IndexOf('=');
@@ -110,6 +135,7 @@ public partial class CalculationService
                     string resultLine = await EvaluateStandardExpressionAsync(trimmedLine);
                     results.Add(resultLine);
                     previousDateTimeResult = null;
+                    previousUnitResult = null;
 
                     // Try to parse the result as a number and add to output numbers
                     // Remove formatting characters before parsing
@@ -138,14 +164,21 @@ public partial class CalculationService
                 errorCount++;
                 previousLineResult = null;
                 previousDateTimeResult = null;
+                previousUnitResult = null;
             }
         }
+
+        // Determine the most common unit across results
+        string? dominantUnit = unitCounts.Count > 0
+            ? unitCounts.MaxBy(kv => kv.Value).Key
+            : null;
 
         return new CalculationResult
         {
             Output = string.Join("\n", results),
             ErrorCount = errorCount,
-            OutputNumbers = outputNumbers
+            OutputNumbers = outputNumbers,
+            DominantUnit = dominantUnit
         };
     }
 
@@ -630,4 +663,11 @@ public class CalculationResult
     /// Includes both direct expression results and variable assignment values.
     /// </summary>
     public List<double> OutputNumbers { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the most common unit abbreviation across unit-bearing results.
+    /// Null when no unit conversions were evaluated. Can be used to annotate
+    /// aggregate displays (e.g., "Sum: 45.2 kg").
+    /// </summary>
+    public string? DominantUnit { get; set; }
 }

@@ -24,124 +24,130 @@
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.Resources>
-        <Style x:Key="SimpleBTN" TargetType="Button">
-            <Setter Property="Width" Value="120" />
-            <Setter Property="Padding" Value="6" />
-            <Setter Property="Margin" Value="10,10,0,10" />
+        <Style x:Key="SimpleBTN"
+                TargetType="Button">
+            <Setter Property="Width"
+                    Value="120"/>
+            <Setter Property="Padding"
+                    Value="6"/>
+            <Setter Property="Margin"
+                    Value="10,10,0,10"/>
         </Style>
-        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+        <ui:ImageIcon x:Key="TextGrabIcon"
+                Source="/Text-Grab;component/Images/TealSelect40.png"/>
         <ContextMenu x:Key="ContextMenuResource">
-            <MenuItem Command="ApplicationCommands.Undo" />
-            <MenuItem Command="ApplicationCommands.Redo" />
-            <Separator />
-            <MenuItem Command="ApplicationCommands.Cut" />
-            <MenuItem Command="ApplicationCommands.Copy" />
-            <MenuItem Command="ApplicationCommands.Paste" />
+            <MenuItem Command="ApplicationCommands.Undo"/>
+            <MenuItem Command="ApplicationCommands.Redo"/>
+            <Separator/>
+            <MenuItem Command="ApplicationCommands.Cut"/>
+            <MenuItem Command="ApplicationCommands.Copy"/>
+            <MenuItem Command="ApplicationCommands.Paste"/>
             <MenuItem
                 Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
                 Header="OCR Paste"
-                InputGestureText="Ctrl + Shift + V" />
-            <Separator />
+                InputGestureText="Ctrl + Shift + V"/>
+            <Separator/>
             <MenuItem
                 Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
                 Header="Isolate Selected Text"
-                InputGestureText="Ctrl + I" />
+                InputGestureText="Ctrl + I"/>
             <MenuItem
                 Click="SelectLineMenuItem_Click"
                 Header="Select Line"
-                InputGestureText="Ctrl + L" />
+                InputGestureText="Ctrl + L"/>
             <MenuItem
                 Click="SelectAllMenuItem_Click"
                 Header="Select All"
-                InputGestureText="Ctrl + A" />
+                InputGestureText="Ctrl + A"/>
             <MenuItem
                 Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                 Header="Toggle Case"
-                InputGestureText="Shift + F3" />
-            <MenuItem Click="DeleteSelectedTextMenuItem_Click" Header="Delete Selected Text" />
-            <Separator />
+                InputGestureText="Shift + F3"/>
+            <MenuItem Click="DeleteSelectedTextMenuItem_Click"
+                    Header="Delete Selected Text"/>
+            <Separator/>
             <MenuItem
                 Click="MoveLineUpMenuItem_Click"
                 Header="Move Selection Up"
-                InputGestureText="Alt + Up" />
+                InputGestureText="Alt + Up"/>
             <MenuItem
                 Click="MoveLineDownMenuItem_Click"
                 Header="Move Selection Down"
-                InputGestureText="Alt + Down" />
+                InputGestureText="Alt + Down"/>
         </ContextMenu>
     </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding
             CanExecute="SplitOnSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
-            Executed="SplitOnSelectionCmdExecuted" />
+            Executed="SplitOnSelectionCmdExecuted"/>
         <CommandBinding
             CanExecute="SplitOnSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
-            Executed="SplitAfterSelectionCmdExecuted" />
+            Executed="SplitAfterSelectionCmdExecuted"/>
         <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
-            Executed="IsolateSelectionCmdExecuted" />
+            Executed="IsolateSelectionCmdExecuted"/>
         <CommandBinding
             CanExecute="SingleLineCmdCanExecute"
             Command="{x:Static local:EditTextWindow.SingleLineCmd}"
-            Executed="SingleLineCmdExecuted" />
+            Executed="SingleLineCmdExecuted"/>
         <CommandBinding
             CanExecute="ToggleCaseCmdCanExecute"
             Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
-            Executed="ToggleCase" />
+            Executed="ToggleCase"/>
         <CommandBinding
             CanExecute="ReplaceReservedCharsCmdCanExecute"
             Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
-            Executed="ReplaceReservedCharsCmdExecuted" />
+            Executed="ReplaceReservedCharsCmdExecuted"/>
         <CommandBinding
             CanExecute="SelectionContainsNewLinesCmdCanExecute"
             Command="{x:Static local:EditTextWindow.UnstackCmd}"
-            Executed="UnstackExecuted" />
+            Executed="UnstackExecuted"/>
         <CommandBinding
             CanExecute="SelectionContainsNewLinesCmdCanExecute"
             Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
-            Executed="UnstackGroupExecuted" />
+            Executed="UnstackGroupExecuted"/>
         <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
-            Executed="DeleteAllSelectionExecuted" />
+            Executed="DeleteAllSelectionExecuted"/>
         <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.DeleteAllSelectionPatternCmd}"
-            Executed="DeleteAllSelectionPatternExecuted" />
+            Executed="DeleteAllSelectionPatternExecuted"/>
         <CommandBinding
             CanExecute="InsertSelectionOnEveryLineCmdCanExecute"
             Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
-            Executed="InsertSelectionOnEveryLine" />
+            Executed="InsertSelectionOnEveryLine"/>
         <CommandBinding
             CanExecute="CanOcrPasteExecute"
             Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
-            Executed="PasteExecuted" />
+            Executed="PasteExecuted"/>
         <CommandBinding
             CanExecute="CanLaunchUriExecute"
             Command="{x:Static local:EditTextWindow.LaunchCmd}"
-            Executed="LaunchUriExecuted" />
+            Executed="LaunchUriExecuted"/>
         <CommandBinding
             CanExecute="MakeQrCodeCanExecute"
             Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
-            Executed="MakeQrCodeExecuted" />
+            Executed="MakeQrCodeExecuted"/>
         <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.WebSearchCmd}"
-            Executed="WebSearchExecuted" />
+            Executed="WebSearchExecuted"/>
         <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
-            Executed="DefaultWebSearchExecuted" />
+            Executed="DefaultWebSearchExecuted"/>
     </Window.CommandBindings>
     <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <ui:TitleBar
             x:Name="UiTitleBar"
@@ -149,188 +155,192 @@
             Height="32"
             Margin="2,2,2,0"
             Padding="8,2"
-            Icon="{StaticResource TextGrabIcon}" />
+            Icon="{StaticResource TextGrabIcon}"/>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Menu
                 Grid.Column="0"
                 ClipToBounds="True"
                 IsMainMenu="True">
-                <MenuItem Header="_File" SubmenuOpened="MenuItem_SubmenuOpened">
+                <MenuItem Header="_File"
+                        SubmenuOpened="MenuItem_SubmenuOpened">
                     <MenuItem
                         x:Name="OpenFileMenuItem"
                         Click="OpenFileMenuItem_Click"
                         Header="_Open File..."
-                        InputGestureText="Ctrl + O" />
-                    <MenuItem x:Name="OpenRecentMenuItem" Header="Recent" />
-                    <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
+                        InputGestureText="Ctrl + O"/>
+                    <MenuItem x:Name="OpenRecentMenuItem"
+                            Header="Recent"/>
+                    <MenuItem x:Name="OpenRecentGrabsMenuItem"
+                            Header="Recent Grabs"/>
                     <MenuItem
                         x:Name="SaveFileMenuItem"
                         Click="SaveBTN_Click"
                         Header="_Save"
-                        InputGestureText="Ctrl + S" />
+                        InputGestureText="Ctrl + S"/>
                     <MenuItem
                         x:Name="SaveAsFileMenuItem"
                         Click="SaveAsBTN_Click"
                         Header="Save _As..."
-                        InputGestureText="Ctrl + Shift + S" />
+                        InputGestureText="Ctrl + Shift + S"/>
                     <MenuItem
                         x:Name="CopyAndCloseMenuItem"
                         Click="CopyCloseBTN_Click"
-                        Header="_Copy And Close" />
+                        Header="_Copy And Close"/>
                     <MenuItem
                         x:Name="CloseAndInsertMenuItem"
                         Click="CopyClosePasteBTN_Click"
-                        Header="Close and I_nsert" />
-                    <Separator />
+                        Header="Close and I_nsert"/>
+                    <Separator/>
                     <MenuItem
                         x:Name="SettingsMenuItem"
                         Click="SettingsMenuItem_Click"
-                        Header="Text Grab Sett_ings..." />
+                        Header="Text Grab Sett_ings..."/>
                     <MenuItem
                         x:Name="CloseMenuItem"
                         Click="CloseMenuItem_Click"
                         Header="Close"
-                        InputGestureText="Alt + F4" />
+                        InputGestureText="Alt + F4"/>
                 </MenuItem>
                 <MenuItem Header="_Edit">
-                    <MenuItem Command="ApplicationCommands.Undo" />
-                    <MenuItem Command="ApplicationCommands.Redo" />
-                    <Separator />
-                    <MenuItem Command="ApplicationCommands.Cut" />
-                    <MenuItem Command="ApplicationCommands.Copy" />
-                    <MenuItem Command="ApplicationCommands.Paste" />
+                    <MenuItem Command="ApplicationCommands.Undo"/>
+                    <MenuItem Command="ApplicationCommands.Redo"/>
+                    <Separator/>
+                    <MenuItem Command="ApplicationCommands.Cut"/>
+                    <MenuItem Command="ApplicationCommands.Copy"/>
+                    <MenuItem Command="ApplicationCommands.Paste"/>
                     <MenuItem
                         Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
                         Header="OCR Paste"
-                        InputGestureText="Ctrl + Shift + V" />
-                    <Separator />
+                        InputGestureText="Ctrl + Shift + V"/>
+                    <Separator/>
                     <MenuItem
                         x:Name="LaunchUriMenuItem"
                         Command="{x:Static local:EditTextWindow.LaunchCmd}"
-                        Header="Launch URL" />
+                        Header="Launch URL"/>
                     <MenuItem
                         x:Name="SingleLineMenuItem"
                         Command="{x:Static local:EditTextWindow.SingleLineCmd}"
-                        Header="Make _Single Line" />
+                        Header="Make _Single Line"/>
                     <MenuItem
                         x:Name="_TrimEachLineMenuItem"
                         Click="TrimEachLineMenuItem_Click"
-                        Header="_Trim Each Line" />
+                        Header="_Trim Each Line"/>
                     <MenuItem
                         x:Name="TryToNumberMenuItem"
                         Click="TryToNumberMenuItem_Click"
-                        Header="Try To Make _Numbers" />
+                        Header="Try To Make _Numbers"/>
                     <MenuItem
                         x:Name="TryToAlphaMenuItem"
                         Click="TryToAlphaMenuItem_Click"
-                        Header="Try To Make _Letters" />
+                        Header="Try To Make _Letters"/>
                     <MenuItem
                         x:Name="CorrectGuid"
                         Click="CorrectGuid_Click"
-                        Header="Correct Common _GUID/UUID Errors" />
+                        Header="Correct Common _GUID/UUID Errors"/>
                     <MenuItem
                         x:Name="ToggleCaseMenuItem"
                         Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
                         Header="Toggle _Case"
-                        InputGestureText="Shift + F3" />
+                        InputGestureText="Shift + F3"/>
                     <MenuItem
                         x:Name="RemoveDuplicateLines"
                         Click="RemoveDuplicateLines_Click"
-                        Header="Remove Duplicate Lines" />
+                        Header="Remove Duplicate Lines"/>
                     <MenuItem
                         x:Name="ReplaceReservedCharsMenuItem"
                         Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
                         Header="_Replace Reserved Characters"
-                        InputGestureText="Ctrl + R" />
+                        InputGestureText="Ctrl + R"/>
                     <MenuItem
                         x:Name="UnStackMenuItem"
                         Command="{x:Static local:EditTextWindow.UnstackCmd}"
                         Header="_Unstack Text (Select Top Row)"
-                        InputGestureText="Ctrl + U" />
+                        InputGestureText="Ctrl + U"/>
                     <MenuItem
                         x:Name="UnStackGroupMenuItem"
                         Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
-                        Header="_Unstack Text (Select First Column)" />
+                        Header="_Unstack Text (Select First Column)"/>
                     <MenuItem
                         x:Name="AddRemoveAtMenuItem"
                         Click="AddRemoveAtMenuItem_Click"
-                        Header="_Add, Remove, Limit..." />
+                        Header="_Add, Remove, Limit..."/>
                 </MenuItem>
                 <MenuItem Header="_Selection">
                     <MenuItem
                         x:Name="FindAndReplaceMenuItem"
                         Click="FindAndReplaceMenuItem_Click"
-                        Header="Find and Replace" />
+                        Header="Find and Replace"/>
                     <MenuItem
                         x:Name="DefaultWebSearch"
                         Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
-                        Header="Default Web Search" />
-                    <MenuItem x:Name="WebSearchCollection" Header="Search web with..." />
-                    <Separator />
+                        Header="Default Web Search"/>
+                    <MenuItem x:Name="WebSearchCollection"
+                            Header="Search web with..."/>
+                    <Separator/>
                     <MenuItem
                         x:Name="SelectWordMenuItem"
                         Click="SelectWordMenuItem_Click"
                         Header="Select _Word"
-                        InputGestureText="Ctrl + W" />
+                        InputGestureText="Ctrl + W"/>
                     <MenuItem
                         x:Name="SelectLineMenuItem"
                         Click="SelectLineMenuItem_Click"
                         Header="Select _Line"
-                        InputGestureText="Ctrl + L" />
+                        InputGestureText="Ctrl + L"/>
                     <MenuItem
                         x:Name="SelectAllMenuItem"
                         Click="SelectAllMenuItem_Click"
                         Header="Select All"
-                        InputGestureText="Ctrl + A" />
+                        InputGestureText="Ctrl + A"/>
                     <MenuItem
                         x:Name="SelectNoneMenuItem"
                         Click="SelectNoneMenuItem_Click"
-                        Header="Select None" />
+                        Header="Select None"/>
                     <MenuItem
                         x:Name="DeleteSelectedTextMenuItem"
                         Click="DeleteSelectedTextMenuItem_Click"
-                        Header="Delete Selected Text" />
-                    <Separator />
+                        Header="Delete Selected Text"/>
+                    <Separator/>
                     <MenuItem
                         x:Name="MoveLineUpMenuItem"
                         Click="MoveLineUpMenuItem_Click"
                         Header="Move Selection _Up"
-                        InputGestureText="Alt + Up" />
+                        InputGestureText="Alt + Up"/>
                     <MenuItem
                         x:Name="MoveLineDownMenuItem"
                         Click="MoveLineDownMenuItem_Click"
                         Header="Move Selection _Down"
-                        InputGestureText="Alt + Down" />
-                    <Separator />
+                        InputGestureText="Alt + Down"/>
+                    <Separator/>
                     <MenuItem
                         x:Name="SplitLineBeforeSelectionMI"
                         Command="{x:Static local:EditTextWindow.SplitOnSelectionCmd}"
-                        Header="Split Lines _Before Each Selection" />
+                        Header="Split Lines _Before Each Selection"/>
                     <MenuItem
                         x:Name="SplitLineAfterSelectionMI"
                         Command="{x:Static local:EditTextWindow.SplitAfterSelectionCmd}"
-                        Header="Split Lines _After Each Selection" />
+                        Header="Split Lines _After Each Selection"/>
                     <MenuItem
                         x:Name="IsolateSelectionMI"
                         Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
                         Header="_Isolate Selected Text"
-                        InputGestureText="Ctrl + I" />
+                        InputGestureText="Ctrl + I"/>
                     <MenuItem
                         x:Name="DeleteAllSelectionMI"
                         Command="{x:Static local:EditTextWindow.DeleteAllSelectionCmd}"
-                        Header="Delete All Instances of Selection" />
+                        Header="Delete All Instances of Selection"/>
                     <MenuItem
                         x:Name="DeleteAllSelectionPatternMI"
                         Command="{x:Static local:EditTextWindow.DeleteAllSelectionPatternCmd}"
-                        Header="Delete All Instances of Selection Simple Pattern" />
+                        Header="Delete All Instances of Selection Simple Pattern"/>
                     <MenuItem
                         x:Name="InsertSelectionOnEveryLineMI"
                         Command="{x:Static local:EditTextWindow.InsertSelectionOnEveryLineCmd}"
-                        Header="Insert Selection On Every Line" />
+                        Header="Insert Selection On Every Line"/>
                 </MenuItem>
                 <MenuItem
                     Name="AiMenuItem"
@@ -339,101 +349,102 @@
                     <MenuItem
                         x:Name="SummarizeMenuItem"
                         Click="SummarizeMenuItem_Click"
-                        Header="_Summarize Paragraph" />
+                        Header="_Summarize Paragraph"/>
                     <MenuItem
                         x:Name="RewriteMenuItem"
                         Click="RewriteMenuItem_Click"
-                        Header="_Rewrite" />
+                        Header="_Rewrite"/>
                     <MenuItem
                         x:Name="ConvertTableMenuItem"
                         Click="ConvertTableMenuItem_Click"
-                        Header="_Convert to Table" />
+                        Header="_Convert to Table"/>
                     <MenuItem
                         x:Name="TranslateToSystemLanguageMenuItem"
                         Click="TranslateToSystemLanguageMenuItem_Click"
-                        Header="Translate to System Language" />
-                    <MenuItem x:Name="TranslateMenuItem" Header="_Translate to...">
+                        Header="Translate to System Language"/>
+                    <MenuItem x:Name="TranslateMenuItem"
+                            Header="_Translate to...">
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="English"
-                            Tag="English" />
+                            Tag="English"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Spanish"
-                            Tag="Spanish" />
+                            Tag="Spanish"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="French"
-                            Tag="French" />
+                            Tag="French"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="German"
-                            Tag="German" />
+                            Tag="German"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Italian"
-                            Tag="Italian" />
+                            Tag="Italian"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Portuguese"
-                            Tag="Portuguese" />
+                            Tag="Portuguese"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Russian"
-                            Tag="Russian" />
+                            Tag="Russian"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Japanese"
-                            Tag="Japanese" />
+                            Tag="Japanese"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Chinese (Simplified)"
-                            Tag="Chinese (Simplified)" />
+                            Tag="Chinese (Simplified)"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Korean"
-                            Tag="Korean" />
+                            Tag="Korean"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Arabic"
-                            Tag="Arabic" />
+                            Tag="Arabic"/>
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="Hindi"
-                            Tag="Hindi" />
+                            Tag="Hindi"/>
                     </MenuItem>
                     <MenuItem
                         x:Name="ExtractRegexMenuItem"
                         Click="ExtractRegexMenuItem_Click"
-                        Header="E_xtract RegEx" />
+                        Header="E_xtract RegEx"/>
                     <MenuItem
                         x:Name="LearnAiMenuItem"
                         Click="LearnAiMenuItem_Click"
-                        Header="_Learn About Local AI Features..." />
+                        Header="_Learn About Local AI Features..."/>
                 </MenuItem>
                 <MenuItem Header="F_ormat">
                     <MenuItem
                         x:Name="ShowErrorsMenuItem"
                         Click="ShowErrorsMenuItem_Click"
                         Header="Show Math Errors"
-                        IsCheckable="True" />
+                        IsCheckable="True"/>
                     <MenuItem
                         x:Name="MarginsMenuItem"
                         Checked="MarginsMenuItem_Checked"
                         Header="_Use Margins"
                         IsCheckable="True"
-                        Unchecked="MarginsMenuItem_Checked" />
+                        Unchecked="MarginsMenuItem_Checked"/>
                     <MenuItem
                         x:Name="WrapTextMenuItem"
                         Checked="WrapTextCHBX_Checked"
                         Header="_Wrap Text"
                         IsCheckable="True"
                         IsChecked="True"
-                        Unchecked="WrapTextCHBX_Checked" />
+                        Unchecked="WrapTextCHBX_Checked"/>
                     <MenuItem
                         x:Name="FontMenuItem"
                         Click="FontMenuItem_Click"
-                        Header="_Font..." />
+                        Header="_Font..."/>
                 </MenuItem>
                 <MenuItem
                     x:Name="CaptureMenuItem"
@@ -443,70 +454,71 @@
                         x:Name="FullScreenGrabMenuItem"
                         Click="FullScreenGrabMenuItem_Click"
                         Header="New _Fullscreen Grab"
-                        InputGestureText="Ctrl + F" />
+                        InputGestureText="Ctrl + F"/>
                     <MenuItem
                         x:Name="FSGDelayMenuItem"
                         Click="FSGDelayMenuItem_Click"
-                        Header="Fullscreen with 2 second _delay" />
+                        Header="Fullscreen with 2 second _delay"/>
                     <MenuItem
                         x:Name="PreviousRegionMenuItem"
                         Click="PreviousRegion_Click"
-                        Header="Grab previous region" />
+                        Header="Grab previous region"/>
                     <MenuItem
                         x:Name="GrabFrameMenuItem"
                         Click="GrabFrameMenuItem_Click"
                         Header="New _Grab Frame"
-                        InputGestureText="Ctrl + G" />
-                    <Separator />
+                        InputGestureText="Ctrl + G"/>
+                    <Separator/>
                     <MenuItem
                         x:Name="QuickSimpleLookupMenuItem"
                         Click="LaunchQuickSimpleLookup"
                         Header="Add From _Quick Simple Lookup"
-                        InputGestureText="Ctrl + Q" />
+                        InputGestureText="Ctrl + Q"/>
                     <MenuItem
                         x:Name="ClipboardWatcherMenuItem"
                         Header="_Watch Clipboard For Changes"
                         IsCheckable="True"
-                        IsChecked="False" />
-                    <Separator />
+                        IsChecked="False"/>
+                    <Separator/>
                     <MenuItem
                         x:Name="ListFilesMenuItem"
                         Click="ListFilesMenuItem_Click"
-                        Header="_List Files and Folders From Folder..." />
-                    <Separator />
+                        Header="_List Files and Folders From Folder..."/>
+                    <Separator/>
                     <MenuItem
                         x:Name="ReadFolderOfImages"
                         Click="ReadFolderOfImages_Click"
-                        Header="_Extract Text from Images in Folder..." />
-                    <MenuItem x:Name="LanguageMenuItem" Header="OCR in Language..." />
+                        Header="_Extract Text from Images in Folder..."/>
+                    <MenuItem x:Name="LanguageMenuItem"
+                            Header="OCR in Language..."/>
                     <MenuItem
                         x:Name="RecursiveFoldersCheck"
                         Header="Scan all folders recursively"
                         IsCheckable="True"
-                        StaysOpenOnClick="True" />
+                        StaysOpenOnClick="True"/>
                     <MenuItem
                         x:Name="ReadFolderOfImagesWriteTxtFiles"
                         Header="Write ._Txt File For Each Image"
                         IsCheckable="True"
-                        StaysOpenOnClick="True" />
+                        StaysOpenOnClick="True"/>
                     <MenuItem
                         x:Name="OutputFilenamesCheck"
                         Header="Write File names in output"
                         IsCheckable="True"
                         IsChecked="True"
-                        StaysOpenOnClick="True" />
+                        StaysOpenOnClick="True"/>
                     <MenuItem
                         x:Name="OutputHeaderCheck"
                         Header="Include output header text"
                         IsCheckable="True"
                         IsChecked="True"
-                        StaysOpenOnClick="True" />
+                        StaysOpenOnClick="True"/>
                     <MenuItem
                         x:Name="OutputFooterCheck"
                         Header="Include output footer text"
                         IsCheckable="True"
                         IsChecked="True"
-                        StaysOpenOnClick="True" />
+                        StaysOpenOnClick="True"/>
                 </MenuItem>
                 <MenuItem
                     x:Name="WindowMenuItem"
@@ -517,69 +529,69 @@
                         Click="AlwaysOnTop_Checked"
                         Header="_Always On Top"
                         IsCheckable="True"
-                        IsChecked="False" />
+                        IsChecked="False"/>
                     <MenuItem
                         x:Name="HideBottomBarMenuItem"
                         Click="HideBottomBarMenuItem_Click"
                         Header="_Hide Bottom Bar"
                         IsCheckable="True"
-                        IsChecked="False" />
+                        IsChecked="False"/>
                     <MenuItem
                         x:Name="LaunchFullscreenOnLoad"
                         Click="LaunchFullscreenOnLoad_Click"
                         Header="Open _Fullscreen on Launch"
                         IsCheckable="True"
-                        IsChecked="False" />
+                        IsChecked="False"/>
                     <MenuItem
                         x:Name="RestorePositionMenuItem"
                         Checked="RestorePositionMenuItem_Checked"
                         Header="Set postion based on previous Edit Text Window"
                         IsCheckable="True"
-                        Unchecked="RestorePositionMenuItem_Checked" />
+                        Unchecked="RestorePositionMenuItem_Checked"/>
                     <MenuItem
                         x:Name="RestoreThisPosition"
                         Click="RestoreThisPosition_Click"
-                        Header="_Restore this windows's position" />
+                        Header="_Restore this windows's position"/>
                     <MenuItem
                         x:Name="ShowCalcPaneMenuItem"
                         Click="ShowCalcPaneMenuItem_Click"
                         Header="Show calculations pane"
-                        IsCheckable="True" />
-                    <Separator />
+                        IsCheckable="True"/>
+                    <Separator/>
                     <MenuItem
                         x:Name="NewWindowMenuItem"
                         Click="NewWindow_Clicked"
-                        Header="_New Window" />
+                        Header="_New Window"/>
                     <MenuItem
                         x:Name="NewWindowFromSelectionMenuItem"
                         Click="NewWindowWithText_Clicked"
-                        Header="New Window with Selected _Text" />
+                        Header="New Window with Selected _Text"/>
                     <MenuItem
                         x:Name="MakeCodeMenuItem"
                         Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
-                        Header="Make _QR Code" />
+                        Header="Make _QR Code"/>
                     <MenuItem
                         x:Name="OpenLastAsGrabFrameMenuItem"
                         Click="OpenLastAsGrabFrameMenuItem_Click"
-                        Header="Edit _Last Grab" />
+                        Header="Edit _Last Grab"/>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem
                         x:Name="ContactMenuItem"
                         Click="ContactMenuItem_Click"
-                        Header="_Contact The Developer..." />
+                        Header="_Contact The Developer..."/>
                     <MenuItem
                         x:Name="RateAndReview"
                         Click="RateAndReview_Click"
-                        Header="_Rate and Review..." />
+                        Header="_Rate and Review..."/>
                     <MenuItem
                         x:Name="FeedbackMenuItem"
                         Click="FeedbackMenuItem_Click"
-                        Header="_Feedback..." />
+                        Header="_Feedback..."/>
                     <MenuItem
                         x:Name="AboutMenuItem"
                         Click="AboutMenuItem_Click"
-                        Header="_About" />
+                        Header="_About"/>
                 </MenuItem>
             </Menu>
             <Button
@@ -595,13 +607,15 @@
                 BorderThickness="0"
                 Click="CalcToggleButton_Click"
                 ToolTip="Toggle Calculation Pane (Ctrl+P)&#x0a;Note: Text wrapping is disabled when calc pane is visible for better vertical alignment">
-                <ui:SymbolIcon FontSize="16" Symbol="Calculator24" />
+                <ui:SymbolIcon FontSize="16"
+                        Symbol="Calculator24"/>
             </Button>
         </Grid>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition x:Name="CalcColumn" Width="200" />
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition x:Name="CalcColumn"
+                        Width="200"/>
             </Grid.ColumnDefinitions>
             <TextBox
                 x:Name="PassedTextControl"
@@ -623,7 +637,7 @@
                 Style="{DynamicResource TextBoxStyle2}"
                 TextChanged="PassedTextControl_TextChanged"
                 TextWrapping="WrapWithOverflow"
-                VerticalScrollBarVisibility="Auto" />
+                VerticalScrollBarVisibility="Auto"/>
             <TextBox
                 x:Name="CalcResultsTextControl"
                 Grid.Column="1"
@@ -641,38 +655,41 @@
                 VerticalScrollBarVisibility="Hidden">
                 <TextBox.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Name="HideCalcPaneContextItem" Header="Hide Pane" />
-                        <MenuItem Name="ShowCalcErrorsContextItem" Header="Show Errors" />
-                        <MenuItem Name="CopyAllContextItem" Header="Copy All" />
-                        <Separator />
+                        <MenuItem Name="HideCalcPaneContextItem"
+                                Header="Hide Pane"/>
+                        <MenuItem Name="ShowCalcErrorsContextItem"
+                                Header="Show Errors"/>
+                        <MenuItem Name="CopyAllContextItem"
+                                Header="Copy All"/>
+                        <Separator/>
                         <MenuItem
                             Name="ShowSumContextItem"
                             Header="Sum: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="ShowAverageContextItem"
                             Header="Average: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="ShowMedianContextItem"
                             Header="Median: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="ShowCountContextItem"
                             Header="Count: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="ShowMinContextItem"
                             Header="Min: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="ShowMaxContextItem"
                             Header="Max: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="ShowProductContextItem"
                             Header="Product: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                     </ContextMenu>
                 </TextBox.ContextMenu>
             </TextBox>
@@ -698,31 +715,31 @@
                         <MenuItem
                             Name="AggregateSumContextItem"
                             Header="Sum: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="AggregateAverageContextItem"
                             Header="Average: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="AggregateMedianContextItem"
                             Header="Median: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="AggregateCountContextItem"
                             Header="Count: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="AggregateMinContextItem"
                             Header="Min: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="AggregateMaxContextItem"
                             Header="Max: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                         <MenuItem
                             Name="AggregateProductContextItem"
                             Header="Product: -"
-                            IsCheckable="True" />
+                            IsCheckable="True"/>
                     </ContextMenu>
                 </Border.ContextMenu>
                 <Grid>
@@ -730,7 +747,7 @@
                         x:Name="CalcAggregateStatusText"
                         FontSize="12"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                        Text="" />
+                        Text=""/>
                     <ui:SymbolIcon
                         x:Name="CalcAggregateCopyIcon"
                         HorizontalAlignment="Center"
@@ -738,7 +755,7 @@
                         FontSize="16"
                         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                         Opacity="0"
-                        Symbol="Copy24" />
+                        Symbol="Copy24"/>
                 </Grid>
             </Border>
 
@@ -758,7 +775,8 @@
                     BorderThickness="0"
                     Click="CalcCopyAllButton_Click"
                     ToolTip="Copy All Results">
-                    <ui:SymbolIcon FontSize="14" Symbol="Copy24" />
+                    <ui:SymbolIcon FontSize="14"
+                            Symbol="Copy24"/>
                 </Button>
                 <Button
                     x:Name="CalcInfoButton"
@@ -769,7 +787,8 @@
                     BorderThickness="0"
                     Click="CalcInfoButton_Click"
                     ToolTip="Calculation Pane Help">
-                    <ui:SymbolIcon FontSize="14" Symbol="Info24" />
+                    <ui:SymbolIcon FontSize="14"
+                            Symbol="Info24"/>
                 </Button>
             </StackPanel>
 
@@ -791,40 +810,62 @@
                             Margin="0,0,0,8"
                             FontSize="16"
                             FontWeight="Bold"
-                            Text="Calculation Pane" />
-                        <TextBlock Margin="0,0,0,8" TextWrapping="Wrap">
-                            <Run Text="Type mathematical expressions in the text area and see results calculated in real-time." />
+                            Text="Calculation Pane"/>
+                        <TextBlock Margin="0,0,0,8"
+                                TextWrapping="Wrap">
+                            <Run Text="Type mathematical expressions in the text area and see results calculated in real-time."/>
                         </TextBlock>
                         <TextBlock
                             Margin="0,0,0,4"
                             FontWeight="SemiBold"
-                            Text="Features:" />
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Basic math: +, -, *, /, %, ** for exponent" />
+                            Text="Features:"/>
+                        <TextBlock Margin="0,0,0,4"
+                                TextWrapping="Wrap">
+                            <Run Text="• Basic math: +, -, *, /, %, ** for exponent"/>
                         </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Functions: sin, cos, tan, sqrt, abs, log, etc." />
+                        <TextBlock Margin="0,0,0,4"
+                                TextWrapping="Wrap">
+                            <Run Text="• Functions: sin, cos, tan, sqrt, abs, log, etc."/>
                         </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Variables: x = 10" />
+                        <TextBlock Margin="0,0,0,4"
+                                TextWrapping="Wrap">
+                            <Run Text="• Variables: x = 10"/>
                         </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Constants: pi, e, tau, phi, sqrt2, sqrt3, sqrt5, ln2, ln10, log2e, log10e" />
+                        <TextBlock Margin="0,0,0,4"
+                                TextWrapping="Wrap">
+                            <Run Text="• Constants: pi, e, tau, phi, sqrt2, sqrt3, sqrt5, ln2, ln10, log2e, log10e"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,4"
+                                TextWrapping="Wrap">
+                            <Run Text="• Unit conversion: 5 miles to km, 100°F to celsius"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,4"
+                                TextWrapping="Wrap">
+                            <Run Text="• Supported units: length, mass, temperature, volume, speed, area"/>
                         </TextBlock>
                         <TextBlock
                             Margin="0,0,0,4"
                             FontWeight="SemiBold"
-                            Text="Example:" />
+                            Text="Examples:"/>
                         <TextBlock
                             Margin="0,0,0,4"
                             FontFamily="Consolas"
                             FontSize="12"
                             TextWrapping="Wrap">
-                            <Run Text="x = 10" /><LineBreak />
-                            <Run Text="y = 20" /><LineBreak />
-                            <Run Text="x + y" /><LineBreak />
-                            <Run Text="sin(pi/2)" /><LineBreak />
-                            <Run Text="sqrt(x * y)" />
+                            <Run Text="x = 10"/><LineBreak/>
+                            <Run Text="y = 20"/><LineBreak/>
+                            <Run Text="x + y"/><LineBreak/>
+                            <Run Text="sin(pi/2)"/><LineBreak/>
+                            <Run Text="sqrt(x * y)"/>
+                        </TextBlock>
+                        <TextBlock
+                            Margin="0,4,0,4"
+                            FontFamily="Consolas"
+                            FontSize="12"
+                            TextWrapping="Wrap">
+                            <Run Text="5 miles to km"/><LineBreak/>
+                            <Run Text="100 fahrenheit to celsius"/><LineBreak/>
+                            <Run Text="3.5 gallons to liters"/>
                         </TextBlock>
                         <TextBlock
                             Margin="0,8,0,4"
@@ -832,20 +873,20 @@
                             FontWeight="SemiBold"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="Note:"
-                            TextWrapping="Wrap" />
+                            TextWrapping="Wrap"/>
                         <TextBlock
                             Margin="0,0,0,8"
                             FontSize="11"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             TextWrapping="Wrap">
-                            <Run Text="Text wrapping is automatically disabled when the calculation pane is visible to ensure calculation results align vertically with their corresponding input lines." />
+                            <Run Text="Text wrapping is automatically disabled when the calculation pane is visible to ensure calculation results align vertically with their corresponding input lines."/>
                         </TextBlock>
                         <TextBlock
                             Margin="0,0,0,0"
                             FontSize="11"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             TextWrapping="Wrap">
-                            <Run Text="Toggle with Ctrl+P or the calculator button" />
+                            <Run Text="Toggle with Ctrl+P or the calculator button"/>
                         </TextBlock>
                     </StackPanel>
                 </Border>
@@ -860,7 +901,7 @@
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                 MouseDoubleClick="TextBoxSplitter_MouseDoubleClick"
                 ResizeDirection="Auto"
-                ShowsPreview="True" />
+                ShowsPreview="True"/>
 
             <!--  Subtle shadow at the edge of the calc pane/splitter for visual separation  -->
             <Rectangle
@@ -872,10 +913,13 @@
                 Panel.ZIndex="100"
                 IsHitTestVisible="False">
                 <Rectangle.Fill>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <LinearGradientBrush StartPoint="0,0"
+                            EndPoint="1,0">
                         <!--  Slight shadow cast toward the calc pane area  -->
-                        <GradientStop Offset="0" Color="#33000000" />
-                        <GradientStop Offset="1" Color="#00000000" />
+                        <GradientStop Offset="0"
+                                Color="#33000000"/>
+                        <GradientStop Offset="1"
+                                Color="#00000000"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
@@ -893,13 +937,13 @@
                 Grid.Row="2"
                 Background="Transparent">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="auto" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel
                     Name="BottomBarButtons"
                     Margin="8,0"
-                    Orientation="Horizontal" />
+                    Orientation="Horizontal"/>
                 <StackPanel
                     Grid.Column="1"
                     Margin="20,0,20,0"
@@ -919,7 +963,7 @@
                         <TextBlock
                             FontFamily="Cascadia Mono"
                             FontSize="12"
-                            Text="0 matches" />
+                            Text="0 matches"/>
                     </Button>
                     <Button
                         x:Name="SimilarMatchesButton"
@@ -936,17 +980,17 @@
                         <TextBlock
                             FontFamily="Cascadia Mono"
                             FontSize="12"
-                            Text="0 similar" />
+                            Text="0 similar"/>
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem
                                     x:Name="SavePatternMenuItem"
                                     Click="SavePatternMenuItem_Click"
-                                    Header="Save Pattern" />
+                                    Header="Save Pattern"/>
                                 <MenuItem
                                     x:Name="ExplainPatternMenuItem"
                                     Click="ExplainPatternMenuItem_Click"
-                                    Header="Explain Pattern" />
+                                    Header="Explain Pattern"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
@@ -965,17 +1009,17 @@
                         <TextBlock
                             FontFamily="Cascadia Mono"
                             FontSize="12"
-                            Text="Regex: " />
+                            Text="Regex: "/>
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem
                                     x:Name="SavePatternMenuItem2"
                                     Click="SavePatternMenuItem_Click"
-                                    Header="Save Pattern" />
+                                    Header="Save Pattern"/>
                                 <MenuItem
                                     x:Name="ExplainPatternMenuItem2"
                                     Click="ExplainPatternMenuItem_Click"
-                                    Header="Explain Pattern" />
+                                    Header="Explain Pattern"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
@@ -993,12 +1037,12 @@
                             x:Name="CharDetailsButtonText"
                             FontFamily="Cascadia Mono"
                             FontSize="12"
-                            Text="U+0000" />
+                            Text="U+0000"/>
                     </Button>
                     <TextBlock
                         x:Name="BottomBarText"
                         FontFamily="Cascadia Mono"
-                        Text="Ln 1, Col 0" />
+                        Text="Ln 1, Col 0"/>
                 </StackPanel>
                 <Popup
                     x:Name="CharDetailsPopup"
@@ -1013,12 +1057,14 @@
                         BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="4">
-                        <StackPanel x:Name="CharDetailsPopupContent" Width="300" />
+                        <StackPanel x:Name="CharDetailsPopupContent"
+                                Width="300"/>
                     </Border>
                 </Popup>
                 <Grid.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Click="EditBottomBarMenuItem_Click" Header="Edit Bottom Bar" />
+                        <MenuItem Click="EditBottomBarMenuItem_Click"
+                                Header="Edit Bottom Bar"/>
                     </ContextMenu>
                 </Grid.ContextMenu>
             </Grid>
@@ -1034,14 +1080,14 @@
                 x:Name="ProgressRing"
                 Width="60"
                 Height="60"
-                IsIndeterminate="True" />
+                IsIndeterminate="True"/>
             <TextBlock
                 x:Name="ProgressText"
                 Margin="0,12,0,0"
                 FontSize="16"
                 FontWeight="Bold"
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                Text="Working..." />
+                Text="Working..."/>
         </StackPanel>
     </Grid>
 </ui:FluentWindow>
