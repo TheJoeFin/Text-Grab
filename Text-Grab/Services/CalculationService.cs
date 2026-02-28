@@ -68,7 +68,7 @@ public partial class CalculationService
             // Skip when we have a previous unit result — unit continuation is handled separately.
             if (previousLineResult.HasValue && !previousDateTimeResult.HasValue && previousUnitResult is null && StartsWithBinaryOperator(trimmedLine))
             {
-                string previousValueStr = previousLineResult.Value.ToString(CultureInfo.InvariantCulture);
+                string previousValueStr = previousLineResult.Value.ToString(this.CultureInfo);
                 trimmedLine = previousValueStr + " " + trimmedLine;
             }
 
@@ -189,12 +189,17 @@ public partial class CalculationService
     {
         // Check for assignment pattern: variable = expression
         // Avoid matching comparison operators (==, !=, <=, >=)
-        return line.Contains('=') &&
-               !line.Contains("==") &&
-               !line.Contains("!=") &&
-               !line.Contains("<=") &&
-               !line.Contains(">=") &&
-               line.IndexOf('=') == line.LastIndexOf('='); // Ensure single '='
+        if (!line.Contains('=') ||
+            line.Contains("==") ||
+            line.Contains("!=") ||
+            line.Contains("<=") ||
+            line.Contains(">=") ||
+            line.IndexOf('=') != line.LastIndexOf('=')) // Ensure single '='
+            return false;
+
+        // Require a non-empty RHS so that "x =" falls through to the normal error path
+        int equalIndex = line.IndexOf('=');
+        return equalIndex < line.Length - 1 && !string.IsNullOrWhiteSpace(line[(equalIndex + 1)..]);
     }
 
     /// <summary>
@@ -404,7 +409,7 @@ public partial class CalculationService
         };
 
         if (string.IsNullOrEmpty(expr.ExpressionString))
-            return string.Empty;
+            throw new ArgumentException($"Expression for '{variableName}' is empty.");
 
         // Set up parameter handler for existing parameters
         expr.EvaluateParameterAsync += (name, args) =>
