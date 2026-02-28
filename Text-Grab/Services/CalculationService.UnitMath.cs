@@ -107,9 +107,11 @@ public partial class CalculationService
         { "celsius",         new(TemperatureUnit.DegreeCelsius, "Temperature", "°C") },
         { "°C",              new(TemperatureUnit.DegreeCelsius, "Temperature", "°C") },
         { "degC",            new(TemperatureUnit.DegreeCelsius, "Temperature", "°C") },
+        { "C",               new(TemperatureUnit.DegreeCelsius, "Temperature", "°C") },
         { "fahrenheit",      new(TemperatureUnit.DegreeFahrenheit, "Temperature", "°F") },
         { "°F",              new(TemperatureUnit.DegreeFahrenheit, "Temperature", "°F") },
         { "degF",            new(TemperatureUnit.DegreeFahrenheit, "Temperature", "°F") },
+        { "F",               new(TemperatureUnit.DegreeFahrenheit, "Temperature", "°F") },
         { "kelvin",          new(TemperatureUnit.Kelvin, "Temperature", "K") },
 
         // ══════════════════════════════════════════════════════════════

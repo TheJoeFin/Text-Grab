@@ -403,6 +403,9 @@ public partial class CalculationService
             CultureInfo = CultureInfo ?? CultureInfo.CurrentCulture
         };
 
+        if (string.IsNullOrEmpty(expr.ExpressionString))
+            return string.Empty;
+
         // Set up parameter handler for existing parameters
         expr.EvaluateParameterAsync += (name, args) =>
         {
