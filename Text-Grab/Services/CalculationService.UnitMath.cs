@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -532,10 +533,74 @@ public partial class CalculationService
         string numberStr = match.Groups["number"].Value;
         string unitStr = match.Groups["unit"].Value.Trim();
 
-        if (!double.TryParse(numberStr, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+        if (!TryParseFlexibleDouble(numberStr, out value))
             return false;
 
         return TryResolveUnit(unitStr, out unitInfo);
+    }
+
+    /// <summary>
+    /// Tries to parse a double from a string using flexible handling of decimal and group separators.
+    /// Supports inputs like "1,000", "1.000,5", "3,5", etc.
+    /// </summary>
+    private static bool TryParseFlexibleDouble(string input, out double value)
+    {
+        value = 0;
+
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
+
+        string normalized = NormalizeNumberString(input);
+        if (string.IsNullOrEmpty(normalized))
+            return false;
+
+        return double.TryParse(
+            normalized,
+            NumberStyles.Float | NumberStyles.AllowLeadingSign,
+            CultureInfo.InvariantCulture,
+            out value);
+    }
+
+    /// <summary>
+    /// Normalizes a numeric string to invariant form (dot as decimal, no group separators)
+    /// by inferring separator roles from the positions of '.' and ',' characters.
+    /// </summary>
+    private static string NormalizeNumberString(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+
+        // Remove spaces and underscores used as group separators
+        StringBuilder sb = new();
+        foreach (char c in input.Trim())
+        {
+            if (c != ' ' && c != '_')
+                sb.Append(c);
+        }
+
+        string compact = sb.ToString();
+        int commaIndex = compact.IndexOf(',');
+        int dotIndex = compact.IndexOf('.');
+
+        if (commaIndex >= 0 && dotIndex >= 0)
+        {
+            // Both present: whichever appears last is the decimal separator
+            if (compact.LastIndexOf('.') > compact.LastIndexOf(','))
+                compact = compact.Replace(",", string.Empty);              // e.g. "1,234.56"
+            else
+                compact = compact.Replace(".", string.Empty).Replace(",", ".");  // e.g. "1.234,56"
+        }
+        else if (commaIndex >= 0)
+        {
+            // Only comma: single comma is decimal ("3,5"), multiple are group separators ("1,000,000")
+            int lastCommaIndex = compact.LastIndexOf(',');
+            compact = commaIndex == lastCommaIndex
+                ? compact.Replace(",", ".")
+                : compact.Replace(",", string.Empty);
+        }
+        // Only dot or no separator: leave as-is for invariant parsing
+
+        return compact;
     }
 
     /// <summary>

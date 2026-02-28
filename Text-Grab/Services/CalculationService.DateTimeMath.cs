@@ -242,7 +242,7 @@ public partial class CalculationService
         if (includeTime)
         {
             string datePart = dateTime.ToString("d", culture);
-            string timePart = dateTime.ToString("h:mmtt", culture).ToLowerInvariant();
+            string timePart = dateTime.ToString("h:mmtt", CultureInfo.InvariantCulture).ToLowerInvariant();
             return $"{datePart} {timePart}";
         }
 

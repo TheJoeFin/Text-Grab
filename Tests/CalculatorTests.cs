@@ -2353,75 +2353,81 @@ totalCost";
     #region DateTime Math Tests
 
     [Theory]
-    [InlineData("March 10, 2026 + 10 days", "3/20/2026")]
-    [InlineData("January 1, 2026 + 30 days", "1/31/2026")]
-    [InlineData("December 25, 2026 + 7 days", "1/1/2027")]
-    [InlineData("February 28, 2026 + 1 day", "3/1/2026")]
-    public async Task DateTimeMath_AddDays_ReturnsCorrectDate(string input, string expected)
+    [InlineData("March 10, 2026 + 10 days", 2026, 3, 20)]
+    [InlineData("January 1, 2026 + 30 days", 2026, 1, 31)]
+    [InlineData("December 25, 2026 + 7 days", 2027, 1, 1)]
+    [InlineData("February 28, 2026 + 1 day", 2026, 3, 1)]
+    public async Task DateTimeMath_AddDays_ReturnsCorrectDate(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
     [Theory]
-    [InlineData("January 1, 2026 + 2 weeks", "1/15/2026")]
-    [InlineData("March 1, 2026 + 1 week", "3/8/2026")]
-    [InlineData("March 14, 2026 - 2 weeks", "2/28/2026")]
-    public async Task DateTimeMath_AddWeeks_ReturnsCorrectDate(string input, string expected)
+    [InlineData("January 1, 2026 + 2 weeks", 2026, 1, 15)]
+    [InlineData("March 1, 2026 + 1 week", 2026, 3, 8)]
+    [InlineData("March 14, 2026 - 2 weeks", 2026, 2, 28)]
+    public async Task DateTimeMath_AddWeeks_ReturnsCorrectDate(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
     [Theory]
-    [InlineData("January 15, 2026 + 3 months", "4/15/2026")]
-    [InlineData("October 31, 2026 + 1 month", "11/30/2026")]
-    [InlineData("March 31, 2026 + 1 month", "4/30/2026")]
-    public async Task DateTimeMath_AddMonths_ReturnsCorrectDate(string input, string expected)
+    [InlineData("January 15, 2026 + 3 months", 2026, 4, 15)]
+    [InlineData("October 31, 2026 + 1 month", 2026, 11, 30)]
+    [InlineData("March 31, 2026 + 1 month", 2026, 4, 30)]
+    public async Task DateTimeMath_AddMonths_ReturnsCorrectDate(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
     [Theory]
-    [InlineData("January 1, 2020 + 5 years", "1/1/2025")]
-    [InlineData("February 29, 2024 + 1 year", "2/28/2025")]
-    [InlineData("June 15, 2026 + 10 years", "6/15/2036")]
-    public async Task DateTimeMath_AddYears_ReturnsCorrectDate(string input, string expected)
+    [InlineData("January 1, 2020 + 5 years", 2025, 1, 1)]
+    [InlineData("February 29, 2024 + 1 year", 2025, 2, 28)]
+    [InlineData("June 15, 2026 + 10 years", 2036, 6, 15)]
+    public async Task DateTimeMath_AddYears_ReturnsCorrectDate(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
     [Theory]
-    [InlineData("January 1, 2000 + 2 decades", "1/1/2020")]
-    [InlineData("June 15, 2010 + 1 decade", "6/15/2020")]
-    [InlineData("March 1, 2026 + 3 decades", "3/1/2056")]
-    public async Task DateTimeMath_AddDecades_ReturnsCorrectDate(string input, string expected)
+    [InlineData("January 1, 2000 + 2 decades", 2020, 1, 1)]
+    [InlineData("June 15, 2010 + 1 decade", 2020, 6, 15)]
+    [InlineData("March 1, 2026 + 3 decades", 2056, 3, 1)]
+    public async Task DateTimeMath_AddDecades_ReturnsCorrectDate(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
     [Theory]
-    [InlineData("March 20, 2026 - 10 days", "3/10/2026")]
-    [InlineData("January 5, 2026 - 10 days", "12/26/2025")]
-    [InlineData("March 1, 2026 - 1 month", "2/1/2026")]
-    [InlineData("January 1, 2026 - 1 year", "1/1/2025")]
-    public async Task DateTimeMath_Subtraction_ReturnsCorrectDate(string input, string expected)
+    [InlineData("March 20, 2026 - 10 days", 2026, 3, 10)]
+    [InlineData("January 5, 2026 - 10 days", 2025, 12, 26)]
+    [InlineData("March 1, 2026 - 1 month", 2026, 2, 1)]
+    [InlineData("January 1, 2026 - 1 year", 2025, 1, 1)]
+    public async Task DateTimeMath_Subtraction_ReturnsCorrectDate(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2432,20 +2438,22 @@ totalCost";
         CalculationService service = new();
         string input = "March 10th, 2026 + 10 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/20/2026", result.Output);
+        string expected = new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
     [Theory]
-    [InlineData("January 1st, 2026 + 5 days", "1/6/2026")]
-    [InlineData("February 2nd, 2026 + 5 days", "2/7/2026")]
-    [InlineData("March 3rd, 2026 + 5 days", "3/8/2026")]
-    [InlineData("April 4th, 2026 + 5 days", "4/9/2026")]
-    [InlineData("May 21st, 2026 + 1 day", "5/22/2026")]
-    public async Task DateTimeMath_VariousOrdinalSuffixes_ParseCorrectly(string input, string expected)
+    [InlineData("January 1st, 2026 + 5 days", 2026, 1, 6)]
+    [InlineData("February 2nd, 2026 + 5 days", 2026, 2, 7)]
+    [InlineData("March 3rd, 2026 + 5 days", 2026, 3, 8)]
+    [InlineData("April 4th, 2026 + 5 days", 2026, 4, 9)]
+    [InlineData("May 21st, 2026 + 1 day", 2026, 5, 22)]
+    public async Task DateTimeMath_VariousOrdinalSuffixes_ParseCorrectly(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2456,7 +2464,8 @@ totalCost";
         CalculationService service = new();
         string input = "3/10/2026 + 10 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/20/2026", result.Output);
+        string expected = new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2466,7 +2475,8 @@ totalCost";
         CalculationService service = new();
         string input = "3/10/26 + 10 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/20/2026", result.Output);
+        string expected = new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2476,7 +2486,8 @@ totalCost";
         CalculationService service = new();
         string input = "1/1/2026 2:00pm + 5 hours";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("1/1/2026", result.Output);
+        string expectedDate = new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
         Assert.Contains("7:00pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2487,7 +2498,8 @@ totalCost";
         CalculationService service = new();
         string input = "1/1/2026 14:30 + 2 hours";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("1/1/2026", result.Output);
+        string expectedDate = new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
         Assert.Contains("4:30pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2498,7 +2510,8 @@ totalCost";
         CalculationService service = new();
         string input = "2/25/2026 11:02pm + 800 mins";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("2/26/2026", result.Output);
+        string expectedDate = new DateTime(2026, 2, 26).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
         Assert.Contains("12:22pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2509,7 +2522,8 @@ totalCost";
         CalculationService service = new();
         string input = "1/1/2026 10:00pm + 5 hours";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("1/2/2026", result.Output);
+        string expectedDate = new DateTime(2026, 1, 2).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
         Assert.Contains("3:00am", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2520,7 +2534,8 @@ totalCost";
         CalculationService service = new();
         string input = "January 1, 2026 + 2 weeks + 3 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("1/18/2026", result.Output);
+        string expected = new DateTime(2026, 1, 18).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2530,7 +2545,8 @@ totalCost";
         CalculationService service = new();
         string input = "March 1, 2026 + 1 month - 5 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/27/2026", result.Output);
+        string expected = new DateTime(2026, 3, 27).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2540,7 +2556,8 @@ totalCost";
         CalculationService service = new();
         string input = "January 1, 2026 + 1 year + 6 months";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("7/1/2027", result.Output);
+        string expected = new DateTime(2027, 7, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2585,7 +2602,8 @@ totalCost";
         // Since result is midnight, only date is shown
         string input = "March 10, 2026 + 1.5 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/12/2026", result.Output);
+        string expected = new DateTime(2026, 3, 12).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2596,7 +2614,8 @@ totalCost";
         // March 10 noon + 1.3 days = March 10 12:00 + 31.2 hours = March 11 19:12
         string input = "March 10, 2026 + 1.3 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("3/11/2026", result.Output);
+        string expectedDate = new DateTime(2026, 3, 11).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
         Assert.Contains("7:12pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2608,7 +2627,8 @@ totalCost";
         // No time specified, so base is midnight; adding minutes produces a time result
         string input = "January 1, 2026 + 90 minutes";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("1/1/2026", result.Output);
+        string expectedDate = new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
         Assert.Contains("1:30am", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2676,9 +2696,9 @@ totalCost";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
         string[] lines = result.Output.Split('\n');
         Assert.Equal(3, lines.Length);
-        Assert.Equal("3/20/2026", lines[0]);
+        Assert.Equal(new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture), lines[0]);
         Assert.Equal("8", lines[1]);
-        Assert.Equal("1/1/2027", lines[2]);
+        Assert.Equal(new DateTime(2027, 1, 1).ToString("d", CultureInfo.CurrentCulture), lines[2]);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2726,13 +2746,14 @@ totalCost";
     }
 
     [Theory]
-    [InlineData("Jan 1, 2026 + 5 days", "1/6/2026")]
-    [InlineData("Feb 14, 2026 + 1 week", "2/21/2026")]
-    [InlineData("Dec 31, 2026 + 1 day", "1/1/2027")]
-    public async Task DateTimeMath_AbbreviatedMonths_ParseCorrectly(string input, string expected)
+    [InlineData("Jan 1, 2026 + 5 days", 2026, 1, 6)]
+    [InlineData("Feb 14, 2026 + 1 week", 2026, 2, 21)]
+    [InlineData("Dec 31, 2026 + 1 day", 2027, 1, 1)]
+    public async Task DateTimeMath_AbbreviatedMonths_ParseCorrectly(string input, int year, int month, int day)
     {
         CalculationService service = new();
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
         Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2744,7 +2765,8 @@ totalCost";
         string input = "June 1st, 2026 + 6 months + 2 weeks";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
         // June 1 + 6 months = Dec 1, + 2 weeks = Dec 15
-        Assert.Equal("12/15/2026", result.Output);
+        string expected = new DateTime(2026, 12, 15).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2754,7 +2776,7 @@ totalCost";
         CalculationService service = new();
         string input = "3/15/2026 9:00am + 90 mins";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("3/15/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 3, 15).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("10:30am", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2766,7 +2788,7 @@ totalCost";
         // Flight departs 11pm, arrives after 14 hours
         string input = "7/4/2026 11:00pm + 14 hours";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("7/5/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 7, 5).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("1:00pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2783,7 +2805,7 @@ totalCost";
         // = Jan 1 + 35 days + 3 days + 8 hours = Feb 8 2026 8:00am
         string input = "January 1, 2026 + 5 weeks 3 days 8 hours";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("2/8/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 2, 8).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("8:00am", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2807,7 +2829,7 @@ totalCost";
         // January 1, 2026 + 1 year 6 months = July 1, 2027
         string input = "January 1, 2026 + 1 year 6 months";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("7/1/2027", result.Output);
+        Assert.Equal(new DateTime(2027, 7, 1).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2818,7 +2840,7 @@ totalCost";
         // March 10, 2026 + 2 weeks 3 days = March 10 + 14 + 3 = March 27
         string input = "March 10, 2026 + 2 weeks 3 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/27/2026", result.Output);
+        Assert.Equal(new DateTime(2026, 3, 27).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2829,7 +2851,7 @@ totalCost";
         // 1/1/2026 9:00am + 2 hours 30 mins = 11:30am
         string input = "1/1/2026 9:00am + 2 hours 30 mins";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("1/1/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("11:30am", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2842,7 +2864,7 @@ totalCost";
         // = Feb 1 + 14 days + 3 days = Feb 18
         string input = "January 1, 2026 + 1 month 2 weeks 3 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("2/18/2026", result.Output);
+        Assert.Equal(new DateTime(2026, 2, 18).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2854,7 +2876,7 @@ totalCost";
         // = Jan 1 2027 + 2 months = Mar 1 2027 + 7 days = Mar 8 + 3 days = Mar 11
         string input = "January 1, 2026 + 1 year 2 months 1 week 3 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/11/2027", result.Output);
+        Assert.Equal(new DateTime(2027, 3, 11).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2866,7 +2888,7 @@ totalCost";
         // = April 1 + 5 days = April 6, then - 2 hours crosses to April 5 10:00pm
         string input = "March 1, 2026 + 1 month 5 days - 2 hours";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("4/5/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 4, 5).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("10:00pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2879,7 +2901,7 @@ totalCost";
         // = March 30 - 10 days = March 20
         string input = "April 30, 2026 - 1 month 10 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("3/20/2026", result.Output);
+        Assert.Equal(new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2892,7 +2914,7 @@ totalCost";
         // = June 15 + 14 + 3 = July 2, then - 7 - 2 = June 23
         string input = "June 15, 2026 + 2 weeks 3 days - 1 week 2 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("6/23/2026", result.Output);
+        Assert.Equal(new DateTime(2026, 6, 23).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2904,7 +2926,7 @@ totalCost";
         // = Jan 1 2030 + 2 years = Jan 1 2032 + 3 months = Apr 1 2032 + 14 days = Apr 15 + 5 days = Apr 20
         string input = "January 1, 2020 + 1 decade 2 years 3 months 2 weeks 5 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("4/20/2032", result.Output);
+        Assert.Equal(new DateTime(2032, 4, 20).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2916,7 +2938,7 @@ totalCost";
         // = 3/2/2026 8:00am + 4:30 = 12:30pm
         string input = "3/1/2026 8:00am + 1 day 4 hours 30 mins";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Contains("3/2/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 3, 2).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("12:30pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2928,7 +2950,7 @@ totalCost";
         // Existing explicit-operator style should still work identically
         string input = "January 1, 2026 + 2 weeks + 3 days";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
-        Assert.Equal("1/18/2026", result.Output);
+        Assert.Equal(new DateTime(2026, 1, 18).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2960,7 +2982,7 @@ totalCost";
         string input = "June 15, 2026 + 9 months 1 week";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
         // June 15 + 9 months = March 15 2027, + 1 week = March 22 2027
-        Assert.Equal("3/22/2027", result.Output);
+        Assert.Equal(new DateTime(2027, 3, 22).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -2972,7 +2994,7 @@ totalCost";
         string input = "3/2/2026 9:00am + 2 weeks 3 days 6 hours";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
         // March 2 + 14 + 3 = March 19, 9am + 6h = 3pm
-        Assert.Contains("3/19/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 3, 19).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("3:00pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -2985,7 +3007,7 @@ totalCost";
         string input = "1/10/2026 6:30am + 1 day 14 hours 45 mins";
         CalculationResult result = await service.EvaluateExpressionsAsync(input);
         // Jan 10 6:30am + 1d 14h 45m = Jan 11 6:30am + 14h 45m = Jan 11 9:15pm
-        Assert.Contains("1/11/2026", result.Output);
+        Assert.Contains(new DateTime(2026, 1, 11).ToString("d", CultureInfo.CurrentCulture), result.Output);
         Assert.Contains("9:15pm", result.Output.ToLowerInvariant());
         Assert.Equal(0, result.ErrorCount);
     }
@@ -3147,9 +3169,9 @@ totalCost";
         string[] lines = result.Output.Split('\n');
         Assert.Equal(2, lines.Length);
         // March 1 + 2 weeks = March 15
-        Assert.Contains("3/15/2026", lines[0]);
+        Assert.Contains(new DateTime(2026, 3, 15).ToString("d", CultureInfo.CurrentCulture), lines[0]);
         // March 15 + 1 month = April 15
-        Assert.Contains("4/15/2026", lines[1]);
+        Assert.Contains(new DateTime(2026, 4, 15).ToString("d", CultureInfo.CurrentCulture), lines[1]);
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -3166,9 +3188,9 @@ totalCost";
         // Assert
         string[] lines = result.Output.Split('\n');
         Assert.Equal(3, lines.Length);
-        Assert.Contains("2/1/2026", lines[0]);   // Jan 1 + 1 month = Feb 1
-        Assert.Contains("3/1/2026", lines[1]);   // Feb 1 + 1 month = Mar 1
-        Assert.Contains("4/1/2026", lines[2]);   // Mar 1 + 1 month = Apr 1
+        Assert.Contains(new DateTime(2026, 2, 1).ToString("d", CultureInfo.CurrentCulture), lines[0]);   // Jan 1 + 1 month = Feb 1
+        Assert.Contains(new DateTime(2026, 3, 1).ToString("d", CultureInfo.CurrentCulture), lines[1]);   // Feb 1 + 1 month = Mar 1
+        Assert.Contains(new DateTime(2026, 4, 1).ToString("d", CultureInfo.CurrentCulture), lines[2]);   // Mar 1 + 1 month = Apr 1
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -3185,8 +3207,8 @@ totalCost";
         // Assert
         string[] lines = result.Output.Split('\n');
         Assert.Equal(2, lines.Length);
-        Assert.Contains("4/15/2026", lines[0]);  // March 15 + 1 month = April 15
-        Assert.Contains("4/8/2026", lines[1]);   // April 15 - 1 week = April 8
+        Assert.Contains(new DateTime(2026, 4, 15).ToString("d", CultureInfo.CurrentCulture), lines[0]);  // March 15 + 1 month = April 15
+        Assert.Contains(new DateTime(2026, 4, 8).ToString("d", CultureInfo.CurrentCulture), lines[1]);   // April 15 - 1 week = April 8
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -3223,9 +3245,9 @@ totalCost";
         // Assert
         string[] lines = result.Output.Split('\n');
         Assert.Equal(3, lines.Length);
-        Assert.Contains("2/1/2026", lines[0]);   // Jan 1 + 1 month = Feb 1
+        Assert.Contains(new DateTime(2026, 2, 1).ToString("d", CultureInfo.CurrentCulture), lines[0]);   // Jan 1 + 1 month = Feb 1
         Assert.Equal("", lines[1]);               // comment
-        Assert.Contains("3/1/2026", lines[2]);   // Feb 1 + 1 month = Mar 1
+        Assert.Contains(new DateTime(2026, 3, 1).ToString("d", CultureInfo.CurrentCulture), lines[2]);   // Feb 1 + 1 month = Mar 1
         Assert.Equal(0, result.ErrorCount);
     }
 
@@ -3242,7 +3264,7 @@ totalCost";
         // Assert
         string[] lines = result.Output.Split('\n');
         Assert.Equal(2, lines.Length);
-        Assert.Contains("2/1/2026", lines[0]);
+        Assert.Contains(new DateTime(2026, 2, 1).ToString("d", CultureInfo.CurrentCulture), lines[0]);
         Assert.Equal("8", lines[1]);
         Assert.Equal(0, result.ErrorCount);
     }
