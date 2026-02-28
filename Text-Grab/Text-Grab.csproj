@@ -63,6 +63,7 @@
         <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="1.8.260101001" />
         <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="1.8.251222000" />
         <PackageReference Include="NCalcAsync" Version="5.11.0" />
+        <PackageReference Include="UnitsNet" Version="5.75.0" />
         <PackageReference Include="WPF-UI" Version="4.2.0" />
         <PackageReference Include="WPF-UI.Tray" Version="4.2.0" />
         <PackageReference Include="ZXing.Net" Version="0.16.11" />

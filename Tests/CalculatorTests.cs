@@ -1960,393 +1960,1558 @@ totalCost";
         Assert.Equal(expected, result);
     }
 
-        #endregion ParseQuantityWords Direct Tests
+    #endregion ParseQuantityWords Direct Tests
 
-        #region Percentage Tests
+    #region Percentage Tests
 
-        [Theory]
-        [InlineData("4 * 25%", "1")]
-        [InlineData("4*25%", "1")]
-        [InlineData("100 * 15%", "15")]
-        [InlineData("200 * 50%", "100")]
-        [InlineData("80 * 10%", "8")]
-        public async Task Percentage_BasicMultiplication_ReturnsCorrectResult(string input, string expected)
-        {
-            // Arrange
-            CalculationService service = new();
+    [Theory]
+    [InlineData("4 * 25%", "1")]
+    [InlineData("4*25%", "1")]
+    [InlineData("100 * 15%", "15")]
+    [InlineData("200 * 50%", "100")]
+    [InlineData("80 * 10%", "8")]
+    public async Task Percentage_BasicMultiplication_ReturnsCorrectResult(string input, string expected)
+    {
+        // Arrange
+        CalculationService service = new();
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal(expected, result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Theory]
-        [InlineData("25%", "0.25")]
-        [InlineData("50%", "0.5")]
-        [InlineData("100%", "1")]
-        [InlineData("10%", "0.1")]
-        [InlineData("1%", "0.01")]
-        [InlineData("0.5%", "0.005")]
-        public async Task Percentage_Standalone_ConvertsToDecimal(string input, string expected)
-        {
-            // Arrange
-            CalculationService service = new();
+    [Theory]
+    [InlineData("25%", "0.25")]
+    [InlineData("50%", "0.5")]
+    [InlineData("100%", "1")]
+    [InlineData("10%", "0.1")]
+    [InlineData("1%", "0.01")]
+    [InlineData("0.5%", "0.005")]
+    public async Task Percentage_Standalone_ConvertsToDecimal(string input, string expected)
+    {
+        // Arrange
+        CalculationService service = new();
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal(expected, result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Theory]
-        [InlineData("25 %", "0.25")]
-        [InlineData("50 %", "0.5")]
-        [InlineData("15.5 %", "0.155")]
-        [InlineData("0.5 %", "0.005")]
-        public async Task Percentage_WithWhitespace_ConvertsCorrectly(string input, string expected)
-        {
-            // Arrange
-            CalculationService service = new();
+    [Theory]
+    [InlineData("25 %", "0.25")]
+    [InlineData("50 %", "0.5")]
+    [InlineData("15.5 %", "0.155")]
+    [InlineData("0.5 %", "0.005")]
+    public async Task Percentage_WithWhitespace_ConvertsCorrectly(string input, string expected)
+    {
+        // Arrange
+        CalculationService service = new();
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal(expected, result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Theory]
-        [InlineData("1000 + 20%", "1,000.2")]
-        [InlineData("100 - 10%", "99.9")]
-        [InlineData("50 / 25%", "200")]
-        public async Task Percentage_WithDifferentOperators_WorksCorrectly(string input, string expected)
-        {
-            // Arrange
-            CalculationService service = new();
+    [Theory]
+    [InlineData("1000 + 20%", "1,000.2")]
+    [InlineData("100 - 10%", "99.9")]
+    [InlineData("50 / 25%", "200")]
+    public async Task Percentage_WithDifferentOperators_WorksCorrectly(string input, string expected)
+    {
+        // Arrange
+        CalculationService service = new();
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal(expected, result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_RealWorldExample_SalesTax()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"price = 100
+    [Fact]
+    public async Task Percentage_RealWorldExample_SalesTax()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"price = 100
     taxRate = 8.5%
     tax = price * taxRate
     total = price + tax
     total";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            Assert.Equal("108.5", lines[^1]);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal("108.5", lines[^1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_RealWorldExample_Discount()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"originalPrice = 200
+    [Fact]
+    public async Task Percentage_RealWorldExample_Discount()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"originalPrice = 200
     discount = 25%
     discountAmount = originalPrice * discount
     finalPrice = originalPrice - discountAmount
     finalPrice";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            Assert.Equal("150", lines[^1]);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal("150", lines[^1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_RealWorldExample_TipCalculation()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"billAmount = 85
+    [Fact]
+    public async Task Percentage_RealWorldExample_TipCalculation()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"billAmount = 85
     tipRate = 18%
     tip = billAmount * tipRate
     totalWithTip = billAmount + tip
     totalWithTip";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            Assert.Equal("100.3", lines[^1]);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal("100.3", lines[^1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_MultiplePercentages_WorksCorrectly()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"100 * 10%
+    [Fact]
+    public async Task Percentage_MultiplePercentages_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"100 * 10%
     200 * 15%
     500 * 5%";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            Assert.Equal(3, lines.Length);
-            Assert.Equal("10", lines[0]);
-            Assert.Equal("30", lines[1]);
-            Assert.Equal("25", lines[2]);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Equal("10", lines[0]);
+        Assert.Equal("30", lines[1]);
+        Assert.Equal("25", lines[2]);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_WithVariables_WorksCorrectly()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"base = 1000
+    [Fact]
+    public async Task Percentage_WithVariables_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"base = 1000
     rate = 15%
     result = base * rate
     result";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            Assert.Equal("150", lines[^1]);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal("150", lines[^1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_ComplexExpression_PercentageOfSum()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = "(100 + 200) * 10%";
+    [Fact]
+    public async Task Percentage_ComplexExpression_PercentageOfSum()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "(100 + 200) * 10%";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal("30", result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal("30", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_CompoundPercentages_WorksCorrectly()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"initial = 1000
+    [Fact]
+    public async Task Percentage_CompoundPercentages_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"initial = 1000
     afterFirst = initial * (1 - 20%)
     afterSecond = afterFirst * (1 + 15%)
     afterSecond";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            // 1000 * 0.8 = 800, then 800 * 1.15 = 920
-            Assert.Equal("920", lines[^1]);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        // 1000 * 0.8 = 800, then 800 * 1.15 = 920
+        Assert.Equal("920", lines[^1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Theory]
-        [InlineData("-10%", "-0.1")]
-        [InlineData("4 * -25%", "-1")]
-        [InlineData("-100 * 10%", "-10")]
-        public async Task Percentage_NegativePercentages_WorksCorrectly(string input, string expected)
-        {
-            // Arrange
-            CalculationService service = new();
+    [Theory]
+    [InlineData("-10%", "-0.1")]
+    [InlineData("4 * -25%", "-1")]
+    [InlineData("-100 * 10%", "-10")]
+    public async Task Percentage_NegativePercentages_WorksCorrectly(string input, string expected)
+    {
+        // Arrange
+        CalculationService service = new();
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal(expected, result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Theory]
-        [InlineData("150%", "1.5")]
-        [InlineData("200%", "2")]
-        [InlineData("500%", "5")]
-        [InlineData("100 * 150%", "150")]
-        public async Task Percentage_OverHundredPercent_WorksCorrectly(string input, string expected)
-        {
-            // Arrange
-            CalculationService service = new();
+    [Theory]
+    [InlineData("150%", "1.5")]
+    [InlineData("200%", "2")]
+    [InlineData("500%", "5")]
+    [InlineData("100 * 150%", "150")]
+    public async Task Percentage_OverHundredPercent_WorksCorrectly(string input, string expected)
+    {
+        // Arrange
+        CalculationService service = new();
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal(expected, result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_WithDecimalBase_WorksCorrectly()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = "45.50 * 15%";
+    [Fact]
+    public async Task Percentage_WithDecimalBase_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "45.50 * 15%";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal("6.825", result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal("6.825", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_WithDecimalPercentage_WorksCorrectly()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = "100 * 12.5%";
+    [Fact]
+    public async Task Percentage_WithDecimalPercentage_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "100 * 12.5%";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            Assert.Equal("12.5", result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        Assert.Equal("12.5", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Theory]
-        [InlineData("25%", "0.25")]
-        [InlineData("25 %", "0.25")]
-        [InlineData("4 * 25%", "0.25")]
-        [InlineData("4 * 25 %", "0.25")]
-        public void ParsePercentages_DirectCall_ConvertsCorrectly(string input, string expectedContains)
-        {
-            // Arrange & Act
-            string result = CalculationService.ParsePercentages(input);
+    [Theory]
+    [InlineData("25%", "0.25")]
+    [InlineData("25 %", "0.25")]
+    [InlineData("4 * 25%", "0.25")]
+    [InlineData("4 * 25 %", "0.25")]
+    public void ParsePercentages_DirectCall_ConvertsCorrectly(string input, string expectedContains)
+    {
+        // Arrange & Act
+        string result = CalculationService.ParsePercentages(input);
 
-            // Assert
-            Assert.Contains(expectedContains, result);
-        }
+        // Assert
+        Assert.Contains(expectedContains, result);
+    }
 
-        [Fact]
-        public void ParsePercentages_EmptyInput_ReturnsEmpty()
-        {
-            // Arrange
-            string input = "";
+    [Fact]
+    public void ParsePercentages_EmptyInput_ReturnsEmpty()
+    {
+        // Arrange
+        string input = "";
 
-            // Act
-            string result = CalculationService.ParsePercentages(input);
+        // Act
+        string result = CalculationService.ParsePercentages(input);
 
-            // Assert
-            Assert.Equal("", result);
-        }
+        // Assert
+        Assert.Equal("", result);
+    }
 
-        [Fact]
-        public void ParsePercentages_NoPercentages_ReturnsUnchanged()
-        {
-            // Arrange
-            string input = "100 + 50";
+    [Fact]
+    public void ParsePercentages_NoPercentages_ReturnsUnchanged()
+    {
+        // Arrange
+        string input = "100 + 50";
 
-            // Act
-            string result = CalculationService.ParsePercentages(input);
+        // Act
+        string result = CalculationService.ParsePercentages(input);
 
-            // Assert
-            Assert.Equal("100 + 50", result);
-        }
+        // Assert
+        Assert.Equal("100 + 50", result);
+    }
 
-        [Fact]
-        public async Task Percentage_RealWorldExample_InterestCalculation()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"principal = 10000
+    [Fact]
+    public async Task Percentage_RealWorldExample_InterestCalculation()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"principal = 10000
     annualRate = 5%
     interest = principal * annualRate
     totalAmount = principal + interest
     totalAmount";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            Assert.Equal("10,500", lines[^1]);
-            Assert.Equal(0, result.ErrorCount);
-        }
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal("10,500", lines[^1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
 
-        [Fact]
-        public async Task Percentage_RealWorldExample_GradeCalculation()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = @"totalQuestions = 50
+    [Fact]
+    public async Task Percentage_RealWorldExample_GradeCalculation()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = @"totalQuestions = 50
     correctAnswers = 42
     percentage = (correctAnswers / totalQuestions) * 100%
     percentage";
 
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
 
-            // Assert
-            string[] lines = result.Output.Split('\n');
-            // (42/50) * 1 = 0.84 (since 100% = 1.0)
-            Assert.Equal("0.84", lines[^1]);
-            Assert.Equal(0, result.ErrorCount);
-        }
-
-        [Fact]
-        public async Task Percentage_WithMathFunctions_WorksCorrectly()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = "Sqrt(100) * 25%";
-
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-            // Assert
-            Assert.Equal("2.5", result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
-
-        [Fact]
-        public async Task Percentage_WithSum_WorksCorrectly()
-        {
-            // Arrange
-            CalculationService service = new();
-            string input = "Sum(100, 200, 300) * 10%";
-
-            // Act
-            CalculationResult result = await service.EvaluateExpressionsAsync(input);
-
-            // Assert
-            Assert.Equal("60", result.Output);
-            Assert.Equal(0, result.ErrorCount);
-        }
-
-        #endregion Percentage Tests
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        // (42/50) * 1 = 0.84 (since 100% = 1.0)
+        Assert.Equal("0.84", lines[^1]);
+        Assert.Equal(0, result.ErrorCount);
     }
+
+    [Fact]
+    public async Task Percentage_WithMathFunctions_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sqrt(100) * 25%";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("2.5", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task Percentage_WithSum_WorksCorrectly()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "Sum(100, 200, 300) * 10%";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        Assert.Equal("60", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion Percentage Tests
+
+    #region DateTime Math Tests
+
+    [Theory]
+    [InlineData("March 10, 2026 + 10 days", 2026, 3, 20)]
+    [InlineData("January 1, 2026 + 30 days", 2026, 1, 31)]
+    [InlineData("December 25, 2026 + 7 days", 2027, 1, 1)]
+    [InlineData("February 28, 2026 + 1 day", 2026, 3, 1)]
+    public async Task DateTimeMath_AddDays_ReturnsCorrectDate(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Theory]
+    [InlineData("January 1, 2026 + 2 weeks", 2026, 1, 15)]
+    [InlineData("March 1, 2026 + 1 week", 2026, 3, 8)]
+    [InlineData("March 14, 2026 - 2 weeks", 2026, 2, 28)]
+    public async Task DateTimeMath_AddWeeks_ReturnsCorrectDate(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Theory]
+    [InlineData("January 15, 2026 + 3 months", 2026, 4, 15)]
+    [InlineData("October 31, 2026 + 1 month", 2026, 11, 30)]
+    [InlineData("March 31, 2026 + 1 month", 2026, 4, 30)]
+    public async Task DateTimeMath_AddMonths_ReturnsCorrectDate(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Theory]
+    [InlineData("January 1, 2020 + 5 years", 2025, 1, 1)]
+    [InlineData("February 29, 2024 + 1 year", 2025, 2, 28)]
+    [InlineData("June 15, 2026 + 10 years", 2036, 6, 15)]
+    public async Task DateTimeMath_AddYears_ReturnsCorrectDate(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Theory]
+    [InlineData("January 1, 2000 + 2 decades", 2020, 1, 1)]
+    [InlineData("June 15, 2010 + 1 decade", 2020, 6, 15)]
+    [InlineData("March 1, 2026 + 3 decades", 2056, 3, 1)]
+    public async Task DateTimeMath_AddDecades_ReturnsCorrectDate(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Theory]
+    [InlineData("March 20, 2026 - 10 days", 2026, 3, 10)]
+    [InlineData("January 5, 2026 - 10 days", 2025, 12, 26)]
+    [InlineData("March 1, 2026 - 1 month", 2026, 2, 1)]
+    [InlineData("January 1, 2026 - 1 year", 2025, 1, 1)]
+    public async Task DateTimeMath_Subtraction_ReturnsCorrectDate(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_WithOrdinalSuffix_ParsesCorrectly()
+    {
+        CalculationService service = new();
+        string input = "March 10th, 2026 + 10 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Theory]
+    [InlineData("January 1st, 2026 + 5 days", 2026, 1, 6)]
+    [InlineData("February 2nd, 2026 + 5 days", 2026, 2, 7)]
+    [InlineData("March 3rd, 2026 + 5 days", 2026, 3, 8)]
+    [InlineData("April 4th, 2026 + 5 days", 2026, 4, 9)]
+    [InlineData("May 21st, 2026 + 1 day", 2026, 5, 22)]
+    public async Task DateTimeMath_VariousOrdinalSuffixes_ParseCorrectly(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_NumericDateFormat_ParsesCorrectly()
+    {
+        CalculationService service = new();
+        string input = "3/10/2026 + 10 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_TwoDigitYear_ParsesCorrectly()
+    {
+        CalculationService service = new();
+        string input = "3/10/26 + 10 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_WithTimePM_ShowsTimeInResult()
+    {
+        CalculationService service = new();
+        string input = "1/1/2026 2:00pm + 5 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expectedDate = new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
+        Assert.Contains("7:00pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_With24HrTime_ShowsTimeInResult()
+    {
+        CalculationService service = new();
+        string input = "1/1/2026 14:30 + 2 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expectedDate = new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
+        Assert.Contains("4:30pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_MinutesAddition_CrossesDayBoundary()
+    {
+        CalculationService service = new();
+        string input = "2/25/2026 11:02pm + 800 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expectedDate = new DateTime(2026, 2, 26).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
+        Assert.Contains("12:22pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_HoursAddition_CrossesDayBoundary()
+    {
+        CalculationService service = new();
+        string input = "1/1/2026 10:00pm + 5 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expectedDate = new DateTime(2026, 1, 2).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
+        Assert.Contains("3:00am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_MultipleOperations_WorkCorrectly()
+    {
+        CalculationService service = new();
+        string input = "January 1, 2026 + 2 weeks + 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(2026, 1, 18).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_MixedAddSubtract_WorkCorrectly()
+    {
+        CalculationService service = new();
+        string input = "March 1, 2026 + 1 month - 5 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(2026, 3, 27).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_MixedUnits_YearsAndMonths()
+    {
+        CalculationService service = new();
+        string input = "January 1, 2026 + 1 year + 6 months";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(2027, 7, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_TodayKeyword_Works()
+    {
+        CalculationService service = new();
+        string input = "today + 5 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = DateTime.Today.AddDays(5).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_TomorrowKeyword_Works()
+    {
+        CalculationService service = new();
+        string input = "tomorrow + 1 week";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = DateTime.Today.AddDays(8).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_YesterdayKeyword_Works()
+    {
+        CalculationService service = new();
+        string input = "yesterday + 2 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = DateTime.Today.AddDays(1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_FractionalDays_AssumesNoon()
+    {
+        CalculationService service = new();
+        // March 10 noon + 1.5 days = March 10 12:00 + 36 hours = March 12 00:00 (midnight)
+        // Since result is midnight, only date is shown
+        string input = "March 10, 2026 + 1.5 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(2026, 3, 12).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_FractionalDays_ShowsTimeWhenNonMidnight()
+    {
+        CalculationService service = new();
+        // March 10 noon + 1.3 days = March 10 12:00 + 31.2 hours = March 11 19:12
+        string input = "March 10, 2026 + 1.3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expectedDate = new DateTime(2026, 3, 11).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
+        Assert.Contains("7:12pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_MinutesWithoutTime_ShowsTime()
+    {
+        CalculationService service = new();
+        // No time specified, so base is midnight; adding minutes produces a time result
+        string input = "January 1, 2026 + 90 minutes";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expectedDate = new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Contains(expectedDate, result.Output);
+        Assert.Contains("1:30am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DoesNotBreakRegularMath()
+    {
+        CalculationService service = new();
+        string input = "5 + 3";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("8", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DoesNotBreakExistingFunctions()
+    {
+        CalculationService service = new();
+        string input = "Sin(Pi/2)\nSqrt(16)\nAbs(-10)";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal("1", lines[0]);
+        Assert.Equal("4", lines[1]);
+        Assert.Equal("10", lines[2]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DoesNotBreakVariableAssignment()
+    {
+        CalculationService service = new();
+        string input = "x = 10\nx * 2";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string[] lines = result.Output.Split('\n');
+        Assert.Contains("x = 10", lines[0]);
+        Assert.Equal("20", lines[1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DoesNotBreakPercentages()
+    {
+        CalculationService service = new();
+        string input = "100 * 15%";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("15", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DoesNotBreakQuantityWords()
+    {
+        CalculationService service = new();
+        string input = "5 million + 3 thousand";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("5003000", result.Output.Replace(",", ""));
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_WithMixedExpressions_WorksCorrectly()
+    {
+        CalculationService service = new();
+        string input = "March 10, 2026 + 10 days\n5 + 3\nJanuary 1, 2026 + 1 year";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Equal(new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture), lines[0]);
+        Assert.Equal("8", lines[1]);
+        Assert.Equal(new DateTime(2027, 1, 1).ToString("d", CultureInfo.CurrentCulture), lines[2]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public void TryEvaluateDateTimeMath_EmptyInput_ReturnsFalse()
+    {
+        bool result = CalculationService.TryEvaluateDateTimeMath("", out _);
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void TryEvaluateDateTimeMath_NoTimeUnits_ReturnsFalse()
+    {
+        bool result = CalculationService.TryEvaluateDateTimeMath("5 + 3", out _);
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void TryEvaluateDateTimeMath_InvalidDate_ReturnsFalse()
+    {
+        bool result = CalculationService.TryEvaluateDateTimeMath("notadate + 5 days", out _);
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateOnly_DoesNotIncludeTime()
+    {
+        CalculationService service = new();
+        string input = "March 10, 2026 + 10 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Should not contain am/pm since it's date-only
+        Assert.DoesNotContain("am", result.Output.ToLowerInvariant());
+        Assert.DoesNotContain("pm", result.Output.ToLowerInvariant());
+    }
+
+    [Fact]
+    public async Task DateTimeMath_NoDateStartOperator_UsesToday()
+    {
+        CalculationService service = new();
+        string input = "+ 7 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = DateTime.Today.AddDays(7).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Theory]
+    [InlineData("Jan 1, 2026 + 5 days", 2026, 1, 6)]
+    [InlineData("Feb 14, 2026 + 1 week", 2026, 2, 21)]
+    [InlineData("Dec 31, 2026 + 1 day", 2027, 1, 1)]
+    public async Task DateTimeMath_AbbreviatedMonths_ParseCorrectly(string input, int year, int month, int day)
+    {
+        CalculationService service = new();
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        string expected = new DateTime(year, month, day).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_RealWorldExample_ProjectDeadline()
+    {
+        CalculationService service = new();
+        string input = "June 1st, 2026 + 6 months + 2 weeks";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // June 1 + 6 months = Dec 1, + 2 weeks = Dec 15
+        string expected = new DateTime(2026, 12, 15).ToString("d", CultureInfo.CurrentCulture);
+        Assert.Equal(expected, result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_RealWorldExample_MeetingTime()
+    {
+        CalculationService service = new();
+        string input = "3/15/2026 9:00am + 90 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains(new DateTime(2026, 3, 15).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("10:30am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_RealWorldExample_FlightArrival()
+    {
+        CalculationService service = new();
+        // Flight departs 11pm, arrives after 14 hours
+        string input = "7/4/2026 11:00pm + 14 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains(new DateTime(2026, 7, 5).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("1:00pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion DateTime Math Tests
+
+    #region Combined Duration Segment Tests
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WeeksDaysHours()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 5 weeks 3 days 8 hours
+        // = Jan 1 + 35 days + 3 days + 8 hours = Feb 8 2026 8:00am
+        string input = "January 1, 2026 + 5 weeks 3 days 8 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains(new DateTime(2026, 2, 8).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("8:00am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_TodayKeyword()
+    {
+        CalculationService service = new();
+        string input = "today + 5 weeks 3 days 8 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        DateTime expected = DateTime.Today.AddDays(5 * 7 + 3).AddHours(8);
+        Assert.Contains(expected.ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("8:00am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_YearsMonths()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 1 year 6 months = July 1, 2027
+        string input = "January 1, 2026 + 1 year 6 months";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2027, 7, 1).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WeeksDays()
+    {
+        CalculationService service = new();
+        // March 10, 2026 + 2 weeks 3 days = March 10 + 14 + 3 = March 27
+        string input = "March 10, 2026 + 2 weeks 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2026, 3, 27).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_HoursMinutes()
+    {
+        CalculationService service = new();
+        // 1/1/2026 9:00am + 2 hours 30 mins = 11:30am
+        string input = "1/1/2026 9:00am + 2 hours 30 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains(new DateTime(2026, 1, 1).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("11:30am", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_ThreeUnits()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 1 month 2 weeks 3 days
+        // = Feb 1 + 14 days + 3 days = Feb 18
+        string input = "January 1, 2026 + 1 month 2 weeks 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2026, 2, 18).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_FourUnits()
+    {
+        CalculationService service = new();
+        // January 1, 2026 + 1 year 2 months 1 week 3 days
+        // = Jan 1 2027 + 2 months = Mar 1 2027 + 7 days = Mar 8 + 3 days = Mar 11
+        string input = "January 1, 2026 + 1 year 2 months 1 week 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2027, 3, 11).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WithOperatorChange()
+    {
+        CalculationService service = new();
+        // March 1, 2026 + 1 month 5 days - 2 hours
+        // = April 1 + 5 days = April 6, then - 2 hours crosses to April 5 10:00pm
+        string input = "March 1, 2026 + 1 month 5 days - 2 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains(new DateTime(2026, 4, 5).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("10:00pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_SubtractMultiple()
+    {
+        CalculationService service = new();
+        // April 30, 2026 - 1 month 10 days
+        // = March 30 - 10 days = March 20
+        string input = "April 30, 2026 - 1 month 10 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2026, 3, 20).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_OperatorInheritance()
+    {
+        CalculationService service = new();
+        // Implicit segments inherit the most recent operator.
+        // June 15, 2026 + 2 weeks 3 days - 1 week 2 days
+        // = June 15 + 14 + 3 = July 2, then - 7 - 2 = June 23
+        string input = "June 15, 2026 + 2 weeks 3 days - 1 week 2 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2026, 6, 23).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_AllDateUnits()
+    {
+        CalculationService service = new();
+        // January 1, 2020 + 1 decade 2 years 3 months 2 weeks 5 days
+        // = Jan 1 2030 + 2 years = Jan 1 2032 + 3 months = Apr 1 2032 + 14 days = Apr 15 + 5 days = Apr 20
+        string input = "January 1, 2020 + 1 decade 2 years 3 months 2 weeks 5 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2032, 4, 20).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_WithTimeInput()
+    {
+        CalculationService service = new();
+        // 3/1/2026 8:00am + 1 day 4 hours 30 mins
+        // = 3/2/2026 8:00am + 4:30 = 12:30pm
+        string input = "3/1/2026 8:00am + 1 day 4 hours 30 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains(new DateTime(2026, 3, 2).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("12:30pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_DoesNotBreakExplicitOperators()
+    {
+        CalculationService service = new();
+        // Existing explicit-operator style should still work identically
+        string input = "January 1, 2026 + 2 weeks + 3 days";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal(new DateTime(2026, 1, 18).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_DoesNotBreakRegularMath()
+    {
+        CalculationService service = new();
+        string input = "5 + 3";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("8", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_DoesNotBreakQuantityWords()
+    {
+        CalculationService service = new();
+        string input = "5 million + 3 thousand";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("5003000", result.Output.Replace(",", ""));
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_RealWorld_Pregnancy()
+    {
+        CalculationService service = new();
+        // Due date calculation: conception + 9 months 1 week
+        string input = "June 15, 2026 + 9 months 1 week";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // June 15 + 9 months = March 15 2027, + 1 week = March 22 2027
+        Assert.Equal(new DateTime(2027, 3, 22).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_RealWorld_SprintPlanning()
+    {
+        CalculationService service = new();
+        // Sprint starts Monday 9am, lasts 2 weeks 3 days 6 hours
+        string input = "3/2/2026 9:00am + 2 weeks 3 days 6 hours";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // March 2 + 14 + 3 = March 19, 9am + 6h = 3pm
+        Assert.Contains(new DateTime(2026, 3, 19).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("3:00pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_CombinedSegments_RealWorld_TravelItinerary()
+    {
+        CalculationService service = new();
+        // Depart Jan 10 at 6:30am, travel 1 day 14 hours 45 mins
+        string input = "1/10/2026 6:30am + 1 day 14 hours 45 mins";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        // Jan 10 6:30am + 1d 14h 45m = Jan 11 6:30am + 14h 45m = Jan 11 9:15pm
+        Assert.Contains(new DateTime(2026, 1, 11).ToString("d", CultureInfo.CurrentCulture), result.Output);
+        Assert.Contains("9:15pm", result.Output.ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion Combined Duration Segment Tests
+
+    #region Date Subtraction (Date - Date = Timespan) Tests
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_TwoDatesYieldTimespan()
+    {
+        CalculationService service = new();
+        // March 10, 2026 - January 1, 2026 = 2 months 1 week 2 days
+        string input = "March 10, 2026 - January 1, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("2 months", result.Output);
+        Assert.Contains("1 week", result.Output);
+        Assert.Contains("2 days", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_SameDateReturnsZeroSeconds()
+    {
+        CalculationService service = new();
+        string input = "January 1, 2026 - January 1, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("0 seconds", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_ReversedOrderStillWorks()
+    {
+        CalculationService service = new();
+        // Earlier date first should still give positive result
+        string input = "January 1, 2026 - March 10, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("2 months", result.Output);
+        Assert.Contains("1 week", result.Output);
+        Assert.Contains("2 days", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_WithKeywords()
+    {
+        CalculationService service = new();
+        // today - yesterday = 1 day
+        string input = "today - yesterday";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("1 day", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_ExactlyOneYear()
+    {
+        CalculationService service = new();
+        string input = "January 1, 2027 - January 1, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("1 year", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_MultipleYearsMonthsDays()
+    {
+        CalculationService service = new();
+        // July 15, 2028 - January 1, 2026 = 2 years 6 months 2 weeks
+        string input = "July 15, 2028 - January 1, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("2 years", result.Output);
+        Assert.Contains("6 months", result.Output);
+        Assert.Contains("2 weeks", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_WithTimes_IncludesHoursMinutesSeconds()
+    {
+        CalculationService service = new();
+        // 3/1/2026 10:30:45am - 3/1/2026 8:00:00am = 2 hours 30 minutes 45 seconds
+        string input = "3/1/2026 10:30:45am - 3/1/2026 8:00:00am";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("2 hours", result.Output);
+        Assert.Contains("30 minutes", result.Output);
+        Assert.Contains("45 seconds", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_NumericDateFormat()
+    {
+        CalculationService service = new();
+        // 6/15/2026 - 6/1/2026 = 2 weeks
+        string input = "6/15/2026 - 6/1/2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("2 weeks", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_OneDayDifference()
+    {
+        CalculationService service = new();
+        string input = "March 2, 2026 - March 1, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Equal("1 day", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_WeeksAndDays()
+    {
+        CalculationService service = new();
+        // 10 days = 1 week 3 days
+        string input = "January 11, 2026 - January 1, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("1 week", result.Output);
+        Assert.Contains("3 days", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task DateTimeMath_DateSubtraction_SingularUnits()
+    {
+        CalculationService service = new();
+        // 1 year 1 month 1 week 1 day
+        // Feb 1 2026 + 1y = Feb 1 2027, + 1m = Mar 1 2027, + 1w = Mar 8, + 1d = Mar 9
+        string input = "March 9, 2027 - February 1, 2026";
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+        Assert.Contains("1 year", result.Output);
+        Assert.Contains("1 month", result.Output);
+        Assert.Contains("1 week", result.Output);
+        Assert.Contains("1 day", result.Output);
+        Assert.DoesNotContain("years", result.Output);
+        Assert.DoesNotContain("months", result.Output);
+        Assert.DoesNotContain("weeks", result.Output);
+        Assert.DoesNotContain("days", result.Output);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion Date Subtraction (Date - Date = Timespan) Tests
+
+    #region Date Operator Continuation Tests
+
+    [Fact]
+    public async Task CalculationService_DatePlusDuration_ThenOperatorContinuation()
+    {
+        // Arrange - "March 1, 2026 + 2 weeks" then "+ 1 month" should chain
+        CalculationService service = new();
+        string input = "March 1, 2026 + 2 weeks\n+ 1 month";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        // March 1 + 2 weeks = March 15
+        Assert.Contains(new DateTime(2026, 3, 15).ToString("d", CultureInfo.CurrentCulture), lines[0]);
+        // March 15 + 1 month = April 15
+        Assert.Contains(new DateTime(2026, 4, 15).ToString("d", CultureInfo.CurrentCulture), lines[1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_DateChainedThreeLines()
+    {
+        // Arrange - chain three date operations
+        CalculationService service = new();
+        string input = "January 1, 2026 + 1 month\n+ 1 month\n+ 1 month";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Contains(new DateTime(2026, 2, 1).ToString("d", CultureInfo.CurrentCulture), lines[0]);   // Jan 1 + 1 month = Feb 1
+        Assert.Contains(new DateTime(2026, 3, 1).ToString("d", CultureInfo.CurrentCulture), lines[1]);   // Feb 1 + 1 month = Mar 1
+        Assert.Contains(new DateTime(2026, 4, 1).ToString("d", CultureInfo.CurrentCulture), lines[2]);   // Mar 1 + 1 month = Apr 1
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_DateMinusDuration_OperatorContinuation()
+    {
+        // Arrange - subtract duration from previous date result
+        CalculationService service = new();
+        string input = "March 15, 2026 + 1 month\n- 1 week";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Contains(new DateTime(2026, 4, 15).ToString("d", CultureInfo.CurrentCulture), lines[0]);  // March 15 + 1 month = April 15
+        Assert.Contains(new DateTime(2026, 4, 8).ToString("d", CultureInfo.CurrentCulture), lines[1]);   // April 15 - 1 week = April 8
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_DateWithTime_OperatorContinuation()
+    {
+        // Arrange - date with time then add hours
+        CalculationService service = new();
+        string input = "March 1, 2026 10:00am + 5 hours\n+ 3 hours";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        // March 1 10am + 5 hours = March 1 3pm
+        Assert.Contains("3:00pm", lines[0].ToLowerInvariant());
+        // 3pm + 3 hours = 6pm
+        Assert.Contains("6:00pm", lines[1].ToLowerInvariant());
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_DateContinuation_CommentDoesNotResetDate()
+    {
+        // Arrange - comment between date lines should preserve the date
+        CalculationService service = new();
+        string input = "January 1, 2026 + 1 month\n// add another month\n+ 1 month";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Contains(new DateTime(2026, 2, 1).ToString("d", CultureInfo.CurrentCulture), lines[0]);   // Jan 1 + 1 month = Feb 1
+        Assert.Equal("", lines[1]);               // comment
+        Assert.Contains(new DateTime(2026, 3, 1).ToString("d", CultureInfo.CurrentCulture), lines[2]);   // Feb 1 + 1 month = Mar 1
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_DateFollowedByNumericExpression_ResetsDateContext()
+    {
+        // Arrange - numeric expression after date should not carry date forward
+        CalculationService service = new();
+        string input = "January 1, 2026 + 1 month\n5 + 3";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Contains(new DateTime(2026, 2, 1).ToString("d", CultureInfo.CurrentCulture), lines[0]);
+        Assert.Equal("8", lines[1]);
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    #endregion Date Operator Continuation Tests
+
+    #region Operator Continuation Tests
+
+    [Fact]
+    public async Task CalculationService_LineStartingWithMultiply_UsesPreviousResult()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "2 + 3\n* 4";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("5", lines[0]);           // 2 + 3 = 5
+        Assert.Equal("20", lines[1]);          // 5 * 4 = 20
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_LineStartingWithDivide_UsesPreviousResult()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "100\n/ 4";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("100", lines[0]);
+        Assert.Equal("25", lines[1]);          // 100 / 4 = 25
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_LineStartingWithPlus_UsesPreviousResult()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "10\n+ 5";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("10", lines[0]);
+        Assert.Equal("15", lines[1]);          // 10 + 5 = 15
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_LineStartingWithMinus_UsesPreviousResult()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "10\n- 3";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("10", lines[0]);
+        Assert.Equal("7", lines[1]);           // 10 - 3 = 7
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_ChainedOperatorContinuation_AccumulatesResults()
+    {
+        // Arrange - running total: 10 -> 20 -> 15 -> 45
+        CalculationService service = new();
+        string input = "10\n+ 10\n- 5\n* 3";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(4, lines.Length);
+        Assert.Equal("10", lines[0]);          // 10
+        Assert.Equal("20", lines[1]);          // 10 + 10 = 20
+        Assert.Equal("15", lines[2]);          // 20 - 5 = 15
+        Assert.Equal("45", lines[3]);          // 15 * 3 = 45
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_OperatorAfterVariableAssignment_UsesAssignmentValue()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "x = 10\n* 2";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Contains("x = 10", lines[0]);
+        Assert.Equal("20", lines[1]);          // 10 * 2 = 20
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_OperatorWithNoPreviousResult_FirstLine()
+    {
+        // Arrange - + with space but no previous result on first line
+        // This will try to evaluate "+ 5" which NCalc can't handle
+        CalculationService service = new() { ShowErrors = true };
+        string input = "+ 5";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert - should produce an error since there's no left operand
+        Assert.Contains("Error", result.Output);
+        Assert.Equal(1, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_OperatorSkipsComments_UsesPreviousResult()
+    {
+        // Arrange - comments/empty lines don't reset previous result
+        CalculationService service = new();
+        string input = "10\n// this is a comment\n+ 5";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(3, lines.Length);
+        Assert.Equal("10", lines[0]);
+        Assert.Equal("", lines[1]);            // comment line
+        Assert.Equal("15", lines[2]);          // 10 + 5 = 15
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_OperatorAfterExpression_UsesPreviousOutput()
+    {
+        // Arrange - operator continues from previous expression output
+        CalculationService service = new();
+        string input = "3 * 4\n+ 8";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("12", lines[0]);          // 3 * 4 = 12
+        Assert.Equal("20", lines[1]);          // 12 + 8 = 20
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_OperatorWithParentheses_UsesPreviousResult()
+    {
+        // Arrange
+        CalculationService service = new();
+        string input = "10\n* (2 + 3)";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("10", lines[0]);
+        Assert.Equal("50", lines[1]);          // 10 * (2 + 3) = 50
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_MultiplyWithNoSpace_UsesPreviousResult()
+    {
+        // Arrange - *2 (no space) should still work for * since it can't be unary
+        CalculationService service = new();
+        string input = "10\n*2";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("10", lines[0]);
+        Assert.Equal("20", lines[1]);          // 10 * 2 = 20
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public async Task CalculationService_OperatorWithDecimalPreviousResult()
+    {
+        // Arrange - previous result is a decimal
+        CalculationService service = new();
+        string input = "2.5\n* 4";
+
+        // Act
+        CalculationResult result = await service.EvaluateExpressionsAsync(input);
+
+        // Assert
+        string[] lines = result.Output.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("2.5", lines[0]);
+        Assert.Equal("10", lines[1]);          // 2.5 * 4 = 10
+        Assert.Equal(0, result.ErrorCount);
+    }
+
+    [Fact]
+    public void StartsWithBinaryOperator_ValidOperators_ReturnsTrue()
+    {
+        Assert.True(CalculationService.StartsWithBinaryOperator("+ 5"));
+        Assert.True(CalculationService.StartsWithBinaryOperator("- 3"));
+        Assert.True(CalculationService.StartsWithBinaryOperator("* 2"));
+        Assert.True(CalculationService.StartsWithBinaryOperator("/ 4"));
+        Assert.True(CalculationService.StartsWithBinaryOperator("*2"));
+        Assert.True(CalculationService.StartsWithBinaryOperator("*(2+3)"));
+    }
+
+    [Fact]
+    public void StartsWithBinaryOperator_InvalidPatterns_ReturnsFalse()
+    {
+        Assert.False(CalculationService.StartsWithBinaryOperator(""));
+        Assert.False(CalculationService.StartsWithBinaryOperator("5 + 3"));
+        Assert.False(CalculationService.StartsWithBinaryOperator("x"));
+        Assert.False(CalculationService.StartsWithBinaryOperator("+"));   // single char, too short
+        Assert.False(CalculationService.StartsWithBinaryOperator("+5"));  // unary plus (no space)
+        Assert.False(CalculationService.StartsWithBinaryOperator("-3"));  // negative number (no space)
+        Assert.False(CalculationService.StartsWithBinaryOperator("-10 + 5")); // negative number expression
+    }
+
+    #endregion Operator Continuation Tests
+}

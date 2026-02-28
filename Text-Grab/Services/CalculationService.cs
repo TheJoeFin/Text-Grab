@@ -46,6 +46,10 @@ public partial class CalculationService
         List<string> results = [];
         List<double> outputNumbers = [];
         int errorCount = 0;
+        double? previousLineResult = null;
+        DateTime? previousDateTimeResult = null;
+        UnitResult? previousUnitResult = null;
+        Dictionary<string, int> unitCounts = [];
 
         // Clear parameters and rebuild from scratch for each evaluation
         _parameters.Clear();
@@ -59,13 +63,51 @@ public partial class CalculationService
                 continue;
             }
 
+            // If the line starts with a binary operator and we have a previous numeric result,
+            // prepend the previous result to form a complete expression.
+            // Skip when we have a previous unit result — unit continuation is handled separately.
+            if (previousLineResult.HasValue && !previousDateTimeResult.HasValue && previousUnitResult is null && StartsWithBinaryOperator(trimmedLine))
+            {
+                string previousValueStr = previousLineResult.Value.ToString(this.CultureInfo);
+                trimmedLine = previousValueStr + " " + trimmedLine;
+            }
+
             try
             {
-                if (IsParameterAssignment(trimmedLine))
+                if (TryEvaluateDateTimeMath(trimmedLine, out string dateTimeResult, out DateTime? parsedDateTime, previousDateTimeResult))
+                {
+                    results.Add(dateTimeResult);
+                    previousDateTimeResult = parsedDateTime;
+                    previousLineResult = null;
+                    previousUnitResult = null;
+                }
+                else if (TryEvaluateUnitConversion(trimmedLine, out string unitResultStr, out UnitResult? newUnitResult, previousUnitResult))
+                {
+                    results.Add(unitResultStr);
+                    previousUnitResult = newUnitResult;
+                    previousDateTimeResult = null;
+
+                    if (newUnitResult is not null)
+                    {
+                        outputNumbers.Add(newUnitResult.Value);
+                        previousLineResult = newUnitResult.Value;
+
+                        // Track unit frequency for DominantUnit
+                        string unitKey = newUnitResult.Abbreviation;
+                        unitCounts[unitKey] = unitCounts.GetValueOrDefault(unitKey) + 1;
+                    }
+                    else
+                    {
+                        previousLineResult = null;
+                    }
+                }
+                else if (IsParameterAssignment(trimmedLine))
                 {
                     string resultLine = await HandleParameterAssignmentAsync(trimmedLine);
                     results.Add(resultLine);
-                    
+                    previousDateTimeResult = null;
+                    previousUnitResult = null;
+
                     // Extract variable name and add its value to output numbers
                     int equalIndex = trimmedLine.IndexOf('=');
                     string variableName = trimmedLine[..equalIndex].Trim();
@@ -75,24 +117,37 @@ public partial class CalculationService
                         {
                             double numValue = Convert.ToDouble(value);
                             outputNumbers.Add(numValue);
+                            previousLineResult = numValue;
                         }
                         catch
                         {
                             // Skip non-numeric values
+                            previousLineResult = null;
                         }
+                    }
+                    else
+                    {
+                        previousLineResult = null;
                     }
                 }
                 else
                 {
                     string resultLine = await EvaluateStandardExpressionAsync(trimmedLine);
                     results.Add(resultLine);
-                    
+                    previousDateTimeResult = null;
+                    previousUnitResult = null;
+
                     // Try to parse the result as a number and add to output numbers
                     // Remove formatting characters before parsing
                     string cleanedResult = resultLine.Replace(",", "").Replace(" ", "").Trim();
                     if (double.TryParse(cleanedResult, NumberStyles.Any, CultureInfo.InvariantCulture, out double numValue))
                     {
                         outputNumbers.Add(numValue);
+                        previousLineResult = numValue;
+                    }
+                    else
+                    {
+                        previousLineResult = null;
                     }
                 }
             }
@@ -107,14 +162,23 @@ public partial class CalculationService
                     results.Add(""); // Empty line when errors are hidden
                 }
                 errorCount++;
+                previousLineResult = null;
+                previousDateTimeResult = null;
+                previousUnitResult = null;
             }
         }
+
+        // Determine the most common unit across results
+        string? dominantUnit = unitCounts.Count > 0
+            ? unitCounts.MaxBy(kv => kv.Value).Key
+            : null;
 
         return new CalculationResult
         {
             Output = string.Join("\n", results),
             ErrorCount = errorCount,
-            OutputNumbers = outputNumbers
+            OutputNumbers = outputNumbers,
+            DominantUnit = dominantUnit
         };
     }
 
@@ -125,12 +189,17 @@ public partial class CalculationService
     {
         // Check for assignment pattern: variable = expression
         // Avoid matching comparison operators (==, !=, <=, >=)
-        return line.Contains('=') &&
-               !line.Contains("==") &&
-               !line.Contains("!=") &&
-               !line.Contains("<=") &&
-               !line.Contains(">=") &&
-               line.IndexOf('=') == line.LastIndexOf('='); // Ensure single '='
+        if (!line.Contains('=') ||
+            line.Contains("==") ||
+            line.Contains("!=") ||
+            line.Contains("<=") ||
+            line.Contains(">=") ||
+            line.IndexOf('=') != line.LastIndexOf('=')) // Ensure single '='
+            return false;
+
+        // Require a non-empty RHS so that "x =" falls through to the normal error path
+        int equalIndex = line.IndexOf('=');
+        return equalIndex < line.Length - 1 && !string.IsNullOrWhiteSpace(line[(equalIndex + 1)..]);
     }
 
     /// <summary>
@@ -338,6 +407,9 @@ public partial class CalculationService
         {
             CultureInfo = CultureInfo ?? CultureInfo.CurrentCulture
         };
+
+        if (string.IsNullOrEmpty(expr.ExpressionString))
+            throw new ArgumentException($"Expression for '{variableName}' is empty.");
 
         // Set up parameter handler for existing parameters
         expr.EvaluateParameterAsync += (name, args) =>
@@ -547,6 +619,32 @@ public partial class CalculationService
         };
     }
 
+    /// <summary>
+    /// Checks if a line starts with a binary operator that could continue from a previous result.
+    /// For * / (which cannot be unary), matches when followed by a space, digit, paren, or letter.
+    /// For + - (which can be unary), only matches when followed by a space to distinguish from
+    /// negative numbers like "-3" or unary plus like "+5".
+    /// </summary>
+    public static bool StartsWithBinaryOperator(string trimmedLine)
+    {
+        if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.Length < 2)
+            return false;
+
+        char first = trimmedLine[0];
+        char second = trimmedLine[1];
+
+        // * / always require a left operand — treat as continuation operator
+        if (first is '*' or '/')
+            return second == ' ' || char.IsDigit(second) || second == '(' || char.IsLetter(second);
+
+        // + - can be unary, so only treat as continuation when followed by a space
+        // This distinguishes "- 3" (continuation) from "-3" (negative number)
+        if (first is '+' or '-')
+            return second == ' ';
+
+        return false;
+    }
+
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d)\.(?=\d{3}(?:\.|,|\D|$))")]
     private static partial System.Text.RegularExpressions.Regex DigitGroupSeparator();
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d),(?=\d{3}(?:,|\D|$))")]
@@ -573,4 +671,11 @@ public class CalculationResult
     /// Includes both direct expression results and variable assignment values.
     /// </summary>
     public List<double> OutputNumbers { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the most common unit abbreviation across unit-bearing results.
+    /// Null when no unit conversions were evaluated. Can be used to annotate
+    /// aggregate displays (e.g., "Sum: 45.2 kg").
+    /// </summary>
+    public string? DominantUnit { get; set; }
 }
