@@ -161,6 +161,21 @@
             </Grid>
         </Border>
         <Border
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Background="#CC1F6B78"
+            CornerRadius="0,0,4,0"
+            Padding="3,1"
+            Panel.ZIndex="10"
+            Visibility="{Binding Path=TemplateBadgeVisibility, ElementName=WordBorderControl}">
+            <TextBlock
+                FontFamily="Segoe UI"
+                FontSize="9"
+                FontWeight="Bold"
+                Foreground="White"
+                Text="{Binding Path=TemplateBadgeText, ElementName=WordBorderControl}" />
+        </Border>
+        <Border
             Name="MoveResizeBorder"
             d:Visibility="Visible"
             Background="Transparent"

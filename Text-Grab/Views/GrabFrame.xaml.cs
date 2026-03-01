@@ -54,6 +54,8 @@ public partial class GrabFrame : Window
     private TextBox? destinationTextBox;
     private ImageSource? frameContentImageSource;
     private HistoryInfo? historyItem;
+    private GrabTemplate? _editingTemplate;
+    private string? _currentImagePath;
     private bool hasLoadedImageSource = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
@@ -134,6 +136,79 @@ public partial class GrabFrame : Window
         }
 
         Loaded += async (s, e) => await TryLoadImageFromPath(absolutePath);
+    }
+
+    /// <summary>
+    /// Opens GrabFrame in template editing mode with existing regions pre-loaded.
+    /// </summary>
+    /// <param name="template">The template to edit.</param>
+    public GrabFrame(GrabTemplate template)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = false;
+        _editingTemplate = template;
+        Title = $"Edit Template: {template.Name}";
+
+        Loaded += async (s, e) => await LoadTemplateForEditing(template);
+    }
+
+    private async Task LoadTemplateForEditing(GrabTemplate template)
+    {
+        TemplateNameBox.Text = template.Name;
+        OutputTemplateBox.Text = template.OutputTemplate;
+
+        SaveAsTemplateBTN.IsChecked = true;
+        TemplateSavePanel.Visibility = Visibility.Visible;
+
+        if (!string.IsNullOrEmpty(template.SourceImagePath) && File.Exists(template.SourceImagePath))
+        {
+            await TryLoadImageFromPath(template.SourceImagePath);
+            reDrawTimer.Stop();
+        }
+        else
+        {
+            // No reference image — freeze into a clean empty canvas without capturing the screen
+            GrabFrameImage.Opacity = 0;
+            FreezeToggleButton.IsChecked = true;
+            FreezeToggleButton.Visibility = Visibility.Collapsed;
+            Topmost = false;
+            Background = new SolidColorBrush(Colors.DimGray);
+            RectanglesBorder.Background.Opacity = 0;
+            IsFreezeMode = true;
+        }
+
+        // Allow WPF to measure the canvas after the image loads
+        await Task.Delay(150);
+
+        double cw = RectanglesCanvas.ActualWidth;
+        double ch = RectanglesCanvas.ActualHeight;
+
+        if (cw <= 0) cw = template.ReferenceImageWidth;
+        if (ch <= 0) ch = template.ReferenceImageHeight;
+
+        foreach (TemplateRegion region in template.Regions.OrderBy(r => r.RegionNumber))
+        {
+            Rect abs = region.ToAbsoluteRect(cw, ch);
+
+            WordBorder wb = new()
+            {
+                Width = Math.Max(abs.Width, 10),
+                Height = Math.Max(abs.Height, 10),
+                Left = abs.X,
+                Top = abs.Y,
+                Word = region.Label,
+                OwnerGrabFrame = this,
+                MatchingBackground = new SolidColorBrush(Colors.Black),
+            };
+
+            wordBorders.Add(wb);
+            _ = RectanglesCanvas.Children.Add(wb);
+        }
+
+        EnterEditMode();
+        UpdateTemplateBadges();
+        reSearchTimer.Start();
     }
 
     private async Task LoadContentFromHistory(HistoryInfo history)
@@ -1435,7 +1510,7 @@ public partial class GrabFrame : Window
 
     private void HandleDelete(object? sender = null, RoutedEventArgs? e = null)
     {
-        if (SearchBox.IsFocused)
+        if (Keyboard.FocusedElement is TextBox)
             return;
 
         UndoRedo.StartTransaction();
@@ -2071,6 +2146,9 @@ new GrabFrameOperationArgs()
             MatchesTXTBLK.Text = $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
         LanguagesComboBox.Visibility = Visibility.Collapsed;
+
+        if (SaveAsTemplateBTN.IsChecked == true)
+            UpdateTemplateBadges();
     }
 
     private void ResetGrabFrame()
@@ -2184,6 +2262,8 @@ new GrabFrameOperationArgs()
         TemplateSavePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (show)
             TemplateNameBox.Focus();
+
+        UpdateTemplateBadges();
     }
 
     private void SaveTemplateSave_Click(object sender, RoutedEventArgs e)
@@ -2211,7 +2291,7 @@ new GrabFrameOperationArgs()
         // Sort regions in reading order: top-to-bottom, then left-to-right
         List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
 
-        List<TemplateRegion> regions = sorted.Select((wb, i) => new TemplateRegion
+        List<TemplateRegion> regions = [.. sorted.Select((wb, i) => new TemplateRegion
         {
             RegionNumber = i + 1,
             Label = string.IsNullOrWhiteSpace(wb.Word) ? $"Region {i + 1}" : wb.Word,
@@ -2219,7 +2299,7 @@ new GrabFrameOperationArgs()
             RatioTop = wb.Top / ch,
             RatioWidth = wb.ActualWidth / cw,
             RatioHeight = wb.ActualHeight / ch,
-        }).ToList();
+        })];
 
         GrabTemplate template = new(name)
         {
@@ -2229,12 +2309,24 @@ new GrabFrameOperationArgs()
             Regions = regions,
         };
 
+        if (_editingTemplate is not null)
+        {
+            template.Id = _editingTemplate.Id;
+            template.CreatedDate = _editingTemplate.CreatedDate;
+        }
+
+        template.SourceImagePath = GrabTemplateManager.SaveTemplateReferenceImage(frameContentImageSource as BitmapSource, name, template.Id)
+            ?? _currentImagePath
+            ?? _editingTemplate?.SourceImagePath
+            ?? string.Empty;
+
         GrabTemplateManager.AddOrUpdateTemplate(template);
 
         SaveAsTemplateBTN.IsChecked = false;
         TemplateSavePanel.Visibility = Visibility.Collapsed;
         TemplateNameBox.Text = string.Empty;
         OutputTemplateBox.Text = string.Empty;
+        UpdateTemplateBadges();
 
         MessageBox.Show(
             $"Template \"{name}\" saved with {regions.Count} region(s).\n\nEnable it in Post-Grab Actions Settings to use it during a Fullscreen Grab.",
@@ -2247,6 +2339,23 @@ new GrabFrameOperationArgs()
     {
         SaveAsTemplateBTN.IsChecked = false;
         TemplateSavePanel.Visibility = Visibility.Collapsed;
+        UpdateTemplateBadges();
+    }
+
+    private void UpdateTemplateBadges()
+    {
+        bool isTemplateMode = SaveAsTemplateBTN.IsChecked == true;
+
+        if (!isTemplateMode)
+        {
+            foreach (WordBorder wb in wordBorders)
+                wb.TemplateIndex = 0;
+            return;
+        }
+
+        List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
+        for (int i = 0; i < sorted.Count; i++)
+            sorted[i].TemplateIndex = i + 1;
     }
 
     private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
@@ -2270,6 +2379,7 @@ new GrabFrameOperationArgs()
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
             hasLoadedImageSource = true;
+            _currentImagePath = path;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
             FreezeToggleButton.Visibility = Visibility.Collapsed;
@@ -2485,7 +2595,7 @@ new GrabFrameOperationArgs()
         if (IsCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
 
-        if (IsEditingAnyWordBorders || SearchBox.IsFocused)
+        if (IsEditingAnyWordBorders || Keyboard.FocusedElement is TextBox)
             return;
 
         if (e.Key == Key.Delete)

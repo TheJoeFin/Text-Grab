@@ -24,6 +24,19 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public static readonly DependencyProperty WordProperty =
         DependencyProperty.Register("Word", typeof(string), typeof(WordBorder), new PropertyMetadata(""));
 
+    public static readonly DependencyProperty TemplateIndexProperty =
+        DependencyProperty.Register(nameof(TemplateIndex), typeof(int), typeof(WordBorder),
+            new PropertyMetadata(0, OnTemplateIndexChanged));
+
+    private static void OnTemplateIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is WordBorder wb)
+        {
+            wb.PropertyChanged?.Invoke(wb, new PropertyChangedEventArgs(nameof(TemplateBadgeVisibility)));
+            wb.PropertyChanged?.Invoke(wb, new PropertyChangedEventArgs(nameof(TemplateBadgeText)));
+        }
+    }
+
     public static RoutedCommand MergeWordsCommand = new();
     private int contextMenuBaseSize;
     private SolidColorBrush contrastingForeground = new(Colors.White);
@@ -132,6 +145,16 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             Canvas.SetTop(this, top);
         }
     }
+
+    public int TemplateIndex
+    {
+        get => (int)GetValue(TemplateIndexProperty);
+        set => SetValue(TemplateIndexProperty, value);
+    }
+
+    public Visibility TemplateBadgeVisibility => TemplateIndex > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    public string TemplateBadgeText => TemplateIndex > 0 ? $"{{{TemplateIndex}}}" : string.Empty;
 
     public bool WasRegionSelected { get; set; } = false;
     public string Word

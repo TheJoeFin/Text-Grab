@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Windows.Media.Imaging;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Wpf.Ui.Controls;
@@ -47,6 +49,53 @@ public static class GrabTemplateManager
 
         string? exeDir = Path.GetDirectoryName(FileUtilities.GetExePath());
         return Path.Combine(exeDir ?? "c:\\Text-Grab", TemplatesFileName);
+    }
+
+    /// <summary>
+    /// Saves <paramref name="imageSource"/> as a PNG in the template-images folder, named
+    /// after <paramref name="templateName"/> and the first 8 characters of <paramref name="templateId"/>.
+    /// Returns the full file path on success, or <c>null</c> if the source is null or the write fails.
+    /// </summary>
+    public static string? SaveTemplateReferenceImage(BitmapSource? imageSource, string templateName, string templateId)
+    {
+        if (imageSource is null)
+            return null;
+
+        try
+        {
+            string folder = GetTemplateImagesFolder();
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
+
+            string safeName = Regex.Replace(templateName.ToLowerInvariant(), @"[^\w]+", "-").Trim('-');
+            string shortId = templateId.Length >= 8 ? templateId[..8] : templateId;
+            string filePath = Path.Combine(folder, $"{safeName}_{shortId}.png");
+
+            PngBitmapEncoder encoder = new();
+            encoder.Frames.Add(BitmapFrame.Create(imageSource));
+            using FileStream fs = new(filePath, FileMode.Create, FileAccess.Write);
+            encoder.Save(fs);
+
+            return filePath;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to save template reference image: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>Returns the folder where template reference images are stored alongside the templates JSON.</summary>
+    public static string GetTemplateImagesFolder()
+    {
+        if (AppUtilities.IsPackaged())
+        {
+            string localFolder = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+            return Path.Combine(localFolder, "template-images");
+        }
+
+        string? exeDir = Path.GetDirectoryName(FileUtilities.GetExePath());
+        return Path.Combine(exeDir ?? "c:\\Text-Grab", "template-images");
     }
 
     // ── Migration from settings ───────────────────────────────────────────────

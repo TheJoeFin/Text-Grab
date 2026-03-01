@@ -14,24 +14,23 @@
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.Resources>
-        <ui:ImageIcon x:Key="TextGrabIcon"
-                      Source="/Text-Grab;component/Images/TealSelect40.png"/>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
 
         <!--  Converter to convert enum to int for ComboBox SelectedIndex  -->
-        <local:EnumToIntConverter x:Key="EnumToIntConverter"/>
+        <local:EnumToIntConverter x:Key="EnumToIntConverter" />
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ui:TitleBar
@@ -40,7 +39,7 @@
             Height="32"
             Margin="2,2,2,0"
             Padding="8,2"
-            Icon="{StaticResource TextGrabIcon}"/>
+            Icon="{StaticResource TextGrabIcon}" />
 
         <!--  Available Actions (Left)  -->
         <StackPanel
@@ -51,13 +50,13 @@
                 Margin="0,0,0,8"
                 FontSize="18"
                 FontWeight="SemiBold"
-                Text="Available Actions"/>
+                Text="Available Actions" />
             <TextBlock
                 x:Name="AvailableActionsHint"
                 Margin="0,0,0,4"
                 Opacity="0.7"
                 Text="Actions that can be added to the enabled list"
-                TextWrapping="Wrap"/>
+                TextWrapping="Wrap" />
             <Border
                 Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
@@ -72,13 +71,11 @@
                         ScrollViewer.VerticalScrollBarVisibility="Visible">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="46"
-                                                Header="Icon">
+                                <GridViewColumn Width="46" Header="Icon">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Viewbox Height="24">
-                                                <ui:SymbolIcon FontSize="24"
-                                                               Symbol="{Binding Path=SymbolIcon, Mode=OneWay}"/>
+                                                <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
                                             </Viewbox>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
@@ -86,7 +83,7 @@
                                 <GridViewColumn
                                     Width="300"
                                     DisplayMemberBinding="{Binding ButtonText}"
-                                    Header="Action Name"/>
+                                    Header="Action Name" />
                             </GridView>
                         </ListView.View>
                     </ui:ListView>
@@ -98,7 +95,7 @@
                         FontSize="14"
                         Opacity="0.6"
                         Text="All actions are currently enabled"
-                        Visibility="Collapsed"/>
+                        Visibility="Collapsed" />
                 </Grid>
             </Border>
         </StackPanel>
@@ -117,10 +114,8 @@
                 Click="AddButton_Click"
                 ToolTip="Add selected action to enabled list">
                 <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon FontSize="14"
-                                   Symbol="ArrowRight16"/>
-                    <TextBlock Margin="4,0,0,0"
-                               Text="Add"/>
+                    <ui:SymbolIcon FontSize="14" Symbol="ArrowRight16" />
+                    <TextBlock Margin="4,0,0,0" Text="Add" />
                 </StackPanel>
             </ui:Button>
             <ui:Button
@@ -131,13 +126,11 @@
                 Click="RemoveButton_Click"
                 ToolTip="Remove selected action from enabled list">
                 <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon FontSize="14"
-                                   Symbol="ArrowLeft16"/>
-                    <TextBlock Margin="4,0,0,0"
-                               Text="Remove"/>
+                    <ui:SymbolIcon FontSize="14" Symbol="ArrowLeft16" />
+                    <TextBlock Margin="4,0,0,0" Text="Remove" />
                 </StackPanel>
             </ui:Button>
-            <Separator Margin="0,8"/>
+            <Separator Margin="0,8" />
             <ui:Button
                 x:Name="MoveUpButton"
                 Width="100"
@@ -146,10 +139,8 @@
                 Click="MoveUpButton_Click"
                 ToolTip="Move selected action up in order">
                 <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon FontSize="14"
-                                   Symbol="ArrowUp16"/>
-                    <TextBlock Margin="4,0,0,0"
-                               Text="Up"/>
+                    <ui:SymbolIcon FontSize="14" Symbol="ArrowUp16" />
+                    <TextBlock Margin="4,0,0,0" Text="Up" />
                 </StackPanel>
             </ui:Button>
             <ui:Button
@@ -159,10 +150,8 @@
                 Click="MoveDownButton_Click"
                 ToolTip="Move selected action down in order">
                 <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon FontSize="14"
-                                   Symbol="ArrowDown16"/>
-                    <TextBlock Margin="4,0,0,0"
-                               Text="Down"/>
+                    <ui:SymbolIcon FontSize="14" Symbol="ArrowDown16" />
+                    <TextBlock Margin="4,0,0,0" Text="Down" />
                 </StackPanel>
             </ui:Button>
         </StackPanel>
@@ -176,12 +165,12 @@
                 Margin="0,0,0,8"
                 FontSize="18"
                 FontWeight="SemiBold"
-                Text="Enabled Actions"/>
+                Text="Enabled Actions" />
             <TextBlock
                 Margin="0,0,0,4"
                 Opacity="0.7"
                 Text="Actions that will appear in the post-grab menu"
-                TextWrapping="Wrap"/>
+                TextWrapping="Wrap" />
             <Border
                 Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
@@ -195,13 +184,11 @@
                     ScrollViewer.VerticalScrollBarVisibility="Visible">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Width="46"
-                                            Header="Icon">
+                            <GridViewColumn Width="46" Header="Icon">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <Viewbox Height="24">
-                                            <ui:SymbolIcon FontSize="24"
-                                                           Symbol="{Binding Path=SymbolIcon, Mode=OneWay}"/>
+                                            <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
                                         </Viewbox>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
@@ -209,16 +196,14 @@
                             <GridViewColumn
                                 Width="180"
                                 DisplayMemberBinding="{Binding ButtonText}"
-                                Header="Action Name"/>
-                            <GridViewColumn Width="120"
-                                            Header="Default">
+                                Header="Action Name" />
+                            <GridViewColumn Width="120" Header="Default">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ComboBox Width="110"
-                                                  SelectedIndex="{Binding Path=DefaultCheckState, Mode=TwoWay, Converter={StaticResource EnumToIntConverter}}">
-                                            <ComboBoxItem Content="Off"/>
-                                            <ComboBoxItem Content="Last Used"/>
-                                            <ComboBoxItem Content="On"/>
+                                        <ComboBox Width="110" SelectedIndex="{Binding Path=DefaultCheckState, Mode=TwoWay, Converter={StaticResource EnumToIntConverter}}">
+                                            <ComboBoxItem Content="Off" />
+                                            <ComboBoxItem Content="Last Used" />
+                                            <ComboBoxItem Content="On" />
                                         </ComboBox>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
@@ -233,7 +218,7 @@
                 x:Name="StayOpenToggle"
                 Margin="0,16,0,0"
                 Content="Keep menu open after clicking an action"
-                ToolTip="When enabled, the post-grab menu stays open after clicking an action, allowing multiple actions to be selected"/>
+                ToolTip="When enabled, the post-grab menu stays open after clicking an action, allowing multiple actions to be selected" />
         </StackPanel>
 
         <!--  Grab Templates Section  -->
@@ -242,51 +227,69 @@
             Grid.Column="0"
             Grid.ColumnSpan="3"
             Margin="16,0,16,8"
+            Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
             BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"
-            CornerRadius="8"
-            Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}">
+            CornerRadius="8">
             <Grid Margin="12,10">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!--  Header + buttons  -->
-                <Grid Grid.Row="0"
-                      Margin="0,0,0,8">
+                <Grid Grid.Row="0" Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0"
-                                VerticalAlignment="Center">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
                         <TextBlock
                             FontSize="16"
                             FontWeight="SemiBold"
-                            Text="Grab Templates"/>
+                            Text="Grab Templates" />
                         <TextBlock
-                            Opacity="0.7"
                             FontSize="11"
+                            Opacity="0.7"
                             Text="Templates extract structured data from fixed-layout documents. Open a Grab Frame, use Ctrl+drag to draw regions, then click the Save as Template button. Add a template to the Enabled Actions list to use it during a Fullscreen Grab."
-                            TextWrapping="Wrap"/>
+                            TextWrapping="Wrap" />
                     </StackPanel>
 
                     <StackPanel
                         Grid.Column="1"
-                        Orientation="Horizontal"
-                        VerticalAlignment="Center">
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
                         <ui:Button
                             x:Name="OpenGrabFrameButton"
                             Margin="0,0,6,0"
                             Click="OpenGrabFrameButton_Click"
-                            ToolTip="Open a Grab Frame to draw regions and save as a template">
+                            ToolTip="Open a blank Grab Frame to draw regions and save as a new template">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon FontSize="14"
-                                               Symbol="Window24"/>
-                                <TextBlock Margin="4,0,0,0"
-                                           Text="Open Grab Frame"/>
+                                <ui:SymbolIcon FontSize="14" Symbol="Window24" />
+                                <TextBlock Margin="4,0,0,0" Text="Open Grab Frame" />
+                            </StackPanel>
+                        </ui:Button>
+                        <ui:Button
+                            x:Name="EditTemplateRegionsButton"
+                            Margin="0,0,6,0"
+                            Click="EditTemplateRegionsButton_Click"
+                            ToolTip="Open the selected template in a Grab Frame to edit its regions">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon FontSize="14" Symbol="Edit24" />
+                                <TextBlock Margin="4,0,0,0" Text="Edit Grab Template" />
+                            </StackPanel>
+                        </ui:Button>
+                        <ui:Button
+                            x:Name="EditTemplateButton"
+                            Margin="0,0,6,0"
+                            Click="EditTemplateButton_Click"
+                            ToolTip="Edit the selected template's name and output template"
+                            Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon FontSize="14" Symbol="Edit24" />
+                                <TextBlock Margin="4,0,0,0" Text="Edit" />
                             </StackPanel>
                         </ui:Button>
                         <ui:Button
@@ -294,10 +297,8 @@
                             Click="DeleteTemplateButton_Click"
                             ToolTip="Delete the selected Grab Template">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon FontSize="14"
-                                               Symbol="Delete24"/>
-                                <TextBlock Margin="4,0,0,0"
-                                           Text="Delete"/>
+                                <ui:SymbolIcon FontSize="14" Symbol="Delete24" />
+                                <TextBlock Margin="4,0,0,0" Text="Delete" />
                             </StackPanel>
                         </ui:Button>
                     </StackPanel>
@@ -309,32 +310,29 @@
                         x:Name="TemplatesListBox"
                         MaxHeight="140"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                        ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        SelectionChanged="TemplatesListBox_SelectionChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn
                                     Width="220"
                                     DisplayMemberBinding="{Binding Name}"
-                                    Header="Template Name"/>
-                                <GridViewColumn Width="70"
-                                                Header="Regions">
+                                    Header="Template Name" />
+                                <GridViewColumn Width="70" Header="Regions">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Regions.Count}"
-                                                       TextAlignment="Center"/>
+                                            <TextBlock Text="{Binding Regions.Count}" TextAlignment="Center" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn
                                     Width="300"
                                     DisplayMemberBinding="{Binding OutputTemplate}"
-                                    Header="Output Template"/>
-                                <GridViewColumn Width="140"
-                                                Header="Last Used">
+                                    Header="Output Template" />
+                                <GridViewColumn Width="140" Header="Last Used">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding LastUsedDate, StringFormat={}{0:g}}"
-                                                       Opacity="0.7"/>
+                                            <TextBlock Opacity="0.7" Text="{Binding LastUsedDate, StringFormat={}{0:g}}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -349,8 +347,76 @@
                         Opacity="0.6"
                         Text="No templates defined yet. Click 'Open Grab Frame', use Ctrl+drag to draw regions, then click the Save as Template button in the Grab Frame."
                         TextWrapping="Wrap"
-                        Visibility="Collapsed"/>
+                        Visibility="Collapsed" />
                 </Grid>
+
+                <!--  Inline template editor (collapsed until Edit is clicked)  -->
+                <Border
+                    x:Name="TemplateEditPanel"
+                    Grid.Row="2"
+                    Margin="0,8,0,0"
+                    Padding="0,8,0,0"
+                    BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,1,0,0"
+                    Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock
+                            Grid.Row="0"
+                            Margin="0,0,8,4"
+                            VerticalAlignment="Center"
+                            Text="Name:" />
+                        <TextBox
+                            x:Name="EditTemplateNameBox"
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="0,0,0,4"
+                            Padding="4,2"
+                            VerticalContentAlignment="Center" />
+
+                        <TextBlock
+                            Grid.Row="1"
+                            Margin="0,0,8,4"
+                            VerticalAlignment="Center"
+                            Text="Output Template:" />
+                        <TextBox
+                            x:Name="EditOutputTemplateBox"
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Margin="0,0,0,4"
+                            Padding="4,2"
+                            VerticalContentAlignment="Center"
+                            FontFamily="Consolas"
+                            ToolTip="Use {1}, {2}, etc. for region values. Use {1:trim}, {1:upper}, {1:lower} for formatting. Use \n for newline." />
+
+                        <StackPanel
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Margin="0,4,0,0"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <ui:Button
+                                x:Name="ApplyTemplateEditButton"
+                                Margin="0,0,8,0"
+                                Appearance="Primary"
+                                Click="ApplyTemplateEdit_Click"
+                                Content="Apply Changes" />
+                            <ui:Button
+                                x:Name="CancelTemplateEditButton"
+                                Click="CancelTemplateEdit_Click"
+                                Content="Cancel" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 
@@ -367,19 +433,19 @@
                 Margin="0,0,8,0"
                 Click="ResetButton_Click"
                 Content="Reset to Defaults"
-                ToolTip="Reset to default post-grab actions"/>
+                ToolTip="Reset to default post-grab actions" />
             <ui:Button
                 x:Name="SaveButton"
                 Margin="0,0,8,0"
                 Appearance="Primary"
                 Click="SaveButton_Click"
                 Content="Save"
-                ToolTip="Save changes and close"/>
+                ToolTip="Save changes and close" />
             <ui:Button
                 x:Name="CancelButton"
                 Click="CancelButton_Click"
                 Content="Cancel"
-                ToolTip="Close without saving"/>
+                ToolTip="Close without saving" />
         </StackPanel>
     </Grid>
 </ui:FluentWindow>

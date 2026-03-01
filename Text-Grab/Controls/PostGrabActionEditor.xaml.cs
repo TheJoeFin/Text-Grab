@@ -38,6 +38,7 @@ public partial class PostGrabActionEditor : FluentWindow
 
     private ObservableCollection<ButtonInfo> AvailableActions { get; set; }
     private ObservableCollection<ButtonInfo> EnabledActions { get; set; }
+    private GrabTemplate? _editingTemplate;
 
     #endregion Properties
 
@@ -225,6 +226,24 @@ public partial class PostGrabActionEditor : FluentWindow
         grabFrame.Activate();
     }
 
+    private void EditTemplateRegionsButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (TemplatesListBox.SelectedItem is not GrabTemplate selected)
+        {
+            System.Windows.MessageBox.Show(
+                "Select a template from the list first.",
+                "No Template Selected",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        GrabFrame grabFrame = new(selected);
+        grabFrame.Closed += (_, _) => RefreshTemplatesAndActions();
+        grabFrame.Show();
+        grabFrame.Activate();
+    }
+
     private void DeleteTemplateButton_Click(object sender, RoutedEventArgs e)
     {
         if (TemplatesListBox.SelectedItem is not GrabTemplate selected)
@@ -266,6 +285,58 @@ public partial class PostGrabActionEditor : FluentWindow
         }
 
         UpdateEmptyStateVisibility();
+    }
+
+    private void TemplatesListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (_editingTemplate is null)
+            return;
+
+        if (TemplatesListBox.SelectedItem is GrabTemplate selected && selected.Id != _editingTemplate.Id)
+        {
+            _editingTemplate = null;
+            TemplateEditPanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void EditTemplateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (TemplatesListBox.SelectedItem is not GrabTemplate selected)
+            return;
+
+        _editingTemplate = selected;
+        EditTemplateNameBox.Text = selected.Name;
+        EditOutputTemplateBox.Text = selected.OutputTemplate;
+        TemplateEditPanel.Visibility = Visibility.Visible;
+        EditTemplateNameBox.Focus();
+        EditTemplateNameBox.SelectAll();
+    }
+
+    private void ApplyTemplateEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (_editingTemplate is null)
+            return;
+
+        string newName = EditTemplateNameBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            EditTemplateNameBox.Focus();
+            return;
+        }
+
+        _editingTemplate.Name = newName;
+        _editingTemplate.OutputTemplate = EditOutputTemplateBox.Text;
+        GrabTemplateManager.AddOrUpdateTemplate(_editingTemplate);
+
+        _editingTemplate = null;
+        TemplateEditPanel.Visibility = Visibility.Collapsed;
+        RefreshTemplatesAndActions();
+    }
+
+    private void CancelTemplateEdit_Click(object sender, RoutedEventArgs e)
+    {
+        _editingTemplate = null;
+        TemplateEditPanel.Visibility = Visibility.Collapsed;
     }
 
     #endregion Methods
