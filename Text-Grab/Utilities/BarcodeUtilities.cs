@@ -14,13 +14,26 @@ public static class BarcodeUtilities
 
     public static OcrOutput TryToReadBarcodes(Bitmap bitmap)
     {
+        if (bitmap is null || bitmap.Width <= 0 || bitmap.Height <= 0)
+            return new OcrOutput() { Kind = OcrOutputKind.Barcode, RawOutput = string.Empty };
+
         BarcodeReader barcodeReader = new()
         {
             AutoRotate = true,
             Options = new ZXing.Common.DecodingOptions { TryHarder = true }
         };
 
-        ZXing.Result result = barcodeReader.Decode(bitmap);
+        Result? result = null;
+
+        try
+        {
+            result = barcodeReader.Decode(bitmap);
+
+        }
+        catch (System.Exception)
+        {
+            return new OcrOutput() { Kind = OcrOutputKind.Barcode, RawOutput = string.Empty };
+        }
 
         string resultString = string.Empty;
         if (result is not null)
