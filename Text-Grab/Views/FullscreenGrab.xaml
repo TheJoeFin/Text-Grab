@@ -112,6 +112,9 @@
                 </ContextMenu>
             </Canvas.ContextMenu>
         </Canvas>
+        <Canvas
+            x:Name="TemplateOverlayHost"
+            IsHitTestVisible="False" />
         <Border
             x:Name="TopButtonsStackPanel"
             Margin="12"

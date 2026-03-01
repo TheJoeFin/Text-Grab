@@ -44,6 +44,7 @@ public partial class FullscreenGrab : Window
     private HistoryInfo? historyInfo;
     private readonly bool usingTesseract;
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private readonly Canvas templateOverlayCanvas = new() { ClipToBounds = true, IsHitTestVisible = false };
 
     private const double MaxZoomScale = 16.0;
     private const double EdgePanThresholdPercent = 0.10;
@@ -274,7 +275,7 @@ public partial class FullscreenGrab : Window
 
         // Remove any existing keyboard handler to avoid duplicates
         contextMenu.PreviewKeyDown -= FullscreenGrab_KeyDown;
-        
+
         // Add keyboard handling once for the entire context menu
         contextMenu.PreviewKeyDown += FullscreenGrab_KeyDown;
 
@@ -376,6 +377,80 @@ public partial class FullscreenGrab : Window
             default:
                 break;
         }
+    }
+
+    private GrabTemplate? GetActiveTemplate()
+    {
+        if (NextStepDropDownButton.Flyout is not ContextMenu contextMenu)
+            return null;
+
+        foreach (object item in contextMenu.Items)
+        {
+            if (item is MenuItem menuItem
+                && menuItem.IsChecked
+                && menuItem.Tag is ButtonInfo action
+                && action.ClickEvent == "ApplyTemplate_Click"
+                && !string.IsNullOrEmpty(action.TemplateId))
+            {
+                return GrabTemplateManager.GetTemplateById(action.TemplateId);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Draws scaled template region overlays inside the current selection border.
+    /// Regions are scaled using UniformToFill semantics relative to the template's
+    /// reference image dimensions so they fill the selected area proportionally.
+    /// </summary>
+    private void UpdateTemplateRegionOverlays(double selLeft, double selTop, double selWidth, double selHeight)
+    {
+        TemplateOverlayHost.Children.Clear();
+        templateOverlayCanvas.Children.Clear();
+
+        GrabTemplate? template = GetActiveTemplate();
+        if (template is null || template.Regions.Count == 0)
+            return;
+
+        if (selWidth < 4 || selHeight < 4)
+            return;
+
+        // Stretch: scale each axis independently to fill the selection exactly
+        double scaleX = selWidth / template.ReferenceImageWidth;
+        double scaleY = selHeight / template.ReferenceImageHeight;
+
+        templateOverlayCanvas.Width = selWidth;
+        templateOverlayCanvas.Height = selHeight;
+        Canvas.SetLeft(templateOverlayCanvas, selLeft);
+        Canvas.SetTop(templateOverlayCanvas, selTop);
+
+        System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(220, 255, 180, 0);
+
+        foreach (TemplateRegion region in template.Regions)
+        {
+            double regionLeft = region.RatioLeft * selWidth;
+            double regionTop = region.RatioTop * selHeight;
+            double regionWidth = region.RatioWidth * selWidth;
+            double regionHeight = region.RatioHeight * selHeight;
+
+            if (regionWidth < 1 || regionHeight < 1)
+                continue;
+
+            Border regionBorder = new()
+            {
+                Width = regionWidth,
+                Height = regionHeight,
+                BorderBrush = new SolidColorBrush(borderColor),
+                BorderThickness = new Thickness(1.5),
+            };
+
+            Canvas.SetLeft(regionBorder, regionLeft);
+            Canvas.SetTop(regionBorder, regionTop);
+            templateOverlayCanvas.Children.Add(regionBorder);
+        }
+
+        TemplateOverlayHost.Children.Add(templateOverlayCanvas);
     }
 
     private void GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop)
@@ -580,6 +655,8 @@ public partial class FullscreenGrab : Window
             new System.Windows.Size(selectBorder.Width - 2, selectBorder.Height - 2));
         Canvas.SetLeft(selectBorder, leftValue - 1);
         Canvas.SetTop(selectBorder, topValue - 1);
+
+        UpdateTemplateRegionOverlays(leftValue - 1, topValue - 1, selectBorder.Width, selectBorder.Height);
     }
 
     private void PlaceGrabFrameInSelectionRect()
@@ -652,6 +729,8 @@ public partial class FullscreenGrab : Window
         dpiScale = VisualTreeHelper.GetDpi(this);
 
         try { RegionClickCanvas.Children.Remove(selectBorder); } catch (Exception) { }
+        TemplateOverlayHost.Children.Clear();
+        templateOverlayCanvas.Children.Clear();
 
         selectBorder.BorderThickness = new Thickness(2);
         System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(255, 40, 118, 126);
@@ -697,6 +776,8 @@ public partial class FullscreenGrab : Window
             new System.Windows.Size(selectBorder.Width - 2, selectBorder.Height - 2));
         Canvas.SetLeft(selectBorder, left - 1);
         Canvas.SetTop(selectBorder, top - 1);
+
+        UpdateTemplateRegionOverlays(left - 1, top - 1, selectBorder.Width, selectBorder.Height);
     }
 
     private async void RegionClickCanvas_MouseUp(object sender, MouseButtonEventArgs e)
@@ -711,6 +792,9 @@ public partial class FullscreenGrab : Window
         clippingGeometry.Rect = new Rect(
             new System.Windows.Point(0, 0),
             new System.Windows.Size(0, 0));
+
+        TemplateOverlayHost.Children.Clear();
+        templateOverlayCanvas.Children.Clear();
 
         System.Windows.Point movingPoint = e.GetPosition(this);
         Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
@@ -728,6 +812,14 @@ public partial class FullscreenGrab : Window
             (int)yDimScaled,
             (int)(selectBorder.Width * m.M11),
             (int)(selectBorder.Height * m.M22));
+
+        // Build the absolute capture rect for template execution (physical screen pixels)
+        System.Windows.Point absoluteWindowPos = this.GetAbsolutePosition();
+        Rect absoluteCaptureRect = new(
+            absoluteWindowPos.X + xDimScaled,
+            absoluteWindowPos.Y + yDimScaled,
+            selectBorder.Width * m.M11,
+            selectBorder.Height * m.M22);
 
         TextFromOCR = string.Empty;
 
@@ -779,7 +871,7 @@ public partial class FullscreenGrab : Window
                 PositionRect = historyRect,
                 IsTable = TableToggleButton.IsChecked!.Value,
                 TextContent = TextFromOCR,
-                ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
+                ImageContent = Singleton<HistoryService>.Instance.CachedBitmap is Bitmap cb ? new Bitmap(cb) : null,
                 SourceMode = TextGrabMode.Fullscreen,
             };
         }
@@ -807,8 +899,16 @@ public partial class FullscreenGrab : Window
                         continue;
                     }
 
+                    // Build context for this action (text may have changed from previous actions)
+                    PostGrabContext grabContext = new(
+                        Text: TextFromOCR ?? string.Empty,
+                        CaptureRegion: absoluteCaptureRect,
+                        DpiScale: m.M11,
+                        CapturedImage: null,
+                        Language: selectedOcrLang);
+
                     // Execute the action
-                    TextFromOCR = await PostGrabActionManager.ExecutePostGrabAction(action, TextFromOCR);
+                    TextFromOCR = await PostGrabActionManager.ExecutePostGrabAction(action, grabContext);
                 }
             }
 
@@ -1021,7 +1121,7 @@ public partial class FullscreenGrab : Window
         if (NextStepDropDownButton.Flyout is ContextMenu contextMenu)
         {
             contextMenu.PreviewKeyDown -= FullscreenGrab_KeyDown;
-            
+
             foreach (object item in contextMenu.Items)
             {
                 if (item is MenuItem menuItem)
@@ -1043,7 +1143,7 @@ public partial class FullscreenGrab : Window
                     }
                 }
             }
-            
+
             contextMenu.Items.Clear();
         }
 
@@ -1137,7 +1237,7 @@ public partial class FullscreenGrab : Window
     private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Save check state for LastUsed tracking
-        if (sender is MenuItem menuItem 
+        if (sender is MenuItem menuItem
             && menuItem.Tag is ButtonInfo action
             && action.DefaultCheckState == DefaultCheckState.LastUsed)
         {

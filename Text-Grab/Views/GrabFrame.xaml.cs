@@ -2178,6 +2178,77 @@ new GrabFrameOperationArgs()
         WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
     }
 
+    private void SaveAsTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        bool show = SaveAsTemplateBTN.IsChecked == true;
+        TemplateSavePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (show)
+            TemplateNameBox.Focus();
+    }
+
+    private void SaveTemplateSave_Click(object sender, RoutedEventArgs e)
+    {
+        string name = TemplateNameBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TemplateNameBox.Focus();
+            return;
+        }
+
+        if (wordBorders.Count == 0)
+        {
+            MessageBox.Show(
+                "Use Ctrl+drag to draw at least one region before saving.",
+                "No Regions",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        double cw = RectanglesCanvas.ActualWidth;
+        double ch = RectanglesCanvas.ActualHeight;
+
+        // Sort regions in reading order: top-to-bottom, then left-to-right
+        List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
+
+        List<TemplateRegion> regions = sorted.Select((wb, i) => new TemplateRegion
+        {
+            RegionNumber = i + 1,
+            Label = string.IsNullOrWhiteSpace(wb.Word) ? $"Region {i + 1}" : wb.Word,
+            RatioLeft = wb.Left / cw,
+            RatioTop = wb.Top / ch,
+            RatioWidth = wb.ActualWidth / cw,
+            RatioHeight = wb.ActualHeight / ch,
+        }).ToList();
+
+        GrabTemplate template = new(name)
+        {
+            OutputTemplate = OutputTemplateBox.Text,
+            ReferenceImageWidth = cw,
+            ReferenceImageHeight = ch,
+            Regions = regions,
+        };
+
+        GrabTemplateManager.AddOrUpdateTemplate(template);
+
+        SaveAsTemplateBTN.IsChecked = false;
+        TemplateSavePanel.Visibility = Visibility.Collapsed;
+        TemplateNameBox.Text = string.Empty;
+        OutputTemplateBox.Text = string.Empty;
+
+        MessageBox.Show(
+            $"Template \"{name}\" saved with {regions.Count} region(s).\n\nEnable it in Post-Grab Actions Settings to use it during a Fullscreen Grab.",
+            "Template Saved",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void SaveTemplateCancel_Click(object sender, RoutedEventArgs e)
+    {
+        SaveAsTemplateBTN.IsChecked = false;
+        TemplateSavePanel.Visibility = Visibility.Collapsed;
+    }
+
     private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         RemoveTableLines();
