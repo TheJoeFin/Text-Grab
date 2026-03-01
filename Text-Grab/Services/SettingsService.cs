@@ -98,9 +98,15 @@ internal class SettingsService : IDisposable
         {
             _localSettings.Values[name] = value;
         }
+        catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == unchecked((int)0x80073DC8))
+        {
+            // The value exceeds the ApplicationDataContainer size limit (8 KB).
+            // Large data should be stored in a file instead.
+            Debug.WriteLine($"Setting '{name}' exceeds ApplicationDataContainer size limit: {ex.Message}");
+        }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to Save setting from ApplicationDataContainer {ex.Message}");
+            Debug.WriteLine($"Failed to Save setting in ApplicationDataContainer: {ex.Message}");
 #if DEBUG
             throw;
 #endif
