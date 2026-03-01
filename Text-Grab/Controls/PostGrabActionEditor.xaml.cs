@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Data;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
+using Text_Grab.Views;
 using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls;
@@ -73,6 +74,9 @@ public partial class PostGrabActionEditor : FluentWindow
 
         // Update empty state visibility
         UpdateEmptyStateVisibility();
+
+        // Load templates
+        LoadTemplates();
     }
 
     #endregion Constructors
@@ -197,6 +201,71 @@ public partial class PostGrabActionEditor : FluentWindow
             NoAvailableActionsText.Visibility = Visibility.Collapsed;
             AvailableActionsListBox.Visibility = Visibility.Visible;
         }
+    }
+
+    private void LoadTemplates()
+    {
+        List<GrabTemplate> templates = GrabTemplateManager.GetAllTemplates();
+        TemplatesListBox.ItemsSource = templates;
+        UpdateTemplateEmptyState(templates.Count);
+    }
+
+    private void UpdateTemplateEmptyState(int count)
+    {
+        bool hasTemplates = count > 0;
+        TemplatesListBox.Visibility = hasTemplates ? Visibility.Visible : Visibility.Collapsed;
+        NoTemplatesText.Visibility = hasTemplates ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OpenGrabFrameButton_Click(object sender, RoutedEventArgs e)
+    {
+        GrabFrame grabFrame = new();
+        grabFrame.Closed += (_, _) => RefreshTemplatesAndActions();
+        grabFrame.Show();
+        grabFrame.Activate();
+    }
+
+    private void DeleteTemplateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (TemplatesListBox.SelectedItem is not GrabTemplate selected)
+            return;
+
+        System.Windows.MessageBoxResult result = System.Windows.MessageBox.Show(
+            $"Delete template '{selected.Name}'?",
+            "Delete Template",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Question);
+
+        if (result != System.Windows.MessageBoxResult.Yes)
+            return;
+
+        GrabTemplateManager.DeleteTemplate(selected.Id);
+
+        // Also remove any enabled action tied to this template
+        ButtonInfo? toRemove = EnabledActions.FirstOrDefault(a => a.TemplateId == selected.Id);
+        if (toRemove is not null)
+            EnabledActions.Remove(toRemove);
+
+        RefreshTemplatesAndActions();
+    }
+
+    private void RefreshTemplatesAndActions()
+    {
+        LoadTemplates();
+
+        // Rebuild available actions list to include/exclude updated templates
+        List<ButtonInfo> allActions = PostGrabActionManager.GetAvailablePostGrabActions();
+        List<ButtonInfo> enabledIds = [.. EnabledActions];
+
+        AvailableActions.Clear();
+        foreach (ButtonInfo action in allActions
+            .Where(a => !enabledIds.Any(e => e.ButtonText == a.ButtonText && e.TemplateId == a.TemplateId))
+            .OrderBy(a => a.OrderNumber))
+        {
+            AvailableActions.Add(action);
+        }
+
+        UpdateEmptyStateVisibility();
     }
 
     #endregion Methods

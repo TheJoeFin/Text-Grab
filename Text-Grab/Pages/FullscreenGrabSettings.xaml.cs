@@ -134,6 +134,18 @@ public partial class FullscreenGrabSettings : Page
         }
     }
 
+    private void ManageTemplatesButton_Click(object sender, RoutedEventArgs e)
+    {
+        PostGrabActionEditor editor = new()
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        // ShowDialog returns true only on Save — update count regardless for consistency
+        editor.ShowDialog();
+        UpdateActionsCountText();
+    }
+
     private void UpdateActionsCountText()
     {
         List<ButtonInfo> enabledActions = PostGrabActionManager.GetEnabledPostGrabActions();
