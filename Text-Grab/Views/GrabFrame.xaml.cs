@@ -2372,13 +2372,12 @@ new GrabFrameOperationArgs()
     private void UpdateTemplatePickerItems()
     {
         List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
-        TemplateOutputBox.ItemsSource = sorted
+        TemplateOutputBox.ItemsSource = [.. sorted
             .Select((wb, i) =>
             {
                 string label = string.IsNullOrWhiteSpace(wb.Word) ? $"Region {i + 1}" : wb.Word;
                 return new InlinePickerItem(label, $"{{{i + 1}}}");
-            })
-            .ToList();
+            })];
     }
 
     private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
@@ -2395,10 +2394,10 @@ new GrabFrameOperationArgs()
             ResetGrabFrame();
             await Task.Delay(300);
             BitmapImage droppedImage = new();
-                droppedImage.BeginInit();
-                droppedImage.UriSource = fileURI;
-                droppedImage.CacheOption = BitmapCacheOption.OnLoad; // decode fully into memory and release the file handle
-                System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
+            droppedImage.BeginInit();
+            droppedImage.UriSource = fileURI;
+            droppedImage.CacheOption = BitmapCacheOption.OnLoad; // decode fully into memory and release the file handle
+            System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;

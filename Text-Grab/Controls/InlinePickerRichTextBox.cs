@@ -164,8 +164,10 @@ public class InlinePickerRichTextBox : RichTextBox
     {
         // Provide a minimal ControlTemplate so WPF-UI's touch-sized ListBoxItem
         // template (large MinHeight + padding) is completely replaced.
-        FrameworkElementFactory border = new(typeof(Border));
-        border.Name = "Bd";
+        FrameworkElementFactory border = new(typeof(Border))
+        {
+            Name = "Bd"
+        };
         border.SetValue(Border.BackgroundProperty, Brushes.Transparent);
         border.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
         border.SetValue(FrameworkElement.MarginProperty, new Thickness(1, 1, 1, 0));
@@ -356,9 +358,9 @@ public class InlinePickerRichTextBox : RichTextBox
         while (hit is not null and not ListBoxItem)
             hit = VisualTreeHelper.GetParent(hit);
 
-        if (hit is ListBoxItem)
+        if (hit is ListBoxItem item)
         {
-            _listBox.SelectedItem = ((ListBoxItem)hit).DataContext ?? ((ListBoxItem)hit).Content;
+            _listBox.SelectedItem = item.DataContext ?? item.Content;
             CommitSelection();
             e.Handled = true;
             Focus();

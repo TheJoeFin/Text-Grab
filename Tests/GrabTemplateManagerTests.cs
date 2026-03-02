@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 
