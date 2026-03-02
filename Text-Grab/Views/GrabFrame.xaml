@@ -654,18 +654,12 @@
                         VerticalAlignment="Center"
                         Text="Output (type { to pick):"
                         ToolTip="Type { to insert a region chip. Plain text is also supported." />
-                    <TextBox
-                        x:Name="OutputTemplateBox"
-                        Grid.Column="3"
-                        Padding="4,2"
-                        VerticalContentAlignment="Center"
-                        FontFamily="Consolas"
-                        ToolTip="Use {1}, {2}, etc. for region values."
-                        Visibility="Collapsed" />
                     <controls:InlinePickerRichTextBox
                         x:Name="TemplateOutputBox"
                         Grid.Column="3"
                         VerticalAlignment="Center"
+                        AcceptsReturn="True"
+                        AcceptsTab="True"
                         ToolTip="Type { to open the region picker. Plain text also supported." />
                     <Button
                         Grid.Column="4"
