@@ -37,21 +37,14 @@
     WindowStyle="None"
     mc:Ignorable="d">
     <Window.Resources>
-        <BitmapImage x:Key="TextGrabIcon"
-                UriSource="/Text-Grab;component/Images/TealSelect40.png"/>
+        <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
 
-        <Style x:Key="SymbolTextStyle"
-                TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment"
-                    Value="Center"/>
-            <Setter Property="VerticalAlignment"
-                    Value="Center"/>
-            <Setter Property="FontFamily"
-                    Value="Segoe MDL2 Assets"/>
-            <Setter Property="FontSize"
-                    Value="16"/>
-            <Setter Property="Margin"
-                    Value="4"/>
+        <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="4" />
         </Style>
     </Window.Resources>
 
@@ -59,31 +52,31 @@
         <CommandBinding
             CanExecute="CanPasteExecute"
             Command="{x:Static local:GrabFrame.PasteCommand}"
-            Executed="PasteExecuted"/>
+            Executed="PasteExecuted" />
         <CommandBinding
             CanExecute="CanUndoCommand"
             Command="{x:Static local:GrabFrame.UndoCommand}"
-            Executed="UndoExecuted"/>
+            Executed="UndoExecuted" />
         <CommandBinding
             CanExecute="CanRedoExecuted"
             Command="{x:Static local:GrabFrame.RedoCommand}"
-            Executed="RedoExecuted"/>
+            Executed="RedoExecuted" />
         <CommandBinding
             CanExecute="CanExecuteMergeWordBorders"
             Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
-            Executed="DeleteWordBordersExecuted"/>
+            Executed="DeleteWordBordersExecuted" />
         <CommandBinding
             CanExecute="CanChangeWordBorderExecute"
             Command="{x:Static local:GrabFrame.MergeWordsCommand}"
-            Executed="MergeWordBordersExecuted"/>
+            Executed="MergeWordBordersExecuted" />
         <CommandBinding
             CanExecute="CanExecuteGrab"
             Command="{x:Static local:GrabFrame.GrabCommand}"
-            Executed="GrabExecuted"/>
+            Executed="GrabExecuted" />
         <CommandBinding
             CanExecute="CanExecuteGrab"
             Command="{x:Static local:GrabFrame.GrabTrimCommand}"
-            Executed="GrabTrimExecuted"/>
+            Executed="GrabTrimExecuted" />
     </Window.CommandBindings>
 
     <WindowChrome.WindowChrome>
@@ -91,7 +84,7 @@
             CaptionHeight="32"
             CornerRadius="18,18,2,18"
             GlassFrameThickness="0"
-            ResizeBorderThickness="5"/>
+            ResizeBorderThickness="5" />
     </WindowChrome.WindowChrome>
     <Border
         BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
@@ -99,10 +92,10 @@
         ClipToBounds="True">
         <Grid ClipToBounds="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="32"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="auto"/>
+                <RowDefinition Height="32" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <Grid
                 Grid.Row="0"
@@ -110,11 +103,11 @@
                 VerticalAlignment="Top"
                 Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Menu
@@ -122,227 +115,224 @@
                     VerticalAlignment="Center"
                     ClipToBounds="True"
                     WindowChrome.IsHitTestVisibleInChrome="True">
-                    <MenuItem Header="File"
-                            SubmenuOpened="MenuItem_SubmenuOpened">
+                    <MenuItem Header="File" SubmenuOpened="MenuItem_SubmenuOpened">
                         <MenuItem
                             x:Name="AutoOcrCheckBox"
                             Click="AutoOcrCheckBox_Click"
                             Header="Auto Start OCR"
                             IsCheckable="True"
-                            IsChecked="True"/>
+                            IsChecked="True" />
                         <MenuItem
                             x:Name="AlwaysUpdateEtwCheckBox"
                             Header="Auto Update Content in Edit Text Window"
                             IsCheckable="True"
-                            IsChecked="True"/>
+                            IsChecked="True" />
                         <MenuItem
                             x:Name="ReadBarcodesMenuItem"
                             Checked="ReadBarcodesMenuItem_Checked"
                             Header="Try to read barcodes and QR Codes"
                             IsCheckable="True"
-                            Unchecked="ReadBarcodesMenuItem_Checked"/>
+                            Unchecked="ReadBarcodesMenuItem_Checked" />
                         <MenuItem
                             x:Name="IsTopmostMenuItem"
                             Header="Keep Grab Frame On Top"
                             IsCheckable="True"
-                            IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}"/>
-                        <Separator/>
-                        <MenuItem x:Name="TranslationMenuItem"
-                                Header="Translation to...">
+                            IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}" />
+                        <Separator />
+                        <MenuItem x:Name="TranslationMenuItem" Header="Translation to...">
                             <MenuItem
                                 x:Name="EnableTranslationMenuItem"
                                 Click="EnableTranslationMenuItem_Click"
                                 Header="Enable Real-time Translation"
-                                IsCheckable="True"/>
-                            <Separator/>
+                                IsCheckable="True" />
+                            <Separator />
                             <MenuItem Header="Target Language">
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="English"
                                     IsCheckable="True"
-                                    Tag="English"/>
+                                    Tag="English" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Spanish"
                                     IsCheckable="True"
-                                    Tag="Spanish"/>
+                                    Tag="Spanish" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="French"
                                     IsCheckable="True"
-                                    Tag="French"/>
+                                    Tag="French" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="German"
                                     IsCheckable="True"
-                                    Tag="German"/>
+                                    Tag="German" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Italian"
                                     IsCheckable="True"
-                                    Tag="Italian"/>
+                                    Tag="Italian" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Portuguese"
                                     IsCheckable="True"
-                                    Tag="Portuguese"/>
+                                    Tag="Portuguese" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Russian"
                                     IsCheckable="True"
-                                    Tag="Russian"/>
+                                    Tag="Russian" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Japanese"
                                     IsCheckable="True"
-                                    Tag="Japanese"/>
+                                    Tag="Japanese" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Chinese (Simplified)"
                                     IsCheckable="True"
-                                    Tag="Chinese (Simplified)"/>
+                                    Tag="Chinese (Simplified)" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Korean"
                                     IsCheckable="True"
-                                    Tag="Korean"/>
+                                    Tag="Korean" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Arabic"
                                     IsCheckable="True"
-                                    Tag="Arabic"/>
+                                    Tag="Arabic" />
                                 <MenuItem
                                     Click="TranslationLanguageMenuItem_Click"
                                     Header="Hindi"
                                     IsCheckable="True"
-                                    Tag="Hindi"/>
+                                    Tag="Hindi" />
                             </MenuItem>
                         </MenuItem>
-                        <Separator/>
+                        <Separator />
                         <MenuItem
                             Command="{x:Static local:GrabFrame.PasteCommand}"
                             Header="Paste Image"
-                            InputGestureText="Ctrl + Shift + V"/>
+                            InputGestureText="Ctrl + Shift + V" />
                         <MenuItem
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image..."
-                            InputGestureText="Ctrl + O"/>
-                        <MenuItem x:Name="OpenRecentGrabsMenuItem"
-                                Header="Recent Grabs"/>
-                        <Separator/>
+                            InputGestureText="Ctrl + O" />
+                        <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
+                        <Separator />
                         <MenuItem
                             Name="GrabMenuItem"
                             Command="{x:Static local:GrabFrame.GrabCommand}"
                             Header="_Grab"
-                            InputGestureText="Ctrl + G"/>
+                            InputGestureText="Ctrl + G" />
                         <MenuItem
                             Name="GrabTrimSingleMenuItem"
                             Command="{x:Static local:GrabFrame.GrabTrimCommand}"
                             Header="Grab text as Single Line"
-                            InputGestureText="Ctrl + Shift + G"/>
-                        <Separator/>
+                            InputGestureText="Ctrl + Shift + G" />
+                        <Separator />
                         <MenuItem
                             Name="SettingsMenuItem"
                             Click="SettingsBTN_Click"
-                            Header="Text Grab Settings"/>
+                            Header="Text Grab Settings" />
                         <MenuItem
                             Name="CloseMenuItem"
                             Click="OnCloseButtonClick"
                             Header="Close"
-                            InputGestureText="Alt + F4"/>
+                            InputGestureText="Alt + F4" />
                     </MenuItem>
                     <MenuItem Header="Edit">
                         <MenuItem
                             Name="RedoMenuItem"
                             Command="{x:Static local:GrabFrame.RedoCommand}"
                             Header="Redo"
-                            InputGestureText="Ctrl + Y"/>
+                            InputGestureText="Ctrl + Y" />
                         <MenuItem
                             Name="UndoMenuItem"
                             Command="{x:Static local:GrabFrame.UndoCommand}"
                             Header="Undo"
-                            InputGestureText="Ctrl + Z"/>
+                            InputGestureText="Ctrl + Z" />
                         <MenuItem
                             Name="SelectAllMenuItem"
                             Click="SelectAllWordBorders"
                             Header="Select All"
-                            InputGestureText="Ctrl + A"/>
+                            InputGestureText="Ctrl + A" />
                         <MenuItem
                             Name="AddEditOcrMenuItem"
                             Header="Add, move, or Resize lines"
                             InputGestureText="Hold Ctrl"
-                            IsCheckable="True"/>
-                        <Separator/>
+                            IsCheckable="True" />
+                        <Separator />
                         <MenuItem Header="Edit Image">
                             <MenuItem
                                 Name="InvertColorsMI"
                                 Click="InvertColorsMI_Click"
-                                Header="Invert Colors"/>
+                                Header="Invert Colors" />
                             <MenuItem
                                 Name="AutoContrastMI"
                                 Click="AutoContrastMI_Click"
-                                Header="Increase Contrast (Sigmoid)"/>
+                                Header="Increase Contrast (Sigmoid)" />
                             <MenuItem
                                 Name="BrightenMI"
                                 Click="BrightenMI_Click"
-                                Header="Brighten"/>
+                                Header="Brighten" />
                             <MenuItem
                                 Name="DarkenMI"
                                 Click="DarkenMI_Click"
-                                Header="Darken"/>
+                                Header="Darken" />
                             <MenuItem
                                 Name="GrayscaleMI"
                                 Click="GrayscaleMI_Click"
-                                Header="Grayscale"/>
+                                Header="Grayscale" />
                         </MenuItem>
                         <MenuItem
                             Click="RefreshBTN_Click"
                             Header="Refresh Grab Frame OCR Results"
-                            InputGestureText="(Ctrl + R)"/>
+                            InputGestureText="(Ctrl + R)" />
                         <MenuItem
                             Checked="AspectRationMI_Checked"
                             Header="Maintain Aspect Ratio"
                             IsCheckable="True"
                             IsChecked="{Binding IsChecked, ElementName=AspectRationMI, Mode=TwoWay}"
-                            Unchecked="AspectRationMI_Checked"/>
+                            Unchecked="AspectRationMI_Checked" />
                         <MenuItem
                             Click="FreezeToggleButton_Click"
                             Header="Freeze Image In Frame"
                             InputGestureText="F"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}"/>
+                            IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="TableToggleButton_Click"
                             Header="Analyze as a Table"
                             InputGestureText="T"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}"/>
+                            IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="EditToggleButton_Click"
                             Header="Allow recognized words to be edited"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=EditToggleButton, Mode=TwoWay}"/>
+                            IsChecked="{Binding IsChecked, ElementName=EditToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="EditTextBTN_Click"
                             Header="Send results to an Edit Text Window"
                             InputGestureText="E"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}"/>
-                        <Separator/>
+                            IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
+                        <Separator />
                         <MenuItem
                             x:Name="InvertSelectionMenuItem"
                             Click="InvertSelection"
                             Header="Invert Selection"
-                            InputGestureText="Ctrl + I"/>
+                            InputGestureText="Ctrl + I" />
                         <MenuItem
                             Command="{x:Static local:GrabFrame.MergeWordsCommand}"
                             Header="Merge Word Borders"
-                            InputGestureText="Ctrl + M"/>
+                            InputGestureText="Ctrl + M" />
                         <MenuItem
                             Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
                             Header="_Delete selected words"
-                            InputGestureText="Del"/>
-                        <Separator/>
+                            InputGestureText="Del" />
+                        <Separator />
                     </MenuItem>
                     <MenuItem Header="View">
                         <ui:MenuItem
@@ -350,43 +340,43 @@
                             Click="ScrollBehaviorMenuItem_Click"
                             Header="Scroll does nothing"
                             IsCheckable="True"
-                            Tag="None"/>
+                            Tag="None" />
                         <MenuItem
                             x:Name="ResizeScrollMenuItem"
                             Click="ScrollBehaviorMenuItem_Click"
                             Header="Scroll resizes Grab Frame"
                             IsCheckable="True"
-                            Tag="Resize"/>
+                            Tag="Resize" />
                         <MenuItem
                             x:Name="ZoomScrollMenuItem"
                             Click="ScrollBehaviorMenuItem_Click"
                             Header="Scroll Zooms Grab Frame (preview)"
                             IsCheckable="True"
-                            Tag="Zoom"/>
-                        <Separator/>
+                            Tag="Zoom" />
+                        <Separator />
                         <MenuItem
                             x:Name="CloseOnGrabMenuItem"
                             Click="CloseOnGrabMenuItem_Click"
                             Header="Close Frame on Grab"
-                            IsCheckable="True"/>
+                            IsCheckable="True" />
                     </MenuItem>
                     <MenuItem Header="_Help">
                         <MenuItem
                             x:Name="ContactMenuItem"
                             Click="ContactMenuItem_Click"
-                            Header="_Contact The Developer..."/>
+                            Header="_Contact The Developer..." />
                         <MenuItem
                             x:Name="RateAndReview"
                             Click="RateAndReview_Click"
-                            Header="_Rate and Review..."/>
+                            Header="_Rate and Review..." />
                         <MenuItem
                             x:Name="FeedbackMenuItem"
                             Click="FeedbackMenuItem_Click"
-                            Header="_Feedback..."/>
+                            Header="_Feedback..." />
                         <MenuItem
                             x:Name="AboutMenuItem"
                             Click="AboutMenuItem_Click"
-                            Header="_About"/>
+                            Header="_About" />
                     </MenuItem>
                 </Menu>
                 <StackPanel
@@ -406,10 +396,8 @@
                         <Image.Style>
                             <Style TargetType="Image">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            Value="False">
-                                        <Setter Property="Opacity"
-                                                Value="0.6"/>
+                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Opacity" Value="0.6" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -424,10 +412,8 @@
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            Value="False">
-                                        <Setter Property="Opacity"
-                                                Value="0.6"/>
+                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Opacity" Value="0.6" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -442,7 +428,7 @@
                     Padding="8,2"
                     HorizontalAlignment="Right"
                     Background="{ui:ThemeResource ApplicationBackgroundBrush}"
-                    WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    WindowChrome.IsHitTestVisibleInChrome="True" />
                 <StackPanel
                     Grid.Column="2"
                     Orientation="Horizontal"
@@ -454,8 +440,7 @@
                         Margin="0,-2,0,0"
                         Click="OnMinimizeButtonClick"
                         Style="{StaticResource TitleBarButtonStyle}">
-                        <TextBlock FontFamily="Segoe MDL2 Assets"
-                                Text=""/>
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                     </Button>
                     <Button
                         x:Name="RestoreButton"
@@ -467,7 +452,7 @@
                         <TextBlock
                             x:Name="RestoreTextlock"
                             FontFamily="Segoe MDL2 Assets"
-                            Text=""/>
+                            Text="" />
                     </Button>
                     <Button
                         x:Name="CloseButton"
@@ -476,8 +461,7 @@
                         Margin="0,-2,0,0"
                         Click="OnCloseButtonClick"
                         Style="{StaticResource TitleBarCloseButtonStyle}">
-                        <TextBlock FontFamily="Segoe MDL2 Assets"
-                                Text=""/>
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                     </Button>
 
                 </StackPanel>
@@ -487,8 +471,7 @@
                 Grid.Row="1"
                 ClipToBounds="True">
                 <Border.Background>
-                    <SolidColorBrush Opacity=".05"
-                            Color="White"/>
+                    <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
                 <Grid>
                     <controls:ZoomBorder x:Name="MainZoomBorder">
@@ -500,7 +483,7 @@
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Opacity="0"
-                                    Stretch="Uniform"/>
+                                    Stretch="Uniform" />
                                 <Canvas
                                     x:Name="RectanglesCanvas"
                                     Margin="-4,-2,0,0"
@@ -515,46 +498,46 @@
                                             <MenuItem
                                                 Command="{x:Static local:GrabFrame.PasteCommand}"
                                                 Header="Paste Image"
-                                                InputGestureText="Ctrl + Shift + V"/>
+                                                InputGestureText="Ctrl + Shift + V" />
                                             <MenuItem
                                                 Click="OpenImageMenuItem_Click"
                                                 Header="Open Image..."
-                                                InputGestureText="Ctrl + O"/>
-                                            <Separator/>
+                                                InputGestureText="Ctrl + O" />
+                                            <Separator />
                                             <MenuItem
                                                 x:Name="CopyText"
                                                 Click="CopyText_Click"
-                                                Header="Copy Text"/>
-                                            <Separator/>
+                                                Header="Copy Text" />
+                                            <Separator />
                                             <MenuItem
                                                 x:Name="AspectRationMI"
                                                 Checked="AspectRationMI_Checked"
                                                 Header="Maintain Aspect Ratio"
                                                 IsCheckable="True"
                                                 IsChecked="True"
-                                                Unchecked="AspectRationMI_Checked"/>
+                                                Unchecked="AspectRationMI_Checked" />
                                             <MenuItem
                                                 x:Name="FreezeMI"
                                                 Click="FreezeMI_Click"
                                                 Header="Toggle Freeze"
-                                                InputGestureText="F"/>
-                                            <Separator/>
+                                                InputGestureText="F" />
+                                            <Separator />
                                             <MenuItem
                                                 x:Name="TryToNumberMenuItem"
                                                 Click="TryToNumberMenuItem_Click"
-                                                Header="Try To Make _Numbers"/>
+                                                Header="Try To Make _Numbers" />
                                             <MenuItem
                                                 x:Name="TryToAlphaMenuItem"
                                                 Click="TryToAlphaMenuItem_Click"
-                                                Header="Try To Make _Letters"/>
+                                                Header="Try To Make _Letters" />
                                             <MenuItem
                                                 Command="{x:Static local:GrabFrame.MergeWordsCommand}"
                                                 Header="Merge Word Borders"
-                                                InputGestureText="Ctrl + M"/>
+                                                InputGestureText="Ctrl + M" />
                                             <MenuItem
                                                 Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
                                                 Header="_Delete selected words"
-                                                InputGestureText="Del"/>
+                                                InputGestureText="Del" />
                                         </ContextMenu>
                                     </Canvas.ContextMenu>
                                 </Canvas>
@@ -577,21 +560,21 @@
                                 Direction="270"
                                 Opacity="0.3"
                                 ShadowDepth="2"
-                                Color="Black"/>
+                                Color="Black" />
                         </Border.Effect>
                         <Grid Margin="8,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <ui:SymbolIcon
                                 Grid.Column="0"
                                 Margin="0,0,12,0"
                                 VerticalAlignment="Center"
                                 Foreground="{ui:ThemeResource AccentTextFillColorPrimaryBrush}"
-                                Symbol="LocalLanguage24"/>
+                                Symbol="LocalLanguage24" />
                             <StackPanel
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
@@ -602,13 +585,13 @@
                                     FontSize="12"
                                     FontWeight="SemiBold"
                                     Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
-                                    Text="Translating..."/>
+                                    Text="Translating..." />
                                 <ProgressBar
                                     x:Name="TranslationProgressBar"
                                     Height="6"
                                     Maximum="100"
                                     Minimum="0"
-                                    Value="0"/>
+                                    Value="0" />
                             </StackPanel>
                             <TextBlock
                                 x:Name="TranslationCountText"
@@ -617,7 +600,7 @@
                                 VerticalAlignment="Center"
                                 FontSize="11"
                                 Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                Text="0/0"/>
+                                Text="0/0" />
                             <Button
                                 x:Name="CancelTranslationButton"
                                 Grid.Column="3"
@@ -632,7 +615,7 @@
                                 <ui:SymbolIcon
                                     FontSize="16"
                                     Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                    Symbol="Dismiss24"/>
+                                    Symbol="Dismiss24" />
                             </Button>
                         </Grid>
                     </Border>
@@ -648,64 +631,69 @@
                 Visibility="Collapsed">
                 <Grid Margin="8,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="160"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock
                         Grid.Column="0"
                         Margin="0,0,6,0"
                         VerticalAlignment="Center"
-                        Text="Template Name:"/>
+                        Text="Template Name:" />
                     <TextBox
                         x:Name="TemplateNameBox"
                         Grid.Column="1"
                         Padding="4,2"
-                        VerticalContentAlignment="Center"/>
+                        VerticalContentAlignment="Center" />
                     <TextBlock
                         Grid.Column="2"
                         Margin="8,0,6,0"
                         VerticalAlignment="Center"
-                        Text="Output ({1}, {2}…):"
-                        ToolTip="Use {1}, {2}, etc. for region values. Regions are numbered left-to-right, top-to-bottom."/>
+                        Text="Output (type { to pick):"
+                        ToolTip="Type { to insert a region chip. Plain text is also supported." />
                     <TextBox
                         x:Name="OutputTemplateBox"
                         Grid.Column="3"
                         Padding="4,2"
                         VerticalContentAlignment="Center"
                         FontFamily="Consolas"
-                        ToolTip="Use {1}, {2}, etc. for region values. Use {1:trim}, {1:upper}, {1:lower} for formatting. Use \n for newline."/>
+                        ToolTip="Use {1}, {2}, etc. for region values."
+                        Visibility="Collapsed" />
+                    <controls:InlinePickerRichTextBox
+                        x:Name="TemplateOutputBox"
+                        Grid.Column="3"
+                        VerticalAlignment="Center"
+                        ToolTip="Type { to open the region picker. Plain text also supported." />
                     <Button
                         Grid.Column="4"
                         Margin="8,0,4,0"
                         Padding="8,4"
                         Click="SaveTemplateSave_Click"
-                        Content="Save Template"/>
+                        Content="Save Template" />
                     <Button
                         Grid.Column="5"
                         Padding="8,4"
                         Click="SaveTemplateCancel_Click"
-                        Content="Cancel"/>
+                        Content="Cancel" />
                 </Grid>
             </Border>
 
-            <Border Grid.Row="3"
-                    Background="{ui:ThemeResource ApplicationBackgroundBrush}">
+            <Border Grid.Row="3" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid
                     Height="30"
                     Margin="6"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
 
                     <TextBox
@@ -718,20 +706,20 @@
                         TextChanged="SearchBox_TextChanged">
                         <TextBox.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Command="ApplicationCommands.Cut"/>
-                                <MenuItem Command="ApplicationCommands.Copy"/>
-                                <MenuItem Command="ApplicationCommands.Paste"/>
-                                <Separator/>
+                                <MenuItem Command="ApplicationCommands.Cut" />
+                                <MenuItem Command="ApplicationCommands.Copy" />
+                                <MenuItem Command="ApplicationCommands.Paste" />
+                                <Separator />
                                 <MenuItem
                                     x:Name="SearchWithRegexCheckBox"
                                     Click="SearchBox_GotFocus"
                                     Header="Search with Regex"
-                                    IsCheckable="True"/>
+                                    IsCheckable="True" />
                                 <MenuItem
                                     x:Name="ExactMatchChkBx"
                                     Click="SearchBox_GotFocus"
                                     Header="Match searches exactly"
-                                    IsCheckable="True"/>
+                                    IsCheckable="True" />
                             </ContextMenu>
                         </TextBox.ContextMenu>
                     </TextBox>
@@ -745,7 +733,7 @@
                         Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                         IsHitTestVisible="False"
                         Opacity="0.5"
-                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}"/>
+                        Visibility="{Binding Visibility, ElementName=SearchBox, Mode=OneWay}" />
                     <controls:CollapsibleButton
                         x:Name="ClearBTN"
                         Grid.Column="1"
@@ -757,7 +745,7 @@
                         Click="ClearBTN_Click"
                         Foreground="LightGray"
                         IsSymbol="True"
-                        Visibility="Collapsed"/>
+                        Visibility="Collapsed" />
 
                     <Menu
                         x:Name="MatchesMenu"
@@ -775,15 +763,14 @@
                                     x:Name="MatchesTXTBLK"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
-                                    Text="Matches: 0"/>
+                                    Text="Matches: 0" />
                             </MenuItem.Header>
-                            <MenuItem Click="HandleDelete"
-                                    Header="Delete Selected"/>
-                            <Separator/>
+                            <MenuItem Click="HandleDelete" Header="Delete Selected" />
+                            <Separator />
                             <MenuItem
                                 Name="EditMatchesMenuItem"
                                 Click="EditMatchesMenuItem_Click"
-                                Header="Edit Selected in new Window"/>
+                                Header="Edit Selected in new Window" />
                         </MenuItem>
                     </Menu>
 
@@ -802,7 +789,7 @@
                                     VerticalAlignment="Center"
                                     FontFamily="Segoe UI"
                                     Style="{StaticResource SymbolTextStyle}"
-                                    Text="{Binding LanguageTag}"/>
+                                    Text="{Binding LanguageTag}" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
@@ -821,7 +808,7 @@
                             ButtonText="Re-OCR Frame"
                             Click="RefreshBTN_Click"
                             IsSymbol="True"
-                            ToolTip="Re-OCR Frame (Ctrl + R)"/>
+                            ToolTip="Re-OCR Frame (Ctrl + R)" />
                         <controls:CollapsibleButton
                             x:Name="OcrFrameBTN"
                             Margin="0"
@@ -829,7 +816,7 @@
                             ButtonText="OCR Frame"
                             Click="RefreshBTN_Click"
                             ToolTip="OCR Frame (Ctrl + R)"
-                            Visibility="Collapsed"/>
+                            Visibility="Collapsed" />
 
                         <ToggleButton
                             x:Name="FreezeToggleButton"
@@ -839,7 +826,7 @@
                             Click="FreezeToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(F) Freeze the content within Grab Frame">
-                            <ui:SymbolIcon Symbol="Pause24"/>
+                            <ui:SymbolIcon Symbol="Pause24" />
                         </ToggleButton>
 
                         <ToggleButton
@@ -850,7 +837,7 @@
                             Click="TableToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) Analyze content as tables">
-                            <ui:SymbolIcon Symbol="Table24"/>
+                            <ui:SymbolIcon Symbol="Table24" />
                         </ToggleButton>
 
                         <ToggleButton
@@ -861,7 +848,7 @@
                             Click="TranslateToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="Enable real-time translation">
-                            <ui:SymbolIcon Symbol="LocalLanguage24"/>
+                            <ui:SymbolIcon Symbol="LocalLanguage24" />
                         </ToggleButton>
 
                         <ToggleButton
@@ -888,7 +875,7 @@
                             IsChecked="False"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(E) Edit individual words in Grab Frame">
-                            <ui:SymbolIcon Symbol="Window24"/>
+                            <ui:SymbolIcon Symbol="Window24" />
                         </ToggleButton>
 
                         <controls:CollapsibleButton
@@ -899,7 +886,7 @@
                             Click="SettingsBTN_Click"
                             IsSymbol="True"
                             ToolTip="Open Text Grab Settings"
-                            Visibility="Collapsed"/>
+                            Visibility="Collapsed" />
 
                         <ToggleButton
                             x:Name="SaveAsTemplateBTN"
@@ -909,7 +896,7 @@
                             Click="SaveAsTemplate_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="Save current Ctrl+drag regions as a Grab Template">
-                            <ui:SymbolIcon Symbol="DocumentSave24"/>
+                            <ui:SymbolIcon Symbol="DocumentSave24" />
                         </ToggleButton>
                     </StackPanel>
 
@@ -921,7 +908,7 @@
                         ButtonSymbol="Copy24"
                         ButtonText="Grab"
                         Command="{x:Static local:GrabFrame.GrabCommand}"
-                        ToolTip="Grab text in the Grab Frame"/>
+                        ToolTip="Grab text in the Grab Frame" />
                 </Grid>
             </Border>
         </Grid>

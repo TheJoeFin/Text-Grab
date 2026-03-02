@@ -67,15 +67,22 @@ public static class GrabTemplateManager
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
 
-            string safeName = Regex.Replace(templateName.ToLowerInvariant(), @"[^\w]+", "-").Trim('-');
+            string safeName = templateName.ReplaceReservedCharacters();
             string shortId = templateId.Length >= 8 ? templateId[..8] : templateId;
             string filePath = Path.Combine(folder, $"{safeName}_{shortId}.png");
 
+            // Write to a temp file first so the encoder never contends with WPF's
+            // read lock on filePath (held when BitmapImage was loaded without OnLoad).
+            string tempPath = Path.Combine(folder, $"{Guid.NewGuid():N}.tmp");
+
             PngBitmapEncoder encoder = new();
             encoder.Frames.Add(BitmapFrame.Create(imageSource));
-            using FileStream fs = new(filePath, FileMode.Create, FileAccess.Write);
-            encoder.Save(fs);
+            using (FileStream fs = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                encoder.Save(fs);
 
+            // Atomically replace the destination; succeeds even when the target file
+            // is open for reading by another process (e.g. WPF's BitmapImage).
+            File.Move(tempPath, filePath, overwrite: true);
             return filePath;
         }
         catch (Exception ex)

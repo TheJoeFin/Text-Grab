@@ -54,7 +54,7 @@ public partial class GrabFrame : Window
     private TextBox? destinationTextBox;
     private ImageSource? frameContentImageSource;
     private HistoryInfo? historyItem;
-    private GrabTemplate? _editingTemplate;
+    private readonly GrabTemplate? _editingTemplate;
     private string? _currentImagePath;
     private bool hasLoadedImageSource = false;
     private bool IsDragOver = false;
@@ -156,7 +156,6 @@ public partial class GrabFrame : Window
     private async Task LoadTemplateForEditing(GrabTemplate template)
     {
         TemplateNameBox.Text = template.Name;
-        OutputTemplateBox.Text = template.OutputTemplate;
 
         SaveAsTemplateBTN.IsChecked = true;
         TemplateSavePanel.Visibility = Visibility.Visible;
@@ -208,6 +207,9 @@ public partial class GrabFrame : Window
 
         EnterEditMode();
         UpdateTemplateBadges();
+        UpdateTemplatePickerItems();
+        // Repopulate the output box AFTER ItemsSource is set so chips are recreated correctly
+        TemplateOutputBox.SetSerializedText(template.OutputTemplate);
         reSearchTimer.Start();
     }
 
@@ -2261,7 +2263,14 @@ new GrabFrameOperationArgs()
         bool show = SaveAsTemplateBTN.IsChecked == true;
         TemplateSavePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (show)
+        {
+            if (!IsFreezeMode)
+            {
+                FreezeToggleButton.IsChecked = true;
+                FreezeGrabFrame();
+            }
             TemplateNameBox.Focus();
+        }
 
         UpdateTemplateBadges();
     }
@@ -2303,7 +2312,7 @@ new GrabFrameOperationArgs()
 
         GrabTemplate template = new(name)
         {
-            OutputTemplate = OutputTemplateBox.Text,
+            OutputTemplate = TemplateOutputBox.GetSerializedText(),
             ReferenceImageWidth = cw,
             ReferenceImageHeight = ch,
             Regions = regions,
@@ -2325,7 +2334,7 @@ new GrabFrameOperationArgs()
         SaveAsTemplateBTN.IsChecked = false;
         TemplateSavePanel.Visibility = Visibility.Collapsed;
         TemplateNameBox.Text = string.Empty;
-        OutputTemplateBox.Text = string.Empty;
+        TemplateOutputBox.SetSerializedText(string.Empty);
         UpdateTemplateBadges();
 
         MessageBox.Show(
@@ -2356,6 +2365,20 @@ new GrabFrameOperationArgs()
         List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
         for (int i = 0; i < sorted.Count; i++)
             sorted[i].TemplateIndex = i + 1;
+
+        UpdateTemplatePickerItems();
+    }
+
+    private void UpdateTemplatePickerItems()
+    {
+        List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
+        TemplateOutputBox.ItemsSource = sorted
+            .Select((wb, i) =>
+            {
+                string label = string.IsNullOrWhiteSpace(wb.Word) ? $"Region {i + 1}" : wb.Word;
+                return new InlinePickerItem(label, $"{{{i + 1}}}");
+            })
+            .ToList();
     }
 
     private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
@@ -2372,9 +2395,10 @@ new GrabFrameOperationArgs()
             ResetGrabFrame();
             await Task.Delay(300);
             BitmapImage droppedImage = new();
-            droppedImage.BeginInit();
-            droppedImage.UriSource = fileURI;
-            System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
+                droppedImage.BeginInit();
+                droppedImage.UriSource = fileURI;
+                droppedImage.CacheOption = BitmapCacheOption.OnLoad; // decode fully into memory and release the file handle
+                System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
@@ -2595,7 +2619,7 @@ new GrabFrameOperationArgs()
         if (IsCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
 
-        if (IsEditingAnyWordBorders || Keyboard.FocusedElement is TextBox)
+        if (IsEditingAnyWordBorders || Keyboard.FocusedElement is TextBox or RichTextBox)
             return;
 
         if (e.Key == Key.Delete)
