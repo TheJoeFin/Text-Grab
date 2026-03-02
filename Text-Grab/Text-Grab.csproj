@@ -61,6 +61,7 @@
         <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="1.8.47" />
         <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="1.8.260203002" />
         <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="1.8.260209005" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="1.8.260204000" />
         <PackageReference Include="NCalcAsync" Version="5.12.0" />
         <PackageReference Include="UnitsNet" Version="5.75.0" />
         <PackageReference Include="WPF-UI" Version="4.2.0" />
