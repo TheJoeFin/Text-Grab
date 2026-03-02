@@ -285,6 +285,23 @@ public partial class GrabFrame : Window
         UpdateFrameText();
     }
 
+    /// <summary>
+    /// Returns the physical-pixel screen rectangle that exactly covers the
+    /// transparent content area (RectanglesBorder, Row 1 of the grid).
+    /// Uses PointToScreen so it is always accurate regardless of border
+    /// thickness, DPI, or future layout changes.
+    /// </summary>
+    internal System.Drawing.Rectangle GetContentAreaScreenRect()
+    {
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        Point topLeft = RectanglesBorder.PointToScreen(new Point(0, 0));
+        return new System.Drawing.Rectangle(
+            (int)topLeft.X,
+            (int)topLeft.Y,
+            (int)(RectanglesBorder.ActualWidth * dpi.DpiScaleX),
+            (int)(RectanglesBorder.ActualHeight * dpi.DpiScaleY));
+    }
+
     public Rect GetImageContentRect()
     {
         // This is a WIP to try to remove the gray letterboxes on either
@@ -1070,31 +1087,32 @@ public partial class GrabFrame : Window
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
 
-        Point windowPosition = this.GetAbsolutePosition();
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         double canvasScale = CanvasViewBox.GetHorizontalScaleFactor();
-        Point rectanglesPosition = RectanglesCanvas.TransformToAncestor(this)
-                                                   .Transform(new Point(0, 0));
-
         if (double.IsNaN(canvasScale))
             canvasScale = 1;
 
-        double ContentWidth = RectanglesCanvas.RenderSize.Width;
-        double ContentHeight = RectanglesCanvas.RenderSize.Height;
+        double contentWidth = RectanglesCanvas.RenderSize.Width;
+        double contentHeight = RectanglesCanvas.RenderSize.Height;
 
-        if (ContentWidth == 4 || ContentHeight == 2)
+        // When the canvas hasn't been measured yet (Viewbox content is still
+        // at its minimum size), fall back to the containing border's dimensions.
+        if (contentWidth <= 4 || contentHeight <= 2)
         {
-            ContentWidth = RectanglesBorder.RenderSize.Width;
-            ContentHeight = RectanglesBorder.RenderSize.Height;
-            rectanglesPosition = new(-2, 32);
+            contentWidth = RectanglesBorder.ActualWidth;
+            contentHeight = RectanglesBorder.ActualHeight;
+            canvasScale = 1;
         }
 
+        // PointToScreen gives the exact physical-pixel origin of the canvas
+        // regardless of border thickness, DPI, or layout changes.
+        Point scanTopLeft = RectanglesCanvas.PointToScreen(new Point(0, 0));
         System.Drawing.Rectangle rectCanvasSize = new()
         {
-            Width = (int)(ContentWidth * dpi.DpiScaleX * canvasScale),
-            Height = (int)(ContentHeight * dpi.DpiScaleY * canvasScale),
-            X = (int)((windowPosition.X + rectanglesPosition.X) * dpi.DpiScaleX),
-            Y = (int)((windowPosition.Y + rectanglesPosition.Y) * dpi.DpiScaleY)
+            X = (int)scanTopLeft.X,
+            Y = (int)scanTopLeft.Y,
+            Width = (int)(contentWidth * dpi.DpiScaleX * canvasScale),
+            Height = (int)(contentHeight * dpi.DpiScaleY * canvasScale),
         };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Length == 0)

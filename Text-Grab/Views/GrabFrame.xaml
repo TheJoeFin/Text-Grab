@@ -17,8 +17,8 @@
     AllowDrop="True"
     AllowsTransparency="True"
     Background="Transparent"
-    BorderBrush="Gray"
-    BorderThickness="0.2"
+    BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
+    BorderThickness="1"
     Closed="Window_Closed"
     Closing="GrabFrameWindow_Closing"
     Deactivated="GrabFrameWindow_Deactivated"
@@ -84,7 +84,7 @@
             CaptionHeight="32"
             CornerRadius="18,18,2,18"
             GlassFrameThickness="0"
-            ResizeBorderThickness="5" />
+            ResizeBorderThickness="8" />
     </WindowChrome.WindowChrome>
     <Border
         BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
