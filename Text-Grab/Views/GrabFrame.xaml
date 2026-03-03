@@ -92,7 +92,7 @@
         ClipToBounds="True">
         <Grid ClipToBounds="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="32" />
+                <RowDefinition Height="34" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="auto" />

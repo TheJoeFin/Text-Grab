@@ -667,15 +667,35 @@ public partial class FullscreenGrab : Window
         // bottom bar and width of GrabFrame
         GetDpiAdjustedRegionOfSelectBorder(out DpiScale dpi, out double posLeft, out double posTop);
 
-        // TODO: The Grab Frame does not get the background image and position it.
-        // BackgroundImage should be passed to the GF and used as the image
-        // it would need to be positioned/cropped to the bounds of the GF
-
-        GrabFrame grabFrame = new()
+        // Crop the frozen background image to the selected region so the GrabFrame
+        // shows exactly what the user saw in the Fullscreen Grab (freeze continuity).
+        GrabFrame grabFrame;
+        if (BackgroundImage.Source is BitmapSource backgroundBitmap)
         {
-            Left = posLeft,
-            Top = posTop,
-        };
+            Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+            int cropX = Math.Max(0, (int)(Canvas.GetLeft(selectBorder) * m.M11));
+            int cropY = Math.Max(0, (int)(Canvas.GetTop(selectBorder) * m.M22));
+            int cropW = Math.Min((int)(selectBorder.Width * m.M11), backgroundBitmap.PixelWidth - cropX);
+            int cropH = Math.Min((int)(selectBorder.Height * m.M22), backgroundBitmap.PixelHeight - cropY);
+
+            if (cropW > 0 && cropH > 0)
+            {
+                CroppedBitmap croppedBitmap = new(backgroundBitmap, new Int32Rect(cropX, cropY, cropW, cropH));
+                croppedBitmap.Freeze();
+                grabFrame = new GrabFrame(croppedBitmap);
+            }
+            else
+            {
+                grabFrame = new GrabFrame();
+            }
+        }
+        else
+        {
+            grabFrame = new GrabFrame();
+        }
+
+        grabFrame.Left = posLeft;
+        grabFrame.Top = posTop;
 
         grabFrame.Left -= (2 / dpi.PixelsPerDip);
         grabFrame.Top -= (48 / dpi.PixelsPerDip);

@@ -139,6 +139,27 @@ public partial class GrabFrame : Window
     }
 
     /// <summary>
+    /// Creates a GrabFrame pre-loaded with a frozen image cropped from a Fullscreen Grab selection.
+    /// The frame opens in freeze mode showing the provided bitmap and immediately runs OCR.
+    /// </summary>
+    /// <param name="frozenImage">The cropped bitmap to display as the initial frozen background.</param>
+    public GrabFrame(BitmapSource frozenImage)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = true;
+        frameContentImageSource = frozenImage;
+        hasLoadedImageSource = true;
+
+        Loaded += (s, e) =>
+        {
+            FreezeToggleButton.IsChecked = true;
+            FreezeGrabFrame();
+            reDrawTimer.Start();
+        };
+    }
+
+    /// <summary>
     /// Opens GrabFrame in template editing mode with existing regions pre-loaded.
     /// </summary>
     /// <param name="template">The template to edit.</param>
@@ -231,10 +252,29 @@ public partial class GrabFrame : Window
             return;
         }
 
+        history.ImageContent = bgBitmap;
         frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
         hasLoadedImageSource = true;
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
+
+        if (history.PositionRect != Rect.Empty)
+        {
+            Left = history.PositionRect.Left;
+            Top = history.PositionRect.Top;
+
+            if (history.SourceMode == TextGrabMode.Fullscreen)
+            {
+                Size nonContentSize = GetGrabFrameNonContentSize();
+                Width = history.PositionRect.Width + nonContentSize.Width;
+                Height = history.PositionRect.Height + nonContentSize.Height;
+            }
+            else
+            {
+                Width = history.PositionRect.Width;
+                Height = history.PositionRect.Height;
+            }
+        }
 
         List<WordBorderInfo>? wbInfoList = null;
 
@@ -243,6 +283,8 @@ public partial class GrabFrame : Window
 
         if (wbInfoList is not null && wbInfoList.Count > 0)
         {
+            ScaleHistoryWordBordersToCanvas(history, wbInfoList);
+
             foreach (WordBorderInfo info in wbInfoList)
             {
                 WordBorder wb = new(info)
@@ -263,26 +305,95 @@ public partial class GrabFrame : Window
             ShouldSaveOnClose = true;
         }
 
-        if (history.PositionRect != Rect.Empty)
-        {
-            Left = history.PositionRect.Left;
-            Top = history.PositionRect.Top;
-            Height = history.PositionRect.Height;
-            Width = history.PositionRect.Width;
-
-            if (history.SourceMode == TextGrabMode.Fullscreen)
-            {
-                int borderThickness = 2;
-                int titleBarHeight = 32;
-                int bottomBarHeight = 42;
-                Height += (titleBarHeight + bottomBarHeight);
-                Width += (2 * borderThickness);
-            }
-        }
-
         TableToggleButton.IsChecked = history.IsTable;
 
         UpdateFrameText();
+    }
+
+    private Size GetGrabFrameNonContentSize()
+    {
+        const double defaultNonContentWidth = 4;
+        const double defaultNonContentHeight = 74;
+
+        UpdateLayout();
+
+        if (ActualWidth <= 1 || ActualHeight <= 1
+            || RectanglesBorder.ActualWidth <= 1 || RectanglesBorder.ActualHeight <= 1)
+        {
+            return new Size(defaultNonContentWidth, defaultNonContentHeight);
+        }
+
+        double nonContentWidth = ActualWidth - RectanglesBorder.ActualWidth;
+        double nonContentHeight = ActualHeight - RectanglesBorder.ActualHeight;
+
+        if (!double.IsFinite(nonContentWidth) || nonContentWidth < 0 || nonContentWidth > 100)
+            nonContentWidth = defaultNonContentWidth;
+
+        if (!double.IsFinite(nonContentHeight) || nonContentHeight < 0 || nonContentHeight > 200)
+            nonContentHeight = defaultNonContentHeight;
+
+        return new Size(nonContentWidth, nonContentHeight);
+    }
+
+    private void ScaleHistoryWordBordersToCanvas(HistoryInfo history, List<WordBorderInfo> wbInfoList)
+    {
+        if (wbInfoList.Count == 0 || RectanglesCanvas.Width <= 0 || RectanglesCanvas.Height <= 0)
+            return;
+
+        Size savedContentSize = GetSavedHistoryContentSize(history);
+        if (savedContentSize.Width <= 0 || savedContentSize.Height <= 0)
+            return;
+
+        double scaleX = RectanglesCanvas.Width / savedContentSize.Width;
+        double scaleY = RectanglesCanvas.Height / savedContentSize.Height;
+        if (!double.IsFinite(scaleX) || !double.IsFinite(scaleY) || (scaleX <= 1.05 && scaleY <= 1.05))
+            return;
+
+        double maxRight = wbInfoList.Max(info => info.BorderRect.Right);
+        double maxBottom = wbInfoList.Max(info => info.BorderRect.Bottom);
+
+        // Scale only when saved word borders look like they were captured in
+        // the old window-content coordinate space rather than image-space.
+        if (maxRight > savedContentSize.Width * 1.1 || maxBottom > savedContentSize.Height * 1.1)
+            return;
+
+        foreach (WordBorderInfo info in wbInfoList)
+        {
+            Rect borderRect = info.BorderRect;
+            info.BorderRect = new Rect(
+                borderRect.Left * scaleX,
+                borderRect.Top * scaleY,
+                borderRect.Width * scaleX,
+                borderRect.Height * scaleY);
+        }
+    }
+
+    private Size GetSavedHistoryContentSize(HistoryInfo history)
+    {
+        if (history.ImageContent is System.Drawing.Bitmap imageContentBitmap
+            && imageContentBitmap.Width > 0 && imageContentBitmap.Height > 0)
+        {
+            return new Size(imageContentBitmap.Width, imageContentBitmap.Height);
+        }
+
+        Rect positionRect = history.PositionRect;
+        if (positionRect == Rect.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
+            return new Size(0, 0);
+
+        if (history.SourceMode == TextGrabMode.Fullscreen)
+            return new Size(positionRect.Width, positionRect.Height);
+
+        Size nonContentSize = GetGrabFrameNonContentSize();
+        double contentWidth = positionRect.Width - nonContentSize.Width;
+        double contentHeight = positionRect.Height - nonContentSize.Height;
+
+        if (!double.IsFinite(contentWidth) || contentWidth <= 0)
+            contentWidth = positionRect.Width;
+
+        if (!double.IsFinite(contentHeight) || contentHeight <= 0)
+            contentHeight = positionRect.Height;
+
+        return new Size(contentWidth, contentHeight);
     }
 
     /// <summary>
@@ -307,17 +418,21 @@ public partial class GrabFrame : Window
         // This is a WIP to try to remove the gray letterboxes on either
         // side of the image when zooming it.
 
-        Rect imageRect = Rect.Empty;
+        if (frameContentImageSource is null || !IsLoaded || !RectanglesCanvas.IsLoaded)
+            return Rect.Empty;
 
-        if (frameContentImageSource is null)
-            return imageRect;
+        Rect canvasPlacement = RectanglesCanvas.GetAbsolutePlacement(true);
+        if (canvasPlacement == Rect.Empty)
+            return Rect.Empty;
 
-        imageRect = RectanglesCanvas.GetAbsolutePlacement(true);
         Size rectCanvasSize = RectanglesCanvas.RenderSize;
-        imageRect.Width = rectCanvasSize.Width;
-        imageRect.Height = rectCanvasSize.Height;
+        if (!double.IsFinite(rectCanvasSize.Width) || !double.IsFinite(rectCanvasSize.Height)
+            || rectCanvasSize.Width <= 0 || rectCanvasSize.Height <= 0)
+        {
+            return canvasPlacement;
+        }
 
-        return imageRect;
+        return new Rect(canvasPlacement.X, canvasPlacement.Y, rectCanvasSize.Width, rectCanvasSize.Height);
     }
 
     private void StandardInitialize()
@@ -1088,32 +1203,13 @@ public partial class GrabFrame : Window
         wordBorders.Clear();
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
-        double canvasScale = CanvasViewBox.GetHorizontalScaleFactor();
-        if (double.IsNaN(canvasScale))
-            canvasScale = 1;
-
-        double contentWidth = RectanglesCanvas.RenderSize.Width;
-        double contentHeight = RectanglesCanvas.RenderSize.Height;
-
-        // When the canvas hasn't been measured yet (Viewbox content is still
-        // at its minimum size), fall back to the containing border's dimensions.
-        if (contentWidth <= 4 || contentHeight <= 2)
+        System.Drawing.Rectangle rectCanvasSize = GetContentAreaScreenRect();
+        if (rectCanvasSize.Width <= 0 || rectCanvasSize.Height <= 0)
         {
-            contentWidth = RectanglesBorder.ActualWidth;
-            contentHeight = RectanglesBorder.ActualHeight;
-            canvasScale = 1;
+            isDrawing = false;
+            reDrawTimer.Start();
+            return;
         }
-
-        // PointToScreen gives the exact physical-pixel origin of the canvas
-        // regardless of border thickness, DPI, or layout changes.
-        Point scanTopLeft = RectanglesCanvas.PointToScreen(new Point(0, 0));
-        System.Drawing.Rectangle rectCanvasSize = new()
-        {
-            X = (int)scanTopLeft.X,
-            Y = (int)scanTopLeft.Y,
-            Width = (int)(contentWidth * dpi.DpiScaleX * canvasScale),
-            Height = (int)(contentHeight * dpi.DpiScaleY * canvasScale),
-        };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Length == 0)
         {
@@ -1126,13 +1222,22 @@ public partial class GrabFrame : Window
 
         isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
-        System.Drawing.Bitmap? bmp = null;
+        System.Drawing.Bitmap? bmp = Singleton<HistoryService>.Instance.CachedBitmap;
+        bool shouldDisposeBmp = false;
 
-        if (frameContentImageSource is BitmapSource bmpImg)
+        if (bmp is null && frameContentImageSource is BitmapSource bmpImg)
+        {
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+            shouldDisposeBmp = true;
+        }
 
         int lineNumber = 0;
         double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
+        if (!double.IsFinite(viewBoxZoomFactor) || viewBoxZoomFactor <= 0 || viewBoxZoomFactor > 4)
+            viewBoxZoomFactor = 1;
+        Point canvasOriginInBorder = RectanglesCanvas.TranslatePoint(new Point(0, 0), RectanglesBorder);
+        double borderToCanvasX = -canvasOriginInBorder.X;
+        double borderToCanvasY = -canvasOriginInBorder.Y;
 
         foreach (IOcrLine ocrLine in ocrResultOfWindow.Lines)
         {
@@ -1145,7 +1250,7 @@ public partial class GrabFrame : Window
             SolidColorBrush backgroundBrush = new(Colors.Black);
 
             if (bmp is not null)
-                backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
+                backgroundBrush = GetBackgroundBrushFromOcrBitmap(windowFrameImageScale, bmp, ref lineRect);
 
             string ocrText = lineText.ToString();
 
@@ -1159,8 +1264,8 @@ public partial class GrabFrame : Window
             {
                 Width = ((lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
                 Height = ((lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
-                Top = (lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 1) / viewBoxZoomFactor,
-                Left = (lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 1) / viewBoxZoomFactor,
+                Top = ((lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 1) + borderToCanvasY) / viewBoxZoomFactor,
+                Left = ((lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 1) + borderToCanvasX) / viewBoxZoomFactor,
                 Word = ocrText,
                 OwnerGrabFrame = this,
                 LineNumber = lineNumber,
@@ -1203,7 +1308,8 @@ public partial class GrabFrame : Window
 
         isDrawing = false;
 
-        bmp?.Dispose();
+        if (shouldDisposeBmp)
+            bmp?.Dispose();
         reSearchTimer.Start();
 
         // Trigger translation if enabled
@@ -1335,11 +1441,35 @@ public partial class GrabFrame : Window
             GrabFrameImage.Source = frameContentImageSource;
         }
 
+        SyncRectanglesCanvasSizeToImage();
+
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
         Background = new SolidColorBrush(Colors.DimGray);
         RectanglesBorder.Background.Opacity = 0;
         IsFreezeMode = true;
+    }
+
+    private void SyncRectanglesCanvasSizeToImage()
+    {
+        if (GrabFrameImage.Source is not BitmapSource source)
+            return;
+
+        // Keep image and overlay in the same coordinate space (raw image pixels).
+        double sourceWidth = source.PixelWidth > 0 ? source.PixelWidth : source.Width;
+        double sourceHeight = source.PixelHeight > 0 ? source.PixelHeight : source.Height;
+
+        if (double.IsFinite(sourceWidth) && sourceWidth > 0)
+        {
+            GrabFrameImage.Width = sourceWidth;
+            RectanglesCanvas.Width = sourceWidth;
+        }
+
+        if (double.IsFinite(sourceHeight) && sourceHeight > 0)
+        {
+            GrabFrameImage.Height = sourceHeight;
+            RectanglesCanvas.Height = sourceHeight;
+        }
     }
 
     private async void FreezeMI_Click(object sender, RoutedEventArgs e)
@@ -1371,6 +1501,54 @@ public partial class GrabFrame : Window
             UnfreezeGrabFrame();
     }
 
+    private static SolidColorBrush GetBackgroundBrushFromOcrBitmap(double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
+    {
+        if (!double.IsFinite(scale) || scale <= 0)
+            scale = 1;
+
+        double boxLeft = lineRect.Left / scale;
+        double boxTop = lineRect.Top / scale;
+        double boxRight = lineRect.Right / scale;
+        double boxBottom = lineRect.Bottom / scale;
+        double boxWidth = Math.Max(0, boxRight - boxLeft);
+        double boxHeight = Math.Max(0, boxBottom - boxTop);
+        double insetX = Math.Min(boxWidth / 2, Math.Max(1, boxWidth * 0.12));
+        double insetY = Math.Min(boxHeight / 2, Math.Max(1, boxHeight * 0.12));
+
+        int pxLeft = Math.Clamp((int)(boxLeft + insetX), 0, bmp.Width - 1);
+        int pxTop = Math.Clamp((int)(boxTop + insetY), 0, bmp.Height - 1);
+        int pxRight = Math.Clamp((int)(boxRight - insetX), 0, bmp.Width - 1);
+        int pxBottom = Math.Clamp((int)(boxBottom - insetY), 0, bmp.Height - 1);
+
+        if (pxRight < pxLeft)
+            pxRight = pxLeft;
+
+        if (pxBottom < pxTop)
+            pxBottom = pxTop;
+
+        System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
+        System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
+        System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
+        System.Drawing.Color pxColorLeftBottom = bmp.GetPixel(pxLeft, pxBottom);
+
+        List<Color> mediaColorList =
+        [
+            ColorHelper.MediaColorFromDrawingColor(pxColorLeftTop),
+            ColorHelper.MediaColorFromDrawingColor(pxColorRightTop),
+            ColorHelper.MediaColorFromDrawingColor(pxColorRightBottom),
+            ColorHelper.MediaColorFromDrawingColor(pxColorLeftBottom),
+        ];
+
+        Color? mostCommonColor = mediaColorList.GroupBy(c => c)
+                                               .OrderBy(g => g.Count())
+                                               .LastOrDefault()?.Key;
+
+        if (mostCommonColor is not null)
+            return new SolidColorBrush(mostCommonColor.Value);
+
+        return ColorHelper.SolidColorBrushFromDrawingColor(pxColorLeftTop);
+    }
+
     private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
     {
         SolidColorBrush backgroundBrush = new(Colors.Black);
@@ -1385,10 +1563,26 @@ public partial class GrabFrame : Window
         double rightFraction = boxRight / RectanglesCanvas.ActualWidth;
         double bottomFraction = boxBottom / RectanglesCanvas.ActualHeight;
 
-        int pxLeft = Math.Clamp((int)(leftFraction * bmp.Width) - 1, 0, bmp.Width - 1);
-        int pxTop = Math.Clamp((int)(topFraction * bmp.Height) - 2, 0, bmp.Height - 1);
-        int pxRight = Math.Clamp((int)(rightFraction * bmp.Width) + 1, 0, bmp.Width - 1);
-        int pxBottom = Math.Clamp((int)(bottomFraction * bmp.Height) + 1, 0, bmp.Height - 1);
+        int rawLeft = Math.Clamp((int)(leftFraction * bmp.Width), 0, bmp.Width - 1);
+        int rawTop = Math.Clamp((int)(topFraction * bmp.Height), 0, bmp.Height - 1);
+        int rawRight = Math.Clamp((int)(rightFraction * bmp.Width), 0, bmp.Width - 1);
+        int rawBottom = Math.Clamp((int)(bottomFraction * bmp.Height), 0, bmp.Height - 1);
+
+        int spanX = Math.Max(0, rawRight - rawLeft);
+        int spanY = Math.Max(0, rawBottom - rawTop);
+        int insetX = Math.Min(spanX / 2, Math.Max(1, spanX / 8));
+        int insetY = Math.Min(spanY / 2, Math.Max(1, spanY / 8));
+        int pxLeft = Math.Clamp(rawLeft + insetX, 0, bmp.Width - 1);
+        int pxTop = Math.Clamp(rawTop + insetY, 0, bmp.Height - 1);
+        int pxRight = Math.Clamp(rawRight - insetX, 0, bmp.Width - 1);
+        int pxBottom = Math.Clamp(rawBottom - insetY, 0, bmp.Height - 1);
+
+        if (pxRight < pxLeft)
+            pxRight = pxLeft;
+
+        if (pxBottom < pxTop)
+            pxBottom = pxTop;
+
         System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
         System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
         System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
@@ -2018,6 +2212,12 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         SetRefreshOrOcrFrameBtnVis();
 
+        if (!IsLoaded || RectanglesBorder.ActualWidth <= 1 || RectanglesBorder.ActualHeight <= 1)
+        {
+            reDrawTimer.Start();
+            return;
+        }
+
         if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
         {
             reDrawTimer.Start();
@@ -2177,6 +2377,10 @@ new GrabFrameOperationArgs()
 
         MainZoomBorder.Reset();
         RectanglesCanvas.RenderTransform = Transform.Identity;
+        RectanglesCanvas.ClearValue(WidthProperty);
+        RectanglesCanvas.ClearValue(HeightProperty);
+        GrabFrameImage.ClearValue(WidthProperty);
+        GrabFrameImage.ClearValue(HeightProperty);
         IsOcrValid = false;
         ocrResultOfWindow = null;
 
