@@ -459,6 +459,11 @@ public partial class FullscreenGrab : Window
         if (template is null || template.Regions.Count == 0)
             return;
 
+        // If the output template references no regions (pattern-only), skip overlays
+        HashSet<int> referencedRegions = [.. template.GetReferencedRegionNumbers()];
+        if (referencedRegions.Count == 0 && template.PatternMatches.Count > 0)
+            return;
+
         if (selWidth < 4 || selHeight < 4)
             return;
 
@@ -473,8 +478,6 @@ public partial class FullscreenGrab : Window
 
         System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(220, 255, 180, 0);
         System.Windows.Media.Color dimBorderColor = System.Windows.Media.Color.FromArgb(80, 255, 180, 0);
-
-        HashSet<int> referencedRegions = [.. template.GetReferencedRegionNumbers()];
 
         foreach (TemplateRegion region in template.Regions)
         {
