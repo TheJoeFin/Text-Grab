@@ -457,6 +457,10 @@
                         Click="GrabFrameMenuItem_Click"
                         Header="New _Grab Frame"
                         InputGestureText="Ctrl + G" />
+                    <MenuItem
+                        x:Name="ManageGrabTemplatesMenuItem"
+                        Click="ManageGrabTemplates_Click"
+                        Header="Manage Grab _Templates..." />
                     <Separator />
                     <MenuItem
                         x:Name="QuickSimpleLookupMenuItem"

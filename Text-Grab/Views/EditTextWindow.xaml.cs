@@ -913,6 +913,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         CheckForGrabFrameOrLaunch();
     }
 
+    private void ManageGrabTemplates_Click(object sender, RoutedEventArgs e)
+    {
+        PostGrabActionEditor editor = new();
+        editor.Show();
+    }
+
     private void HandlePreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         // Source: StackOverflow, read on Sep. 10, 2021

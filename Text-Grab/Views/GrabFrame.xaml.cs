@@ -2480,6 +2480,12 @@ new GrabFrameOperationArgs()
         WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
     }
 
+    private void ManageGrabTemplates_Click(object sender, RoutedEventArgs e)
+    {
+        PostGrabActionEditor editor = new();
+        editor.Show();
+    }
+
     private void SaveAsTemplate_Click(object sender, RoutedEventArgs e)
     {
         bool show = SaveAsTemplateBTN.IsChecked == true;

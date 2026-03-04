@@ -89,6 +89,7 @@ public partial class FullscreenGrab : Window
 
     public bool IsFreeze { get; set; } = false;
     public string? TextFromOCR { get; set; }
+    public string? PreselectedTemplateId { get; set; }
     private DisplayInfo? CurrentScreen { get; set; }
 
     #endregion Properties
@@ -282,12 +283,17 @@ public partial class FullscreenGrab : Window
         int index = 1;
         foreach (ButtonInfo action in enabledActions)
         {
+            // When a template is preselected, don't restore saved check state for other templates
+            bool isChecked = !string.IsNullOrEmpty(PreselectedTemplateId) && !string.IsNullOrEmpty(action.TemplateId)
+                ? false
+                : PostGrabActionManager.GetCheckState(action);
+
             MenuItem menuItem = new()
             {
                 Header = action.ButtonText,
                 IsCheckable = true,
                 Tag = action,
-                IsChecked = PostGrabActionManager.GetCheckState(action),
+                IsChecked = isChecked,
                 StaysOpenOnClick = stayOpen,
                 InputGestureText = $"Ctrl+{index}"
             };
@@ -301,10 +307,10 @@ public partial class FullscreenGrab : Window
 
         contextMenu.Items.Add(new Separator());
 
-        // Add "Edit this list..." menu item
+        // Add "Customize Actions & Templates..." menu item
         MenuItem editPostGrabMenuItem = new()
         {
-            Header = "Edit this list...",
+            Header = "✨ Customize Actions \u0026 Templates...",
             Tag = EditPostGrabActionsTag
         };
         editPostGrabMenuItem.Click += EditPostGrabActions_Click;
@@ -321,6 +327,46 @@ public partial class FullscreenGrab : Window
 
         // Update the dropdown button appearance
         CheckIfAnyPostActionsSelected();
+
+        // If a template was preselected (e.g. from Quick Simple Lookup), auto-check it
+        if (!string.IsNullOrEmpty(PreselectedTemplateId))
+        {
+            bool found = false;
+            foreach (object item in contextMenu.Items)
+            {
+                if (item is MenuItem mi
+                    && mi.Tag is ButtonInfo bi
+                    && bi.TemplateId == PreselectedTemplateId)
+                {
+                    mi.IsChecked = true;
+                    found = true;
+                    break;
+                }
+            }
+
+            // Template not in the enabled list — add it dynamically
+            if (!found)
+            {
+                GrabTemplate? template = GrabTemplateManager.GetTemplateById(PreselectedTemplateId);
+                if (template is not null)
+                {
+                    ButtonInfo templateAction = GrabTemplateManager.CreateButtonInfoForTemplate(template);
+                    MenuItem templateMenuItem = new()
+                    {
+                        Header = templateAction.ButtonText,
+                        IsCheckable = true,
+                        Tag = templateAction,
+                        IsChecked = true,
+                        StaysOpenOnClick = DefaultSettings.PostGrabStayOpen,
+                    };
+                    templateMenuItem.Click += PostActionMenuItem_Click;
+                    contextMenu.Items.Insert(contextMenu.Items.Count > 0 ? contextMenu.Items.Count - 2 : 0, new Separator());
+                    contextMenu.Items.Insert(contextMenu.Items.Count > 0 ? contextMenu.Items.Count - 2 : 0, templateMenuItem);
+                }
+            }
+
+            CheckIfAnyPostActionsSelected();
+        }
     }
 
     private void CancelMenuItem_Click(object sender, RoutedEventArgs e)

@@ -232,6 +232,10 @@
                             InputGestureText="Ctrl + Shift + G" />
                         <Separator />
                         <MenuItem
+                            Name="ManageGrabTemplatesMenuItem"
+                            Click="ManageGrabTemplates_Click"
+                            Header="Manage Grab _Templates..." />
+                        <MenuItem
                             Name="SettingsMenuItem"
                             Click="SettingsBTN_Click"
                             Header="Text Grab Settings" />

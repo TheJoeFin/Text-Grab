@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Controls;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -468,6 +469,19 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 }
                 break;
             case KeyboardModifiersDown.Ctrl:
+                if (selectedLookupItems.FirstOrDefault() is LookupItem ctrlItem
+                    && ctrlItem.Kind == LookupItemKind.GrabTemplate
+                    && ctrlItem.TemplateId is not null)
+                {
+                    GrabTemplate? ctrlTemplate = GrabTemplateManager.GetTemplateById(ctrlItem.TemplateId);
+                    if (ctrlTemplate is not null)
+                    {
+                        GrabFrame editFrame = new(ctrlTemplate);
+                        editFrame.Show();
+                    }
+                    openedHistoryItemOrLink = true;
+                    break;
+                }
                 foreach (LookupItem lItem in selectedLookupItems)
                     stringBuilder.AppendLine(lItem.ShortValue);
                 break;
@@ -508,6 +522,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                         case LookupItemKind.Command:
                             openedHistoryItemOrLink = await RunCli(lItem.LongValue);
                             break;
+                        case LookupItemKind.GrabTemplate when lItem.TemplateId is not null:
+                            {
+                                this.Hide();
+                                WindowUtilities.LaunchFullScreenGrab(null, lItem.TemplateId);
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
                         case LookupItemKind.Dynamic:
                             break;
                         default:
@@ -721,6 +742,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             AddHistoryItemsToItemsDictionary();
             SearchHistory.IsChecked = true;
         }
+
+        AddGrabTemplatesToItemsDictionary();
 
         MainDataGrid.ItemsSource = ItemsDictionary;
 
@@ -951,6 +974,21 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         {
             LookupItem newItem = new(historyItem);
             ItemsDictionary.Add(newItem);
+        }
+    }
+
+    private void AddGrabTemplatesToItemsDictionary()
+    {
+        List<GrabTemplate> templates = GrabTemplateManager.GetAllTemplates();
+
+        foreach (GrabTemplate template in templates)
+        {
+            LookupItem item = new(template.Name, template.OutputTemplate)
+            {
+                Kind = LookupItemKind.GrabTemplate,
+                TemplateId = template.Id,
+            };
+            ItemsDictionary.Add(item);
         }
     }
 

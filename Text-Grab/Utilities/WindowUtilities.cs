@@ -78,6 +78,11 @@ public static partial class WindowUtilities
 
     public static void LaunchFullScreenGrab(TextBox? destinationTextBox = null)
     {
+        LaunchFullScreenGrab(destinationTextBox, null);
+    }
+
+    public static void LaunchFullScreenGrab(TextBox? destinationTextBox, string? preselectedTemplateId)
+    {
         DisplayInfo[] allScreens = DisplayInfo.AllDisplayInfos;
         WindowCollection allWindows = Application.Current.Windows;
 
@@ -107,6 +112,7 @@ public static partial class WindowUtilities
             fullScreenGrab.Width = sideLength;
             fullScreenGrab.Height = sideLength;
             fullScreenGrab.DestinationTextBox = destinationTextBox;
+            fullScreenGrab.PreselectedTemplateId = preselectedTemplateId;
             fullScreenGrab.WindowState = WindowState.Normal;
 
             Point screenCenterPoint = screen.ScaledCenterPoint();
