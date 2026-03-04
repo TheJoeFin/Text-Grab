@@ -470,15 +470,24 @@ public class InlinePickerRichTextBox : RichTextBox
         if (selectedItem.Group == HeaderGroupTag)
             return;
 
+        // Save trigger position before any dialog opens (dialogs steal focus,
+        // which fires OnLostKeyboardFocus and nulls _triggerStart)
+        TextPointer savedTriggerStart = _triggerStart;
+
         // For pattern items, invoke the dialog callback to configure match mode
         bool isPatternItem = string.Equals(selectedItem.Group, "Patterns", StringComparison.OrdinalIgnoreCase);
         InlinePickerItem itemToInsert = selectedItem;
 
         if (isPatternItem && PatternItemSelected != null)
         {
+            HidePopup();
+
             TemplatePatternMatch? patternConfig = PatternItemSelected(selectedItem);
             if (patternConfig == null)
+            {
+                _triggerStart = null;
                 return; // user cancelled
+            }
 
             // Build the placeholder value from the dialog result
             string placeholderValue = BuildPatternPlaceholder(patternConfig);
@@ -490,7 +499,7 @@ public class InlinePickerRichTextBox : RichTextBox
         try
         {
             // Delete from trigger position to current caret (removes "{" + typed filter text)
-            new TextRange(_triggerStart, CaretPosition).Text = string.Empty;
+            new TextRange(savedTriggerStart, CaretPosition).Text = string.Empty;
 
             // CaretPosition is now at the insertion point (where trigger was)
             InlineChipElement chip = new()
