@@ -426,6 +426,9 @@ public partial class FullscreenGrab : Window
         Canvas.SetTop(templateOverlayCanvas, selTop);
 
         System.Windows.Media.Color borderColor = System.Windows.Media.Color.FromArgb(220, 255, 180, 0);
+        System.Windows.Media.Color dimBorderColor = System.Windows.Media.Color.FromArgb(80, 255, 180, 0);
+
+        HashSet<int> referencedRegions = [.. template.GetReferencedRegionNumbers()];
 
         foreach (TemplateRegion region in template.Regions)
         {
@@ -437,11 +440,12 @@ public partial class FullscreenGrab : Window
             if (regionWidth < 1 || regionHeight < 1)
                 continue;
 
+            bool isReferenced = referencedRegions.Count == 0 || referencedRegions.Contains(region.RegionNumber);
             Border regionBorder = new()
             {
                 Width = regionWidth,
                 Height = regionHeight,
-                BorderBrush = new SolidColorBrush(borderColor),
+                BorderBrush = new SolidColorBrush(isReferenced ? borderColor : dimBorderColor),
                 BorderThickness = new Thickness(1.5),
             };
 

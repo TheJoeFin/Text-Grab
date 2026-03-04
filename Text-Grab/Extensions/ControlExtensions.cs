@@ -6,9 +6,6 @@ namespace Text_Grab;
 
 public static class ControlExtensions
 {
-
-
-
     public static double GetHorizontalScaleFactor(this Viewbox viewbox)
     {
         if (viewbox.Child is not FrameworkElement childElement)

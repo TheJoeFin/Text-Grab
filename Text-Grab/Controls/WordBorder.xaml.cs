@@ -174,7 +174,28 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void Deselect()
     {
         IsSelected = false;
-        WordBorderBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 48, 142, 152));
+        ApplyTemplateDimBorderBrush();
+    }
+
+    private bool _isDimmedForTemplate = false;
+
+    /// <summary>
+    /// Dims the border brush to indicate this region is not referenced in the output template.
+    /// Call with false to restore the normal border color.
+    /// </summary>
+    public void SetDimmedForTemplate(bool isDimmed)
+    {
+        _isDimmedForTemplate = isDimmed;
+        if (!IsSelected)
+            ApplyTemplateDimBorderBrush();
+    }
+
+    private void ApplyTemplateDimBorderBrush()
+    {
+        byte alpha = _isDimmedForTemplate ? (byte)80 : (byte)255;
+        SolidColorBrush brush = new(Color.FromArgb(alpha, 48, 142, 152));
+        WordBorderBorder.BorderBrush = brush;
+        MoveResizeBorder.BorderBrush = brush;
     }
 
     public void EnterEdit()

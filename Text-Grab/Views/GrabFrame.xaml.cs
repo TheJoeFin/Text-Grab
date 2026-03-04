@@ -2580,7 +2580,11 @@ new GrabFrameOperationArgs()
         if (!isTemplateMode)
         {
             foreach (WordBorder wb in wordBorders)
+            {
                 wb.TemplateIndex = 0;
+                wb.Opacity = 1.0;
+                wb.SetDimmedForTemplate(false);
+            }
             return;
         }
 
@@ -2589,6 +2593,30 @@ new GrabFrameOperationArgs()
             sorted[i].TemplateIndex = i + 1;
 
         UpdateTemplatePickerItems();
+        UpdateTemplateRegionOpacities();
+    }
+
+    private void UpdateTemplateRegionOpacities()
+    {
+        if (SaveAsTemplateBTN.IsChecked != true)
+            return;
+
+        string outputTemplate = TemplateOutputBox.GetSerializedText();
+        HashSet<int> referenced = [.. Regex.Matches(outputTemplate, @"\{(\d+)(?::[a-z]+)?\}")
+            .Select(m => int.TryParse(m.Groups[1].Value, out int n) ? n : 0)
+            .Where(n => n > 0)];
+
+        foreach (WordBorder wb in wordBorders)
+        {
+            bool isReferenced = referenced.Count == 0 || referenced.Contains(wb.TemplateIndex);
+            wb.Opacity = isReferenced ? 1.0 : 0.5;
+            wb.SetDimmedForTemplate(!isReferenced);
+        }
+    }
+
+    private void TemplateOutputBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UpdateTemplateRegionOpacities();
     }
 
     private void UpdateTemplatePickerItems()

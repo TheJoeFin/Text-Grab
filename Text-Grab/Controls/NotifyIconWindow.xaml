@@ -40,8 +40,8 @@
                     <MenuItem
                         x:Name="OpenClipboardImageGrabFrame"
                         Click="OpenClipboardImageGrabFrame_Click"
-                        IsEnabled="False"
-                        Header="Paste in Grab Frame">
+                        Header="Paste in Grab Frame"
+                        IsEnabled="False">
                         <MenuItem.Icon>
                             <wpfui:SymbolIcon Symbol="ImageEdit24" />
                         </MenuItem.Icon>

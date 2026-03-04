@@ -660,6 +660,7 @@
                         VerticalAlignment="Center"
                         AcceptsReturn="True"
                         AcceptsTab="True"
+                        TextChanged="TemplateOutputBox_TextChanged"
                         ToolTip="Type { to open the region picker. Plain text also supported." />
                     <Button
                         Grid.Column="4"
