@@ -174,26 +174,27 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public void Deselect()
     {
         IsSelected = false;
-        ApplyTemplateDimBorderBrush();
+        ApplyTemplateStateBorderBrush();
     }
 
-    private bool _isDimmedForTemplate = false;
+    private bool _isInOutputPattern = false;
 
     /// <summary>
-    /// Dims the border brush to indicate this region is not referenced in the output template.
-    /// Call with false to restore the normal border color.
+    /// Highlights the border orange when this region is referenced in the output template.
+    /// Call with false to restore the normal teal border color.
     /// </summary>
-    public void SetDimmedForTemplate(bool isDimmed)
+    public void SetHighlightedForOutput(bool isHighlighted)
     {
-        _isDimmedForTemplate = isDimmed;
+        _isInOutputPattern = isHighlighted;
         if (!IsSelected)
-            ApplyTemplateDimBorderBrush();
+            ApplyTemplateStateBorderBrush();
     }
 
-    private void ApplyTemplateDimBorderBrush()
+    private void ApplyTemplateStateBorderBrush()
     {
-        byte alpha = _isDimmedForTemplate ? (byte)80 : (byte)255;
-        SolidColorBrush brush = new(Color.FromArgb(alpha, 48, 142, 152));
+        SolidColorBrush brush = _isInOutputPattern
+            ? new SolidColorBrush(Colors.Orange)
+            : new SolidColorBrush(Color.FromRgb(48, 142, 152));
         WordBorderBorder.BorderBrush = brush;
         MoveResizeBorder.BorderBrush = brush;
     }

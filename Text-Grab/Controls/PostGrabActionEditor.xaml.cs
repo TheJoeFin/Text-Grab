@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Data;
@@ -218,9 +219,27 @@ public partial class PostGrabActionEditor : FluentWindow
         NoTemplatesText.Visibility = hasTemplates ? Visibility.Collapsed : Visibility.Visible;
     }
 
-    private void OpenGrabFrameButton_Click(object sender, RoutedEventArgs e)
+    private void NewTemplateFromImageButton_Click(object sender, RoutedEventArgs e)
     {
-        GrabFrame grabFrame = new();
+        Microsoft.Win32.OpenFileDialog dlg = new()
+        {
+            Filter = FileUtilities.GetImageFilter()
+        };
+
+        if (dlg.ShowDialog() is not true)
+            return;
+
+        string imagePath = dlg.FileName;
+        if (!File.Exists(imagePath))
+            return;
+
+        GrabTemplate newTemplate = new()
+        {
+            Name = Path.GetFileNameWithoutExtension(imagePath),
+            SourceImagePath = imagePath
+        };
+
+        GrabFrame grabFrame = new(newTemplate);
         grabFrame.Closed += (_, _) => RefreshTemplatesAndActions();
         grabFrame.Show();
         grabFrame.Activate();

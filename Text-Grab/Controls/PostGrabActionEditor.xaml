@@ -29,7 +29,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" MaxHeight="400" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -42,22 +42,30 @@
             Icon="{StaticResource TextGrabIcon}" />
 
         <!--  Available Actions (Left)  -->
-        <StackPanel
+        <Grid
             Grid.Row="1"
             Grid.Column="0"
             Margin="16,16,8,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
             <TextBlock
+                Grid.Row="0"
                 Margin="0,0,0,8"
                 FontSize="18"
                 FontWeight="SemiBold"
                 Text="Available Actions" />
             <TextBlock
                 x:Name="AvailableActionsHint"
+                Grid.Row="1"
                 Margin="0,0,0,4"
                 Opacity="0.7"
                 Text="Actions that can be added to the enabled list"
                 TextWrapping="Wrap" />
             <Border
+                Grid.Row="2"
                 Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
@@ -65,7 +73,6 @@
                 <Grid>
                     <ui:ListView
                         x:Name="AvailableActionsListBox"
-                        MinHeight="240"
                         d:ItemsSource="{d:SampleData ItemCount=5}"
                         ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                         ScrollViewer.VerticalScrollBarVisibility="Visible">
@@ -98,7 +105,7 @@
                         Visibility="Collapsed" />
                 </Grid>
             </Border>
-        </StackPanel>
+        </Grid>
 
         <!--  Move Buttons (Center)  -->
         <StackPanel
@@ -157,69 +164,77 @@
         </StackPanel>
 
         <!--  Enabled Actions (Right)  -->
-        <StackPanel
-            Grid.Row="1"
-            Grid.Column="2"
-            Margin="8,16,16,8">
-            <TextBlock
-                Margin="0,0,0,8"
-                FontSize="18"
-                FontWeight="SemiBold"
-                Text="Enabled Actions" />
-            <TextBlock
-                Margin="0,0,0,4"
-                Opacity="0.7"
-                Text="Actions that will appear in the post-grab menu"
-                TextWrapping="Wrap" />
-            <Border
-                Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-                <ui:ListView
-                    x:Name="EnabledActionsListBox"
-                    MinHeight="240"
-                    d:ItemsSource="{d:SampleData ItemCount=5}"
-                    ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                    ScrollViewer.VerticalScrollBarVisibility="Visible">
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Width="46" Header="Icon">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Viewbox Height="24">
-                                            <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
-                                        </Viewbox>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn
-                                Width="180"
-                                DisplayMemberBinding="{Binding ButtonText}"
-                                Header="Action Name" />
-                            <GridViewColumn Width="120" Header="Default">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <ComboBox Width="110" SelectedIndex="{Binding Path=DefaultCheckState, Mode=TwoWay, Converter={StaticResource EnumToIntConverter}}">
-                                            <ComboBoxItem Content="Off" />
-                                            <ComboBoxItem Content="Last Used" />
-                                            <ComboBoxItem Content="On" />
-                                        </ComboBox>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ui:ListView>
-            </Border>
+        <Grid Grid.Row="1" Grid.Column="2">
+            <Grid Margin="8,16,16,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock
+                    Grid.Row="0"
+                    Margin="0,0,0,8"
+                    FontSize="18"
+                    FontWeight="SemiBold"
+                    Text="Enabled Actions" />
+                <TextBlock
+                    Grid.Row="1"
+                    Margin="0,0,0,4"
+                    Opacity="0.7"
+                    Text="Actions that will appear in the post-grab menu"
+                    TextWrapping="Wrap" />
+                <Border
+                    Grid.Row="2"
+                    Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <ui:ListView
+                        x:Name="EnabledActionsListBox"
+                        d:ItemsSource="{d:SampleData ItemCount=5}"
+                        ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                        ScrollViewer.VerticalScrollBarVisibility="Visible">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="46" Header="Icon">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Viewbox Height="24">
+                                                <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
+                                            </Viewbox>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn
+                                    Width="180"
+                                    DisplayMemberBinding="{Binding ButtonText}"
+                                    Header="Action Name" />
+                                <GridViewColumn Width="120" Header="Default">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox Width="110" SelectedIndex="{Binding Path=DefaultCheckState, Mode=TwoWay, Converter={StaticResource EnumToIntConverter}}">
+                                                <ComboBoxItem Content="Off" />
+                                                <ComboBoxItem Content="Last Used" />
+                                                <ComboBoxItem Content="On" />
+                                            </ComboBox>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ui:ListView>
+                </Border>
 
-            <!--  Stay Open Toggle  -->
-            <ui:ToggleSwitch
-                x:Name="StayOpenToggle"
-                Margin="0,16,0,0"
-                Content="Keep menu open after clicking an action"
-                ToolTip="When enabled, the post-grab menu stays open after clicking an action, allowing multiple actions to be selected" />
-        </StackPanel>
+                <!--  Stay Open Toggle  -->
+                <ui:ToggleSwitch
+                    x:Name="StayOpenToggle"
+                    Grid.Row="3"
+                    Margin="0,16,0,0"
+                    Content="Keep menu open after clicking an action"
+                    ToolTip="When enabled, the post-grab menu stays open after clicking an action, allowing multiple actions to be selected" />
+            </Grid>
+        </Grid>
 
         <!--  Grab Templates Section  -->
         <Border
@@ -253,7 +268,7 @@
                         <TextBlock
                             FontSize="11"
                             Opacity="0.7"
-                            Text="Templates extract structured data from fixed-layout documents. Open a Grab Frame, use Ctrl+drag to draw regions, then click the Save as Template button. Add a template to the Enabled Actions list to use it during a Fullscreen Grab."
+                            Text="Templates extract structured data from fixed-layout documents. Click 'New Template from Image' to pick a reference image, then use Ctrl+drag to draw regions and save. Add a template to the Enabled Actions list to use it during a Fullscreen Grab."
                             TextWrapping="Wrap" />
                     </StackPanel>
 
@@ -262,13 +277,13 @@
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
                         <ui:Button
-                            x:Name="OpenGrabFrameButton"
+                            x:Name="NewTemplateFromImageButton"
                             Margin="0,0,6,0"
-                            Click="OpenGrabFrameButton_Click"
-                            ToolTip="Open a blank Grab Frame to draw regions and save as a new template">
+                            Click="NewTemplateFromImageButton_Click"
+                            ToolTip="Pick an image to use as reference for a new grab template">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon FontSize="14" Symbol="Window24" />
-                                <TextBlock Margin="4,0,0,0" Text="Open Grab Frame" />
+                                <ui:SymbolIcon FontSize="14" Symbol="ImageAdd24" />
+                                <TextBlock Margin="4,0,0,0" Text="New Template from Image" />
                             </StackPanel>
                         </ui:Button>
                         <ui:Button
@@ -279,17 +294,6 @@
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon FontSize="14" Symbol="Edit24" />
                                 <TextBlock Margin="4,0,0,0" Text="Edit Grab Template" />
-                            </StackPanel>
-                        </ui:Button>
-                        <ui:Button
-                            x:Name="EditTemplateButton"
-                            Margin="0,0,6,0"
-                            Click="EditTemplateButton_Click"
-                            ToolTip="Edit the selected template's name and output template"
-                            Visibility="Collapsed">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon FontSize="14" Symbol="Edit24" />
-                                <TextBlock Margin="4,0,0,0" Text="Edit" />
                             </StackPanel>
                         </ui:Button>
                         <ui:Button
@@ -308,7 +312,6 @@
                 <Grid Grid.Row="1">
                     <ui:ListView
                         x:Name="TemplatesListBox"
-                        MaxHeight="140"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                         SelectionChanged="TemplatesListBox_SelectionChanged">

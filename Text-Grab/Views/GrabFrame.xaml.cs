@@ -2589,7 +2589,7 @@ new GrabFrameOperationArgs()
             {
                 wb.TemplateIndex = 0;
                 wb.Opacity = 1.0;
-                wb.SetDimmedForTemplate(false);
+                wb.SetHighlightedForOutput(false);
             }
             return;
         }
@@ -2615,8 +2615,8 @@ new GrabFrameOperationArgs()
         foreach (WordBorder wb in wordBorders)
         {
             bool isReferenced = referenced.Count == 0 || referenced.Contains(wb.TemplateIndex);
-            wb.Opacity = isReferenced ? 1.0 : 0.5;
-            wb.SetDimmedForTemplate(!isReferenced);
+            wb.Opacity = 1.0;
+            wb.SetHighlightedForOutput(isReferenced);
         }
     }
 
