@@ -47,6 +47,9 @@ public partial class PatternMatchModeDialog : FluentWindow
 
     private bool ValidateIndices()
     {
+        if (IndicesTextBox == null)
+            return true;
+
         string text = IndicesTextBox.Text.Trim();
         if (string.IsNullOrEmpty(text))
         {
@@ -76,6 +79,8 @@ public partial class PatternMatchModeDialog : FluentWindow
 
     private void ShowIndicesError(string message)
     {
+        if (IndicesErrorText == null || OkButton == null)
+            return;
         IndicesErrorText.Text = message;
         IndicesErrorText.Visibility = Visibility.Visible;
         OkButton.IsEnabled = false;
@@ -83,6 +88,8 @@ public partial class PatternMatchModeDialog : FluentWindow
 
     private void HideIndicesError()
     {
+        if (IndicesErrorText == null || OkButton == null)
+            return;
         IndicesErrorText.Visibility = Visibility.Collapsed;
         OkButton.IsEnabled = true;
     }
