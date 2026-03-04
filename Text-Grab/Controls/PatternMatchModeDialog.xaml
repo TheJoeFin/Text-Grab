@@ -1,0 +1,87 @@
+<ui:FluentWindow
+    x:Class="Text_Grab.Controls.PatternMatchModeDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Pattern Match Options"
+    Width="420"
+    Height="320"
+    MinWidth="380"
+    MinHeight="280"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar
+            Title="Pattern Match Options"
+            Height="32"
+            Margin="2,2,2,0"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+
+        <StackPanel Grid.Row="1" Margin="12">
+            <TextBlock
+                Margin="0,0,0,8"
+                FontWeight="SemiBold"
+                x:Name="PatternNameLabel"
+                Text="Pattern:" />
+
+            <TextBlock Margin="0,0,0,4" Text="Match Mode:" />
+            <ComboBox
+                x:Name="MatchModeComboBox"
+                Margin="0,0,0,12"
+                SelectedIndex="0"
+                SelectionChanged="MatchModeComboBox_SelectionChanged">
+                <ComboBoxItem Content="First Match" Tag="first" />
+                <ComboBoxItem Content="Last Match" Tag="last" />
+                <ComboBoxItem Content="All Matches" Tag="all" />
+                <ComboBoxItem Content="Specific Match(es)" Tag="nth" />
+            </ComboBox>
+
+            <StackPanel x:Name="SeparatorPanel" Margin="0,0,0,12" Visibility="Collapsed">
+                <TextBlock Margin="0,0,0,4" Text="Separator:" />
+                <TextBox x:Name="SeparatorTextBox" Text=", " />
+            </StackPanel>
+
+            <StackPanel x:Name="IndicesPanel" Margin="0,0,0,12" Visibility="Collapsed">
+                <TextBlock Margin="0,0,0,4" Text="Match indices (1-based, comma-separated):" />
+                <TextBox
+                    x:Name="IndicesTextBox"
+                    Text="1"
+                    TextChanged="IndicesTextBox_TextChanged" />
+                <TextBlock
+                    x:Name="IndicesErrorText"
+                    Margin="0,4,0,0"
+                    FontSize="11"
+                    Foreground="Red"
+                    Text=""
+                    Visibility="Collapsed" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="12,0,12,12"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <ui:Button
+                x:Name="OkButton"
+                Margin="0,0,6,0"
+                Appearance="Primary"
+                Click="OkButton_Click"
+                Content="OK" />
+            <ui:Button Click="CancelButton_Click" Content="Cancel" />
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

@@ -9,12 +9,14 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using Text_Grab.Models;
 
 namespace Text_Grab.Controls;
 
 /// <summary>
 /// A RichTextBox that shows a compact inline picker popup when the trigger character
 /// (default '{') is typed, allowing users to insert named value chips into the document.
+/// Supports grouped items with section headers (e.g. "Regions" and "Patterns").
 /// </summary>
 public class InlinePickerRichTextBox : RichTextBox
 {
@@ -70,6 +72,13 @@ public class InlinePickerRichTextBox : RichTextBox
 
     public event EventHandler<InlinePickerItem>? ItemInserted;
 
+    /// <summary>
+    /// Called when a pattern-group item is selected. The handler should show the
+    /// <see cref="PatternMatchModeDialog"/> and return the configured
+    /// <see cref="TemplatePatternMatch"/>, or null to cancel.
+    /// </summary>
+    public Func<InlinePickerItem, TemplatePatternMatch?>? PatternItemSelected { get; set; }
+
     static InlinePickerRichTextBox()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
@@ -121,8 +130,8 @@ public class InlinePickerRichTextBox : RichTextBox
     {
         ListBox lb = new()
         {
-            MinWidth = 120,
-            MaxHeight = 150,
+            MinWidth = 140,
+            MaxHeight = 200,
             FontSize = 11,
             BorderThickness = new Thickness(0),
             Background = Brushes.Transparent,
@@ -131,7 +140,18 @@ public class InlinePickerRichTextBox : RichTextBox
         };
         lb.SetResourceReference(ForegroundProperty, "TextFillColorPrimaryBrush");
 
-        // Item template: DisplayName + muted Value label side-by-side
+        // Use a template selector to render headers vs selectable items
+        lb.ItemTemplateSelector = new PickerItemTemplateSelector(
+            BuildSelectableItemTemplate(),
+            BuildHeaderItemTemplate());
+
+        lb.PreviewMouseDown += ListBox_PreviewMouseDown;
+        lb.ItemContainerStyle = BuildCompactItemStyle();
+        return lb;
+    }
+
+    private static DataTemplate BuildSelectableItemTemplate()
+    {
         DataTemplate dt = new();
         FrameworkElementFactory spFactory = new(typeof(StackPanel));
         spFactory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
@@ -153,11 +173,22 @@ public class InlinePickerRichTextBox : RichTextBox
         spFactory.AppendChild(nameFactory);
         spFactory.AppendChild(valueFactory);
         dt.VisualTree = spFactory;
-        lb.ItemTemplate = dt;
+        return dt;
+    }
 
-        lb.PreviewMouseDown += ListBox_PreviewMouseDown;
-        lb.ItemContainerStyle = BuildCompactItemStyle();
-        return lb;
+    private static DataTemplate BuildHeaderItemTemplate()
+    {
+        DataTemplate dt = new();
+        FrameworkElementFactory tb = new(typeof(TextBlock));
+        tb.SetBinding(TextBlock.TextProperty,
+            new System.Windows.Data.Binding(nameof(InlinePickerItem.DisplayName)));
+        tb.SetValue(TextBlock.FontSizeProperty, 9.5);
+        tb.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+        tb.SetValue(TextBlock.OpacityProperty, 0.6);
+        tb.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 4, 4, 2));
+        tb.SetValue(UIElement.IsHitTestVisibleProperty, false);
+        dt.VisualTree = tb;
+        return dt;
     }
 
     private static Style BuildCompactItemStyle()
@@ -233,16 +264,12 @@ public class InlinePickerRichTextBox : RichTextBox
         {
             case Key.Down:
                 e.Handled = true;
-                _listBox.SelectedIndex = (_listBox.SelectedIndex + 1) % Math.Max(1, _listBox.Items.Count);
-                _listBox.ScrollIntoView(_listBox.SelectedItem);
+                MoveSelection(1);
                 break;
 
             case Key.Up:
                 e.Handled = true;
-                _listBox.SelectedIndex = _listBox.SelectedIndex > 0
-                    ? _listBox.SelectedIndex - 1
-                    : _listBox.Items.Count - 1;
-                _listBox.ScrollIntoView(_listBox.SelectedItem);
+                MoveSelection(-1);
                 break;
 
             case Key.Enter:
@@ -270,6 +297,30 @@ public class InlinePickerRichTextBox : RichTextBox
     }
 
     #endregion Keyboard & Focus handling
+
+    /// <summary>
+    /// Moves the listbox selection by <paramref name="direction"/> (+1 or -1),
+    /// skipping non-selectable section header items.
+    /// </summary>
+    private void MoveSelection(int direction)
+    {
+        int count = _listBox.Items.Count;
+        if (count == 0) return;
+
+        int start = _listBox.SelectedIndex;
+        int next = start;
+
+        for (int i = 0; i < count; i++)
+        {
+            next = (next + direction + count) % count;
+            if (_listBox.Items[next] is InlinePickerItem item && item.Group != HeaderGroupTag)
+            {
+                _listBox.SelectedIndex = next;
+                _listBox.ScrollIntoView(_listBox.SelectedItem);
+                return;
+            }
+        }
+    }
 
     #region Text change & popup management
 
@@ -317,8 +368,12 @@ public class InlinePickerRichTextBox : RichTextBox
 
         _listBox.ItemsSource = filtered;
 
+        // Auto-select the first non-header item
         if (_listBox.SelectedIndex < 0 || _listBox.SelectedIndex >= filtered.Count)
-            _listBox.SelectedIndex = 0;
+        {
+            int firstSelectable = filtered.FindIndex(i => i.Group != HeaderGroupTag);
+            _listBox.SelectedIndex = firstSelectable >= 0 ? firstSelectable : 0;
+        }
 
         if (!_popup.IsOpen)
         {
@@ -341,12 +396,51 @@ public class InlinePickerRichTextBox : RichTextBox
 
         IEnumerable<InlinePickerItem> source = ItemsSource ?? [];
 
-        return filterText.Length == 0
+        List<InlinePickerItem> filtered = filterText.Length == 0
             ? [.. source]
             : [.. source.Where(i =>
                 i.DisplayName.Contains(filterText, StringComparison.OrdinalIgnoreCase) ||
                 i.Value.Contains(filterText, StringComparison.OrdinalIgnoreCase))];
+
+        // Insert section headers when items have different groups
+        return InsertGroupHeaders(filtered);
     }
+
+    private static List<InlinePickerItem> InsertGroupHeaders(List<InlinePickerItem> items)
+    {
+        if (items.Count == 0)
+            return items;
+
+        // Check if there are multiple distinct groups
+        List<string> distinctGroups = items
+            .Select(i => i.Group)
+            .Where(g => !string.IsNullOrEmpty(g))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (distinctGroups.Count <= 1)
+            return items;
+
+        // Build list with section headers
+        List<InlinePickerItem> result = [];
+        string? currentGroup = null;
+
+        foreach (InlinePickerItem item in items)
+        {
+            string group = string.IsNullOrEmpty(item.Group) ? "Other" : item.Group;
+            if (!string.Equals(group, currentGroup, StringComparison.OrdinalIgnoreCase))
+            {
+                currentGroup = group;
+                result.Add(new InlinePickerItem($"── {group} ──", "") { Group = HeaderGroupTag });
+            }
+            result.Add(item);
+        }
+
+        return result;
+    }
+
+    /// <summary>Sentinel group value for non-selectable section header items.</summary>
+    internal const string HeaderGroupTag = "__header__";
 
     #endregion Text change & popup management
 
@@ -372,6 +466,26 @@ public class InlinePickerRichTextBox : RichTextBox
         if (_listBox.SelectedItem is not InlinePickerItem selectedItem || _triggerStart == null)
             return;
 
+        // Skip non-selectable header items
+        if (selectedItem.Group == HeaderGroupTag)
+            return;
+
+        // For pattern items, invoke the dialog callback to configure match mode
+        bool isPatternItem = string.Equals(selectedItem.Group, "Patterns", StringComparison.OrdinalIgnoreCase);
+        InlinePickerItem itemToInsert = selectedItem;
+
+        if (isPatternItem && PatternItemSelected != null)
+        {
+            TemplatePatternMatch? patternConfig = PatternItemSelected(selectedItem);
+            if (patternConfig == null)
+                return; // user cancelled
+
+            // Build the placeholder value from the dialog result
+            string placeholderValue = BuildPatternPlaceholder(patternConfig);
+            string displayLabel = $"{patternConfig.PatternName} ({patternConfig.MatchMode})";
+            itemToInsert = new InlinePickerItem(displayLabel, placeholderValue, selectedItem.Group);
+        }
+
         _isModifyingDocument = true;
         try
         {
@@ -381,8 +495,8 @@ public class InlinePickerRichTextBox : RichTextBox
             // CaretPosition is now at the insertion point (where trigger was)
             InlineChipElement chip = new()
             {
-                DisplayName = selectedItem.DisplayName,
-                Value = selectedItem.Value,
+                DisplayName = itemToInsert.DisplayName,
+                Value = itemToInsert.Value,
             };
             chip.RemoveRequested += Chip_RemoveRequested;
 
@@ -397,7 +511,7 @@ public class InlinePickerRichTextBox : RichTextBox
 
             HidePopup();
             _triggerStart = null;
-            ItemInserted?.Invoke(this, selectedItem);
+            ItemInserted?.Invoke(this, itemToInsert);
         }
         finally
         {
@@ -406,6 +520,20 @@ public class InlinePickerRichTextBox : RichTextBox
 
         UpdateSerializedText();
         Focus();
+    }
+
+    private static string BuildPatternPlaceholder(TemplatePatternMatch config)
+    {
+        string mode = config.MatchMode;
+
+        // Include separator in placeholder for "all" and multi-index modes
+        bool needsSeparator = mode == "all"
+            || (mode.Contains(',') && mode.Split(',').Length > 1);
+
+        if (needsSeparator && config.Separator != ", ")
+            return $"{{p:{config.PatternName}:{mode}:{config.Separator}}}";
+
+        return $"{{p:{config.PatternName}:{mode}}}";
     }
 
     private void Chip_RemoveRequested(object? sender, EventArgs e)
@@ -564,5 +692,30 @@ public class InlinePickerRichTextBox : RichTextBox
                       ?? LogicalTreeHelper.GetParent(current);
         }
         return false;
+    }
+}
+
+/// <summary>
+/// Selects between a selectable item template and a non-selectable section header template
+/// based on the <see cref="InlinePickerItem.Group"/> value.
+/// </summary>
+internal class PickerItemTemplateSelector : DataTemplateSelector
+{
+    private readonly DataTemplate _selectableTemplate;
+    private readonly DataTemplate _headerTemplate;
+
+    public PickerItemTemplateSelector(DataTemplate selectableTemplate, DataTemplate headerTemplate)
+    {
+        _selectableTemplate = selectableTemplate;
+        _headerTemplate = headerTemplate;
+    }
+
+    public override DataTemplate SelectTemplate(object item, DependencyObject container)
+    {
+        if (item is InlinePickerItem pickerItem
+            && pickerItem.Group == InlinePickerRichTextBox.HeaderGroupTag)
+            return _headerTemplate;
+
+        return _selectableTemplate;
     }
 }

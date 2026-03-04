@@ -229,9 +229,37 @@ public partial class GrabFrame : Window
         EnterEditMode();
         UpdateTemplateBadges();
         UpdateTemplatePickerItems();
+
+        // For editing, also add picker items for the template's specific pattern configurations
+        // so SetSerializedText can match the exact placeholder values and recreate chips
+        if (template.PatternMatches.Count > 0)
+        {
+            List<InlinePickerItem> items = [.. TemplateOutputBox.ItemsSource ?? []];
+            foreach (TemplatePatternMatch pm in template.PatternMatches)
+            {
+                string displayLabel = $"{pm.PatternName} ({pm.MatchMode})";
+                string value = BuildPatternPlaceholderValue(pm);
+                // Only add if not already in the list (avoid duplicates with the default "first" items)
+                if (!items.Any(i => i.Value == value))
+                    items.Add(new InlinePickerItem(displayLabel, value, "Patterns"));
+            }
+            TemplateOutputBox.ItemsSource = items;
+        }
+
         // Repopulate the output box AFTER ItemsSource is set so chips are recreated correctly
         TemplateOutputBox.SetSerializedText(template.OutputTemplate);
         reSearchTimer.Start();
+    }
+
+    private static string BuildPatternPlaceholderValue(TemplatePatternMatch config)
+    {
+        bool needsSeparator = config.MatchMode == "all"
+            || (config.MatchMode.Contains(',') && config.MatchMode.Split(',').Length > 1);
+
+        if (needsSeparator && config.Separator != ", ")
+            return $"{{p:{config.PatternName}:{config.MatchMode}:{config.Separator}}}";
+
+        return $"{{p:{config.PatternName}:{config.MatchMode}}}";
     }
 
     private async Task LoadContentFromHistory(HistoryInfo history)
@@ -2512,11 +2540,16 @@ new GrabFrameOperationArgs()
             return;
         }
 
-        if (wordBorders.Count == 0)
+        string outputTemplateText = TemplateOutputBox.GetSerializedText();
+
+        // Parse pattern references from the output template
+        List<TemplatePatternMatch> patternMatches = ParsePatternMatchesFromTemplate(outputTemplateText);
+
+        if (wordBorders.Count == 0 && patternMatches.Count == 0)
         {
             MessageBox.Show(
-                "Use Ctrl+drag to draw at least one region before saving.",
-                "No Regions",
+                "Use Ctrl+drag to draw at least one region, or add a pattern placeholder, before saving.",
+                "No Regions or Patterns",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -2540,10 +2573,11 @@ new GrabFrameOperationArgs()
 
         GrabTemplate template = new(name)
         {
-            OutputTemplate = TemplateOutputBox.GetSerializedText(),
+            OutputTemplate = outputTemplateText,
             ReferenceImageWidth = cw,
             ReferenceImageHeight = ch,
             Regions = regions,
+            PatternMatches = patternMatches,
         };
 
         if (_editingTemplate is not null)
@@ -2565,11 +2599,66 @@ new GrabFrameOperationArgs()
         TemplateOutputBox.SetSerializedText(string.Empty);
         UpdateTemplateBadges();
 
+        int totalItems = regions.Count + patternMatches.Count;
+        string itemsDesc = regions.Count > 0 && patternMatches.Count > 0
+            ? $"{regions.Count} region(s) and {patternMatches.Count} pattern(s)"
+            : regions.Count > 0
+                ? $"{regions.Count} region(s)"
+                : $"{patternMatches.Count} pattern(s)";
+
         MessageBox.Show(
-            $"Template \"{name}\" saved with {regions.Count} region(s).\n\nEnable it in Post-Grab Actions Settings to use it during a Fullscreen Grab.",
+            $"Template \"{name}\" saved with {itemsDesc}.\n\nEnable it in Post-Grab Actions Settings to use it during a Fullscreen Grab.",
             "Template Saved",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
+    }
+
+    /// <summary>
+    /// Parses {p:Name:mode} and {p:Name:mode:separator} placeholders from the output template
+    /// and builds TemplatePatternMatch objects by resolving against saved patterns.
+    /// </summary>
+    private static List<TemplatePatternMatch> ParsePatternMatchesFromTemplate(string outputTemplate)
+    {
+        if (string.IsNullOrEmpty(outputTemplate))
+            return [];
+
+        MatchCollection matches = Regex.Matches(outputTemplate, @"\{p:([^:}]+):([^:}]+)(?::([^}]*))?\}");
+        Dictionary<string, TemplatePatternMatch> uniquePatterns = new(StringComparer.OrdinalIgnoreCase);
+
+        // Load saved patterns for ID resolution
+        StoredRegex[] savedPatterns;
+        try
+        {
+            string json = Settings.Default.RegexList;
+            savedPatterns = string.IsNullOrWhiteSpace(json)
+                ? StoredRegex.GetDefaultPatterns()
+                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
+        }
+        catch
+        {
+            savedPatterns = StoredRegex.GetDefaultPatterns();
+        }
+
+        foreach (Match match in matches)
+        {
+            string patternName = match.Groups[1].Value;
+            string mode = match.Groups[2].Value;
+            string separator = match.Groups[3].Success ? match.Groups[3].Value : ", ";
+
+            if (uniquePatterns.ContainsKey(patternName))
+                continue;
+
+            StoredRegex? stored = savedPatterns.FirstOrDefault(
+                p => p.Name.Equals(patternName, StringComparison.OrdinalIgnoreCase));
+
+            uniquePatterns[patternName] = new TemplatePatternMatch(
+                patternId: stored?.Id ?? string.Empty,
+                patternName: patternName,
+                matchMode: mode,
+                separator: separator);
+        }
+
+        return [.. uniquePatterns.Values];
     }
 
     private void SaveTemplateCancel_Click(object sender, RoutedEventArgs e)
@@ -2628,12 +2717,73 @@ new GrabFrameOperationArgs()
     private void UpdateTemplatePickerItems()
     {
         List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
-        TemplateOutputBox.ItemsSource = [.. sorted
+
+        // Region items
+        List<InlinePickerItem> items = [.. sorted
             .Select((wb, i) =>
             {
                 string label = string.IsNullOrWhiteSpace(wb.Word) ? $"Region {i + 1}" : wb.Word;
-                return new InlinePickerItem(label, $"{{{i + 1}}}");
+                return new InlinePickerItem(label, $"{{{i + 1}}}", "Regions");
             })];
+
+        // Pattern items from saved StoredRegex patterns
+        List<InlinePickerItem> patternItems = LoadPatternPickerItems();
+        items.AddRange(patternItems);
+
+        TemplateOutputBox.ItemsSource = items;
+
+        // Wire up the pattern selection callback
+        TemplateOutputBox.PatternItemSelected ??= OnPatternItemSelected;
+    }
+
+    private static List<InlinePickerItem> LoadPatternPickerItems()
+    {
+        StoredRegex[] patterns;
+        try
+        {
+            string json = Settings.Default.RegexList;
+            patterns = string.IsNullOrWhiteSpace(json)
+                ? StoredRegex.GetDefaultPatterns()
+                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
+        }
+        catch
+        {
+            patterns = StoredRegex.GetDefaultPatterns();
+        }
+
+        return [.. patterns.Select(p =>
+            new InlinePickerItem(p.Name, $"{{p:{p.Name}:first}}", "Patterns"))];
+    }
+
+    private TemplatePatternMatch? OnPatternItemSelected(InlinePickerItem item)
+    {
+        // Extract pattern ID by looking up the name
+        StoredRegex[] patterns;
+        try
+        {
+            string json = Settings.Default.RegexList;
+            patterns = string.IsNullOrWhiteSpace(json)
+                ? StoredRegex.GetDefaultPatterns()
+                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
+        }
+        catch
+        {
+            patterns = StoredRegex.GetDefaultPatterns();
+        }
+
+        StoredRegex? storedRegex = patterns.FirstOrDefault(
+            p => p.Name.Equals(item.DisplayName, StringComparison.OrdinalIgnoreCase));
+
+        string patternId = storedRegex?.Id ?? string.Empty;
+        string patternName = item.DisplayName;
+
+        PatternMatchModeDialog dialog = new(patternId, patternName)
+        {
+            Owner = this,
+        };
+
+        bool? dialogResult = dialog.ShowDialog();
+        return dialogResult == true ? dialog.Result : null;
     }
 
     private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
