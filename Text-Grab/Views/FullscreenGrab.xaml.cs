@@ -445,8 +445,8 @@ public partial class FullscreenGrab : Window
 
     /// <summary>
     /// Draws scaled template region overlays inside the current selection border.
-    /// Regions are scaled using UniformToFill semantics relative to the template's
-    /// reference image dimensions so they fill the selected area proportionally.
+    /// Each region's stored ratio coordinates are applied directly to the current
+    /// selection dimensions (stretch-to-fill), so both axes scale independently.
     /// </summary>
     private void UpdateTemplateRegionOverlays(double selLeft, double selTop, double selWidth, double selHeight)
     {
@@ -464,10 +464,6 @@ public partial class FullscreenGrab : Window
 
         if (selWidth < 4 || selHeight < 4)
             return;
-
-        // Stretch: scale each axis independently to fill the selection exactly
-        double scaleX = selWidth / template.ReferenceImageWidth;
-        double scaleY = selHeight / template.ReferenceImageHeight;
 
         templateOverlayCanvas.Width = selWidth;
         templateOverlayCanvas.Height = selHeight;
