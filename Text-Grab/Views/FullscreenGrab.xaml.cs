@@ -284,9 +284,7 @@ public partial class FullscreenGrab : Window
         foreach (ButtonInfo action in enabledActions)
         {
             // When a template is preselected, don't restore saved check state for other templates
-            bool isChecked = !string.IsNullOrEmpty(PreselectedTemplateId) && !string.IsNullOrEmpty(action.TemplateId)
-                ? false
-                : PostGrabActionManager.GetCheckState(action);
+            bool isChecked = (string.IsNullOrEmpty(PreselectedTemplateId) || string.IsNullOrEmpty(action.TemplateId)) && PostGrabActionManager.GetCheckState(action);
 
             MenuItem menuItem = new()
             {

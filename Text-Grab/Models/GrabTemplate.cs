@@ -27,7 +27,7 @@ namespace Text_Grab.Models;
 ///   \\           — literal backslash
 ///   \{           — literal opening brace
 /// </summary>
-public class GrabTemplate
+public partial class GrabTemplate
 {
     /// <summary>Unique persistent identifier.</summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -101,9 +101,7 @@ public class GrabTemplate
     public IEnumerable<int> GetReferencedRegionNumbers()
     {
         System.Text.RegularExpressions.MatchCollection matches =
-            System.Text.RegularExpressions.Regex.Matches(
-                OutputTemplate,
-                @"\{(\d+)(?::[a-z]+)?\}");
+            RefRegionNumbers().Matches(OutputTemplate);
 
         foreach (System.Text.RegularExpressions.Match match in matches)
         {
@@ -118,13 +116,17 @@ public class GrabTemplate
     public IEnumerable<string> GetReferencedPatternNames()
     {
         System.Text.RegularExpressions.MatchCollection matches =
-            System.Text.RegularExpressions.Regex.Matches(
-                OutputTemplate,
-                @"\{p:([^:}]+):[^}]+\}");
+            RefPatternNames().Matches(OutputTemplate);
 
         foreach (System.Text.RegularExpressions.Match match in matches)
         {
             yield return match.Groups[1].Value;
         }
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\{(\d+)(?::[a-z]+)?\}")]
+    private static partial System.Text.RegularExpressions.Regex RefRegionNumbers();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\{p:([^:}]+):[^}]+\}")]
+    private static partial System.Text.RegularExpressions.Regex RefPatternNames();
 }
