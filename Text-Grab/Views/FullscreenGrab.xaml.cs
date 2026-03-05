@@ -1,6 +1,7 @@
 ﻿using Dapplo.Windows.User32;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows;
@@ -280,11 +281,14 @@ public partial class FullscreenGrab : Window
         // Add keyboard handling once for the entire context menu
         contextMenu.PreviewKeyDown += FullscreenGrab_KeyDown;
 
+        List<ButtonInfo> regularActions = enabledActions.Where(a => string.IsNullOrEmpty(a.TemplateId)).ToList();
+        List<ButtonInfo> templateActions = enabledActions.Where(a => !string.IsNullOrEmpty(a.TemplateId)).ToList();
+        bool templatePreselected = !string.IsNullOrEmpty(PreselectedTemplateId);
+
         int index = 1;
-        foreach (ButtonInfo action in enabledActions)
+        foreach (ButtonInfo action in regularActions)
         {
-            // When a template is preselected, don't restore saved check state for other templates
-            bool isChecked = (string.IsNullOrEmpty(PreselectedTemplateId) || string.IsNullOrEmpty(action.TemplateId)) && PostGrabActionManager.GetCheckState(action);
+            bool isChecked = PostGrabActionManager.GetCheckState(action);
 
             MenuItem menuItem = new()
             {
@@ -296,9 +300,30 @@ public partial class FullscreenGrab : Window
                 InputGestureText = $"Ctrl+{index}"
             };
 
-            // Wire up click handler
             menuItem.Click += PostActionMenuItem_Click;
+            contextMenu.Items.Add(menuItem);
+            index++;
+        }
 
+        // Separator between regular actions and grab templates
+        if (regularActions.Count > 0 && templateActions.Count > 0)
+            contextMenu.Items.Add(new Separator());
+
+        foreach (ButtonInfo action in templateActions)
+        {
+            bool isChecked = !templatePreselected && PostGrabActionManager.GetCheckState(action);
+
+            MenuItem menuItem = new()
+            {
+                Header = action.ButtonText,
+                IsCheckable = true,
+                Tag = action,
+                IsChecked = isChecked,
+                StaysOpenOnClick = stayOpen,
+                InputGestureText = $"Ctrl+{index}"
+            };
+
+            menuItem.Click += PostActionMenuItem_Click;
             contextMenu.Items.Add(menuItem);
             index++;
         }
@@ -358,8 +383,10 @@ public partial class FullscreenGrab : Window
                         StaysOpenOnClick = DefaultSettings.PostGrabStayOpen,
                     };
                     templateMenuItem.Click += PostActionMenuItem_Click;
-                    contextMenu.Items.Insert(contextMenu.Items.Count > 0 ? contextMenu.Items.Count - 2 : 0, new Separator());
-                    contextMenu.Items.Insert(contextMenu.Items.Count > 0 ? contextMenu.Items.Count - 2 : 0, templateMenuItem);
+                    // Add section separator before templates if none exist yet (trailing: Separator, Customize, Close)
+                    if (!templateActions.Any())
+                        contextMenu.Items.Insert(contextMenu.Items.Count - 3, new Separator());
+                    contextMenu.Items.Insert(contextMenu.Items.Count - 3, templateMenuItem);
                 }
             }
 
@@ -1303,12 +1330,34 @@ public partial class FullscreenGrab : Window
 
     private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        // Save check state for LastUsed tracking
-        if (sender is MenuItem menuItem
-            && menuItem.Tag is ButtonInfo action
-            && action.DefaultCheckState == DefaultCheckState.LastUsed)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not ButtonInfo action)
         {
+            CheckIfAnyPostActionsSelected();
+            return;
+        }
+
+        // Save check state for LastUsed tracking
+        if (action.DefaultCheckState == DefaultCheckState.LastUsed)
             PostGrabActionManager.SaveCheckState(action, menuItem.IsChecked);
+
+        // Enforce exclusive template selection: when a template is checked, uncheck all others
+        if (!string.IsNullOrEmpty(action.TemplateId)
+            && menuItem.IsChecked
+            && menuItem.Parent is ContextMenu contextMenu)
+        {
+            foreach (object item in contextMenu.Items)
+            {
+                if (item is MenuItem otherItem
+                    && otherItem != menuItem
+                    && otherItem.Tag is ButtonInfo otherAction
+                    && !string.IsNullOrEmpty(otherAction.TemplateId)
+                    && otherItem.IsChecked)
+                {
+                    otherItem.IsChecked = false;
+                    if (otherAction.DefaultCheckState == DefaultCheckState.LastUsed)
+                        PostGrabActionManager.SaveCheckState(otherAction, false);
+                }
+            }
         }
 
         CheckIfAnyPostActionsSelected();
