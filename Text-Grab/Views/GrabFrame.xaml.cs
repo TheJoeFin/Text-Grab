@@ -1483,9 +1483,14 @@ public partial class GrabFrame : Window
         if (GrabFrameImage.Source is not BitmapSource source)
             return;
 
-        // Keep image and overlay in the same coordinate space (raw image pixels).
-        double sourceWidth = source.PixelWidth > 0 ? source.PixelWidth : source.Width;
-        double sourceHeight = source.PixelHeight > 0 ? source.PixelHeight : source.Height;
+        // Convert physical pixels to WPF device-independent pixels so the canvas
+        // coordinate space stays consistent with DrawRectanglesAroundWords, which
+        // divides OCR pixel coordinates by dpi.DpiScaleX/Y to produce DIP positions.
+        // Using raw PixelWidth would cause the Viewbox to scale down at DPI > 100%,
+        // shifting viewBoxZoomFactor and borderToCanvasX/Y, and misplacing word borders.
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        double sourceWidth = source.PixelWidth > 0 ? source.PixelWidth / dpi.DpiScaleX : source.Width;
+        double sourceHeight = source.PixelHeight > 0 ? source.PixelHeight / dpi.DpiScaleY : source.Height;
 
         if (double.IsFinite(sourceWidth) && sourceWidth > 0)
         {
@@ -2622,7 +2627,7 @@ new GrabFrameOperationArgs()
         if (string.IsNullOrEmpty(outputTemplate))
             return [];
 
-        MatchCollection matches = Regex.Matches(outputTemplate, @"\{p:([^:}]+):([^:}]+)(?::([^}]*))?\}");
+        MatchCollection matches = TemplatePattern().Matches(outputTemplate);
         Dictionary<string, TemplatePatternMatch> uniquePatterns = new(StringComparer.OrdinalIgnoreCase);
 
         // Load saved patterns for ID resolution
@@ -2697,7 +2702,7 @@ new GrabFrameOperationArgs()
             return;
 
         string outputTemplate = TemplateOutputBox.GetSerializedText();
-        HashSet<int> referenced = [.. Regex.Matches(outputTemplate, @"\{(\d+)(?::[a-z]+)?\}")
+        HashSet<int> referenced = [.. OutputTemplateReferenced().Matches(outputTemplate)
             .Select(m => int.TryParse(m.Groups[1].Value, out int n) ? n : 0)
             .Where(n => n > 0)];
 
@@ -3721,6 +3726,11 @@ new GrabFrameOperationArgs()
 
         UpdateFrameText();
     }
+
+    [GeneratedRegex(@"\{p:([^:}]+):([^:}]+)(?::([^}]*))?\}")]
+    private static partial Regex TemplatePattern();
+    [GeneratedRegex(@"\{(\d+)(?::[a-z]+)?\}")]
+    private static partial Regex OutputTemplateReferenced();
 
     #endregion Methods
 }
