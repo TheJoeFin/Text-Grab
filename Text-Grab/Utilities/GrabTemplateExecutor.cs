@@ -56,9 +56,9 @@ public static class GrabTemplateExecutor
     /// </summary>
     /// <param name="template">The template to execute.</param>
     /// <param name="captureRegion">
-    ///     The screen rectangle (in WPF units, pre-DPI-scaling applied by caller)
-    ///     that bounds the user's selection. Template region ratios are applied to
-    ///     this rectangle's width/height.
+    ///     The screen rectangle in physical screen pixels that bounds the user's
+    ///     selection. Template region ratios are applied to this rectangle's
+    ///     width/height to derive each sub-region's capture bounds.
     /// </param>
     /// <param name="language">The OCR language to use. Pass null to use the app default.</param>
     public static async Task<string> ExecuteTemplateAsync(
@@ -363,7 +363,7 @@ public static class GrabTemplateExecutor
             }
 
             if (!available.Contains(num))
-                issues.Add($"Placeholder {{{{num}}}} references region {num} which does not exist.");
+                issues.Add($"Placeholder {{{num}}} references region {num} which does not exist.");
 
             referenced.Add(num);
         }
