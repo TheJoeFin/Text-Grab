@@ -836,11 +836,6 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
         WindowUtilities.FullscreenKeyDown(Key.G, isActive);
         SelectSingleToggleButton(sender);
-
-        // null out any zoom/scaling because it does not translate into GF Size
-        // TODO: when placing the Grab Frame consider zoom
-        BackgroundImage.RenderTransform = null;
-        edgePanTimer.Stop();
     }
 
     private void PanSelection(System.Windows.Point movingPoint)
@@ -893,14 +888,17 @@ public partial class FullscreenGrab : Window
         if (BackgroundImage.Source is BitmapSource backgroundBitmap)
         {
             Matrix m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
-            int cropX = Math.Max(0, (int)(Canvas.GetLeft(selectBorder) * m.M11));
-            int cropY = Math.Max(0, (int)(Canvas.GetTop(selectBorder) * m.M22));
-            int cropW = Math.Min((int)(selectBorder.Width * m.M11), backgroundBitmap.PixelWidth - cropX);
-            int cropH = Math.Min((int)(selectBorder.Height * m.M22), backgroundBitmap.PixelHeight - cropY);
+            Rect selectionRect = GetCurrentSelectionRect();
 
-            if (cropW > 0 && cropH > 0)
+            if (TryGetBitmapCropRectForSelection(
+                selectionRect,
+                m,
+                BackgroundImage.RenderTransform,
+                backgroundBitmap.PixelWidth,
+                backgroundBitmap.PixelHeight,
+                out Int32Rect cropRect))
             {
-                CroppedBitmap croppedBitmap = new(backgroundBitmap, new Int32Rect(cropX, cropY, cropW, cropH));
+                CroppedBitmap croppedBitmap = new(backgroundBitmap, cropRect);
                 croppedBitmap.Freeze();
                 grabFrame = new GrabFrame(croppedBitmap);
             }
@@ -1407,13 +1405,6 @@ public partial class FullscreenGrab : Window
 
     private void RegionClickCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        if (NewGrabFrameMenuItem.IsChecked)
-        {
-            BackgroundImage.RenderTransform = null;
-            edgePanTimer.Stop();
-            return;
-        }
-
         System.Windows.Point point = Mouse.GetPosition(this);
 
         if (BackgroundImage.RenderTransform is TransformGroup transformGroup)
@@ -1489,6 +1480,64 @@ public partial class FullscreenGrab : Window
     {
         if (NextStepDropDownButton.Flyout is ContextMenu menu)
             menu.IsOpen = false;
+    }
+
+    internal static bool TryGetBitmapCropRectForSelection(
+        Rect selectionRect,
+        Matrix transformToDevice,
+        Transform? backgroundRenderTransform,
+        int bitmapPixelWidth,
+        int bitmapPixelHeight,
+        out Int32Rect cropRect)
+    {
+        cropRect = default;
+
+        if (selectionRect.IsEmpty
+            || selectionRect.Width <= 0
+            || selectionRect.Height <= 0
+            || bitmapPixelWidth <= 0
+            || bitmapPixelHeight <= 0)
+        {
+            return false;
+        }
+
+        Matrix selectionToBackground = backgroundRenderTransform?.Value ?? Matrix.Identity;
+        if (selectionToBackground.HasInverse)
+            selectionToBackground.Invert();
+        else
+            selectionToBackground = Matrix.Identity;
+
+        Point[] backgroundPoints =
+        [
+            selectionToBackground.Transform(selectionRect.TopLeft),
+            selectionToBackground.Transform(new Point(selectionRect.Right, selectionRect.Top)),
+            selectionToBackground.Transform(new Point(selectionRect.Left, selectionRect.Bottom)),
+            selectionToBackground.Transform(selectionRect.BottomRight)
+        ];
+
+        Point[] bitmapPoints =
+        [
+            transformToDevice.Transform(backgroundPoints[0]),
+            transformToDevice.Transform(backgroundPoints[1]),
+            transformToDevice.Transform(backgroundPoints[2]),
+            transformToDevice.Transform(backgroundPoints[3])
+        ];
+
+        double left = bitmapPoints.Min(static point => point.X);
+        double top = bitmapPoints.Min(static point => point.Y);
+        double right = bitmapPoints.Max(static point => point.X);
+        double bottom = bitmapPoints.Max(static point => point.Y);
+
+        int cropLeft = Math.Max(0, (int)Math.Floor(left));
+        int cropTop = Math.Max(0, (int)Math.Floor(top));
+        int cropRight = Math.Min(bitmapPixelWidth, (int)Math.Ceiling(right));
+        int cropBottom = Math.Min(bitmapPixelHeight, (int)Math.Ceiling(bottom));
+
+        if (cropRight <= cropLeft || cropBottom <= cropTop)
+            return false;
+
+        cropRect = new Int32Rect(cropLeft, cropTop, cropRight - cropLeft, cropBottom - cropTop);
+        return true;
     }
 
     private void EditPostGrabActions_Click(object sender, RoutedEventArgs e)

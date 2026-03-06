@@ -40,7 +40,7 @@ public partial class FullscreenGrab
     }
 
     private const double MinimumSelectionSize = 6.0;
-    private const double AdjustHandleSize = 10.0;
+    private const double AdjustHandleSize = 12.0;
     private static readonly SolidColorBrush SelectionBorderBrush = new(System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
     private static readonly SolidColorBrush WindowSelectionFillBrush = new(System.Windows.Media.Color.FromArgb(52, 255, 255, 255));
     private static readonly SolidColorBrush WindowSelectionLabelBackgroundBrush = new(System.Windows.Media.Color.FromArgb(224, 20, 27, 46));
@@ -960,14 +960,15 @@ public partial class FullscreenGrab
             Matrix transformToDevice = presentationSource?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
             Rect selectionRect = GetCurrentSelectionRect();
 
-            int cropX = Math.Max(0, (int)Math.Round(selectionRect.Left * transformToDevice.M11));
-            int cropY = Math.Max(0, (int)Math.Round(selectionRect.Top * transformToDevice.M22));
-            int cropW = Math.Min((int)Math.Round(selectionRect.Width * transformToDevice.M11), backgroundBitmap.PixelWidth - cropX);
-            int cropH = Math.Min((int)Math.Round(selectionRect.Height * transformToDevice.M22), backgroundBitmap.PixelHeight - cropY);
-
-            if (cropW > 0 && cropH > 0)
+            if (TryGetBitmapCropRectForSelection(
+                selectionRect,
+                transformToDevice,
+                BackgroundImage.RenderTransform,
+                backgroundBitmap.PixelWidth,
+                backgroundBitmap.PixelHeight,
+                out Int32Rect cropRect))
             {
-                CroppedBitmap croppedBitmap = new(backgroundBitmap, new Int32Rect(cropX, cropY, cropW, cropH));
+                CroppedBitmap croppedBitmap = new(backgroundBitmap, cropRect);
                 croppedBitmap.Freeze();
                 return croppedBitmap;
             }
