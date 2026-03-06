@@ -27,10 +27,13 @@ public record PostGrabContext(
     BitmapSource? CapturedImage,
 
     /// <summary>The OCR language used for the capture. Null means use the app default.</summary>
-    ILanguage? Language = null
+    ILanguage? Language = null,
+
+    /// <summary>The selection style used to produce the capture.</summary>
+    FsgSelectionStyle SelectionStyle = FsgSelectionStyle.Region
 )
 {
     /// <summary>Convenience factory for non-template actions that only need text.</summary>
     public static PostGrabContext TextOnly(string text) =>
-        new(text, Rect.Empty, 1.0, null, null);
+        new(text, Rect.Empty, 1.0, null, null, FsgSelectionStyle.Region);
 }

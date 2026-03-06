@@ -52,6 +52,42 @@
                 Text="Single Line outputs captures as a single line (same as pressing S). Table mode requires Windows OCR/AI languages."/>
         </StackPanel>
 
+        <StackPanel Margin="0,4,0,8">
+            <TextBlock Style="{StaticResource TextBodyNormal}"
+                    Text="Selection style:"/>
+            <StackPanel Margin="12,6,0,0">
+                <RadioButton
+                    x:Name="RegionSelectionStyleRadio"
+                    Click="RegionSelectionStyleRadio_Click"
+                    GroupName="FsgSelectionStyle">
+                    Rectangle 1 - Drag a box
+                </RadioButton>
+                <RadioButton
+                    x:Name="WindowSelectionStyleRadio"
+                    Click="WindowSelectionStyleRadio_Click"
+                    GroupName="FsgSelectionStyle">
+                    Window - Hover and click
+                </RadioButton>
+                <RadioButton
+                    x:Name="FreeformSelectionStyleRadio"
+                    Click="FreeformSelectionStyleRadio_Click"
+                    GroupName="FsgSelectionStyle">
+                    Freeform - Draw any shape
+                </RadioButton>
+                <RadioButton
+                    x:Name="AdjustAfterSelectionStyleRadio"
+                    Click="AdjustAfterSelectionStyleRadio_Click"
+                    GroupName="FsgSelectionStyle">
+                    Rectangle 2 - Drag, then adjust
+                </RadioButton>
+            </StackPanel>
+            <TextBlock
+                Margin="24,6,0,0"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Choose how Fullscreen Grab defines the capture area by default. Rectangle 1 is the standard drag-a-box capture, and Rectangle 2 lets you fine-tune the box before grabbing."/>
+        </StackPanel>
+
         <CheckBox
             x:Name="SendToEtwCheckBox"
             Margin="0,4,0,0"

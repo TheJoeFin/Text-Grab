@@ -38,14 +38,6 @@
     mc:Ignorable="d">
     <Window.Resources>
         <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
-
-        <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="Margin" Value="4" />
-        </Style>
     </Window.Resources>
 
     <Window.CommandBindings>

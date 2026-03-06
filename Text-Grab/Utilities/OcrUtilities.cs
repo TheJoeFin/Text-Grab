@@ -131,6 +131,48 @@ public static partial class OcrUtilities
         return sb.ToString();
     }
 
+    public static async Task<string> GetTextFromBitmapAsync(Bitmap bitmap, ILanguage language)
+    {
+        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bitmap, language));
+    }
+
+    public static async Task<string> GetTextFromBitmapSourceAsync(BitmapSource bitmapSource, ILanguage language)
+    {
+        using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(bitmapSource);
+        return await GetTextFromBitmapAsync(bitmap, language);
+    }
+
+    public static async Task<string> GetTextFromBitmapAsTableAsync(Bitmap bitmap, ILanguage language)
+    {
+        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
+        using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
+        IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, language);
+        DpiScale bitmapDpiScale = new(1.0, 1.0);
+
+        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, bitmapDpiScale);
+
+        Rectangle rectCanvasSize = new()
+        {
+            Width = scaledBitmap.Width,
+            Height = scaledBitmap.Height,
+            X = 0,
+            Y = 0
+        };
+
+        ResultTable table = new();
+        table.AnalyzeAsTable(wordBorderInfos, rectCanvasSize);
+
+        StringBuilder textBuilder = new();
+        ResultTable.GetTextFromTabledWordBorders(textBuilder, wordBorderInfos, language.IsSpaceJoining());
+        return textBuilder.ToString();
+    }
+
+    public static async Task<string> GetTextFromBitmapSourceAsTableAsync(BitmapSource bitmapSource, ILanguage language)
+    {
+        using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(bitmapSource);
+        return await GetTextFromBitmapAsTableAsync(bitmap, language);
+    }
+
     public static async Task<(IOcrLinesWords?, double)> GetOcrResultFromRegionAsync(Rectangle region, ILanguage language)
     {
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
@@ -191,6 +233,9 @@ public static partial class OcrUtilities
         if (lastFsg is null)
             return;
 
+        if (!CanReplayPreviousFullscreenSelection(lastFsg))
+            return;
+
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
 
         PreviousGrabWindow previousGrab = new(lastFsg.PositionRect);
@@ -224,6 +269,9 @@ public static partial class OcrUtilities
         if (lastFsg is null)
             return;
 
+        if (!CanReplayPreviousFullscreenSelection(lastFsg))
+            return;
+
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
 
         PreviousGrabWindow previousGrab = new(lastFsg.PositionRect);
@@ -254,13 +302,6 @@ public static partial class OcrUtilities
     {
         Bitmap bitmap = ImageMethods.GetBitmapFromIRandomAccessStream(randomAccessStream);
         List<OcrOutput> outputs = await GetTextFromImageAsync(bitmap, language);
-
-        if (DefaultSettings.TryToReadBarcodes)
-        {
-            OcrOutput barcodeResult = BarcodeUtilities.TryToReadBarcodes(bitmap);
-            outputs.Add(barcodeResult);
-        }
-
         return outputs;
     }
 
@@ -303,9 +344,9 @@ public static partial class OcrUtilities
         {
             GlobalLang ocrLanguageFromILang = language as GlobalLang ?? new GlobalLang("en-US");
             double scale = await GetIdealScaleFactorForOcrAsync(bitmap, ocrLanguageFromILang);
-            Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
+            using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
             IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, ocrLanguageFromILang);
-            OcrOutput paragraphsOutput = GetTextFromOcrResult(ocrLanguageFromILang, scaledBitmap, ocrResult);
+            OcrOutput paragraphsOutput = GetTextFromOcrResult(ocrLanguageFromILang, new Bitmap(scaledBitmap), ocrResult);
             outputs.Add(paragraphsOutput);
         }
 
@@ -483,4 +524,17 @@ public static partial class OcrUtilities
 
     [GeneratedRegex(@"(^[\p{L}-[\p{Lo}]]|\p{Nd}$)|.{2,}")]
     private static partial Regex SpaceJoiningWordRegex();
+
+    private static bool CanReplayPreviousFullscreenSelection(HistoryInfo history)
+    {
+        if (history.SelectionStyle is FsgSelectionStyle.Region or FsgSelectionStyle.AdjustAfter)
+            return true;
+
+        MessageBox.Show(
+            "Repeat previous fullscreen capture is currently available only for Region and Adjust After selections.",
+            "Text Grab",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+        return false;
+    }
 }

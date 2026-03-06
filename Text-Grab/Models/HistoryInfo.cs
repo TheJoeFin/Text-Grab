@@ -35,6 +35,8 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public double DpiScaleFactor { get; set; } = 1.0;
 
+    public FsgSelectionStyle SelectionStyle { get; set; } = FsgSelectionStyle.Region;
+
     public string LanguageTag { get; set; } = string.Empty;
 
     public LanguageKind LanguageKind { get; set; } = LanguageKind.Global;

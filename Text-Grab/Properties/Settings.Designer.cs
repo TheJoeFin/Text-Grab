@@ -649,6 +649,18 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Region")]
+        public string FsgSelectionStyle {
+            get {
+                return ((string)(this["FsgSelectionStyle"]));
+            }
+            set {
+                this["FsgSelectionStyle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool FsgShadeOverlay {
             get {

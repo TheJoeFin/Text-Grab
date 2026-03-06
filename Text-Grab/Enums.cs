@@ -98,3 +98,11 @@ public enum FsgDefaultMode
     SingleLine = 1,
     Table = 2,
 }
+
+public enum FsgSelectionStyle
+{
+    Region = 0,
+    Window = 1,
+    Freeform = 2,
+    AdjustAfter = 3,
+}
