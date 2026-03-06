@@ -206,19 +206,7 @@ public partial class FullscreenGrab : Window
                 int numberPressed = (int)key - 34; // D1 casts to 35, D2 to 36, etc.
 
                 if (KeyboardExtensions.IsCtrlDown())
-                {
-                    if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu
-                        || !flyoutMenu.HasItems
-                        || numberPressed - 1 >= flyoutMenu.Items.Count
-                        || flyoutMenu.Items[numberPressed - 1] is not MenuItem selectedItem)
-                    {
-                        return;
-                    }
-
-                    selectedItem.IsChecked = !selectedItem.IsChecked;
-                    CheckIfAnyPostActionsSelected();
                     return;
-                }
 
                 int numberOfLanguages = LanguagesComboBox.Items.Count;
                 if (numberPressed <= numberOfLanguages
@@ -232,14 +220,75 @@ public partial class FullscreenGrab : Window
         }
     }
 
+    internal static string GetPostGrabActionKey(ButtonInfo action)
+    {
+        if (!string.IsNullOrWhiteSpace(action.TemplateId))
+            return $"template:{action.TemplateId}";
+
+        if (!string.IsNullOrWhiteSpace(action.ClickEvent))
+            return $"click:{action.ClickEvent}";
+
+        return $"text:{action.ButtonText}";
+    }
+
+    internal static List<MenuItem> GetActionablePostGrabMenuItems(ContextMenu contextMenu)
+    {
+        return [.. contextMenu.Items
+            .OfType<MenuItem>()
+            .Where(static item => item.Tag is ButtonInfo)];
+    }
+
+    internal static Dictionary<string, bool> BuildPostGrabActionSnapshot(
+        IEnumerable<MenuItem> actionableItems,
+        string? changedActionKey = null,
+        bool? changedIsChecked = null)
+    {
+        List<(MenuItem MenuItem, ButtonInfo Action, string ActionKey)> postGrabItems = [];
+
+        foreach (MenuItem menuItem in actionableItems)
+        {
+            if (menuItem.Tag is not ButtonInfo action)
+                continue;
+
+            postGrabItems.Add((menuItem, action, GetPostGrabActionKey(action)));
+        }
+
+        Dictionary<string, bool> actionStates = [];
+        foreach ((MenuItem menuItem, _, string actionKey) in postGrabItems)
+        {
+            bool isChecked = changedActionKey == actionKey && changedIsChecked.HasValue
+                ? changedIsChecked.Value
+                : menuItem.IsChecked;
+            actionStates[actionKey] = isChecked;
+        }
+
+        List<string> checkedTemplateKeys = [.. postGrabItems
+            .Where(item => !string.IsNullOrWhiteSpace(item.Action.TemplateId) && actionStates[item.ActionKey])
+            .Select(item => item.ActionKey)];
+
+        if (checkedTemplateKeys.Count > 1)
+        {
+            string templateToKeep = !string.IsNullOrWhiteSpace(changedActionKey)
+                && changedIsChecked == true
+                && checkedTemplateKeys.Contains(changedActionKey)
+                ? changedActionKey
+                : checkedTemplateKeys[0];
+
+            foreach (string templateKey in checkedTemplateKeys.Where(key => key != templateToKeep))
+                actionStates[templateKey] = false;
+        }
+
+        return actionStates;
+    }
+
     private void CheckIfAnyPostActionsSelected()
     {
         if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu || !flyoutMenu.HasItems)
             return;
 
-        foreach (object anyItem in flyoutMenu.Items)
+        foreach (MenuItem item in GetActionablePostGrabMenuItems(flyoutMenu))
         {
-            if (anyItem is MenuItem item && item.IsChecked is true)
+            if (item.IsChecked)
             {
                 if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
                     NextStepDropDownButton.Background = tealButtonStyle;
@@ -261,6 +310,131 @@ public partial class FullscreenGrab : Window
         return isActive;
     }
 
+    private void RefreshPostGrabActionVisuals()
+    {
+        CheckIfAnyPostActionsSelected();
+
+        if (RegionClickCanvas.Children.Contains(selectBorder)
+            && selectBorder.Width > 2
+            && selectBorder.Height > 2)
+        {
+            double selLeft = Canvas.GetLeft(selectBorder);
+            double selTop = Canvas.GetTop(selectBorder);
+
+            if (!double.IsNaN(selLeft) && !double.IsNaN(selTop))
+            {
+                UpdateTemplateRegionOverlays(selLeft, selTop, selectBorder.Width, selectBorder.Height);
+                return;
+            }
+        }
+
+        TemplateOverlayHost.Children.Clear();
+        templateOverlayCanvas.Children.Clear();
+    }
+
+    private void SynchronizePostGrabActionShortcut(int actionIndex)
+    {
+        if (NextStepDropDownButton.Flyout is not ContextMenu contextMenu || !contextMenu.HasItems)
+            return;
+
+        List<MenuItem> actionableItems = GetActionablePostGrabMenuItems(contextMenu);
+        if (actionIndex < 0 || actionIndex >= actionableItems.Count)
+            return;
+
+        MenuItem selectedItem = actionableItems[actionIndex];
+        SynchronizePostGrabActionSelection(selectedItem, !selectedItem.IsChecked);
+    }
+
+    private void SynchronizePostGrabActionSelection(MenuItem menuItem, bool isChecked)
+    {
+        if (menuItem.Tag is not ButtonInfo action
+            || menuItem.Parent is not ContextMenu contextMenu)
+        {
+            RefreshPostGrabActionVisuals();
+            return;
+        }
+
+        Dictionary<string, bool> actionStates = BuildPostGrabActionSnapshot(
+            GetActionablePostGrabMenuItems(contextMenu),
+            GetPostGrabActionKey(action),
+            isChecked);
+
+        ApplyPostGrabActionSnapshot(
+            actionStates,
+            persistLastUsed: true,
+            forcePersistActionKey: GetPostGrabActionKey(action));
+        WindowUtilities.SyncFullscreenPostGrabActionStates(actionStates, this);
+    }
+
+    internal static bool ShouldPersistLastUsedState(ButtonInfo action, bool previousChecked, bool isChecked, string? forcePersistActionKey = null)
+    {
+        if (action.DefaultCheckState != DefaultCheckState.LastUsed)
+            return false;
+
+        return previousChecked != isChecked || GetPostGrabActionKey(action) == forcePersistActionKey;
+    }
+
+    internal void ApplyPostGrabActionSnapshot(
+        IReadOnlyDictionary<string, bool> actionStates,
+        bool persistLastUsed = false,
+        string? forcePersistActionKey = null)
+    {
+        if (NextStepDropDownButton.Flyout is not ContextMenu contextMenu || !contextMenu.HasItems)
+            return;
+
+        foreach (MenuItem menuItem in GetActionablePostGrabMenuItems(contextMenu))
+        {
+            if (menuItem.Tag is not ButtonInfo action)
+                continue;
+
+            bool previousChecked = menuItem.IsChecked;
+            bool isChecked = actionStates.TryGetValue(GetPostGrabActionKey(action), out bool syncedState) && syncedState;
+            menuItem.IsChecked = isChecked;
+
+            if (persistLastUsed
+                && ShouldPersistLastUsedState(action, previousChecked, isChecked, forcePersistActionKey))
+            {
+                PostGrabActionManager.SaveCheckState(action, isChecked);
+            }
+        }
+
+        RefreshPostGrabActionVisuals();
+    }
+
+    private void AddPostGrabActionMenuItem(ContextMenu contextMenu, ButtonInfo action, bool isChecked, bool stayOpen, int shortcutIndex)
+    {
+        MenuItem menuItem = new()
+        {
+            Header = action.ButtonText,
+            IsCheckable = true,
+            Tag = action,
+            IsChecked = isChecked,
+            StaysOpenOnClick = stayOpen,
+            InputGestureText = $"Ctrl+{shortcutIndex}"
+        };
+
+        menuItem.Click += PostActionMenuItem_Click;
+        contextMenu.Items.Add(menuItem);
+    }
+
+    private List<ButtonInfo> GetEnabledPostGrabActionsForMenu()
+    {
+        List<ButtonInfo> enabledActions = PostGrabActionManager.GetEnabledPostGrabActions();
+
+        if (string.IsNullOrWhiteSpace(PreselectedTemplateId)
+            || enabledActions.Any(action => action.TemplateId == PreselectedTemplateId))
+        {
+            return enabledActions;
+        }
+
+        GrabTemplate? template = GrabTemplateManager.GetTemplateById(PreselectedTemplateId);
+        if (template is null)
+            return enabledActions;
+
+        enabledActions.Add(GrabTemplateManager.CreateButtonInfoForTemplate(template));
+        return enabledActions;
+    }
+
     private void LoadDynamicPostGrabActions()
     {
         if (NextStepDropDownButton.Flyout is not ContextMenu contextMenu)
@@ -269,16 +443,11 @@ public partial class FullscreenGrab : Window
         // Clear existing items
         contextMenu.Items.Clear();
 
-        // Get enabled post-grab actions from settings
-        List<ButtonInfo> enabledActions = PostGrabActionManager.GetEnabledPostGrabActions();
+        List<ButtonInfo> enabledActions = GetEnabledPostGrabActionsForMenu();
 
-        // Get the PostGrabStayOpen setting
         bool stayOpen = DefaultSettings.PostGrabStayOpen;
 
-        // Remove any existing keyboard handler to avoid duplicates
         contextMenu.PreviewKeyDown -= FullscreenGrab_KeyDown;
-
-        // Add keyboard handling once for the entire context menu
         contextMenu.PreviewKeyDown += FullscreenGrab_KeyDown;
 
         List<ButtonInfo> regularActions = enabledActions.Where(a => string.IsNullOrEmpty(a.TemplateId)).ToList();
@@ -288,49 +457,25 @@ public partial class FullscreenGrab : Window
         int index = 1;
         foreach (ButtonInfo action in regularActions)
         {
-            bool isChecked = PostGrabActionManager.GetCheckState(action);
-
-            MenuItem menuItem = new()
-            {
-                Header = action.ButtonText,
-                IsCheckable = true,
-                Tag = action,
-                IsChecked = isChecked,
-                StaysOpenOnClick = stayOpen,
-                InputGestureText = $"Ctrl+{index}"
-            };
-
-            menuItem.Click += PostActionMenuItem_Click;
-            contextMenu.Items.Add(menuItem);
+            AddPostGrabActionMenuItem(contextMenu, action, PostGrabActionManager.GetCheckState(action), stayOpen, index);
             index++;
         }
 
-        // Separator between regular actions and grab templates
         if (regularActions.Count > 0 && templateActions.Count > 0)
             contextMenu.Items.Add(new Separator());
 
         foreach (ButtonInfo action in templateActions)
         {
-            bool isChecked = !templatePreselected && PostGrabActionManager.GetCheckState(action);
+            bool isChecked = templatePreselected
+                ? action.TemplateId == PreselectedTemplateId
+                : PostGrabActionManager.GetCheckState(action);
 
-            MenuItem menuItem = new()
-            {
-                Header = action.ButtonText,
-                IsCheckable = true,
-                Tag = action,
-                IsChecked = isChecked,
-                StaysOpenOnClick = stayOpen,
-                InputGestureText = $"Ctrl+{index}"
-            };
-
-            menuItem.Click += PostActionMenuItem_Click;
-            contextMenu.Items.Add(menuItem);
+            AddPostGrabActionMenuItem(contextMenu, action, isChecked, stayOpen, index);
             index++;
         }
 
         contextMenu.Items.Add(new Separator());
 
-        // Add "Customize Actions & Templates..." menu item
         MenuItem editPostGrabMenuItem = new()
         {
             Header = "✨ Customize Actions \u0026 Templates...",
@@ -348,50 +493,14 @@ public partial class FullscreenGrab : Window
         hidePostGrabMenuItem.Click += HidePostGrabActions_Click;
         contextMenu.Items.Add(hidePostGrabMenuItem);
 
-        // Update the dropdown button appearance
-        CheckIfAnyPostActionsSelected();
-
-        // If a template was preselected (e.g. from Quick Simple Lookup), auto-check it
-        if (!string.IsNullOrEmpty(PreselectedTemplateId))
+        IReadOnlyDictionary<string, bool>? synchronizedActionStates = WindowUtilities.GetFullscreenPostGrabActionStates();
+        if (synchronizedActionStates is not null)
         {
-            bool found = false;
-            foreach (object item in contextMenu.Items)
-            {
-                if (item is MenuItem mi
-                    && mi.Tag is ButtonInfo bi
-                    && bi.TemplateId == PreselectedTemplateId)
-                {
-                    mi.IsChecked = true;
-                    found = true;
-                    break;
-                }
-            }
-
-            // Template not in the enabled list — add it dynamically
-            if (!found)
-            {
-                GrabTemplate? template = GrabTemplateManager.GetTemplateById(PreselectedTemplateId);
-                if (template is not null)
-                {
-                    ButtonInfo templateAction = GrabTemplateManager.CreateButtonInfoForTemplate(template);
-                    MenuItem templateMenuItem = new()
-                    {
-                        Header = templateAction.ButtonText,
-                        IsCheckable = true,
-                        Tag = templateAction,
-                        IsChecked = true,
-                        StaysOpenOnClick = DefaultSettings.PostGrabStayOpen,
-                    };
-                    templateMenuItem.Click += PostActionMenuItem_Click;
-                    // Add section separator before templates if none exist yet (trailing: Separator, Customize, Close)
-                    if (!templateActions.Any())
-                        contextMenu.Items.Insert(contextMenu.Items.Count - 3, new Separator());
-                    contextMenu.Items.Insert(contextMenu.Items.Count - 3, templateMenuItem);
-                }
-            }
-
-            CheckIfAnyPostActionsSelected();
+            ApplyPostGrabActionSnapshot(synchronizedActionStates);
+            return;
         }
+
+        RefreshPostGrabActionVisuals();
     }
 
     private void CancelMenuItem_Click(object sender, RoutedEventArgs e)
@@ -433,6 +542,16 @@ public partial class FullscreenGrab : Window
 
     private void FullscreenGrab_KeyDown(object sender, KeyEventArgs e)
     {
+        int keyValue = (int)e.Key;
+        if (KeyboardExtensions.IsCtrlDown()
+            && keyValue >= (int)Key.D1
+            && keyValue <= (int)Key.D9)
+        {
+            SynchronizePostGrabActionShortcut(keyValue - (int)Key.D1);
+            e.Handled = true;
+            return;
+        }
+
         WindowUtilities.FullscreenKeyDown(e.Key);
     }
 
@@ -455,10 +574,9 @@ public partial class FullscreenGrab : Window
         if (NextStepDropDownButton.Flyout is not ContextMenu contextMenu)
             return null;
 
-        foreach (object item in contextMenu.Items)
+        foreach (MenuItem menuItem in GetActionablePostGrabMenuItems(contextMenu))
         {
-            if (item is MenuItem menuItem
-                && menuItem.IsChecked
+            if (menuItem.IsChecked
                 && menuItem.Tag is ButtonInfo action
                 && action.ClickEvent == "ApplyTemplate_Click"
                 && !string.IsNullOrEmpty(action.TemplateId))
@@ -982,38 +1100,33 @@ public partial class FullscreenGrab : Window
         {
             bool shouldInsert = false;
 
-            foreach (object item in contextMenu.Items)
+            foreach (MenuItem menuItem in GetActionablePostGrabMenuItems(contextMenu))
             {
-                if (item is MenuItem menuItem && menuItem.IsChecked && menuItem.Tag is ButtonInfo action)
+                if (!menuItem.IsChecked || menuItem.Tag is not ButtonInfo action)
+                    continue;
+
+                if (action.ClickEvent == "Insert_Click")
                 {
-                    // Special handling for Insert action - defer until after window closes
-                    if (action.ClickEvent == "Insert_Click")
-                    {
-                        shouldInsert = true;
-                        continue;
-                    }
-
-                    // Build context for this action (text may have changed from previous actions)
-                    PostGrabContext grabContext = new(
-                        Text: TextFromOCR ?? string.Empty,
-                        CaptureRegion: absoluteCaptureRect,
-                        DpiScale: m.M11,
-                        CapturedImage: null,
-                        Language: selectedOcrLang);
-
-                    // Execute the action
-                    TextFromOCR = await PostGrabActionManager.ExecutePostGrabAction(action, grabContext);
+                    shouldInsert = true;
+                    continue;
                 }
+
+                PostGrabContext grabContext = new(
+                    Text: TextFromOCR ?? string.Empty,
+                    CaptureRegion: absoluteCaptureRect,
+                    DpiScale: m.M11,
+                    CapturedImage: null,
+                    Language: selectedOcrLang);
+
+                TextFromOCR = await PostGrabActionManager.ExecutePostGrabAction(action, grabContext);
             }
 
-            // Handle insert after all other actions
             if (shouldInsert && !DefaultSettings.TryInsert)
             {
-                // Store for later execution after window closes
                 string textToInsert = TextFromOCR;
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(100); // Small delay to ensure window is closed
+                    await Task.Delay(100);
                     await WindowUtilities.TryInsertString(textToInsert);
                 });
             }
@@ -1026,9 +1139,11 @@ public partial class FullscreenGrab : Window
             bool isWebSearch = false;
             if (NextStepDropDownButton.Flyout is ContextMenu cm)
             {
-                foreach (object item in cm.Items)
+                foreach (MenuItem menuItem in GetActionablePostGrabMenuItems(cm))
                 {
-                    if (item is MenuItem mi && mi.IsChecked && mi.Tag is ButtonInfo act && act.ClickEvent == "WebSearch_Click")
+                    if (menuItem.IsChecked
+                        && menuItem.Tag is ButtonInfo action
+                        && action.ClickEvent == "WebSearch_Click")
                     {
                         isWebSearch = true;
                         break;
@@ -1330,37 +1445,13 @@ public partial class FullscreenGrab : Window
 
     private void PostActionMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not ButtonInfo action)
+        if (sender is not MenuItem menuItem)
         {
-            CheckIfAnyPostActionsSelected();
+            RefreshPostGrabActionVisuals();
             return;
         }
 
-        // Save check state for LastUsed tracking
-        if (action.DefaultCheckState == DefaultCheckState.LastUsed)
-            PostGrabActionManager.SaveCheckState(action, menuItem.IsChecked);
-
-        // Enforce exclusive template selection: when a template is checked, uncheck all others
-        if (!string.IsNullOrEmpty(action.TemplateId)
-            && menuItem.IsChecked
-            && menuItem.Parent is ContextMenu contextMenu)
-        {
-            foreach (object item in contextMenu.Items)
-            {
-                if (item is MenuItem otherItem
-                    && otherItem != menuItem
-                    && otherItem.Tag is ButtonInfo otherAction
-                    && !string.IsNullOrEmpty(otherAction.TemplateId)
-                    && otherItem.IsChecked)
-                {
-                    otherItem.IsChecked = false;
-                    if (otherAction.DefaultCheckState == DefaultCheckState.LastUsed)
-                        PostGrabActionManager.SaveCheckState(otherAction, false);
-                }
-            }
-        }
-
-        CheckIfAnyPostActionsSelected();
+        SynchronizePostGrabActionSelection(menuItem, menuItem.IsChecked);
     }
     #endregion Methods
 

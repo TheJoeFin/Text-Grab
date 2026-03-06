@@ -16,6 +16,8 @@ namespace Text_Grab.Utilities;
 
 public static partial class WindowUtilities
 {
+    private static Dictionary<string, bool>? fullscreenPostGrabActionStates;
+
     public static void AddTextToOpenWindow(string textToAdd)
     {
         WindowCollection allWindows = Application.Current.Windows;
@@ -94,6 +96,9 @@ public static partial class WindowUtilities
             if (window is FullscreenGrab grab)
                 allFullscreenGrab.Add(grab);
 
+        if (allFullscreenGrab.Count == 0)
+            ClearFullscreenPostGrabActionStates();
+
         int numberOfFullscreenGrabWindowsToCreate = numberOfScreens - allFullscreenGrab.Count;
 
         for (int i = 0; i < numberOfFullscreenGrabWindowsToCreate; i++)
@@ -157,6 +162,7 @@ public static partial class WindowUtilities
     internal static async void CloseAllFullscreenGrabs()
     {
         WindowCollection allWindows = Application.Current.Windows;
+        ClearFullscreenPostGrabActionStates();
 
         bool isFromEditWindow = false;
         string stringFromOCR = "";
@@ -201,6 +207,31 @@ public static partial class WindowUtilities
         foreach (Window window in allWindows)
             if (window is FullscreenGrab fsg)
                 fsg.KeyPressed(key, isActive);
+    }
+
+    internal static void SyncFullscreenPostGrabActionStates(IReadOnlyDictionary<string, bool> actionStates, FullscreenGrab? sourceWindow = null)
+    {
+        fullscreenPostGrabActionStates = new Dictionary<string, bool>(actionStates);
+
+        WindowCollection allWindows = Application.Current.Windows;
+        foreach (Window window in allWindows)
+        {
+            if (window is FullscreenGrab fsg && fsg != sourceWindow)
+                fsg.ApplyPostGrabActionSnapshot(fullscreenPostGrabActionStates);
+        }
+    }
+
+    internal static IReadOnlyDictionary<string, bool>? GetFullscreenPostGrabActionStates()
+    {
+        if (fullscreenPostGrabActionStates is null || fullscreenPostGrabActionStates.Count == 0)
+            return null;
+
+        return new Dictionary<string, bool>(fullscreenPostGrabActionStates);
+    }
+
+    internal static void ClearFullscreenPostGrabActionStates()
+    {
+        fullscreenPostGrabActionStates = null;
     }
 
     internal static async Task TryInsertString(string stringToInsert)
