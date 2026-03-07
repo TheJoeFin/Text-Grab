@@ -48,4 +48,37 @@ public class CaptureLanguageUtilitiesTests
     {
         Assert.False(CaptureLanguageUtilities.SupportsTableOutput(new UiAutomationLang()));
     }
+
+    [Fact]
+    public void RequiresLiveUiAutomationSource_ReturnsTrueForStaticUiAutomationWithoutSnapshot()
+    {
+        bool requiresLiveSource = CaptureLanguageUtilities.RequiresLiveUiAutomationSource(
+            new UiAutomationLang(),
+            isStaticImageSource: true,
+            hasFrozenUiAutomationSnapshot: false);
+
+        Assert.True(requiresLiveSource);
+    }
+
+    [Fact]
+    public void RequiresLiveUiAutomationSource_ReturnsFalseWhenFrozenSnapshotExists()
+    {
+        bool requiresLiveSource = CaptureLanguageUtilities.RequiresLiveUiAutomationSource(
+            new UiAutomationLang(),
+            isStaticImageSource: true,
+            hasFrozenUiAutomationSnapshot: true);
+
+        Assert.False(requiresLiveSource);
+    }
+
+    [Fact]
+    public void RequiresLiveUiAutomationSource_ReturnsFalseForOcrLanguageOnStaticImage()
+    {
+        bool requiresLiveSource = CaptureLanguageUtilities.RequiresLiveUiAutomationSource(
+            new GlobalLang("en-US"),
+            isStaticImageSource: true,
+            hasFrozenUiAutomationSnapshot: false);
+
+        Assert.False(requiresLiveSource);
+    }
 }

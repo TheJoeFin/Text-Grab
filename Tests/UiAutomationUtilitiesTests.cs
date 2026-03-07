@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using Text_Grab.Models;
@@ -62,14 +63,18 @@ public class UiAutomationUtilitiesTests
         Assert.False(UIAutomationUtilities.ShouldUseNameFallback(ControlType.Group));
         Assert.False(UIAutomationUtilities.ShouldUseNameFallback(ControlType.Pane));
         Assert.False(UIAutomationUtilities.ShouldUseNameFallback(ControlType.Custom));
+        Assert.False(UIAutomationUtilities.ShouldUseNameFallback(ControlType.Button));
+        Assert.False(UIAutomationUtilities.ShouldUseNameFallback(ControlType.SplitButton));
+        Assert.False(UIAutomationUtilities.ShouldUseNameFallback(ControlType.ComboBox));
     }
 
     [Fact]
-    public void ShouldUseNameFallback_AllowsLeafControls()
+    public void ShouldUseNameFallback_AllowsVisibleTextContainers()
     {
         Assert.True(UIAutomationUtilities.ShouldUseNameFallback(ControlType.Text));
-        Assert.True(UIAutomationUtilities.ShouldUseNameFallback(ControlType.Button));
         Assert.True(UIAutomationUtilities.ShouldUseNameFallback(ControlType.ListItem));
+        Assert.True(UIAutomationUtilities.ShouldUseNameFallback(ControlType.MenuItem));
+        Assert.True(UIAutomationUtilities.ShouldUseNameFallback(ControlType.TabItem));
     }
 
     [Fact]
@@ -103,5 +108,58 @@ public class UiAutomationUtilitiesTests
         Assert.Contains(new Point(27, 40), probePoints);
         Assert.Contains(new Point(25, 38), probePoints);
         Assert.Contains(new Point(25, 42), probePoints);
+    }
+
+    [Fact]
+    public void TryClipBounds_ReturnsIntersectionForOverlappingRects()
+    {
+        bool clipped = UIAutomationUtilities.TryClipBounds(
+            new Rect(10, 10, 50, 50),
+            new Rect(30, 25, 50, 50),
+            out Rect result);
+
+        Assert.True(clipped);
+        Assert.Equal(new Rect(30, 25, 30, 35), result);
+    }
+
+    [Fact]
+    public void TryClipBounds_ReturnsFalseWhenBoundsDoNotIntersect()
+    {
+        bool clipped = UIAutomationUtilities.TryClipBounds(
+            new Rect(10, 10, 20, 20),
+            new Rect(100, 100, 20, 20),
+            out Rect result);
+
+        Assert.False(clipped);
+        Assert.Equal(Rect.Empty, result);
+    }
+
+    [Fact]
+    public void TryAddUniqueOverlayItem_DeduplicatesNormalizedTextAndBounds()
+    {
+        HashSet<string> seen = [];
+        List<UiAutomationOverlayItem> output = [];
+        UiAutomationOverlayItem first = new(" Hello   world ", new Rect(10.01, 20.01, 30.01, 40.01), UiAutomationOverlaySource.ElementBounds);
+        UiAutomationOverlayItem second = new("Hello world", new Rect(10.04, 20.04, 30.04, 40.04), UiAutomationOverlaySource.VisibleTextRange);
+
+        bool addedFirst = UIAutomationUtilities.TryAddUniqueOverlayItem(first, seen, output);
+        bool addedSecond = UIAutomationUtilities.TryAddUniqueOverlayItem(second, seen, output);
+
+        Assert.True(addedFirst);
+        Assert.False(addedSecond);
+        Assert.Single(output);
+    }
+
+    [Fact]
+    public void SortOverlayItems_OrdersTopThenLeft()
+    {
+        IReadOnlyList<UiAutomationOverlayItem> sorted = UIAutomationUtilities.SortOverlayItems(
+        [
+            new UiAutomationOverlayItem("Bottom", new Rect(40, 30, 10, 10), UiAutomationOverlaySource.ElementBounds),
+            new UiAutomationOverlayItem("Right", new Rect(25, 10, 10, 10), UiAutomationOverlaySource.ElementBounds),
+            new UiAutomationOverlayItem("Left", new Rect(10, 10, 10, 10), UiAutomationOverlaySource.ElementBounds),
+        ]);
+
+        Assert.Equal(["Left", "Right", "Bottom"], sorted.Select(item => item.Text));
     }
 }
