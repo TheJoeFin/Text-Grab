@@ -31,6 +31,8 @@ public class InlineChipElement : Control
 
     public event EventHandler? RemoveRequested;
 
+    private Button? _removeButton;
+
     static InlineChipElement()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
@@ -42,7 +44,15 @@ public class InlineChipElement : Control
     {
         base.OnApplyTemplate();
 
-        if (GetTemplateChild(PartRemoveButton) is Button removeButton)
-            removeButton.Click += (s, e) => RemoveRequested?.Invoke(this, EventArgs.Empty);
+        if (_removeButton is not null)
+            _removeButton.Click -= RemoveButton_Click;
+
+        _removeButton = GetTemplateChild(PartRemoveButton) as Button;
+
+        if (_removeButton is not null)
+            _removeButton.Click += RemoveButton_Click;
     }
+
+    private void RemoveButton_Click(object sender, RoutedEventArgs e)
+        => RemoveRequested?.Invoke(this, EventArgs.Empty);
 }

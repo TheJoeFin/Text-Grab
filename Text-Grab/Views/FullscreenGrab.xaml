@@ -95,7 +95,7 @@
                             x:Name="FreeformSelectionMenuItem"
                             Click="SelectionStyleMenuItem_Click"
                             Header="Freeform - Draw any shape"
-                            InputGestureText="P"
+                            InputGestureText="D"
                             IsCheckable="True"
                             Tag="Freeform" />
                         <MenuItem

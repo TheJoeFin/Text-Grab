@@ -732,6 +732,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             PopulateSampleData();
 
         MainDataGrid.ItemsSource = null;
+        ItemsDictionary.Clear();
 
         ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
         lookupItems = [.. ItemsDictionary];

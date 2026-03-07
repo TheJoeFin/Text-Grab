@@ -428,7 +428,7 @@ public partial class FullscreenGrab : Window
             Tag = action,
             IsChecked = isChecked,
             StaysOpenOnClick = stayOpen,
-            InputGestureText = $"Ctrl+{shortcutIndex}"
+            InputGestureText = shortcutIndex <= 9 ? $"Ctrl+{shortcutIndex}" : string.Empty
         };
 
         menuItem.Click += PostActionMenuItem_Click;
