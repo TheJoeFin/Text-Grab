@@ -35,6 +35,16 @@ public class LanguageServiceTests
     }
 
     [Fact]
+    public void GetLanguageTag_WithUiAutomationLang_ReturnsUiAutomationTag()
+    {
+        UiAutomationLang uiAutomationLang = new();
+
+        string tag = LanguageService.GetLanguageTag(uiAutomationLang);
+
+        Assert.Equal(UiAutomationLang.Tag, tag);
+    }
+
+    [Fact]
     public void GetLanguageTag_WithTessLang_ReturnsRawTag()
     {
         // Arrange
@@ -84,6 +94,16 @@ public class LanguageServiceTests
 
         // Assert
         Assert.Equal(LanguageKind.WindowsAi, kind);
+    }
+
+    [Fact]
+    public void GetLanguageKind_WithUiAutomationLang_ReturnsUiAutomation()
+    {
+        UiAutomationLang uiAutomationLang = new();
+
+        LanguageKind kind = LanguageService.GetLanguageKind(uiAutomationLang);
+
+        Assert.Equal(LanguageKind.UiAutomation, kind);
     }
 
     [Fact]
@@ -148,5 +168,17 @@ public class LanguageServiceTests
         // Assert
         Assert.Equal("en-US", tag);
         Assert.Equal(LanguageKind.Global, kind);
+    }
+
+    [Fact]
+    public void HistoryInfo_OcrLanguage_RehydratesUiAutomationLanguage()
+    {
+        HistoryInfo historyInfo = new()
+        {
+            LanguageTag = UiAutomationLang.Tag,
+            LanguageKind = LanguageKind.UiAutomation,
+        };
+
+        Assert.IsType<UiAutomationLang>(historyInfo.OcrLanguage);
     }
 }
