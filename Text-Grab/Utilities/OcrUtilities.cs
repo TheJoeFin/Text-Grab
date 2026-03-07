@@ -42,6 +42,12 @@ public static partial class OcrUtilities
         return language;
     }
 
+    private static IReadOnlyCollection<IntPtr>? GetExcludedWindowHandles(Window passedWindow)
+    {
+        IntPtr handle = new System.Windows.Interop.WindowInteropHelper(passedWindow).Handle;
+        return handle == IntPtr.Zero ? null : [handle];
+    }
+
     public static void GetTextFromOcrLine(this IOcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
         // (when OCR language is zh or ja)
@@ -87,11 +93,14 @@ public static partial class OcrUtilities
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
-    public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, ILanguage language)
+    public static async Task<string> GetTextFromAbsoluteRectAsync(
+        Rect rect,
+        ILanguage language,
+        IReadOnlyCollection<IntPtr>? excludedHandles = null)
     {
         if (IsUiAutomationLanguage(language))
         {
-            string uiAutomationText = await UIAutomationUtilities.GetTextFromRegionAsync(rect);
+            string uiAutomationText = await UIAutomationUtilities.GetTextFromRegionAsync(rect, excludedHandles);
             if (!string.IsNullOrWhiteSpace(uiAutomationText) || !DefaultSettings.UiAutomationFallbackToOcr)
                 return uiAutomationText;
 
@@ -112,7 +121,7 @@ public static partial class OcrUtilities
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
 
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
-        return await GetTextFromAbsoluteRectAsync(correctedRegion.AsRect(), language);
+        return await GetTextFromAbsoluteRectAsync(correctedRegion.AsRect(), language, GetExcludedWindowHandles(passedWindow));
     }
 
     public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, ILanguage objLang)
@@ -460,7 +469,7 @@ public static partial class OcrUtilities
         {
             Point absoluteWindowPosition = passedWindow.GetAbsolutePosition();
             Point absoluteClickedPoint = new(absoluteWindowPosition.X + clickedPoint.X, absoluteWindowPosition.Y + clickedPoint.Y);
-            string uiAutomationText = await UIAutomationUtilities.GetTextFromPointAsync(absoluteClickedPoint);
+            string uiAutomationText = await UIAutomationUtilities.GetTextFromPointAsync(absoluteClickedPoint, GetExcludedWindowHandles(passedWindow));
             if (!string.IsNullOrWhiteSpace(uiAutomationText) || !DefaultSettings.UiAutomationFallbackToOcr)
                 return uiAutomationText.Trim();
 

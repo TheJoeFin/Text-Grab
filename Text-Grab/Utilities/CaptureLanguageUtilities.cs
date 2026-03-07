@@ -79,4 +79,7 @@ internal static class CaptureLanguageUtilities
 
     public static bool IsStaticImageCompatible(ILanguage language)
         => language is not UiAutomationLang;
+
+    public static bool RequiresLiveUiAutomationSource(ILanguage language, bool isStaticImageSource, bool hasFrozenUiAutomationSnapshot)
+        => language is UiAutomationLang && isStaticImageSource && !hasFrozenUiAutomationSnapshot;
 }
