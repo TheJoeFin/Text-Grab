@@ -31,14 +31,14 @@ public partial class LanguagePicker : UserControl
     {
         Languages.Clear();
 
-        ILanguage currentInputGlobalLang = LanguageUtilities.GetCurrentInputLanguage();
+        ILanguage currentSelectedLanguage = LanguageUtilities.GetOCRLanguage();
 
         int selectedIndex = 0;
         int i = 0;
         foreach (ILanguage langFromUtil in LanguageUtilities.GetAllLanguages())
         {
             Languages.Add(langFromUtil);
-            if (langFromUtil.LanguageTag == currentInputGlobalLang.LanguageTag)
+            if (langFromUtil.LanguageTag == currentSelectedLanguage.LanguageTag)
                 selectedIndex = i;
             i++;
         }
@@ -54,6 +54,7 @@ public partial class LanguagePicker : UserControl
         if (MainComboBox.SelectedItem is ILanguage selectedILanguage)
         {
             SelectedLanguage = selectedILanguage;
+            CaptureLanguageUtilities.PersistSelectedLanguage(selectedILanguage);
             LanguageChanged?.Invoke(this, new RoutedEventArgs());
         }
     }
