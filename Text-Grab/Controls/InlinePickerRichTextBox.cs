@@ -50,7 +50,7 @@ public class InlinePickerRichTextBox : RichTextBox
 
     public IEnumerable<InlinePickerItem> ItemsSource
     {
-        get => (IEnumerable<InlinePickerItem>)GetValue(ItemsSourceProperty);
+        get => (IEnumerable<InlinePickerItem>?)GetValue(ItemsSourceProperty) ?? [];
         set => SetValue(ItemsSourceProperty, value);
     }
 
