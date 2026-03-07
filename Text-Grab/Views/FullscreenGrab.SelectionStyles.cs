@@ -1036,11 +1036,18 @@ public partial class FullscreenGrab
             PresentationSource? presentationSource = PresentationSource.FromVisual(this);
             Matrix transformToDevice = presentationSource?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
             Rect selectionRect = GetCurrentSelectionRect();
-            Point clickedPointForOcr = new(
-                Math.Round(selectionRect.Left * transformToDevice.M11),
-                Math.Round(selectionRect.Top * transformToDevice.M22));
+            Point clickedPointForOcr = transformToDevice.Transform(new Point(
+                selectionRect.Left + (selectionRect.Width / 2.0),
+                selectionRect.Top + (selectionRect.Height / 2.0)));
+            clickedPointForOcr = new Point(
+                Math.Round(clickedPointForOcr.X),
+                Math.Round(clickedPointForOcr.Y));
 
             TextFromOCR = await OcrUtilities.GetClickedWordAsync(this, clickedPointForOcr, selectedOcrLang);
+        }
+        else if (selectedOcrLang is UiAutomationLang)
+        {
+            TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang);
         }
         else if (selection.CapturedImage is not null)
         {

@@ -65,6 +65,7 @@ public partial class GrabFrame : Window
     private bool isSearchSelectionOverridden = false;
     private bool isSelecting;
     private bool isSpaceJoining = true;
+    private bool isStaticImageSource = false;
     private readonly Dictionary<WordBorder, Rect> movingWordBordersDictionary = [];
     private IOcrLinesWords? ocrResultOfWindow;
     private readonly DispatcherTimer reDrawTimer = new();
@@ -150,6 +151,7 @@ public partial class GrabFrame : Window
         ShouldSaveOnClose = true;
         frameContentImageSource = frozenImage;
         hasLoadedImageSource = true;
+        isStaticImageSource = true;
 
         Loaded += (s, e) =>
         {
@@ -183,6 +185,7 @@ public partial class GrabFrame : Window
 
         if (!string.IsNullOrEmpty(template.SourceImagePath) && File.Exists(template.SourceImagePath))
         {
+            isStaticImageSource = true;
             await TryLoadImageFromPath(template.SourceImagePath);
             reDrawTimer.Stop();
         }
@@ -266,6 +269,7 @@ public partial class GrabFrame : Window
     {
         FrameText = history.TextContent;
         currentLanguage = history.OcrLanguage;
+        isStaticImageSource = true;
 
         string imageName = Path.GetFileName(history.ImagePath);
 
@@ -285,6 +289,7 @@ public partial class GrabFrame : Window
         hasLoadedImageSource = true;
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
+        NotifyIfUiAutomationNeedsLiveSource(currentLanguage);
 
         if (history.PositionRect != Rect.Empty)
         {
@@ -468,7 +473,7 @@ public partial class GrabFrame : Window
         InitializeComponent();
         App.SetTheme();
 
-        LoadOcrLanguages();
+        _ = LoadOcrLanguagesAsync();
 
         SetRestoreState();
 
@@ -964,10 +969,10 @@ public partial class GrabFrame : Window
         ILanguage language = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
         string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), language);
 
-        if (DefaultSettings.CorrectErrors)
+        if (language is not UiAutomationLang && DefaultSettings.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
 
-        if (DefaultSettings.CorrectToLatin)
+        if (language is not UiAutomationLang && DefaultSettings.CorrectToLatin)
             ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
 
         if (frameContentImageSource is BitmapImage bmpImg)
@@ -1465,6 +1470,7 @@ public partial class GrabFrame : Window
             GrabFrameImage.Source = frameContentImageSource;
         else
         {
+            isStaticImageSource = false;
             frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
             GrabFrameImage.Source = frameContentImageSource;
         }
@@ -1710,6 +1716,7 @@ public partial class GrabFrame : Window
 
         Activate();
         frameContentImageSource = null;
+        isStaticImageSource = true;
 
         await TryLoadImageFromPath(fileName);
 
@@ -1866,25 +1873,32 @@ public partial class GrabFrame : Window
         {
             DefaultSettings.LastUsedLang = string.Empty;
             DefaultSettings.Save();
+            LanguageUtilities.InvalidateOcrLanguageCache();
         }
+    }
+
+    private void NotifyIfUiAutomationNeedsLiveSource(ILanguage language)
+    {
+        if (language is not UiAutomationLang || !isStaticImageSource)
+            return;
+
+        string message = DefaultSettings.UiAutomationFallbackToOcr
+            ? "UI Automation reads live application controls. This Grab Frame currently contains a static image, so Text Grab will fall back to OCR for image-only operations."
+            : "UI Automation reads live application controls. This Grab Frame currently contains a static image, so image-only operations will not return UI Automation text.";
+
+        MessageBox.Show(message, "Text Grab", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!isLanguageBoxLoaded || sender is not ComboBox langComboBox)
+        if (!isLanguageBoxLoaded
+            || sender is not ComboBox langComboBox
+            || langComboBox.SelectedItem is not ILanguage pickedLang)
             return;
 
-        ILanguage? pickedLang = langComboBox.SelectedItem as ILanguage;
-
-        if (langComboBox.SelectedItem is WindowsAiLang winAiLang)
-            pickedLang = winAiLang;
-
-        if (pickedLang != null)
-        {
-            currentLanguage = pickedLang;
-            DefaultSettings.LastUsedLang = pickedLang.LanguageTag;
-            DefaultSettings.Save();
-        }
+        currentLanguage = pickedLang;
+        CaptureLanguageUtilities.PersistSelectedLanguage(pickedLang);
+        NotifyIfUiAutomationNeedsLiveSource(pickedLang);
 
         ResetGrabFrame();
 
@@ -1892,38 +1906,25 @@ public partial class GrabFrame : Window
         reDrawTimer.Start();
     }
 
-    private void LoadOcrLanguages()
+    private async Task LoadOcrLanguagesAsync()
     {
         if (LanguagesComboBox.Items.Count > 0)
             return;
 
-        IReadOnlyList<Language> possibleOCRLangs = OcrEngine.AvailableRecognizerLanguages;
-        ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
+        List<ILanguage> availableLanguages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(includeTesseract: false);
+        foreach (ILanguage language in availableLanguages)
+            LanguagesComboBox.Items.Add(language);
 
-        foreach (Language language in possibleOCRLangs)
+        int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(
+            availableLanguages,
+            DefaultSettings.LastUsedLang,
+            LanguageUtilities.GetOCRLanguage());
+
+        if (selectedIndex >= 0)
         {
-            GlobalLang globalLang = new(language);
-            LanguagesComboBox.Items.Add(globalLang);
+            LanguagesComboBox.SelectedIndex = selectedIndex;
+            currentLanguage = availableLanguages[selectedIndex];
         }
-
-        if (WindowsAiUtilities.CanDeviceUseWinAI())
-        {
-            WindowsAiLang winAiLang = new();
-            LanguagesComboBox.Items.Insert(0, winAiLang);
-        }
-
-        for (int i = 0; i < LanguagesComboBox.Items.Count; i++)
-        {
-            if (LanguagesComboBox.Items[i] is not ILanguage item)
-                continue;
-
-            if (item.LanguageTag == firstLang.LanguageTag)
-            {
-                LanguagesComboBox.SelectedIndex = i;
-                break;
-            }
-        }
-
 
         isLanguageBoxLoaded = true;
     }
@@ -2064,9 +2065,11 @@ public partial class GrabFrame : Window
         }
 
         hasLoadedImageSource = true;
+        isStaticImageSource = true;
         FreezeToggleButton.IsChecked = true;
         FreezeGrabFrame();
         FreezeToggleButton.Visibility = Visibility.Collapsed;
+        NotifyIfUiAutomationNeedsLiveSource(CurrentLanguage);
 
         reDrawTimer.Start();
     }
@@ -2813,10 +2816,12 @@ new GrabFrameOperationArgs()
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
             hasLoadedImageSource = true;
+            isStaticImageSource = true;
             _currentImagePath = path;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
             FreezeToggleButton.Visibility = Visibility.Collapsed;
+            NotifyIfUiAutomationNeedsLiveSource(CurrentLanguage);
 
             reDrawTimer.Start();
         }
