@@ -32,6 +32,16 @@ public static partial class OcrUtilities
     // Cache the SpaceJoiningWordRegex to avoid creating it on every method call
     private static readonly Regex _cachedSpaceJoiningWordRegex = SpaceJoiningWordRegex();
 
+    private static bool IsUiAutomationLanguage(ILanguage language) => language is UiAutomationLang;
+
+    private static ILanguage GetCompatibleOcrLanguage(ILanguage language)
+    {
+        if (language is UiAutomationLang)
+            return CaptureLanguageUtilities.GetUiAutomationFallbackLanguage();
+
+        return language;
+    }
+
     public static void GetTextFromOcrLine(this IOcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
     {
         // (when OCR language is zh or ja)
@@ -79,6 +89,15 @@ public static partial class OcrUtilities
 
     public static async Task<string> GetTextFromAbsoluteRectAsync(Rect rect, ILanguage language)
     {
+        if (IsUiAutomationLanguage(language))
+        {
+            string uiAutomationText = await UIAutomationUtilities.GetTextFromRegionAsync(rect);
+            if (!string.IsNullOrWhiteSpace(uiAutomationText) || !DefaultSettings.UiAutomationFallbackToOcr)
+                return uiAutomationText;
+
+            language = GetCompatibleOcrLanguage(language);
+        }
+
         Rectangle selectedRegion = rect.AsRectangle();
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
 
@@ -93,13 +112,12 @@ public static partial class OcrUtilities
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
 
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
-        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
-
-        return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
+        return await GetTextFromAbsoluteRectAsync(correctedRegion.AsRect(), language);
     }
 
     public static async Task<string> GetRegionsTextAsTableAsync(Window passedWindow, Rectangle selectedRegion, ILanguage objLang)
     {
+        ILanguage compatibleLanguage = GetCompatibleOcrLanguage(objLang);
         Point absPosPoint = passedWindow.GetAbsolutePosition();
 
         int thisCorrectedLeft = (int)absPosPoint.X + selectedRegion.Left;
@@ -107,10 +125,10 @@ public static partial class OcrUtilities
 
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
-        double scale = await GetIdealScaleFactorForOcrAsync(bmp, objLang);
+        double scale = await GetIdealScaleFactorForOcrAsync(bmp, compatibleLanguage);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
         DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
-        IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, objLang);
+        IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, compatibleLanguage);
 
         // New model-only flow
         List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, dpiScale);
@@ -127,12 +145,20 @@ public static partial class OcrUtilities
         table.AnalyzeAsTable(wordBorderInfos, rectCanvasSize);
 
         StringBuilder sb = new();
-        ResultTable.GetTextFromTabledWordBorders(sb, wordBorderInfos, objLang.IsSpaceJoining());
+        ResultTable.GetTextFromTabledWordBorders(sb, wordBorderInfos, compatibleLanguage.IsSpaceJoining());
         return sb.ToString();
     }
 
     public static async Task<string> GetTextFromBitmapAsync(Bitmap bitmap, ILanguage language)
     {
+        if (IsUiAutomationLanguage(language))
+        {
+            if (!DefaultSettings.UiAutomationFallbackToOcr)
+                return string.Empty;
+
+            language = GetCompatibleOcrLanguage(language);
+        }
+
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bitmap, language));
     }
 
@@ -144,9 +170,10 @@ public static partial class OcrUtilities
 
     public static async Task<string> GetTextFromBitmapAsTableAsync(Bitmap bitmap, ILanguage language)
     {
-        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, language);
+        ILanguage compatibleLanguage = GetCompatibleOcrLanguage(language);
+        double scale = await GetIdealScaleFactorForOcrAsync(bitmap, compatibleLanguage);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
-        IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, language);
+        IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, compatibleLanguage);
         DpiScale bitmapDpiScale = new(1.0, 1.0);
 
         List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, bitmapDpiScale);
@@ -163,7 +190,7 @@ public static partial class OcrUtilities
         table.AnalyzeAsTable(wordBorderInfos, rectCanvasSize);
 
         StringBuilder textBuilder = new();
-        ResultTable.GetTextFromTabledWordBorders(textBuilder, wordBorderInfos, language.IsSpaceJoining());
+        ResultTable.GetTextFromTabledWordBorders(textBuilder, wordBorderInfos, compatibleLanguage.IsSpaceJoining());
         return textBuilder.ToString();
     }
 
@@ -175,6 +202,7 @@ public static partial class OcrUtilities
 
     public static async Task<(IOcrLinesWords?, double)> GetOcrResultFromRegionAsync(Rectangle region, ILanguage language)
     {
+        language = GetCompatibleOcrLanguage(language);
         Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
 
         if (language is WindowsAiLang)
@@ -196,6 +224,8 @@ public static partial class OcrUtilities
 
     public static async Task<IOcrLinesWords> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, ILanguage language)
     {
+        language = GetCompatibleOcrLanguage(language);
+
         if (language is WindowsAiLang winAiLang)
         {
             return new WinAiOcrLinesWords(await WindowsAiUtilities.GetOcrResultAsync(scaledBitmap));
@@ -213,6 +243,7 @@ public static partial class OcrUtilities
 
     public static async Task<IOcrLinesWords> GetOcrResultFromImageAsync(Bitmap scaledBitmap, ILanguage language)
     {
+        language = GetCompatibleOcrLanguage(language);
         await using MemoryStream memory = new();
         using WrappingStream wrapper = new(memory);
 
@@ -331,6 +362,14 @@ public static partial class OcrUtilities
     {
         List<OcrOutput> outputs = [];
 
+        if (IsUiAutomationLanguage(language))
+        {
+            if (!DefaultSettings.UiAutomationFallbackToOcr)
+                return outputs;
+
+            language = GetCompatibleOcrLanguage(language);
+        }
+
         if (language is TessLang tessLang)
         {
             OcrOutput tesseractOutput = await TesseractHelper.GetOcrOutputFromBitmap(bitmap, tessLang);
@@ -417,6 +456,17 @@ public static partial class OcrUtilities
 
     public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, ILanguage OcrLang)
     {
+        if (IsUiAutomationLanguage(OcrLang))
+        {
+            Point absoluteWindowPosition = passedWindow.GetAbsolutePosition();
+            Point absoluteClickedPoint = new(absoluteWindowPosition.X + clickedPoint.X, absoluteWindowPosition.Y + clickedPoint.Y);
+            string uiAutomationText = await UIAutomationUtilities.GetTextFromPointAsync(absoluteClickedPoint);
+            if (!string.IsNullOrWhiteSpace(uiAutomationText) || !DefaultSettings.UiAutomationFallbackToOcr)
+                return uiAutomationText.Trim();
+
+            OcrLang = GetCompatibleOcrLanguage(OcrLang);
+        }
+
         using Bitmap bmp = ImageMethods.GetWindowsBoundsBitmap(passedWindow);
         string ocrText = await GetTextFromClickedWordAsync(clickedPoint, bmp, OcrLang);
         return ocrText.Trim();
@@ -441,6 +491,7 @@ public static partial class OcrUtilities
 
     public static async Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, ILanguage selectedLanguage)
     {
+        selectedLanguage = GetCompatibleOcrLanguage(selectedLanguage);
         IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
         return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.Height, bitmap.Width);
     }

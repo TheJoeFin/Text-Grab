@@ -30,6 +30,8 @@ public class LanguageService
     // Static instance of WindowsAiLang to avoid allocations
     private static readonly WindowsAiLang _windowsAiLangInstance = new();
     private static readonly string _windowsAiLangTag = _windowsAiLangInstance.LanguageTag;
+    private static readonly UiAutomationLang _uiAutomationLangInstance = new();
+    private static readonly string _uiAutomationLangTag = _uiAutomationLangInstance.LanguageTag;
 
     #endregion Fields
 
@@ -71,6 +73,9 @@ public class LanguageService
 
             List<ILanguage> languages = [];
 
+            if (AppUtilities.TextGrabSettings.UiAutomationEnabled)
+                languages.Add(_uiAutomationLangInstance);
+
             if (WindowsAiUtilities.CanDeviceUseWinAI())
             {
                 // Add Windows AI languages - use static instance
@@ -97,6 +102,7 @@ public class LanguageService
         {
             Language lang => lang.LanguageTag,
             WindowsAiLang => _windowsAiLangTag,
+            UiAutomationLang => _uiAutomationLangTag,
             TessLang tessLang => tessLang.RawTag,
             GlobalLang gLang => gLang.LanguageTag,
             _ => throw new ArgumentException("Unsupported language type", nameof(language)),
@@ -112,6 +118,7 @@ public class LanguageService
         {
             Language => LanguageKind.Global,
             WindowsAiLang => LanguageKind.WindowsAi,
+            UiAutomationLang => LanguageKind.UiAutomation,
             TessLang => LanguageKind.Tesseract,
             _ => LanguageKind.Global, // Default fallback
         };
@@ -142,6 +149,12 @@ public class LanguageService
                 {
                     // If the last used language is Windows AI, return static instance
                     _cachedOcrLanguage = _windowsAiLangInstance;
+                    return _cachedOcrLanguage;
+                }
+
+                if (lastUsedLang == _uiAutomationLangTag && AppUtilities.TextGrabSettings.UiAutomationEnabled)
+                {
+                    _cachedOcrLanguage = _uiAutomationLangInstance;
                     return _cachedOcrLanguage;
                 }
 

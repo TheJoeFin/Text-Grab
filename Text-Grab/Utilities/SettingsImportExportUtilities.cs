@@ -4,6 +4,7 @@ using System.Configuration;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Text_Grab.Properties;
@@ -116,6 +117,12 @@ public static class SettingsImportExportUtilities
             settingsDict[propertyName] = value;
         }
 
+        if (settingsDict.Count == 0)
+        {
+            foreach (PropertyInfo propertyInfo in GetSerializableSettingProperties(settings.GetType()))
+                settingsDict[propertyInfo.Name] = propertyInfo.GetValue(settings);
+        }
+
         JsonSerializerOptions options = new()
         {
             WriteIndented = true,
@@ -141,6 +148,8 @@ public static class SettingsImportExportUtilities
             return;
 
         Settings settings = AppUtilities.TextGrabSettings;
+        Dictionary<string, PropertyInfo> reflectedSettings = GetSerializableSettingProperties(settings.GetType())
+            .ToDictionary(property => property.Name, property => property, StringComparer.Ordinal);
 
         // Apply each setting
         foreach (var kvp in settingsDict)
@@ -151,14 +160,23 @@ public static class SettingsImportExportUtilities
             try
             {
                 SettingsProperty? property = settings.Properties[propertyName];
-                if (property is null)
+                if (property is not null)
+                {
+                    object? value = ConvertJsonElementToSettingValue(kvp.Value, property.PropertyType);
+                    if (value is not null)
+                    {
+                        settings[propertyName] = value;
+                    }
+
+                    continue;
+                }
+
+                if (!reflectedSettings.TryGetValue(propertyName, out PropertyInfo? propertyInfo))
                     continue;
 
-                object? value = ConvertJsonElementToSettingValue(kvp.Value, property);
-                if (value is not null)
-                {
-                    settings[propertyName] = value;
-                }
+                object? reflectedValue = ConvertJsonElementToSettingValue(kvp.Value, propertyInfo.PropertyType);
+                if (reflectedValue is not null)
+                    propertyInfo.SetValue(settings, reflectedValue);
             }
             catch (Exception ex)
             {
@@ -252,10 +270,19 @@ public static class SettingsImportExportUtilities
         return char.ToUpper(camelCase[0]) + camelCase.Substring(1);
     }
 
-    private static object? ConvertJsonElementToSettingValue(JsonElement jsonElement, SettingsProperty property)
+    private static IEnumerable<PropertyInfo> GetSerializableSettingProperties(Type settingsType)
     {
-        Type propertyType = property.PropertyType;
+        return settingsType
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(property =>
+                property.CanRead
+                && property.CanWrite
+                && property.GetIndexParameters().Length == 0
+                && property.GetCustomAttribute<UserScopedSettingAttribute>() is not null);
+    }
 
+    private static object? ConvertJsonElementToSettingValue(JsonElement jsonElement, Type propertyType)
+    {
         try
         {
             if (propertyType == typeof(string))
