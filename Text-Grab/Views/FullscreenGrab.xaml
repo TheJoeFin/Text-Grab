@@ -21,22 +21,12 @@
     mc:Ignorable="d">
 
     <Window.Resources>
-        <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="Margin" Value="4" />
-        </Style>
-        <Style TargetType="ToggleButton">
-            <Setter Property="Margin" Value="2,0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="Width" Value="30" />
-            <Setter Property="Height" Value="30" />
-        </Style>
-
-
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Styles/SelectionStyleComboBoxItemStyle.xaml" />
+                <ResourceDictionary Source="/Styles/SelectionStyleComboBoxStyle.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Grid d:Background="NavajoWhite">
@@ -85,6 +75,37 @@
                         Header="Freeze"
                         IsCheckable="True"
                         IsChecked="True" />
+                    <MenuItem Header="Selection Style">
+                        <MenuItem
+                            x:Name="RegionSelectionMenuItem"
+                            Click="SelectionStyleMenuItem_Click"
+                            Header="Rectangle 1 - Drag a box"
+                            InputGestureText="R"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Region" />
+                        <MenuItem
+                            x:Name="WindowSelectionMenuItem"
+                            Click="SelectionStyleMenuItem_Click"
+                            Header="Window - Hover and click"
+                            InputGestureText="W"
+                            IsCheckable="True"
+                            Tag="Window" />
+                        <MenuItem
+                            x:Name="FreeformSelectionMenuItem"
+                            Click="SelectionStyleMenuItem_Click"
+                            Header="Freeform - Draw any shape"
+                            InputGestureText="D"
+                            IsCheckable="True"
+                            Tag="Freeform" />
+                        <MenuItem
+                            x:Name="AdjustAfterSelectionMenuItem"
+                            Click="SelectionStyleMenuItem_Click"
+                            Header="Rectangle 2 - Drag, then adjust"
+                            InputGestureText="A"
+                            IsCheckable="True"
+                            Tag="AdjustAfter" />
+                    </MenuItem>
                     <Separator />
                     <MenuItem
                         Name="NewGrabFrameMenuItem"
@@ -112,6 +133,8 @@
                 </ContextMenu>
             </Canvas.ContextMenu>
         </Canvas>
+        <Canvas x:Name="SelectionOutlineHost" IsHitTestVisible="False" />
+        <Canvas x:Name="TemplateOverlayHost" IsHitTestVisible="False" />
         <Border
             x:Name="TopButtonsStackPanel"
             Margin="12"
@@ -137,6 +160,28 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Orientation="Horizontal">
+                <ComboBox
+                    x:Name="SelectionStyleComboBox"
+                    Width="34"
+                    Height="34"
+                    Margin="0,0,4,0"
+                    ItemContainerStyle="{StaticResource SelectionStyleComboBoxItemStyle}"
+                    SelectionChanged="SelectionStyleComboBox_SelectionChanged"
+                    Style="{StaticResource SelectionStyleComboBoxStyle}"
+                    ToolTip="Choose how to define the capture area.">
+                    <ComboBoxItem Tag="Region" ToolTip="Region select (R)">
+                        <wpfui:SymbolIcon FontSize="22" Symbol="RectangleLandscape24" />
+                    </ComboBoxItem>
+                    <ComboBoxItem Tag="Window" ToolTip="Window select (W)">
+                        <wpfui:SymbolIcon FontSize="22" Symbol="WindowMultiple20" />
+                    </ComboBoxItem>
+                    <ComboBoxItem Tag="Freeform" ToolTip="Draw freeform shape (D)">
+                        <wpfui:SymbolIcon FontSize="22" Symbol="DrawShape24" />
+                    </ComboBoxItem>
+                    <ComboBoxItem Tag="AdjustAfter" ToolTip="Adjust after (A)">
+                        <wpfui:SymbolIcon FontSize="22" Symbol="SelectObject24" />
+                    </ComboBoxItem>
+                </ComboBox>
                 <ComboBox
                     x:Name="LanguagesComboBox"
                     Height="34"
@@ -289,6 +334,15 @@
                         </ContextMenu>
                     </wpfui:DropDownButton.Flyout>
                 </wpfui:DropDownButton>
+                <Button
+                    x:Name="AcceptSelectionButton"
+                    Width="44"
+                    Height="34"
+                    Margin="2,0"
+                    Click="AcceptSelectionButton_Click"
+                    Content="OK"
+                    ToolTip="(Enter) Accept selection"
+                    Visibility="Collapsed" />
                 <ToggleButton
                     x:Name="SendToEditTextToggleButton"
                     Width="34"

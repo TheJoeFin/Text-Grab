@@ -54,6 +54,27 @@ public partial class FullscreenGrabSettings : Page
             DefaultModeRadio.IsChecked = true;
         }
 
+        FsgSelectionStyle selectionStyle = FsgSelectionStyle.Region;
+        if (!string.IsNullOrWhiteSpace(DefaultSettings.FsgSelectionStyle))
+            Enum.TryParse(DefaultSettings.FsgSelectionStyle, true, out selectionStyle);
+
+        switch (selectionStyle)
+        {
+            case FsgSelectionStyle.Window:
+                WindowSelectionStyleRadio.IsChecked = true;
+                break;
+            case FsgSelectionStyle.Freeform:
+                FreeformSelectionStyleRadio.IsChecked = true;
+                break;
+            case FsgSelectionStyle.AdjustAfter:
+                AdjustAfterSelectionStyleRadio.IsChecked = true;
+                break;
+            case FsgSelectionStyle.Region:
+            default:
+                RegionSelectionStyleRadio.IsChecked = true;
+                break;
+        }
+
         // Update post-grab actions count
         UpdateActionsCountText();
 
@@ -83,6 +104,26 @@ public partial class FullscreenGrabSettings : Page
         DefaultSettings.FsgDefaultMode = nameof(FsgDefaultMode.Table);
         DefaultSettings.FSGMakeSingleLineToggle = false;
         DefaultSettings.Save();
+    }
+
+    private void RegionSelectionStyleRadio_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSelectionStyle(RegionSelectionStyleRadio, FsgSelectionStyle.Region);
+    }
+
+    private void WindowSelectionStyleRadio_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSelectionStyle(WindowSelectionStyleRadio, FsgSelectionStyle.Window);
+    }
+
+    private void FreeformSelectionStyleRadio_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSelectionStyle(FreeformSelectionStyleRadio, FsgSelectionStyle.Freeform);
+    }
+
+    private void AdjustAfterSelectionStyleRadio_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSelectionStyle(AdjustAfterSelectionStyleRadio, FsgSelectionStyle.AdjustAfter);
     }
 
     private void SendToEtwCheckBox_Click(object sender, RoutedEventArgs e)
@@ -134,6 +175,18 @@ public partial class FullscreenGrabSettings : Page
         }
     }
 
+    private void ManageTemplatesButton_Click(object sender, RoutedEventArgs e)
+    {
+        PostGrabActionEditor editor = new()
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        // ShowDialog returns true only on Save — update count regardless for consistency
+        editor.ShowDialog();
+        UpdateActionsCountText();
+    }
+
     private void UpdateActionsCountText()
     {
         List<ButtonInfo> enabledActions = PostGrabActionManager.GetEnabledPostGrabActions();
@@ -155,5 +208,14 @@ public partial class FullscreenGrabSettings : Page
 
             ActionsCountText.Text = $"{count} actions enabled: {actionsList}";
         }
+    }
+
+    private void SaveSelectionStyle(RadioButton radioButton, FsgSelectionStyle selectionStyle)
+    {
+        if (!_loaded || radioButton.IsChecked != true)
+            return;
+
+        DefaultSettings.FsgSelectionStyle = selectionStyle.ToString();
+        DefaultSettings.Save();
     }
 }

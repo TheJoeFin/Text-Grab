@@ -12,6 +12,7 @@ public enum LookupItemKind
     Link = 3,
     Command = 4,
     Dynamic = 5,
+    GrabTemplate = 6,
 }
 
 public class LookupItem : IEquatable<LookupItem>
@@ -31,6 +32,7 @@ public class LookupItem : IEquatable<LookupItem>
                 LookupItemKind.Link => Wpf.Ui.Controls.SymbolRegular.Link24,
                 LookupItemKind.Command => Wpf.Ui.Controls.SymbolRegular.WindowConsole20,
                 LookupItemKind.Dynamic => Wpf.Ui.Controls.SymbolRegular.Flash24,
+                LookupItemKind.GrabTemplate => Wpf.Ui.Controls.SymbolRegular.DocumentTableSearch24,
                 _ => Wpf.Ui.Controls.SymbolRegular.Copy20,
             };
         }
@@ -65,6 +67,8 @@ public class LookupItem : IEquatable<LookupItem>
     }
 
     public HistoryInfo? HistoryItem { get; set; }
+
+    public string? TemplateId { get; set; }
 
     public override string ToString()
     {

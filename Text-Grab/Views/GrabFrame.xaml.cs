@@ -54,6 +54,8 @@ public partial class GrabFrame : Window
     private TextBox? destinationTextBox;
     private ImageSource? frameContentImageSource;
     private HistoryInfo? historyItem;
+    private readonly GrabTemplate? _editingTemplate;
+    private string? _currentImagePath;
     private bool hasLoadedImageSource = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
@@ -136,6 +138,130 @@ public partial class GrabFrame : Window
         Loaded += async (s, e) => await TryLoadImageFromPath(absolutePath);
     }
 
+    /// <summary>
+    /// Creates a GrabFrame pre-loaded with a frozen image cropped from a Fullscreen Grab selection.
+    /// The frame opens in freeze mode showing the provided bitmap and immediately runs OCR.
+    /// </summary>
+    /// <param name="frozenImage">The cropped bitmap to display as the initial frozen background.</param>
+    public GrabFrame(BitmapSource frozenImage)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = true;
+        frameContentImageSource = frozenImage;
+        hasLoadedImageSource = true;
+
+        Loaded += (s, e) =>
+        {
+            FreezeToggleButton.IsChecked = true;
+            FreezeGrabFrame();
+            reDrawTimer.Start();
+        };
+    }
+
+    /// <summary>
+    /// Opens GrabFrame in template editing mode with existing regions pre-loaded.
+    /// </summary>
+    /// <param name="template">The template to edit.</param>
+    public GrabFrame(GrabTemplate template)
+    {
+        StandardInitialize();
+
+        ShouldSaveOnClose = false;
+        _editingTemplate = template;
+        Title = $"Edit Template: {template.Name}";
+
+        Loaded += async (s, e) => await LoadTemplateForEditing(template);
+    }
+
+    private async Task LoadTemplateForEditing(GrabTemplate template)
+    {
+        TemplateNameBox.Text = template.Name;
+
+        SaveAsTemplateBTN.IsChecked = true;
+        TemplateSavePanel.Visibility = Visibility.Visible;
+
+        if (!string.IsNullOrEmpty(template.SourceImagePath) && File.Exists(template.SourceImagePath))
+        {
+            await TryLoadImageFromPath(template.SourceImagePath);
+            reDrawTimer.Stop();
+        }
+        else
+        {
+            // No reference image — freeze into a clean empty canvas without capturing the screen
+            GrabFrameImage.Opacity = 0;
+            FreezeToggleButton.IsChecked = true;
+            FreezeToggleButton.Visibility = Visibility.Collapsed;
+            Topmost = false;
+            Background = new SolidColorBrush(Colors.DimGray);
+            RectanglesBorder.Background.Opacity = 0;
+            IsFreezeMode = true;
+        }
+
+        // Allow WPF to measure the canvas after the image loads
+        await Task.Delay(150);
+
+        double cw = RectanglesCanvas.ActualWidth;
+        double ch = RectanglesCanvas.ActualHeight;
+
+        if (cw <= 0) cw = template.ReferenceImageWidth;
+        if (ch <= 0) ch = template.ReferenceImageHeight;
+
+        foreach (TemplateRegion region in template.Regions.OrderBy(r => r.RegionNumber))
+        {
+            Rect abs = region.ToAbsoluteRect(cw, ch);
+
+            WordBorder wb = new()
+            {
+                Width = Math.Max(abs.Width, 10),
+                Height = Math.Max(abs.Height, 10),
+                Left = abs.X,
+                Top = abs.Y,
+                Word = region.Label,
+                OwnerGrabFrame = this,
+                MatchingBackground = new SolidColorBrush(Colors.Black),
+            };
+
+            wordBorders.Add(wb);
+            _ = RectanglesCanvas.Children.Add(wb);
+        }
+
+        EnterEditMode();
+        UpdateTemplateBadges();
+        UpdateTemplatePickerItems();
+
+        // For editing, also add picker items for the template's specific pattern configurations
+        // so SetSerializedText can match the exact placeholder values and recreate chips
+        if (template.PatternMatches.Count > 0)
+        {
+            List<InlinePickerItem> items = [.. TemplateOutputBox.ItemsSource ?? []];
+            foreach (TemplatePatternMatch pm in template.PatternMatches)
+            {
+                string displayLabel = $"{pm.PatternName} ({pm.MatchMode})";
+                string value = BuildPatternPlaceholderValue(pm);
+                // Only add if not already in the list (avoid duplicates with the default "first" items)
+                if (!items.Any(i => i.Value == value))
+                    items.Add(new InlinePickerItem(displayLabel, value, "Patterns"));
+            }
+            TemplateOutputBox.ItemsSource = items;
+        }
+
+        // Repopulate the output box AFTER ItemsSource is set so chips are recreated correctly
+        TemplateOutputBox.SetSerializedText(template.OutputTemplate);
+        reSearchTimer.Start();
+    }
+
+    private static string BuildPatternPlaceholderValue(TemplatePatternMatch config)
+    {
+        bool needsSeparator = config.MatchMode == "all"
+            || (config.MatchMode.Contains(',') && config.MatchMode.Split(',').Length > 1);
+
+        if (needsSeparator && config.Separator != ", ")
+            return $"{{p:{config.PatternName}:{config.MatchMode}:{config.Separator}}}";
+
+        return $"{{p:{config.PatternName}:{config.MatchMode}}}";
+    }
+
     private async Task LoadContentFromHistory(HistoryInfo history)
     {
         FrameText = history.TextContent;
@@ -154,10 +280,29 @@ public partial class GrabFrame : Window
             return;
         }
 
+        history.ImageContent = bgBitmap;
         frameContentImageSource = ImageMethods.BitmapToImageSource(bgBitmap);
         hasLoadedImageSource = true;
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
+
+        if (history.PositionRect != Rect.Empty)
+        {
+            Left = history.PositionRect.Left;
+            Top = history.PositionRect.Top;
+
+            if (history.SourceMode == TextGrabMode.Fullscreen)
+            {
+                Size nonContentSize = GetGrabFrameNonContentSize();
+                Width = history.PositionRect.Width + nonContentSize.Width;
+                Height = history.PositionRect.Height + nonContentSize.Height;
+            }
+            else
+            {
+                Width = history.PositionRect.Width;
+                Height = history.PositionRect.Height;
+            }
+        }
 
         List<WordBorderInfo>? wbInfoList = null;
 
@@ -166,6 +311,8 @@ public partial class GrabFrame : Window
 
         if (wbInfoList is not null && wbInfoList.Count > 0)
         {
+            ScaleHistoryWordBordersToCanvas(history, wbInfoList);
+
             foreach (WordBorderInfo info in wbInfoList)
             {
                 WordBorder wb = new(info)
@@ -186,26 +333,112 @@ public partial class GrabFrame : Window
             ShouldSaveOnClose = true;
         }
 
-        if (history.PositionRect != Rect.Empty)
-        {
-            Left = history.PositionRect.Left;
-            Top = history.PositionRect.Top;
-            Height = history.PositionRect.Height;
-            Width = history.PositionRect.Width;
-
-            if (history.SourceMode == TextGrabMode.Fullscreen)
-            {
-                int borderThickness = 2;
-                int titleBarHeight = 32;
-                int bottomBarHeight = 42;
-                Height += (titleBarHeight + bottomBarHeight);
-                Width += (2 * borderThickness);
-            }
-        }
-
         TableToggleButton.IsChecked = history.IsTable;
 
         UpdateFrameText();
+    }
+
+    private Size GetGrabFrameNonContentSize()
+    {
+        const double defaultNonContentWidth = 4;
+        const double defaultNonContentHeight = 74;
+
+        UpdateLayout();
+
+        if (ActualWidth <= 1 || ActualHeight <= 1
+            || RectanglesBorder.ActualWidth <= 1 || RectanglesBorder.ActualHeight <= 1)
+        {
+            return new Size(defaultNonContentWidth, defaultNonContentHeight);
+        }
+
+        double nonContentWidth = ActualWidth - RectanglesBorder.ActualWidth;
+        double nonContentHeight = ActualHeight - RectanglesBorder.ActualHeight;
+
+        if (!double.IsFinite(nonContentWidth) || nonContentWidth < 0 || nonContentWidth > 100)
+            nonContentWidth = defaultNonContentWidth;
+
+        if (!double.IsFinite(nonContentHeight) || nonContentHeight < 0 || nonContentHeight > 200)
+            nonContentHeight = defaultNonContentHeight;
+
+        return new Size(nonContentWidth, nonContentHeight);
+    }
+
+    private void ScaleHistoryWordBordersToCanvas(HistoryInfo history, List<WordBorderInfo> wbInfoList)
+    {
+        if (wbInfoList.Count == 0 || RectanglesCanvas.Width <= 0 || RectanglesCanvas.Height <= 0)
+            return;
+
+        Size savedContentSize = GetSavedHistoryContentSize(history);
+        if (savedContentSize.Width <= 0 || savedContentSize.Height <= 0)
+            return;
+
+        double scaleX = RectanglesCanvas.Width / savedContentSize.Width;
+        double scaleY = RectanglesCanvas.Height / savedContentSize.Height;
+        if (!double.IsFinite(scaleX) || !double.IsFinite(scaleY) || (scaleX <= 1.05 && scaleY <= 1.05))
+            return;
+
+        double maxRight = wbInfoList.Max(info => info.BorderRect.Right);
+        double maxBottom = wbInfoList.Max(info => info.BorderRect.Bottom);
+
+        // Scale only when saved word borders look like they were captured in
+        // the old window-content coordinate space rather than image-space.
+        if (maxRight > savedContentSize.Width * 1.1 || maxBottom > savedContentSize.Height * 1.1)
+            return;
+
+        foreach (WordBorderInfo info in wbInfoList)
+        {
+            Rect borderRect = info.BorderRect;
+            info.BorderRect = new Rect(
+                borderRect.Left * scaleX,
+                borderRect.Top * scaleY,
+                borderRect.Width * scaleX,
+                borderRect.Height * scaleY);
+        }
+    }
+
+    private Size GetSavedHistoryContentSize(HistoryInfo history)
+    {
+        if (history.ImageContent is System.Drawing.Bitmap imageContentBitmap
+            && imageContentBitmap.Width > 0 && imageContentBitmap.Height > 0)
+        {
+            return new Size(imageContentBitmap.Width, imageContentBitmap.Height);
+        }
+
+        Rect positionRect = history.PositionRect;
+        if (positionRect == Rect.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
+            return new Size(0, 0);
+
+        if (history.SourceMode == TextGrabMode.Fullscreen)
+            return new Size(positionRect.Width, positionRect.Height);
+
+        Size nonContentSize = GetGrabFrameNonContentSize();
+        double contentWidth = positionRect.Width - nonContentSize.Width;
+        double contentHeight = positionRect.Height - nonContentSize.Height;
+
+        if (!double.IsFinite(contentWidth) || contentWidth <= 0)
+            contentWidth = positionRect.Width;
+
+        if (!double.IsFinite(contentHeight) || contentHeight <= 0)
+            contentHeight = positionRect.Height;
+
+        return new Size(contentWidth, contentHeight);
+    }
+
+    /// <summary>
+    /// Returns the physical-pixel screen rectangle that exactly covers the
+    /// transparent content area (RectanglesBorder, Row 1 of the grid).
+    /// Uses PointToScreen so it is always accurate regardless of border
+    /// thickness, DPI, or future layout changes.
+    /// </summary>
+    internal System.Drawing.Rectangle GetContentAreaScreenRect()
+    {
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        Point topLeft = RectanglesBorder.PointToScreen(new Point(0, 0));
+        return new System.Drawing.Rectangle(
+            (int)topLeft.X,
+            (int)topLeft.Y,
+            (int)(RectanglesBorder.ActualWidth * dpi.DpiScaleX),
+            (int)(RectanglesBorder.ActualHeight * dpi.DpiScaleY));
     }
 
     public Rect GetImageContentRect()
@@ -213,17 +446,21 @@ public partial class GrabFrame : Window
         // This is a WIP to try to remove the gray letterboxes on either
         // side of the image when zooming it.
 
-        Rect imageRect = Rect.Empty;
+        if (frameContentImageSource is null || !IsLoaded || !RectanglesCanvas.IsLoaded)
+            return Rect.Empty;
 
-        if (frameContentImageSource is null)
-            return imageRect;
+        Rect canvasPlacement = RectanglesCanvas.GetAbsolutePlacement(true);
+        if (canvasPlacement == Rect.Empty)
+            return Rect.Empty;
 
-        imageRect = RectanglesCanvas.GetAbsolutePlacement(true);
         Size rectCanvasSize = RectanglesCanvas.RenderSize;
-        imageRect.Width = rectCanvasSize.Width;
-        imageRect.Height = rectCanvasSize.Height;
+        if (!double.IsFinite(rectCanvasSize.Width) || !double.IsFinite(rectCanvasSize.Height)
+            || rectCanvasSize.Width <= 0 || rectCanvasSize.Height <= 0)
+        {
+            return canvasPlacement;
+        }
 
-        return imageRect;
+        return new Rect(canvasPlacement.X, canvasPlacement.Y, rectCanvasSize.Width, rectCanvasSize.Height);
     }
 
     private void StandardInitialize()
@@ -993,32 +1230,14 @@ public partial class GrabFrame : Window
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
 
-        Point windowPosition = this.GetAbsolutePosition();
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
-        double canvasScale = CanvasViewBox.GetHorizontalScaleFactor();
-        Point rectanglesPosition = RectanglesCanvas.TransformToAncestor(this)
-                                                   .Transform(new Point(0, 0));
-
-        if (double.IsNaN(canvasScale))
-            canvasScale = 1;
-
-        double ContentWidth = RectanglesCanvas.RenderSize.Width;
-        double ContentHeight = RectanglesCanvas.RenderSize.Height;
-
-        if (ContentWidth == 4 || ContentHeight == 2)
+        System.Drawing.Rectangle rectCanvasSize = GetContentAreaScreenRect();
+        if (rectCanvasSize.Width <= 0 || rectCanvasSize.Height <= 0)
         {
-            ContentWidth = RectanglesBorder.RenderSize.Width;
-            ContentHeight = RectanglesBorder.RenderSize.Height;
-            rectanglesPosition = new(-2, 32);
+            isDrawing = false;
+            reDrawTimer.Start();
+            return;
         }
-
-        System.Drawing.Rectangle rectCanvasSize = new()
-        {
-            Width = (int)(ContentWidth * dpi.DpiScaleX * canvasScale),
-            Height = (int)(ContentHeight * dpi.DpiScaleY * canvasScale),
-            X = (int)((windowPosition.X + rectanglesPosition.X) * dpi.DpiScaleX),
-            Y = (int)((windowPosition.Y + rectanglesPosition.Y) * dpi.DpiScaleY)
-        };
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Length == 0)
         {
@@ -1031,13 +1250,22 @@ public partial class GrabFrame : Window
 
         isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
-        System.Drawing.Bitmap? bmp = null;
+        System.Drawing.Bitmap? bmp = Singleton<HistoryService>.Instance.CachedBitmap;
+        bool shouldDisposeBmp = false;
 
-        if (frameContentImageSource is BitmapSource bmpImg)
+        if (bmp is null && frameContentImageSource is BitmapSource bmpImg)
+        {
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+            shouldDisposeBmp = true;
+        }
 
         int lineNumber = 0;
         double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
+        if (!double.IsFinite(viewBoxZoomFactor) || viewBoxZoomFactor <= 0 || viewBoxZoomFactor > 4)
+            viewBoxZoomFactor = 1;
+        Point canvasOriginInBorder = RectanglesCanvas.TranslatePoint(new Point(0, 0), RectanglesBorder);
+        double borderToCanvasX = -canvasOriginInBorder.X;
+        double borderToCanvasY = -canvasOriginInBorder.Y;
 
         foreach (IOcrLine ocrLine in ocrResultOfWindow.Lines)
         {
@@ -1050,7 +1278,7 @@ public partial class GrabFrame : Window
             SolidColorBrush backgroundBrush = new(Colors.Black);
 
             if (bmp is not null)
-                backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, windowFrameImageScale, bmp, ref lineRect);
+                backgroundBrush = GetBackgroundBrushFromOcrBitmap(windowFrameImageScale, bmp, ref lineRect);
 
             string ocrText = lineText.ToString();
 
@@ -1064,8 +1292,8 @@ public partial class GrabFrame : Window
             {
                 Width = ((lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
                 Height = ((lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
-                Top = (lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 1) / viewBoxZoomFactor,
-                Left = (lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 1) / viewBoxZoomFactor,
+                Top = ((lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 1) + borderToCanvasY) / viewBoxZoomFactor,
+                Left = ((lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 1) + borderToCanvasX) / viewBoxZoomFactor,
                 Word = ocrText,
                 OwnerGrabFrame = this,
                 LineNumber = lineNumber,
@@ -1108,7 +1336,8 @@ public partial class GrabFrame : Window
 
         isDrawing = false;
 
-        bmp?.Dispose();
+        if (shouldDisposeBmp)
+            bmp?.Dispose();
         reSearchTimer.Start();
 
         // Trigger translation if enabled
@@ -1240,11 +1469,40 @@ public partial class GrabFrame : Window
             GrabFrameImage.Source = frameContentImageSource;
         }
 
+        SyncRectanglesCanvasSizeToImage();
+
         FreezeToggleButton.IsChecked = true;
         Topmost = false;
         Background = new SolidColorBrush(Colors.DimGray);
         RectanglesBorder.Background.Opacity = 0;
         IsFreezeMode = true;
+    }
+
+    private void SyncRectanglesCanvasSizeToImage()
+    {
+        if (GrabFrameImage.Source is not BitmapSource source)
+            return;
+
+        // Convert physical pixels to WPF device-independent pixels so the canvas
+        // coordinate space stays consistent with DrawRectanglesAroundWords, which
+        // divides OCR pixel coordinates by dpi.DpiScaleX/Y to produce DIP positions.
+        // Using raw PixelWidth would cause the Viewbox to scale down at DPI > 100%,
+        // shifting viewBoxZoomFactor and borderToCanvasX/Y, and misplacing word borders.
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        double sourceWidth = source.PixelWidth > 0 ? source.PixelWidth / dpi.DpiScaleX : source.Width;
+        double sourceHeight = source.PixelHeight > 0 ? source.PixelHeight / dpi.DpiScaleY : source.Height;
+
+        if (double.IsFinite(sourceWidth) && sourceWidth > 0)
+        {
+            GrabFrameImage.Width = sourceWidth;
+            RectanglesCanvas.Width = sourceWidth;
+        }
+
+        if (double.IsFinite(sourceHeight) && sourceHeight > 0)
+        {
+            GrabFrameImage.Height = sourceHeight;
+            RectanglesCanvas.Height = sourceHeight;
+        }
     }
 
     private async void FreezeMI_Click(object sender, RoutedEventArgs e)
@@ -1276,6 +1534,54 @@ public partial class GrabFrame : Window
             UnfreezeGrabFrame();
     }
 
+    private static SolidColorBrush GetBackgroundBrushFromOcrBitmap(double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
+    {
+        if (!double.IsFinite(scale) || scale <= 0)
+            scale = 1;
+
+        double boxLeft = lineRect.Left / scale;
+        double boxTop = lineRect.Top / scale;
+        double boxRight = lineRect.Right / scale;
+        double boxBottom = lineRect.Bottom / scale;
+        double boxWidth = Math.Max(0, boxRight - boxLeft);
+        double boxHeight = Math.Max(0, boxBottom - boxTop);
+        double insetX = Math.Min(boxWidth / 2, Math.Max(1, boxWidth * 0.12));
+        double insetY = Math.Min(boxHeight / 2, Math.Max(1, boxHeight * 0.12));
+
+        int pxLeft = Math.Clamp((int)(boxLeft + insetX), 0, bmp.Width - 1);
+        int pxTop = Math.Clamp((int)(boxTop + insetY), 0, bmp.Height - 1);
+        int pxRight = Math.Clamp((int)(boxRight - insetX), 0, bmp.Width - 1);
+        int pxBottom = Math.Clamp((int)(boxBottom - insetY), 0, bmp.Height - 1);
+
+        if (pxRight < pxLeft)
+            pxRight = pxLeft;
+
+        if (pxBottom < pxTop)
+            pxBottom = pxTop;
+
+        System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
+        System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
+        System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
+        System.Drawing.Color pxColorLeftBottom = bmp.GetPixel(pxLeft, pxBottom);
+
+        List<Color> mediaColorList =
+        [
+            ColorHelper.MediaColorFromDrawingColor(pxColorLeftTop),
+            ColorHelper.MediaColorFromDrawingColor(pxColorRightTop),
+            ColorHelper.MediaColorFromDrawingColor(pxColorRightBottom),
+            ColorHelper.MediaColorFromDrawingColor(pxColorLeftBottom),
+        ];
+
+        Color? mostCommonColor = mediaColorList.GroupBy(c => c)
+                                               .OrderBy(g => g.Count())
+                                               .LastOrDefault()?.Key;
+
+        if (mostCommonColor is not null)
+            return new SolidColorBrush(mostCommonColor.Value);
+
+        return ColorHelper.SolidColorBrushFromDrawingColor(pxColorLeftTop);
+    }
+
     private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
     {
         SolidColorBrush backgroundBrush = new(Colors.Black);
@@ -1290,10 +1596,26 @@ public partial class GrabFrame : Window
         double rightFraction = boxRight / RectanglesCanvas.ActualWidth;
         double bottomFraction = boxBottom / RectanglesCanvas.ActualHeight;
 
-        int pxLeft = Math.Clamp((int)(leftFraction * bmp.Width) - 1, 0, bmp.Width - 1);
-        int pxTop = Math.Clamp((int)(topFraction * bmp.Height) - 2, 0, bmp.Height - 1);
-        int pxRight = Math.Clamp((int)(rightFraction * bmp.Width) + 1, 0, bmp.Width - 1);
-        int pxBottom = Math.Clamp((int)(bottomFraction * bmp.Height) + 1, 0, bmp.Height - 1);
+        int rawLeft = Math.Clamp((int)(leftFraction * bmp.Width), 0, bmp.Width - 1);
+        int rawTop = Math.Clamp((int)(topFraction * bmp.Height), 0, bmp.Height - 1);
+        int rawRight = Math.Clamp((int)(rightFraction * bmp.Width), 0, bmp.Width - 1);
+        int rawBottom = Math.Clamp((int)(bottomFraction * bmp.Height), 0, bmp.Height - 1);
+
+        int spanX = Math.Max(0, rawRight - rawLeft);
+        int spanY = Math.Max(0, rawBottom - rawTop);
+        int insetX = Math.Min(spanX / 2, Math.Max(1, spanX / 8));
+        int insetY = Math.Min(spanY / 2, Math.Max(1, spanY / 8));
+        int pxLeft = Math.Clamp(rawLeft + insetX, 0, bmp.Width - 1);
+        int pxTop = Math.Clamp(rawTop + insetY, 0, bmp.Height - 1);
+        int pxRight = Math.Clamp(rawRight - insetX, 0, bmp.Width - 1);
+        int pxBottom = Math.Clamp(rawBottom - insetY, 0, bmp.Height - 1);
+
+        if (pxRight < pxLeft)
+            pxRight = pxLeft;
+
+        if (pxBottom < pxTop)
+            pxBottom = pxTop;
+
         System.Drawing.Color pxColorLeftTop = bmp.GetPixel(pxLeft, pxTop);
         System.Drawing.Color pxColorRightTop = bmp.GetPixel(pxRight, pxTop);
         System.Drawing.Color pxColorRightBottom = bmp.GetPixel(pxRight, pxBottom);
@@ -1435,7 +1757,7 @@ public partial class GrabFrame : Window
 
     private void HandleDelete(object? sender = null, RoutedEventArgs? e = null)
     {
-        if (SearchBox.IsFocused)
+        if (Keyboard.FocusedElement is TextBox)
             return;
 
         UndoRedo.StartTransaction();
@@ -1923,6 +2245,12 @@ public partial class GrabFrame : Window
         reDrawTimer.Stop();
         SetRefreshOrOcrFrameBtnVis();
 
+        if (!IsLoaded || RectanglesBorder.ActualWidth <= 1 || RectanglesBorder.ActualHeight <= 1)
+        {
+            reDrawTimer.Start();
+            return;
+        }
+
         if (CheckKey(VirtualKeyCodes.LeftButton) || CheckKey(VirtualKeyCodes.MiddleButton))
         {
             reDrawTimer.Start();
@@ -2071,6 +2399,9 @@ new GrabFrameOperationArgs()
             MatchesTXTBLK.Text = $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
         LanguagesComboBox.Visibility = Visibility.Collapsed;
+
+        if (SaveAsTemplateBTN.IsChecked == true)
+            UpdateTemplateBadges();
     }
 
     private void ResetGrabFrame()
@@ -2079,6 +2410,10 @@ new GrabFrameOperationArgs()
 
         MainZoomBorder.Reset();
         RectanglesCanvas.RenderTransform = Transform.Identity;
+        RectanglesCanvas.ClearValue(WidthProperty);
+        RectanglesCanvas.ClearValue(HeightProperty);
+        GrabFrameImage.ClearValue(WidthProperty);
+        GrabFrameImage.ClearValue(HeightProperty);
         IsOcrValid = false;
         ocrResultOfWindow = null;
 
@@ -2178,6 +2513,284 @@ new GrabFrameOperationArgs()
         WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
     }
 
+    private void ManageGrabTemplates_Click(object sender, RoutedEventArgs e)
+    {
+        PostGrabActionEditor editor = new();
+        editor.Show();
+    }
+
+    private void SaveAsTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        bool show = SaveAsTemplateBTN.IsChecked == true;
+        TemplateSavePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (show)
+        {
+            if (!IsFreezeMode)
+            {
+                FreezeToggleButton.IsChecked = true;
+                FreezeGrabFrame();
+            }
+            TemplateNameBox.Focus();
+        }
+
+        UpdateTemplateBadges();
+    }
+
+    private void SaveTemplateSave_Click(object sender, RoutedEventArgs e)
+    {
+        string name = TemplateNameBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TemplateNameBox.Focus();
+            return;
+        }
+
+        string outputTemplateText = TemplateOutputBox.GetSerializedText();
+
+        // Parse pattern references from the output template
+        List<TemplatePatternMatch> patternMatches = ParsePatternMatchesFromTemplate(outputTemplateText);
+
+        if (wordBorders.Count == 0 && patternMatches.Count == 0)
+        {
+            MessageBox.Show(
+                "Use Ctrl+drag to draw at least one region, or add a pattern placeholder, before saving.",
+                "No Regions or Patterns",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        double cw = RectanglesCanvas.ActualWidth;
+        double ch = RectanglesCanvas.ActualHeight;
+
+        // Sort regions in reading order: top-to-bottom, then left-to-right
+        List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
+
+        List<TemplateRegion> regions = [.. sorted.Select((wb, i) => new TemplateRegion
+        {
+            RegionNumber = i + 1,
+            Label = string.IsNullOrWhiteSpace(wb.Word) ? $"Region {i + 1}" : wb.Word,
+            RatioLeft = wb.Left / cw,
+            RatioTop = wb.Top / ch,
+            RatioWidth = wb.ActualWidth / cw,
+            RatioHeight = wb.ActualHeight / ch,
+        })];
+
+        GrabTemplate template = new(name)
+        {
+            OutputTemplate = outputTemplateText,
+            ReferenceImageWidth = cw,
+            ReferenceImageHeight = ch,
+            Regions = regions,
+            PatternMatches = patternMatches,
+        };
+
+        if (_editingTemplate is not null)
+        {
+            template.Id = _editingTemplate.Id;
+            template.CreatedDate = _editingTemplate.CreatedDate;
+        }
+
+        template.SourceImagePath = GrabTemplateManager.SaveTemplateReferenceImage(frameContentImageSource as BitmapSource, name, template.Id)
+            ?? _currentImagePath
+            ?? _editingTemplate?.SourceImagePath
+            ?? string.Empty;
+
+        GrabTemplateManager.AddOrUpdateTemplate(template);
+
+        SaveAsTemplateBTN.IsChecked = false;
+        TemplateSavePanel.Visibility = Visibility.Collapsed;
+        TemplateNameBox.Text = string.Empty;
+        TemplateOutputBox.SetSerializedText(string.Empty);
+        UpdateTemplateBadges();
+
+        int totalItems = regions.Count + patternMatches.Count;
+        string itemsDesc = regions.Count > 0 && patternMatches.Count > 0
+            ? $"{regions.Count} region(s) and {patternMatches.Count} pattern(s)"
+            : regions.Count > 0
+                ? $"{regions.Count} region(s)"
+                : $"{patternMatches.Count} pattern(s)";
+
+        MessageBox.Show(
+            $"Template \"{name}\" saved with {itemsDesc}.\n\nEnable it in Post-Grab Actions Settings to use it during a Fullscreen Grab.",
+            "Template Saved",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    /// <summary>
+    /// Parses {p:Name:mode} and {p:Name:mode:separator} placeholders from the output template
+    /// and builds TemplatePatternMatch objects by resolving against saved patterns.
+    /// </summary>
+    private static List<TemplatePatternMatch> ParsePatternMatchesFromTemplate(string outputTemplate)
+    {
+        if (string.IsNullOrEmpty(outputTemplate))
+            return [];
+
+        MatchCollection matches = TemplatePattern().Matches(outputTemplate);
+        Dictionary<string, TemplatePatternMatch> uniquePatterns = new(StringComparer.OrdinalIgnoreCase);
+
+        // Load saved patterns for ID resolution
+        StoredRegex[] savedPatterns;
+        try
+        {
+            string json = Settings.Default.RegexList;
+            savedPatterns = string.IsNullOrWhiteSpace(json)
+                ? StoredRegex.GetDefaultPatterns()
+                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
+        }
+        catch
+        {
+            savedPatterns = StoredRegex.GetDefaultPatterns();
+        }
+
+        foreach (Match match in matches)
+        {
+            string patternName = match.Groups[1].Value;
+            string mode = match.Groups[2].Value;
+            string separator = match.Groups[3].Success ? match.Groups[3].Value : ", ";
+
+            if (uniquePatterns.ContainsKey(patternName))
+                continue;
+
+            StoredRegex? stored = savedPatterns.FirstOrDefault(
+                p => p.Name.Equals(patternName, StringComparison.OrdinalIgnoreCase));
+
+            uniquePatterns[patternName] = new TemplatePatternMatch(
+                patternId: stored?.Id ?? string.Empty,
+                patternName: patternName,
+                matchMode: mode,
+                separator: separator);
+        }
+
+        return [.. uniquePatterns.Values];
+    }
+
+    private void SaveTemplateCancel_Click(object sender, RoutedEventArgs e)
+    {
+        SaveAsTemplateBTN.IsChecked = false;
+        TemplateSavePanel.Visibility = Visibility.Collapsed;
+        UpdateTemplateBadges();
+    }
+
+    private void UpdateTemplateBadges()
+    {
+        bool isTemplateMode = SaveAsTemplateBTN.IsChecked == true;
+
+        if (!isTemplateMode)
+        {
+            foreach (WordBorder wb in wordBorders)
+            {
+                wb.TemplateIndex = 0;
+                wb.Opacity = 1.0;
+                wb.SetHighlightedForOutput(false);
+            }
+            return;
+        }
+
+        List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
+        for (int i = 0; i < sorted.Count; i++)
+            sorted[i].TemplateIndex = i + 1;
+
+        UpdateTemplatePickerItems();
+        UpdateTemplateRegionOpacities();
+    }
+
+    private void UpdateTemplateRegionOpacities()
+    {
+        if (SaveAsTemplateBTN.IsChecked != true)
+            return;
+
+        string outputTemplate = TemplateOutputBox.GetSerializedText();
+        HashSet<int> referenced = [.. OutputTemplateReferenced().Matches(outputTemplate)
+            .Select(m => int.TryParse(m.Groups[1].Value, out int n) ? n : 0)
+            .Where(n => n > 0)];
+
+        foreach (WordBorder wb in wordBorders)
+        {
+            bool isReferenced = referenced.Count == 0 || referenced.Contains(wb.TemplateIndex);
+            wb.Opacity = 1.0;
+            wb.SetHighlightedForOutput(isReferenced);
+        }
+    }
+
+    private void TemplateOutputBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UpdateTemplateRegionOpacities();
+    }
+
+    private void UpdateTemplatePickerItems()
+    {
+        List<WordBorder> sorted = [.. wordBorders.OrderBy(w => w.Top).ThenBy(w => w.Left)];
+
+        // Region items
+        List<InlinePickerItem> items = [.. sorted
+            .Select((wb, i) =>
+            {
+                string label = string.IsNullOrWhiteSpace(wb.Word) ? $"Region {i + 1}" : wb.Word;
+                return new InlinePickerItem(label, $"{{{i + 1}}}", "Regions");
+            })];
+
+        // Pattern items from saved StoredRegex patterns
+        List<InlinePickerItem> patternItems = LoadPatternPickerItems();
+        items.AddRange(patternItems);
+
+        TemplateOutputBox.ItemsSource = items;
+
+        // Wire up the pattern selection callback
+        TemplateOutputBox.PatternItemSelected ??= OnPatternItemSelected;
+    }
+
+    private static List<InlinePickerItem> LoadPatternPickerItems()
+    {
+        StoredRegex[] patterns;
+        try
+        {
+            string json = Settings.Default.RegexList;
+            patterns = string.IsNullOrWhiteSpace(json)
+                ? StoredRegex.GetDefaultPatterns()
+                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
+        }
+        catch
+        {
+            patterns = StoredRegex.GetDefaultPatterns();
+        }
+
+        return [.. patterns.Select(p =>
+            new InlinePickerItem(p.Name, $"{{p:{p.Name}:first}}", "Patterns"))];
+    }
+
+    private TemplatePatternMatch? OnPatternItemSelected(InlinePickerItem item)
+    {
+        // Extract pattern ID by looking up the name
+        StoredRegex[] patterns;
+        try
+        {
+            string json = Settings.Default.RegexList;
+            patterns = string.IsNullOrWhiteSpace(json)
+                ? StoredRegex.GetDefaultPatterns()
+                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
+        }
+        catch
+        {
+            patterns = StoredRegex.GetDefaultPatterns();
+        }
+
+        StoredRegex? storedRegex = patterns.FirstOrDefault(
+            p => p.Name.Equals(item.DisplayName, StringComparison.OrdinalIgnoreCase));
+
+        string patternId = storedRegex?.Id ?? string.Empty;
+        string patternName = item.DisplayName;
+
+        PatternMatchModeDialog dialog = new(patternId, patternName)
+        {
+            Owner = this,
+        };
+
+        bool? dialogResult = dialog.ShowDialog();
+        return dialogResult == true ? dialog.Result : null;
+    }
+
     private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         RemoveTableLines();
@@ -2194,11 +2807,13 @@ new GrabFrameOperationArgs()
             BitmapImage droppedImage = new();
             droppedImage.BeginInit();
             droppedImage.UriSource = fileURI;
+            droppedImage.CacheOption = BitmapCacheOption.OnLoad; // decode fully into memory and release the file handle
             System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
             hasLoadedImageSource = true;
+            _currentImagePath = path;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
             FreezeToggleButton.Visibility = Visibility.Collapsed;
@@ -2414,7 +3029,7 @@ new GrabFrameOperationArgs()
         if (IsCtrlDown)
             RectanglesCanvas.Cursor = Cursors.Cross;
 
-        if (IsEditingAnyWordBorders || SearchBox.IsFocused)
+        if (IsEditingAnyWordBorders || Keyboard.FocusedElement is TextBox or RichTextBox)
             return;
 
         if (e.Key == Key.Delete)
@@ -3111,6 +3726,11 @@ new GrabFrameOperationArgs()
 
         UpdateFrameText();
     }
+
+    [GeneratedRegex(@"\{p:([^:}]+):([^:}]+)(?::([^}]*))?\}")]
+    private static partial Regex TemplatePattern();
+    [GeneratedRegex(@"\{(\d+)(?::[a-z]+)?\}")]
+    private static partial Regex OutputTemplateReferenced();
 
     #endregion Methods
 }

@@ -30,6 +30,12 @@ public class ButtonInfo
     public bool IsRelevantForEditWindow { get; set; } = true; // Default to true for backward compatibility
     public DefaultCheckState DefaultCheckState { get; set; } = DefaultCheckState.Off;
 
+    /// <summary>
+    /// When this ButtonInfo represents a Grab Template action, this holds the template's
+    /// unique ID so the executor can look it up. Empty for non-template actions.
+    /// </summary>
+    public string TemplateId { get; set; } = string.Empty;
+
     public ButtonInfo()
     {
 

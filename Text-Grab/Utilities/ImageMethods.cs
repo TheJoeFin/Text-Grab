@@ -90,7 +90,7 @@ public static class ImageMethods
         return bitmapImage;
     }
 
-    public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region)
+    public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region, bool cacheResult = true)
     {
         Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using Graphics g = Graphics.FromImage(bmp);
@@ -98,7 +98,9 @@ public static class ImageMethods
         g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
         bmp = PadImage(bmp);
 
-        Singleton<HistoryService>.Instance.CacheLastBitmap(bmp);
+        if (cacheResult)
+            Singleton<HistoryService>.Instance.CacheLastBitmap(bmp);
+
         return bmp;
     }
 
@@ -117,16 +119,16 @@ public static class ImageMethods
         {
             Rect imageRect = grabFrame.GetImageContentRect();
 
-            int borderThickness = 2;
-            int titleBarHeight = 32;
-            int bottomBarHeight = 42;
-
             if (imageRect == Rect.Empty)
             {
-                thisCorrectedLeft = (int)((absPosPoint.X + borderThickness) * dpi.DpiScaleX);
-                thisCorrectedTop = (int)((absPosPoint.Y + (titleBarHeight + borderThickness)) * dpi.DpiScaleY);
-                windowWidth -= (int)((2 * borderThickness) * dpi.DpiScaleX);
-                windowHeight -= (int)((titleBarHeight + bottomBarHeight + (2 * borderThickness)) * dpi.DpiScaleY);
+                // Ask WPF's layout engine for the exact physical-pixel bounds of the
+                // transparent content area. This is always correct regardless of DPI,
+                // border thickness, or title/bottom bar heights.
+                Rectangle contentRect = grabFrame.GetContentAreaScreenRect();
+                thisCorrectedLeft = contentRect.X;
+                thisCorrectedTop = contentRect.Y;
+                windowWidth = contentRect.Width;
+                windowHeight = contentRect.Height;
             }
             else
             {
@@ -218,8 +220,12 @@ public static class ImageMethods
 
     public static Bitmap GetBitmapFromIRandomAccessStream(IRandomAccessStream stream)
     {
-        Bitmap bitmap = new(stream.AsStream());
-        return bitmap;
+        Stream managedStream = stream.AsStream();
+        if (managedStream.CanSeek)
+            managedStream.Position = 0;
+
+        using Bitmap bitmap = new(managedStream);
+        return new Bitmap(bitmap);
     }
 
     public static BitmapImage GetBitmapImageFromIRandomAccessStream(IRandomAccessStream stream)

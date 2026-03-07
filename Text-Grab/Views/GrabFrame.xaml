@@ -17,8 +17,8 @@
     AllowDrop="True"
     AllowsTransparency="True"
     Background="Transparent"
-    BorderBrush="Gray"
-    BorderThickness="0.2"
+    BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
+    BorderThickness="1"
     Closed="Window_Closed"
     Closing="GrabFrameWindow_Closing"
     Deactivated="GrabFrameWindow_Deactivated"
@@ -38,14 +38,6 @@
     mc:Ignorable="d">
     <Window.Resources>
         <BitmapImage x:Key="TextGrabIcon" UriSource="/Text-Grab;component/Images/TealSelect40.png" />
-
-        <Style x:Key="SymbolTextStyle" TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="Margin" Value="4" />
-        </Style>
     </Window.Resources>
 
     <Window.CommandBindings>
@@ -84,7 +76,7 @@
             CaptionHeight="32"
             CornerRadius="18,18,2,18"
             GlassFrameThickness="0"
-            ResizeBorderThickness="5" />
+            ResizeBorderThickness="8" />
     </WindowChrome.WindowChrome>
     <Border
         BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
@@ -92,8 +84,9 @@
         ClipToBounds="True">
         <Grid ClipToBounds="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="32" />
+                <RowDefinition Height="34" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <Grid
@@ -230,6 +223,10 @@
                             Header="Grab text as Single Line"
                             InputGestureText="Ctrl + Shift + G" />
                         <Separator />
+                        <MenuItem
+                            Name="ManageGrabTemplatesMenuItem"
+                            Click="ManageGrabTemplates_Click"
+                            Header="Manage Grab _Templates..." />
                         <MenuItem
                             Name="SettingsMenuItem"
                             Click="SettingsBTN_Click"
@@ -492,135 +489,190 @@
                                     MouseDown="RectanglesCanvas_MouseDown"
                                     MouseMove="RectanglesCanvas_MouseMove"
                                     MouseUp="RectanglesCanvas_MouseUp">
-                                <Canvas.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem
-                                            Command="{x:Static local:GrabFrame.PasteCommand}"
-                                            Header="Paste Image"
-                                            InputGestureText="Ctrl + Shift + V" />
-                                        <MenuItem
-                                            Click="OpenImageMenuItem_Click"
-                                            Header="Open Image..."
-                                            InputGestureText="Ctrl + O" />
-                                        <Separator />
-                                        <MenuItem
-                                            x:Name="CopyText"
-                                            Click="CopyText_Click"
-                                            Header="Copy Text" />
-                                        <Separator />
-                                        <MenuItem
-                                            x:Name="AspectRationMI"
-                                            Checked="AspectRationMI_Checked"
-                                            Header="Maintain Aspect Ratio"
-                                            IsCheckable="True"
-                                            IsChecked="True"
-                                            Unchecked="AspectRationMI_Checked" />
-                                        <MenuItem
-                                            x:Name="FreezeMI"
-                                            Click="FreezeMI_Click"
-                                            Header="Toggle Freeze"
-                                            InputGestureText="F" />
-                                        <Separator />
-                                        <MenuItem
-                                            x:Name="TryToNumberMenuItem"
-                                            Click="TryToNumberMenuItem_Click"
-                                            Header="Try To Make _Numbers" />
-                                        <MenuItem
-                                            x:Name="TryToAlphaMenuItem"
-                                            Click="TryToAlphaMenuItem_Click"
-                                            Header="Try To Make _Letters" />
-                                        <MenuItem
-                                            Command="{x:Static local:GrabFrame.MergeWordsCommand}"
-                                            Header="Merge Word Borders"
-                                            InputGestureText="Ctrl + M" />
-                                        <MenuItem
-                                            Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
-                                            Header="_Delete selected words"
-                                            InputGestureText="Del" />
-                                    </ContextMenu>
-                                </Canvas.ContextMenu>
-                            </Canvas>
-                                        </Grid>
-                                    </Viewbox>
-                                    </controls:ZoomBorder>
-                                    <Border
-                                        x:Name="TranslationProgressBorder"
-                                        Height="40"
-                                        Margin="8"
-                                        VerticalAlignment="Bottom"
-                                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                        BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="6"
-                                        Visibility="Collapsed">
-                                        <Border.Effect>
-                                            <DropShadowEffect
-                                                BlurRadius="8"
-                                                Direction="270"
-                                                Opacity="0.3"
-                                                ShadowDepth="2"
-                                                Color="Black" />
-                                        </Border.Effect>
-                                        <Grid Margin="8,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon
-                                                Grid.Column="0"
-                                                Margin="0,0,12,0"
-                                                VerticalAlignment="Center"
-                                                Foreground="{ui:ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                Symbol="LocalLanguage24" />
-                                            <StackPanel
-                                                Grid.Column="1"
-                                                VerticalAlignment="Center"
-                                                Orientation="Vertical">
-                                                <TextBlock
-                                                    x:Name="TranslationProgressText"
-                                                    Margin="0,0,0,2"
-                                                    FontSize="12"
-                                                    FontWeight="SemiBold"
-                                                    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
-                                                    Text="Translating..." />
-                                                <ProgressBar
-                                                    x:Name="TranslationProgressBar"
-                                                    Height="6"
-                                                    Maximum="100"
-                                                    Minimum="0"
-                                                    Value="0" />
-                                            </StackPanel>
-                                            <TextBlock
-                                                x:Name="TranslationCountText"
-                                                Grid.Column="2"
-                                                Margin="12,0,8,0"
-                                                VerticalAlignment="Center"
-                                                FontSize="11"
-                                                Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="0/0" />
-                                            <Button
-                                                x:Name="CancelTranslationButton"
-                                                Grid.Column="3"
-                                                Width="28"
-                                                Height="28"
-                                                Padding="0"
-                                                VerticalAlignment="Center"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                Click="CancelTranslationButton_Click"
-                                                ToolTip="Cancel translation">
-                                                <ui:SymbolIcon
-                                                    FontSize="16"
-                                                    Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                                    Symbol="Dismiss24" />
-                                            </Button>
-                                        </Grid>
-                                    </Border>
-                                </Grid>
-                        </Border>
-            <Border Grid.Row="2" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
+                                    <Canvas.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem
+                                                Command="{x:Static local:GrabFrame.PasteCommand}"
+                                                Header="Paste Image"
+                                                InputGestureText="Ctrl + Shift + V" />
+                                            <MenuItem
+                                                Click="OpenImageMenuItem_Click"
+                                                Header="Open Image..."
+                                                InputGestureText="Ctrl + O" />
+                                            <Separator />
+                                            <MenuItem
+                                                x:Name="CopyText"
+                                                Click="CopyText_Click"
+                                                Header="Copy Text" />
+                                            <Separator />
+                                            <MenuItem
+                                                x:Name="AspectRationMI"
+                                                Checked="AspectRationMI_Checked"
+                                                Header="Maintain Aspect Ratio"
+                                                IsCheckable="True"
+                                                IsChecked="True"
+                                                Unchecked="AspectRationMI_Checked" />
+                                            <MenuItem
+                                                x:Name="FreezeMI"
+                                                Click="FreezeMI_Click"
+                                                Header="Toggle Freeze"
+                                                InputGestureText="F" />
+                                            <Separator />
+                                            <MenuItem
+                                                x:Name="TryToNumberMenuItem"
+                                                Click="TryToNumberMenuItem_Click"
+                                                Header="Try To Make _Numbers" />
+                                            <MenuItem
+                                                x:Name="TryToAlphaMenuItem"
+                                                Click="TryToAlphaMenuItem_Click"
+                                                Header="Try To Make _Letters" />
+                                            <MenuItem
+                                                Command="{x:Static local:GrabFrame.MergeWordsCommand}"
+                                                Header="Merge Word Borders"
+                                                InputGestureText="Ctrl + M" />
+                                            <MenuItem
+                                                Command="{x:Static local:GrabFrame.DeleteWordsCommand}"
+                                                Header="_Delete selected words"
+                                                InputGestureText="Del" />
+                                        </ContextMenu>
+                                    </Canvas.ContextMenu>
+                                </Canvas>
+                            </Grid>
+                        </Viewbox>
+                    </controls:ZoomBorder>
+                    <Border
+                        x:Name="TranslationProgressBorder"
+                        Height="40"
+                        Margin="8"
+                        VerticalAlignment="Bottom"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                        BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Visibility="Collapsed">
+                        <Border.Effect>
+                            <DropShadowEffect
+                                BlurRadius="8"
+                                Direction="270"
+                                Opacity="0.3"
+                                ShadowDepth="2"
+                                Color="Black" />
+                        </Border.Effect>
+                        <Grid Margin="8,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon
+                                Grid.Column="0"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                Foreground="{ui:ThemeResource AccentTextFillColorPrimaryBrush}"
+                                Symbol="LocalLanguage24" />
+                            <StackPanel
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical">
+                                <TextBlock
+                                    x:Name="TranslationProgressText"
+                                    Margin="0,0,0,2"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+                                    Text="Translating..." />
+                                <ProgressBar
+                                    x:Name="TranslationProgressBar"
+                                    Height="6"
+                                    Maximum="100"
+                                    Minimum="0"
+                                    Value="0" />
+                            </StackPanel>
+                            <TextBlock
+                                x:Name="TranslationCountText"
+                                Grid.Column="2"
+                                Margin="12,0,8,0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                Text="0/0" />
+                            <Button
+                                x:Name="CancelTranslationButton"
+                                Grid.Column="3"
+                                Width="28"
+                                Height="28"
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Click="CancelTranslationButton_Click"
+                                ToolTip="Cancel translation">
+                                <ui:SymbolIcon
+                                    FontSize="16"
+                                    Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                    Symbol="Dismiss24" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+            <!--  Template Save Panel (collapsed by default, shown when Save as Template is toggled)  -->
+            <Border
+                x:Name="TemplateSavePanel"
+                Grid.Row="2"
+                Background="{ui:ThemeResource ApplicationBackgroundBrush}"
+                BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0"
+                Visibility="Collapsed">
+                <Grid Margin="8,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Grid.Column="0"
+                        Margin="0,0,6,0"
+                        VerticalAlignment="Center"
+                        Text="Template Name:" />
+                    <TextBox
+                        x:Name="TemplateNameBox"
+                        Grid.Column="1"
+                        Padding="4,2"
+                        VerticalContentAlignment="Center" />
+                    <TextBlock
+                        Grid.Column="2"
+                        Margin="8,0,6,0"
+                        VerticalAlignment="Center"
+                        Text="Output (type { to pick):"
+                        ToolTip="Type { to insert a region chip. Plain text is also supported." />
+                    <controls:InlinePickerRichTextBox
+                        x:Name="TemplateOutputBox"
+                        Grid.Column="3"
+                        VerticalAlignment="Center"
+                        AcceptsReturn="True"
+                        AcceptsTab="True"
+                        TextChanged="TemplateOutputBox_TextChanged"
+                        ToolTip="Type { to open the region picker. Plain text also supported." />
+                    <Button
+                        Grid.Column="4"
+                        Margin="8,0,4,0"
+                        Padding="8,4"
+                        Click="SaveTemplateSave_Click"
+                        Content="Save Template" />
+                    <Button
+                        Grid.Column="5"
+                        Padding="8,4"
+                        Click="SaveTemplateCancel_Click"
+                        Content="Cancel" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="3" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid
                     Height="30"
                     Margin="6"
@@ -826,6 +878,17 @@
                             IsSymbol="True"
                             ToolTip="Open Text Grab Settings"
                             Visibility="Collapsed" />
+
+                        <ToggleButton
+                            x:Name="SaveAsTemplateBTN"
+                            Width="30"
+                            Height="30"
+                            Margin="6,0,0,0"
+                            Click="SaveAsTemplate_Click"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Save current Ctrl+drag regions as a Grab Template">
+                            <ui:SymbolIcon Symbol="DocumentSave24" />
+                        </ToggleButton>
                     </StackPanel>
 
                     <controls:CollapsibleButton
