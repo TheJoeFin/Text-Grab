@@ -29,7 +29,7 @@ public partial class PatternMatchModeDialog : FluentWindow
         PatternNameLabel.Text = $"Pattern: {patternName}";
     }
 
-    private void MatchModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void MatchModeRadioButton_Checked(object sender, RoutedEventArgs e)
     {
         if (SeparatorPanel == null || IndicesPanel == null)
             return;
@@ -96,8 +96,9 @@ public partial class PatternMatchModeDialog : FluentWindow
 
     private string GetSelectedMode()
     {
-        if (MatchModeComboBox.SelectedItem is ComboBoxItem item)
-            return item.Tag?.ToString() ?? "first";
+        if (MatchModePanel?.Children.OfType<RadioButton>().FirstOrDefault(button => button.IsChecked == true) is RadioButton button)
+            return button.Tag?.ToString() ?? "first";
+
         return "first";
     }
 

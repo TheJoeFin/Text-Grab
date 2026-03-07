@@ -7,7 +7,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Pattern Match Options"
     Width="420"
-    Height="320"
+    Height="450"
     MinWidth="380"
     MinHeight="280"
     WindowStartupLocation="CenterOwner"
@@ -32,29 +32,48 @@
 
         <StackPanel Grid.Row="1" Margin="12">
             <TextBlock
+                x:Name="PatternNameLabel"
                 Margin="0,0,0,8"
                 FontWeight="SemiBold"
-                x:Name="PatternNameLabel"
                 Text="Pattern:" />
 
             <TextBlock Margin="0,0,0,4" Text="Match Mode:" />
-            <ComboBox
-                x:Name="MatchModeComboBox"
-                Margin="0,0,0,12"
-                SelectedIndex="0"
-                SelectionChanged="MatchModeComboBox_SelectionChanged">
-                <ComboBoxItem Content="First Match" Tag="first" />
-                <ComboBoxItem Content="Last Match" Tag="last" />
-                <ComboBoxItem Content="All Matches" Tag="all" />
-                <ComboBoxItem Content="Specific Match(es)" Tag="nth" />
-            </ComboBox>
+            <StackPanel x:Name="MatchModePanel" Margin="0,0,0,12">
+                <RadioButton
+                    Checked="MatchModeRadioButton_Checked"
+                    Content="First Match"
+                    GroupName="MatchMode"
+                    IsChecked="True"
+                    Tag="first" />
+                <RadioButton
+                    Checked="MatchModeRadioButton_Checked"
+                    Content="Last Match"
+                    GroupName="MatchMode"
+                    Tag="last" />
+                <RadioButton
+                    Checked="MatchModeRadioButton_Checked"
+                    Content="All Matches"
+                    GroupName="MatchMode"
+                    Tag="all" />
+                <RadioButton
+                    Checked="MatchModeRadioButton_Checked"
+                    Content="Specific Match(es)"
+                    GroupName="MatchMode"
+                    Tag="nth" />
+            </StackPanel>
 
-            <StackPanel x:Name="SeparatorPanel" Margin="0,0,0,12" Visibility="Collapsed">
+            <StackPanel
+                x:Name="SeparatorPanel"
+                Margin="0,0,0,12"
+                Visibility="Collapsed">
                 <TextBlock Margin="0,0,0,4" Text="Separator:" />
                 <TextBox x:Name="SeparatorTextBox" Text=", " />
             </StackPanel>
 
-            <StackPanel x:Name="IndicesPanel" Margin="0,0,0,12" Visibility="Collapsed">
+            <StackPanel
+                x:Name="IndicesPanel"
+                Margin="0,0,0,12"
+                Visibility="Collapsed">
                 <TextBlock Margin="0,0,0,4" Text="Match indices (1-based, comma-separated):" />
                 <TextBox
                     x:Name="IndicesTextBox"
