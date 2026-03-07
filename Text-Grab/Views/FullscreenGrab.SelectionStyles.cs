@@ -978,10 +978,16 @@ public partial class FullscreenGrab
         return ImageMethods.BitmapToImageSource(capturedBitmap);
     }
 
-    private Task PlaceGrabFrameInSelectionRectAsync(FullscreenCaptureResult selection)
+    private async Task PlaceGrabFrameInSelectionRectAsync(FullscreenCaptureResult selection)
     {
         BitmapSource? frozenImage = GetBitmapSourceForGrabFrame(selection);
-        GrabFrame grabFrame = frozenImage is not null ? new GrabFrame(frozenImage) : new GrabFrame();
+        ILanguage selectedLanguage = LanguagesComboBox.SelectedItem as ILanguage ?? LanguageUtilities.GetOCRLanguage();
+        IntPtr fullscreenGrabHandle = new WindowInteropHelper(this).Handle;
+        IReadOnlyCollection<IntPtr>? excludedHandles = fullscreenGrabHandle == IntPtr.Zero ? null : [fullscreenGrabHandle];
+        UiAutomationOverlaySnapshot? uiAutomationSnapshot = selectedLanguage is UiAutomationLang
+            ? await UIAutomationUtilities.GetOverlaySnapshotFromRegionAsync(selection.CaptureRegion, excludedHandles)
+            : null;
+        GrabFrame grabFrame = frozenImage is not null ? new GrabFrame(frozenImage, uiAutomationSnapshot) : new GrabFrame();
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         Rect selectionRect = new(
@@ -1008,7 +1014,6 @@ public partial class FullscreenGrab
 
         DisposeBitmapSource(BackgroundImage);
         WindowUtilities.CloseAllFullscreenGrabs();
-        return Task.CompletedTask;
     }
 
     private static bool IsTemplateAction(ButtonInfo action) => action.ClickEvent == "ApplyTemplate_Click";
@@ -1029,6 +1034,8 @@ public partial class FullscreenGrab
         bool isSingleLine = SingleLineMenuItem is not null && SingleLineMenuItem.IsChecked;
         bool isTable = TableMenuItem is not null && TableMenuItem.IsChecked;
         TextFromOCR = string.Empty;
+        IntPtr fullscreenGrabHandle = new WindowInteropHelper(this).Handle;
+        IReadOnlyCollection<IntPtr>? excludedHandles = fullscreenGrabHandle == IntPtr.Zero ? null : [fullscreenGrabHandle];
 
         if (isSmallClick && selection.SelectionStyle == FsgSelectionStyle.Region)
         {
@@ -1047,7 +1054,7 @@ public partial class FullscreenGrab
         }
         else if (selectedOcrLang is UiAutomationLang)
         {
-            TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang);
+            TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
         }
         else if (selection.CapturedImage is not null)
         {
@@ -1062,7 +1069,7 @@ public partial class FullscreenGrab
         }
         else
         {
-            TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang);
+            TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
         }
 
         if (DefaultSettings.UseHistory && !isSmallClick)

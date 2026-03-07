@@ -68,6 +68,9 @@ public partial class GrabFrame : Window
     private bool isStaticImageSource = false;
     private readonly Dictionary<WordBorder, Rect> movingWordBordersDictionary = [];
     private IOcrLinesWords? ocrResultOfWindow;
+    private UiAutomationOverlaySnapshot? frozenUiAutomationSnapshot;
+    private UiAutomationOverlaySnapshot? liveUiAutomationSnapshot;
+    private readonly DispatcherTimer frameMessageTimer = new();
     private readonly DispatcherTimer reDrawTimer = new();
     private readonly DispatcherTimer reSearchTimer = new();
     private Side resizingSide = Side.None;
@@ -75,6 +78,7 @@ public partial class GrabFrame : Window
     private Point startingMovingPoint;
     private readonly UndoRedo UndoRedo = new();
     private bool wasAltHeld = false;
+    private bool isSyncingLanguageSelection = false;
     private double windowFrameImageScale = 1;
     private readonly ObservableCollection<WordBorder> wordBorders = [];
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
@@ -141,10 +145,11 @@ public partial class GrabFrame : Window
 
     /// <summary>
     /// Creates a GrabFrame pre-loaded with a frozen image cropped from a Fullscreen Grab selection.
-    /// The frame opens in freeze mode showing the provided bitmap and immediately runs OCR.
+    /// The frame opens in freeze mode showing the provided bitmap and can render either OCR results
+    /// or a pre-captured UI Automation snapshot, depending on the selected language.
     /// </summary>
     /// <param name="frozenImage">The cropped bitmap to display as the initial frozen background.</param>
-    public GrabFrame(BitmapSource frozenImage)
+    public GrabFrame(BitmapSource frozenImage, UiAutomationOverlaySnapshot? uiAutomationSnapshot = null)
     {
         StandardInitialize();
 
@@ -152,6 +157,7 @@ public partial class GrabFrame : Window
         frameContentImageSource = frozenImage;
         hasLoadedImageSource = true;
         isStaticImageSource = true;
+        frozenUiAutomationSnapshot = uiAutomationSnapshot;
 
         Loaded += (s, e) =>
         {
@@ -269,7 +275,10 @@ public partial class GrabFrame : Window
     {
         FrameText = history.TextContent;
         currentLanguage = history.OcrLanguage;
+        SyncLanguageComboBoxSelection(currentLanguage);
         isStaticImageSource = true;
+        frozenUiAutomationSnapshot = null;
+        liveUiAutomationSnapshot = null;
 
         string imageName = Path.GetFileName(history.ImagePath);
 
@@ -289,7 +298,14 @@ public partial class GrabFrame : Window
         hasLoadedImageSource = true;
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
-        NotifyIfUiAutomationNeedsLiveSource(currentLanguage);
+
+        List<WordBorderInfo>? wbInfoList = null;
+
+        if (!string.IsNullOrWhiteSpace(history.WordBorderInfoJson))
+            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson);
+
+        if (wbInfoList is not { Count: > 0 })
+            NotifyIfUiAutomationNeedsLiveSource(currentLanguage);
 
         if (history.PositionRect != Rect.Empty)
         {
@@ -308,11 +324,6 @@ public partial class GrabFrame : Window
                 Height = history.PositionRect.Height;
             }
         }
-
-        List<WordBorderInfo>? wbInfoList = null;
-
-        if (!string.IsNullOrWhiteSpace(history.WordBorderInfoJson))
-            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson);
 
         if (wbInfoList is not null && wbInfoList.Count > 0)
         {
@@ -487,6 +498,9 @@ public partial class GrabFrame : Window
         translationTimer.Interval = new(0, 0, 0, 0, 1000);
         translationTimer.Tick += TranslationTimer_Tick;
 
+        frameMessageTimer.Interval = TimeSpan.FromSeconds(4);
+        frameMessageTimer.Tick += FrameMessageTimer_Tick;
+
         _ = UndoRedo.HasUndoOperations();
         _ = UndoRedo.HasRedoOperations();
 
@@ -494,6 +508,55 @@ public partial class GrabFrame : Window
         SetRefreshOrOcrFrameBtnVis();
 
         DataContext = this;
+    }
+
+    private void FrameMessageTimer_Tick(object? sender, EventArgs e)
+    {
+        frameMessageTimer.Stop();
+        HideFrameMessage();
+    }
+
+    private void HideFrameMessage()
+    {
+        FrameMessageBorder.Visibility = Visibility.Collapsed;
+        FrameMessageTextBlock.Text = string.Empty;
+    }
+
+    private void ShowFrameMessage(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        FrameMessageTextBlock.Text = message;
+        FrameMessageBorder.Visibility = Visibility.Visible;
+        frameMessageTimer.Stop();
+        frameMessageTimer.Start();
+    }
+
+    private void SyncLanguageComboBoxSelection(ILanguage language)
+    {
+        if (LanguagesComboBox.Items.Count == 0)
+            return;
+
+        List<ILanguage> availableLanguages = [.. LanguagesComboBox.Items.OfType<ILanguage>()];
+        int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(
+            availableLanguages,
+            language.LanguageTag,
+            language);
+
+        if (selectedIndex < 0 || LanguagesComboBox.SelectedIndex == selectedIndex)
+            return;
+
+        isSyncingLanguageSelection = true;
+        try
+        {
+            LanguagesComboBox.SelectedIndex = selectedIndex;
+            currentLanguage = availableLanguages[selectedIndex];
+        }
+        finally
+        {
+            isSyncingLanguageSelection = false;
+        }
     }
 
     #endregion Constructors
@@ -551,10 +614,7 @@ public partial class GrabFrame : Window
 
     public HistoryInfo AsHistoryItem()
     {
-        System.Drawing.Bitmap? bitmap = null;
-
-        if (frameContentImageSource is BitmapImage image)
-            bitmap = ImageMethods.BitmapImageToBitmap(image);
+        System.Drawing.Bitmap? bitmap = ImageMethods.ImageSourceToBitmap(frameContentImageSource);
 
         List<WordBorderInfo> wbInfoList = [];
 
@@ -726,6 +786,9 @@ public partial class GrabFrame : Window
 
         reDrawTimer.Stop();
         reDrawTimer.Tick -= ReDrawTimer_Tick;
+
+        frameMessageTimer.Stop();
+        frameMessageTimer.Tick -= FrameMessageTimer_Tick;
 
         translationTimer.Stop();
         translationTimer.Tick -= TranslationTimer_Tick;
@@ -967,7 +1030,10 @@ public partial class GrabFrame : Window
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
         // Language language = CurrentLanguage.AsLanguage() ?? LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
         ILanguage language = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(rect.GetScaleSizeByFraction(viewBoxZoomFactor), language);
+        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(
+            rect.GetScaleSizeByFraction(viewBoxZoomFactor),
+            language,
+            GetUiAutomationExcludedHandles());
 
         if (language is not UiAutomationLang && DefaultSettings.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
@@ -1221,7 +1287,78 @@ public partial class GrabFrame : Window
         reSearchTimer.Start();
     }
 
-    private async Task DrawRectanglesAroundWords(string searchWord = "")
+    private void ClearRenderedWordBorders()
+    {
+        RectanglesCanvas.Children.Clear();
+        wordBorders.Clear();
+    }
+
+    private IReadOnlyCollection<IntPtr>? GetUiAutomationExcludedHandles()
+    {
+        IntPtr handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        return handle == IntPtr.Zero ? null : [handle];
+    }
+
+    private (double ViewBoxZoomFactor, double BorderToCanvasX, double BorderToCanvasY) GetOverlayRenderMetrics()
+    {
+        double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
+        if (!double.IsFinite(viewBoxZoomFactor) || viewBoxZoomFactor <= 0 || viewBoxZoomFactor > 4)
+            viewBoxZoomFactor = 1;
+
+        Point canvasOriginInBorder = RectanglesCanvas.TranslatePoint(new Point(0, 0), RectanglesBorder);
+        return (viewBoxZoomFactor, -canvasOriginInBorder.X, -canvasOriginInBorder.Y);
+    }
+
+    private WordBorder CreateWordBorderFromSourceRect(
+        Windows.Foundation.Rect sourceRect,
+        double sourceScale,
+        string text,
+        int lineNumber,
+        SolidColorBrush backgroundBrush,
+        DpiScale dpi,
+        double viewBoxZoomFactor,
+        double borderToCanvasX,
+        double borderToCanvasY)
+    {
+        return new()
+        {
+            Width = ((sourceRect.Width / (dpi.DpiScaleX * sourceScale)) + 2) / viewBoxZoomFactor,
+            Height = ((sourceRect.Height / (dpi.DpiScaleY * sourceScale)) + 2) / viewBoxZoomFactor,
+            Top = ((sourceRect.Y / (dpi.DpiScaleY * sourceScale) - 1) + borderToCanvasY) / viewBoxZoomFactor,
+            Left = ((sourceRect.X / (dpi.DpiScaleX * sourceScale) - 1) + borderToCanvasX) / viewBoxZoomFactor,
+            Word = text,
+            OwnerGrabFrame = this,
+            LineNumber = lineNumber,
+            IsFromEditWindow = IsFromEditWindow,
+            MatchingBackground = backgroundBrush,
+        };
+    }
+
+    private void AddRenderedWordBorder(WordBorder wordBorderBox)
+    {
+        if (!IsOcrValid)
+            return;
+
+        wordBorders.Add(wordBorderBox);
+        _ = RectanglesCanvas.Children.Add(wordBorderBox);
+
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                WordBorder = wordBorderBox,
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+    }
+
+    private Task DrawRectanglesAroundWords(string searchWord = "")
+    {
+        return CurrentLanguage is UiAutomationLang
+            ? DrawUiAutomationRectanglesAsync(searchWord)
+            : DrawOcrRectanglesAsync(searchWord);
+    }
+
+    private async Task DrawOcrRectanglesAsync(string searchWord = "")
     {
         if (isDrawing || IsDragOver)
             return;
@@ -1232,8 +1369,7 @@ public partial class GrabFrame : Window
         if (string.IsNullOrWhiteSpace(searchWord))
             searchWord = SearchBox.Text;
 
-        RectanglesCanvas.Children.Clear();
-        wordBorders.Clear();
+        ClearRenderedWordBorders();
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         System.Drawing.Rectangle rectCanvasSize = GetContentAreaScreenRect();
@@ -1255,22 +1391,22 @@ public partial class GrabFrame : Window
 
         isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
-        System.Drawing.Bitmap? bmp = Singleton<HistoryService>.Instance.CachedBitmap;
+        System.Drawing.Bitmap? bmp = null;
         bool shouldDisposeBmp = false;
 
-        if (bmp is null && frameContentImageSource is BitmapSource bmpImg)
+        if (isStaticImageSource && frameContentImageSource is BitmapSource bmpImg)
         {
             bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
             shouldDisposeBmp = true;
         }
+        else
+        {
+            bmp = ImageMethods.GetRegionOfScreenAsBitmap(rectCanvasSize, cacheResult: false);
+            shouldDisposeBmp = true;
+        }
 
         int lineNumber = 0;
-        double viewBoxZoomFactor = CanvasViewBox.GetHorizontalScaleFactor();
-        if (!double.IsFinite(viewBoxZoomFactor) || viewBoxZoomFactor <= 0 || viewBoxZoomFactor > 4)
-            viewBoxZoomFactor = 1;
-        Point canvasOriginInBorder = RectanglesCanvas.TranslatePoint(new Point(0, 0), RectanglesBorder);
-        double borderToCanvasX = -canvasOriginInBorder.X;
-        double borderToCanvasY = -canvasOriginInBorder.Y;
+        (double viewBoxZoomFactor, double borderToCanvasX, double borderToCanvasY) = GetOverlayRenderMetrics();
 
         foreach (IOcrLine ocrLine in ocrResultOfWindow.Lines)
         {
@@ -1293,18 +1429,16 @@ public partial class GrabFrame : Window
             if (DefaultSettings.CorrectToLatin)
                 ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
 
-            WordBorder wordBorderBox = new()
-            {
-                Width = ((lineRect.Width / (dpi.DpiScaleX * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
-                Height = ((lineRect.Height / (dpi.DpiScaleY * windowFrameImageScale)) + 2) / viewBoxZoomFactor,
-                Top = ((lineRect.Y / (dpi.DpiScaleY * windowFrameImageScale) - 1) + borderToCanvasY) / viewBoxZoomFactor,
-                Left = ((lineRect.X / (dpi.DpiScaleX * windowFrameImageScale) - 1) + borderToCanvasX) / viewBoxZoomFactor,
-                Word = ocrText,
-                OwnerGrabFrame = this,
-                LineNumber = lineNumber,
-                IsFromEditWindow = IsFromEditWindow,
-                MatchingBackground = backgroundBrush,
-            };
+            WordBorder wordBorderBox = CreateWordBorderFromSourceRect(
+                lineRect,
+                windowFrameImageScale,
+                ocrText,
+                lineNumber,
+                backgroundBrush,
+                dpi,
+                viewBoxZoomFactor,
+                borderToCanvasX,
+                borderToCanvasY);
 
             if (CurrentLanguage!.IsRightToLeft())
             {
@@ -1314,19 +1448,7 @@ public partial class GrabFrame : Window
                 wordBorderBox.Word = sb.ToString();
             }
 
-            if (IsOcrValid)
-            {
-                wordBorders.Add(wordBorderBox);
-                _ = RectanglesCanvas.Children.Add(wordBorderBox);
-
-                UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.AddWordBorder,
-                    new GrabFrameOperationArgs()
-                    {
-                        WordBorder = wordBorderBox,
-                        WordBorders = wordBorders,
-                        GrabFrameCanvas = RectanglesCanvas
-                    });
-            }
+            AddRenderedWordBorder(wordBorderBox);
 
             lineNumber++;
         }
@@ -1346,6 +1468,114 @@ public partial class GrabFrame : Window
         reSearchTimer.Start();
 
         // Trigger translation if enabled
+        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            translationTimer.Stop();
+            translationTimer.Start();
+        }
+    }
+
+    private async Task DrawUiAutomationRectanglesAsync(string searchWord = "")
+    {
+        if (isDrawing || IsDragOver)
+            return;
+
+        isDrawing = true;
+        IsOcrValid = true;
+
+        if (string.IsNullOrWhiteSpace(searchWord))
+            searchWord = SearchBox.Text;
+
+        ClearRenderedWordBorders();
+
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        System.Drawing.Rectangle rectCanvasSize = GetContentAreaScreenRect();
+        if (rectCanvasSize.Width <= 0 || rectCanvasSize.Height <= 0)
+        {
+            isDrawing = false;
+            reDrawTimer.Start();
+            return;
+        }
+
+        UiAutomationOverlaySnapshot? overlaySnapshot = null;
+        if (isStaticImageSource && frozenUiAutomationSnapshot is not null)
+        {
+            overlaySnapshot = frozenUiAutomationSnapshot;
+        }
+        else
+        {
+            liveUiAutomationSnapshot = await UIAutomationUtilities.GetOverlaySnapshotFromRegionAsync(
+                new Rect(rectCanvasSize.X, rectCanvasSize.Y, rectCanvasSize.Width, rectCanvasSize.Height),
+                GetUiAutomationExcludedHandles());
+            overlaySnapshot = liveUiAutomationSnapshot;
+        }
+
+        if (overlaySnapshot is null || overlaySnapshot.Items.Count == 0)
+        {
+            isDrawing = false;
+
+            if (DefaultSettings.UiAutomationFallbackToOcr)
+            {
+                await DrawOcrRectanglesAsync(searchWord);
+                return;
+            }
+
+            reSearchTimer.Start();
+            return;
+        }
+
+        System.Drawing.Bitmap? bmp = Singleton<HistoryService>.Instance.CachedBitmap;
+        bool shouldDisposeBmp = false;
+
+        if (bmp is null && frameContentImageSource is BitmapSource bmpImg)
+        {
+            bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+            shouldDisposeBmp = true;
+        }
+
+        (double viewBoxZoomFactor, double borderToCanvasX, double borderToCanvasY) = GetOverlayRenderMetrics();
+        Rect sourceBounds = overlaySnapshot.CaptureBounds;
+        int lineNumber = 0;
+
+        foreach (UiAutomationOverlayItem overlayItem in overlaySnapshot.Items)
+        {
+            Rect relativeBounds = new(
+                overlayItem.ScreenBounds.X - sourceBounds.X,
+                overlayItem.ScreenBounds.Y - sourceBounds.Y,
+                overlayItem.ScreenBounds.Width,
+                overlayItem.ScreenBounds.Height);
+
+            if (relativeBounds == Rect.Empty || relativeBounds.Width < 1 || relativeBounds.Height < 1)
+                continue;
+
+            Windows.Foundation.Rect sourceRect = new(relativeBounds.X, relativeBounds.Y, relativeBounds.Width, relativeBounds.Height);
+            SolidColorBrush backgroundBrush = new(Colors.Black);
+
+            if (bmp is not null)
+                backgroundBrush = GetBackgroundBrushFromBitmap(ref dpi, 1, bmp, ref sourceRect);
+
+            WordBorder wordBorderBox = CreateWordBorderFromSourceRect(
+                sourceRect,
+                1,
+                overlayItem.Text,
+                lineNumber,
+                backgroundBrush,
+                dpi,
+                viewBoxZoomFactor,
+                borderToCanvasX,
+                borderToCanvasY);
+
+            AddRenderedWordBorder(wordBorderBox);
+            lineNumber++;
+        }
+
+        isDrawing = false;
+
+        if (shouldDisposeBmp)
+            bmp?.Dispose();
+
+        reSearchTimer.Start();
+
         if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
         {
             translationTimer.Stop();
@@ -1471,6 +1701,7 @@ public partial class GrabFrame : Window
         else
         {
             isStaticImageSource = false;
+            frozenUiAutomationSnapshot = null;
             frameContentImageSource = ImageMethods.GetWindowBoundsImage(this);
             GrabFrameImage.Source = frameContentImageSource;
         }
@@ -1879,7 +2110,10 @@ public partial class GrabFrame : Window
 
     private void NotifyIfUiAutomationNeedsLiveSource(ILanguage language)
     {
-        if (language is not UiAutomationLang || !isStaticImageSource)
+        if (!CaptureLanguageUtilities.RequiresLiveUiAutomationSource(
+            language,
+            isStaticImageSource,
+            frozenUiAutomationSnapshot is not null))
             return;
 
         string message = DefaultSettings.UiAutomationFallbackToOcr
@@ -1891,11 +2125,20 @@ public partial class GrabFrame : Window
 
     private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!isLanguageBoxLoaded
-            || sender is not ComboBox langComboBox
+        if (sender is not ComboBox langComboBox
             || langComboBox.SelectedItem is not ILanguage pickedLang)
             return;
 
+        if (isSyncingLanguageSelection)
+        {
+            currentLanguage = pickedLang;
+            return;
+        }
+
+        if (!isLanguageBoxLoaded)
+            return;
+
+        HideFrameMessage();
         currentLanguage = pickedLang;
         CaptureLanguageUtilities.PersistSelectedLanguage(pickedLang);
         NotifyIfUiAutomationNeedsLiveSource(pickedLang);
@@ -1915,15 +2158,24 @@ public partial class GrabFrame : Window
         foreach (ILanguage language in availableLanguages)
             LanguagesComboBox.Items.Add(language);
 
+        ILanguage preferredLanguage = currentLanguage ?? LanguageUtilities.GetOCRLanguage();
         int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(
             availableLanguages,
-            DefaultSettings.LastUsedLang,
-            LanguageUtilities.GetOCRLanguage());
+            currentLanguage?.LanguageTag ?? DefaultSettings.LastUsedLang,
+            preferredLanguage);
 
         if (selectedIndex >= 0)
         {
-            LanguagesComboBox.SelectedIndex = selectedIndex;
-            currentLanguage = availableLanguages[selectedIndex];
+            isSyncingLanguageSelection = true;
+            try
+            {
+                LanguagesComboBox.SelectedIndex = selectedIndex;
+                currentLanguage = availableLanguages[selectedIndex];
+            }
+            finally
+            {
+                isSyncingLanguageSelection = false;
+            }
         }
 
         isLanguageBoxLoaded = true;
@@ -2066,6 +2318,8 @@ public partial class GrabFrame : Window
 
         hasLoadedImageSource = true;
         isStaticImageSource = true;
+        frozenUiAutomationSnapshot = null;
+        liveUiAutomationSnapshot = null;
         FreezeToggleButton.IsChecked = true;
         FreezeGrabFrame();
         FreezeToggleButton.Visibility = Visibility.Collapsed;
@@ -2277,6 +2531,16 @@ public partial class GrabFrame : Window
 
     private async void RefreshBTN_Click(object? sender = null, RoutedEventArgs? e = null)
     {
+        if (CaptureLanguageUtilities.RequiresLiveUiAutomationSource(
+            CurrentLanguage,
+            isStaticImageSource,
+            frozenUiAutomationSnapshot is not null))
+        {
+            ShowFrameMessage("Cannot use UI Automation on a saved image. Switch to an OCR language to refresh.");
+            return;
+        }
+
+        HideFrameMessage();
         reDrawTimer.Stop();
 
         UndoRedo.StartTransaction();
@@ -2298,8 +2562,7 @@ new GrabFrameOperationArgs()
             RectanglesCanvas.RenderTransform = Transform.Identity;
             IsOcrValid = false;
             ocrResultOfWindow = null;
-            RectanglesCanvas.Children.Clear();
-            wordBorders.Clear();
+            ClearRenderedWordBorders();
             MatchesTXTBLK.Text = "- Matches";
             UpdateFrameText();
 
@@ -2419,12 +2682,12 @@ new GrabFrameOperationArgs()
         GrabFrameImage.ClearValue(HeightProperty);
         IsOcrValid = false;
         ocrResultOfWindow = null;
+        liveUiAutomationSnapshot = null;
 
         if (!hasLoadedImageSource)
             frameContentImageSource = null;
 
-        RectanglesCanvas.Children.Clear();
-        wordBorders.Clear();
+            ClearRenderedWordBorders();
         MatchesTXTBLK.Text = "- Matches";
         UpdateFrameText();
     }
@@ -2817,6 +3080,8 @@ new GrabFrameOperationArgs()
             frameContentImageSource = droppedImage;
             hasLoadedImageSource = true;
             isStaticImageSource = true;
+            frozenUiAutomationSnapshot = null;
+            liveUiAutomationSnapshot = null;
             _currentImagePath = path;
             FreezeToggleButton.IsChecked = true;
             FreezeGrabFrame();
@@ -2957,6 +3222,9 @@ new GrabFrameOperationArgs()
     {
         reDrawTimer.Stop();
         hasLoadedImageSource = false;
+        isStaticImageSource = false;
+        frozenUiAutomationSnapshot = null;
+        liveUiAutomationSnapshot = null;
         ResetGrabFrame();
         Topmost = true;
         GrabFrameImage.Opacity = 0;
@@ -3211,8 +3479,7 @@ new GrabFrameOperationArgs()
             });
 
         reDrawTimer.Stop();
-        RectanglesCanvas.Children.Clear();
-        wordBorders.Clear();
+        ClearRenderedWordBorders();
 
         if (!IsFreezeMode)
             FreezeGrabFrame();

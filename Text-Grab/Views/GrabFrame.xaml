@@ -615,6 +615,32 @@
                             </Button>
                         </Grid>
                     </Border>
+                    <Border
+                        x:Name="FrameMessageBorder"
+                        MaxWidth="420"
+                        Margin="16,16,16,20"
+                        Padding="12,8"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                        BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        IsHitTestVisible="False"
+                        Visibility="Collapsed">
+                        <Border.Effect>
+                            <DropShadowEffect
+                                BlurRadius="12"
+                                Direction="270"
+                                Opacity="0.35"
+                                ShadowDepth="3"
+                                Color="Black" />
+                        </Border.Effect>
+                        <TextBlock
+                            x:Name="FrameMessageTextBlock"
+                            TextAlignment="Center"
+                            TextWrapping="Wrap" />
+                    </Border>
                 </Grid>
             </Border>
             <!--  Template Save Panel (collapsed by default, shown when Save as Template is toggled)  -->
