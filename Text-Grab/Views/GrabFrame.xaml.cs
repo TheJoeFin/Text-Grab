@@ -1387,7 +1387,11 @@ public partial class GrabFrame : Window
         }
 
         if (ocrResultOfWindow is null)
+        {
+            isDrawing = false;
+            reDrawTimer.Start();
             return;
+        }
 
         isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
@@ -2687,7 +2691,7 @@ new GrabFrameOperationArgs()
         if (!hasLoadedImageSource)
             frameContentImageSource = null;
 
-            ClearRenderedWordBorders();
+        ClearRenderedWordBorders();
         MatchesTXTBLK.Text = "- Matches";
         UpdateFrameText();
     }

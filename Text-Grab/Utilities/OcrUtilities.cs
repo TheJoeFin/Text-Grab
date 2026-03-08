@@ -133,7 +133,7 @@ public static partial class OcrUtilities
         int thisCorrectedTop = (int)absPosPoint.Y + selectedRegion.Top;
 
         Rectangle correctedRegion = new(thisCorrectedLeft, thisCorrectedTop, selectedRegion.Width, selectedRegion.Height);
-        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
+        using Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
         double scale = await GetIdealScaleFactorForOcrAsync(bmp, compatibleLanguage);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
         DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
@@ -212,7 +212,7 @@ public static partial class OcrUtilities
     public static async Task<(IOcrLinesWords?, double)> GetOcrResultFromRegionAsync(Rectangle region, ILanguage language)
     {
         language = GetCompatibleOcrLanguage(language);
-        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
+        using Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
 
         if (language is WindowsAiLang)
         {
