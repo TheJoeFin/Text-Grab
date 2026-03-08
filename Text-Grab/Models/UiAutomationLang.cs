@@ -7,19 +7,19 @@ public class UiAutomationLang : ILanguage
 {
     public const string Tag = "UIAutomation";
 
-    public string AbbreviatedName => "UIA";
+    public string AbbreviatedName => "DT";
 
-    public string DisplayName => "UI Automation Text";
+    public string DisplayName => "Direct Text";
 
     public string CurrentInputMethodLanguageTag => string.Empty;
 
-    public string CultureDisplayName => "UI Automation Text";
+    public string CultureDisplayName => "Direct Text";
 
     public string LanguageTag => Tag;
 
     public LanguageLayoutDirection LayoutDirection => LanguageLayoutDirection.Ltr;
 
-    public string NativeName => "UI Automation Text";
+    public string NativeName => "Direct Text";
 
     public string Script => string.Empty;
 }

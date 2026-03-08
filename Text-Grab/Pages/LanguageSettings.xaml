@@ -62,19 +62,19 @@
             FontSize="18"
             FontWeight="Bold"
             Style="{StaticResource TextBodyNormal}"
-            Text="UI Automation Text" />
+            Text="Direct Text" />
         <TextBlock
             Margin="0,0,0,8"
             Style="{StaticResource TextBodyNormal}"
             TextWrapping="Wrap">
-            When the UI Automation language is selected, Text Grab will try to read native accessibility text from live application controls before falling back to OCR.
+            When the Direct Text language is selected, Text Grab will try to read native accessibility text from live application controls before falling back to OCR.
         </TextBlock>
         <ui:ToggleSwitch
             x:Name="UiAutomationEnabledToggle"
             Checked="UiAutomationEnabledToggle_Checked"
             Unchecked="UiAutomationEnabledToggle_Checked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
-                Show UI Automation as a language option
+                Show Direct Text as a language option
             </TextBlock>
         </ui:ToggleSwitch>
         <ui:ToggleSwitch
@@ -101,7 +101,7 @@
             Checked="UiAutomationIncludeOffscreenToggle_Checked"
             Unchecked="UiAutomationIncludeOffscreenToggle_Checked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
-                Include offscreen UI Automation elements
+                Include offscreen Direct Text elements
             </TextBlock>
         </ui:ToggleSwitch>
         <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
