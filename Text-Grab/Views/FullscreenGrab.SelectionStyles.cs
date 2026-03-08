@@ -1064,7 +1064,9 @@ public partial class FullscreenGrab
         }
         else if (isTable)
         {
-            using Bitmap selectionBitmap = ImageMethods.GetRegionOfScreenAsBitmap(selection.CaptureRegion.AsRectangle());
+            // TODO: Look into why this happens and find a better way to dispose the bitmap
+            // DO NOT add a using statement to this selected bitmap, it crashes the app
+            Bitmap selectionBitmap = ImageMethods.GetRegionOfScreenAsBitmap(selection.CaptureRegion.AsRectangle());
             TextFromOCR = await OcrUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
         }
         else
