@@ -688,37 +688,33 @@ public partial class FullscreenGrab : Window
         {
             DefaultSettings.LastUsedLang = String.Empty;
             DefaultSettings.Save();
+            LanguageUtilities.InvalidateOcrLanguageCache();
+        }
+    }
+
+    private void ApplySelectedLanguageState(ILanguage selectedLanguage)
+    {
+        bool supportsTableOutput = CaptureLanguageUtilities.SupportsTableOutput(selectedLanguage);
+        TableMenuItem.Visibility = supportsTableOutput ? Visibility.Visible : Visibility.Collapsed;
+        TableToggleButton.Visibility = supportsTableOutput ? Visibility.Visible : Visibility.Collapsed;
+
+        if (!supportsTableOutput)
+        {
+            TableMenuItem.IsChecked = false;
+            TableToggleButton.IsChecked = false;
+            SelectSingleToggleButton(StandardModeToggleButton);
         }
     }
 
     private void LanguagesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is not ComboBox languageCmbBox || !isComboBoxReady)
+        if (sender is not ComboBox languageCmbBox
+            || languageCmbBox.SelectedItem is not ILanguage selectedLanguage
+            || !isComboBoxReady)
             return;
 
-        if (languageCmbBox.SelectedItem is TessLang tessLang)
-        {
-            DefaultSettings.LastUsedLang = tessLang.CultureDisplayName;
-            DefaultSettings.Save();
-
-            TableMenuItem.Visibility = Visibility.Collapsed;
-            TableToggleButton.Visibility = Visibility.Collapsed;
-        }
-        else if (languageCmbBox.SelectedItem is Language pickedLang)
-        {
-            DefaultSettings.LastUsedLang = pickedLang.LanguageTag;
-            DefaultSettings.Save();
-
-            TableMenuItem.Visibility = Visibility.Visible;
-            TableToggleButton.Visibility = Visibility.Visible;
-        }
-        else if (languageCmbBox.SelectedItem is WindowsAiLang winAiLang)
-        {
-            DefaultSettings.LastUsedLang = winAiLang.LanguageTag;
-            DefaultSettings.Save();
-            TableMenuItem.Visibility = Visibility.Visible;
-            TableToggleButton.Visibility = Visibility.Visible;
-        }
+        CaptureLanguageUtilities.PersistSelectedLanguage(selectedLanguage);
+        ApplySelectedLanguageState(selectedLanguage);
 
         int selection = languageCmbBox.SelectedIndex;
 
@@ -756,73 +752,22 @@ public partial class FullscreenGrab : Window
         }
     }
 
-    private static async Task LoadOcrLanguages(ComboBox languagesComboBox, bool usingTesseract, List<FrameworkElement>? tesseractIncompatibleElements = null)
+    private static async Task LoadOcrLanguages(ComboBox languagesComboBox, bool usingTesseract)
     {
         if (languagesComboBox.Items.Count > 0)
             return;
 
-        int count = 0;
-        // TODO Find a way to combine with the ETW language drop down
-        // or just put this logic into Language Utilities
-
-        bool haveSetLastLang = false;
-        string lastTextLang = DefaultSettings.LastUsedLang;
-
-        if (WindowsAiUtilities.CanDeviceUseWinAI())
-        {
-            WindowsAiLang winAiLang = new();
-            languagesComboBox.Items.Add(winAiLang);
-
-            if (lastTextLang == winAiLang.LanguageTag)
-            {
-                languagesComboBox.SelectedIndex = 0;
-            }
-        }
-
-        if (usingTesseract)
-        {
-            List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
-
-            foreach (ILanguage language in tesseractLanguages)
-            {
-                languagesComboBox.Items.Add(language);
-
-                if (!haveSetLastLang && language.CultureDisplayName == lastTextLang)
-                {
-                    languagesComboBox.SelectedIndex = count;
-                    haveSetLastLang = true;
-
-                    if (tesseractIncompatibleElements is not null)
-                        foreach (FrameworkElement element in tesseractIncompatibleElements)
-                            element.Visibility = Visibility.Collapsed;
-                }
-
-                count++;
-            }
-        }
-
-        IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
-
-        ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
-
-        foreach (Language language in possibleOCRLanguages)
-        {
+        List<ILanguage> availableLanguages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(usingTesseract);
+        foreach (ILanguage language in availableLanguages)
             languagesComboBox.Items.Add(language);
 
-            if (!haveSetLastLang &&
-                (language.AbbreviatedName.Equals(firstLang?.AbbreviatedName.ToLower(), StringComparison.CurrentCultureIgnoreCase)
-                || language.LanguageTag.Equals(firstLang?.LanguageTag.ToLower(), StringComparison.CurrentCultureIgnoreCase)))
-            {
-                languagesComboBox.SelectedIndex = count;
-                haveSetLastLang = true;
-            }
+        int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(
+            availableLanguages,
+            DefaultSettings.LastUsedLang,
+            LanguageUtilities.GetOCRLanguage());
 
-            count++;
-        }
-
-        // if no lang is set, select the first one
-        if (languagesComboBox.SelectedIndex == -1)
-            languagesComboBox.SelectedIndex = 0;
+        if (selectedIndex >= 0)
+            languagesComboBox.SelectedIndex = selectedIndex;
     }
 
     private void NewEditTextMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1021,12 +966,10 @@ public partial class FullscreenGrab : Window
         Topmost = false;
 #endif
 
-        List<FrameworkElement> tesseractIncompatibleFrameworkElements =
-        [
-            TableMenuItem, TableToggleButton
-        ];
-        await LoadOcrLanguages(LanguagesComboBox, usingTesseract, tesseractIncompatibleFrameworkElements);
+        await LoadOcrLanguages(LanguagesComboBox, usingTesseract);
         isComboBoxReady = true;
+        if (LanguagesComboBox.SelectedItem is ILanguage selectedLanguage)
+            ApplySelectedLanguageState(selectedLanguage);
 
         // Load dynamic post-grab actions
         LoadDynamicPostGrabActions();

@@ -371,7 +371,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 item.IsChecked = false;
         }
 
-        if (selectedILanguage is WindowsAiLang)
+        if (selectedILanguage is not GlobalLang)
         {
             SetCultureAndLanguageToDefault();
             return;
@@ -1160,17 +1160,25 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
 
         selectedILanguage = ILang;
+        CaptureLanguageUtilities.PersistSelectedLanguage(selectedILanguage);
 
-        try
-        {
-            CultureInfo cultureInfo = new(selectedILanguage.LanguageTag);
-            selectedCultureInfo = cultureInfo;
-            XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
-            Language = xmlLang;
-        }
-        catch (CultureNotFoundException)
+        if (selectedILanguage is not GlobalLang)
         {
             SetCultureAndLanguageToDefault();
+        }
+        else
+        {
+            try
+            {
+                CultureInfo cultureInfo = new(selectedILanguage.LanguageTag);
+                selectedCultureInfo = cultureInfo;
+                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
+                Language = xmlLang;
+            }
+            catch (CultureNotFoundException)
+            {
+                SetCultureAndLanguageToDefault();
+            }
         }
 
         foreach (object? child in BottomBarButtons.Children)
@@ -1249,81 +1257,25 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (captureMenuItem.Items.Count > 0)
             return;
 
-        bool haveSetLastLang = false;
-        string lastTextLang = DefaultSettings.LastUsedLang;
         bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+        List<ILanguage> availableLanguages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(usingTesseract);
+        int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(
+            availableLanguages,
+            DefaultSettings.LastUsedLang,
+            LanguageUtilities.GetOCRLanguage());
 
-        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        for (int i = 0; i < availableLanguages.Count; i++)
         {
-            WindowsAiLang windowsAiLang = new();
-
-            MenuItem languageMenuItem = new()
-            {
-                Header = windowsAiLang.DisplayName,
-                Tag = windowsAiLang,
-                IsCheckable = true,
-            };
-
-            languageMenuItem.Click += LanguageMenuItem_Click;
-            captureMenuItem.Items.Add(languageMenuItem);
-            if (!haveSetLastLang && windowsAiLang.CultureDisplayName == lastTextLang)
-            {
-                languageMenuItem.IsChecked = true;
-                haveSetLastLang = true;
-            }
-        }
-
-        if (usingTesseract)
-        {
-            List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
-
-            foreach (TessLang language in tesseractLanguages.Cast<TessLang>())
-            {
-                MenuItem languageMenuItem = new()
-                {
-                    Header = language.DisplayName,
-                    Tag = language,
-                    IsCheckable = true,
-                };
-                languageMenuItem.Click += LanguageMenuItem_Click;
-
-                captureMenuItem.Items.Add(languageMenuItem);
-
-                if (!haveSetLastLang && language.CultureDisplayName == lastTextLang)
-                {
-                    languageMenuItem.IsChecked = true;
-                    haveSetLastLang = true;
-                }
-            }
-        }
-
-        IReadOnlyList<Language> possibleOCRLanguages = OcrEngine.AvailableRecognizerLanguages;
-
-        ILanguage firstLang = LanguageUtilities.GetOCRLanguage();
-
-        foreach (Language language in possibleOCRLanguages)
-        {
+            ILanguage language = availableLanguages[i];
             MenuItem languageMenuItem = new()
             {
                 Header = language.DisplayName,
-                Tag = new GlobalLang(language),
+                Tag = language,
                 IsCheckable = true,
+                IsChecked = i == selectedIndex,
             };
             languageMenuItem.Click += LanguageMenuItem_Click;
-
             captureMenuItem.Items.Add(languageMenuItem);
-
-            if (!haveSetLastLang &&
-                (language.AbbreviatedName.Equals(firstLang?.AbbreviatedName.ToLower(), StringComparison.CurrentCultureIgnoreCase)
-                || language.LanguageTag.Equals(firstLang?.LanguageTag.ToLower(), StringComparison.CurrentCultureIgnoreCase)))
-            {
-                languageMenuItem.IsChecked = true;
-                haveSetLastLang = true;
-            }
-        }
-        if (!haveSetLastLang && captureMenuItem.Items[0] is MenuItem firstMenuItem)
-        {
-            firstMenuItem.IsChecked = true;
         }
     }
 

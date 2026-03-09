@@ -194,6 +194,21 @@
     <Setting Name="OverrideAiArchCheck" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="UiAutomationEnabled" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="UiAutomationFallbackToOcr" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="UiAutomationTraversalMode" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Balanced</Value>
+    </Setting>
+    <Setting Name="UiAutomationIncludeOffscreen" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="UiAutomationPreferFocusedElement" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
     <Setting Name="GrabFrameTranslationEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>

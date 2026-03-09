@@ -218,6 +218,15 @@ public static class ImageMethods
         return bmp;
     }
 
+    public static Bitmap? ImageSourceToBitmap(ImageSource? source)
+    {
+        return source switch
+        {
+            BitmapSource bitmapSource => BitmapSourceToBitmap(bitmapSource),
+            _ => null
+        };
+    }
+
     public static Bitmap GetBitmapFromIRandomAccessStream(IRandomAccessStream stream)
     {
         Stream managedStream = stream.AsStream();

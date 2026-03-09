@@ -793,6 +793,66 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UiAutomationEnabled {
+            get {
+                return ((bool)(this["UiAutomationEnabled"]));
+            }
+            set {
+                this["UiAutomationEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UiAutomationFallbackToOcr {
+            get {
+                return ((bool)(this["UiAutomationFallbackToOcr"]));
+            }
+            set {
+                this["UiAutomationFallbackToOcr"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Balanced")]
+        public string UiAutomationTraversalMode {
+            get {
+                return ((string)(this["UiAutomationTraversalMode"]));
+            }
+            set {
+                this["UiAutomationTraversalMode"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UiAutomationIncludeOffscreen {
+            get {
+                return ((bool)(this["UiAutomationIncludeOffscreen"]));
+            }
+            set {
+                this["UiAutomationIncludeOffscreen"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UiAutomationPreferFocusedElement {
+            get {
+                return ((bool)(this["UiAutomationPreferFocusedElement"]));
+            }
+            set {
+                this["UiAutomationPreferFocusedElement"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool GrabFrameTranslationEnabled {
             get {

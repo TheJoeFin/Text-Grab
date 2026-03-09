@@ -19,7 +19,7 @@
                                Mode=TwoWay}"
         SelectionChanged="MainComboBox_SelectionChanged">
         <ComboBox.ItemTemplate>
-            <DataTemplate DataType="global:Language">
+            <DataTemplate>
                 <TextBlock Text="{Binding DisplayName}" />
             </DataTemplate>
         </ComboBox.ItemTemplate>

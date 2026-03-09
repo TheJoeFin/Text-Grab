@@ -90,6 +90,14 @@ public enum LanguageKind
     Global = 0,
     Tesseract = 1,
     WindowsAi = 2,
+    UiAutomation = 3,
+}
+
+public enum UiAutomationTraversalMode
+{
+    Fast = 0,
+    Balanced = 1,
+    Thorough = 2,
 }
 
 public enum FsgDefaultMode

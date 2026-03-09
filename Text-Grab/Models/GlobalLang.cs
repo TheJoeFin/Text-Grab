@@ -15,19 +15,19 @@ public class GlobalLang : ILanguage
         OriginalLanguage = lang;
     }
 
-    public GlobalLang(string inputLang)
+    public GlobalLang(string inputLangTag)
     {
-        if (inputLang == "English")
-            inputLang = "en-US";
+        if (inputLangTag == "English")
+            inputLangTag = "en-US";
 
         Windows.Globalization.Language language = new(System.Globalization.CultureInfo.CurrentCulture.Name);
         try
         {
-            language = new(inputLang);
+            language = new(inputLangTag);
         }
         catch (System.ArgumentException ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to initialize language '{inputLang}': {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Failed to initialize language '{inputLangTag}': {ex.Message}");
         }
         AbbreviatedName = language.AbbreviatedName;
         CultureDisplayName = language.DisplayName;

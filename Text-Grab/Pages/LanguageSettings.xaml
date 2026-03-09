@@ -62,6 +62,70 @@
             FontSize="18"
             FontWeight="Bold"
             Style="{StaticResource TextBodyNormal}"
+            Text="Direct Text" />
+        <TextBlock
+            Margin="0,0,0,8"
+            Style="{StaticResource TextBodyNormal}"
+            TextWrapping="Wrap">
+            When the Direct Text language is selected, Text Grab will try to read native accessibility text from live application controls before falling back to OCR.
+        </TextBlock>
+        <ui:ToggleSwitch
+            x:Name="UiAutomationEnabledToggle"
+            Checked="UiAutomationEnabledToggle_Checked"
+            Unchecked="UiAutomationEnabledToggle_Checked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Show Direct Text as a language option
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <ui:ToggleSwitch
+            x:Name="UiAutomationFallbackToggle"
+            Margin="0,8,0,0"
+            Checked="UiAutomationFallbackToggle_Checked"
+            Unchecked="UiAutomationFallbackToggle_Checked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Fall back to OCR when UI Automation returns no text
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <ui:ToggleSwitch
+            x:Name="UiAutomationPreferFocusedToggle"
+            Margin="0,8,0,0"
+            Checked="UiAutomationPreferFocusedToggle_Checked"
+            Unchecked="UiAutomationPreferFocusedToggle_Checked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Prefer the focused UI element before scanning the rest of the window
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <ui:ToggleSwitch
+            x:Name="UiAutomationIncludeOffscreenToggle"
+            Margin="0,8,0,0"
+            Checked="UiAutomationIncludeOffscreenToggle_Checked"
+            Unchecked="UiAutomationIncludeOffscreenToggle_Checked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Include offscreen Direct Text elements
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
+            <TextBlock
+                Margin="0,0,12,0"
+                VerticalAlignment="Center"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Traversal mode" />
+            <ComboBox
+                x:Name="UiAutomationTraversalModeComboBox"
+                Width="180"
+                SelectionChanged="UiAutomationTraversalModeComboBox_SelectionChanged" />
+        </StackPanel>
+        <TextBlock
+            Margin="0,4,0,0"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Fast focuses on the closest useful elements, Balanced scans the visible subtree, and Thorough walks deeper through the automation tree."
+            TextWrapping="Wrap" />
+
+        <TextBlock
+            Margin="0,24,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
             Text="Windows Installed Languages" />
         <!--  auto pull and parse which Windows Languages are installed  -->
         <ui:HyperlinkButton
