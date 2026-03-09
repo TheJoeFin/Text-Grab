@@ -1,7 +1,10 @@
 ﻿using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Text_Grab.Interfaces;
+using Text_Grab.Models;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls;
@@ -33,10 +36,24 @@ public partial class LanguagePicker : UserControl
 
         ILanguage currentSelectedLanguage = LanguageUtilities.GetOCRLanguage();
 
+        // get current keyboard language
+        CultureInfo keyboardLanguage = InputLanguageManager.Current.CurrentInputLanguage;
+
+        // The challenge here is that UI Automation and Windows AI support any langauage
+        // since this picker will set the spell checker language and stuff like that
+        // it needs to represent real languages and not just OCR engine target languages
+        // As new models are supported they will need to be caught and filtered here too
+
+        if (currentSelectedLanguage is UiAutomationLang or WindowsAiLang)
+            currentSelectedLanguage = new GlobalLang(keyboardLanguage.Name);
+
         int selectedIndex = 0;
         int i = 0;
         foreach (ILanguage langFromUtil in LanguageUtilities.GetAllLanguages())
         {
+            if (langFromUtil is UiAutomationLang or WindowsAiLang)
+                continue;
+
             Languages.Add(langFromUtil);
             if (langFromUtil.LanguageTag == currentSelectedLanguage.LanguageTag)
                 selectedIndex = i;

@@ -5,7 +5,7 @@ namespace Text_Grab.Models;
 
 public class UiAutomationLang : ILanguage
 {
-    public const string Tag = "UIAutomation";
+    public const string Tag = "Direct-Txt";
 
     public string AbbreviatedName => "DT";
 
