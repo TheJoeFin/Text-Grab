@@ -299,12 +299,9 @@ public partial class GrabFrame : Window
         GrabFrameImage.Source = frameContentImageSource;
         FreezeGrabFrame();
 
-        List<WordBorderInfo>? wbInfoList = null;
+        List<WordBorderInfo> wbInfoList = await Singleton<HistoryService>.Instance.GetWordBorderInfosAsync(history);
 
-        if (!string.IsNullOrWhiteSpace(history.WordBorderInfoJson))
-            wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson);
-
-        if (wbInfoList is not { Count: > 0 })
+        if (wbInfoList.Count < 1)
             NotifyIfUiAutomationNeedsLiveSource(currentLanguage);
 
         if (history.PositionRect != Rect.Empty)
@@ -325,7 +322,7 @@ public partial class GrabFrame : Window
             }
         }
 
-        if (wbInfoList is not null && wbInfoList.Count > 0)
+        if (wbInfoList.Count > 0)
         {
             ScaleHistoryWordBordersToCanvas(history, wbInfoList);
 
@@ -352,6 +349,7 @@ public partial class GrabFrame : Window
         TableToggleButton.IsChecked = history.IsTable;
 
         UpdateFrameText();
+        history.ClearTransientImage();
     }
 
     private Size GetGrabFrameNonContentSize()
@@ -621,17 +619,20 @@ public partial class GrabFrame : Window
         foreach (WordBorder wb in wordBorders)
             wbInfoList.Add(new WordBorderInfo(wb));
 
-        string wbInfoJson;
-        try
+        string? wbInfoJson = null;
+        if (wbInfoList.Count > 0)
         {
-            wbInfoJson = JsonSerializer.Serialize(wbInfoList);
-        }
-        catch
-        {
-            wbInfoJson = string.Empty;
+            try
+            {
+                wbInfoJson = JsonSerializer.Serialize(wbInfoList);
+            }
+            catch
+            {
+                wbInfoJson = null;
 #if DEBUG
-            throw;
+                throw;
 #endif
+            }
         }
 
         Rect sizePosRect = new()
@@ -654,6 +655,7 @@ public partial class GrabFrame : Window
             CaptureDateTime = DateTimeOffset.UtcNow,
             TextContent = FrameText,
             WordBorderInfoJson = wbInfoJson,
+            WordBorderInfoFileName = wbInfoJson is null ? null : historyItem?.WordBorderInfoFileName,
             ImageContent = bitmap,
             PositionRect = sizePosRect,
             IsTable = TableToggleButton.IsChecked!.Value,
@@ -1907,6 +1909,8 @@ public partial class GrabFrame : Window
         if (ShouldSaveOnClose)
             Singleton<HistoryService>.Instance.SaveToHistory(this);
 
+        historyItem?.ClearTransientImage();
+
         FrameText = "";
         wordBorders.Clear();
         UpdateFrameText();
@@ -2900,19 +2904,7 @@ new GrabFrameOperationArgs()
         MatchCollection matches = TemplatePattern().Matches(outputTemplate);
         Dictionary<string, TemplatePatternMatch> uniquePatterns = new(StringComparer.OrdinalIgnoreCase);
 
-        // Load saved patterns for ID resolution
-        StoredRegex[] savedPatterns;
-        try
-        {
-            string json = Settings.Default.RegexList;
-            savedPatterns = string.IsNullOrWhiteSpace(json)
-                ? StoredRegex.GetDefaultPatterns()
-                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
-        }
-        catch
-        {
-            savedPatterns = StoredRegex.GetDefaultPatterns();
-        }
+        StoredRegex[] savedPatterns = LoadSavedPatterns();
 
         foreach (Match match in matches)
         {
@@ -3013,18 +3005,7 @@ new GrabFrameOperationArgs()
 
     private static List<InlinePickerItem> LoadPatternPickerItems()
     {
-        StoredRegex[] patterns;
-        try
-        {
-            string json = Settings.Default.RegexList;
-            patterns = string.IsNullOrWhiteSpace(json)
-                ? StoredRegex.GetDefaultPatterns()
-                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
-        }
-        catch
-        {
-            patterns = StoredRegex.GetDefaultPatterns();
-        }
+        StoredRegex[] patterns = LoadSavedPatterns();
 
         return [.. patterns.Select(p =>
             new InlinePickerItem(p.Name, $"{{p:{p.Name}:first}}", "Patterns"))];
@@ -3033,18 +3014,7 @@ new GrabFrameOperationArgs()
     private TemplatePatternMatch? OnPatternItemSelected(InlinePickerItem item)
     {
         // Extract pattern ID by looking up the name
-        StoredRegex[] patterns;
-        try
-        {
-            string json = Settings.Default.RegexList;
-            patterns = string.IsNullOrWhiteSpace(json)
-                ? StoredRegex.GetDefaultPatterns()
-                : JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
-        }
-        catch
-        {
-            patterns = StoredRegex.GetDefaultPatterns();
-        }
+        StoredRegex[] patterns = LoadSavedPatterns();
 
         StoredRegex? storedRegex = patterns.FirstOrDefault(
             p => p.Name.Equals(item.DisplayName, StringComparison.OrdinalIgnoreCase));
@@ -3059,6 +3029,12 @@ new GrabFrameOperationArgs()
 
         bool? dialogResult = dialog.ShowDialog();
         return dialogResult == true ? dialog.Result : null;
+    }
+
+    private static StoredRegex[] LoadSavedPatterns()
+    {
+        StoredRegex[] patterns = AppUtilities.TextGrabSettingsService.LoadStoredRegexes();
+        return patterns.Length == 0 ? StoredRegex.GetDefaultPatterns() : patterns;
     }
 
     private void TableToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
