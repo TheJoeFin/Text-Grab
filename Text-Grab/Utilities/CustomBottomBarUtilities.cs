@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -15,23 +14,14 @@ namespace Text_Grab.Utilities;
 
 public class CustomBottomBarUtilities
 {
-    private static readonly JsonSerializerOptions ButtonInfoJsonOptions = new();
     private static readonly Dictionary<Type, List<MethodInfo>> _methodCache = [];
     private static readonly Lock _methodCacheLock = new();
     private static readonly BrushConverter BrushConverter = new();
 
     public static List<ButtonInfo> GetCustomBottomBarItemsSetting()
     {
-        string json = AppUtilities.TextGrabSettings.BottomButtonsJson;
-
-        if (string.IsNullOrWhiteSpace(json))
-            return ButtonInfo.DefaultButtonList;
-
-        List<ButtonInfo>? customBottomBarItems = [];
-
-        customBottomBarItems = JsonSerializer.Deserialize<List<ButtonInfo>>(json, ButtonInfoJsonOptions);
-
-        if (customBottomBarItems is null || customBottomBarItems.Count == 0)
+        List<ButtonInfo> customBottomBarItems = AppUtilities.TextGrabSettingsService.LoadBottomBarButtons();
+        if (customBottomBarItems.Count == 0)
             return ButtonInfo.DefaultButtonList;
 
         // SymbolIcon is not serialized (marked with [JsonIgnore]), so reconstruct it from ButtonText
@@ -58,9 +48,7 @@ public class CustomBottomBarUtilities
 
     public static void SaveCustomBottomBarItemsSetting(List<ButtonInfo> bottomBarButtons)
     {
-        string json = JsonSerializer.Serialize(bottomBarButtons, ButtonInfoJsonOptions);
-        AppUtilities.TextGrabSettings.BottomButtonsJson = json;
-        AppUtilities.TextGrabSettings.Save();
+        AppUtilities.TextGrabSettingsService.SaveBottomBarButtons(bottomBarButtons);
     }
 
     public static List<CollapsibleButton> GetBottomBarButtons(EditTextWindow editTextWindow)

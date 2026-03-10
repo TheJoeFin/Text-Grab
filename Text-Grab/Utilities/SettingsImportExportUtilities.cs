@@ -107,6 +107,7 @@ public static class SettingsImportExportUtilities
     private static async Task ExportSettingsToJsonAsync(string filePath)
     {
         Settings settings = AppUtilities.TextGrabSettings;
+        SettingsService settingsService = AppUtilities.TextGrabSettingsService;
         Dictionary<string, object?> settingsDict = new();
 
         // Iterate through all settings properties using reflection
@@ -114,6 +115,9 @@ public static class SettingsImportExportUtilities
         {
             string propertyName = property.Name;
             object? value = settings[propertyName];
+            if (SettingsService.IsManagedJsonSetting(propertyName))
+                value = settingsService.GetManagedJsonSettingValueForExport(propertyName);
+
             settingsDict[propertyName] = value;
         }
 
@@ -212,13 +216,21 @@ public static class SettingsImportExportUtilities
             string historyDestDir = Path.Combine(tempDir, HistoryFolderName);
             Directory.CreateDirectory(historyDestDir);
 
-            // Copy all .bmp files from history directory
-            string[] imageFiles = Directory.GetFiles(historyBasePath, "*.bmp");
-            foreach (string imageFile in imageFiles)
+            string[] historyArtifactFiles = Directory
+                .GetFiles(historyBasePath)
+                .Where(filePath =>
+                {
+                    string fileName = Path.GetFileName(filePath);
+                    return !fileName.Equals(HistoryTextOnlyFileName, StringComparison.OrdinalIgnoreCase)
+                        && !fileName.Equals(HistoryWithImageFileName, StringComparison.OrdinalIgnoreCase);
+                })
+                .ToArray();
+
+            foreach (string historyFile in historyArtifactFiles)
             {
-                string fileName = Path.GetFileName(imageFile);
+                string fileName = Path.GetFileName(historyFile);
                 string destPath = Path.Combine(historyDestDir, fileName);
-                File.Copy(imageFile, destPath, true);
+                File.Copy(historyFile, destPath, true);
             }
         }
     }
@@ -249,12 +261,12 @@ public static class SettingsImportExportUtilities
         string historySourceDir = Path.Combine(tempDir, HistoryFolderName);
         if (Directory.Exists(historySourceDir))
         {
-            string[] imageFiles = Directory.GetFiles(historySourceDir, "*.bmp");
-            foreach (string imageFile in imageFiles)
+            string[] historyArtifactFiles = Directory.GetFiles(historySourceDir);
+            foreach (string historyFile in historyArtifactFiles)
             {
-                string fileName = Path.GetFileName(imageFile);
+                string fileName = Path.GetFileName(historyFile);
                 string destPath = Path.Combine(historyBasePath, fileName);
-                File.Copy(imageFile, destPath, true);
+                File.Copy(historyFile, destPath, true);
             }
         }
 

@@ -347,8 +347,6 @@ public partial class App : System.Windows.Application
         // Register COM server and activator type
         bool handledArgument = false;
 
-        await Singleton<HistoryService>.Instance.LoadHistories();
-
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
             LaunchFromToast(toastArgs);

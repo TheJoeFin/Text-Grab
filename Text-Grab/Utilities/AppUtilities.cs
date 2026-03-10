@@ -19,7 +19,9 @@ internal class AppUtilities
         }
     }
 
-    internal static Settings TextGrabSettings => Singleton<SettingsService>.Instance.ClassicSettings;
+    internal static SettingsService TextGrabSettingsService => Singleton<SettingsService>.Instance;
+
+    internal static Settings TextGrabSettings => TextGrabSettingsService.ClassicSettings;
 
     internal static string GetAppVersion()
     {
