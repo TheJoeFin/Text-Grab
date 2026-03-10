@@ -374,26 +374,53 @@ public class HistoryService
 
         if (!string.IsNullOrWhiteSpace(history.WordBorderInfoFileName))
         {
-            string historyBasePath = await FileUtilities.GetPathToHistory();
-            string wordBorderInfoPath = Path.Combine(historyBasePath, history.WordBorderInfoFileName);
+            // Sanitize the persisted file name to prevent path traversal outside the history directory
+            string sanitizedFileName = Path.GetFileName(history.WordBorderInfoFileName);
 
-            if (File.Exists(wordBorderInfoPath))
+            if (!string.IsNullOrWhiteSpace(sanitizedFileName)
+                && string.Equals(Path.GetExtension(sanitizedFileName), ".json", StringComparison.OrdinalIgnoreCase))
             {
-                await using FileStream wordBorderInfoStream = File.OpenRead(wordBorderInfoPath);
-                List<WordBorderInfo>? wordBorderInfos =
-                    await JsonSerializer.DeserializeAsync<List<WordBorderInfo>>(wordBorderInfoStream, HistoryJsonOptions);
+                try
+                {
+                    string historyBasePath = await FileUtilities.GetPathToHistory();
+                    string wordBorderInfoPath = Path.Combine(historyBasePath, sanitizedFileName);
 
-                return wordBorderInfos ?? [];
+                    if (File.Exists(wordBorderInfoPath))
+                    {
+                        await using FileStream wordBorderInfoStream = File.OpenRead(wordBorderInfoPath);
+                        List<WordBorderInfo>? wordBorderInfos =
+                            await JsonSerializer.DeserializeAsync<List<WordBorderInfo>>(wordBorderInfoStream, HistoryJsonOptions);
+
+                        if (wordBorderInfos is not null)
+                            return wordBorderInfos;
+                    }
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"Failed to read word border info file for history item '{history.ID}': {ex}");
+                }
+                catch (JsonException ex)
+                {
+                    Debug.WriteLine($"Failed to deserialize word border info file for history item '{history.ID}': {ex}");
+                }
             }
         }
 
         if (string.IsNullOrWhiteSpace(history.WordBorderInfoJson))
             return [];
 
-        List<WordBorderInfo>? inlineWordBorderInfos =
-            JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson, HistoryJsonOptions);
+        try
+        {
+            List<WordBorderInfo>? inlineWordBorderInfos =
+                JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson, HistoryJsonOptions);
 
-        return inlineWordBorderInfos ?? [];
+            return inlineWordBorderInfos ?? [];
+        }
+        catch (JsonException ex)
+        {
+            Debug.WriteLine($"Failed to deserialize inline word border info for history item '{history.ID}': {ex}");
+            return [];
+        }
     }
 
     public void ReleaseLoadedHistories()
@@ -551,8 +578,21 @@ public class HistoryService
         string historyBasePath = GetHistoryPathBlocking();
         string filePath = Path.Combine(historyBasePath, Path.GetFileName(historyFileName));
 
-        if (File.Exists(filePath))
+        if (!File.Exists(filePath))
+            return;
+
+        try
+        {
             File.Delete(filePath);
+        }
+        catch (IOException ex)
+        {
+            Debug.WriteLine($"Failed to delete history file '{filePath}': {ex}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Debug.WriteLine($"Access denied when deleting history file '{filePath}': {ex}");
+        }
     }
 
     private void DeleteUnusedWordBorderFiles(IEnumerable<HistoryInfo> historyItems)
@@ -574,7 +614,20 @@ public class HistoryService
             string fileName = Path.GetFileName(wordBorderInfoFile);
 
             if (!expectedFileNames.Contains(fileName))
-                File.Delete(wordBorderInfoFile);
+            {
+                try
+                {
+                    File.Delete(wordBorderInfoFile);
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"Failed to delete word border info file '{wordBorderInfoFile}': {ex}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Debug.WriteLine($"Access denied when deleting word border info file '{wordBorderInfoFile}': {ex}");
+                }
+            }
         }
     }
 
