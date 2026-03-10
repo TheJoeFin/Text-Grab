@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Models;
@@ -79,11 +78,8 @@ public record WebSearchUrlModel
 
     public static List<WebSearchUrlModel> GetWebSearchUrls()
     {
-        string json = AppUtilities.TextGrabSettings.WebSearchItemsJson;
-        if (string.IsNullOrWhiteSpace(json))
-            return GetDefaultWebSearchUrls();
-        List<WebSearchUrlModel>? webSearchUrls = JsonSerializer.Deserialize<List<WebSearchUrlModel>>(json);
-        if (webSearchUrls is null || webSearchUrls.Count == 0)
+        List<WebSearchUrlModel> webSearchUrls = AppUtilities.TextGrabSettingsService.LoadWebSearchUrls();
+        if (webSearchUrls.Count == 0)
             return GetDefaultWebSearchUrls();
 
         return webSearchUrls;
@@ -91,8 +87,6 @@ public record WebSearchUrlModel
 
     public static void SaveWebSearchUrls(List<WebSearchUrlModel> webSearchUrls)
     {
-        string json = JsonSerializer.Serialize(webSearchUrls);
-        AppUtilities.TextGrabSettings.WebSearchItemsJson = json;
-        AppUtilities.TextGrabSettings.Save();
+        AppUtilities.TextGrabSettingsService.SaveWebSearchUrls(webSearchUrls);
     }
 }

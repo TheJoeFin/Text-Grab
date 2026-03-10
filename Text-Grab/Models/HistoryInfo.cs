@@ -85,13 +85,28 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public string TextContent { get; set; } = string.Empty;
 
-    public string WordBorderInfoJson { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? WordBorderInfoJson { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? WordBorderInfoFileName { get; set; }
 
     public string RectAsString { get; set; } = string.Empty;
 
     #endregion Properties
 
     #region Public Methods
+
+    public void ClearTransientImage()
+    {
+        ImageContent?.Dispose();
+        ImageContent = null;
+    }
+
+    public void ClearTransientWordBorderData()
+    {
+        WordBorderInfoJson = null;
+    }
 
     public static bool operator !=(HistoryInfo? left, HistoryInfo? right)
     {
