@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Windows.Input;
 using Text_Grab.Models;
 
@@ -11,34 +10,18 @@ internal class ShortcutKeysUtilities
 {
     public static void SaveShortcutKeySetSettings(IEnumerable<ShortcutKeySet> shortcutKeySets)
     {
-        string json = JsonSerializer.Serialize(shortcutKeySets);
-
-        // save the json string to the settings
-        AppUtilities.TextGrabSettings.ShortcutKeySets = json;
-
-        // save the settings
-        AppUtilities.TextGrabSettings.Save();
+        AppUtilities.TextGrabSettingsService.SaveShortcutKeySets(shortcutKeySets);
     }
 
     public static IEnumerable<ShortcutKeySet> GetShortcutKeySetsFromSettings()
     {
-        string json = AppUtilities.TextGrabSettings.ShortcutKeySets;
-
         List<ShortcutKeySet> defaultKeys = ShortcutKeySet.DefaultShortcutKeySets;
+        List<ShortcutKeySet> shortcutKeySets = AppUtilities.TextGrabSettingsService.LoadShortcutKeySets();
 
-        if (string.IsNullOrWhiteSpace(json))
+        if (shortcutKeySets.Count == 0)
             return ParseFromPreviousAndDefaultsSettings();
 
-        // create a list of custom bottom bar items
-        List<ShortcutKeySet>? shortcutKeySets = new();
-
-        // deserialize the json string into a list of custom bottom bar items
-        shortcutKeySets = JsonSerializer.Deserialize<List<ShortcutKeySet>>(json);
-
         // return the list of custom bottom bar items
-        if (shortcutKeySets is null || shortcutKeySets.Count == 0)
-            return defaultKeys;
-
         List<ShortcutKeyActions> actionsList = shortcutKeySets.Select(x => x.Action).ToList();
         return shortcutKeySets.Concat(defaultKeys.Where(x => !actionsList.Contains(x.Action)).ToList()).ToList();
     }

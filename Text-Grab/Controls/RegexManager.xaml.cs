@@ -1,12 +1,10 @@
-﻿using Humanizer;
+using Humanizer;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using Text_Grab.Models;
-using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
 
@@ -14,8 +12,6 @@ namespace Text_Grab.Controls;
 
 public partial class RegexManager : FluentWindow
 {
-    private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
-
     public EditTextWindow? SourceEditTextWindow;
     private ObservableCollection<StoredRegex> RegexPatterns { get; set; } = [];
 
@@ -33,26 +29,9 @@ public partial class RegexManager : FluentWindow
     private void LoadRegexPatterns()
     {
         RegexPatterns.Clear();
-
-        // Load from settings
-        string regexListJson = DefaultSettings.RegexList;
-
-        if (!string.IsNullOrWhiteSpace(regexListJson))
-        {
-            try
-            {
-                StoredRegex[]? loadedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
-                if (loadedPatterns is not null)
-                {
-                    foreach (StoredRegex pattern in loadedPatterns)
-                        RegexPatterns.Add(pattern);
-                }
-            }
-            catch (JsonException)
-            {
-                // If deserialization fails, start fresh
-            }
-        }
+        StoredRegex[] loadedPatterns = AppUtilities.TextGrabSettingsService.LoadStoredRegexes();
+        foreach (StoredRegex pattern in loadedPatterns)
+            RegexPatterns.Add(pattern);
 
         // Add default patterns if list is empty
         if (RegexPatterns.Count == 0)
@@ -66,16 +45,7 @@ public partial class RegexManager : FluentWindow
 
     private void SaveRegexPatterns()
     {
-        try
-        {
-            string json = JsonSerializer.Serialize(RegexPatterns.ToArray());
-            DefaultSettings.RegexList = json;
-            DefaultSettings.Save();
-        }
-        catch (Exception)
-        {
-            // Handle save error silently or show message
-        }
+        AppUtilities.TextGrabSettingsService.SaveStoredRegexes(RegexPatterns);
     }
 
     private void RegexDataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

@@ -620,27 +620,12 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (string.IsNullOrWhiteSpace(pattern))
             return false;
 
-        try
-        {
-            Settings settings = AppUtilities.TextGrabSettings;
-            string regexListJson = settings.RegexList;
-
-            if (string.IsNullOrWhiteSpace(regexListJson))
-                return false;
-
-            StoredRegex[]? savedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
-
-            if (savedPatterns is null || savedPatterns.Length == 0)
-                return false;
-
-            // Check if any saved pattern matches the current pattern exactly
-            return savedPatterns.Any(p => p.Pattern == pattern);
-        }
-        catch (Exception)
-        {
-            // If there's any error loading patterns, assume it's not saved
+        StoredRegex[] savedPatterns = AppUtilities.TextGrabSettingsService.LoadStoredRegexes();
+        if (savedPatterns.Length == 0)
             return false;
-        }
+
+        // Check if any saved pattern matches the current pattern exactly
+        return savedPatterns.Any(p => p.Pattern == pattern);
     }
 
     internal void FindByPattern(ExtractedPattern pattern, int? precisionLevel = null)

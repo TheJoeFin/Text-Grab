@@ -24,6 +24,9 @@ public class HistoryService
 
     private static readonly int maxHistoryTextOnly = 100;
     private static readonly int maxHistoryWithImages = 10;
+    private const string WordBorderInfoFileSuffix = ".wordborders.json";
+    private static readonly TimeSpan historyCacheCheckInterval = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan historyCacheIdleLifetime = TimeSpan.FromMinutes(2);
     private static readonly JsonSerializerOptions HistoryJsonOptions = new()
     {
         AllowTrailingCommas = true,
@@ -33,7 +36,12 @@ public class HistoryService
     private List<HistoryInfo> HistoryTextOnly = [];
     private List<HistoryInfo> HistoryWithImage = [];
     private readonly DispatcherTimer saveTimer = new();
+    private readonly DispatcherTimer historyCacheReleaseTimer = new();
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private bool _textHistoryLoaded;
+    private bool _imageHistoryLoaded;
+    private bool _hasPendingWrite;
+    private DateTimeOffset _lastHistoryAccessUtc = DateTimeOffset.MinValue;
     #endregion Fields
 
     #region Constructors
@@ -42,6 +50,9 @@ public class HistoryService
     {
         saveTimer.Interval = new(0, 0, 0, 0, 500);
         saveTimer.Tick += SaveTimer_Tick;
+
+        historyCacheReleaseTimer.Interval = historyCacheCheckInterval;
+        historyCacheReleaseTimer.Tick += HistoryCacheReleaseTimer_Tick;
     }
 
     #endregion Constructors
@@ -57,49 +68,47 @@ public class HistoryService
 
     public void CacheLastBitmap(Bitmap bmp)
     {
-        if (_cachedBitmapHandle is nint bmpH)
-        {
-            NativeMethods.DeleteObject(bmpH);
-            _cachedBitmapHandle = null;
-        }
-
-        CachedBitmap?.Dispose();
+        DisposeCachedBitmap();
         CachedBitmap = bmp;
         _cachedBitmapHandle = bmp.GetHbitmap();
     }
 
     public void DeleteHistory()
     {
-        HistoryWithImage.Clear();
-        HistoryTextOnly.Clear();
-
-        if (_cachedBitmapHandle is nint bmpH)
-        {
-            NativeMethods.DeleteObject(bmpH);
-            CachedBitmap = null;
-            _cachedBitmapHandle = null;
-        }
+        saveTimer.Stop();
+        historyCacheReleaseTimer.Stop();
+        _hasPendingWrite = false;
+        ReleaseLoadedHistoriesCore();
+        DisposeCachedBitmap();
 
         FileUtilities.TryDeleteHistoryDirectory();
     }
 
     public List<HistoryInfo> GetEditWindows()
     {
-        return HistoryTextOnly;
+        EnsureTextHistoryLoaded();
+        TouchHistoryCache();
+        return [.. HistoryTextOnly];
     }
 
     public HistoryInfo? GetLastFullScreenGrabInfo()
     {
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
         return HistoryWithImage.Where(h => h.SourceMode == TextGrabMode.Fullscreen).LastOrDefault();
     }
 
     public bool HasAnyFullscreenHistory()
     {
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
         return HistoryWithImage.Any(h => h.SourceMode == TextGrabMode.Fullscreen);
     }
 
     public bool GetLastHistoryAsGrabFrame()
     {
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
         HistoryInfo? lastHistoryItem = HistoryWithImage.LastOrDefault();
 
         if (lastHistoryItem is not HistoryInfo historyInfo)
@@ -114,6 +123,8 @@ public class HistoryService
 
     public string GetLastTextHistory()
     {
+        EnsureTextHistoryLoaded();
+        TouchHistoryCache();
         HistoryInfo? lastHistoryItem = HistoryTextOnly.LastOrDefault();
 
         if (lastHistoryItem is not HistoryInfo historyInfo)
@@ -124,18 +135,37 @@ public class HistoryService
 
     public List<HistoryInfo> GetRecentGrabs()
     {
-        return HistoryWithImage;
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
+        return [.. HistoryWithImage];
     }
 
     public bool HasAnyHistoryWithImages()
     {
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
         return HistoryWithImage.Count > 0;
     }
 
     public async Task LoadHistories()
     {
-        HistoryTextOnly = await LoadHistory(nameof(HistoryTextOnly));
-        HistoryWithImage = await LoadHistory(nameof(HistoryWithImage));
+        saveTimer.Stop();
+        historyCacheReleaseTimer.Stop();
+        _hasPendingWrite = false;
+        ReleaseLoadedHistoriesCore();
+
+        HistoryTextOnly = await LoadHistoryAsync(nameof(HistoryTextOnly));
+        _textHistoryLoaded = true;
+        NormalizeHistoryIds(HistoryTextOnly);
+
+        HistoryWithImage = await LoadHistoryAsync(nameof(HistoryWithImage));
+        _imageHistoryLoaded = true;
+        NormalizeHistoryIds(HistoryWithImage);
+
+        if (MigrateWordBorderDataToSidecarFiles(HistoryWithImage))
+            MarkHistoryDirty();
+
+        TouchHistoryCache();
     }
 
     public async Task PopulateMenuItemWithRecentGrabs(MenuItem recentGrabsMenuItem)
@@ -160,9 +190,18 @@ public class HistoryService
                 continue;
 
             MenuItem menuItem = new();
+            string historyId = history.ID;
             menuItem.Click += (object sender, RoutedEventArgs args) =>
             {
-                GrabFrame grabFrame = new(history);
+                HistoryInfo? selectedHistory = GetImageHistoryById(historyId);
+
+                if (selectedHistory is null)
+                {
+                    menuItem.IsEnabled = false;
+                    return;
+                }
+
+                GrabFrame grabFrame = new(selectedHistory);
                 try { grabFrame.Show(); }
                 catch { menuItem.IsEnabled = false; }
             };
@@ -177,6 +216,8 @@ public class HistoryService
         if (!DefaultSettings.UseHistory)
             return;
 
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
         HistoryInfo historyInfo = grabFrameToSave.AsHistoryItem();
         string imgRandomName = Guid.NewGuid().ToString();
         HistoryInfo? prevHistory = string.IsNullOrEmpty(historyInfo.ID)
@@ -196,18 +237,22 @@ public class HistoryService
                 ? $"{imgRandomName}.bmp"
                 : prevHistory.ImagePath;
             HistoryWithImage.Remove(prevHistory);
+            prevHistory.ClearTransientImage();
+            prevHistory.ClearTransientWordBorderData();
         }
 
         if (string.IsNullOrEmpty(historyInfo.ID))
             historyInfo.ID = Guid.NewGuid().ToString();
 
+        PersistWordBorderData(historyInfo);
+
         if (historyInfo.ImageContent is not null && !string.IsNullOrWhiteSpace(historyInfo.ImagePath))
             FileUtilities.SaveImageFile(historyInfo.ImageContent, historyInfo.ImagePath, FileStorageKind.WithHistory);
 
+        historyInfo.ClearTransientImage();
         HistoryWithImage.Add(historyInfo);
 
-        saveTimer.Stop();
-        saveTimer.Start();
+        MarkHistoryDirty();
     }
 
     public void SaveToHistory(HistoryInfo infoFromFullscreenGrab)
@@ -215,23 +260,25 @@ public class HistoryService
         if (!DefaultSettings.UseHistory || infoFromFullscreenGrab.ImageContent is null)
             return;
 
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
+
+        if (string.IsNullOrWhiteSpace(infoFromFullscreenGrab.ID))
+            infoFromFullscreenGrab.ID = Guid.NewGuid().ToString();
+
         string imgRandomName = Guid.NewGuid().ToString();
 
         FileUtilities.SaveImageFile(infoFromFullscreenGrab.ImageContent, $"{imgRandomName}.bmp", FileStorageKind.WithHistory);
 
         infoFromFullscreenGrab.ImagePath = $"{imgRandomName}.bmp";
 
+        PersistWordBorderData(infoFromFullscreenGrab);
+        infoFromFullscreenGrab.ClearTransientImage();
         HistoryWithImage.Add(infoFromFullscreenGrab);
 
-        if (_cachedBitmapHandle is nint bmpH)
-        {
-            NativeMethods.DeleteObject(bmpH);
-            CachedBitmap = null;
-            _cachedBitmapHandle = null;
-        }
+        DisposeCachedBitmap();
 
-        saveTimer.Stop();
-        saveTimer.Start();
+        MarkHistoryDirty();
     }
 
     public void SaveToHistory(EditTextWindow etwToSave)
@@ -239,6 +286,8 @@ public class HistoryService
         if (!DefaultSettings.UseHistory)
             return;
 
+        EnsureTextHistoryLoaded();
+        TouchHistoryCache();
         HistoryInfo historyInfo = etwToSave.AsHistoryItem();
 
         foreach (HistoryInfo inHistoryItem in HistoryTextOnly)
@@ -249,49 +298,144 @@ public class HistoryService
             if (inHistoryItem.TextContent == historyInfo.TextContent)
             {
                 inHistoryItem.CaptureDateTime = DateTimeOffset.Now;
+                MarkHistoryDirty();
                 return;
             }
         }
 
         HistoryTextOnly.Add(historyInfo);
 
-        saveTimer.Stop();
-        saveTimer.Start();
+        MarkHistoryDirty();
     }
 
     public void WriteHistory()
     {
-        if (HistoryTextOnly.Count > 0)
+        if (!_hasPendingWrite)
+            return;
+
+        if (_textHistoryLoaded)
             WriteHistoryFiles(HistoryTextOnly, nameof(HistoryTextOnly), maxHistoryTextOnly);
 
-        if (HistoryWithImage.Count > 0)
+        if (_imageHistoryLoaded)
         {
             ClearOldImages();
+            PersistWordBorderData(HistoryWithImage);
             WriteHistoryFiles(HistoryWithImage, nameof(HistoryWithImage), maxHistoryWithImages);
+            DeleteUnusedWordBorderFiles(HistoryWithImage);
         }
+
+        _hasPendingWrite = false;
     }
 
     public void RemoveTextHistoryItem(HistoryInfo historyItem)
     {
+        EnsureTextHistoryLoaded();
+        TouchHistoryCache();
         HistoryTextOnly.Remove(historyItem);
 
-        saveTimer.Stop();
-        saveTimer.Start();
+        MarkHistoryDirty();
     }
 
     public void RemoveImageHistoryItem(HistoryInfo historyItem)
     {
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
         HistoryWithImage.Remove(historyItem);
+        historyItem.ClearTransientImage();
+        historyItem.ClearTransientWordBorderData();
+        DeleteHistoryArtifacts(historyItem);
 
-        saveTimer.Stop();
-        saveTimer.Start();
+        MarkHistoryDirty();
+    }
+
+    public HistoryInfo? GetImageHistoryById(string historyId)
+    {
+        if (string.IsNullOrWhiteSpace(historyId))
+            return null;
+
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
+        return HistoryWithImage.FirstOrDefault(history => history.ID == historyId);
+    }
+
+    public HistoryInfo? GetTextHistoryById(string historyId)
+    {
+        if (string.IsNullOrWhiteSpace(historyId))
+            return null;
+
+        EnsureTextHistoryLoaded();
+        TouchHistoryCache();
+        return HistoryTextOnly.FirstOrDefault(history => history.ID == historyId);
+    }
+
+    public async Task<List<WordBorderInfo>> GetWordBorderInfosAsync(HistoryInfo history)
+    {
+        TouchHistoryCache();
+
+        if (!string.IsNullOrWhiteSpace(history.WordBorderInfoFileName))
+        {
+            // Sanitize the persisted file name to prevent path traversal outside the history directory
+            string sanitizedFileName = Path.GetFileName(history.WordBorderInfoFileName);
+
+            if (!string.IsNullOrWhiteSpace(sanitizedFileName)
+                && string.Equals(Path.GetExtension(sanitizedFileName), ".json", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    string historyBasePath = await FileUtilities.GetPathToHistory();
+                    string wordBorderInfoPath = Path.Combine(historyBasePath, sanitizedFileName);
+
+                    if (File.Exists(wordBorderInfoPath))
+                    {
+                        await using FileStream wordBorderInfoStream = File.OpenRead(wordBorderInfoPath);
+                        List<WordBorderInfo>? wordBorderInfos =
+                            await JsonSerializer.DeserializeAsync<List<WordBorderInfo>>(wordBorderInfoStream, HistoryJsonOptions);
+
+                        if (wordBorderInfos is not null)
+                            return wordBorderInfos;
+                    }
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"Failed to read word border info file for history item '{history.ID}': {ex}");
+                }
+                catch (JsonException ex)
+                {
+                    Debug.WriteLine($"Failed to deserialize word border info file for history item '{history.ID}': {ex}");
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(history.WordBorderInfoJson))
+            return [];
+
+        try
+        {
+            List<WordBorderInfo>? inlineWordBorderInfos =
+                JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson, HistoryJsonOptions);
+
+            return inlineWordBorderInfos ?? [];
+        }
+        catch (JsonException ex)
+        {
+            Debug.WriteLine($"Failed to deserialize inline word border info for history item '{history.ID}': {ex}");
+            return [];
+        }
+    }
+
+    public void ReleaseLoadedHistories()
+    {
+        if (_hasPendingWrite)
+            WriteHistory();
+
+        ReleaseLoadedHistoriesCore();
     }
 
     #endregion Public Methods
 
     #region Private Methods
 
-    private static async Task<List<HistoryInfo>> LoadHistory(string fileName)
+    private static async Task<List<HistoryInfo>> LoadHistoryAsync(string fileName)
     {
         string rawText = await FileUtilities.GetTextFileAsync($"{fileName}.json", FileStorageKind.WithHistory);
 
@@ -335,23 +479,256 @@ public class HistoryService
             HistoryWithImage.RemoveAt(0);
 
         foreach (HistoryInfo infoItem in imagesToRemove)
+            DeleteHistoryArtifacts(infoItem);
+
+        ClearTransientHistoryPayloads(imagesToRemove);
+    }
+
+    private void DisposeCachedBitmap()
+    {
+        if (_cachedBitmapHandle is nint bmpH)
         {
-            if (File.Exists(infoItem.ImagePath))
-                File.Delete(infoItem.ImagePath);
+            NativeMethods.DeleteObject(bmpH);
+            _cachedBitmapHandle = null;
         }
+
+        CachedBitmap?.Dispose();
+        CachedBitmap = null;
+    }
+
+    private static void ClearTransientHistoryPayloads(IEnumerable<HistoryInfo> historyItems)
+    {
+        foreach (HistoryInfo historyItem in historyItems)
+        {
+            historyItem.ClearTransientImage();
+            historyItem.ClearTransientWordBorderData();
+        }
+    }
+
+    private void EnsureImageHistoryLoaded()
+    {
+        if (_imageHistoryLoaded)
+            return;
+
+        HistoryWithImage = LoadHistoryBlocking(nameof(HistoryWithImage));
+        _imageHistoryLoaded = true;
+        NormalizeHistoryIds(HistoryWithImage);
+
+        if (MigrateWordBorderDataToSidecarFiles(HistoryWithImage))
+            MarkHistoryDirty();
+    }
+
+    private void EnsureTextHistoryLoaded()
+    {
+        if (_textHistoryLoaded)
+            return;
+
+        HistoryTextOnly = LoadHistoryBlocking(nameof(HistoryTextOnly));
+        _textHistoryLoaded = true;
+        NormalizeHistoryIds(HistoryTextOnly);
+    }
+
+    private void HistoryCacheReleaseTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_hasPendingWrite)
+            return;
+
+        if (_lastHistoryAccessUtc == DateTimeOffset.MinValue)
+            return;
+
+        if (DateTimeOffset.UtcNow - _lastHistoryAccessUtc < historyCacheIdleLifetime)
+            return;
+
+        ReleaseLoadedHistoriesCore();
+    }
+
+    private static List<HistoryInfo> LoadHistoryBlocking(string fileName)
+    {
+        return Task.Run(() => LoadHistoryAsync(fileName)).GetAwaiter().GetResult();
+    }
+
+    private static string GetHistoryPathBlocking()
+    {
+        return Task.Run(async () => await FileUtilities.GetPathToHistory()).GetAwaiter().GetResult();
+    }
+
+    private static string GetWordBorderInfoFileName(string historyId)
+    {
+        return $"{historyId}{WordBorderInfoFileSuffix}";
+    }
+
+    private static bool SaveHistoryTextFileBlocking(string textContent, string fileName)
+    {
+        return Task.Run(async () => await FileUtilities.SaveTextFile(textContent, fileName, FileStorageKind.WithHistory))
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    private void DeleteHistoryArtifacts(HistoryInfo historyItem)
+    {
+        DeleteHistoryFile(historyItem.ImagePath);
+        DeleteHistoryFile(historyItem.WordBorderInfoFileName);
+    }
+
+    private static void DeleteHistoryFile(string? historyFileName)
+    {
+        if (string.IsNullOrWhiteSpace(historyFileName))
+            return;
+
+        string historyBasePath = GetHistoryPathBlocking();
+        string filePath = Path.Combine(historyBasePath, Path.GetFileName(historyFileName));
+
+        if (!File.Exists(filePath))
+            return;
+
+        try
+        {
+            File.Delete(filePath);
+        }
+        catch (IOException ex)
+        {
+            Debug.WriteLine($"Failed to delete history file '{filePath}': {ex}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Debug.WriteLine($"Access denied when deleting history file '{filePath}': {ex}");
+        }
+    }
+
+    private void DeleteUnusedWordBorderFiles(IEnumerable<HistoryInfo> historyItems)
+    {
+        string historyBasePath = GetHistoryPathBlocking();
+
+        if (!Directory.Exists(historyBasePath))
+            return;
+
+        HashSet<string> expectedFileNames = [.. historyItems
+            .Select(historyItem => historyItem.WordBorderInfoFileName)
+            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+            .Select(fileName => Path.GetFileName(fileName!))];
+
+        string[] wordBorderInfoFiles = Directory.GetFiles(historyBasePath, $"*{WordBorderInfoFileSuffix}");
+
+        foreach (string wordBorderInfoFile in wordBorderInfoFiles)
+        {
+            string fileName = Path.GetFileName(wordBorderInfoFile);
+
+            if (!expectedFileNames.Contains(fileName))
+            {
+                try
+                {
+                    File.Delete(wordBorderInfoFile);
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"Failed to delete word border info file '{wordBorderInfoFile}': {ex}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Debug.WriteLine($"Access denied when deleting word border info file '{wordBorderInfoFile}': {ex}");
+                }
+            }
+        }
+    }
+
+    private void MarkHistoryDirty()
+    {
+        _hasPendingWrite = true;
+        TouchHistoryCache();
+        saveTimer.Stop();
+        saveTimer.Start();
+    }
+
+    private bool MigrateWordBorderDataToSidecarFiles(IEnumerable<HistoryInfo> historyItems)
+    {
+        bool migratedAnyWordBorderData = false;
+
+        foreach (HistoryInfo historyItem in historyItems)
+        {
+            if (PersistWordBorderData(historyItem))
+                migratedAnyWordBorderData = true;
+        }
+
+        return migratedAnyWordBorderData;
+    }
+
+    private static void PersistWordBorderData(IEnumerable<HistoryInfo> historyItems)
+    {
+        foreach (HistoryInfo historyItem in historyItems)
+            PersistWordBorderData(historyItem);
+    }
+
+    private static bool PersistWordBorderData(HistoryInfo historyItem)
+    {
+        if (string.IsNullOrWhiteSpace(historyItem.WordBorderInfoJson))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(historyItem.ID))
+            historyItem.ID = Guid.NewGuid().ToString();
+
+        string wordBorderInfoFileName = GetWordBorderInfoFileName(historyItem.ID);
+        bool couldSaveWordBorderInfo = SaveHistoryTextFileBlocking(historyItem.WordBorderInfoJson, wordBorderInfoFileName);
+
+        if (!couldSaveWordBorderInfo)
+        {
+            historyItem.WordBorderInfoFileName = null;
+            return false;
+        }
+
+        historyItem.WordBorderInfoFileName = wordBorderInfoFileName;
+        historyItem.ClearTransientWordBorderData();
+        return true;
+    }
+
+    private void NormalizeHistoryIds(List<HistoryInfo> historyItems)
+    {
+        HashSet<string> seenIds = [];
+        bool updatedAnyIds = false;
+
+        foreach (HistoryInfo historyItem in historyItems)
+        {
+            if (!string.IsNullOrWhiteSpace(historyItem.ID) && seenIds.Add(historyItem.ID))
+                continue;
+
+            string nextId;
+            do
+            {
+                nextId = Guid.NewGuid().ToString();
+            }
+            while (!seenIds.Add(nextId));
+
+            historyItem.ID = nextId;
+            updatedAnyIds = true;
+        }
+
+        if (updatedAnyIds)
+            MarkHistoryDirty();
+    }
+
+    private void ReleaseLoadedHistoriesCore()
+    {
+        ClearTransientHistoryPayloads(HistoryWithImage);
+        HistoryWithImage.Clear();
+        HistoryTextOnly.Clear();
+        _imageHistoryLoaded = false;
+        _textHistoryLoaded = false;
+        _lastHistoryAccessUtc = DateTimeOffset.MinValue;
+        historyCacheReleaseTimer.Stop();
     }
 
     private void SaveTimer_Tick(object? sender, EventArgs e)
     {
         saveTimer.Stop();
         WriteHistory();
+        DisposeCachedBitmap();
+    }
 
-        if (_cachedBitmapHandle is nint bmpH)
-        {
-            NativeMethods.DeleteObject(bmpH);
-            _cachedBitmapHandle = null;
-        }
-        CachedBitmap = null;
+    private void TouchHistoryCache()
+    {
+        _lastHistoryAccessUtc = DateTimeOffset.UtcNow;
+
+        if (_textHistoryLoaded || _imageHistoryLoaded)
+            historyCacheReleaseTimer.Start();
     }
 
     #endregion Private Methods

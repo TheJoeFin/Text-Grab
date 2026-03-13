@@ -282,18 +282,8 @@ public static class GrabTemplateExecutor
 
     private static StoredRegex[] LoadSavedPatterns()
     {
-        try
-        {
-            string json = Properties.Settings.Default.RegexList;
-            if (string.IsNullOrWhiteSpace(json))
-                return StoredRegex.GetDefaultPatterns();
-
-            return JsonSerializer.Deserialize<StoredRegex[]>(json) ?? StoredRegex.GetDefaultPatterns();
-        }
-        catch
-        {
-            return StoredRegex.GetDefaultPatterns();
-        }
+        StoredRegex[] patterns = AppUtilities.TextGrabSettingsService.LoadStoredRegexes();
+        return patterns.Length == 0 ? StoredRegex.GetDefaultPatterns() : patterns;
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

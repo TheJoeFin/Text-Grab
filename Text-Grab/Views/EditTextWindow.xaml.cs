@@ -1295,15 +1295,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         foreach (HistoryInfo history in grabsHistories)
         {
             MenuItem menuItem = new();
+            string historyId = history.ID;
             menuItem.Click += (sender, args) =>
             {
-                if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+                HistoryInfo? selectedHistory = Singleton<HistoryService>.Instance.GetTextHistoryById(historyId);
+
+                if (selectedHistory is null)
                 {
-                    PassedTextControl.Text = history.TextContent;
+                    menuItem.IsEnabled = false;
                     return;
                 }
 
-                EditTextWindow etw = new(history);
+                if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+                {
+                    PassedTextControl.Text = selectedHistory.TextContent;
+                    return;
+                }
+
+                EditTextWindow etw = new(selectedHistory);
                 etw.Show();
             };
 
@@ -3740,26 +3749,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private List<StoredRegex> LoadRegexPatterns()
     {
         List<StoredRegex> returnRegexes = [];
-
-        // Load from settings
-        string regexListJson = DefaultSettings.RegexList;
-
-        if (!string.IsNullOrWhiteSpace(regexListJson))
-        {
-            try
-            {
-                StoredRegex[]? loadedPatterns = JsonSerializer.Deserialize<StoredRegex[]>(regexListJson);
-                if (loadedPatterns is not null)
-                {
-                    foreach (StoredRegex pattern in loadedPatterns)
-                        returnRegexes.Add(pattern);
-                }
-            }
-            catch (JsonException)
-            {
-                // If deserialization fails, start fresh
-            }
-        }
+        returnRegexes.AddRange(AppUtilities.TextGrabSettingsService.LoadStoredRegexes());
 
         // Add default patterns if list is empty
         if (returnRegexes.Count == 0)
