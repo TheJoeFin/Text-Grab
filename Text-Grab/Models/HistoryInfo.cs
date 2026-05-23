@@ -75,6 +75,7 @@ public class HistoryInfo : IEquatable<HistoryInfo>
                 LanguageKind.Global => new GlobalLang(new Language(normalizedLanguageTag)),
                 LanguageKind.Tesseract => new TessLang(normalizedLanguageTag),
                 LanguageKind.WindowsAi => new WindowsAiLang(),
+                LanguageKind.WindowsAiDescription => new WindowsAiDescriptionLang(),
                 LanguageKind.UiAutomation => CaptureLanguageUtilities.GetUiAutomationFallbackLanguage(),
                 _ => new GlobalLang(LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US")),
             };
