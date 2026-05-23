@@ -806,6 +806,18 @@ namespace Text_Grab.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool WindowsAiDescriptionEnabled {
+            get {
+                return ((bool)(this["WindowsAiDescriptionEnabled"]));
+            }
+            set {
+                this["WindowsAiDescriptionEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool EnableFileBackedManagedSettings {
             get {
                 return ((bool)(this["EnableFileBackedManagedSettings"]));
