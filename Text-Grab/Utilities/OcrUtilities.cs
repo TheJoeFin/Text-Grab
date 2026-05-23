@@ -34,6 +34,7 @@ public static partial class OcrUtilities
     private static readonly Regex _cachedSpaceJoiningWordRegex = SpaceJoiningWordRegex();
 
     private static bool IsUiAutomationLanguage(ILanguage language) => language is UiAutomationLang;
+    private static bool IsWindowsAiDescriptionLanguage(ILanguage language) => language is WindowsAiDescriptionLang;
 
     private static ILanguage GetCompatibleOcrLanguage(ILanguage language)
     {
@@ -215,6 +216,9 @@ public static partial class OcrUtilities
         language = GetCompatibleOcrLanguage(language);
         using Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
 
+        if (IsWindowsAiDescriptionLanguage(language))
+            return (await GetOcrResultFromImageAsync(bmp, language), 1.0);
+
         if (language is WindowsAiLang)
         {
             return (await WindowsAiUtilities.GetOcrResultAsync(bmp), 1.0);
@@ -236,6 +240,9 @@ public static partial class OcrUtilities
     {
         language = GetCompatibleOcrLanguage(language);
 
+        if (IsWindowsAiDescriptionLanguage(language))
+            return (await GetOcrResultFromImageAsync(bmp, language), 1.0);
+
         if (language is WindowsAiLang)
             return (await WindowsAiUtilities.GetOcrResultAsync(bmp), 1.0);
 
@@ -251,6 +258,9 @@ public static partial class OcrUtilities
     public static async Task<IOcrLinesWords> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, ILanguage language)
     {
         language = GetCompatibleOcrLanguage(language);
+
+        if (IsWindowsAiDescriptionLanguage(language))
+            return await GetWindowsAiDescriptionOcrResultAsync(scaledBitmap);
 
         if (language is WindowsAiLang winAiLang)
         {
@@ -405,20 +415,34 @@ public static partial class OcrUtilities
         string tempPath = Path.GetTempPath();
         string tempFileName = Path.GetRandomFileName() + ".bmp";
         string tempFilePath = Path.Combine(tempPath, tempFileName);
-        bitmap.Save(tempFilePath, ImageFormat.Bmp);
-
-        string result = await WindowsAiUtilities.GetTextWithWinAI(tempFilePath);
-
-        OcrOutput paragraphsOutput = new()
+        try
         {
-            Kind = OcrOutputKind.Paragraph,
-            RawOutput = result,
-            Language = language,
-            SourceBitmap = bitmap,
-        };
+            bitmap.Save(tempFilePath, ImageFormat.Bmp);
 
-        List<OcrOutput> outputs = [paragraphsOutput];
-        return outputs;
+            string result = await WindowsAiUtilities.GetTextWithWinAI(tempFilePath);
+
+            OcrOutput paragraphsOutput = new()
+            {
+                Kind = OcrOutputKind.Paragraph,
+                RawOutput = result,
+                Language = language,
+                SourceBitmap = bitmap,
+            };
+
+            List<OcrOutput> outputs = [paragraphsOutput];
+            return outputs;
+        }
+        finally
+        {
+            if (File.Exists(tempFilePath))
+                File.Delete(tempFilePath);
+        }
+    }
+
+    public static async Task<List<OcrOutput>> GetTextFromWinAiDescriptionAsync(Bitmap bitmap, WindowsAiDescriptionLang language)
+    {
+        IOcrLinesWords descriptionResult = await GetOcrResultFromImageAsync(bitmap, language);
+        return [GetTextFromOcrResult(language, bitmap, descriptionResult)];
     }
 
     public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, ILanguage language)
@@ -441,6 +465,10 @@ public static partial class OcrUtilities
         else if (language is WindowsAiLang winAiLang)
         {
             outputs.AddRange(await GetTextFromWinAiAsync(bitmap, winAiLang));
+        }
+        else if (language is WindowsAiDescriptionLang windowsAiDescriptionLang)
+        {
+            outputs.AddRange(await GetTextFromWinAiDescriptionAsync(bitmap, windowsAiDescriptionLang));
         }
         else
         {
@@ -702,9 +730,19 @@ public static partial class OcrUtilities
 
     public static async Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, ILanguage selectedLanguage)
     {
+        if (IsWindowsAiDescriptionLanguage(selectedLanguage))
+            return 1.0;
+
         selectedLanguage = GetCompatibleOcrLanguage(selectedLanguage);
         IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
         return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.Height, bitmap.Width);
+    }
+
+    private static async Task<IOcrLinesWords> GetWindowsAiDescriptionOcrResultAsync(SoftwareBitmap softwareBitmap)
+    {
+        string description = await WindowsAiUtilities.GetTextDescriptionWithWinAI(softwareBitmap);
+        Windows.Foundation.Rect fullBounds = new(0, 0, softwareBitmap.PixelWidth, softwareBitmap.PixelHeight);
+        return GeneratedOcrLinesWords.FromParagraph(description, fullBounds);
     }
 
     private static double GetIdealScaleFactorForOcrResult(IOcrLinesWords ocrResult, int height, int width)

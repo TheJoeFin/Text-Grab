@@ -1,5 +1,6 @@
 ﻿using Microsoft.Graphics.Imaging;
 using Microsoft.Windows.AI;
+using Microsoft.Windows.AI.ContentSafety;
 using Microsoft.Windows.AI.Imaging;
 using Microsoft.Windows.AI.Text;
 using System;
@@ -125,35 +126,45 @@ public static class WindowsAiUtilities
 
     public static bool CanDeviceUseWinAI()
     {
-        // Check if the app is packaged and if the AI feature is supported
-        if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())
-            return false;
+        return CanDeviceUseWinAiFeature(TextRecognizer.GetReadyState);
+    }
 
-        // Today, Windows AI Text Recognition is only supported on ARM64
-        Architecture arch = RuntimeInformation.ProcessArchitecture;
-        if (arch != Architecture.Arm64 && !Settings.Default.OverrideAiArchCheck)
-            return false;
+    public static bool CanDeviceDescribeImagesWithWinAI()
+    {
+        return CanDeviceUseWinAiFeature(ImageDescriptionGenerator.GetReadyState);
+    }
 
-        // After checking for Arm64 the remainder checks should be good to catch supporting devices
+    private static bool CanDeviceUseWinAiFeature(Func<AIFeatureReadyState> getReadyState)
+    {
+        if (!MeetsWindowsAiPrerequisites())
+            return false;
 
         try
         {
-            AIFeatureReadyState readyState = TextRecognizer.GetReadyState();
-            if (readyState == AIFeatureReadyState.NotSupportedOnCurrentSystem)
-                return false;
-            else
-                return true;
+            return getReadyState() != AIFeatureReadyState.NotSupportedOnCurrentSystem;
         }
         catch (Exception)
         {
 #if DEBUG
             throw;
-#endif
-
-#pragma warning disable CS0162 // Unreachable code detected
+#else
             return false;
-#pragma warning restore CS0162 // Unreachable code detected
+#endif
         }
+    }
+
+    private static bool MeetsWindowsAiPrerequisites()
+    {
+        // Check if the app is packaged and if the AI feature is supported
+        if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())
+            return false;
+
+        // Today, Windows AI features are only supported on ARM64 unless overridden for debugging.
+        Architecture arch = RuntimeInformation.ProcessArchitecture;
+        if (arch != Architecture.Arm64 && !Settings.Default.OverrideAiArchCheck)
+            return false;
+
+        return true;
     }
 
     public static async Task<string> GetTextWithWinAI(string imagePath)
@@ -170,7 +181,7 @@ public static class WindowsAiUtilities
         using TextRecognizer textRecognizer = await TextRecognizer.CreateAsync();
 
         SoftwareBitmap bitmap = await imagePath.FilePathToSoftwareBitmapAsync();
-        ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
+        using ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
 
         RecognizedText? result = textRecognizer?
             .RecognizeTextFromImage(imageBuffer);
@@ -184,6 +195,55 @@ public static class WindowsAiUtilities
             stringBuilder.AppendLine(line.Text);
 
         return stringBuilder.ToString();
+    }
+
+    public static async Task<string> GetTextDescriptionWithWinAI(string imagePath)
+    {
+        using SoftwareBitmap bitmap = await imagePath.FilePathToSoftwareBitmapAsync();
+        return await GetTextDescriptionWithWinAI(bitmap);
+    }
+
+    public static async Task<string> GetTextDescriptionWithWinAI(SoftwareBitmap bitmap)
+    {
+        if (!CanDeviceDescribeImagesWithWinAI())
+            return "ERROR: Cannot use Windows AI on this device.";
+
+        AIFeatureReadyState readyState = ImageDescriptionGenerator.GetReadyState();
+        if (readyState == AIFeatureReadyState.NotReady)
+        {
+            AIFeatureReadyResult op = await ImageDescriptionGenerator.EnsureReadyAsync();
+        }
+
+        using ImageDescriptionGenerator imageDescriptionGenerator = await ImageDescriptionGenerator.CreateAsync();
+        using ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
+        return await GetTextDescriptionWithWinAI(imageDescriptionGenerator, imageBuffer);
+    }
+
+    private static async Task<string> GetTextDescriptionWithWinAI(ImageDescriptionGenerator imageDescriptionGenerator, ImageBuffer imageBuffer)
+    {
+        // Create content moderation thresholds object.
+        ContentFilterOptions filterOptions = new();
+        filterOptions.ResponseMaxAllowedSeverityLevel.SelfHarm = SeverityLevel.Medium;
+        filterOptions.ResponseMaxAllowedSeverityLevel.Violent = SeverityLevel.Medium;
+
+        // Get text description.
+        ImageDescriptionResult languageModelResponse = await imageDescriptionGenerator.DescribeAsync(
+                                                                            imageBuffer,
+                                                                            ImageDescriptionKind.AccessibleDescription,
+                                                                            filterOptions);
+
+        int maxWait = 50;
+        int wait = 0;
+        while (languageModelResponse.Status != ImageDescriptionResultStatus.Complete && wait < maxWait)
+        {
+            wait++;
+            await Task.Delay(100);
+        }
+
+        if (languageModelResponse.Status != ImageDescriptionResultStatus.Complete)
+            return string.Empty;
+
+        return languageModelResponse.Description?.Trim() ?? string.Empty;
     }
 
     public static async Task<WinAiOcrLinesWords?> GetOcrResultAsync(Bitmap bmp)
@@ -597,7 +657,7 @@ public static class WindowsAiUtilities
                     return line[8..].Trim();
                 return line;
             })
-            .FirstOrDefault(line => line.Length > 0 && 
+            .FirstOrDefault(line => line.Length > 0 &&
                                    (line.Contains('[') || line.Contains('(') ||
                                     line.Contains('\\') || line.Contains('^') || line.Contains('$') ||
                                     line.Contains('+') || line.Contains('*') || line.Contains('?') ||
