@@ -44,14 +44,14 @@ public partial class LanguagePicker : UserControl
         // it needs to represent real languages and not just OCR engine target languages
         // As new models are supported they will need to be caught and filtered here too
 
-        if (currentSelectedLanguage is UiAutomationLang or WindowsAiLang)
+        if (currentSelectedLanguage is UiAutomationLang or WindowsAiLang or WindowsAiDescriptionLang)
             currentSelectedLanguage = new GlobalLang(keyboardLanguage.Name);
 
         int selectedIndex = 0;
         int i = 0;
         foreach (ILanguage langFromUtil in LanguageUtilities.GetAllLanguages())
         {
-            if (langFromUtil is UiAutomationLang or WindowsAiLang)
+            if (langFromUtil is UiAutomationLang or WindowsAiLang or WindowsAiDescriptionLang)
                 continue;
 
             Languages.Add(langFromUtil);

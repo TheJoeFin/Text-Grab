@@ -52,6 +52,21 @@
             TextWrapping="Wrap">
             Windows AI OCR is a new state-of-the-art OCR engine first introduced on Copilot+ PCs. It supports a wide range of styles and languages, as well as being more accurate.
         </TextBlock>
+        <ui:ToggleSwitch
+            x:Name="WindowsAiDescriptionEnabledToggle"
+            Margin="0,0,0,6"
+            Checked="WindowsAiDescriptionEnabledToggle_Checked"
+            Unchecked="WindowsAiDescriptionEnabledToggle_Checked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Show Windows AI Description as a language option
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <TextBlock
+            Margin="0,0,0,6"
+            Style="{StaticResource TextBodyNormal}"
+            TextWrapping="Wrap">
+            When enabled, Text Grab can use Windows AI to generate a description of an image instead of extracted OCR text.
+        </TextBlock>
         <ui:HyperlinkButton
             Click="HyperlinkButton_Click"
             Content="Learn more about Windows AI Foundry"
