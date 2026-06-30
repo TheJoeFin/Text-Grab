@@ -182,6 +182,22 @@
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Visible">
+                <ComboBox
+                    x:Name="PatternComboBox"
+                    Width="150"
+                    Height="32"
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    DisplayMemberPath="Display"
+                    SelectionChanged="PatternComboBox_SelectionChanged"
+                    ToolTip="Find by pattern — a saved regex or a smart value (dates, numbers, emails, etc.)">
+                    <ComboBox.ItemContainerStyle>
+                        <Style BasedOn="{StaticResource {x:Type ComboBoxItem}}" TargetType="ComboBoxItem">
+                            <Setter Property="IsEnabled" Value="{Binding IsSelectable}" />
+                            <Setter Property="ToolTip" Value="{Binding Description}" />
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
                 <ui:Button
                     x:Name="SavePatternButton"
                     Width="32"
@@ -262,7 +278,7 @@
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="Book24"
-                    ButtonText="Saved Patterns"
+                    ButtonText="Manage Patterns"
                     Click="ManageRegexButton_Click" />
 
                 <local:CollapsibleButton

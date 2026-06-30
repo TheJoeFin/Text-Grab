@@ -43,6 +43,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     public FindAndReplaceWindow()
     {
         InitializeComponent();
+        PopulatePatternComboBox();
 
         ChangeFindTextTimer.Interval = TimeSpan.FromMilliseconds(400);
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
@@ -91,6 +92,14 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         FindResults.Clear();
         ResultsListView.ItemsSource = null;
+
+        // Recognizers are find-only (no regex replace). A saved regex, by contrast, has already
+        // been loaded into the find box, so it flows through the normal regex search below.
+        if (GetSelectedPattern() is { Kind: PatternKind.Recognizer, Recognizer: { } selectedRecognizer })
+        {
+            SearchByRecognizer(selectedRecognizer);
+            return;
+        }
 
         if (!TextSearchUtilities.HasSearchText(FindTextBox.Text))
         {
@@ -179,6 +188,85 @@ public partial class FindAndReplaceWindow : FluentWindow
             && this.IsFocused)
         {
             textEditWindow.PassedTextControl.Select(firstMatch.Index, firstMatch.Value.Length);
+            textEditWindow.PassedTextControl.Focus();
+            this.Focus();
+        }
+    }
+
+    /// <summary>Sentinel item shown when no pattern is selected.</summary>
+    private const string NoPatternLabel = "Pattern…";
+
+    private void PopulatePatternComboBox()
+    {
+        PatternComboBox.ItemsSource = PatternItem.BuildComboChoices(NoPatternLabel);
+        PatternComboBox.SelectedIndex = 0;
+    }
+
+    /// <summary>Returns the pattern chosen in the combo box, or null when none is selected.</summary>
+    private PatternItem? GetSelectedPattern()
+        => (PatternComboBox.SelectedItem as PatternChoice)?.Pattern;
+
+    private void PatternComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded)
+            return;
+
+        // A saved regex loads into the find box and runs as a normal regex search, so replace
+        // and match navigation keep working. Recognizers stay find-only (handled in SearchForText).
+        if (GetSelectedPattern() is { Kind: PatternKind.SavedRegex, SavedRegex: { } savedRegex })
+        {
+            FindTextBox.Text = savedRegex.Pattern;
+            UsePatternCheckBox.IsChecked = true;
+        }
+
+        SearchForText();
+    }
+
+    /// <summary>
+    /// Finds every entity the recognizer detects in the source text and lists them as
+    /// <see cref="FindResult"/>s. Leaves <see cref="Matches"/> null (like spreadsheet search),
+    /// so regex-based replace/navigation is disabled in recognizer mode.
+    /// </summary>
+    private void SearchByRecognizer(BuiltInRecognizer recognizer)
+    {
+        if (string.IsNullOrEmpty(StringFromWindow) && TextEditWindow is not null)
+            StringFromWindow = TextEditWindow.GetSelectedTextOrAllText();
+
+        Matches = null;
+
+        IReadOnlyList<RecognizerMatch> recognizerMatches = RecognizerExecutor.GetMatches(recognizer, StringFromWindow);
+
+        if (recognizerMatches.Count == 0)
+        {
+            MatchesText.Text = "0 Matches";
+            return;
+        }
+
+        MatchesText.Text = recognizerMatches.Count == 1 ? "1 Match" : $"{recognizerMatches.Count} Matches";
+        ResultsListView.IsEnabled = true;
+
+        int count = 1;
+        foreach (RecognizerMatch m in recognizerMatches)
+        {
+            FindResult fr = new()
+            {
+                Index = m.Start,
+                Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Text),
+                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Start, 12).MakeStringSingleLine(),
+                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Start + m.Length, 12).MakeStringSingleLine(),
+                Length = m.Length,
+                Count = count,
+            };
+            FindResults.Add(fr);
+            count++;
+        }
+
+        ResultsListView.ItemsSource = FindResults;
+
+        if (textEditWindow is not null && this.IsFocused)
+        {
+            RecognizerMatch first = recognizerMatches[0];
+            textEditWindow.PassedTextControl.Select(first.Start, first.Length);
             textEditWindow.PassedTextControl.Focus();
             this.Focus();
         }

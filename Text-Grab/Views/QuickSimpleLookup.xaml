@@ -83,6 +83,22 @@
                 </Viewbox>
             </ToggleButton>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ComboBox
+                    x:Name="PatternComboBox"
+                    Height="26"
+                    MinWidth="120"
+                    Margin="0,0,5,0"
+                    VerticalAlignment="Center"
+                    DisplayMemberPath="Display"
+                    SelectionChanged="PatternComboBox_SelectionChanged"
+                    ToolTip="Filter to entries matching a pattern (saved regexes or smart values like dates, numbers, emails)">
+                    <ComboBox.ItemContainerStyle>
+                        <Style BasedOn="{StaticResource {x:Type ComboBoxItem}}" TargetType="ComboBoxItem">
+                            <Setter Property="IsEnabled" Value="{Binding IsSelectable}" />
+                            <Setter Property="ToolTip" Value="{Binding Description}" />
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
                     Background="DarkGreen"

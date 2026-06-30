@@ -43,6 +43,28 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         InitializeComponent();
         App.SetTheme();
+        PopulatePatternComboBox();
+    }
+
+    /// <summary>Sentinel item shown when no pattern filter is active.</summary>
+    private const string NoPatternLabel = "Pattern…";
+
+    private void PopulatePatternComboBox()
+    {
+        PatternComboBox.ItemsSource = PatternItem.BuildComboChoices(NoPatternLabel);
+        PatternComboBox.SelectedIndex = 0;
+    }
+
+    /// <summary>Returns the pattern chosen in the combo box, or null when none is selected.</summary>
+    private PatternItem? GetSelectedPattern()
+        => (PatternComboBox.SelectedItem as PatternChoice)?.Pattern;
+
+    private async void PatternComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded)
+            return;
+
+        await ReSearch(SearchBox.Text);
     }
 
     #endregion Constructors
@@ -817,7 +839,9 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         MainDataGrid.ItemsSource = null;
 
-        if (string.IsNullOrEmpty(searchString))
+        PatternItem? selectedPattern = GetSelectedPattern();
+
+        if (string.IsNullOrEmpty(searchString) && selectedPattern is null)
         {
             MainDataGrid.ItemsSource = ItemsDictionary;
             MainDataGrid.CanUserAddRows = true;
@@ -854,12 +878,41 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         else
             MainDataGrid.CanUserAddRows = false;
 
-        if (RegExToggleButton.IsChecked is true)
+        if (selectedPattern is not null)
+            PatternSearch(selectedPattern, searchString);
+        else if (RegExToggleButton.IsChecked is true)
             RegexSearch(searchString);
         else
             StandardSearch(searchString);
 
         UpdateRowCount();
+    }
+
+    private void PatternSearch(PatternItem pattern, string searchString)
+    {
+        string lowerSearch = searchString.ToLower();
+        List<LookupItem> filteredList = [];
+
+        foreach (LookupItem lItem in ItemsDictionary)
+        {
+            string lItemAsString = lItem.ToString();
+
+            if (!PatternExecutor.HasMatch(pattern, lItemAsString))
+                continue;
+
+            // When search text is also present, narrow the pattern results by it.
+            if (!string.IsNullOrEmpty(lowerSearch)
+                && !lItemAsString.Contains(lowerSearch, StringComparison.CurrentCultureIgnoreCase)
+                && !lItem.FirstLettersString.Contains(lowerSearch, StringComparison.CurrentCultureIgnoreCase))
+                continue;
+
+            filteredList.Add(lItem);
+        }
+
+        MainDataGrid.ItemsSource = filteredList;
+
+        if (MainDataGrid.Items.Count > 0)
+            MainDataGrid.SelectedIndex = 0;
     }
 
     private void RegexSearch(string searchString)

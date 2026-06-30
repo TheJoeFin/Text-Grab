@@ -279,7 +279,7 @@ public partial class GrabFrame : Window
                 string value = BuildPatternPlaceholderValue(pm);
                 // Only add if not already in the list (avoid duplicates with the default "first" items)
                 if (!items.Any(i => i.Value == value))
-                    items.Add(new InlinePickerItem(displayLabel, value, "Patterns"));
+                    items.Add(new InlinePickerItem(displayLabel, value, PatternItem.SavedGroup));
             }
             TemplateOutputBox.ItemsSource = items;
         }
@@ -3811,11 +3811,76 @@ public partial class GrabFrame : Window
             RectanglesCanvas.Children.Remove(tableLineCanvas);
     }
 
+    /// <summary>The pattern chosen via "Search by Pattern", or null for text/regex search.</summary>
+    private PatternItem? _searchPattern;
+
+    private void SearchByPatternMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        // Rebuild each time so newly saved regexes appear.
+        SearchByPatternMenuItem.Items.Clear();
+
+        MenuItem noneItem = new()
+        {
+            Header = "None (text search)",
+            IsCheckable = true,
+            IsChecked = _searchPattern is null,
+            Tag = null,
+        };
+        noneItem.Click += PatternSearchItem_Click;
+        SearchByPatternMenuItem.Items.Add(noneItem);
+
+        string? currentGroup = null;
+        foreach (PatternItem pattern in PatternItem.GetAll())
+        {
+            if (pattern.GroupLabel != currentGroup)
+            {
+                currentGroup = pattern.GroupLabel;
+                SearchByPatternMenuItem.Items.Add(new Separator());
+                SearchByPatternMenuItem.Items.Add(new MenuItem { Header = currentGroup, IsEnabled = false });
+            }
+
+            MenuItem item = new()
+            {
+                Header = pattern.Name,
+                ToolTip = string.IsNullOrWhiteSpace(pattern.Description) ? null : pattern.Description,
+                IsCheckable = true,
+                IsChecked = _searchPattern is not null
+                    && _searchPattern.Kind == pattern.Kind
+                    && _searchPattern.Id == pattern.Id,
+                Tag = pattern,
+            };
+            item.Click += PatternSearchItem_Click;
+            SearchByPatternMenuItem.Items.Add(item);
+        }
+    }
+
+    private void PatternSearchItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem clicked)
+            return;
+
+        _searchPattern = clicked.Tag as PatternItem;
+
+        foreach (object obj in SearchByPatternMenuItem.Items)
+            if (obj is MenuItem { IsCheckable: true } mi)
+                mi.IsChecked = ReferenceEquals(mi, clicked);
+
+        isSearchSelectionOverridden = false;
+        reSearchTimer.Stop();
+        reSearchTimer.Start();
+    }
+
     private void ReSearchTimer_Tick(object? sender, EventArgs e)
     {
         reSearchTimer.Stop();
         if (SearchBox.Text is not string searchText)
             return;
+
+        if (_searchPattern is not null)
+        {
+            RunPatternSearch(_searchPattern);
+            return;
+        }
 
         if (!TextSearchUtilities.HasSearchText(searchText) && !isSearchSelectionOverridden)
         {
@@ -3891,6 +3956,49 @@ public partial class GrabFrame : Window
             MatchesTXTBLK.Text = $"{numberOfMatches} Match";
         else
             MatchesTXTBLK.Text = $"{numberOfMatches} Matches";
+        MatchesMenu.Visibility = Visibility.Visible;
+        LanguagesComboBox.Visibility = Visibility.Collapsed;
+
+        if (TemplateSavePanel.Visibility == Visibility.Visible)
+            UpdateTemplateBadges();
+    }
+
+    /// <summary>
+    /// Selects every word border / PDF line that contains at least one entity recognized
+    /// by <paramref name="recognizer"/>, and reports the total recognized-entity count.
+    /// </summary>
+    private void RunPatternSearch(PatternItem pattern)
+    {
+        int numberOfMatches = 0;
+
+        if (!isSearchSelectionOverridden)
+        {
+            foreach (WordBorder wb in wordBorders)
+            {
+                int count = PatternExecutor.GetMatches(pattern, wb.Word).Count;
+                numberOfMatches += count;
+
+                if (count > 0)
+                    wb.Select();
+                else
+                    wb.Deselect();
+            }
+
+            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
+            {
+                int count = PatternExecutor.GetMatches(pattern, pdfTextLine.Text).Count;
+                numberOfMatches += count;
+
+                if (count > 0)
+                    pdfTextLine.Select();
+                else
+                    pdfTextLine.Deselect();
+            }
+        }
+
+        UpdateFrameText();
+
+        MatchesTXTBLK.Text = numberOfMatches == 1 ? "1 Match" : $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
         LanguagesComboBox.Visibility = Visibility.Collapsed;
 
@@ -4056,7 +4164,10 @@ public partial class GrabFrame : Window
         // Parse pattern references from the output template
         List<TemplatePatternMatch> patternMatches = ParsePatternMatchesFromTemplate(outputTemplateText);
 
-        if (wordBorders.Count == 0 && patternMatches.Count == 0)
+        // Parse recognizer references from the output template
+        List<TemplateRecognizerMatch> recognizerMatches = GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate(outputTemplateText);
+
+        if (wordBorders.Count == 0 && patternMatches.Count == 0 && recognizerMatches.Count == 0)
         {
             await new Wpf.Ui.Controls.MessageBox
             {
@@ -4090,6 +4201,7 @@ public partial class GrabFrame : Window
             ReferenceImageHeight = ch,
             Regions = regions,
             PatternMatches = patternMatches,
+            RecognizerMatches = recognizerMatches,
         };
 
         if (_editingTemplate is not null)
@@ -4330,22 +4442,35 @@ public partial class GrabFrame : Window
                 return new InlinePickerItem(label, $"{{{i + 1}}}", "Regions");
             })];
 
-        // Pattern items from saved StoredRegex patterns
-        List<InlinePickerItem> patternItems = LoadPatternPickerItems();
-        items.AddRange(patternItems);
+        // Pattern items — saved regexes and built-in recognizers as one "Patterns" concept,
+        // split into "Saved Patterns" / "Smart Patterns" subsections.
+        items.AddRange(PatternItem.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
 
         TemplateOutputBox.ItemsSource = items;
 
-        // Wire up the pattern selection callback
+        // Wire up the pattern / recognizer selection callbacks
         TemplateOutputBox.PatternItemSelected ??= OnPatternItemSelected;
+        TemplateOutputBox.RecognizerItemSelected ??= OnRecognizerItemSelected;
     }
 
-    private static List<InlinePickerItem> LoadPatternPickerItems()
+    private TemplateRecognizerMatch? OnRecognizerItemSelected(InlinePickerItem item)
     {
-        StoredRegex[] patterns = LoadSavedPatterns();
+        BuiltInRecognizer? recognizer = BuiltInRecognizer.GetByName(item.DisplayName);
 
-        return [.. patterns.Select(p =>
-            new InlinePickerItem(p.Name, $"{{p:{p.Name}:first}}", "Patterns"))];
+        PatternMatchModeDialog dialog = new(recognizer?.Id ?? string.Empty, item.DisplayName, isRecognizer: true)
+        {
+            Owner = this,
+        };
+
+        if (dialog.ShowDialog() is not true || dialog.Result is null)
+            return null;
+
+        return new TemplateRecognizerMatch(
+            recognizerId: recognizer?.Id ?? string.Empty,
+            recognizerName: item.DisplayName,
+            matchMode: dialog.Result.MatchMode,
+            separator: dialog.Result.Separator,
+            outputKind: dialog.SelectedOutputKind);
     }
 
     private TemplatePatternMatch? OnPatternItemSelected(InlinePickerItem item)

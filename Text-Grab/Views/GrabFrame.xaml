@@ -886,6 +886,11 @@
                                     Click="SearchBox_GotFocus"
                                     Header="Match searches exactly"
                                     IsCheckable="True" />
+                                <Separator />
+                                <MenuItem
+                                    x:Name="SearchByPatternMenuItem"
+                                    Header="Search by Pattern"
+                                    SubmenuOpened="SearchByPatternMenuItem_SubmenuOpened" />
                             </ContextMenu>
                         </TextBox.ContextMenu>
                     </TextBox>

@@ -3,13 +3,15 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Models;
+using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls;
 
 /// <summary>
-/// Dialog shown after the user selects a regex pattern from the inline picker.
-/// Lets them choose match mode (first, last, all, specific indices) and separator.
+/// Dialog shown after the user selects a regex pattern (or recognizer) from the inline picker.
+/// Lets them choose match mode (first, last, all, specific indices) and separator, and — for
+/// recognizers — whether to emit the resolved value or the matched text.
 /// </summary>
 public partial class PatternMatchModeDialog : FluentWindow
 {
@@ -17,6 +19,9 @@ public partial class PatternMatchModeDialog : FluentWindow
     /// The configured result. Null if the user cancelled.
     /// </summary>
     public TemplatePatternMatch? Result { get; private set; }
+
+    /// <summary>The chosen output kind (only meaningful for recognizers).</summary>
+    public RecognizerOutputKind SelectedOutputKind { get; private set; } = RecognizerOutputKind.ResolvedValue;
 
     private readonly string _patternId;
     private readonly string _patternName;
@@ -27,6 +32,22 @@ public partial class PatternMatchModeDialog : FluentWindow
         _patternId = patternId;
         _patternName = patternName;
         PatternNameLabel.Text = $"Pattern: {patternName}";
+    }
+
+    /// <summary>
+    /// Creates the dialog for a recognizer, optionally showing the resolved-value /
+    /// matched-text output selector.
+    /// </summary>
+    public PatternMatchModeDialog(string recognizerId, string recognizerName, bool isRecognizer)
+        : this(recognizerId, recognizerName)
+    {
+        if (!isRecognizer)
+            return;
+
+        Title = "Pattern Match Options";
+        DialogTitleBar.Title = "Pattern Match Options";
+        PatternNameLabel.Text = $"Pattern: {recognizerName}";
+        OutputPanel.Visibility = Visibility.Visible;
     }
 
     private void MatchModeRadioButton_Checked(object sender, RoutedEventArgs e)
@@ -113,6 +134,10 @@ public partial class PatternMatchModeDialog : FluentWindow
                 return;
             mode = IndicesTextBox.Text.Trim();
         }
+
+        SelectedOutputKind = OutputValueRadio.IsChecked is false
+            ? RecognizerOutputKind.MatchedText
+            : RecognizerOutputKind.ResolvedValue;
 
         Result = new TemplatePatternMatch(_patternId, _patternName, mode, separator);
         DialogResult = true;
