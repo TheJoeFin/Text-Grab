@@ -9,15 +9,18 @@ namespace Tests;
 public class CaptureLanguageUtilitiesTests : IDisposable
 {
     private readonly bool _originalUiAutomationEnabled;
+    private readonly bool _originalWindowsAiDescriptionEnabled;
 
     public CaptureLanguageUtilitiesTests()
     {
         _originalUiAutomationEnabled = Settings.Default.UiAutomationEnabled;
+        _originalWindowsAiDescriptionEnabled = Settings.Default.WindowsAiDescriptionEnabled;
     }
 
     public void Dispose()
     {
         Settings.Default.UiAutomationEnabled = _originalUiAutomationEnabled;
+        Settings.Default.WindowsAiDescriptionEnabled = _originalWindowsAiDescriptionEnabled;
         Settings.Default.Save();
         LanguageUtilities.InvalidateAllCaches();
     }
@@ -38,6 +41,16 @@ public class CaptureLanguageUtilitiesTests : IDisposable
         TessLang language = new("eng");
 
         bool matches = CaptureLanguageUtilities.MatchesPersistedLanguage(language, language.CultureDisplayName);
+
+        Assert.True(matches);
+    }
+
+    [Fact]
+    public void MatchesPersistedLanguage_MatchesWindowsAiDescriptionTag()
+    {
+        WindowsAiDescriptionLang language = new();
+
+        bool matches = CaptureLanguageUtilities.MatchesPersistedLanguage(language, WindowsAiDescriptionLang.Tag);
 
         Assert.True(matches);
     }
@@ -84,10 +97,43 @@ public class CaptureLanguageUtilitiesTests : IDisposable
         Assert.Contains(languages, language => language is UiAutomationLang);
     }
 
+    [WpfFact]
+    public async Task GetCaptureLanguagesAsync_ExcludesWindowsAiDescriptionByDefault()
+    {
+        Settings.Default.WindowsAiDescriptionEnabled = false;
+        Settings.Default.Save();
+        LanguageUtilities.InvalidateAllCaches();
+
+        List<ILanguage> languages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(includeTesseract: false);
+
+        Assert.DoesNotContain(languages, language => language is WindowsAiDescriptionLang);
+    }
+
+    [WpfFact]
+    public async Task GetCaptureLanguagesAsync_IncludesWindowsAiDescriptionOnlyWhenSupported()
+    {
+        Settings.Default.WindowsAiDescriptionEnabled = true;
+        Settings.Default.Save();
+        LanguageUtilities.InvalidateAllCaches();
+
+        List<ILanguage> languages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(includeTesseract: false);
+
+        if (WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
+            Assert.Contains(languages, language => language is WindowsAiDescriptionLang);
+        else
+            Assert.DoesNotContain(languages, language => language is WindowsAiDescriptionLang);
+    }
+
     [Fact]
     public void SupportsTableOutput_ReturnsFalseForUiAutomation()
     {
         Assert.False(CaptureLanguageUtilities.SupportsTableOutput(new UiAutomationLang()));
+    }
+
+    [Fact]
+    public void SupportsTableOutput_ReturnsFalseForWindowsAiDescription()
+    {
+        Assert.False(CaptureLanguageUtilities.SupportsTableOutput(new WindowsAiDescriptionLang()));
     }
 
     [Fact]

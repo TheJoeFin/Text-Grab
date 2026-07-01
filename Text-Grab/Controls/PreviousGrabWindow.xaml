@@ -21,6 +21,10 @@
     WindowStyle="None"
     mc:Ignorable="d">
     <Grid>
+        <Image
+            x:Name="RegionBackgroundImage"
+            Stretch="Fill"
+            Visibility="Collapsed" />
         <Viewbox
             x:Name="SuccessViewbox"
             MaxWidth="60"
@@ -46,5 +50,91 @@
                 Foreground="{StaticResource Teal}"
                 IsIndeterminate="True" />
         </Viewbox>
+        <Border
+            x:Name="ChoiceBar"
+            Margin="12"
+            Padding="8"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Background="{DynamicResource ApplicationBackgroundBrush}"
+            BorderBrush="{StaticResource Teal}"
+            BorderThickness="2"
+            CornerRadius="8"
+            Visibility="Collapsed">
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="32"
+                    Direction="-90"
+                    Opacity="0.6"
+                    RenderingBias="Performance" />
+            </Border.Effect>
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="ChoiceBarSlide" />
+            </Border.RenderTransform>
+            <Viewbox
+                MaxHeight="48"
+                HorizontalAlignment="Center"
+                Stretch="Uniform"
+                StretchDirection="DownOnly">
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="CancelButton"
+                        Height="34"
+                        Margin="4,0"
+                        Click="CancelButton_Click"
+                        Style="{StaticResource TealColor}">
+                        <StackPanel Margin="12,0" Orientation="Horizontal">
+                            <ui:SymbolIcon Margin="0,0,8,0" Symbol="Dismiss24" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="White"
+                                Text="Cancel" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="ReGrabButton"
+                        Height="34"
+                        Margin="4,0"
+                        Click="ReGrabButton_Click"
+                        Style="{StaticResource TealColor}">
+                        <StackPanel Margin="12,0" Orientation="Horizontal">
+                            <ui:SymbolIcon Margin="0,0,8,0" Symbol="ArrowClockwise24" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="White"
+                                Text="Re-grab" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="SendToGrabFrameButton"
+                        Height="34"
+                        Margin="4,0"
+                        Click="SendToGrabFrameButton_Click"
+                        Style="{StaticResource TealColor}"
+                        Visibility="Collapsed">
+                        <StackPanel Margin="12,0" Orientation="Horizontal">
+                            <ui:SymbolIcon Margin="0,0,8,0" Symbol="PanelBottom20" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="White"
+                                Text="Send to Grab Frame" />
+                        </StackPanel>
+                    </Button>
+                    <ToggleButton
+                        x:Name="SendToEtwToggleButton"
+                        Width="34"
+                        Height="34"
+                        Margin="4,0"
+                        Click="SendToEtwToggleButton_Click"
+                        Style="{StaticResource ToggleSymbolButton}"
+                        ToolTip="Send to an Edit Text Window"
+                        Visibility="Collapsed">
+                        <ui:SymbolIcon Symbol="Window24" />
+                    </ToggleButton>
+                </StackPanel>
+            </Viewbox>
+        </Border>
     </Grid>
 </Window>

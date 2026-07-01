@@ -104,6 +104,7 @@ public enum LanguageKind
     Tesseract = 1,
     WindowsAi = 2,
     UiAutomation = 3,
+    WindowsAiDescription = 4,
 }
 
 public enum UiAutomationTraversalMode
