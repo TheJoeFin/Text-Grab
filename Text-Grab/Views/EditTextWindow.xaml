@@ -342,7 +342,8 @@
                     <MenuItem
                         x:Name="FindAndReplaceMenuItem"
                         Click="FindAndReplaceMenuItem_Click"
-                        Header="Find and Replace" />
+                        Header="Find and Replace"
+                        InputGestureText="Ctrl + Shift + F" />
                     <MenuItem
                         x:Name="DefaultWebSearch"
                         Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"

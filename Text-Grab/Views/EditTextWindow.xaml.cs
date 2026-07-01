@@ -4877,6 +4877,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = openRecentEditWindow.InputGestures.Add(new KeyGesture(Key.T, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(openRecentEditWindow, OpenRecentEditWindowExecuted));
 
+        RoutedCommand findAndReplaceCommand = new();
+        _ = findAndReplaceCommand.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(findAndReplaceCommand, FindAndReplaceMenuItem_Click));
+
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
