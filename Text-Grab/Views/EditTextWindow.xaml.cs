@@ -3404,8 +3404,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (PassedTextControl.SelectedText.Length > 0)
         {
-            findAndReplaceWindow.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
-            findAndReplaceWindow.FindTextBox.Select(findAndReplaceWindow.FindTextBox.Text.Length, 0);
+            findAndReplaceWindow.SetFindText(PassedTextControl.SelectedText.Trim());
             findAndReplaceWindow.SearchForText();
         }
     }
@@ -6563,8 +6562,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Open Find and Replace window with this pattern and execute search
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findWindow.FindTextBox.Text = storedPattern.Pattern;
-        findWindow.UsePatternCheckBox.IsChecked = true;
+        findWindow.SetFindText(storedPattern.Pattern, useRegex: true);
         findWindow.TextEditWindow = this;
         findWindow.StringFromWindow = PassedTextControl.Text;
         findWindow.SearchForText();

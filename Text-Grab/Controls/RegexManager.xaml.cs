@@ -130,8 +130,7 @@ public partial class RegexManager : FluentWindow
         // Open Find and Replace window with this pattern
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findWindow.TextEditWindow ??= SourceEditTextWindow;
-        findWindow.FindTextBox.Text = selectedRegex.Pattern;
-        findWindow.UsePatternCheckBox.IsChecked = true;
+        findWindow.SetFindText(selectedRegex.Pattern, useRegex: true);
         findWindow.Show();
         findWindow.Activate();
         findWindow.SearchForText();

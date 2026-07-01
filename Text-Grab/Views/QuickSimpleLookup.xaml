@@ -47,58 +47,15 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
-            <TextBox
-                x:Name="SearchBox"
+            <controls:SearchBar
+                x:Name="SearchBar"
                 Grid.Column="0"
                 Margin="6,0,0,0"
                 VerticalAlignment="Center"
                 AcceptsTab="True"
-                TextChanged="SearchBox_TextChanged" />
-            <Label
-                x:Name="SearchLabel"
-                Grid.Column="0"
-                Margin="16,0,6,0"
-                Padding="4"
-                VerticalAlignment="Center"
-                VerticalContentAlignment="Center"
-                Content="Type to search..."
-                FontSize="16"
-                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                IsHitTestVisible="False"
-                Opacity="0.5" />
-            <ToggleButton
-                x:Name="RegExToggleButton"
-                Grid.Column="0"
-                Height="26"
-                Margin="0,0,5,0"
-                Padding="7,4"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                BorderThickness="1"
-                Checked="RegExToggleButton_Checked"
-                Style="{StaticResource ToggleSymbolButton}"
-                Unchecked="RegExToggleButton_Checked">
-                <Viewbox Width="12" Height="12">
-                    <controls:RegExIcon IconColor="{DynamicResource TextFillColorPrimaryBrush}" />
-                </Viewbox>
-            </ToggleButton>
+                PlaceholderText="Type to search..."
+                SearchChanged="SearchBar_SearchChanged" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <ComboBox
-                    x:Name="PatternComboBox"
-                    Height="26"
-                    MinWidth="120"
-                    Margin="0,0,5,0"
-                    VerticalAlignment="Center"
-                    DisplayMemberPath="Display"
-                    SelectionChanged="PatternComboBox_SelectionChanged"
-                    ToolTip="Filter to entries matching a pattern (saved regexes or smart values like dates, numbers, emails)">
-                    <ComboBox.ItemContainerStyle>
-                        <Style BasedOn="{StaticResource {x:Type ComboBoxItem}}" TargetType="ComboBoxItem">
-                            <Setter Property="IsEnabled" Value="{Binding IsSelectable}" />
-                            <Setter Property="ToolTip" Value="{Binding Description}" />
-                        </Style>
-                    </ComboBox.ItemContainerStyle>
-                </ComboBox>
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
                     Background="DarkGreen"

@@ -849,7 +849,7 @@
 
             <Border Grid.Row="3" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
                 <Grid
-                    Height="30"
+                    MinHeight="36"
                     Margin="6"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Bottom">
@@ -862,63 +862,14 @@
                         <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBox
-                        x:Name="SearchBox"
+                    <controls:SearchBar
+                        x:Name="SearchBar"
                         Grid.Column="1"
                         Margin="0,0,6,0"
-                        Padding="4"
-                        VerticalContentAlignment="Center"
-                        GotFocus="SearchBox_GotFocus"
-                        TextChanged="SearchBox_TextChanged">
-                        <TextBox.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Command="ApplicationCommands.Cut" />
-                                <MenuItem Command="ApplicationCommands.Copy" />
-                                <MenuItem Command="ApplicationCommands.Paste" />
-                                <Separator />
-                                <MenuItem
-                                    x:Name="SearchWithRegexCheckBox"
-                                    Click="SearchBox_GotFocus"
-                                    Header="Search with Regex"
-                                    IsCheckable="True" />
-                                <MenuItem
-                                    x:Name="ExactMatchChkBx"
-                                    Click="SearchBox_GotFocus"
-                                    Header="Match searches exactly"
-                                    IsCheckable="True" />
-                                <Separator />
-                                <MenuItem
-                                    x:Name="SearchByPatternMenuItem"
-                                    Header="Search by Pattern"
-                                    SubmenuOpened="SearchByPatternMenuItem_SubmenuOpened" />
-                            </ContextMenu>
-                        </TextBox.ContextMenu>
-                    </TextBox>
-                    <Label
-                        x:Name="SearchLabel"
-                        Grid.Column="1"
-                        Margin="3,0,6,0"
-                        Padding="4"
-                        VerticalContentAlignment="Center"
-                        Content="Search For Text..."
-                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                        IsHitTestVisible="False"
-                        Opacity="0.5"
-                        Visibility="{Binding Visibility,
-                                             ElementName=SearchBox,
-                                             Mode=OneWay}" />
-                    <controls:CollapsibleButton
-                        x:Name="ClearBTN"
-                        Grid.Column="1"
-                        Margin="0,0,6,0"
-                        HorizontalAlignment="Right"
                         VerticalAlignment="Center"
-                        ButtonSymbol="Dismiss24"
-                        CanChangeStyle="False"
-                        Click="ClearBTN_Click"
-                        Foreground="LightGray"
-                        IsSymbol="True"
-                        Visibility="Collapsed" />
+                        PlaceholderText="Search For Text..."
+                        SearchChanged="SearchBar_SearchChanged"
+                        ShowExactMatchToggle="True" />
 
                     <Menu
                         x:Name="MatchesMenu"

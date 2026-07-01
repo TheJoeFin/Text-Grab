@@ -86,15 +86,18 @@
                 IsChecked="True"
                 Style="{DynamicResource ToggleSymbolButton}" />
 
-            <TextBox
-                x:Name="FindTextBox"
+            <local:SearchBar
+                x:Name="SearchBar"
                 Grid.Column="1"
                 Margin="6,6,6,0"
-                VerticalContentAlignment="Center"
+                VerticalAlignment="Center"
                 AcceptsReturn="True"
                 AcceptsTab="True"
-                FontFamily="Segoe UI"
-                KeyUp="FindTextBox_KeyUp" />
+                ExactMatchChanged="OptionsChangedRefresh"
+                KeyUp="FindTextBox_KeyUp"
+                PlaceholderText="Find..."
+                SearchChanged="SearchBar_SearchChanged"
+                ShowExactMatchToggle="True" />
             <local:CollapsibleButton
                 x:Name="FindButton"
                 Grid.Row="0"
@@ -138,17 +141,6 @@
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Visible">
-                <ui:ToggleSwitch
-                    x:Name="ExactMatchCheckBox"
-                    Margin="6"
-                    VerticalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="OptionsChangedRefresh"
-                    Unchecked="OptionsChangedRefresh">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Match Exactly
-                    </TextBlock>
-                </ui:ToggleSwitch>
 
                 <local:CollapsibleButton
                     x:Name="DeleteAllMatches"
@@ -182,22 +174,6 @@
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Visible">
-                <ComboBox
-                    x:Name="PatternComboBox"
-                    Width="150"
-                    Height="32"
-                    Margin="0,0,6,0"
-                    VerticalAlignment="Center"
-                    DisplayMemberPath="Display"
-                    SelectionChanged="PatternComboBox_SelectionChanged"
-                    ToolTip="Find by pattern — a saved regex or a smart value (dates, numbers, emails, etc.)">
-                    <ComboBox.ItemContainerStyle>
-                        <Style BasedOn="{StaticResource {x:Type ComboBoxItem}}" TargetType="ComboBoxItem">
-                            <Setter Property="IsEnabled" Value="{Binding IsSelectable}" />
-                            <Setter Property="ToolTip" Value="{Binding Description}" />
-                        </Style>
-                    </ComboBox.ItemContainerStyle>
-                </ComboBox>
                 <ui:Button
                     x:Name="SavePatternButton"
                     Width="32"
@@ -208,17 +184,6 @@
                     Icon="{ui:SymbolIcon Save24}"
                     ToolTip="Save pattern to Regex Manager"
                     Visibility="Collapsed" />
-                <ui:ToggleSwitch
-                    x:Name="UsePatternCheckBox"
-                    Margin="6"
-                    VerticalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="UsePatternCheckBox_CheckedChanged"
-                    Unchecked="UsePatternCheckBox_CheckedChanged">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Use Regex
-                    </TextBlock>
-                </ui:ToggleSwitch>
 
                 <local:CollapsibleButton
                     x:Name="MatchesToEditWindow"
