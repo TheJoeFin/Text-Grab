@@ -203,7 +203,27 @@ public static class WindowsAiUtilities
         return await GetTextDescriptionWithWinAI(bitmap);
     }
 
-    public static async Task<string> GetTextDescriptionWithWinAI(SoftwareBitmap bitmap)
+    /// <summary>
+    /// Describes a <see cref="Bitmap"/> with Windows AI. The <paramref name="cancellationToken"/>
+    /// aborts the on-device inference; a cancelled call throws <see cref="OperationCanceledException"/>.
+    /// </summary>
+    public static async Task<string> GetTextDescriptionWithWinAI(Bitmap bmp, CancellationToken cancellationToken)
+    {
+        string tempFilePath = System.IO.Path.GetTempFileName();
+        bmp.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
+        try
+        {
+            using SoftwareBitmap softwareBitmap = await tempFilePath.FilePathToSoftwareBitmapAsync();
+            return await GetTextDescriptionWithWinAI(softwareBitmap, cancellationToken);
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempFilePath))
+                System.IO.File.Delete(tempFilePath);
+        }
+    }
+
+    public static async Task<string> GetTextDescriptionWithWinAI(SoftwareBitmap bitmap, CancellationToken cancellationToken = default)
     {
         if (!CanDeviceDescribeImagesWithWinAI())
             return "ERROR: Cannot use Windows AI on this device.";
@@ -214,36 +234,48 @@ public static class WindowsAiUtilities
             AIFeatureReadyResult op = await ImageDescriptionGenerator.EnsureReadyAsync();
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         using ImageDescriptionGenerator imageDescriptionGenerator = await ImageDescriptionGenerator.CreateAsync();
         using ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
-        return await GetTextDescriptionWithWinAI(imageDescriptionGenerator, imageBuffer);
+        return await GetTextDescriptionWithWinAI(imageDescriptionGenerator, imageBuffer, cancellationToken);
     }
 
-    private static async Task<string> GetTextDescriptionWithWinAI(ImageDescriptionGenerator imageDescriptionGenerator, ImageBuffer imageBuffer)
+    private static async Task<string> GetTextDescriptionWithWinAI(ImageDescriptionGenerator imageDescriptionGenerator, ImageBuffer imageBuffer, CancellationToken cancellationToken = default)
     {
         // Create content moderation thresholds object.
         ContentFilterOptions filterOptions = new();
         filterOptions.ResponseMaxAllowedSeverityLevel.SelfHarm = SeverityLevel.Medium;
         filterOptions.ResponseMaxAllowedSeverityLevel.Violent = SeverityLevel.Medium;
 
-        // Get text description.
-        ImageDescriptionResult languageModelResponse = await imageDescriptionGenerator.DescribeAsync(
-                                                                            imageBuffer,
-                                                                            ImageDescriptionKind.AccessibleDescription,
-                                                                            filterOptions);
-
-        int maxWait = 50;
-        int wait = 0;
-        while (languageModelResponse.Status != ImageDescriptionResultStatus.Complete && wait < maxWait)
+        try
         {
-            wait++;
-            await Task.Delay(100);
+            // Get text description. Awaiting DescribeAsync already waits for the on-device
+            // inference to finish; AsTask threads the cancellation token so the model call
+            // itself is aborted when the user cancels.
+            ImageDescriptionResult languageModelResponse = await imageDescriptionGenerator.DescribeAsync(
+                                                                                imageBuffer,
+                                                                                ImageDescriptionKind.AccessibleDescription,
+                                                                                filterOptions).AsTask(cancellationToken);
+
+            if (languageModelResponse.Status != ImageDescriptionResultStatus.Complete)
+            {
+                Debug.WriteLine($"Image description did not complete. Status: {languageModelResponse.Status}");
+                return string.Empty;
+            }
+
+            return languageModelResponse.Description?.Trim() ?? string.Empty;
         }
-
-        if (languageModelResponse.Status != ImageDescriptionResultStatus.Complete)
+        catch (OperationCanceledException)
+        {
+            // Let cancellation propagate so callers can distinguish it from an empty result.
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Image description failed: {ex.Message}");
             return string.Empty;
-
-        return languageModelResponse.Description?.Trim() ?? string.Empty;
+        }
     }
 
     public static async Task<WinAiOcrLinesWords?> GetOcrResultAsync(Bitmap bmp)
