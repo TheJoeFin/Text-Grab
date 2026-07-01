@@ -233,7 +233,14 @@ public static class WindowsAiUtilities
         AIFeatureReadyState readyState = ImageDescriptionGenerator.GetReadyState();
         if (readyState == AIFeatureReadyState.NotReady)
         {
-            AIFeatureReadyResult op = await ImageDescriptionGenerator.EnsureReadyAsync();
+            // EnsureReadyAsync may download the model; thread the token so Cancel
+            // aborts the wait, and bail out if the feature still failed to get ready.
+            AIFeatureReadyResult readyResult = await ImageDescriptionGenerator.EnsureReadyAsync().AsTask(cancellationToken);
+            if (readyResult.Status != AIFeatureReadyResultState.Success)
+            {
+                Debug.WriteLine($"Image description model not ready: {readyResult.Status}");
+                return string.Empty;
+            }
         }
 
         cancellationToken.ThrowIfCancellationRequested();

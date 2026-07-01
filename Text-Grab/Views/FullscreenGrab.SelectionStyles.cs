@@ -1148,8 +1148,12 @@ public partial class FullscreenGrab
 
         if (!string.IsNullOrWhiteSpace(description))
         {
-            grabIndicator.ShowSuccess();
             TextFromOCR = description;
+
+            // The overlay may hold foreground focus (it activates itself when the choice
+            // bar appears). Wait for the success flash to finish and the window to close
+            // before routing the text so a post-grab Insert targets the user's app.
+            await grabIndicator.ShowSuccessAsync();
             await FinishCommitWithTextAsync(selection, isSmallClick, isSingleLine, isTable, selectedOcrLang);
             return;
         }
@@ -1318,9 +1322,10 @@ public partial class FullscreenGrab
             return false;
         }
 
+        bool shouldInsert = false;
+
         if (NextStepDropDownButton.Flyout is ContextMenu contextMenu)
         {
-            bool shouldInsert = false;
             bool showedFreeformTemplateMessage = false;
 
             foreach (MenuItem menuItem in GetActionablePostGrabMenuItems(contextMenu))
@@ -1360,16 +1365,6 @@ public partial class FullscreenGrab
 
                 TextFromOCR = await PostGrabActionManager.ExecutePostGrabAction(action, grabContext);
             }
-
-            if (shouldInsert && !DefaultSettings.TryInsert)
-            {
-                string textToInsert = TextFromOCR;
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(100);
-                    await WindowUtilities.TryInsertString(textToInsert);
-                });
-            }
         }
 
         if (SendToEditTextToggleButton.IsChecked is true
@@ -1403,6 +1398,13 @@ public partial class FullscreenGrab
             isTable,
             destinationTextBox);
         WindowUtilities.CloseAllFullscreenGrabs();
+
+        // Insert only after the text has been routed (clipboard set) and the grab windows
+        // are closed, so the paste lands in the user's app. Fire-and-forget: TryInsertString
+        // applies the user's InsertDelay, and awaiting it would hold up the success indicator.
+        if (shouldInsert && !DefaultSettings.TryInsert && TextFromOCR is string insertText)
+            _ = WindowUtilities.TryInsertString(insertText);
+
         return true;
     }
 

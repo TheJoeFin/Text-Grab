@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -98,6 +99,19 @@ public partial class PreviousGrabWindow : Window
         LoadingViewbox.Visibility = Visibility.Collapsed;
         SuccessViewbox.Visibility = Visibility.Visible;
         CloseAfterDelay();
+    }
+
+    /// <summary>
+    /// Shows the success checkmark and completes once this window has closed, so callers
+    /// can sequence work (like inserting text into another app) after the overlay has
+    /// released any focus it took while its choice bar was shown.
+    /// </summary>
+    public Task ShowSuccessAsync()
+    {
+        TaskCompletionSource closedSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Closed += (_, _) => closedSource.TrySetResult();
+        ShowSuccess();
+        return closedSource.Task;
     }
 
     /// <summary>
