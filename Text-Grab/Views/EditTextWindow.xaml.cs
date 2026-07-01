@@ -2898,6 +2898,76 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         PopulateTemplateMenu(ApplyGrabTemplateMenuItem, textOnlyTemplates, ApplyGrabTemplateItem_Click);
         PopulateTemplateMenu(ApplyGrabTemplatePerLineMenuItem, textOnlyTemplates, ApplyGrabTemplatePerLineItem_Click);
+
+        // Patterns: saved regexes and built-in recognizers, listed together under "Apply Pattern".
+        PopulatePatternMenu(ApplyPatternMenuItem, ApplyPatternItem_Click);
+        PopulatePatternMenu(ApplyPatternPerLineMenuItem, ApplyPatternPerLineItem_Click);
+    }
+
+    private static void PopulatePatternMenu(MenuItem parent, RoutedEventHandler clickHandler)
+    {
+        // Rebuild each time the menu opens so newly saved regexes appear.
+        parent.Items.Clear();
+
+        string? currentGroup = null;
+        foreach (PatternItem pattern in PatternItem.GetAll())
+        {
+            // Header rows separate the "Saved Patterns" and "Smart Patterns" subsections.
+            if (pattern.GroupLabel != currentGroup)
+            {
+                currentGroup = pattern.GroupLabel;
+                if (parent.Items.Count > 0)
+                    parent.Items.Add(new Separator());
+
+                parent.Items.Add(new MenuItem
+                {
+                    Header = currentGroup,
+                    IsEnabled = false,
+                });
+            }
+
+            MenuItem patternItem = new()
+            {
+                Header = pattern.Name,
+                ToolTip = string.IsNullOrWhiteSpace(pattern.Description) ? null : pattern.Description,
+                Tag = pattern,
+            };
+            patternItem.Click += clickHandler;
+            parent.Items.Add(patternItem);
+        }
+    }
+
+    private void ApplyPatternItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PatternItem pattern })
+            return;
+
+        ApplySelectedTextOrAllTextTransform(text => PatternExecutor.Apply(pattern, text));
+    }
+
+    private void ApplyPatternPerLineItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PatternItem pattern })
+            return;
+
+        ApplySelectedTextOrAllTextTransform(text => ApplyPatternPerLine(pattern, text));
+    }
+
+    /// <summary>
+    /// Splits <paramref name="text"/> into lines and applies the pattern to each
+    /// non-blank line independently, preserving blank lines and line structure.
+    /// </summary>
+    private static string ApplyPatternPerLine(PatternItem pattern, string text)
+    {
+        string[] lines = text.Split(Environment.NewLine);
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(lines[i]))
+                lines[i] = PatternExecutor.Apply(pattern, lines[i]);
+        }
+
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static void PopulateTemplateMenu(MenuItem parent, List<GrabTemplate> templates, RoutedEventHandler clickHandler)
@@ -3334,8 +3404,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (PassedTextControl.SelectedText.Length > 0)
         {
-            findAndReplaceWindow.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
-            findAndReplaceWindow.FindTextBox.Select(findAndReplaceWindow.FindTextBox.Text.Length, 0);
+            findAndReplaceWindow.SetFindText(PassedTextControl.SelectedText.Trim());
             findAndReplaceWindow.SearchForText();
         }
     }
@@ -4807,6 +4876,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RoutedCommand openRecentEditWindow = new();
         _ = openRecentEditWindow.InputGestures.Add(new KeyGesture(Key.T, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(openRecentEditWindow, OpenRecentEditWindowExecuted));
+
+        RoutedCommand findAndReplaceCommand = new();
+        _ = findAndReplaceCommand.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(findAndReplaceCommand, FindAndReplaceMenuItem_Click));
 
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
@@ -6493,8 +6566,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Open Find and Replace window with this pattern and execute search
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findWindow.FindTextBox.Text = storedPattern.Pattern;
-        findWindow.UsePatternCheckBox.IsChecked = true;
+        findWindow.SetFindText(storedPattern.Pattern, useRegex: true);
         findWindow.TextEditWindow = this;
         findWindow.StringFromWindow = PassedTextControl.Text;
         findWindow.SearchForText();

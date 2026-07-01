@@ -86,15 +86,18 @@
                 IsChecked="True"
                 Style="{DynamicResource ToggleSymbolButton}" />
 
-            <TextBox
-                x:Name="FindTextBox"
+            <local:SearchBar
+                x:Name="SearchBar"
                 Grid.Column="1"
                 Margin="6,6,6,0"
-                VerticalContentAlignment="Center"
+                VerticalAlignment="Center"
                 AcceptsReturn="True"
                 AcceptsTab="True"
-                FontFamily="Segoe UI"
-                KeyUp="FindTextBox_KeyUp" />
+                ExactMatchChanged="OptionsChangedRefresh"
+                KeyUp="FindTextBox_KeyUp"
+                PlaceholderText="Find..."
+                SearchChanged="SearchBar_SearchChanged"
+                ShowExactMatchToggle="True" />
             <local:CollapsibleButton
                 x:Name="FindButton"
                 Grid.Row="0"
@@ -138,17 +141,6 @@
                 d:Visibility="Visible"
                 Orientation="Horizontal"
                 Visibility="Visible">
-                <ui:ToggleSwitch
-                    x:Name="ExactMatchCheckBox"
-                    Margin="6"
-                    VerticalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="OptionsChangedRefresh"
-                    Unchecked="OptionsChangedRefresh">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Match Exactly
-                    </TextBlock>
-                </ui:ToggleSwitch>
 
                 <local:CollapsibleButton
                     x:Name="DeleteAllMatches"
@@ -192,17 +184,6 @@
                     Icon="{ui:SymbolIcon Save24}"
                     ToolTip="Save pattern to Regex Manager"
                     Visibility="Collapsed" />
-                <ui:ToggleSwitch
-                    x:Name="UsePatternCheckBox"
-                    Margin="6"
-                    VerticalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="UsePatternCheckBox_CheckedChanged"
-                    Unchecked="UsePatternCheckBox_CheckedChanged">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Use Regex
-                    </TextBlock>
-                </ui:ToggleSwitch>
 
                 <local:CollapsibleButton
                     x:Name="MatchesToEditWindow"
@@ -262,7 +243,7 @@
                     Margin="0,0,6,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="Book24"
-                    ButtonText="Saved Patterns"
+                    ButtonText="Manage Patterns"
                     Click="ManageRegexButton_Click" />
 
                 <local:CollapsibleButton

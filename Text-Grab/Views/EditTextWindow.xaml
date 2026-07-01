@@ -320,6 +320,12 @@
                         x:Name="ApplyGrabTemplatePerLineMenuItem"
                         Header="Apply Grab Template Per Line"
                         Visibility="Collapsed" />
+                    <MenuItem
+                        x:Name="ApplyPatternMenuItem"
+                        Header="Apply Pattern" />
+                    <MenuItem
+                        x:Name="ApplyPatternPerLineMenuItem"
+                        Header="Apply Pattern Per Line" />
                     <Separator />
                     <MenuItem
                         x:Name="AddSpreadsheetRowMenuItem"
@@ -336,7 +342,8 @@
                     <MenuItem
                         x:Name="FindAndReplaceMenuItem"
                         Click="FindAndReplaceMenuItem_Click"
-                        Header="Find and Replace" />
+                        Header="Find and Replace"
+                        InputGestureText="Ctrl + Shift + F" />
                     <MenuItem
                         x:Name="DefaultWebSearch"
                         Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"

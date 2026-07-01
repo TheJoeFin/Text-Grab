@@ -46,6 +46,12 @@ public static class GrabTemplateExecutor
     private static readonly Regex PatternPlaceholderRegex =
         new(@"\{p:([^:}]+):([^:}]+)(?::([^}]*))?\}", RegexOptions.Compiled);
 
+    // Matches {r:RecognizerName:mode}, optionally followed by :value|:text and/or :separator
+    // Group 1 = recognizer name, Group 2 = match mode,
+    // Group 3 = optional output kind ("value"/"text"), Group 4 = optional separator
+    private static readonly Regex RecognizerPlaceholderRegex =
+        new(@"\{r:([^:}]+):([^:}]+)(?::(value|text))?(?::([^}]*))?\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(5);
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -81,12 +87,14 @@ public static class GrabTemplateExecutor
         // Also check if output template has {p:...} placeholders in case PatternMatches wasn't populated on save
         bool hasPatternRefs = template.PatternMatches.Count > 0
             || PatternPlaceholderRegex.IsMatch(template.OutputTemplate);
+        bool hasRecognizerRefs = template.RecognizerMatches.Count > 0
+            || RecognizerPlaceholderRegex.IsMatch(template.OutputTemplate);
         List<TemplatePatternMatch> effectivePatternMatches = template.PatternMatches.Count > 0
             ? template.PatternMatches
             : (hasPatternRefs ? ParsePatternMatchesFromOutputTemplate(template.OutputTemplate) : []);
 
         string? fullAreaText = null;
-        if (hasPatternRefs)
+        if (hasPatternRefs || hasRecognizerRefs)
         {
             try
             {
@@ -107,7 +115,10 @@ public static class GrabTemplateExecutor
         string output = ApplyOutputTemplate(template.OutputTemplate, regionResults);
 
         if (fullAreaText != null)
+        {
             output = ApplyPatternPlaceholders(output, fullAreaText, effectivePatternMatches, patternRegexes);
+            output = ApplyRecognizerPlaceholders(output, fullAreaText);
+        }
 
         return output;
     }
@@ -171,12 +182,14 @@ public static class GrabTemplateExecutor
         // Also check if output template has {p:...} placeholders in case PatternMatches wasn't populated on save
         bool hasPatternRefs = template.PatternMatches.Count > 0
             || PatternPlaceholderRegex.IsMatch(template.OutputTemplate);
+        bool hasRecognizerRefs = template.RecognizerMatches.Count > 0
+            || RecognizerPlaceholderRegex.IsMatch(template.OutputTemplate);
         List<TemplatePatternMatch> effectivePatternMatches = template.PatternMatches.Count > 0
             ? template.PatternMatches
             : (hasPatternRefs ? ParsePatternMatchesFromOutputTemplate(template.OutputTemplate) : []);
 
         string? fullAreaText = null;
-        if (hasPatternRefs)
+        if (hasPatternRefs || hasRecognizerRefs)
         {
             try
             {
@@ -198,7 +211,10 @@ public static class GrabTemplateExecutor
         string output = ApplyOutputTemplate(template.OutputTemplate, regionResults);
 
         if (fullAreaText != null)
+        {
             output = ApplyPatternPlaceholders(output, fullAreaText, effectivePatternMatches, patternRegexes);
+            output = ApplyRecognizerPlaceholders(output, fullAreaText);
+        }
 
         return output;
     }
@@ -230,6 +246,8 @@ public static class GrabTemplateExecutor
             Dictionary<string, string> patternRegexes = ResolvePatternRegexes(effectivePatternMatches);
             output = ApplyPatternPlaceholders(output, text, effectivePatternMatches, patternRegexes);
         }
+
+        output = ApplyRecognizerPlaceholders(output, text);
 
         return output;
     }
@@ -340,8 +358,17 @@ public static class GrabTemplateExecutor
     /// Extracts match values based on the mode string.
     /// </summary>
     internal static string ExtractMatchesByMode(MatchCollection matches, string mode, string separator)
+        => ExtractMatchesByMode([.. matches.Select(m => m.Value)], mode, separator);
+
+    /// <summary>
+    /// Selects values from an ordered list according to the mode string
+    /// ("first", "last", "all", or 1-based indices like "2" / "1,3,5").
+    /// Shared with recognizer placeholder/application logic.
+    /// </summary>
+    internal static string ExtractMatchesByMode(IReadOnlyList<string> allValues, string mode, string separator)
     {
-        List<string> allValues = matches.Select(m => m.Value).ToList();
+        if (allValues.Count == 0)
+            return string.Empty;
 
         return mode.ToLowerInvariant() switch
         {
@@ -352,7 +379,7 @@ public static class GrabTemplateExecutor
         };
     }
 
-    private static string ExtractByIndices(List<string> values, string mode, string separator)
+    private static string ExtractByIndices(IReadOnlyList<string> values, string mode, string separator)
     {
         // mode is either a single index like "2" or comma-separated like "1,3,5"
         string[] parts = mode.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -446,6 +473,73 @@ public static class GrabTemplateExecutor
 
         return [.. uniquePatterns.Values];
     }
+
+    // ── Recognizer placeholder processing ───────────────────────────────────────
+
+    /// <summary>
+    /// Replaces <c>{r:RecognizerName:mode}</c> placeholders (optionally with
+    /// <c>:value</c>/<c>:text</c> and a separator) in the template with results from
+    /// running the built-in recognizer over <paramref name="fullText"/>.
+    /// </summary>
+    public static string ApplyRecognizerPlaceholders(string template, string fullText)
+    {
+        if (string.IsNullOrEmpty(template) || !RecognizerPlaceholderRegex.IsMatch(template))
+            return template;
+
+        return RecognizerPlaceholderRegex.Replace(template, match =>
+        {
+            string recognizerName = match.Groups[1].Value;
+            string mode = match.Groups[2].Value;
+            RecognizerOutputKind outputKind = ParseOutputKind(match.Groups[3]);
+            string separator = match.Groups[4].Success ? match.Groups[4].Value : ", ";
+
+            BuiltInRecognizer? recognizer = BuiltInRecognizer.GetByName(recognizerName);
+            if (recognizer is null)
+                return match.Value; // leave unresolved
+
+            return RecognizerExecutor.ApplyRecognizer(recognizer, fullText, mode, separator, outputKind);
+        });
+    }
+
+    /// <summary>
+    /// Parses <c>{r:Name:mode}</c> placeholders from <paramref name="outputTemplate"/> into
+    /// <see cref="TemplateRecognizerMatch"/> objects. Useful when a template was saved
+    /// without populating <see cref="GrabTemplate.RecognizerMatches"/>.
+    /// </summary>
+    public static List<TemplateRecognizerMatch> ParseRecognizerMatchesFromOutputTemplate(string outputTemplate)
+    {
+        if (string.IsNullOrEmpty(outputTemplate))
+            return [];
+
+        MatchCollection matches = RecognizerPlaceholderRegex.Matches(outputTemplate);
+        Dictionary<string, TemplateRecognizerMatch> unique = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (Match match in matches)
+        {
+            string name = match.Groups[1].Value;
+            string mode = match.Groups[2].Value;
+            RecognizerOutputKind outputKind = ParseOutputKind(match.Groups[3]);
+            string separator = match.Groups[4].Success ? match.Groups[4].Value : ", ";
+
+            if (unique.ContainsKey(name))
+                continue;
+
+            BuiltInRecognizer? recognizer = BuiltInRecognizer.GetByName(name);
+            unique[name] = new TemplateRecognizerMatch(
+                recognizerId: recognizer?.Id ?? string.Empty,
+                recognizerName: name,
+                matchMode: mode,
+                separator: separator,
+                outputKind: outputKind);
+        }
+
+        return [.. unique.Values];
+    }
+
+    private static RecognizerOutputKind ParseOutputKind(Group outputGroup)
+        => outputGroup.Success && outputGroup.Value.Equals("text", StringComparison.OrdinalIgnoreCase)
+            ? RecognizerOutputKind.MatchedText
+            : RecognizerOutputKind.ResolvedValue;
 
     private static StoredRegex[] LoadSavedPatterns()
     {

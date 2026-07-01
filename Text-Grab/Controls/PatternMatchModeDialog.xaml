@@ -24,6 +24,7 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
+            x:Name="DialogTitleBar"
             Title="Pattern Match Options"
             Height="32"
             Margin="2,2,2,0"
@@ -60,6 +61,23 @@
                     Content="Specific Match(es)"
                     GroupName="MatchMode"
                     Tag="nth" />
+            </StackPanel>
+
+            <StackPanel
+                x:Name="OutputPanel"
+                Margin="0,0,0,12"
+                Visibility="Collapsed">
+                <TextBlock Margin="0,0,0,4" Text="Output:" />
+                <RadioButton
+                    x:Name="OutputValueRadio"
+                    Content="Resolved value"
+                    GroupName="OutputKind"
+                    IsChecked="True"
+                    Tag="value" />
+                <RadioButton
+                    Content="Matched text"
+                    GroupName="OutputKind"
+                    Tag="text" />
             </StackPanel>
 
             <StackPanel

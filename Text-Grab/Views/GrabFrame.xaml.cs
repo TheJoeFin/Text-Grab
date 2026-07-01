@@ -279,7 +279,7 @@ public partial class GrabFrame : Window
                 string value = BuildPatternPlaceholderValue(pm);
                 // Only add if not already in the list (avoid duplicates with the default "first" items)
                 if (!items.Any(i => i.Value == value))
-                    items.Add(new InlinePickerItem(displayLabel, value, "Patterns"));
+                    items.Add(new InlinePickerItem(displayLabel, value, PatternItem.SavedGroup));
             }
             TemplateOutputBox.ItemsSource = items;
         }
@@ -380,7 +380,7 @@ public partial class GrabFrame : Window
         TableToggleButton.IsChecked = history.IsTable;
 
         if (ShouldRefreshOcrBordersForTableModeActivation())
-            await DrawRectanglesAroundWords(SearchBox.Text);
+            await DrawRectanglesAroundWords(SearchBar.SearchText);
 
         UpdateFrameText();
         history.ClearTransientImage();
@@ -1402,10 +1402,7 @@ public partial class GrabFrame : Window
         AspectRationMI.Unchecked -= AspectRationMI_Checked;
         FreezeMI.Click -= FreezeMI_Click;
 
-        SearchBox.TextChanged -= SearchBox_TextChanged;
-
-        ClearBTN.Click -= ClearBTN_Click;
-        ExactMatchChkBx.Click -= ExactMatchChkBx_Click;
+        SearchBar.SearchChanged -= SearchBar_SearchChanged;
 
         RefreshBTN.Click -= RefreshBTN_Click;
         FreezeToggleButton.Click -= FreezeToggleButton_Click;
@@ -1607,9 +1604,9 @@ public partial class GrabFrame : Window
         string wordPattern = wordBorder.Word.ExtractSimplePattern();
         if (wordTextBox.SelectionLength != 0)
             wordPattern = wordTextBox.SelectedText;
-        SearchWithRegexCheckBox.IsChecked = true;
-        Keyboard.Focus(SearchBox);
-        SearchBox.Text = wordPattern;
+        SearchBar.UseRegex = true;
+        SearchBar.SearchText = wordPattern;
+        SearchBar.FocusInput();
     }
 
     [LibraryImport("user32.dll")]
@@ -1787,17 +1784,12 @@ public partial class GrabFrame : Window
 
         if (Width < 390)
         {
-            SearchBox.Visibility = Visibility.Collapsed;
-            ClearBTN.Visibility = Visibility.Collapsed;
+            SearchBar.Visibility = Visibility.Collapsed;
             MatchesMenu.Visibility = Visibility.Collapsed;
         }
         else
         {
-            SearchBox.Visibility = Visibility.Visible;
-            if (!string.IsNullOrEmpty(SearchBox.Text))
-                ClearBTN.Visibility = Visibility.Visible;
-            else
-                ClearBTN.Visibility = Visibility.Collapsed;
+            SearchBar.Visibility = Visibility.Visible;
         }
 
         if (Width < 480)
@@ -1891,12 +1883,6 @@ public partial class GrabFrame : Window
 
         if (finalCheck)
             UpdateFrameText();
-    }
-
-    private void ClearBTN_Click(object sender, RoutedEventArgs e)
-    {
-        SearchBox.Text = "";
-        MatchesMenu.Visibility = Visibility.Collapsed;
     }
 
     private async void ContactMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2283,7 +2269,7 @@ public partial class GrabFrame : Window
         IsOcrValid = true;
 
         if (string.IsNullOrWhiteSpace(searchWord))
-            searchWord = SearchBox.Text;
+            searchWord = SearchBar.SearchText;
 
         ClearRenderedWordBorders();
 
@@ -2400,7 +2386,7 @@ public partial class GrabFrame : Window
         ocrResultOfWindow = null;
 
         if (string.IsNullOrWhiteSpace(searchWord))
-            searchWord = SearchBox.Text;
+            searchWord = SearchBar.SearchText;
 
         ClearRenderedWordBorders();
 
@@ -2463,7 +2449,7 @@ public partial class GrabFrame : Window
         IsOcrValid = true;
 
         if (string.IsNullOrWhiteSpace(searchWord))
-            searchWord = SearchBox.Text;
+            searchWord = SearchBar.SearchText;
 
         ClearRenderedWordBorders();
 
@@ -2651,8 +2637,8 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (TextSearchUtilities.HasSearchText(SearchBox.Text) && SearchBox.Text != "Search For Text...")
-            SearchBox.Text = "";
+        if (TextSearchUtilities.HasSearchText(SearchBar.SearchText) && SearchBar.SearchText != "Search For Text...")
+            SearchBar.SearchText = "";
         else if (RectanglesCanvas.Children.Count > 0)
         {
             CancelTablePlacement(clearManualSeparators: true);
@@ -2665,12 +2651,6 @@ public partial class GrabFrame : Window
         }
         else
             Close();
-    }
-
-    private void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)
-    {
-        reSearchTimer.Stop();
-        reSearchTimer.Start();
     }
 
     private void ExitEditMode()
@@ -3652,7 +3632,7 @@ public partial class GrabFrame : Window
         if (AutoOcrCheckBox.IsChecked is false)
             return;
 
-        if (SearchBox.Text is string searchText)
+        if (SearchBar.SearchText is string searchText)
         {
             // Timer-driven redraws are not user actions, so the word borders
             // they render must not be recorded in the undo stack; recording
@@ -3794,7 +3774,7 @@ public partial class GrabFrame : Window
         if (AutoOcrCheckBox.IsChecked is false)
             FreezeGrabFrame();
 
-        if (SearchBox.Text is string searchText)
+        if (SearchBar.SearchText is string searchText)
             await DrawRectanglesAroundWords(searchText);
 
         UndoRedo.EndTransaction();
@@ -3814,8 +3794,14 @@ public partial class GrabFrame : Window
     private void ReSearchTimer_Tick(object? sender, EventArgs e)
     {
         reSearchTimer.Stop();
-        if (SearchBox.Text is not string searchText)
+        string searchText = SearchBar.SearchText;
+
+        // A smart pattern (recognizer) chip is active; typed text narrows its matches.
+        if (SearchBar.SelectedPattern is { } selectedPattern)
+        {
+            RunPatternSearch(selectedPattern, searchText);
             return;
+        }
 
         if (!TextSearchUtilities.HasSearchText(searchText) && !isSearchSelectionOverridden)
         {
@@ -3829,8 +3815,8 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (SearchWithRegexCheckBox.IsChecked is false && ExactMatchChkBx.IsChecked is bool matchExactly)
-            searchText = searchText.EscapeSpecialRegexChars(matchExactly);
+        if (!SearchBar.UseRegex)
+            searchText = searchText.EscapeSpecialRegexChars(SearchBar.ExactMatch);
 
         Regex regex;
 
@@ -3838,7 +3824,7 @@ public partial class GrabFrame : Window
         {
             regex = TextSearchUtilities.CreateGrabFrameSearchRegex(
                 searchText,
-                ExactMatchChkBx.IsChecked is true);
+                SearchBar.ExactMatch);
         }
         catch (Exception)
         {
@@ -3898,6 +3884,56 @@ public partial class GrabFrame : Window
             UpdateTemplateBadges();
     }
 
+    /// <summary>
+    /// Selects every word border / PDF line that contains at least one entity recognized
+    /// by <paramref name="recognizer"/>, and reports the total recognized-entity count.
+    /// </summary>
+    private static bool MatchesNarrowText(string text, string narrowText)
+        => string.IsNullOrEmpty(narrowText) || text.Contains(narrowText, StringComparison.CurrentCultureIgnoreCase);
+
+    private void RunPatternSearch(PatternItem pattern, string narrowText = "")
+    {
+        int numberOfMatches = 0;
+
+        if (!isSearchSelectionOverridden)
+        {
+            foreach (WordBorder wb in wordBorders)
+            {
+                int count = MatchesNarrowText(wb.Word, narrowText)
+                    ? PatternExecutor.GetMatches(pattern, wb.Word).Count
+                    : 0;
+                numberOfMatches += count;
+
+                if (count > 0)
+                    wb.Select();
+                else
+                    wb.Deselect();
+            }
+
+            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
+            {
+                int count = MatchesNarrowText(pdfTextLine.Text, narrowText)
+                    ? PatternExecutor.GetMatches(pattern, pdfTextLine.Text).Count
+                    : 0;
+                numberOfMatches += count;
+
+                if (count > 0)
+                    pdfTextLine.Select();
+                else
+                    pdfTextLine.Deselect();
+            }
+        }
+
+        UpdateFrameText();
+
+        MatchesTXTBLK.Text = numberOfMatches == 1 ? "1 Match" : $"{numberOfMatches} Matches";
+        MatchesMenu.Visibility = Visibility.Visible;
+        LanguagesComboBox.Visibility = Visibility.Collapsed;
+
+        if (TemplateSavePanel.Visibility == Visibility.Visible)
+            UpdateTemplateBadges();
+    }
+
     private void ResetGrabFrame()
     {
         CancelTablePlacement();
@@ -3927,33 +3963,12 @@ public partial class GrabFrame : Window
         UpdateFrameText();
     }
 
-    private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
-    {
-        isSearchSelectionOverridden = false;
-        reSearchTimer.Stop();
-        reSearchTimer.Start();
-    }
-
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void SearchBar_SearchChanged(object? sender, EventArgs e)
     {
         if (!IsLoaded)
             return;
 
-        if (sender is not TextBox searchBox) return;
-
-        if (string.IsNullOrEmpty(SearchBox.Text))
-        {
-            ClearBTN.Visibility = Visibility.Collapsed;
-            SearchLabel.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            ClearBTN.Visibility = Visibility.Visible;
-            SearchLabel.Visibility = Visibility.Collapsed;
-        }
-
         isSearchSelectionOverridden = false;
-
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
@@ -4056,7 +4071,10 @@ public partial class GrabFrame : Window
         // Parse pattern references from the output template
         List<TemplatePatternMatch> patternMatches = ParsePatternMatchesFromTemplate(outputTemplateText);
 
-        if (wordBorders.Count == 0 && patternMatches.Count == 0)
+        // Parse recognizer references from the output template
+        List<TemplateRecognizerMatch> recognizerMatches = GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate(outputTemplateText);
+
+        if (wordBorders.Count == 0 && patternMatches.Count == 0 && recognizerMatches.Count == 0)
         {
             await new Wpf.Ui.Controls.MessageBox
             {
@@ -4090,6 +4108,7 @@ public partial class GrabFrame : Window
             ReferenceImageHeight = ch,
             Regions = regions,
             PatternMatches = patternMatches,
+            RecognizerMatches = recognizerMatches,
         };
 
         if (_editingTemplate is not null)
@@ -4330,22 +4349,35 @@ public partial class GrabFrame : Window
                 return new InlinePickerItem(label, $"{{{i + 1}}}", "Regions");
             })];
 
-        // Pattern items from saved StoredRegex patterns
-        List<InlinePickerItem> patternItems = LoadPatternPickerItems();
-        items.AddRange(patternItems);
+        // Pattern items — saved regexes and built-in recognizers as one "Patterns" concept,
+        // split into "Saved Patterns" / "Smart Patterns" subsections.
+        items.AddRange(PatternItem.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
 
         TemplateOutputBox.ItemsSource = items;
 
-        // Wire up the pattern selection callback
+        // Wire up the pattern / recognizer selection callbacks
         TemplateOutputBox.PatternItemSelected ??= OnPatternItemSelected;
+        TemplateOutputBox.RecognizerItemSelected ??= OnRecognizerItemSelected;
     }
 
-    private static List<InlinePickerItem> LoadPatternPickerItems()
+    private TemplateRecognizerMatch? OnRecognizerItemSelected(InlinePickerItem item)
     {
-        StoredRegex[] patterns = LoadSavedPatterns();
+        BuiltInRecognizer? recognizer = BuiltInRecognizer.GetByName(item.DisplayName);
 
-        return [.. patterns.Select(p =>
-            new InlinePickerItem(p.Name, $"{{p:{p.Name}:first}}", "Patterns"))];
+        PatternMatchModeDialog dialog = new(recognizer?.Id ?? string.Empty, item.DisplayName, isRecognizer: true)
+        {
+            Owner = this,
+        };
+
+        if (dialog.ShowDialog() is not true || dialog.Result is null)
+            return null;
+
+        return new TemplateRecognizerMatch(
+            recognizerId: recognizer?.Id ?? string.Empty,
+            recognizerName: item.DisplayName,
+            matchMode: dialog.Result.MatchMode,
+            separator: dialog.Result.Separator,
+            outputKind: dialog.SelectedOutputKind);
     }
 
     private TemplatePatternMatch? OnPatternItemSelected(InlinePickerItem item)
@@ -4381,7 +4413,7 @@ public partial class GrabFrame : Window
 
         if (ShouldRefreshOcrBordersForTableModeActivation())
         {
-            await DrawRectanglesAroundWords(SearchBox.Text);
+            await DrawRectanglesAroundWords(SearchBar.SearchText);
             UpdateFrameText();
             return;
         }
@@ -5480,7 +5512,7 @@ public partial class GrabFrame : Window
         DefaultSettings.Save();
         SetWordGroupingMenuItems();
 
-        await DrawRectanglesAroundWords(SearchBox.Text);
+        await DrawRectanglesAroundWords(SearchBar.SearchText);
         UpdateFrameText();
     }
 
