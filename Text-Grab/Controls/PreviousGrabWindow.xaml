@@ -21,6 +21,10 @@
     WindowStyle="None"
     mc:Ignorable="d">
     <Grid>
+        <Image
+            x:Name="RegionBackgroundImage"
+            Stretch="Fill"
+            Visibility="Collapsed" />
         <Viewbox
             x:Name="SuccessViewbox"
             MaxWidth="60"
@@ -46,5 +50,41 @@
                 Foreground="{StaticResource Teal}"
                 IsIndeterminate="True" />
         </Viewbox>
+        <Border
+            x:Name="ChoiceBar"
+            Padding="8"
+            VerticalAlignment="Bottom"
+            Background="#D0000000"
+            Visibility="Collapsed">
+            <Viewbox
+                MaxHeight="48"
+                HorizontalAlignment="Center"
+                Stretch="Uniform"
+                StretchDirection="DownOnly">
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <ui:Button
+                        x:Name="CancelButton"
+                        Margin="4,0"
+                        Click="CancelButton_Click"
+                        Content="Cancel"
+                        Icon="{ui:SymbolIcon Dismiss24}" />
+                    <ui:Button
+                        x:Name="ReGrabButton"
+                        Margin="4,0"
+                        Click="ReGrabButton_Click"
+                        Content="Re-grab"
+                        Icon="{ui:SymbolIcon ArrowClockwise24}" />
+                    <ui:Button
+                        x:Name="SendToGrabFrameButton"
+                        Margin="4,0"
+                        Click="SendToGrabFrameButton_Click"
+                        Content="Send to Grab Frame"
+                        Icon="{ui:SymbolIcon PanelBottom20}"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </Viewbox>
+        </Border>
     </Grid>
 </Window>

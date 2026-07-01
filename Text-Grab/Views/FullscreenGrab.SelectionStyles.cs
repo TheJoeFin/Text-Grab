@@ -2,6 +2,7 @@ using Dapplo.Windows.User32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -1035,6 +1036,23 @@ public partial class FullscreenGrab
         // Direct Text (UI Automation) reads the live screen, so a Topmost window
         // over the region would occlude the read and return no text — skip it.
         ILanguage selectedLanguage = LanguagesComboBox.SelectedItem as ILanguage ?? LanguageUtilities.GetOCRLanguage();
+
+        // Windows AI image descriptions are slow ("thinking"). Pre-capture the region from
+        // the frozen background so OCR no longer needs the fullscreen windows on screen; that
+        // lets us hide them (so the spinner doesn't hold the whole screen hostage) and offer
+        // cancel / re-grab / send-to-grab-frame choices while the description runs.
+        if (selectedLanguage is WindowsAiDescriptionLang && !isSmallClick)
+        {
+            if (selection.CapturedImage is null && GetBitmapSourceForGrabFrame(selection) is BitmapSource preCaptured)
+                selection = selection with { CapturedImage = preCaptured };
+
+            if (selection.CapturedImage is not null)
+            {
+                await CommitAiDescriptionAsync(selection, isSmallClick, selectedLanguage);
+                return;
+            }
+        }
+
         PreviousGrabWindow? grabIndicator = null;
         if (selectedLanguage is not UiAutomationLang)
         {
@@ -1056,6 +1074,134 @@ public partial class FullscreenGrab
         }
     }
 
+    /// <summary>
+    /// Commits a Windows AI image-description grab: hides the fullscreen windows while the
+    /// (slow) description runs, shows the frozen region snapshot with a spinner, and — if the
+    /// work takes longer than two seconds — lets the user cancel, re-grab, or (once it finishes
+    /// empty/failed) send the originally captured image to a Grab Frame. The token truly aborts
+    /// the on-device inference on cancel.
+    /// </summary>
+    private async Task CommitAiDescriptionAsync(FullscreenCaptureResult selection, bool isSmallClick, ILanguage selectedOcrLang)
+    {
+        bool isSingleLine = SingleLineMenuItem is not null && SingleLineMenuItem.IsChecked;
+        bool isTable = TableMenuItem is not null && TableMenuItem.IsChecked;
+
+        BitmapSource snapshot = selection.CapturedImage!;
+        using Bitmap originalBitmap = ImageMethods.BitmapSourceToBitmap(snapshot);
+
+        PreviousGrabWindow grabIndicator = new(GetHistoryPositionRect(selection), PreviousGrabIndicator.Loading, snapshot);
+        TaskCompletionSource<GrabChoice> choiceSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        grabIndicator.ChoiceSelected += (_, choice) => choiceSource.TrySetResult(choice);
+
+        grabIndicator.Show();
+        SetFullscreenGrabsVisible(false);
+
+        using CancellationTokenSource cts = new();
+        Task<string> descriptionTask = WindowsAiUtilities.GetTextDescriptionWithWinAI(originalBitmap, cts.Token);
+
+        // If it's still working after two seconds, surface Cancel / Re-grab.
+        Task firstFinished = await Task.WhenAny(descriptionTask, Task.Delay(TimeSpan.FromSeconds(2)));
+        bool wasSlow = firstFinished != descriptionTask;
+        if (wasSlow)
+            grabIndicator.ShowRunningChoices();
+
+        // Race the description against a user choice made while it is still running.
+        Task settled = await Task.WhenAny(descriptionTask, choiceSource.Task);
+        if (settled == choiceSource.Task)
+        {
+            GrabChoice runningChoice = choiceSource.Task.Result; // Cancel or Re-grab
+            cts.Cancel();
+
+            // Request cancellation but dismiss right away — don't block the UI waiting for the
+            // on-device inference to unwind. Observe the abandoned task's completion in the
+            // background so a fault never goes unobserved.
+            _ = descriptionTask.ContinueWith(static t => _ = t.Exception, TaskScheduler.Default);
+
+            grabIndicator.Close();
+            FinishAiDescriptionWithoutText(runningChoice, selection);
+            return;
+        }
+
+        string description;
+        try
+        {
+            description = await descriptionTask;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"AI description failed: {ex.Message}");
+            description = string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(description))
+        {
+            grabIndicator.ShowSuccess();
+            TextFromOCR = description;
+            await FinishCommitWithTextAsync(selection, isSmallClick, isSingleLine, isTable, selectedOcrLang);
+            return;
+        }
+
+        // Nothing was produced.
+        if (!wasSlow)
+        {
+            // Fast failure: just reset so the user can re-select (original behavior).
+            grabIndicator.Close();
+            SetFullscreenGrabsVisible(true);
+            ResetForNewSelection(selection);
+            return;
+        }
+
+        // Slow failure: offer Cancel / Re-grab / Send to Grab Frame.
+        grabIndicator.ShowFailedChoices();
+        GrabChoice failedChoice = choiceSource.Task.IsCompleted ? choiceSource.Task.Result : await choiceSource.Task;
+        grabIndicator.Close();
+
+        if (failedChoice == GrabChoice.SendToGrabFrame)
+        {
+            await PlaceGrabFrameInSelectionRectAsync(selection);
+            return;
+        }
+
+        FinishAiDescriptionWithoutText(failedChoice, selection);
+    }
+
+    private void FinishAiDescriptionWithoutText(GrabChoice choice, FullscreenCaptureResult selection)
+    {
+        if (choice == GrabChoice.ReGrab)
+        {
+            SetFullscreenGrabsVisible(true);
+            ResetForNewSelection(selection);
+        }
+        else
+        {
+            // Cancel (or no explicit choice) — dismiss the fullscreen grab entirely.
+            WindowUtilities.CloseAllFullscreenGrabs();
+        }
+    }
+
+    /// <summary>
+    /// Returns the fullscreen grab to a ready-to-select state after a grab produced no text.
+    /// </summary>
+    private void ResetForNewSelection(FullscreenCaptureResult selection)
+    {
+        BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? .2 : 0.0;
+        TopButtonsStackPanel.Visibility = Visibility.Visible;
+
+        if (selection.SelectionStyle == FsgSelectionStyle.AdjustAfter)
+            EnterAdjustAfterMode();
+        else
+            ResetSelectionVisualState();
+    }
+
+    private static void SetFullscreenGrabsVisible(bool visible)
+    {
+        if (Application.Current is null)
+            return;
+
+        foreach (FullscreenGrab fullscreenGrab in Application.Current.Windows.OfType<FullscreenGrab>())
+            fullscreenGrab.Visibility = visible ? Visibility.Visible : Visibility.Hidden;
+    }
+
     private async Task<bool> CommitSelectionCoreAsync(FullscreenCaptureResult selection, bool isSmallClick)
     {
         if (LanguagesComboBox.SelectedItem is not ILanguage selectedOcrLang)
@@ -1067,43 +1213,64 @@ public partial class FullscreenGrab
         IntPtr fullscreenGrabHandle = new WindowInteropHelper(this).Handle;
         IReadOnlyCollection<IntPtr>? excludedHandles = fullscreenGrabHandle == IntPtr.Zero ? null : [fullscreenGrabHandle];
 
-        if (isSmallClick && selection.SelectionStyle == FsgSelectionStyle.Region)
+        try
         {
-            BackgroundBrush.Opacity = 0;
-            PresentationSource? presentationSource = PresentationSource.FromVisual(this);
-            Matrix transformToDevice = presentationSource?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
-            Rect selectionRect = GetCurrentSelectionRect();
-            Point clickedPointForOcr = transformToDevice.Transform(new Point(
-                selectionRect.Left + (selectionRect.Width / 2.0),
-                selectionRect.Top + (selectionRect.Height / 2.0)));
-            clickedPointForOcr = new Point(
-                Math.Round(clickedPointForOcr.X),
-                Math.Round(clickedPointForOcr.Y));
+            if (isSmallClick && selection.SelectionStyle == FsgSelectionStyle.Region)
+            {
+                BackgroundBrush.Opacity = 0;
+                PresentationSource? presentationSource = PresentationSource.FromVisual(this);
+                Matrix transformToDevice = presentationSource?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
+                Rect selectionRect = GetCurrentSelectionRect();
+                Point clickedPointForOcr = transformToDevice.Transform(new Point(
+                    selectionRect.Left + (selectionRect.Width / 2.0),
+                    selectionRect.Top + (selectionRect.Height / 2.0)));
+                clickedPointForOcr = new Point(
+                    Math.Round(clickedPointForOcr.X),
+                    Math.Round(clickedPointForOcr.Y));
 
-            TextFromOCR = await OcrUtilities.GetClickedWordAsync(this, clickedPointForOcr, selectedOcrLang);
+                TextFromOCR = await OcrUtilities.GetClickedWordAsync(this, clickedPointForOcr, selectedOcrLang);
+            }
+            else if (selectedOcrLang is UiAutomationLang)
+            {
+                TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
+            }
+            else if (selection.CapturedImage is not null)
+            {
+                TextFromOCR = isTable
+                    ? await OcrUtilities.GetTextFromBitmapSourceAsTableAsync(selection.CapturedImage, selectedOcrLang)
+                    : await OcrUtilities.GetTextFromBitmapSourceAsync(selection.CapturedImage, selectedOcrLang);
+            }
+            else if (isTable)
+            {
+                // TODO: Look into why this happens and find a better way to dispose the bitmap
+                // DO NOT add a using statement to this selected bitmap, it crashes the app
+                Bitmap selectionBitmap = ImageMethods.GetRegionOfScreenAsBitmap(selection.CaptureRegion.AsRectangle());
+                TextFromOCR = await OcrUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
+            }
+            else
+            {
+                TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
+            }
         }
-        else if (selectedOcrLang is UiAutomationLang)
+        catch (Exception ex)
         {
-            TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
-        }
-        else if (selection.CapturedImage is not null)
-        {
-            TextFromOCR = isTable
-                ? await OcrUtilities.GetTextFromBitmapSourceAsTableAsync(selection.CapturedImage, selectedOcrLang)
-                : await OcrUtilities.GetTextFromBitmapSourceAsync(selection.CapturedImage, selectedOcrLang);
-        }
-        else if (isTable)
-        {
-            // TODO: Look into why this happens and find a better way to dispose the bitmap
-            // DO NOT add a using statement to this selected bitmap, it crashes the app
-            Bitmap selectionBitmap = ImageMethods.GetRegionOfScreenAsBitmap(selection.CaptureRegion.AsRectangle());
-            TextFromOCR = await OcrUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
-        }
-        else
-        {
-            TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
+            // A failed OCR / AI description (e.g. Windows AI throwing or timing out) must not
+            // leave the fullscreen grab in a half-committed state with the old selection still
+            // drawn. Fall through with empty text so the reset logic below runs.
+            System.Diagnostics.Debug.WriteLine($"Fullscreen grab OCR failed: {ex.Message}");
+            TextFromOCR = string.Empty;
         }
 
+        return await FinishCommitWithTextAsync(selection, isSmallClick, isSingleLine, isTable, selectedOcrLang);
+    }
+
+    /// <summary>
+    /// Records history, runs post-grab actions, routes the OCR output, and closes the fullscreen
+    /// grab for the text currently in <see cref="TextFromOCR"/>. Returns false — resetting for a
+    /// new selection — when no text was produced.
+    /// </summary>
+    private async Task<bool> FinishCommitWithTextAsync(FullscreenCaptureResult selection, bool isSmallClick, bool isSingleLine, bool isTable, ILanguage selectedOcrLang)
+    {
         if (DefaultSettings.UseHistory && !isSmallClick)
         {
             Bitmap? historyBitmap = selection.CapturedImage is not null
@@ -1134,14 +1301,7 @@ public partial class FullscreenGrab
 
         if (string.IsNullOrWhiteSpace(TextFromOCR))
         {
-            BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? .2 : 0.0;
-            TopButtonsStackPanel.Visibility = Visibility.Visible;
-
-            if (selection.SelectionStyle == FsgSelectionStyle.AdjustAfter)
-                EnterAdjustAfterMode();
-            else
-                ResetSelectionVisualState();
-
+            ResetForNewSelection(selection);
             return false;
         }
 
