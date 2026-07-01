@@ -7,6 +7,14 @@ namespace Text_Grab.Services;
 
 public partial class CalculationService
 {
+    private const double AverageDaysPerMonth = 30.44;
+    private const double AverageDaysPerYear = 365.25;
+    private const double HoursPerDay = 24d;
+    private const double MinutesPerDay = HoursPerDay * 60d;
+    private const double SecondsPerDay = MinutesPerDay * 60d;
+
+    private readonly record struct DurationUnitInfo(string SingularName, string PluralName, double DaysPerUnit);
+
     /// <summary>
     /// Attempts to evaluate a line as a date/time math expression.
     /// Supports expressions like "March 10th + 10 days", "2/25/26 11:02pm + 800 mins", etc.
@@ -18,7 +26,7 @@ public partial class CalculationService
     /// <returns>True if the line was successfully evaluated as a date/time math expression</returns>
     public static bool TryEvaluateDateTimeMath(string line, out string result)
     {
-        return TryEvaluateDateTimeMath(line, out result, out _, null);
+        return TryEvaluateDateTimeMath(line, out result, out _, null, out _);
     }
 
     /// <summary>
@@ -32,14 +40,34 @@ public partial class CalculationService
     /// <returns>True if the line was successfully evaluated as a date/time math expression</returns>
     public static bool TryEvaluateDateTimeMath(string line, out string result, out DateTime? parsedDateTime, DateTime? baseDateTime)
     {
+        return TryEvaluateDateTimeMath(line, out result, out parsedDateTime, baseDateTime, out _);
+    }
+
+    /// <summary>
+    /// Attempts to evaluate a line as a date/time math expression, optionally returning a numeric
+    /// result for duration conversions like "3.6 years to days" or date differences with a target unit.
+    /// </summary>
+    private static bool TryEvaluateDateTimeMath(string line, out string result, out DateTime? parsedDateTime, DateTime? baseDateTime, out double? numericResult)
+    {
         result = string.Empty;
         parsedDateTime = null;
+        numericResult = null;
         if (string.IsNullOrWhiteSpace(line))
             return false;
 
         // Try date subtraction first (date - date = timespan)
-        if (TryEvaluateDateSubtraction(line, out result))
+        if (TryEvaluateDateSubtraction(line, out result, out double? dateSubtractionNumericResult))
+        {
+            numericResult = dateSubtractionNumericResult;
             return true;
+        }
+
+        // Then try standalone duration conversions like "3.6 years to days"
+        if (TryEvaluateDurationConversion(line, out result, out double durationConversionValue))
+        {
+            numericResult = durationConversionValue;
+            return true;
+        }
 
         // Find the first explicit arithmetic operation (requires +/-) to anchor where arithmetic starts
         Match anchorMatch = DateTimeArithmeticPattern().Match(line);
@@ -152,7 +180,7 @@ public partial class CalculationService
 
         dateTime = dateTime.AddYears(wholeYears);
         if (Math.Abs(fraction) > double.Epsilon)
-            dateTime = dateTime.AddDays(fraction * 365.25);
+            dateTime = dateTime.AddDays(fraction * AverageDaysPerYear);
 
         return dateTime;
     }
@@ -164,7 +192,7 @@ public partial class CalculationService
 
         dateTime = dateTime.AddMonths(wholeMonths);
         if (Math.Abs(fraction) > double.Epsilon)
-            dateTime = dateTime.AddDays(fraction * 30.44);
+            dateTime = dateTime.AddDays(fraction * AverageDaysPerMonth);
 
         return dateTime;
     }
@@ -252,20 +280,30 @@ public partial class CalculationService
     /// <summary>
     /// Attempts to evaluate a line as a date subtraction expression (date - date = timespan).
     /// Supports expressions like "March 10th - January 1st", "today - yesterday", etc.
-    /// Returns the duration between the two dates in whole units down to seconds.
+    /// Returns the duration between the two dates in whole units down to seconds, or as a
+    /// single requested unit for expressions like "... in weeks".
     /// </summary>
-    private static bool TryEvaluateDateSubtraction(string line, out string result)
+    private static bool TryEvaluateDateSubtraction(string line, out string result, out double? numericResult)
     {
         result = string.Empty;
+        numericResult = null;
 
-        MatchCollection matches = DateSubtractionSplitPattern().Matches(line);
+        string subtractionExpression = line.Trim();
+        DurationUnitInfo? targetUnit = null;
+        if (TryExtractRequestedDurationUnit(subtractionExpression, out string expressionWithoutTargetUnit, out DurationUnitInfo requestedTargetUnit))
+        {
+            subtractionExpression = expressionWithoutTargetUnit;
+            targetUnit = requestedTargetUnit;
+        }
+
+        MatchCollection matches = DateSubtractionSplitPattern().Matches(subtractionExpression);
         if (matches.Count == 0)
             return false;
 
         foreach (Match splitMatch in matches)
         {
-            string leftPart = line[..splitMatch.Index].Trim();
-            string rightPart = line[(splitMatch.Index + splitMatch.Length)..].Trim();
+            string leftPart = subtractionExpression[..splitMatch.Index].Trim();
+            string rightPart = subtractionExpression[(splitMatch.Index + splitMatch.Length)..].Trim();
 
             if (string.IsNullOrEmpty(leftPart) || string.IsNullOrEmpty(rightPart))
                 continue;
@@ -287,11 +325,50 @@ public partial class CalculationService
                 earlier = date1;
             }
 
-            result = FormatTimeSpanHumanReadable(earlier, later);
+            if (targetUnit.HasValue)
+            {
+                double convertedValue = ConvertDurationValue((later - earlier).TotalDays, new DurationUnitInfo("day", "days", 1d), targetUnit.Value);
+                result = FormatDurationValue(convertedValue, targetUnit.Value);
+                numericResult = convertedValue;
+            }
+            else
+            {
+                result = FormatTimeSpanHumanReadable(earlier, later);
+            }
             return true;
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Attempts to evaluate a standalone duration conversion like "3.6 years to days".
+    /// Uses fixed-average durations for months, years, and decades.
+    /// </summary>
+    private static bool TryEvaluateDurationConversion(string line, out string result, out double numericResult)
+    {
+        result = string.Empty;
+        numericResult = 0;
+
+        Match match = ToConversionPattern().Match(line);
+        if (!match.Success)
+            match = InConversionPattern().Match(line);
+
+        if (!match.Success)
+            return false;
+
+        string sourcePart = match.Groups[1].Value.Trim();
+        string targetPart = match.Groups[2].Value.Trim();
+
+        if (!TryParseDurationValueAndUnit(sourcePart, out double sourceValue, out DurationUnitInfo sourceUnit))
+            return false;
+
+        if (!TryResolveDurationUnit(targetPart, out DurationUnitInfo targetUnit))
+            return false;
+
+        numericResult = ConvertDurationValue(sourceValue, sourceUnit, targetUnit);
+        result = FormatDurationValue(numericResult, targetUnit);
+        return true;
     }
 
     /// <summary>
@@ -333,6 +410,110 @@ public partial class CalculationService
         return parts.Count == 0 ? "0 seconds" : string.Join(" ", parts);
     }
 
+    private static bool TryExtractRequestedDurationUnit(string input, out string expressionWithoutTargetUnit, out DurationUnitInfo targetUnit)
+    {
+        expressionWithoutTargetUnit = input.Trim();
+        targetUnit = default;
+
+        Match match = DateSubtractionTargetUnitPattern().Match(expressionWithoutTargetUnit);
+        if (!match.Success)
+            return false;
+
+        string body = match.Groups["body"].Value.Trim();
+        string unitText = match.Groups["unit"].Value.Trim();
+        if (string.IsNullOrEmpty(body) || !TryResolveDurationUnit(unitText, out targetUnit))
+            return false;
+
+        expressionWithoutTargetUnit = body;
+        return true;
+    }
+
+    private static bool TryParseDurationValueAndUnit(string input, out double value, out DurationUnitInfo unit)
+    {
+        value = 0;
+        unit = default;
+
+        Match match = DurationValuePattern().Match(input.Trim());
+        if (!match.Success)
+            return false;
+
+        if (!TryParseFlexibleDouble(match.Groups["number"].Value, out value))
+            return false;
+
+        return TryResolveDurationUnit(match.Groups["unit"].Value, out unit);
+    }
+
+    private static bool TryResolveDurationUnit(string unitText, out DurationUnitInfo unit)
+    {
+        switch (unitText.Trim().ToLowerInvariant())
+        {
+            case "decade":
+            case "decades":
+                unit = new DurationUnitInfo("decade", "decades", AverageDaysPerYear * 10d);
+                return true;
+            case "year":
+            case "years":
+                unit = new DurationUnitInfo("year", "years", AverageDaysPerYear);
+                return true;
+            case "month":
+            case "months":
+                unit = new DurationUnitInfo("month", "months", AverageDaysPerMonth);
+                return true;
+            case "week":
+            case "weeks":
+                unit = new DurationUnitInfo("week", "weeks", 7d);
+                return true;
+            case "day":
+            case "days":
+                unit = new DurationUnitInfo("day", "days", 1d);
+                return true;
+            case "hour":
+            case "hours":
+            case "hr":
+            case "hrs":
+                unit = new DurationUnitInfo("hour", "hours", 1d / HoursPerDay);
+                return true;
+            case "minute":
+            case "minutes":
+            case "min":
+            case "mins":
+                unit = new DurationUnitInfo("minute", "minutes", 1d / MinutesPerDay);
+                return true;
+            case "second":
+            case "seconds":
+            case "sec":
+            case "secs":
+                unit = new DurationUnitInfo("second", "seconds", 1d / SecondsPerDay);
+                return true;
+            default:
+                unit = default;
+                return false;
+        }
+    }
+
+    private static double ConvertDurationValue(double value, DurationUnitInfo sourceUnit, DurationUnitInfo targetUnit)
+    {
+        double totalDays = value * sourceUnit.DaysPerUnit;
+        return totalDays / targetUnit.DaysPerUnit;
+    }
+
+    private static string FormatDurationValue(double value, DurationUnitInfo unit)
+    {
+        string unitName = Math.Abs(Math.Abs(value) - 1d) < 1e-9
+            ? unit.SingularName
+            : unit.PluralName;
+
+        return $"{FormatDurationNumber(value)} {unitName}";
+    }
+
+    private static string FormatDurationNumber(double value)
+    {
+        double rounded = Math.Round(value);
+        return Math.Abs(value - rounded) < 1e-9
+            ? rounded.ToString("N0")
+            : value.ToString("#,##0.###");
+    }
+
     [System.Text.RegularExpressions.GeneratedRegex(@"(?<op>[+-])\s*(?<number>\d+\.?\d*)\s*(?<unit>decades?|years?|months?|weeks?|days?|hours?|hrs?|hr|minutes?|mins?|min)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
     private static partial System.Text.RegularExpressions.Regex DateTimeArithmeticPattern();
 
@@ -350,4 +531,10 @@ public partial class CalculationService
 
     [System.Text.RegularExpressions.GeneratedRegex(@"\s+-\s+")]
     private static partial System.Text.RegularExpressions.Regex DateSubtractionSplitPattern();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^(?<body>.+?)\s+(?:to|in)\s+(?<unit>decades?|years?|months?|weeks?|days?|hours?|hrs?|hr|minutes?|mins?|min|seconds?|secs?|sec)\s*$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex DateSubtractionTargetUnitPattern();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^(?<number>[-+]?(?:\d[\d,._ ]*\d|\d))\s*(?<unit>decades?|years?|months?|weeks?|days?|hours?|hrs?|hr|minutes?|mins?|min|seconds?|secs?|sec)\s*$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex DurationValuePattern();
 }

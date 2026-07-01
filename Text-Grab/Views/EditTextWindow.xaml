@@ -68,6 +68,46 @@
                 Click="MoveLineDownMenuItem_Click"
                 Header="Move Selection Down"
                 InputGestureText="Alt + Down" />
+            <MenuItem Click="ShuffleLinesMenuItem_Click" Header="Shuffle Lines" />
+        </ContextMenu>
+        <ContextMenu x:Key="MarkdownContextMenu">
+            <MenuItem Command="ApplicationCommands.Undo" />
+            <MenuItem Command="ApplicationCommands.Redo" />
+            <Separator />
+            <MenuItem Command="ApplicationCommands.Cut" />
+            <MenuItem Command="ApplicationCommands.Copy" />
+            <MenuItem Command="ApplicationCommands.Paste" />
+            <Separator />
+            <MenuItem Command="ApplicationCommands.SelectAll" />
+        </ContextMenu>
+        <ContextMenu x:Key="SpreadsheetContextMenu" Opened="SpreadsheetContextMenu_Opened">
+            <MenuItem Click="AddSpreadsheetRowMenuItem_Click" Header="Add Row Below" />
+            <MenuItem Click="AddSpreadsheetColumnMenuItem_Click" Header="Add Column Right" />
+            <Separator />
+            <MenuItem Command="ApplicationCommands.Cut" />
+            <MenuItem Command="ApplicationCommands.Copy" />
+            <MenuItem Command="ApplicationCommands.Paste" />
+            <Separator />
+            <MenuItem
+                Click="ToggleSpreadsheetWrapTextMenuItem_Click"
+                Header="Wrap Text"
+                IsCheckable="True"
+                Tag="SpreadsheetWrapTextToggle" />
+            <Separator />
+            <MenuItem Click="CopySpreadsheetRowsMenuItem_Click" Header="Copy Selected Rows" />
+            <MenuItem Click="CopySpreadsheetColumnMenuItem_Click" Header="Copy Current Column" />
+        </ContextMenu>
+        <ContextMenu x:Key="SpreadsheetRowHeaderContextMenu">
+            <MenuItem Click="MoveSpreadsheetRowUpMenuItem_Click" Header="Move Row Up" />
+            <MenuItem Click="MoveSpreadsheetRowDownMenuItem_Click" Header="Move Row Down" />
+            <Separator />
+            <MenuItem Click="DeleteSpreadsheetRowMenuItem_Click" Header="Delete Row" />
+        </ContextMenu>
+        <ContextMenu x:Key="SpreadsheetColumnHeaderContextMenu">
+            <MenuItem Click="MoveSpreadsheetColumnLeftMenuItem_Click" Header="Move Column Left" />
+            <MenuItem Click="MoveSpreadsheetColumnRightMenuItem_Click" Header="Move Column Right" />
+            <Separator />
+            <MenuItem Click="DeleteSpreadsheetColumnMenuItem_Click" Header="Delete Column" />
         </ContextMenu>
     </Window.Resources>
     <Window.CommandBindings>
@@ -127,6 +167,10 @@
             CanExecute="MakeQrCodeCanExecute"
             Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
             Executed="MakeQrCodeExecuted" />
+        <CommandBinding
+            CanExecute="TransposeTableCmdCanExecute"
+            Command="{x:Static local:EditTextWindow.TransposeTableCmd}"
+            Executed="TransposeTableExecuted" />
         <CommandBinding
             CanExecute="IsolateSelectionCmdCanExecute"
             Command="{x:Static local:EditTextWindow.WebSearchCmd}"
@@ -196,7 +240,7 @@
                         Header="Close"
                         InputGestureText="Alt + F4" />
                 </MenuItem>
-                <MenuItem Header="_Edit">
+                <MenuItem Header="_Edit" SubmenuOpened="EditMenuItem_SubmenuOpened">
                     <MenuItem Command="ApplicationCommands.Undo" />
                     <MenuItem Command="ApplicationCommands.Redo" />
                     <Separator />
@@ -216,6 +260,10 @@
                         x:Name="SingleLineMenuItem"
                         Command="{x:Static local:EditTextWindow.SingleLineCmd}"
                         Header="Make _Single Line" />
+                    <MenuItem
+                        x:Name="JoinLinesMenuItem"
+                        Click="JoinLinesMenuItem_Click"
+                        Header="_Join Lines..." />
                     <MenuItem
                         x:Name="_TrimEachLineMenuItem"
                         Click="TrimEachLineMenuItem_Click"
@@ -242,6 +290,10 @@
                         Click="RemoveDuplicateLines_Click"
                         Header="Remove Duplicate Lines" />
                     <MenuItem
+                        x:Name="ShuffleLinesMenuItem"
+                        Click="ShuffleLinesMenuItem_Click"
+                        Header="_Shuffle Lines" />
+                    <MenuItem
                         x:Name="ReplaceReservedCharsMenuItem"
                         Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
                         Header="_Replace Reserved Characters"
@@ -259,6 +311,26 @@
                         x:Name="AddRemoveAtMenuItem"
                         Click="AddRemoveAtMenuItem_Click"
                         Header="_Add, Remove, Limit..." />
+                    <MenuItem Command="{x:Static local:EditTextWindow.TransposeTableCmd}" Header="_Transpose Table" />
+                    <MenuItem
+                        x:Name="ApplyGrabTemplateMenuItem"
+                        Header="Apply Grab Template"
+                        Visibility="Collapsed" />
+                    <MenuItem
+                        x:Name="ApplyGrabTemplatePerLineMenuItem"
+                        Header="Apply Grab Template Per Line"
+                        Visibility="Collapsed" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="AddSpreadsheetRowMenuItem"
+                        Click="AddSpreadsheetRowMenuItem_Click"
+                        Header="Add Spreadsheet Row"
+                        Visibility="Collapsed" />
+                    <MenuItem
+                        x:Name="AddSpreadsheetColumnMenuItem"
+                        Click="AddSpreadsheetColumnMenuItem_Click"
+                        Header="Add Spreadsheet Column"
+                        Visibility="Collapsed" />
                 </MenuItem>
                 <MenuItem Header="_Selection">
                     <MenuItem
@@ -413,9 +485,25 @@
                 </MenuItem>
                 <MenuItem Header="F_ormat">
                     <MenuItem
+                        x:Name="RawTextModeMenuItem"
+                        Click="EditorModeMenuItem_Click"
+                        Header="Raw Text"
+                        IsCheckable="True" />
+                    <MenuItem
+                        x:Name="SpreadsheetModeMenuItem"
+                        Click="EditorModeMenuItem_Click"
+                        Header="Spreadsheet"
+                        IsCheckable="True" />
+                    <MenuItem
+                        x:Name="MarkdownModeMenuItem"
+                        Click="EditorModeMenuItem_Click"
+                        Header="Markdown"
+                        IsCheckable="True" />
+                    <Separator />
+                    <MenuItem
                         x:Name="ShowErrorsMenuItem"
                         Click="ShowErrorsMenuItem_Click"
-                        Header="Show Math Errors"
+                        Header="Show Calc Errors"
                         IsCheckable="True" />
                     <MenuItem
                         x:Name="MarginsMenuItem"
@@ -434,6 +522,27 @@
                         x:Name="FontMenuItem"
                         Click="FontMenuItem_Click"
                         Header="_Font..." />
+                    <Separator />
+                    <MenuItem x:Name="SpellCheckMenuItem" Header="Spell _Check">
+                        <MenuItem
+                            x:Name="SpellCheckAutoMenuItem"
+                            Click="SpellCheckModeMenuItem_Click"
+                            Header="_Auto"
+                            IsCheckable="True"
+                            Tag="Auto" />
+                        <MenuItem
+                            x:Name="SpellCheckAlwaysOnMenuItem"
+                            Click="SpellCheckModeMenuItem_Click"
+                            Header="Always _On"
+                            IsCheckable="True"
+                            Tag="AlwaysOn" />
+                        <MenuItem
+                            x:Name="SpellCheckOffMenuItem"
+                            Click="SpellCheckModeMenuItem_Click"
+                            Header="O_ff"
+                            IsCheckable="True"
+                            Tag="Off" />
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem
                     x:Name="CaptureMenuItem"
@@ -487,9 +596,7 @@
                         Click="ReadFolderOfImages_Click"
                         Header="_Extract Text from Images in Folder..." />
                     <MenuItem x:Name="LanguageMenuItem" Header="OCR in Language..." />
-                    <MenuItem
-                        x:Name="GrabTemplateMenuItem"
-                        Header="Use Grab _Template..." />
+                    <MenuItem x:Name="GrabTemplateMenuItem" Header="Use Grab _Template..." />
                     <MenuItem
                         x:Name="RecursiveFoldersCheck"
                         Header="Scan all folders recursively"
@@ -593,48 +700,136 @@
                         Header="_About" />
                 </MenuItem>
             </Menu>
-            <Button
-                x:Name="CalcToggleButton"
+            <StackPanel
                 Grid.Column="1"
-                Width="32"
-                Height="32"
                 Margin="4,0,4,0"
-                Padding="0"
                 HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                BorderThickness="0"
-                Click="CalcToggleButton_Click"
-                ToolTip="Toggle Calculation Pane (Ctrl+P)&#x0a;Note: Text wrapping is disabled when calc pane is visible for better vertical alignment">
-                <ui:SymbolIcon FontSize="16" Symbol="Calculator24" />
-            </Button>
+                Orientation="Horizontal">
+                <Button
+                    x:Name="AddSpreadsheetRowButton"
+                    Width="32"
+                    Height="32"
+                    Margin="0,0,4,0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="AddSpreadsheetRowMenuItem_Click"
+                    ToolTip="Add spreadsheet row"
+                    Visibility="Collapsed">
+                    <ui:SymbolIcon FontSize="16" Symbol="RowTriple24" />
+                </Button>
+                <Button
+                    x:Name="AddSpreadsheetColumnButton"
+                    Width="32"
+                    Height="32"
+                    Margin="0,0,4,0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="AddSpreadsheetColumnMenuItem_Click"
+                    ToolTip="Add spreadsheet column"
+                    Visibility="Collapsed">
+                    <ui:SymbolIcon FontSize="16" Symbol="ColumnTriple24" />
+                </Button>
+                <Button
+                    x:Name="CalcToggleButton"
+                    Width="32"
+                    Height="32"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CalcToggleButton_Click"
+                    ToolTip="Toggle Calculation Pane (Ctrl+P)&#x0a;Note: Text wrapping is disabled when calc pane is visible for better vertical alignment">
+                    <ui:SymbolIcon FontSize="16" Symbol="Calculator24" />
+                </Button>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="CalcColumn" Width="200" />
             </Grid.ColumnDefinitions>
-            <TextBox
-                x:Name="PassedTextControl"
-                Grid.Row="2"
-                AcceptsReturn="True"
-                AcceptsTab="True"
-                AllowDrop="True"
-                AutoWordSelection="True"
-                CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
-                ContextMenuOpening="PassedTextControl_ContextMenuOpening"
-                FontSize="16"
-                HorizontalScrollBarVisibility="Auto"
-                IsInactiveSelectionHighlightEnabled="True"
-                PreviewDragOver="ETWindow_DragOver"
-                PreviewDrop="ETWindow_Drop"
-                SelectionChanged="PassedTextControl_SelectionChanged"
-                SizeChanged="PassedTextControl_SizeChanged"
-                SpellCheck.IsEnabled="True"
-                Style="{DynamicResource TextBoxStyle2}"
-                TextChanged="PassedTextControl_TextChanged"
-                TextWrapping="WrapWithOverflow"
-                VerticalScrollBarVisibility="Auto" />
+            <Grid Grid.Column="0">
+                <TextBox
+                    x:Name="PassedTextControl"
+                    AcceptsReturn="True"
+                    AcceptsTab="True"
+                    AllowDrop="True"
+                    AutoWordSelection="True"
+                    CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    ContextMenuOpening="PassedTextControl_ContextMenuOpening"
+                    FontSize="16"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsInactiveSelectionHighlightEnabled="True"
+                    PreviewDragOver="ETWindow_DragOver"
+                    PreviewDrop="ETWindow_Drop"
+                    SelectionChanged="PassedTextControl_SelectionChanged"
+                    SizeChanged="PassedTextControl_SizeChanged"
+                    SpellCheck.IsEnabled="True"
+                    Style="{DynamicResource TextBoxStyle2}"
+                    TextChanged="PassedTextControl_TextChanged"
+                    TextWrapping="WrapWithOverflow"
+                    VerticalScrollBarVisibility="Auto" />
+                <RichTextBox
+                    x:Name="MarkdownEditorControl"
+                    AllowDrop="True"
+                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    ContextMenu="{StaticResource MarkdownContextMenu}"
+                    FontFamily="{Binding ElementName=PassedTextControl,
+                                         Path=FontFamily,
+                                         Mode=OneWay}"
+                    FontSize="{Binding ElementName=PassedTextControl,
+                                       Path=FontSize,
+                                       Mode=OneWay}"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsDocumentEnabled="True"
+                    IsInactiveSelectionHighlightEnabled="True"
+                    PreviewDragOver="ETWindow_DragOver"
+                    PreviewDrop="ETWindow_Drop"
+                    SelectionBrush="{DynamicResource ControlStrongFillColorDefaultBrush}"
+                    SelectionChanged="MarkdownEditorControl_SelectionChanged"
+                    SizeChanged="MarkdownEditorControl_SizeChanged"
+                    SpellCheck.IsEnabled="True"
+                    TextChanged="MarkdownEditorControl_TextChanged"
+                    VerticalScrollBarVisibility="Auto"
+                    Visibility="Collapsed" />
+                <DataGrid
+                    x:Name="SpreadsheetDataGrid"
+                    AlternatingRowBackground="{DynamicResource ApplicationBackgroundBrush}"
+                    AutoGenerateColumns="False"
+                    Background="Transparent"
+                    BeginningEdit="SpreadsheetDataGrid_BeginningEdit"
+                    CanUserAddRows="False"
+                    CanUserSortColumns="False"
+                    CellEditEnding="SpreadsheetDataGrid_CellEditEnding"
+                    CellStyle="{DynamicResource DataGridCellStyleDark}"
+                    ClipboardCopyMode="None"
+                    ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
+                    ContextMenu="{StaticResource SpreadsheetContextMenu}"
+                    CurrentCellChanged="SpreadsheetDataGrid_CurrentCellChanged"
+                    GridLinesVisibility="All"
+                    HeadersVisibility="All"
+                    HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    HorizontalScrollBarVisibility="Auto"
+                    LoadingRow="SpreadsheetDataGrid_LoadingRow"
+                    PreviewKeyDown="SpreadsheetDataGrid_PreviewKeyDown"
+                    PreviewMouseLeftButtonDown="SpreadsheetDataGrid_PreviewMouseLeftButtonDown"
+                    PreviewMouseRightButtonDown="SpreadsheetDataGrid_PreviewMouseRightButtonDown"
+                    RowBackground="Transparent"
+                    RowHeaderStyle="{DynamicResource DataGridRowHeaderStyleDark}"
+                    RowHeaderWidth="48"
+                    RowStyle="{DynamicResource DataGridRowStyleDark}"
+                    SelectedCellsChanged="SpreadsheetDataGrid_SelectedCellsChanged"
+                    SelectionMode="Extended"
+                    SelectionUnit="CellOrRowHeader"
+                    VerticalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    VerticalScrollBarVisibility="Auto"
+                    Visibility="Collapsed" />
+            </Grid>
             <TextBox
                 x:Name="CalcResultsTextControl"
                 Grid.Column="1"
@@ -643,7 +838,9 @@
                 AcceptsTab="True"
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                 ContextMenuOpening="CalcResultsTextControl_ContextMenuOpening"
-                FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
+                FontSize="{Binding ElementName=PassedTextControl,
+                                   Path=FontSize,
+                                   Mode=OneWay}"
                 HorizontalScrollBarVisibility="Auto"
                 IsInactiveSelectionHighlightEnabled="True"
                 IsReadOnly="True"
@@ -826,7 +1023,10 @@
                             <Run Text="• Unit conversion: 5 miles to km, 100°F to celsius" />
                         </TextBlock>
                         <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Supported units: length, mass, temperature, volume, speed, area" />
+                            <Run Text="• Date math: today + 5 days, 5-14-26 - 1-12-25 in weeks" />
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
+                            <Run Text="• Supported units: length, mass, temperature, volume, speed, area, durations" />
                         </TextBlock>
                         <TextBlock
                             Margin="0,0,0,4"
@@ -850,7 +1050,9 @@
                             TextWrapping="Wrap">
                             <Run Text="5 miles to km" /><LineBreak />
                             <Run Text="100 fahrenheit to celsius" /><LineBreak />
-                            <Run Text="3.5 gallons to liters" />
+                            <Run Text="3.5 gallons to liters" /><LineBreak />
+                            <Run Text="3.6 years to days" /><LineBreak />
+                            <Run Text="5-14-26 - 1-12-25 in weeks" />
                         </TextBlock>
                         <TextBlock
                             Margin="0,8,0,4"
@@ -1069,5 +1271,10 @@
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 Text="Working..." />
         </StackPanel>
+        <ui:ContentDialogHost
+            x:Name="PendingFileCloseDialogHost"
+            Grid.RowSpan="4"
+            Panel.ZIndex="999"
+            IsDisableSiblingsEnabled="True" />
     </Grid>
 </ui:FluentWindow>

@@ -64,6 +64,68 @@
             Style="{StaticResource TextBodyNormal}"
             Text="Remember and restore the Edit Text Window's size and position between sessions." />
 
+        <CheckBox
+            x:Name="EtwNormalizeLineEndingsOnPasteCheckBox"
+            Margin="0,4,0,0"
+            Click="EtwNormalizeLineEndingsOnPasteCheckBox_Click"
+            Content="Normalize to Windows line endings on paste" />
+        <TextBlock
+            Margin="24,0,0,8"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Convert Unix (LF) and classic Mac (CR) line endings to Windows (CRLF) when pasting text." />
+
+        <TextBlock
+            Margin="0,16,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Spell Check" />
+
+        <TextBlock
+            Margin="0,0,0,6"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Control when red squiggles appear under misspelled words in the Edit Text Window." />
+
+        <StackPanel Margin="12,0,0,0">
+            <RadioButton
+                x:Name="SpellCheckAutoRadio"
+                Click="SpellCheckModeRadio_Click"
+                Content="Auto"
+                GroupName="EtwSpellCheckMode"
+                Tag="Auto" />
+            <TextBlock
+                Margin="24,0,0,6"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Turn spell check off automatically for very large documents or content with several long unspaced tokens (GUIDs, app manifests, base64), and on otherwise." />
+
+            <RadioButton
+                x:Name="SpellCheckAlwaysOnRadio"
+                Click="SpellCheckModeRadio_Click"
+                Content="Always on"
+                GroupName="EtwSpellCheckMode"
+                Tag="AlwaysOn" />
+            <TextBlock
+                Margin="24,0,0,6"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Always spell check, regardless of the content." />
+
+            <RadioButton
+                x:Name="SpellCheckOffRadio"
+                Click="SpellCheckModeRadio_Click"
+                Content="Off"
+                GroupName="EtwSpellCheckMode"
+                Tag="Off" />
+            <TextBlock
+                Margin="24,0,0,8"
+                Opacity="0.75"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Never spell check." />
+        </StackPanel>
+
         <TextBlock
             Margin="0,16,0,6"
             FontSize="18"

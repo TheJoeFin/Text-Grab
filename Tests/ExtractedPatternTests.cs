@@ -190,7 +190,7 @@ public class ExtractedPatternTests
         IReadOnlyDictionary<int, string> allPatterns = extractedPattern.AllPatterns;
 
         // Then
-        Assert.IsAssignableFrom<System.Collections.Generic.IReadOnlyDictionary<int, string>>(allPatterns);
+        Assert.IsType<IReadOnlyDictionary<int, string>>(allPatterns, exactMatch: false);
     }
 
     [Fact]
@@ -503,7 +503,7 @@ DATA001 data001 DaTa001 INFO999
     [InlineData("", 3)]             // Empty string
     [InlineData("   ", 3)]          // Whitespace only
     [InlineData(null, 3)]           // Null
-    public void DetermineStartingLevel_EmptyOrWhitespace_ReturnsDefault(string input, int expectedLevel)
+    public void DetermineStartingLevel_EmptyOrWhitespace_ReturnsDefault(string? input, int expectedLevel)
     {
         // When
         int actualLevel = ExtractedPattern.DetermineStartingLevel(input);
@@ -630,7 +630,7 @@ DATA001 data001 DaTa001 INFO999
         MatchCollection matches = Regex.Matches(text, pattern);
 
         // Then - Should match only exact case
-        Assert.Equal(1, matches.Count); // Only "Test"
+        Assert.Single(matches.Cast<Match>()); // Only "Test"
         Assert.DoesNotContain("(?i)", pattern); // Verify inline flag is NOT present
     }
 

@@ -9,11 +9,13 @@ namespace Tests;
 public class SettingsServiceTests : IDisposable
 {
     private readonly string _tempFolder;
+    private readonly string _regularSettingsFilePath;
 
     public SettingsServiceTests()
     {
         _tempFolder = Path.Combine(Path.GetTempPath(), $"TextGrab_SettingsService_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempFolder);
+        _regularSettingsFilePath = Path.Combine(_tempFolder, "Settings.json");
     }
 
     public void Dispose()
@@ -182,6 +184,108 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Constructor_RegularSettingsSidecarWithFileBackedFlagImportsPortableSettings()
+    {
+        Settings settings = new()
+        {
+            FirstRun = false,
+            EnableFileBackedManagedSettings = false,
+            ShowToast = true,
+            DefaultLaunch = "Fullscreen"
+        };
+
+        File.WriteAllText(
+            _regularSettingsFilePath,
+            """
+            {
+              "EnableFileBackedManagedSettings": true,
+              "ShowToast": false,
+              "DefaultLaunch": "EditText"
+            }
+            """);
+
+        SettingsService service = CreateService(settings);
+
+        Assert.True(service.IsFileBackedManagedSettingsEnabled);
+        Assert.True(settings.EnableFileBackedManagedSettings);
+        Assert.False(settings.ShowToast);
+        Assert.Equal("EditText", settings.DefaultLaunch);
+    }
+
+    [Fact]
+    public void Constructor_FileBackedModeWithoutRegularSettingsSidecarCreatesOneFromClassicSettings()
+    {
+        Settings settings = new()
+        {
+            FirstRun = false,
+            EnableFileBackedManagedSettings = true,
+            ShowToast = false,
+            DefaultLaunch = "QuickLookup",
+            GrabTemplatesJSON = """[{ "id": "template-1" }]"""
+        };
+
+        SettingsService service = CreateService(settings);
+
+        Assert.True(service.IsFileBackedManagedSettingsEnabled);
+        Assert.True(File.Exists(_regularSettingsFilePath));
+
+        string persistedJson = File.ReadAllText(_regularSettingsFilePath);
+        Assert.Contains(@"""EnableFileBackedManagedSettings"": true", persistedJson);
+        Assert.Contains(@"""ShowToast"": false", persistedJson);
+        Assert.Contains(@"""DefaultLaunch"": ""QuickLookup""", persistedJson);
+        Assert.DoesNotContain("GrabTemplatesJSON", persistedJson);
+    }
+
+    [Fact]
+    public void Constructor_RegularSettingsSidecarOnlyOverridesKnownValuesAndBackfillsMissingOnes()
+    {
+        Settings settings = new()
+        {
+            FirstRun = false,
+            EnableFileBackedManagedSettings = true,
+            ShowToast = true,
+            DefaultLaunch = "QuickLookup"
+        };
+
+        File.WriteAllText(
+            _regularSettingsFilePath,
+            """
+            {
+              "EnableFileBackedManagedSettings": true,
+              "ShowToast": false
+            }
+            """);
+
+        SettingsService service = CreateService(settings);
+
+        Assert.True(service.IsFileBackedManagedSettingsEnabled);
+        Assert.False(settings.ShowToast);
+        Assert.Equal("QuickLookup", settings.DefaultLaunch);
+
+        string persistedJson = File.ReadAllText(_regularSettingsFilePath);
+        Assert.Contains(@"""ShowToast"": false", persistedJson);
+        Assert.Contains(@"""DefaultLaunch"": ""QuickLookup""", persistedJson);
+    }
+
+    [Fact]
+    public void RegularSettingChange_PersistsToRegularSettingsSidecarWhenFileBackedModeEnabled()
+    {
+        Settings settings = new()
+        {
+            FirstRun = false,
+            EnableFileBackedManagedSettings = true,
+            ShowToast = true
+        };
+
+        SettingsService service = CreateService(settings);
+
+        settings.ShowToast = false;
+
+        string persistedJson = File.ReadAllText(_regularSettingsFilePath);
+        Assert.Contains(@"""ShowToast"": false", persistedJson);
+    }
+
+    [Fact]
     public void LoadStoredRegexes_SidecarSurvivesSimulatedPackageUpgrade()
     {
         // Simulate a package upgrade: sidecar file already exists (from the previous
@@ -209,6 +313,7 @@ public class SettingsServiceTests : IDisposable
             settings,
             localSettings: null,
             managedJsonSettingsFolderPath: _tempFolder,
+            regularSettingsSidecarFilePath: _regularSettingsFilePath,
             saveClassicSettingsChanges: false);
 
     private static string SerializeRegexes(string id) =>

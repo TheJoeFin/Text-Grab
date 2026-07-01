@@ -156,6 +156,119 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
     }
 
     [WpfFact]
+    public async Task ParagraphWrapDetection()
+    {
+        // Given
+        string testImagePath = @".\Images\paragraph-test-image.png";
+        bool originalParagraphDetection = AppUtilities.TextGrabSettings.ParagraphDetection;
+        AppUtilities.TextGrabSettings.ParagraphDetection = true;
+        string expectedResult = "Static cling\r\nStatic cling is the tendency for light objects to stick (cling) to other objects owing to static electricity. Common everyday examples include dust and pet fur clinging to clothing, socks sticking together after being removed from a clothes dryer, or a rubber balloon attracting water after being rubbed against hair.\r\nWhile often considered a minor household annoyance, static cling represents a fundamental demonstration of electrostatics and has significant implications in manufacturing, electronics cooling, and material handling.\r\nhttps://en.wikipedia.org/wiki/Static_cling";
+
+        try
+        {
+            // When
+            string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
+
+            // Then
+            Assert.Equal(expectedResult, ocrTextResult);
+        }
+        finally
+        {
+            AppUtilities.TextGrabSettings.ParagraphDetection = originalParagraphDetection;
+        }
+    }
+
+    [Theory]
+    [InlineData(10, 10, 25, 10, true)]   // bounding-box gap = 5
+    [InlineData(10, 10, 26, 10, false)]  // threshold boundary: gap = 6
+    [InlineData(10, 10, 27, 10, false)]  // bounding-box gap = 7
+    [InlineData(10, 10, 10, 10, true)]   // overlapping bounding boxes
+    [InlineData(10, 10, 16, 30, false)]  // height ratio = 3
+    [InlineData(10, 0, 13, 10, false)]   // zero height
+    public void IsWrappedParagraph_ReturnsExpected(
+        double currentTop, double currentHeight,
+        double nextTop, double nextHeight,
+        bool expected)
+    {
+        bool result = OcrUtilities.IsWrappedParagraph(currentTop, currentHeight, nextTop, nextHeight);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void BuildTextFromOcrLines_UsesParagraphDetectionForWinAi()
+    {
+        bool originalParagraphDetection = AppUtilities.TextGrabSettings.ParagraphDetection;
+        AppUtilities.TextGrabSettings.ParagraphDetection = true;
+
+        try
+        {
+            FakeOcrLinesWords ocrResult = new()
+            {
+                Lines =
+                [
+                    new FakeOcrLine("Static cling is the tendency", new Windows.Foundation.Rect(0, 0, 100, 10)),
+                    new FakeOcrLine("for light objects to stick.", new Windows.Foundation.Rect(0, 14, 100, 10)),
+                    new FakeOcrLine("New paragraph.", new Windows.Foundation.Rect(0, 32, 100, 10)),
+                ]
+            };
+
+            string text = OcrUtilities.BuildTextFromOcrLines(new WindowsAiLang(), ocrResult);
+
+            Assert.Equal("Static cling is the tendency for light objects to stick.\r\nNew paragraph.", text);
+        }
+        finally
+        {
+            AppUtilities.TextGrabSettings.ParagraphDetection = originalParagraphDetection;
+        }
+    }
+
+    [Theory]
+    [InlineData(true, true, false, true)]
+    [InlineData(true, true, true, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    public void ShouldUseParagraphDetection_RespectsTableMode(
+        bool paragraphDetectionEnabled,
+        bool isSpaceJoiningLanguage,
+        bool isTableMode,
+        bool expected)
+    {
+        bool originalParagraphDetection = AppUtilities.TextGrabSettings.ParagraphDetection;
+        AppUtilities.TextGrabSettings.ParagraphDetection = paragraphDetectionEnabled;
+
+        try
+        {
+            bool result = OcrUtilities.ShouldUseParagraphDetection(isSpaceJoiningLanguage, isTableMode);
+            Assert.Equal(expected, result);
+        }
+        finally
+        {
+            AppUtilities.TextGrabSettings.ParagraphDetection = originalParagraphDetection;
+        }
+    }
+
+    [Fact]
+    public void GroupWrappedParagraphLines_CombinesWrappedLinesIntoParagraphBlocks()
+    {
+        List<OcrUtilities.PositionedOcrLine> lines =
+        [
+            new(0, "Static cling is the tendency", new Windows.Foundation.Rect(0, 0, 100, 10)),
+            new(1, "for light objects to stick.", new Windows.Foundation.Rect(0, 14, 100, 10)),
+            new(2, "New paragraph.", new Windows.Foundation.Rect(0, 32, 120, 12)),
+        ];
+
+        List<OcrUtilities.GroupedOcrLines> groups = OcrUtilities.GroupWrappedParagraphLines(lines);
+
+        Assert.Equal(2, groups.Count);
+        Assert.Equal(0, groups[0].StartingLineNumber);
+        Assert.Equal("Static cling is the tendency for light objects to stick.", groups[0].SingleLineText);
+        Assert.Equal($"Static cling is the tendency{Environment.NewLine}for light objects to stick.", groups[0].DisplayText);
+        Assert.Equal(0, groups[0].BoundingBox.Y);
+        Assert.Equal(24, groups[0].BoundingBox.Height);
+        Assert.Equal("New paragraph.", groups[1].SingleLineText);
+    }
+
+    [WpfFact]
     public async Task ReadQrCode()
     {
         string expectedResult = "This is a test of the QR Code system";
@@ -361,5 +474,29 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         Assert.True(new FileInfo(tempFilePath).Length > 0);
 
         File.Delete(tempFilePath);
+    }
+
+    private sealed class FakeOcrLinesWords : IOcrLinesWords
+    {
+        public string Text { get; set; } = string.Empty;
+
+        public IOcrLine[] Lines { get; set; } = [];
+
+        public float Angle { get; set; }
+    }
+
+    private sealed class FakeOcrLine : IOcrLine
+    {
+        public FakeOcrLine(string text, Windows.Foundation.Rect boundingBox)
+        {
+            Text = text;
+            BoundingBox = boundingBox;
+        }
+
+        public string Text { get; set; }
+
+        public IOcrWord[] Words { get; set; } = [];
+
+        public Windows.Foundation.Rect BoundingBox { get; set; }
     }
 }

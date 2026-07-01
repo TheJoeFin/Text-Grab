@@ -1,0 +1,155 @@
+﻿<ui:FluentWindow
+    x:Class="Text_Grab.Controls.JoinLinesWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Join lines"
+    Width="420"
+    Height="430"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
+    Closed="Window_Closed"
+    KeyUp="Window_KeyUp"
+    Loaded="Window_Loaded"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.CommandBindings>
+        <CommandBinding
+            CanExecute="JoinLines_CanExecute"
+            Command="{x:Static local:JoinLinesWindow.JoinLinesCmd}"
+            Executed="JoinLines_Executed" />
+        <CommandBinding
+            CanExecute="JoinLines_CanExecute"
+            Command="{x:Static local:JoinLinesWindow.ApplyCmd}"
+            Executed="Apply_Executed" />
+    </Window.CommandBindings>
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+    <Grid Margin="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar
+            Title="Join Lines"
+            Height="32"
+            Margin="2,2,2,0"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+
+        <StackPanel
+            Grid.Row="1"
+            Margin="12,12,12,0"
+            Orientation="Horizontal">
+            <TextBlock
+                Width="140"
+                VerticalAlignment="Center"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Joining text" />
+            <TextBox
+                x:Name="JoiningTextTextBox"
+                Width="220"
+                VerticalAlignment="Center"
+                AcceptsTab="True"
+                MaxLines="1"
+                TextChanged="PreviewInputChanged" />
+        </StackPanel>
+
+        <ui:ToggleSwitch
+            x:Name="TrimLineBeforeJoiningToggle"
+            Grid.Row="2"
+            Margin="12,12,12,0"
+            VerticalContentAlignment="Center"
+            Checked="PreviewInputChanged"
+            Unchecked="PreviewInputChanged">
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                Trim line before joining
+            </TextBlock>
+        </ui:ToggleSwitch>
+
+        <StackPanel
+            Grid.Row="3"
+            Margin="12,12,12,0"
+            Orientation="Horizontal">
+            <TextBlock
+                Width="140"
+                VerticalAlignment="Center"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Text at beginning" />
+            <TextBox
+                x:Name="TextAtBeginningTextBox"
+                Width="220"
+                VerticalAlignment="Center"
+                AcceptsTab="True"
+                MaxLines="1"
+                TextChanged="PreviewInputChanged" />
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="4"
+            Margin="12,12,12,0"
+            Orientation="Horizontal">
+            <TextBlock
+                Width="140"
+                VerticalAlignment="Center"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Text at end" />
+            <TextBox
+                x:Name="TextAtEndTextBox"
+                Width="220"
+                VerticalAlignment="Center"
+                AcceptsTab="True"
+                MaxLines="1"
+                TextChanged="PreviewInputChanged" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="5" Margin="12,16,12,0">
+            <TextBlock
+                x:Name="PreviewHeaderTextBlock"
+                Margin="0,0,0,6"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Preview" />
+            <TextBox
+                x:Name="PreviewTextBox"
+                Height="120"
+                AcceptsReturn="True"
+                IsReadOnly="True"
+                TextWrapping="Wrap"
+                VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="6"
+            Margin="0,16,0,12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Orientation="Horizontal">
+            <local:CollapsibleButton
+                x:Name="ApplyButton"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                ButtonSymbol="ArrowClockwise24"
+                ButtonText="Apply"
+                Command="{x:Static local:JoinLinesWindow.ApplyCmd}"
+                IsSymbol="True"
+                Visibility="Collapsed" />
+            <local:CollapsibleButton
+                x:Name="DoneButton"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                ButtonSymbol="Checkmark24"
+                ButtonText="Done"
+                Command="{x:Static local:JoinLinesWindow.JoinLinesCmd}" />
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

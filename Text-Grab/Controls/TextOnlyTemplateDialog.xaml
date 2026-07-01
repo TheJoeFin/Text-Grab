@@ -50,11 +50,21 @@
                 ToolTip="Type { to insert a pattern placeholder. Plain text is also supported."
                 VerticalScrollBarVisibility="Auto" />
 
-            <TextBlock
-                FontSize="11"
-                Opacity="0.6"
-                Text="Type { to pick from saved regex patterns. Use \n for newline."
-                TextWrapping="Wrap" />
+            <Grid Margin="0,2,0,0">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="11"
+                    Opacity="0.6"
+                    Text="Type { to pick from saved regex patterns. Use \n for newline."
+                    TextWrapping="Wrap" />
+                <ui:Button
+                    HorizontalAlignment="Right"
+                    Appearance="Secondary"
+                    Click="ManagePatternsButton_Click"
+                    Content="New Regex..."
+                    Icon="{ui:SymbolIcon Add24}"
+                    ToolTip="Open the Regex Manager to create or edit patterns" />
+            </Grid>
 
             <TextBlock
                 x:Name="ErrorText"

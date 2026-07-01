@@ -16,6 +16,9 @@ internal class UndoRedo
 
     private LinkedList<IUndoRedoOperation> UndoStack { get; } = new();
 
+    // Exposed for tests so capacity trimming can be verified.
+    internal int UndoOperationCount => UndoStack.Count;
+
     // used for readability.
     public void StartTransaction()
     {
@@ -24,10 +27,7 @@ internal class UndoRedo
     public void EndTransaction()
     {
         if (TransactionId <= HighestUsedTransactionId)
-        {
             TransactionId++;
-            ActiveTransactionIdCount++;
-        }
     }
 
     public void Reset()
@@ -39,21 +39,27 @@ internal class UndoRedo
         ActiveTransactionIdCount = 0;
     }
 
-    private void AddOperationToUndoStack(IUndoRedoOperation operation)
+    internal void AddOperationToUndoStack(IUndoRedoOperation operation)
     {
-        if (ActiveTransactionIdCount >= UndoRedoTransactionCapacity)
+        // A transaction is a run of operations sharing a TransactionId, so a
+        // new transaction starts whenever the incoming id differs from the
+        // last stacked operation. Counting here (instead of in EndTransaction)
+        // also covers operations inserted without transaction bracketing.
+        if (UndoStack.Last is null || UndoStack.Last.Value.TransactionId != operation.TransactionId)
+            ++ActiveTransactionIdCount;
+
+        UndoStack.AddLast(operation);
+
+        // Trim whole transactions from the oldest end so the stack cannot pin
+        // an unbounded number of WordBorder controls and their visual trees.
+        while (ActiveTransactionIdCount > UndoRedoTransactionCapacity && UndoStack.First is not null)
         {
-            uint? transactionIdToRemove = UndoStack.First?.Value.TransactionId;
-            while (UndoStack.First?.Value.TransactionId == transactionIdToRemove && transactionIdToRemove is not null)
-            {
-                if (UndoStack.Count != 0)
-                    UndoStack.RemoveFirst();
-            }
+            uint transactionIdToRemove = UndoStack.First.Value.TransactionId;
+            while (UndoStack.First is not null && UndoStack.First.Value.TransactionId == transactionIdToRemove)
+                UndoStack.RemoveFirst();
 
             --ActiveTransactionIdCount;
         }
-
-        UndoStack.AddLast(operation);
     }
 
     private void ClearRedoStack()
@@ -134,7 +140,8 @@ internal class UndoRedo
             operationNode = prev;
         }
 
-        --ActiveTransactionIdCount;
+        if (ActiveTransactionIdCount > 0)
+            --ActiveTransactionIdCount;
     }
 
     public void Redo()

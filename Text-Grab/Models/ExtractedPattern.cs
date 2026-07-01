@@ -142,9 +142,9 @@ public class ExtractedPattern
     /// Determines the optimal starting precision level based on text characteristics.
     /// Analyzes length, content type, and structure to suggest the most useful level.
     /// </summary>
-    /// <param name="selection">The text to analyze</param>
+    /// <param name="selection">The text to analyze, or null</param>
     /// <returns>Recommended precision level (0-5)</returns>
-    public static int DetermineStartingLevel(string selection)
+    public static int DetermineStartingLevel(string? selection)
     {
         if (string.IsNullOrWhiteSpace(selection))
             return DefaultPrecisionLevel;
@@ -161,7 +161,7 @@ public class ExtractedPattern
             return 2; // Length-based pattern for long strings
 
         // Content-based analysis (check in priority order)
-        
+
         // Pure numbers (123, 4567) - likely want similar number sequences
         if (IsAllDigits(trimmed))
             return 2; // Length-flexible for number sequences
@@ -180,7 +180,7 @@ public class ExtractedPattern
             return 3; // Character-class for mixed content
 
         // Short text (2-4 chars) - prefer per-character for small variations
-        if (length >= 2 && length <= 4)
+        if (length is >= 2 and <= 4)
             return 4; // Per-character for 2-4 chars
 
         // Single word, all letters ("Hello") - names, simple words
@@ -239,8 +239,8 @@ public class ExtractedPattern
     private static bool IsSimpleWord(string text)
     {
         string trimmed = text.Trim();
-        return trimmed.Length > 0 
-            && trimmed.All(char.IsLetter) 
+        return trimmed.Length > 0
+            && trimmed.All(char.IsLetter)
             && !trimmed.Any(char.IsWhiteSpace);
     }
 

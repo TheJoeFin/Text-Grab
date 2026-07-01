@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
@@ -31,27 +32,45 @@ public class FileUtilities
     /// Modified by Joseph Finney
     public static string GetImageFilter()
     {
-        string imageExtensions = string.Empty;
-        string separator = "";
-        ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-        Dictionary<string, string> imageFilters = [];
-        foreach (ImageCodecInfo codec in codecs)
-        {
-            if (codec.FilenameExtension is not string extension)
-                continue;
+        string imageExtensions = GetImageExtensionsFilterPattern();
+        return string.IsNullOrEmpty(imageExtensions) ? string.Empty : $"Image files|{imageExtensions}";
+    }
 
-            imageExtensions = $"{imageExtensions}{separator}{extension.ToLower()}";
-            separator = ";";
-            imageFilters.Add($"{codec.FormatDescription} files ({extension.ToLower()})", extension.ToLower());
-        }
-        string result = string.Empty;
-        separator = "";
+    public static string GetVisualDocumentFilter()
+    {
+        string pdfExtensions = GetExtensionsFilterPattern(IoUtilities.PdfExtensions);
+        string combinedExtensions = GetVisualDocumentFilterPattern();
+        string imageFilter = GetImageFilter();
 
-        if (!string.IsNullOrEmpty(imageExtensions))
+        return string.Join("|", new[]
         {
-            result += $"{separator}Image files|{imageExtensions}";
-        }
-        return result;
+            $"Image and PDF files|{combinedExtensions}",
+            $"PDF files|{pdfExtensions}",
+            imageFilter
+        });
+    }
+
+    public static string GetOpenDocumentFilter()
+    {
+        string spreadsheetExtensions = GetExtensionsFilterPattern(IoUtilities.SpreadsheetExtensions);
+        string markdownExtensions = GetExtensionsFilterPattern(IoUtilities.MarkdownExtensions);
+        string supportedExtensions = string.Join(";", new[]
+        {
+            GetVisualDocumentFilterPattern(),
+            spreadsheetExtensions,
+            markdownExtensions,
+            "*.txt"
+        }.Where(pattern => !string.IsNullOrWhiteSpace(pattern)));
+
+        return string.Join("|", new[]
+        {
+            $"Supported documents|{supportedExtensions}",
+            GetVisualDocumentFilter(),
+            $"Spreadsheet documents|{spreadsheetExtensions}",
+            $"Markdown documents|{markdownExtensions}",
+            "Text documents (*.txt)|*.txt",
+            "All files (*.*)|*.*"
+        });
     }
 
     public static string GetPathToLocalFile(string imageRelativePath)
@@ -99,6 +118,40 @@ public class FileUtilities
         return SaveTextFileUnpackaged(textContent, filename, storageKind);
     }
 
+    private static string GetImageExtensionsFilterPattern()
+    {
+        string imageExtensions = string.Empty;
+        string separator = string.Empty;
+        ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
+        Dictionary<string, string> imageFilters = [];
+
+        foreach (ImageCodecInfo codec in codecs)
+        {
+            if (codec.FilenameExtension is not string extension)
+                continue;
+
+            imageExtensions = $"{imageExtensions}{separator}{extension.ToLower()}";
+            separator = ";";
+            imageFilters.Add($"{codec.FormatDescription} files ({extension.ToLower()})", extension.ToLower());
+        }
+
+        return imageExtensions;
+    }
+
+    private static string GetExtensionsFilterPattern(IEnumerable<string> extensions)
+    {
+        return string.Join(";", extensions.Select(extension => $"*{extension}"));
+    }
+
+    private static string GetVisualDocumentFilterPattern()
+    {
+        return string.Join(";", new[]
+        {
+            GetImageExtensionsFilterPattern(),
+            GetExtensionsFilterPattern(IoUtilities.PdfExtensions)
+        }.Where(pattern => !string.IsNullOrWhiteSpace(pattern)));
+    }
+
     private static async Task<Bitmap?> GetImageFilePackaged(string fileName, FileStorageKind storageKind)
     {
         StorageFolder folder = await GetStorageFolderPackaged(fileName, storageKind);
@@ -137,7 +190,7 @@ public class FileUtilities
             StorageFile file = await folder.GetFileAsync(fileName);
             using Stream stream = await file.OpenStreamForReadAsync();
             StreamReader streamReader = new(stream);
-            return streamReader.ReadToEnd();
+            return await streamReader.ReadToEndAsync();
         }
         catch
         {

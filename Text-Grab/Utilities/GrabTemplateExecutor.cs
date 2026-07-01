@@ -204,6 +204,37 @@ public static class GrabTemplateExecutor
     }
 
     /// <summary>
+    /// Applies a text-only template (one with no capture regions) to existing
+    /// <paramref name="text"/>. The text itself is used as the source for any
+    /// <c>{p:Name:mode}</c> pattern placeholders; region placeholders resolve to empty.
+    /// No OCR is performed, so this runs synchronously. Used when applying a template
+    /// to text already present in the Edit Text Window.
+    /// </summary>
+    public static string ApplyTextOnlyTemplate(GrabTemplate template, string text)
+    {
+        if (!template.IsValid)
+            return text;
+
+        // No regions to OCR — region placeholders simply resolve to empty.
+        string output = ApplyOutputTemplate(template.OutputTemplate, new Dictionary<int, string>());
+
+        bool hasPatternRefs = template.PatternMatches.Count > 0
+            || PatternPlaceholderRegex.IsMatch(template.OutputTemplate);
+
+        if (hasPatternRefs)
+        {
+            List<TemplatePatternMatch> effectivePatternMatches = template.PatternMatches.Count > 0
+                ? template.PatternMatches
+                : ParsePatternMatchesFromOutputTemplate(template.OutputTemplate);
+
+            Dictionary<string, string> patternRegexes = ResolvePatternRegexes(effectivePatternMatches);
+            output = ApplyPatternPlaceholders(output, text, effectivePatternMatches, patternRegexes);
+        }
+
+        return output;
+    }
+
+    /// <summary>
     /// Applies the output template string with the provided region text values.
     /// Useful for unit testing the string processing independently of OCR.
     /// </summary>

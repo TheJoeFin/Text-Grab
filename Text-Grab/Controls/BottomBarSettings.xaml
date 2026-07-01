@@ -41,71 +41,79 @@
             Margin="2,2,2,0"
             Padding="8,2"
             Icon="{StaticResource TextGrabIcon}" />
-        <TextBlock
-            Grid.Row="1"
-            Grid.Column="0"
-            Padding="52,0"
-            FontSize="16"
-            Text="Is Icon" />
-
         <Border
             Grid.Row="1"
-            Margin="8,24,0,0"
             HorizontalAlignment="Left"
-            VerticalAlignment="Top"
             Background="{ui:ThemeResource CardBackgroundFillColorSecondaryBrush}"
             CornerRadius="8">
-            <ui:ListView
-                x:Name="LeftListBox"
-                d:ItemsSource="{d:SampleData ItemCount=5}"
-                ItemContainerStyle="{StaticResource GridViewListItem}"
-                ItemsSource="{Binding ButtonsInLeftList}"
-                ScrollViewer.VerticalScrollBarVisibility="Visible">
-                <ListView.View>
-                    <!--  ColumnHeaderContainerStyle="{StaticResource headerStyle}"  -->
-                    <GridView>
-                        <GridViewColumn Width="46">
-                            <GridViewColumnHeader Content="Icon" />
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Viewbox Height="32">
-                                        <ui:SymbolIcon
-                                            Grid.Column="0"
-                                            Margin="0,0,8,0"
-                                            d:Symbol="Diamond24"
-                                            FontSize="24"
-                                            Symbol="{Binding Path=SymbolIcon, Mode=TwoWay}" />
-                                    </Viewbox>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Width="72" Header="Icon Mode">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ui:ToggleSwitch
-                                        Grid.Column="2"
-                                        Height="32"
-                                        HorizontalAlignment="Center"
-                                        IsChecked="{Binding IsSymbol}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Width="252" Header="Button Text">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock
-                                        Grid.Column="1"
-                                        Margin="0,4,8,0"
-                                        VerticalAlignment="Center"
-                                        FontSize="16"
-                                        Style="{StaticResource TextBodyNormal}"
-                                        Text="{Binding ButtonText}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ui:ListView>
+            <Grid
+                Grid.Row="1"
+                Grid.Column="0"
+                Margin="8,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <ui:TextBox
+                    Grid.Row="1"
+                    MaxWidth="400"
+                    Margin="0,4"
+                    HorizontalAlignment="Stretch"
+                    PlaceholderText="Filter commands..."
+                    TextChanged="FilterSearchBox_TextChanged" />
+                <ui:ListView
+                    x:Name="LeftListBox"
+                    Grid.Row="2"
+                    d:ItemsSource="{d:SampleData ItemCount=5}"
+                    ItemContainerStyle="{StaticResource GridViewListItem}"
+                    ScrollViewer.VerticalScrollBarVisibility="Visible">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="46">
+                                <GridViewColumnHeader Content="Icon" />
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Viewbox Height="32">
+                                            <ui:SymbolIcon
+                                                Grid.Column="0"
+                                                Margin="0,0,8,0"
+                                                d:Symbol="Diamond24"
+                                                FontSize="24"
+                                                Symbol="{Binding Path=SymbolIcon,
+                                                                 Mode=TwoWay}" />
+                                        </Viewbox>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="72" Header="Icon Mode">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ui:ToggleSwitch
+                                            Grid.Column="2"
+                                            Height="32"
+                                            HorizontalAlignment="Center"
+                                            IsChecked="{Binding IsSymbol}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="252" Header="Button Text">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            Margin="0,4,8,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="16"
+                                            Style="{StaticResource TextBodyNormal}"
+                                            Text="{Binding ButtonText}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ui:ListView>
+            </Grid>
         </Border>
         <StackPanel
             Grid.Row="1"
@@ -143,12 +151,6 @@
                     ButtonText="Move Down"
                     Click="MoveDownButton_Click" />
             </StackPanel>
-            <TextBlock
-                Grid.Row="1"
-                Padding="0,0,300,0"
-                HorizontalAlignment="Right"
-                FontSize="16"
-                Text="Is Icon" />
             <Border
                 Grid.Row="2"
                 Margin="8"
@@ -173,7 +175,8 @@
                                                 Margin="0,0,8,0"
                                                 d:Symbol="Diamond24"
                                                 FontSize="24"
-                                                Symbol="{Binding Path=SymbolIcon, Mode=TwoWay}" />
+                                                Symbol="{Binding Path=SymbolIcon,
+                                                                 Mode=TwoWay}" />
                                         </Viewbox>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

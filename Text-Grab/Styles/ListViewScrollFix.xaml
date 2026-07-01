@@ -26,12 +26,18 @@
                     VerticalScrollBarVisibility="Hidden">
                     <controls:GridViewHeaderRowPresenter
                         Margin="4"
-                        AllowsColumnReorder="{Binding Path=View.AllowsColumnReorder, RelativeSource={RelativeSource AncestorType=ListView}}"
-                        ColumnHeaderContainerStyle="{Binding Path=View.ColumnHeaderContainerStyle, RelativeSource={RelativeSource AncestorType=ListView}}"
-                        ColumnHeaderContextMenu="{Binding Path=View.ColumnHeaderContextMenu, RelativeSource={RelativeSource AncestorType=ListView}}"
-                        ColumnHeaderTemplate="{Binding Path=View.ColumnHeaderTemplate, RelativeSource={RelativeSource AncestorType=ListView}}"
-                        ColumnHeaderToolTip="{Binding Path=View.ColumnHeaderToolTip, RelativeSource={RelativeSource AncestorType=ListView}}"
-                        Columns="{Binding Path=View.Columns, RelativeSource={RelativeSource AncestorType=ListView}}"
+                        AllowsColumnReorder="{Binding Path=View.AllowsColumnReorder,
+                                                      RelativeSource={RelativeSource AncestorType=ListView}}"
+                        ColumnHeaderContainerStyle="{Binding Path=View.ColumnHeaderContainerStyle,
+                                                             RelativeSource={RelativeSource AncestorType=ListView}}"
+                        ColumnHeaderContextMenu="{Binding Path=View.ColumnHeaderContextMenu,
+                                                          RelativeSource={RelativeSource AncestorType=ListView}}"
+                        ColumnHeaderTemplate="{Binding Path=View.ColumnHeaderTemplate,
+                                                       RelativeSource={RelativeSource AncestorType=ListView}}"
+                        ColumnHeaderToolTip="{Binding Path=View.ColumnHeaderToolTip,
+                                                      RelativeSource={RelativeSource AncestorType=ListView}}"
+                        Columns="{Binding Path=View.Columns,
+                                          RelativeSource={RelativeSource AncestorType=ListView}}"
                         SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                 </ScrollViewer>
                 <ScrollContentPresenter
@@ -53,7 +59,9 @@
                 Orientation="Horizontal"
                 ViewportSize="{TemplateBinding ScrollViewer.ViewportWidth}"
                 Visibility="{TemplateBinding ScrollViewer.ComputedHorizontalScrollBarVisibility}"
-                Value="{Binding Path=HorizontalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}" />
+                Value="{Binding Path=HorizontalOffset,
+                                RelativeSource={RelativeSource TemplatedParent},
+                                Mode=OneWay}" />
             <ScrollBar
                 Name="PART_VerticalScrollBar"
                 Grid.Column="1"
@@ -63,7 +71,9 @@
                 Orientation="Vertical"
                 ViewportSize="{TemplateBinding ScrollViewer.ViewportHeight}"
                 Visibility="{TemplateBinding ScrollViewer.ComputedVerticalScrollBarVisibility}"
-                Value="{Binding Path=VerticalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}" />
+                Value="{Binding Path=VerticalOffset,
+                                RelativeSource={RelativeSource TemplatedParent},
+                                Mode=OneWay}" />
             <DockPanel
                 Grid.Row="1"
                 Grid.Column="1"

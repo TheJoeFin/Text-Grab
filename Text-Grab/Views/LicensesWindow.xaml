@@ -1,0 +1,136 @@
+<ui:FluentWindow
+    x:Class="Text_Grab.Views.LicensesWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Third-Party Licenses"
+    Width="1200"
+    Height="760"
+    MinWidth="900"
+    MinHeight="520"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar
+            Title="Third-Party Licenses"
+            Height="32"
+            Margin="2,2,2,0"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="14,12,14,8">
+                <TextBlock Style="{StaticResource TextHeader}" Text="Direct packages and license notices" />
+                <TextBlock
+                    Margin="0,8,0,12"
+                    Style="{StaticResource TextBodyNormal}"
+                    TextWrapping="Wrap">
+                    This page lists the direct NuGet package references used by the Text Grab application and test projects. Common permissive licenses open the upstream repository license file, and package-specific Microsoft terms are included locally when the NuGet package ships its own license text.
+                </TextBlock>
+
+                <StackPanel Margin="0,0,0,12" Orientation="Horizontal">
+                    <ui:Button
+                        Margin="0,0,12,0"
+                        Click="BuiltWithButton_Click"
+                        Content="Open BUILT-WITH.md"
+                        Icon="{ui:SymbolIcon DocumentText24}" />
+                    <ui:Button
+                        Click="NoticesFolderButton_Click"
+                        Content="Open Third-Party Notices"
+                        Icon="{ui:SymbolIcon Folder24}" />
+                </StackPanel>
+
+                <Border Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}" CornerRadius="8">
+                    <DataGrid
+                        x:Name="LicensesDataGrid"
+                        AlternatingRowBackground="{DynamicResource ApplicationBackgroundBrush}"
+                        AutoGenerateColumns="False"
+                        Background="Transparent"
+                        CanUserAddRows="False"
+                        CanUserDeleteRows="False"
+                        CanUserResizeRows="False"
+                        CellStyle="{DynamicResource DataGridCellStyleDark}"
+                        ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
+                        HeadersVisibility="Column"
+                        HorizontalScrollBarVisibility="Auto"
+                        IsReadOnly="True"
+                        ItemsSource="{Binding Packages}"
+                        RowBackground="Transparent"
+                        RowStyle="{DynamicResource DataGridRowStyleDark}"
+                        SelectionMode="Single"
+                        SelectionUnit="FullRow">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn
+                                Width="2.4*"
+                                Binding="{Binding PackageId}"
+                                Header="Package" />
+                            <DataGridTextColumn
+                                Width="*"
+                                Binding="{Binding Version}"
+                                Header="Version" />
+                            <DataGridTextColumn
+                                Width="*"
+                                Binding="{Binding Scope}"
+                                Header="Scope" />
+                            <DataGridTextColumn
+                                Width="*"
+                                Binding="{Binding License}"
+                                Header="License" />
+                            <DataGridTemplateColumn Width="Auto" Header="Notice">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ui:Button
+                                            MinWidth="90"
+                                            Padding="10,4"
+                                            Click="NoticeButton_Click"
+                                            Content="Open" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="Auto" Header="Project">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ui:Button
+                                            MinWidth="90"
+                                            Padding="10,4"
+                                            Click="ProjectButton_Click"
+                                            Content="Open" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="2.5*" Header="Notes">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock
+                                            Margin="4,0"
+                                            Text="{Binding DisplayNotes}"
+                                            TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <TextBlock
+            Grid.Row="2"
+            Margin="16,0,16,12"
+            HorizontalAlignment="Right"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            Style="{StaticResource TextBodyNormal}"
+            Text="The app and tests currently reference 26 direct NuGet packages." />
+    </Grid>
+</ui:FluentWindow>

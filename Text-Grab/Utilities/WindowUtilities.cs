@@ -296,6 +296,45 @@ public static partial class WindowUtilities
         }
     }
 
+    internal static bool ShouldOpenNewEtwInSpreadsheetMode(bool isTableModeSelected, bool hasExistingEditTextWindow)
+    {
+        return isTableModeSelected && !hasExistingEditTextWindow;
+    }
+
+    internal static EditTextWindow OpenOrActivateEditTextWindow(bool isTableModeSelected = false)
+    {
+        WindowCollection allWindows = Application.Current.Windows;
+
+        foreach (Window window in allWindows)
+        {
+            if (window is EditTextWindow matchWindow)
+            {
+                matchWindow.Activate();
+                return matchWindow;
+            }
+        }
+
+        EditTextWindow newWindow = new();
+        if (ShouldOpenNewEtwInSpreadsheetMode(isTableModeSelected, hasExistingEditTextWindow: false))
+            newWindow.EnterSpreadsheetMode();
+
+        try
+        {
+            newWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            _ = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = ex.Message,
+                Content = "An error occurred while trying to open a new window. Please try again.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+
+        return newWindow;
+    }
+
     internal static T OpenOrActivateWindow<T>() where T : Window, new()
     {
         WindowCollection allWindows = Application.Current.Windows;

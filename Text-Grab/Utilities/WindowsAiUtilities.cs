@@ -20,7 +20,7 @@ namespace Text_Grab.Utilities;
 
 public static class WindowsAiUtilities
 {
-    private const string TranslationPromptTemplate = "Translate to {0}:\n\n{1}";
+    private const string TranslationPromptTemplate = "Translate to {0} using local alphabet and characters of that langauage:\n\n{1}";
     private static LanguageModel? _translationLanguageModel;
     private static readonly SemaphoreSlim _modelInitializationLock = new(1, 1);
     private static bool _disposed;

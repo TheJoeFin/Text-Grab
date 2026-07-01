@@ -1,4 +1,6 @@
-﻿using System.Drawing;
+using System.Drawing;
+using System.IO;
+using System.Windows;
 using Text_Grab;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -93,5 +95,105 @@ public class FilesIoTests
         string fileName = "FileNotFound.json";
         Bitmap? emptyReturn = await FileUtilities.GetImageFileAsync(fileName, storageKind);
         Assert.Null(emptyReturn);
+    }
+
+    [Theory]
+    [InlineData(@"C:\Temp\sheet.csv", EtwEditorMode.Spreadsheet)]
+    [InlineData(@"C:\Temp\sheet.TSV", EtwEditorMode.Spreadsheet)]
+    [InlineData(@"C:\Temp\sheet.tab", EtwEditorMode.Spreadsheet)]
+    [InlineData(@"C:\Temp\notes.md", EtwEditorMode.Markdown)]
+    [InlineData(@"C:\Temp\notes.markdown", EtwEditorMode.Markdown)]
+    [InlineData(@"C:\Temp\notes.txt", EtwEditorMode.Text)]
+    [InlineData(@"C:\Temp\data.json", EtwEditorMode.Text)]
+    public void GetEditorModeForPath_UsesFileExtension(string path, EtwEditorMode expectedMode)
+    {
+        Assert.Equal(expectedMode, IoUtilities.GetEditorModeForPath(path));
+    }
+
+    [Theory]
+    [InlineData(@"C:\Temp\scan.png", OpenContentKind.Image)]
+    [InlineData(@"C:\Temp\scan.PDF", OpenContentKind.PdfDocument)]
+    [InlineData(@"C:\Temp\notes.txt", OpenContentKind.TextFile)]
+    public void GetOpenContentKindForPath_ClassifiesVisualDocumentsAndText(string path, OpenContentKind expectedKind)
+    {
+        Assert.Equal(expectedKind, IoUtilities.GetOpenContentKindForPath(path));
+    }
+
+    [Theory]
+    [InlineData(".png", true)]
+    [InlineData(".PDF", true)]
+    [InlineData(".txt", false)]
+    [InlineData("", false)]
+    public void IsVisualDocumentFileExtension_RecognizesImagesAndPdf(string extension, bool expected)
+    {
+        Assert.Equal(expected, IoUtilities.IsVisualDocumentFileExtension(extension));
+    }
+
+    [Fact]
+    public void GetVisualDocumentFilter_IncludesPdfSupport()
+    {
+        string filter = FileUtilities.GetVisualDocumentFilter();
+
+        Assert.Contains("Image and PDF files|", filter);
+        Assert.Contains("PDF files|*.pdf", filter);
+        Assert.Contains("Image files|", filter);
+    }
+
+    [Fact]
+    public void GetOpenDocumentFilter_IncludesVisualAndTextOptions()
+    {
+        string filter = FileUtilities.GetOpenDocumentFilter();
+
+        Assert.Contains("Supported documents|", filter);
+        Assert.Contains("Image and PDF files|", filter);
+        Assert.Contains("Spreadsheet documents|*.csv;*.tsv;*.tab", filter);
+        Assert.Contains("Markdown documents|*.md;*.markdown", filter);
+        Assert.Contains("Text documents (*.txt)|*.txt", filter);
+        Assert.Contains("All files (*.*)|*.*", filter);
+    }
+
+    [WpfFact]
+    public void GetDroppedFilePaths_ReturnsExistingFilesOnly()
+    {
+        string firstPath = Path.GetTempFileName();
+        string secondPath = Path.GetTempFileName();
+        string missingPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.txt");
+        DataObject dataObject = new(DataFormats.FileDrop, new[] { firstPath, missingPath, secondPath });
+
+        try
+        {
+            IReadOnlyList<string> paths = App.GetDroppedFilePaths(dataObject);
+
+            Assert.Equal([firstPath, secondPath], paths);
+        }
+        finally
+        {
+            File.Delete(firstPath);
+            File.Delete(secondPath);
+        }
+    }
+
+    [WpfFact]
+    public void GetDroppedFileEffect_ReturnsCopyWhenExistingFilesAreDropped()
+    {
+        string path = Path.GetTempFileName();
+        DataObject dataObject = new(DataFormats.FileDrop, new[] { path });
+
+        try
+        {
+            Assert.Equal(DragDropEffects.Copy, App.GetDroppedFileEffect(dataObject));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [WpfFact]
+    public void GetDroppedFileEffect_ReturnsNoneWhenNoFilesCanBeOpened()
+    {
+        DataObject dataObject = new(DataFormats.Text, "hello");
+
+        Assert.Equal(DragDropEffects.None, App.GetDroppedFileEffect(dataObject));
     }
 }

@@ -6,7 +6,7 @@ namespace Text_Grab.Utilities;
 
 /// <summary>
 /// Utility class for managing Windows context menu integration.
-/// Adds "Grab text with Text Grab" and "Open in Grab Frame" options to the right-click context menu for image files.
+/// Adds "Grab text with Text Grab" and "Open in Grab Frame" options to the right-click context menu for supported visual documents.
 /// </summary>
 internal static class ContextMenuUtilities
 {
@@ -16,22 +16,17 @@ internal static class ContextMenuUtilities
     private const string GrabFrameDisplayText = "Open in Grab Frame";
 
     /// <summary>
-    /// Supported image file extensions for context menu integration.
+    /// Supported image and PDF file extensions for context menu integration.
     /// </summary>
-    private static readonly string[] ImageExtensions =
+    private static readonly string[] VisualDocumentExtensions =
     [
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".bmp",
-        ".gif",
-        ".tiff",
-        ".tif"
+        .. IoUtilities.ImageExtensions,
+        .. IoUtilities.PdfExtensions
     ];
 
     /// <summary>
-    /// Adds Text Grab to the Windows context menu for image files.
-    /// This allows users to right-click on an image and select "Grab text with Text Grab" or "Open in Grab Frame".
+    /// Adds Text Grab to the Windows context menu for supported visual documents.
+    /// This allows users to right-click a file and select "Grab text with Text Grab" or "Open in Grab Frame".
     /// </summary>
     /// <param name="errorMessage">When the method returns false, contains an error message describing the failure.</param>
     /// <returns>True if registration was successful, false otherwise.</returns>
@@ -48,7 +43,7 @@ internal static class ContextMenuUtilities
 
         try
         {
-            foreach (string extension in ImageExtensions)
+            foreach (string extension in VisualDocumentExtensions)
             {
                 RegisterGrabTextContextMenu(extension, executablePath);
                 RegisterGrabFrameContextMenu(extension, executablePath);
@@ -70,7 +65,7 @@ internal static class ContextMenuUtilities
     }
 
     /// <summary>
-    /// Removes Text Grab from the Windows context menu for image files.
+    /// Removes Text Grab from the Windows context menu for supported visual documents.
     /// </summary>
     /// <param name="errorMessage">When the method returns false, contains an error message describing the failure.</param>
     /// <returns>True if removal was successful, false otherwise.</returns>
@@ -79,7 +74,7 @@ internal static class ContextMenuUtilities
         errorMessage = null;
         try
         {
-            foreach (string extension in ImageExtensions)
+            foreach (string extension in VisualDocumentExtensions)
             {
                 UnregisterContextMenuForExtension(extension, GrabTextRegistryKeyName);
                 UnregisterContextMenuForExtension(extension, GrabFrameRegistryKeyName);
@@ -109,7 +104,7 @@ internal static class ContextMenuUtilities
         try
         {
             // Check if at least one extension has the context menu registered
-            foreach (string extension in ImageExtensions)
+            foreach (string extension in VisualDocumentExtensions)
             {
                 string keyPath = GetShellKeyPath(extension, GrabTextRegistryKeyName);
                 using RegistryKey? key = Registry.CurrentUser.OpenSubKey(keyPath);
@@ -186,7 +181,7 @@ internal static class ContextMenuUtilities
                 throw new InvalidOperationException($"Could not create command registry key for {extension}");
             }
 
-            // --grabframe flag opens the image in GrabFrame instead of EditTextWindow
+            // --grabframe flag opens the visual document in GrabFrame instead of EditTextWindow
             commandKey.SetValue(string.Empty, $"\"{executablePath}\" --grabframe \"%1\"");
         }
     }

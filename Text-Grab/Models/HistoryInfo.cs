@@ -48,6 +48,17 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public int CalcPaneWidth { get; set; } = 0;
 
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<double>? ManualTableColumnSeparators { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<double>? ManualTableRowSeparators { get; set; }
+
+    public EtwEditorMode EditorMode { get; set; } = EtwEditorMode.Text;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? EditTextTableDocumentJson { get; set; }
+
     [JsonIgnore]
     public ILanguage OcrLanguage
     {

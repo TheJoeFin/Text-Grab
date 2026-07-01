@@ -33,6 +33,7 @@ public enum OpenContentKind
     Image = 0,
     TextFile = 1,
     Directory = 2,
+    PdfDocument = 3,
 }
 
 public enum OcrEngineKind
@@ -84,6 +85,17 @@ public enum ScrollBehavior
     Resize = 1,
     Zoom = 2,
     ZoomWhenFrozen = 3,
+}
+
+public enum SpellCheckMode
+{
+    // Enable spell check unless the text looks like it would choke the checker
+    // (very long documents or several long unspaced tokens).
+    Auto = 0,
+    // Always show spell check, regardless of content.
+    AlwaysOn = 1,
+    // Never show spell check.
+    Off = 2,
 }
 
 public enum LanguageKind

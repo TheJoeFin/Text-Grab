@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,7 +11,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Text_Grab.Models;
-using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
 
@@ -59,6 +57,8 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     #region Properties
 
+    private bool IsSpreadsheetSearch => textEditWindow?.IsSpreadsheetMode is true;
+
     public List<FindResult> FindResults { get; set; } = [];
 
     public string StringFromWindow
@@ -72,6 +72,8 @@ public partial class FindAndReplaceWindow : FluentWindow
         get => textEditWindow;
         set
         {
+            textEditWindow?.PassedTextControl.TextChanged -= EditTextBoxChanged;
+
             textEditWindow = value;
 
             textEditWindow?.PassedTextControl.TextChanged += EditTextBoxChanged;
@@ -85,8 +87,17 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     public void SearchForText()
     {
+        if (IsSpreadsheetSearch) { SearchSpreadsheetCells(); return; }
+
         FindResults.Clear();
         ResultsListView.ItemsSource = null;
+
+        if (!TextSearchUtilities.HasSearchText(FindTextBox.Text))
+        {
+            Matches = null;
+            MatchesText.Text = "0 Matches";
+            return;
+        }
 
         Pattern = FindTextBox.Text;
 
@@ -109,16 +120,8 @@ public partial class FindAndReplaceWindow : FluentWindow
             // Otherwise, use RegexOptions for backward compatibility
             bool usingPatternMode = UsePatternCheckBox.IsChecked is true;
             bool exactMatch = ExactMatchCheckBox.IsChecked is true;
-            TimeSpan timeout = TimeSpan.FromSeconds(5);
-
-            if (exactMatch)
-                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline, timeout);
-            else if (usingPatternMode)
-                // Pattern mode with inline (?i) flags - don't add redundant RegexOptions
-                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace, timeout);
-            else
-                // Non-pattern mode - use RegexOptions for case insensitivity
-                Matches = Regex.Matches(StringFromWindow, Pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace, timeout);
+            Regex regex = TextSearchUtilities.CreateFindAndReplaceSearchRegex(Pattern, usingPatternMode, exactMatch);
+            Matches = regex.Matches(StringFromWindow);
         }
         catch (RegexMatchTimeoutException)
         {
@@ -138,7 +141,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             return;
         }
 
-        if (Matches.Count < 1 || string.IsNullOrWhiteSpace(FindTextBox.Text))
+        if (Matches.Count < 1)
         {
             MatchesText.Text = "0 Matches";
             return;
@@ -156,9 +159,10 @@ public partial class FindAndReplaceWindow : FluentWindow
             FindResult fr = new()
             {
                 Index = m.Index,
-                Text = m.Value.MakeStringSingleLine(),
+                Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Value),
                 PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12).MakeStringSingleLine(),
                 PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12).MakeStringSingleLine(),
+                Length = m.Length,
                 Count = count
             };
             FindResults.Add(fr);
@@ -176,6 +180,57 @@ public partial class FindAndReplaceWindow : FluentWindow
         {
             textEditWindow.PassedTextControl.Select(firstMatch.Index, firstMatch.Value.Length);
             textEditWindow.PassedTextControl.Focus();
+            this.Focus();
+        }
+    }
+
+    private Regex? BuildCurrentRegex()
+    {
+        string rawPattern = FindTextBox.Text;
+        if (!TextSearchUtilities.HasSearchText(rawPattern)) return null;
+
+        if (rawPattern.StartsWith('^') && rawPattern.EndsWith('$') && rawPattern.Length > 2)
+            rawPattern = rawPattern[1..^1];
+
+        if (UsePatternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
+            rawPattern = rawPattern.EscapeSpecialRegexChars(matchExactly);
+
+        try { return TextSearchUtilities.CreateReplacementRegex(rawPattern, ExactMatchCheckBox.IsChecked is true); }
+        catch { return null; }
+    }
+
+    private void SearchSpreadsheetCells()
+    {
+        FindResults.Clear();
+        ResultsListView.ItemsSource = null;
+        Matches = null;
+
+        if (textEditWindow is null || !TextSearchUtilities.HasSearchText(FindTextBox.Text))
+        {
+            MatchesText.Text = "0 Matches";
+            return;
+        }
+
+        Regex? regex = BuildCurrentRegex();
+        if (regex is null) { MatchesText.Text = "0 Matches"; return; }
+
+        textEditWindow.CommitSpreadsheetAndSync();
+
+        List<FindResult> results;
+        try { results = textEditWindow.SearchSpreadsheetCells(regex); }
+        catch (RegexMatchTimeoutException) { MatchesText.Text = "Regex timeout"; return; }
+
+        FindResults.AddRange(results);
+        if (FindResults.Count == 0) { MatchesText.Text = "0 Matches"; return; }
+
+        MatchesText.Text = FindResults.Count == 1 ? "1 Match" : $"{FindResults.Count} Matches";
+        ResultsListView.IsEnabled = true;
+        ResultsListView.ItemsSource = FindResults;
+
+        FindResult first = FindResults[0];
+        if (this.IsFocused && first.RowIndex.HasValue && first.ColumnIndex.HasValue)
+        {
+            textEditWindow.NavigateToSpreadsheetCell(first.RowIndex.Value, first.ColumnIndex.Value);
             this.Focus();
         }
     }
@@ -200,6 +255,12 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void CopyMatchesCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
+        if (IsSpreadsheetSearch)
+        {
+            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(FindTextBox.Text);
+            return;
+        }
+
         if (Matches is null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
             e.CanExecute = false;
         else
@@ -208,9 +269,9 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void CopyMatchesCmd_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (Matches is null
-            || textEditWindow is null
-            || Matches.Count < 1)
+        if (textEditWindow is null) return;
+
+        if (!IsSpreadsheetSearch && (Matches is null || Matches.Count < 1))
             return;
 
         StringBuilder stringBuilder = new();
@@ -230,6 +291,12 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void DeleteAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
+        if (IsSpreadsheetSearch)
+        {
+            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(FindTextBox.Text);
+            return;
+        }
+
         if (Matches is not null && Matches.Count > 1 && !string.IsNullOrEmpty(FindTextBox.Text))
             e.CanExecute = true;
         else
@@ -238,24 +305,41 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private async void DeleteAll_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (Matches is null
-            || Matches.Count < 1
-            || textEditWindow is null)
+        if (textEditWindow is null) return;
+
+        if (IsSpreadsheetSearch)
+        {
+            if (FindResults.Count == 0) return;
+            SetWindowToLoading();
+            Regex? regex = BuildCurrentRegex();
+            if (regex is null) { ResetWindowLoading(); return; }
+            IList selection = ResultsListView.SelectedItems;
+            List<FindResult> targets = selection.Count >= 2
+                ? [.. selection.Cast<FindResult>()]
+                : [.. ResultsListView.Items.Cast<FindResult>()];
+            await Task.Run(() => Dispatcher.Invoke(() =>
+                textEditWindow.ReplaceInSpreadsheetCells(targets, string.Empty, regex)));
+            SearchForText();
+            ResetWindowLoading();
+            return;
+        }
+
+        if (Matches is null || Matches.Count < 1)
             return;
 
         SetWindowToLoading();
 
-        IList selection = ResultsListView.SelectedItems;
+        IList selection2 = ResultsListView.SelectedItems;
         StringBuilder stringBuilderOfText = new(textEditWindow.PassedTextControl.Text);
 
         await Task.Run(() =>
         {
-            if (selection.Count < 2)
-                selection = ResultsListView.Items;
+            if (selection2.Count < 2)
+                selection2 = ResultsListView.Items;
 
-            for (int j = selection.Count - 1; j >= 0; j--)
+            for (int j = selection2.Count - 1; j >= 0; j--)
             {
-                if (selection[j] is not FindResult selectedResult)
+                if (selection2[j] is not FindResult selectedResult)
                     continue;
 
                 stringBuilderOfText.Remove(selectedResult.Index, selectedResult.Length);
@@ -270,6 +354,8 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
     {
+        if (IsSpreadsheetSearch) return;
+
         ChangeFindTextTimer.Stop();
         if (textEditWindow is not null)
             StringFromWindow = textEditWindow.PassedTextControl.Text;
@@ -279,6 +365,8 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void ExtractPattern_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
+        if (IsSpreadsheetSearch) { e.CanExecute = false; return; }
+
         if (textEditWindow is not null
             && textEditWindow.PassedTextControl.SelectedText.Length > 0)
             e.CanExecute = true;
@@ -312,7 +400,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
+        if (TextSearchUtilities.HasSearchText(FindTextBox.Text))
             SearchForText();
 
         // Update save button visibility on load
@@ -374,7 +462,7 @@ public partial class FindAndReplaceWindow : FluentWindow
                 FindTextBox.Text = extractedPattern.GetPattern(precisionLevel);
             }
         }
-        else if (UsePatternCheckBox.IsChecked is true && !string.IsNullOrWhiteSpace(FindTextBox.Text))
+        else if (UsePatternCheckBox.IsChecked is true && TextSearchUtilities.HasSearchText(FindTextBox.Text))
         {
             // No extracted pattern, but we're in pattern mode - manually toggle (?i) flag
             string currentPattern = FindTextBox.Text;
@@ -410,6 +498,12 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void Replace_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
+        if (IsSpreadsheetSearch)
+        {
+            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(ReplaceTextBox.Text);
+            return;
+        }
+
         if (string.IsNullOrEmpty(ReplaceTextBox.Text)
             || Matches is null
             || Matches.Count < 1)
@@ -420,10 +514,21 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void Replace_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (Matches is null
-            || textEditWindow is null
-            || ResultsListView.Items.Count is 0)
+        if (textEditWindow is null || ResultsListView.Items.Count is 0)
             return;
+
+        if (IsSpreadsheetSearch)
+        {
+            if (ResultsListView.SelectedIndex == -1) ResultsListView.SelectedIndex = 0;
+            if (ResultsListView.SelectedItem is not FindResult fr) return;
+            Regex? regex = BuildCurrentRegex();
+            if (regex is null) return;
+            textEditWindow.ReplaceInSpreadsheetCells([fr], ReplaceTextBox.Text, regex);
+            SearchForText();
+            return;
+        }
+
+        if (Matches is null) return;
 
         if (ResultsListView.SelectedIndex == -1)
             ResultsListView.SelectedIndex = 0;
@@ -439,26 +544,44 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private async void ReplaceAll_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (Matches is null
-            || Matches.Count < 1
-            || textEditWindow is null)
+        if (textEditWindow is null) return;
+
+        if (IsSpreadsheetSearch)
+        {
+            if (FindResults.Count == 0) return;
+            SetWindowToLoading();
+            Regex? regex = BuildCurrentRegex();
+            if (regex is null) { ResetWindowLoading(); return; }
+            IList selection = ResultsListView.SelectedItems;
+            List<FindResult> targets = selection.Count >= 2
+                ? [.. selection.Cast<FindResult>()]
+                : [.. ResultsListView.Items.Cast<FindResult>()];
+            string replaceWith = ReplaceTextBox.Text;
+            await Task.Run(() => Dispatcher.Invoke(() =>
+                textEditWindow.ReplaceInSpreadsheetCells(targets, replaceWith, regex)));
+            SearchForText();
+            ResetWindowLoading();
+            return;
+        }
+
+        if (Matches is null || Matches.Count < 1)
             return;
 
         SetWindowToLoading();
 
         StringBuilder stringBuilder = new(textEditWindow.PassedTextControl.Text);
 
-        IList selection = ResultsListView.SelectedItems;
+        IList selection2 = ResultsListView.SelectedItems;
         string newText = ReplaceTextBox.Text;
 
         await Task.Run(() =>
         {
-            if (selection.Count < 2)
-                selection = ResultsListView.Items;
+            if (selection2.Count < 2)
+                selection2 = ResultsListView.Items;
 
-            for (int j = selection.Count - 1; j >= 0; j--)
+            for (int j = selection2.Count - 1; j >= 0; j--)
             {
-                if (selection[j] is not FindResult selectedResult)
+                if (selection2[j] is not FindResult selectedResult)
                     continue;
 
                 stringBuilder.Remove(selectedResult.Index, selectedResult.Length);
@@ -467,6 +590,109 @@ public partial class FindAndReplaceWindow : FluentWindow
         });
 
         textEditWindow.PassedTextControl.Text = stringBuilder.ToString();
+
+        SearchForText();
+        ResetWindowLoading();
+    }
+
+    private void ApplyTemplateButton_Click(object sender, RoutedEventArgs e)
+    {
+        System.Windows.Controls.ContextMenu menu = new()
+        {
+            PlacementTarget = ApplyTemplateButton,
+            Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom,
+        };
+
+        if (IsSpreadsheetSearch)
+        {
+            menu.Items.Add(DisabledMenuItem("Not available in spreadsheet mode"));
+            menu.IsOpen = true;
+            return;
+        }
+
+        // Load text-only templates fresh each time, mirroring the Edit Text Window menu.
+        List<GrabTemplate> textOnlyTemplates = GrabTemplateManager.GetAllTemplates()
+            .Where(template => template.IsTextOnly && template.IsValid)
+            .ToList();
+
+        if (textOnlyTemplates.Count == 0)
+        {
+            menu.Items.Add(DisabledMenuItem("No text-only templates found"));
+            menu.IsOpen = true;
+            return;
+        }
+
+        bool hasMatches = Matches is not null && Matches.Count > 0;
+
+        foreach (GrabTemplate template in textOnlyTemplates)
+        {
+            System.Windows.Controls.MenuItem item = new()
+            {
+                Header = template.Name,
+                ToolTip = string.IsNullOrWhiteSpace(template.Description) ? null : template.Description,
+                Tag = template,
+                IsEnabled = hasMatches,
+            };
+            item.Click += TemplateMenuItem_Click;
+            menu.Items.Add(item);
+        }
+
+        if (!hasMatches)
+            menu.Items.Add(DisabledMenuItem("Run a search to find matches first"));
+
+        menu.IsOpen = true;
+    }
+
+    private static System.Windows.Controls.MenuItem DisabledMenuItem(string text) =>
+        new() { Header = text, IsEnabled = false };
+
+    private void TemplateMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.MenuItem { Tag: GrabTemplate template })
+            _ = ApplyTemplateToMatchesAsync(template);
+    }
+
+    /// <summary>
+    /// Applies a text-only Grab Template to every matched result, replacing each match
+    /// with the template output evaluated against that match's own text. When two or
+    /// more results are selected, only those are affected; otherwise all matches are.
+    /// </summary>
+    private async Task ApplyTemplateToMatchesAsync(GrabTemplate template)
+    {
+        if (textEditWindow is null || IsSpreadsheetSearch)
+            return;
+
+        if (Matches is null || Matches.Count < 1)
+            return;
+
+        SetWindowToLoading();
+
+        string originalText = textEditWindow.PassedTextControl.Text;
+        StringBuilder stringBuilder = new(originalText);
+
+        IList selection = ResultsListView.SelectedItems;
+        List<FindResult> targets = selection.Count >= 2
+            ? [.. selection.Cast<FindResult>()]
+            : [.. ResultsListView.Items.Cast<FindResult>()];
+
+        await Task.Run(() =>
+        {
+            // Apply from the end backwards so earlier indices stay valid as we edit.
+            foreach (FindResult result in targets.OrderByDescending(r => r.Index))
+            {
+                if (result.Index < 0 || result.Index + result.Length > originalText.Length)
+                    continue;
+
+                string matchText = originalText.Substring(result.Index, result.Length);
+                string replacement = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, matchText);
+
+                stringBuilder.Remove(result.Index, result.Length);
+                stringBuilder.Insert(result.Index, replacement);
+            }
+        });
+
+        textEditWindow.PassedTextControl.Text = stringBuilder.ToString();
+        GrabTemplateManager.RecordUsage(template.Id);
 
         SearchForText();
         ResetWindowLoading();
@@ -486,15 +712,21 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void ResultsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ResultsListView.SelectedItem is not FindResult selectedResult)
+        if (ResultsListView.SelectedItem is not FindResult selectedResult || textEditWindow is null)
             return;
 
-        if (textEditWindow is not null)
+        if (IsSpreadsheetSearch)
         {
-            textEditWindow.PassedTextControl.Focus();
-            textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+            if (selectedResult.RowIndex.HasValue && selectedResult.ColumnIndex.HasValue)
+                textEditWindow.NavigateToSpreadsheetCell(
+                    selectedResult.RowIndex.Value, selectedResult.ColumnIndex.Value);
             this.Focus();
+            return;
         }
+
+        textEditWindow.PassedTextControl.Focus();
+        textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+        this.Focus();
     }
 
     private void SetExtraOptionsVisibility(Visibility optionsVisibility)
@@ -509,7 +741,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(FindTextBox.Text))
+        if (!TextSearchUtilities.HasSearchText(FindTextBox.Text))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -530,7 +762,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         if (e.Key == Key.Escape)
         {
-            if (!string.IsNullOrWhiteSpace(FindTextBox.Text))
+            if (TextSearchUtilities.HasSearchText(FindTextBox.Text))
                 FindTextBox.Clear();
             else
                 this.Close();

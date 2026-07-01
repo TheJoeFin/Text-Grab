@@ -8,7 +8,11 @@ namespace Text_Grab.Utilities;
 
 internal class ImplementAppOptions
 {
-    private static readonly string[] ImageExtensions = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".tif", ".webp", ".ico"];
+    private static readonly string[] SupportedOpenWithExtensions =
+    [
+        .. IoUtilities.ImageExtensions,
+        .. IoUtilities.PdfExtensions
+    ];
 
     public static async Task ImplementStartupOption(bool startupOnLogin)
     {
@@ -60,8 +64,8 @@ internal class ImplementAppOptions
                 iconKey?.SetValue("", $"\"{executablePath}\",0");
             }
 
-            // Register Text Grab in OpenWithProgids for each image extension
-            foreach (string ext in ImageExtensions)
+            // Register Text Grab in OpenWithProgids for each supported visual document extension
+            foreach (string ext in SupportedOpenWithExtensions)
             {
                 string extKey = $@"SOFTWARE\Classes\{ext}\OpenWithProgids";
                 using RegistryKey? key = Registry.CurrentUser.CreateSubKey(extKey);
@@ -80,7 +84,7 @@ internal class ImplementAppOptions
                 using RegistryKey? supportedTypes = key.CreateSubKey("SupportedTypes");
                 if (supportedTypes is not null)
                 {
-                    foreach (string ext in ImageExtensions)
+                    foreach (string ext in SupportedOpenWithExtensions)
                         supportedTypes.SetValue(ext, "");
                 }
 
@@ -108,7 +112,7 @@ internal class ImplementAppOptions
             Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\Classes\Text-Grab.Image", false);
 
             // Remove OpenWithProgids entries for each extension
-            foreach (string ext in ImageExtensions)
+            foreach (string ext in SupportedOpenWithExtensions)
             {
                 string extKey = $@"SOFTWARE\Classes\{ext}\OpenWithProgids";
                 using RegistryKey? key = Registry.CurrentUser.OpenSubKey(extKey, true);

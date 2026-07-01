@@ -16,6 +16,7 @@ namespace Text_Grab.Services;
 internal class SettingsService : IDisposable
 {
     private const string ManagedJsonSettingsFolderName = "settings-data";
+    private const string RegularSettingsSidecarFileName = "Settings.json";
 
     private static readonly Dictionary<string, string> ManagedJsonSettingFiles = new(StringComparer.Ordinal)
     {
@@ -29,6 +30,7 @@ internal class SettingsService : IDisposable
 
     private readonly ApplicationDataContainer? _localSettings;
     private readonly string _managedJsonSettingsFolderPath;
+    private readonly string _regularSettingsSidecarFilePath;
     private readonly bool _saveClassicSettingsChanges;
     private readonly bool _preferFileBackedManagedSettings;
     private readonly Lock _managedJsonLock = new();
@@ -58,12 +60,15 @@ internal class SettingsService : IDisposable
         Properties.Settings classicSettings,
         ApplicationDataContainer? localSettings,
         string? managedJsonSettingsFolderPath = null,
+        string? regularSettingsSidecarFilePath = null,
         bool saveClassicSettingsChanges = true)
     {
         ClassicSettings = classicSettings;
         _localSettings = localSettings;
         _managedJsonSettingsFolderPath = managedJsonSettingsFolderPath ?? GetManagedJsonSettingsFolderPath();
+        _regularSettingsSidecarFilePath = regularSettingsSidecarFilePath ?? GetRegularSettingsSidecarFilePath();
         _saveClassicSettingsChanges = saveClassicSettingsChanges;
+        Dictionary<string, JsonElement> regularSettingsSidecarSnapshot = ReadRegularSettingsSidecarSnapshot();
 
         if (ClassicSettings.FirstRun)
         {
@@ -82,6 +87,12 @@ internal class SettingsService : IDisposable
                 ClassicSettings.Upgrade();
             }
         }
+
+        bool shouldUseRegularSettingsSidecar = _localSettings is null
+            && (ClassicSettings.EnableFileBackedManagedSettings || SidecarEnablesFileBackedManagedSettings(regularSettingsSidecarSnapshot));
+
+        if (shouldUseRegularSettingsSidecar)
+            SyncRegularSettingsSidecarWithClassic(regularSettingsSidecarSnapshot);
 
         // Must be read after any migration so the user's saved preference is respected.
         _preferFileBackedManagedSettings = ClassicSettings.EnableFileBackedManagedSettings;
@@ -127,6 +138,9 @@ internal class SettingsService : IDisposable
         }
 
         SaveSettingInContainer(propertyName, ClassicSettings[propertyName]);
+
+        if (ShouldPersistRegularSettingsSidecar(propertyName))
+            PersistRegularSettingsSidecar();
     }
 
     public void Dispose()
@@ -295,6 +309,15 @@ internal class SettingsService : IDisposable
             materialized,
             CloneCheckStates,
             ref _cachedPostGrabCheckStates);
+    }
+
+    internal void ReconcileManagedJsonSettings()
+    {
+        foreach (string propertyName in ManagedJsonSettingFiles.Keys)
+        {
+            InvalidateManagedJsonCache(propertyName);
+            _ = ReadManagedJsonSettingText(propertyName);
+        }
     }
 
     private void HandleManagedJsonSettingChanged(string propertyName)
@@ -503,6 +526,197 @@ internal class SettingsService : IDisposable
 
         string? exeDir = Path.GetDirectoryName(FileUtilities.GetExePath());
         return Path.Combine(exeDir ?? "c:\\Text-Grab", ManagedJsonSettingsFolderName);
+    }
+
+    private void SyncRegularSettingsSidecarWithClassic(IReadOnlyDictionary<string, JsonElement> sidecarSnapshot)
+    {
+        Dictionary<string, object?> mergedValues = CaptureRegularSettingsSnapshot();
+
+        foreach ((string propertyName, JsonElement jsonValue) in sidecarSnapshot)
+        {
+            if (!TryGetRegularSettingsProperty(propertyName, out SettingsProperty? property))
+                continue;
+
+            if (!TryConvertJsonElementToSettingValue(jsonValue, property.PropertyType, out object? value))
+                continue;
+
+            mergedValues[propertyName] = value;
+        }
+
+        mergedValues[nameof(Properties.Settings.EnableFileBackedManagedSettings)] = true;
+
+        ApplyRegularSettingsSnapshot(mergedValues);
+        PersistRegularSettingsSidecar(mergedValues);
+    }
+
+    private Dictionary<string, object?> CaptureRegularSettingsSnapshot()
+    {
+        Dictionary<string, object?> settingsSnapshot = new(StringComparer.Ordinal);
+
+        foreach (SettingsProperty property in ClassicSettings.Properties)
+        {
+            if (!IsRegularSettingsSidecarProperty(property))
+                continue;
+
+            settingsSnapshot[property.Name] = ClassicSettings[property.Name];
+        }
+
+        return settingsSnapshot;
+    }
+
+    private void ApplyRegularSettingsSnapshot(IReadOnlyDictionary<string, object?> snapshot)
+    {
+        bool changedAny = false;
+
+        foreach ((string propertyName, object? value) in snapshot)
+        {
+            object? currentValue = ClassicSettings[propertyName];
+            if (Equals(currentValue, value))
+                continue;
+
+            ClassicSettings[propertyName] = value;
+            changedAny = true;
+        }
+
+        if (changedAny && _saveClassicSettingsChanges)
+            ClassicSettings.Save();
+    }
+
+    private void PersistRegularSettingsSidecar()
+    {
+        PersistRegularSettingsSidecar(CaptureRegularSettingsSnapshot());
+    }
+
+    private void PersistRegularSettingsSidecar(IReadOnlyDictionary<string, object?> snapshot)
+    {
+        try
+        {
+            string? directory = Path.GetDirectoryName(_regularSettingsSidecarFilePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+                Directory.CreateDirectory(directory);
+
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = true,
+            };
+
+            string json = JsonSerializer.Serialize(snapshot, options);
+            File.WriteAllText(_regularSettingsSidecarFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to persist regular settings sidecar: {ex.Message}");
+        }
+    }
+
+    private Dictionary<string, JsonElement> ReadRegularSettingsSidecarSnapshot()
+    {
+        if (_localSettings is not null || !File.Exists(_regularSettingsSidecarFilePath))
+            return [];
+
+        try
+        {
+            string json = File.ReadAllText(_regularSettingsSidecarFilePath);
+            return JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? [];
+        }
+        catch (Exception ex) when (ex is IOException or JsonException)
+        {
+            Debug.WriteLine($"Failed to read regular settings sidecar: {ex.Message}");
+            return [];
+        }
+    }
+
+    private static bool SidecarEnablesFileBackedManagedSettings(IReadOnlyDictionary<string, JsonElement> sidecarSnapshot)
+    {
+        if (!sidecarSnapshot.TryGetValue(nameof(Properties.Settings.EnableFileBackedManagedSettings), out JsonElement settingValue))
+            return false;
+
+        return TryConvertJsonElementToSettingValue(
+                settingValue,
+                typeof(bool),
+                out object? convertedValue)
+            && convertedValue is true;
+    }
+
+    private bool TryGetRegularSettingsProperty(string propertyName, out SettingsProperty property)
+    {
+        SettingsProperty? candidate = ClassicSettings.Properties[propertyName];
+        if (candidate is null || !IsRegularSettingsSidecarProperty(candidate))
+        {
+            property = null!;
+            return false;
+        }
+
+        property = candidate;
+        return true;
+    }
+
+    private bool ShouldPersistRegularSettingsSidecar(string propertyName)
+    {
+        if (_localSettings is not null)
+            return false;
+
+        return ClassicSettings.EnableFileBackedManagedSettings
+            || string.Equals(propertyName, nameof(Properties.Settings.EnableFileBackedManagedSettings), StringComparison.Ordinal);
+    }
+
+    private static bool IsRegularSettingsSidecarProperty(SettingsProperty property)
+    {
+        return property.Attributes[typeof(UserScopedSettingAttribute)] is not null
+            && !IsManagedJsonSetting(property.Name)
+            && !string.Equals(property.Name, nameof(Properties.Settings.GrabTemplatesJSON), StringComparison.Ordinal);
+    }
+
+    private static bool TryConvertJsonElementToSettingValue(JsonElement jsonElement, Type propertyType, out object? value)
+    {
+        try
+        {
+            if (propertyType == typeof(string))
+            {
+                value = jsonElement.ValueKind == JsonValueKind.Null ? null : jsonElement.GetString();
+                return true;
+            }
+
+            if (propertyType == typeof(bool))
+            {
+                value = jsonElement.GetBoolean();
+                return true;
+            }
+
+            if (propertyType == typeof(int))
+            {
+                value = jsonElement.GetInt32();
+                return true;
+            }
+
+            if (propertyType == typeof(double))
+            {
+                value = jsonElement.GetDouble();
+                return true;
+            }
+
+            if (propertyType == typeof(long))
+            {
+                value = jsonElement.GetInt64();
+                return true;
+            }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or FormatException or OverflowException)
+        {
+            Debug.WriteLine($"Failed to convert sidecar setting value: {ex.Message}");
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static string GetRegularSettingsSidecarFilePath()
+    {
+        if (AppUtilities.IsPackaged())
+            return Path.Combine(ApplicationData.Current.LocalFolder.Path, RegularSettingsSidecarFileName);
+
+        string? exeDir = Path.GetDirectoryName(FileUtilities.GetExePath());
+        return Path.Combine(exeDir ?? "c:\\Text-Grab", RegularSettingsSidecarFileName);
     }
 
     private void InvalidateManagedJsonCache(string propertyName)

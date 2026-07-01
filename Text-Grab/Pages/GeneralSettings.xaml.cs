@@ -135,6 +135,7 @@ public partial class GeneralSettings : Page
         HistorySwitch.IsChecked = DefaultSettings.UseHistory;
         ErrorCorrectBox.IsChecked = DefaultSettings.CorrectErrors;
         CorrectToLatin.IsChecked = DefaultSettings.CorrectToLatin;
+        ParagraphDetectionToggle.IsChecked = DefaultSettings.ParagraphDetection;
         NeverUseClipboardChkBx.IsChecked = DefaultSettings.NeverAutoUseClipboard;
         TryInsertCheckbox.IsChecked = DefaultSettings.TryInsert;
         InsertDelaySeconds = DefaultSettings.InsertDelay;
@@ -298,6 +299,22 @@ public partial class GeneralSettings : Page
             return;
 
         DefaultSettings.CorrectErrors = false;
+    }
+
+    private void ParagraphDetectionToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.ParagraphDetection = true;
+    }
+
+    private void ParagraphDetectionToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.ParagraphDetection = false;
     }
 
     private void CorrectToLatin_Checked(object sender, RoutedEventArgs e)

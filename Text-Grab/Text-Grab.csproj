@@ -12,8 +12,8 @@
         <StartupObject>Text_Grab.App</StartupObject>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <Platforms>x64;x86;ARM64</Platforms>
-        <Copyright>Joseph Finney 2025</Copyright>
-        <PackageProjectUrl>TextGrab.net</PackageProjectUrl>
+        <Copyright>Joseph Finney 2026</Copyright>
+        <PackageProjectUrl>https://textgrab.net</PackageProjectUrl>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/TheJoeFin/Text-Grab</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -23,7 +23,9 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
         <EnableMsixTooling>false</EnableMsixTooling>
-        <Version>4.13.2</Version>
+        <Version>4.14.2</Version>
+        <!-- Keep manifest-based DPI settings for accurate mixed WPF/WinForms capture behavior. -->
+        <NoWarn>$(NoWarn);WFO0003</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -44,6 +46,18 @@
             <Pack>True</Pack>
             <PackagePath>\</PackagePath>
         </None>
+        <None Include="..\BUILT-WITH.md">
+            <Link>BUILT-WITH.md</Link>
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\ThirdPartyNotices\licenses\**\*">
+            <Link>ThirdPartyNotices\licenses\%(RecursiveDir)%(Filename)%(Extension)</Link>
+            <Pack>True</Pack>
+            <PackagePath>ThirdPartyNotices\licenses\%(RecursiveDir)</PackagePath>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\Text-Grab-Package\Images\SmallTile.scale-125.png">
             <Pack>True</Pack>
             <PackagePath>\</PackagePath>
@@ -51,21 +65,23 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CliWrap" Version="3.10.1" />
+        <PackageReference Include="CliWrap" Version="3.10.2" />
         <PackageReference Include="Dapplo.Windows.User32" Version="2.0.89" />
         <PackageReference Include="Humanizer.Core" Version="3.0.10" />
-        <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.11.1" />
-        <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.19" />
-        <PackageReference Include="Magick.NET.SystemWindowsMedia" Version="8.0.19" />
+        <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.14.0" />
+        <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.23" />
+        <PackageReference Include="Magick.NET.SystemWindowsMedia" Version="8.0.23" />
+        <PackageReference Include="Markdig" Version="1.3.2" />
         <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="1.8.53" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="1.8.260222000" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="1.8.260317003" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="1.8.260224000" />
-        <PackageReference Include="NCalcAsync" Version="5.12.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.2.3" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.1.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.2.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.2.1" />
+        <PackageReference Include="NCalcAsync" Version="6.2.0" />
+        <PackageReference Include="PdfPig" Version="0.1.14" />
         <PackageReference Include="UnitsNet" Version="5.75.0" />
-        <PackageReference Include="WPF-UI" Version="4.2.0" />
-        <PackageReference Include="WPF-UI.Tray" Version="4.2.0" />
+        <PackageReference Include="WPF-UI" Version="4.3.0" />
+        <PackageReference Include="WPF-UI.Tray" Version="4.3.0" />
         <PackageReference Include="ZXing.Net" Version="0.16.11" />
         <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.14" />
     </ItemGroup>

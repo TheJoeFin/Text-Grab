@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Windows.AI.Imaging;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -253,7 +254,13 @@ public static partial class OcrUtilities
 
         if (language is WindowsAiLang winAiLang)
         {
-            return new WinAiOcrLinesWords(await WindowsAiUtilities.GetOcrResultAsync(scaledBitmap));
+            RecognizedText? recognizedText = await WindowsAiUtilities.GetOcrResultAsync(scaledBitmap);
+            if (recognizedText is not null)
+                return new WinAiOcrLinesWords(recognizedText);
+
+            language = LanguageUtilities.GetCurrentInputLanguage().AsLanguage() is Language fallbackLanguage
+                ? new GlobalLang(fallbackLanguage)
+                : new GlobalLang("en-US");
         }
 
         if (language is not GlobalLang globalLang)
@@ -294,31 +301,40 @@ public static partial class OcrUtilities
 
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
 
-        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect);
+        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
-        ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-        string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
-        (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
-            LanguageUtilities.GetPersistedLanguageIdentity(language);
-
-        HistoryInfo newPrevRegionHistory = new()
+        try
         {
-            ID = Guid.NewGuid().ToString(),
-            CaptureDateTime = DateTimeOffset.Now,
-            ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
-            TextContent = grabbedText,
-            PositionRect = lastFsg.PositionRect,
-            LanguageTag = languageTag,
-            LanguageKind = languageKind,
-            UsedUiAutomation = usedUiAutomation,
-            IsTable = lastFsg.IsTable,
-            SourceMode = TextGrabMode.Fullscreen,
-            DpiScaleFactor = lastFsg.DpiScaleFactor,
-        };
-        Singleton<HistoryService>.Instance.SaveToHistory(newPrevRegionHistory);
+            ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
+            (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
+                LanguageUtilities.GetPersistedLanguageIdentity(language);
 
-        OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, null);
+            HistoryInfo newPrevRegionHistory = new()
+            {
+                ID = Guid.NewGuid().ToString(),
+                CaptureDateTime = DateTimeOffset.Now,
+                ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
+                TextContent = grabbedText,
+                PositionRect = lastFsg.PositionRect,
+                LanguageTag = languageTag,
+                LanguageKind = languageKind,
+                UsedUiAutomation = usedUiAutomation,
+                IsTable = lastFsg.IsTable,
+                SourceMode = TextGrabMode.Fullscreen,
+                DpiScaleFactor = lastFsg.DpiScaleFactor,
+            };
+            Singleton<HistoryService>.Instance.SaveToHistory(newPrevRegionHistory);
+
+            OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, null);
+            previousGrab.ShowSuccess();
+        }
+        catch
+        {
+            previousGrab.Close();
+            throw;
+        }
     }
 
     public static async Task GetTextFromPreviousFullscreenRegion(TextBox? destinationTextBox = null)
@@ -333,31 +349,40 @@ public static partial class OcrUtilities
 
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
 
-        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect);
+        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
-        ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-        string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
-        (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
-            LanguageUtilities.GetPersistedLanguageIdentity(language);
-
-        HistoryInfo newPrevRegionHistory = new()
+        try
         {
-            ID = Guid.NewGuid().ToString(),
-            CaptureDateTime = DateTimeOffset.Now,
-            ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
-            TextContent = grabbedText,
-            PositionRect = lastFsg.PositionRect,
-            LanguageTag = languageTag,
-            LanguageKind = languageKind,
-            UsedUiAutomation = usedUiAutomation,
-            IsTable = lastFsg.IsTable,
-            SourceMode = TextGrabMode.Fullscreen,
-            DpiScaleFactor = lastFsg.DpiScaleFactor,
-        };
-        Singleton<HistoryService>.Instance.SaveToHistory(newPrevRegionHistory);
+            ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
+            (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
+                LanguageUtilities.GetPersistedLanguageIdentity(language);
 
-        OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, destinationTextBox);
+            HistoryInfo newPrevRegionHistory = new()
+            {
+                ID = Guid.NewGuid().ToString(),
+                CaptureDateTime = DateTimeOffset.Now,
+                ImageContent = Singleton<HistoryService>.Instance.CachedBitmap,
+                TextContent = grabbedText,
+                PositionRect = lastFsg.PositionRect,
+                LanguageTag = languageTag,
+                LanguageKind = languageKind,
+                UsedUiAutomation = usedUiAutomation,
+                IsTable = lastFsg.IsTable,
+                SourceMode = TextGrabMode.Fullscreen,
+                DpiScaleFactor = lastFsg.DpiScaleFactor,
+            };
+            Singleton<HistoryService>.Instance.SaveToHistory(newPrevRegionHistory);
+
+            OutputUtilities.HandleTextFromOcr(grabbedText, false, lastFsg.IsTable, destinationTextBox);
+            previousGrab.ShowSuccess();
+        }
+        catch
+        {
+            previousGrab.Close();
+            throw;
+        }
     }
 
     public static async Task<List<OcrOutput>> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, ILanguage language)
@@ -369,6 +394,13 @@ public static partial class OcrUtilities
 
     public static async Task<List<OcrOutput>> GetTextFromWinAiAsync(Bitmap bitmap, WindowsAiLang language)
     {
+        if (ShouldUseParagraphDetection(language.IsSpaceJoining()))
+        {
+            WinAiOcrLinesWords? ocrResult = await WindowsAiUtilities.GetOcrResultAsync(bitmap);
+            if (ocrResult is not null)
+                return [GetTextFromOcrResult(language, bitmap, ocrResult)];
+        }
+
         // get temp path
         string tempPath = Path.GetTempPath();
         string tempFileName = Path.GetRandomFileName() + ".bmp";
@@ -428,24 +460,164 @@ public static partial class OcrUtilities
 
     private static OcrOutput GetTextFromOcrResult(ILanguage language, Bitmap? scaledBitmap, IOcrLinesWords ocrResult)
     {
-        StringBuilder text = new();
-
-        bool isSpaceJoiningOCRLang = language.IsSpaceJoining();
-
-        foreach (IOcrLine ocrLine in ocrResult.Lines)
-            ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
-
-        if (language.IsRightToLeft())
-            text.ReverseWordsForRightToLeft();
-
         OcrOutput paragraphsOutput = new()
         {
             Kind = OcrOutputKind.Paragraph,
-            RawOutput = text.ToString(),
+            RawOutput = BuildTextFromOcrLines(language, ocrResult),
             Language = language,
             SourceBitmap = scaledBitmap,
         };
         return paragraphsOutput;
+    }
+
+    internal readonly record struct PositionedOcrLine(int LineNumber, string Text, Windows.Foundation.Rect BoundingBox);
+
+    internal sealed class GroupedOcrLines(IReadOnlyList<PositionedOcrLine> lines, Windows.Foundation.Rect boundingBox)
+    {
+        public Windows.Foundation.Rect BoundingBox { get; } = boundingBox;
+
+        public IReadOnlyList<PositionedOcrLine> Lines { get; } = lines;
+
+        public int StartingLineNumber => Lines.Count == 0 ? 0 : Lines[0].LineNumber;
+
+        public string DisplayText => string.Join(Environment.NewLine, Lines.Select(static line => line.Text));
+
+        public string SingleLineText => string.Join(" ", Lines.Select(static line => line.Text).Where(static text => !string.IsNullOrWhiteSpace(text)));
+    }
+
+    internal static string BuildTextFromOcrLines(ILanguage language, IOcrLinesWords ocrResult)
+    {
+        StringBuilder text = new();
+
+        bool isSpaceJoiningOCRLang = language.IsSpaceJoining();
+        IOcrLine[] lines = ocrResult.Lines;
+
+        if (ShouldUseParagraphDetection(isSpaceJoiningOCRLang) && lines.Length > 0)
+        {
+            List<GroupedOcrLines> groupedLines =
+            [
+                .. GroupWrappedParagraphLines(
+                    [.. lines.Select((line, index) => new PositionedOcrLine(index, line.Text, line.BoundingBox))])
+            ];
+
+            for (int i = 0; i < groupedLines.Count; i++)
+            {
+                if (i > 0)
+                    text.AppendLine();
+
+                text.Append(groupedLines[i].SingleLineText);
+            }
+        }
+        else
+        {
+            foreach (IOcrLine ocrLine in lines)
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
+        }
+
+        if (language.IsRightToLeft())
+            text.ReverseWordsForRightToLeft();
+
+        return text.ToString();
+    }
+
+    internal static bool ShouldUseParagraphDetection(bool isSpaceJoiningLanguage, bool isTableMode = false)
+    {
+        return DefaultSettings.ParagraphDetection && isSpaceJoiningLanguage && !isTableMode;
+    }
+
+    internal static List<GroupedOcrLines> GroupWrappedParagraphLines(IReadOnlyList<PositionedOcrLine> lines)
+    {
+        List<GroupedOcrLines> groupedLines = [];
+
+        if (lines.Count == 0)
+            return groupedLines;
+
+        List<PositionedOcrLine> currentGroup = [lines[0]];
+        Windows.Foundation.Rect currentBounds = lines[0].BoundingBox;
+
+        for (int i = 1; i < lines.Count; i++)
+        {
+            PositionedOcrLine previousLine = currentGroup[^1];
+            PositionedOcrLine currentLine = lines[i];
+
+            if (IsWrappedParagraph(
+                previousLine.BoundingBox.Y,
+                previousLine.BoundingBox.Height,
+                currentLine.BoundingBox.Y,
+                currentLine.BoundingBox.Height))
+            {
+                currentGroup.Add(currentLine);
+                currentBounds = UnionRectangles(currentBounds, currentLine.BoundingBox);
+                continue;
+            }
+
+            groupedLines.Add(new GroupedOcrLines([.. currentGroup], currentBounds));
+            currentGroup = [currentLine];
+            currentBounds = currentLine.BoundingBox;
+        }
+
+        groupedLines.Add(new GroupedOcrLines([.. currentGroup], currentBounds));
+        return groupedLines;
+    }
+
+    private static Windows.Foundation.Rect UnionRectangles(Windows.Foundation.Rect current, Windows.Foundation.Rect next)
+    {
+        if (current.IsEmpty)
+            return next;
+
+        if (next.IsEmpty)
+            return current;
+
+        double left = Math.Min(current.X, next.X);
+        double top = Math.Min(current.Y, next.Y);
+        double right = Math.Max(current.X + current.Width, next.X + next.Width);
+        double bottom = Math.Max(current.Y + current.Height, next.Y + next.Height);
+        return new Windows.Foundation.Rect(left, top, right - left, bottom - top);
+    }
+
+    /// <summary>
+    /// Determines whether two consecutive lines belong to the same wrapped paragraph
+    /// by comparing the vertical gap between them relative to the average line height.
+    /// Returns true if the lines should be joined with a space (same paragraph, wrapped),
+    /// false if they should be separated by a newline (different paragraphs).
+    /// </summary>
+    internal static bool IsWrappedLine(IOcrLine currentLine, IOcrLine nextLine)
+    {
+        if (currentLine.BoundingBox.IsEmpty || nextLine.BoundingBox.IsEmpty)
+            return false;
+
+        return IsWrappedParagraph(
+            currentLine.BoundingBox.Y,
+            currentLine.BoundingBox.Height,
+            nextLine.BoundingBox.Y,
+            nextLine.BoundingBox.Height);
+    }
+
+    /// <summary>
+    /// Core paragraph-wrap heuristic: returns true when the vertical gap between two
+    /// lines is small enough (less than 60 % of the average line height) that they
+    /// belong to the same wrapped paragraph, and their heights are similar (ratio ≤ 1.5).
+    /// Works for any coordinate space — ratios are scale-invariant.
+    /// </summary>
+    internal static bool IsWrappedParagraph(
+        double currentTop, double currentHeight,
+        double nextTop, double nextHeight)
+    {
+        if (currentHeight <= 0 || nextHeight <= 0)
+            return false;
+
+        // Lines with significantly different heights are likely different content blocks
+        double minHeight = Math.Min(currentHeight, nextHeight);
+        double maxHeight = Math.Max(currentHeight, nextHeight);
+        if (maxHeight / minHeight > 1.5)
+            return false;
+
+        // If the vertical gap between line bounding boxes is less than 0.6× the average line
+        // height, the lines are part of the same paragraph (normal line spacing); otherwise
+        // the extra whitespace signals a paragraph break.
+        double gap = nextTop - (currentTop + currentHeight);
+        double avgLineHeight = (currentHeight + nextHeight) / 2.0;
+        return gap < avgLineHeight * 0.6;
     }
 
     public static string GetStringFromOcrOutputs(List<OcrOutput> outputs)
@@ -467,8 +639,15 @@ public static partial class OcrUtilities
 
     public static async Task<string> OcrAbsoluteFilePathAsync(string absolutePath, ILanguage? language = null)
     {
-        Bitmap bmp = LoadBitmapFromFile(absolutePath);
         language ??= LanguageUtilities.GetCurrentInputLanguage();
+
+        if (IoUtilities.IsPdfFileExtension(Path.GetExtension(absolutePath)))
+        {
+            using PdfDocumentRenderer pdfDocument = await PdfDocumentRenderer.LoadAsync(absolutePath);
+            return await pdfDocument.ExtractTextAsync(language);
+        }
+
+        using Bitmap bmp = LoadBitmapFromFile(absolutePath);
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
@@ -584,8 +763,16 @@ public static partial class OcrUtilities
             string ocrText;
             if (options.GrabTemplate is GrabTemplate grabTemplate)
             {
-                Bitmap bmp = LoadBitmapFromFile(path);
-                ocrText = await GrabTemplateExecutor.ExecuteTemplateOnBitmapAsync(grabTemplate, bmp, selectedLanguage);
+                if (IoUtilities.IsPdfFileExtension(Path.GetExtension(path)))
+                {
+                    using PdfDocumentRenderer pdfDocument = await PdfDocumentRenderer.LoadAsync(path);
+                    ocrText = await pdfDocument.ExtractTextAsync(selectedLanguage, grabTemplate);
+                }
+                else
+                {
+                    using Bitmap bmp = LoadBitmapFromFile(path);
+                    ocrText = await GrabTemplateExecutor.ExecuteTemplateOnBitmapAsync(grabTemplate, bmp, selectedLanguage);
+                }
             }
             else
                 ocrText = await OcrAbsoluteFilePathAsync(path, selectedLanguage);

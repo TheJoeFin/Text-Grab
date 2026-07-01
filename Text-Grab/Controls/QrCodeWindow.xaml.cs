@@ -80,7 +80,10 @@ public partial class QrCodeWindow : FluentWindow
 
     private void CopyButton_Click(object sender, RoutedEventArgs e)
     {
-        Clipboard.SetData(DataFormats.Bitmap, QrBitmap);
+        if (QrBitmap is not Bitmap qrBitmap)
+            return;
+
+        Clipboard.SetData(DataFormats.Bitmap, qrBitmap);
     }
 
     private void ErrorCorrectionComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

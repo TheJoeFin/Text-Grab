@@ -36,12 +36,12 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }}
@@ -231,25 +231,25 @@ jobs:
           }
 
       - name: Upload build artifact (x64 framework-dependent)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Text-Grab-win-x64-framework-dependent
           path: ${{ env.BUILD_X64 }}
 
       - name: Upload build artifact (x64 self-contained)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Text-Grab-win-x64-self-contained
           path: ${{ steps.compute.outputs.archive_x64_sc }}
 
       - name: Upload build artifact (ARM64 framework-dependent)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Text-Grab-win-arm64-framework-dependent
           path: ${{ env.BUILD_ARM64 }}
 
       - name: Upload build artifact (ARM64 self-contained)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Text-Grab-win-arm64-self-contained
           path: ${{ steps.compute.outputs.archive_arm64_sc }}

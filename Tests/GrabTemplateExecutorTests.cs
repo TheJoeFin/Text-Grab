@@ -436,6 +436,79 @@ public class GrabTemplateExecutorTests
         Assert.Contains("Phone Number", names);
     }
 
+    [Fact]
+    public void GrabTemplate_IsTextOnly_TrueWhenNoRegions()
+    {
+        GrabTemplate template = new("Test")
+        {
+            OutputTemplate = "{p:Email:first}"
+        };
+
+        Assert.True(template.IsTextOnly);
+    }
+
+    [Fact]
+    public void GrabTemplate_IsTextOnly_FalseWhenRegionsPresent()
+    {
+        GrabTemplate template = new("Test")
+        {
+            OutputTemplate = "{1}",
+            Regions = [new TemplateRegion { RegionNumber = 1 }]
+        };
+
+        Assert.False(template.IsTextOnly);
+    }
+
+    // ── ApplyTextOnlyTemplate ─────────────────────────────────────────────────
+
+    [Fact]
+    public void ApplyTextOnlyTemplate_LiteralOutput_IgnoresInputText()
+    {
+        GrabTemplate template = new("Header")
+        {
+            OutputTemplate = "Static header line"
+        };
+
+        string result = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, "some selected text");
+        Assert.Equal("Static header line", result);
+    }
+
+    [Fact]
+    public void ApplyTextOnlyTemplate_RegionPlaceholders_ResolveToEmpty()
+    {
+        GrabTemplate template = new("Test")
+        {
+            OutputTemplate = "Region: {1}!"
+        };
+
+        string result = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, "input");
+        Assert.Equal("Region: !", result);
+    }
+
+    [Fact]
+    public void ApplyTextOnlyTemplate_EscapeSequences_AreProcessed()
+    {
+        GrabTemplate template = new("Test")
+        {
+            OutputTemplate = @"line1\nline2"
+        };
+
+        string result = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, "input");
+        Assert.Equal("line1\nline2", result);
+    }
+
+    [Fact]
+    public void ApplyTextOnlyTemplate_InvalidTemplate_ReturnsInputUnchanged()
+    {
+        GrabTemplate template = new("Test")
+        {
+            OutputTemplate = string.Empty
+        };
+
+        string result = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, "keep me");
+        Assert.Equal("keep me", result);
+    }
+
     // ── ValidateOutputTemplate with patterns ──────────────────────────────────
 
     [Fact]

@@ -10,14 +10,16 @@
     Title="NotifyIconWindow"
     Width="0"
     Height="0"
-    Activated="Window_Activated"
     Background="Transparent"
     IsHitTestVisible="False"
     Left="-50"
+    Loaded="Window_Loaded"
     Opacity="0"
-    ShowInTaskbar="True"
+    ShowActivated="False"
+    ShowInTaskbar="False"
     Top="-50"
-    WindowStyle="ToolWindow"
+    Visibility="Hidden"
+    WindowStyle="None"
     mc:Ignorable="d">
     <Grid>
         <WpfUiIcon:NotifyIcon
@@ -37,6 +39,14 @@
                         </MenuItem.Icon>
                     </MenuItem>
                     <Separator />
+                    <MenuItem
+                        x:Name="OpenFileMenuItem"
+                        Click="OpenFileMenuItem_Click"
+                        Header="Open File...">
+                        <MenuItem.Icon>
+                            <wpfui:SymbolIcon Symbol="Document24" />
+                        </MenuItem.Icon>
+                    </MenuItem>
                     <MenuItem
                         x:Name="OpenClipboardImageGrabFrame"
                         Click="OpenClipboardImageGrabFrame_Click"

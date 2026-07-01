@@ -84,6 +84,7 @@ public static class SettingsImportExportUtilities
     {
         string tempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Import_{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
+        SettingsService settingsService = AppUtilities.TextGrabSettingsService;
 
         try
         {
@@ -98,6 +99,7 @@ public static class SettingsImportExportUtilities
             }
 
             ImportManagedJsonSettingsFolder(tempDir);
+            settingsService.ReconcileManagedJsonSettings();
             await ImportGrabTemplatesAsync(tempDir);
 
             // Import history if present

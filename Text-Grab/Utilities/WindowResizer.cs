@@ -28,7 +28,7 @@ public enum WindowDockPosition
 /// <summary>
 /// Fixes the issue with Windows of Style <see cref="WindowStyle.None"/> covering the taskbar
 /// </summary>
-public class WindowResizer
+public partial class WindowResizer : IDisposable
 {
     #region Private Members
 
@@ -36,6 +36,13 @@ public class WindowResizer
     /// The window to handle the resizing for
     /// </summary>
     private Window? mWindow;
+
+    /// <summary>
+    /// The HwndSource we hooked WindowProc into. Tracked so we can remove the hook on dispose.
+    /// </summary>
+    private HwndSource? mHookedSource;
+
+    private bool mDisposed;
 
     /// <summary>
     /// The last calculated available screen size
@@ -66,15 +73,15 @@ public class WindowResizer
 
     #region Dll Imports
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetCursorPos(out POINT lpPoint);
+    private static partial bool GetCursorPos(out POINT lpPoint);
 
     [DllImport("user32.dll")]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, MONITORINFO lpmi);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern IntPtr MonitorFromPoint(POINT pt, MonitorOptions dwFlags);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial IntPtr MonitorFromPoint(POINT pt, MonitorOptions dwFlags);
 
     #endregion
 
@@ -124,7 +131,7 @@ public class WindowResizer
         PresentationSource source = PresentationSource.FromVisual(mWindow);
 
         // Reset the transform to default
-        mTransformToDevice = default(Matrix);
+        mTransformToDevice = default;
 
         // If we cannot get the source, ignore
         if (source?.CompositionTarget == null)
@@ -151,6 +158,29 @@ public class WindowResizer
 
         // Hook into it's Windows messages
         handleSource.AddHook(WindowProc);
+        mHookedSource = handleSource;
+    }
+
+    public void Dispose()
+    {
+        if (mDisposed)
+            return;
+
+        mDisposed = true;
+
+        if (mWindow is not null)
+        {
+            mWindow.SourceInitialized -= Window_SourceInitialized;
+            mWindow.SizeChanged -= Window_SizeChanged;
+            mWindow = null;
+        }
+
+        mHookedSource?.RemoveHook(WindowProc);
+        mHookedSource = null;
+
+        WindowDockChanged = static (_) => { };
+
+        GC.SuppressFinalize(this);
     }
 
     #endregion
@@ -165,7 +195,7 @@ public class WindowResizer
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         // We cannot find positioning until the window transform has been established
-        if (mTransformToDevice == default(Matrix)
+        if (mTransformToDevice == default
             || mWindow is null)
             return;
 
@@ -250,8 +280,7 @@ public class WindowResizer
             return;
 
         // Get the point position to determine what screen we are on
-        POINT lMousePosition;
-        GetCursorPos(out lMousePosition);
+        GetCursorPos(out POINT lMousePosition);
 
         // Get the primary monitor at cursor position 0,0
         nint lPrimaryScreen = MonitorFromPoint(new POINT(0, 0), MonitorOptions.MONITOR_DEFAULTTOPRIMARY);
@@ -265,7 +294,7 @@ public class WindowResizer
         nint lCurrentScreen = MonitorFromPoint(lMousePosition, MonitorOptions.MONITOR_DEFAULTTONEAREST);
 
         // If this has changed from the last one, update the transform
-        if (lCurrentScreen != mLastScreen || mTransformToDevice == default(Matrix))
+        if (lCurrentScreen != mLastScreen || mTransformToDevice == default)
             GetTransform();
 
         // Store last know screen

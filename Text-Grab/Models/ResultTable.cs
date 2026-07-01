@@ -22,9 +22,13 @@ public class ResultTable
 
     public Rect BoundingRect { get; set; } = new();
 
-    public List<int> ColumnLines { get; set; } = [];
+    public List<double> ColumnLines { get; set; } = [];
 
-    public List<int> RowLines { get; set; } = [];
+    public List<double> ManualColumnSeparators { get; private set; } = [];
+
+    public List<double> ManualRowSeparators { get; private set; } = [];
+
+    public List<double> RowLines { get; set; } = [];
 
     public Canvas? TableLines { get; set; } = null;
 
@@ -94,7 +98,7 @@ public class ResultTable
 
         for (int i = 0; i < Columns.Count - 1; i++)
         {
-            int columnMid = (int)(Columns[i].Right + Columns[i + 1].Left) / 2;
+            double columnMid = (Columns[i].Right + Columns[i + 1].Left) / 2;
             ColumnLines.Add(columnMid);
         }
 
@@ -104,7 +108,7 @@ public class ResultTable
 
         for (int i = 0; i < Rows.Count - 1; i++)
         {
-            int rowMid = (int)(Rows[i].Bottom + Rows[i + 1].Top) / 2;
+            double rowMid = (Rows[i].Bottom + Rows[i + 1].Top) / 2;
             RowLines.Add(rowMid);
         }
     }
@@ -172,10 +176,24 @@ public class ResultTable
     // New core analyzer that operates on WordBorderInfo (pure model)
     public void AnalyzeAsTable(ICollection<WordBorderInfo> wordBorders, Rectangle rectCanvasSize, bool drawTable = true)
     {
+        AnalyzeAsTable(wordBorders, rectCanvasSize, null, null, drawTable);
+    }
+
+    public void AnalyzeAsTable(
+        ICollection<WordBorderInfo> wordBorders,
+        Rectangle rectCanvasSize,
+        IReadOnlyCollection<double>? manualRowSeparators,
+        IReadOnlyCollection<double>? manualColumnSeparators,
+        bool drawTable = true)
+    {
         if (wordBorders == null || wordBorders.Count == 0)
         {
             Rows.Clear();
             Columns.Clear();
+            RowLines.Clear();
+            ColumnLines.Clear();
+            ManualRowSeparators = [];
+            ManualColumnSeparators = [];
             return;
         }
 
@@ -200,10 +218,9 @@ public class ResultTable
         Rows.AddRange(resultRows);
         Columns.Clear();
         Columns.AddRange(resultColumns);
-
-        AssignWordBordersToFinalGrid(wordBorders);
-
         ParseRowAndColumnLines();
+        ApplyManualSeparators(manualRowSeparators, manualColumnSeparators);
+        AssignWordBordersToFinalGrid(wordBorders);
         if (drawTable)
             DrawTable();
     }
@@ -445,7 +462,7 @@ public class ResultTable
         Canvas.SetTop(tableOutline, this.BoundingRect.Y);
         Canvas.SetLeft(tableOutline, this.BoundingRect.X);
 
-        foreach (int columnLine in this.ColumnLines)
+        foreach (double columnLine in this.ColumnLines)
         {
             Border vertLine = new()
             {
@@ -458,7 +475,7 @@ public class ResultTable
             Canvas.SetLeft(vertLine, columnLine);
         }
 
-        foreach (int rowLine in this.RowLines)
+        foreach (double rowLine in this.RowLines)
         {
             Border horzLine = new()
             {
@@ -809,96 +826,92 @@ public class ResultTable
     // Overload for WordBorderInfo
     private void AssignWordBordersToFinalGrid(ICollection<WordBorderInfo> wordBorders)
     {
-        if (Rows.Count == 0 || Columns.Count == 0)
+        if (Rows.Count == 0 && Columns.Count == 0)
             return;
-
-        // Precompute row and column edge arrays (sorted by ID/index)
-        int rowCount = Rows.Count;
-        int colCount = Columns.Count;
-        double[] rowTops = new double[rowCount];
-        double[] rowBottoms = new double[rowCount];
-        for (int i = 0; i < rowCount; i++)
-        {
-            rowTops[i] = Rows[i].Top;
-            rowBottoms[i] = Rows[i].Bottom;
-        }
-        double[] colLefts = new double[colCount];
-        double[] colRights = new double[colCount];
-        for (int j = 0; j < colCount; j++)
-        {
-            colLefts[j] = Columns[j].Left;
-            colRights[j] = Columns[j].Right;
-        }
-
-        static int LowerBound(double[] arr, double value)
-        {
-            int lo = 0, hi = arr.Length; // [lo, hi)
-            while (lo < hi)
-            {
-                int mid = (lo + hi) >> 1;
-                if (arr[mid] <= value) lo = mid + 1; else hi = mid;
-            }
-            return lo - 1; // last index with arr[i] <= value, or -1 if none
-        }
 
         foreach (WordBorderInfo wb in wordBorders)
         {
             double centerX = wb.BorderRect.Left + (wb.BorderRect.Width / 2.0);
             double centerY = wb.BorderRect.Top + (wb.BorderRect.Height / 2.0);
-
-            // Find row by binary search on Tops then validate with Bottoms
-            int rowIndex = LowerBound(rowTops, centerY);
-            if (rowIndex < 0) rowIndex = 0;
-            if (rowIndex >= rowCount) rowIndex = rowCount - 1;
-            if (!(centerY >= rowTops[rowIndex] && centerY <= rowBottoms[rowIndex]))
-            {
-                // choose nearest neighbor row by distance to boundaries
-                double bestDist = double.MaxValue;
-                int bestIdx = rowIndex;
-                // candidate current
-                double dCur = centerY < rowTops[rowIndex] ? (rowTops[rowIndex] - centerY) : (centerY - rowBottoms[rowIndex]);
-                if (dCur < bestDist) { bestDist = dCur; bestIdx = rowIndex; }
-                // candidate previous
-                if (rowIndex - 1 >= 0)
-                {
-                    double dPrev = centerY < rowTops[rowIndex - 1] ? (rowTops[rowIndex - 1] - centerY) : (centerY - rowBottoms[rowIndex - 1]);
-                    if (dPrev < bestDist) { bestDist = dPrev; bestIdx = rowIndex - 1; }
-                }
-                // candidate next
-                if (rowIndex + 1 < rowCount)
-                {
-                    double dNext = centerY < rowTops[rowIndex + 1] ? (rowTops[rowIndex + 1] - centerY) : (centerY - rowBottoms[rowIndex + 1]);
-                    if (dNext < bestDist) { bestDist = dNext; bestIdx = rowIndex + 1; }
-                }
-                rowIndex = bestIdx;
-            }
-
-            // Find column by binary search on Lefts then validate with Rights
-            int colIndex = LowerBound(colLefts, centerX);
-            if (colIndex < 0) colIndex = 0;
-            if (colIndex >= colCount) colIndex = colCount - 1;
-            if (!(centerX >= colLefts[colIndex] && centerX <= colRights[colIndex]))
-            {
-                double bestDist = double.MaxValue;
-                int bestIdx = colIndex;
-                double dCur = centerX < colLefts[colIndex] ? (colLefts[colIndex] - centerX) : (centerX - colRights[colIndex]);
-                if (dCur < bestDist) { bestDist = dCur; bestIdx = colIndex; }
-                if (colIndex - 1 >= 0)
-                {
-                    double dPrev = centerX < colLefts[colIndex - 1] ? (colLefts[colIndex - 1] - centerX) : (centerX - colRights[colIndex - 1]);
-                    if (dPrev < bestDist) { bestDist = dPrev; bestIdx = colIndex - 1; }
-                }
-                if (colIndex + 1 < colCount)
-                {
-                    double dNext = centerX < colLefts[colIndex + 1] ? (colLefts[colIndex + 1] - centerX) : (centerX - colRights[colIndex + 1]);
-                    if (dNext < bestDist) { bestDist = dNext; bestIdx = colIndex + 1; }
-                }
-                colIndex = bestIdx;
-            }
-
-            wb.ResultRowID = rowIndex;
-            wb.ResultColumnID = colIndex;
+            wb.ResultRowID = CountSeparatorsBefore(RowLines, centerY);
+            wb.ResultColumnID = CountSeparatorsBefore(ColumnLines, centerX);
         }
+    }
+
+    private void ApplyManualSeparators(
+        IReadOnlyCollection<double>? manualRowSeparators,
+        IReadOnlyCollection<double>? manualColumnSeparators)
+    {
+        ManualRowSeparators = SanitizeManualSeparators(
+            manualRowSeparators,
+            RowLines,
+            BoundingRect.Top,
+            BoundingRect.Bottom);
+        ManualColumnSeparators = SanitizeManualSeparators(
+            manualColumnSeparators,
+            ColumnLines,
+            BoundingRect.Left,
+            BoundingRect.Right);
+
+        RowLines = MergeSeparatorLines(RowLines, ManualRowSeparators);
+        ColumnLines = MergeSeparatorLines(ColumnLines, ManualColumnSeparators);
+    }
+
+    private static int CountSeparatorsBefore(IEnumerable<double> separators, double coordinate)
+    {
+        int count = 0;
+
+        foreach (double separator in separators)
+        {
+            if (coordinate > separator)
+                count++;
+        }
+
+        return count;
+    }
+
+    private static List<double> MergeSeparatorLines(IEnumerable<double> automaticSeparators, IEnumerable<double> manualSeparators)
+    {
+        return [.. automaticSeparators
+            .Concat(manualSeparators)
+            .Where(double.IsFinite)
+            .Distinct()
+            .OrderBy(position => position)];
+    }
+
+    private static List<double> SanitizeManualSeparators(
+        IEnumerable<double>? manualSeparators,
+        IEnumerable<double> automaticSeparators,
+        double minimumPosition,
+        double maximumPosition)
+    {
+        if (manualSeparators is null)
+            return [];
+
+        List<double> appliedSeparators = [];
+        List<double> existingSeparators = MergeSeparatorLines(automaticSeparators, []);
+
+        foreach (double manualSeparator in manualSeparators
+            .Where(double.IsFinite)
+            .OrderBy(position => position))
+        {
+            if (!GrabFrameTableEditState.TryNormalizeSeparatorPosition(
+                manualSeparator,
+                minimumPosition + GrabFrameTableEditState.MinimumSeparatorGap,
+                maximumPosition - GrabFrameTableEditState.MinimumSeparatorGap,
+                existingSeparators,
+                GrabFrameTableEditState.MinimumSeparatorGap,
+                out double normalizedSeparator))
+            {
+                continue;
+            }
+
+            appliedSeparators.Add(normalizedSeparator);
+            existingSeparators.Add(normalizedSeparator);
+            existingSeparators.Sort();
+        }
+
+        return appliedSeparators;
     }
 }
 

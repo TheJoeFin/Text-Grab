@@ -13,13 +13,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="8.0.1">
+        <PackageReference Include="coverlet.collector" Version="10.0.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
-        <PackageReference Include="Moq" Version="4.20.72" />
-        <PackageReference Include="NCalcAsync" Version="5.12.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
+        <PackageReference Include="NCalcAsync" Version="6.2.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -27,7 +26,7 @@
         <PackageReference Include="Xunit.StaFact" Version="3.0.13" />
         <PackageReference Include="xunit.v3" Version="3.2.2" />
         <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.6.37125.3" />
+        <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.7.37220.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -47,6 +46,9 @@
         <Content Include="Images\QrCodeTestImage.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Content Include="Images\paragraph-test-image.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
         <Content Include="Images\Table-Test-2.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
@@ -54,9 +56,6 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="Images\toc.png">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Include="Images\font_sample.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>

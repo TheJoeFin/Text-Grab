@@ -218,7 +218,8 @@
                     x:Name="PART_Popup"
                     AllowsTransparency="true"
                     Focusable="false"
-                    IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                    IsOpen="{Binding IsSubmenuOpen,
+                                     RelativeSource={RelativeSource TemplatedParent}}"
                     Placement="Bottom"
                     PlacementTarget="{Binding ElementName=templateRoot}"
                     PopupAnimation="{DynamicResource {x:Static SystemParameters.MenuPopupAnimationKey}}">
@@ -237,9 +238,12 @@
                                     VerticalAlignment="Top">
                                     <Rectangle
                                         x:Name="OpaqueRect"
-                                        Width="{Binding ActualWidth, ElementName=SubMenuBorder}"
-                                        Height="{Binding ActualHeight, ElementName=SubMenuBorder}"
-                                        Fill="{Binding Background, ElementName=SubMenuBorder}" />
+                                        Width="{Binding ActualWidth,
+                                                        ElementName=SubMenuBorder}"
+                                        Height="{Binding ActualHeight,
+                                                         ElementName=SubMenuBorder}"
+                                        Fill="{Binding Background,
+                                                       ElementName=SubMenuBorder}" />
                                 </Canvas>
                                 <Rectangle
                                     Width="1"
@@ -450,7 +454,8 @@
                     AllowsTransparency="true"
                     Focusable="false"
                     HorizontalOffset="-2"
-                    IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                    IsOpen="{Binding IsSubmenuOpen,
+                                     RelativeSource={RelativeSource TemplatedParent}}"
                     Placement="Right"
                     PopupAnimation="{DynamicResource {x:Static SystemParameters.MenuPopupAnimationKey}}"
                     VerticalOffset="-3">
@@ -469,9 +474,12 @@
                                     VerticalAlignment="Top">
                                     <Rectangle
                                         x:Name="OpaqueRect"
-                                        Width="{Binding ActualWidth, ElementName=SubMenuBorder}"
-                                        Height="{Binding ActualHeight, ElementName=SubMenuBorder}"
-                                        Fill="{Binding Background, ElementName=SubMenuBorder}" />
+                                        Width="{Binding ActualWidth,
+                                                        ElementName=SubMenuBorder}"
+                                        Height="{Binding ActualHeight,
+                                                         ElementName=SubMenuBorder}"
+                                        Fill="{Binding Background,
+                                                       ElementName=SubMenuBorder}" />
                                 </Canvas>
                                 <Rectangle
                                     Width="1"

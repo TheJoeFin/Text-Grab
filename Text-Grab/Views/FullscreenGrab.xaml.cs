@@ -16,8 +16,6 @@ using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
-using Windows.Globalization;
-using Windows.Media.Ocr;
 
 namespace Text_Grab.Views;
 
@@ -51,6 +49,7 @@ public partial class FullscreenGrab : Window
     private const string EditPostGrabActionsTag = "EditPostGrabActions";
     private const string ClosePostGrabMenuTag = "ClosePostGrabMenu";
     private readonly DispatcherTimer edgePanTimer;
+    private bool _isCleanedUp;
 
     #endregion Fields
 
@@ -68,6 +67,14 @@ public partial class FullscreenGrab : Window
             Interval = TimeSpan.FromMilliseconds(16)
         };
         edgePanTimer.Tick += EdgePanTimer_Tick;
+
+        Closed += FullscreenGrab_Closed;
+    }
+
+    private void FullscreenGrab_Closed(object? sender, EventArgs e)
+    {
+        Closed -= FullscreenGrab_Closed;
+        CleanupFullscreenGrab();
     }
 
     #endregion Constructors
@@ -1057,6 +1064,15 @@ public partial class FullscreenGrab : Window
 
     private void Window_Unloaded(object sender, RoutedEventArgs e)
     {
+        CleanupFullscreenGrab();
+    }
+
+    private void CleanupFullscreenGrab()
+    {
+        if (_isCleanedUp)
+            return;
+        _isCleanedUp = true;
+
         edgePanTimer.Stop();
         edgePanTimer.Tick -= EdgePanTimer_Tick;
         windowSelectionTimer.Stop();

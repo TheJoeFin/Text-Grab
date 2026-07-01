@@ -119,17 +119,7 @@ public static partial class StringMethods
         if (string.IsNullOrEmpty(input))
             return (0, 0);
 
-        if (cursorPosition < 0)
-            cursorPosition = 0;
-
-        try
-        {
-            char check = input[cursorPosition];
-        }
-        catch (IndexOutOfRangeException)
-        {
-            return (cursorPosition, 0);
-        }
+        cursorPosition = Math.Clamp(cursorPosition, 0, input.Length - 1);
 
         // Check if the cursor is at a space
         if (char.IsWhiteSpace(input[cursorPosition]))
@@ -165,7 +155,7 @@ public static partial class StringMethods
 
     private static int FindNearestLetterIndex(string input, int cursorPosition)
     {
-        Math.Clamp(cursorPosition, 0, input.Length - 1);
+        cursorPosition = Math.Clamp(cursorPosition, 0, input.Length - 1);
 
         int lastCharIndex = input.Length - 1;
 
@@ -182,6 +172,12 @@ public static partial class StringMethods
         if (nearestToTheLeft < 0
             && nearestToTheRight > lastCharIndex)
             return cursorPosition;
+
+        if (nearestToTheLeft < 0)
+            return nearestToTheRight;
+
+        if (nearestToTheRight > lastCharIndex)
+            return nearestToTheLeft;
 
         int leftDistance = cursorPosition - nearestToTheLeft;
         int rightDistance = nearestToTheRight - cursorPosition;
@@ -303,13 +299,39 @@ public static partial class StringMethods
         string temp = MultiSpaces().Replace(workingString.ToString(), " ");
         workingString.Clear();
         workingString.Append(temp);
+        if (workingString.Length == 0)
+            return string.Empty;
+
         if (workingString[0] == ' ')
             workingString.Remove(0, 1);
+
+        if (workingString.Length == 0)
+            return string.Empty;
 
         if (workingString[^1] == ' ')
             workingString.Remove(workingString.Length - 1, 1);
 
         return workingString.ToString();
+    }
+
+    public static string JoinLines(this string textToJoin, string joiningText, bool trimLineBeforeJoining, string textAtBeginning = "", string textAtEnd = "")
+    {
+        ArgumentNullException.ThrowIfNull(textToJoin);
+        ArgumentNullException.ThrowIfNull(joiningText);
+        ArgumentNullException.ThrowIfNull(textAtBeginning);
+        ArgumentNullException.ThrowIfNull(textAtEnd);
+
+        string normalizedText = NewlineRegex().Replace(textToJoin, Environment.NewLine);
+        string[] lines = normalizedText.Split([Environment.NewLine], StringSplitOptions.None);
+
+        if (normalizedText.EndsWith(Environment.NewLine, StringComparison.Ordinal) && lines.Length > 0)
+            lines = [.. lines[..^1]];
+
+        if (trimLineBeforeJoining)
+            lines = [.. lines.Select(line => line.Trim())];
+
+        string joinedText = string.Join(joiningText, lines);
+        return $"{textAtBeginning}{joinedText}{textAtEnd}";
     }
 
     public static string ToCamel(this string stringToCamel)
@@ -732,6 +754,31 @@ public static partial class StringMethods
                 uniqueLines.Add(originalLine);
 
         return string.Join(Environment.NewLine, [.. uniqueLines]);
+    }
+
+    public static string ShuffleLines(this string textToShuffle, Random? random = null)
+    {
+        ArgumentNullException.ThrowIfNull(textToShuffle);
+
+        string[] lines = textToShuffle.Split([Environment.NewLine], StringSplitOptions.None);
+        bool endsWithNewline = textToShuffle.EndsWith(Environment.NewLine, StringComparison.Ordinal);
+
+        if (endsWithNewline)
+            lines = [.. lines[..^1]];
+
+        if (lines.Length <= 1)
+            return textToShuffle;
+
+        random ??= Random.Shared;
+
+        for (int i = lines.Length - 1; i > 0; i--)
+        {
+            int swapIndex = random.Next(i + 1);
+            (lines[i], lines[swapIndex]) = (lines[swapIndex], lines[i]);
+        }
+
+        string shuffledText = string.Join(Environment.NewLine, lines);
+        return endsWithNewline ? $"{shuffledText}{Environment.NewLine}" : shuffledText;
     }
 
     public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)

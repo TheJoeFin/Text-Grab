@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Text_Grab.Utilities;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -13,6 +14,14 @@ public partial class CalculationService
     /// Stores information about a resolved measurement unit, mapping to a UnitsNet enum value.
     /// </summary>
     private readonly record struct UnitInfo(Enum Unit, string QuantityName, string Abbreviation);
+
+    private enum PaceUnit
+    {
+        MinutePerMile,
+        MinutePerKilometer
+    }
+
+    private const double KilometersPerMile = 1.609344;
 
     /// <summary>
     /// Represents the result of a unit-bearing evaluation for tracking across lines.
@@ -156,6 +165,7 @@ public partial class CalculationService
         { "mph",             new(SpeedUnit.MilePerHour, "Speed", "mph") },
         { "miles per hour",  new(SpeedUnit.MilePerHour, "Speed", "mph") },
         { "km/h",            new(SpeedUnit.KilometerPerHour, "Speed", "km/h") },
+        { "km/hr",           new(SpeedUnit.KilometerPerHour, "Speed", "km/h") },
         { "kph",             new(SpeedUnit.KilometerPerHour, "Speed", "km/h") },
         { "kilometers per hour", new(SpeedUnit.KilometerPerHour, "Speed", "km/h") },
         { "m/s",             new(SpeedUnit.MeterPerSecond, "Speed", "m/s") },
@@ -163,6 +173,15 @@ public partial class CalculationService
         { "knot",            new(SpeedUnit.Knot, "Speed", "kn") },
         { "knots",           new(SpeedUnit.Knot, "Speed", "kn") },
         { "kn",              new(SpeedUnit.Knot, "Speed", "kn") },
+        { "min/mi",          new(PaceUnit.MinutePerMile, "Speed", "min/mi") },
+        { "min/mile",        new(PaceUnit.MinutePerMile, "Speed", "min/mi") },
+        { "minute per mile", new(PaceUnit.MinutePerMile, "Speed", "min/mi") },
+        { "minutes per mile", new(PaceUnit.MinutePerMile, "Speed", "min/mi") },
+        { "min/km",          new(PaceUnit.MinutePerKilometer, "Speed", "min/km") },
+        { "minute per kilometer", new(PaceUnit.MinutePerKilometer, "Speed", "min/km") },
+        { "minutes per kilometer", new(PaceUnit.MinutePerKilometer, "Speed", "min/km") },
+        { "minute per kilometre", new(PaceUnit.MinutePerKilometer, "Speed", "min/km") },
+        { "minutes per kilometre", new(PaceUnit.MinutePerKilometer, "Speed", "min/km") },
 
         // ══════════════════════════════════════════════════════════════
         // AREA
@@ -279,30 +298,20 @@ public partial class CalculationService
         if (!TryResolveUnit(targetStr, out UnitInfo target))
             return false;
 
-        // Ensure compatible quantity types (e.g., both are Length)
-        if (previous.Unit.GetType() != target.Unit.GetType())
+        if (!TryConvertUnitValue(previous.Value, previous.Unit, target.Unit, out double convertedValue))
             return false;
 
-        try
+        unitResult = new UnitResult
         {
-            IQuantity source = Quantity.From(previous.Value, previous.Unit);
-            IQuantity converted = source.ToUnit(target.Unit);
-            double convertedValue = (double)converted.Value;
-
-            unitResult = new UnitResult
-            {
-                Value = convertedValue,
-                Unit = target.Unit,
-                QuantityName = target.QuantityName,
-                Abbreviation = target.Abbreviation
-            };
-            result = FormatUnitValue(convertedValue, target.Abbreviation);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+            Value = convertedValue,
+            Unit = target.Unit,
+            QuantityName = target.QuantityName,
+            Abbreviation = target.Abbreviation
+        };
+        result = target.Unit is LengthUnit.Foot
+            ? FormatFeetAndInches(convertedValue)
+            : FormatUnitValue(convertedValue, target.Abbreviation);
+        return true;
     }
 
     /// <summary>
@@ -332,43 +341,33 @@ public partial class CalculationService
         if (!TryResolveUnit(unitStr, out UnitInfo operandUnit))
             return false;
 
-        // Must be same quantity type
+        // Arithmetic stays limited to the same unit family.
         if (previous.Unit.GetType() != operandUnit.Unit.GetType())
             return false;
 
-        try
+        double operandInPreviousUnit;
+        if (operandUnit.Unit.Equals(previous.Unit))
         {
-            // Convert operand to the previous result's unit
-            double operandInPreviousUnit;
-            if (operandUnit.Unit.Equals(previous.Unit))
-            {
-                operandInPreviousUnit = number;
-            }
-            else
-            {
-                IQuantity operandQuantity = Quantity.From(number, operandUnit.Unit);
-                IQuantity converted = operandQuantity.ToUnit(previous.Unit);
-                operandInPreviousUnit = (double)converted.Value;
-            }
-
-            double newValue = op == "+"
-                ? previous.Value + operandInPreviousUnit
-                : previous.Value - operandInPreviousUnit;
-
-            unitResult = new UnitResult
-            {
-                Value = newValue,
-                Unit = previous.Unit,
-                QuantityName = previous.QuantityName,
-                Abbreviation = previous.Abbreviation
-            };
-            result = FormatUnitValue(newValue, previous.Abbreviation);
-            return true;
+            operandInPreviousUnit = number;
         }
-        catch
+        else if (!TryConvertUnitValue(number, operandUnit.Unit, previous.Unit, out operandInPreviousUnit))
         {
             return false;
         }
+
+        double newValue = op == "+"
+            ? previous.Value + operandInPreviousUnit
+            : previous.Value - operandInPreviousUnit;
+
+        unitResult = new UnitResult
+        {
+            Value = newValue,
+            Unit = previous.Unit,
+            QuantityName = previous.QuantityName,
+            Abbreviation = previous.Abbreviation
+        };
+        result = FormatUnitValue(newValue, previous.Abbreviation);
+        return true;
     }
 
     /// <summary>
@@ -443,30 +442,20 @@ public partial class CalculationService
         if (!TryResolveUnit(targetStr, out UnitInfo targetUnit))
             return false;
 
-        // Ensure compatible quantity types
-        if (sourceUnit.Unit.GetType() != targetUnit.Unit.GetType())
+        if (!TryConvertUnitValue(value, sourceUnit.Unit, targetUnit.Unit, out double convertedValue))
             return false;
 
-        try
+        unitResult = new UnitResult
         {
-            IQuantity source = Quantity.From(value, sourceUnit.Unit);
-            IQuantity converted = source.ToUnit(targetUnit.Unit);
-            double convertedValue = (double)converted.Value;
-
-            unitResult = new UnitResult
-            {
-                Value = convertedValue,
-                Unit = targetUnit.Unit,
-                QuantityName = targetUnit.QuantityName,
-                Abbreviation = targetUnit.Abbreviation
-            };
-            result = FormatUnitValue(convertedValue, targetUnit.Abbreviation);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+            Value = convertedValue,
+            Unit = targetUnit.Unit,
+            QuantityName = targetUnit.QuantityName,
+            Abbreviation = targetUnit.Abbreviation
+        };
+        result = targetUnit.Unit is LengthUnit.Foot
+            ? FormatFeetAndInches(convertedValue)
+            : FormatUnitValue(convertedValue, targetUnit.Abbreviation);
+        return true;
     }
 
     /// <summary>
@@ -515,7 +504,8 @@ public partial class CalculationService
     }
 
     /// <summary>
-    /// Extracts a numeric value and unit from a string like "5 miles", "100°F", "3.5 gallons".
+    /// Extracts a numeric value and unit from a string like "5 miles", "100°F", "3.5 gallons",
+    /// or runner pace values like "9:30 min/mi".
     /// The number must appear at the beginning and the unit at the end.
     /// </summary>
     private static bool TryExtractValueAndUnit(string input, out double value, out UnitInfo unitInfo)
@@ -530,13 +520,160 @@ public partial class CalculationService
         if (!match.Success)
             return false;
 
-        string numberStr = match.Groups["number"].Value;
         string unitStr = match.Groups["unit"].Value.Trim();
-
-        if (!TryParseFlexibleDouble(numberStr, out value))
+        if (!TryResolveUnit(unitStr, out unitInfo))
             return false;
 
-        return TryResolveUnit(unitStr, out unitInfo);
+        string numberStr = match.Groups["number"].Value;
+        return TryParseUnitValue(numberStr, unitInfo, out value);
+    }
+
+    private static bool TryParseUnitValue(string input, UnitInfo unitInfo, out double value)
+    {
+        if (unitInfo.Unit is PaceUnit)
+        {
+            return input.Contains(':', StringComparison.Ordinal)
+                ? TryParsePaceTimeValue(input, out value)
+                : TryParseFlexibleDouble(input, out value);
+        }
+
+        value = 0;
+        return !input.Contains(':', StringComparison.Ordinal)
+            && TryParseFlexibleDouble(input, out value);
+    }
+
+    private static bool TryParsePaceTimeValue(string input, out double value)
+    {
+        value = 0;
+
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
+
+        string[] parts = input.Trim().Split(':');
+        if (parts.Length is < 2 or > 3)
+            return false;
+
+        if (!int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out int leading)
+            || leading < 0)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int seconds)
+            || seconds is < 0 or >= 60)
+        {
+            return false;
+        }
+
+        if (parts.Length == 2)
+        {
+            value = leading + (seconds / 60d);
+            return true;
+        }
+
+        if (!int.TryParse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture, out int thirdPart)
+            || thirdPart is < 0 or >= 60)
+        {
+            return false;
+        }
+
+        value = (leading * 60) + seconds + (thirdPart / 60d);
+        return true;
+    }
+
+    private static bool TryConvertUnitValue(double value, Enum sourceUnit, Enum targetUnit, out double convertedValue)
+    {
+        convertedValue = 0;
+
+        if (sourceUnit.Equals(targetUnit))
+        {
+            convertedValue = value;
+            return true;
+        }
+
+        if (sourceUnit is PaceUnit || targetUnit is PaceUnit)
+            return TryConvertSpeedLikeUnitValue(value, sourceUnit, targetUnit, out convertedValue);
+
+        try
+        {
+            IQuantity source = Quantity.From(value, sourceUnit);
+            IQuantity converted = source.ToUnit(targetUnit);
+            convertedValue = (double)converted.Value;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryConvertSpeedLikeUnitValue(double value, Enum sourceUnit, Enum targetUnit, out double convertedValue)
+    {
+        convertedValue = 0;
+
+        if (!TryConvertToKilometersPerHour(value, sourceUnit, out double kilometersPerHour))
+            return false;
+
+        return TryConvertFromKilometersPerHour(kilometersPerHour, targetUnit, out convertedValue);
+    }
+
+    private static bool TryConvertToKilometersPerHour(double value, Enum unit, out double kilometersPerHour)
+    {
+        kilometersPerHour = 0;
+
+        if (unit is PaceUnit paceUnit)
+        {
+            if (value <= 0)
+                return false;
+
+            kilometersPerHour = paceUnit switch
+            {
+                PaceUnit.MinutePerMile => (60 * KilometersPerMile) / value,
+                PaceUnit.MinutePerKilometer => 60 / value,
+                _ => 0
+            };
+
+            return kilometersPerHour > 0;
+        }
+
+        if (unit is SpeedUnit speedUnit)
+        {
+            if (value <= 0)
+                return false;
+
+            kilometersPerHour = Speed.From(value, speedUnit).KilometersPerHour;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryConvertFromKilometersPerHour(double kilometersPerHour, Enum unit, out double convertedValue)
+    {
+        convertedValue = 0;
+
+        if (kilometersPerHour <= 0)
+            return false;
+
+        if (unit is PaceUnit paceUnit)
+        {
+            convertedValue = paceUnit switch
+            {
+                PaceUnit.MinutePerMile => (60 * KilometersPerMile) / kilometersPerHour,
+                PaceUnit.MinutePerKilometer => 60 / kilometersPerHour,
+                _ => 0
+            };
+
+            return convertedValue > 0;
+        }
+
+        if (unit is SpeedUnit speedUnit)
+        {
+            convertedValue = (double)Speed.FromKilometersPerHour(kilometersPerHour).ToUnit(speedUnit).Value;
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -545,62 +682,7 @@ public partial class CalculationService
     /// </summary>
     private static bool TryParseFlexibleDouble(string input, out double value)
     {
-        value = 0;
-
-        if (string.IsNullOrWhiteSpace(input))
-            return false;
-
-        string normalized = NormalizeNumberString(input);
-        if (string.IsNullOrEmpty(normalized))
-            return false;
-
-        return double.TryParse(
-            normalized,
-            NumberStyles.Float | NumberStyles.AllowLeadingSign,
-            CultureInfo.InvariantCulture,
-            out value);
-    }
-
-    /// <summary>
-    /// Normalizes a numeric string to invariant form (dot as decimal, no group separators)
-    /// by inferring separator roles from the positions of '.' and ',' characters.
-    /// </summary>
-    private static string NormalizeNumberString(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-            return string.Empty;
-
-        // Remove spaces and underscores used as group separators
-        StringBuilder sb = new();
-        foreach (char c in input.Trim())
-        {
-            if (c != ' ' && c != '_')
-                sb.Append(c);
-        }
-
-        string compact = sb.ToString();
-        int commaIndex = compact.IndexOf(',');
-        int dotIndex = compact.IndexOf('.');
-
-        if (commaIndex >= 0 && dotIndex >= 0)
-        {
-            // Both present: whichever appears last is the decimal separator
-            if (compact.LastIndexOf('.') > compact.LastIndexOf(','))
-                compact = compact.Replace(",", string.Empty);              // e.g. "1,234.56"
-            else
-                compact = compact.Replace(".", string.Empty).Replace(",", ".");  // e.g. "1.234,56"
-        }
-        else if (commaIndex >= 0)
-        {
-            // Only comma: single comma is decimal ("3,5"), multiple are group separators ("1,000,000")
-            int lastCommaIndex = compact.LastIndexOf(',');
-            compact = commaIndex == lastCommaIndex
-                ? compact.Replace(",", ".")
-                : compact.Replace(",", string.Empty);
-        }
-        // Only dot or no separator: leave as-is for invariant parsing
-
-        return compact;
+        return NumericUtilities.TryParseFlexibleDouble(input, out value);
     }
 
     /// <summary>
@@ -619,6 +701,30 @@ public partial class CalculationService
     {
         string formatted = FormatResult(value);
         return $"{formatted} {abbreviation}";
+    }
+
+    /// <summary>
+    /// Formats a fractional feet value as a human-readable "X ft Y in" string.
+    /// For example, 6.2336 feet → "6 ft 3 in", 6.0 feet → "6 ft".
+    /// </summary>
+    private static string FormatFeetAndInches(double totalFeet)
+    {
+        bool negative = totalFeet < 0;
+        double absoluteFeet = Math.Abs(totalFeet);
+        int wholeFeet = (int)Math.Floor(absoluteFeet);
+        double remainingInches = (absoluteFeet - wholeFeet) * 12;
+        int wholeInches = (int)Math.Round(remainingInches);
+
+        if (wholeInches == 12)
+        {
+            wholeFeet++;
+            wholeInches = 0;
+        }
+
+        string sign = negative ? "-" : "";
+        return wholeInches == 0
+            ? $"{sign}{wholeFeet} ft"
+            : $"{sign}{wholeFeet} ft {wholeInches} in";
     }
 
     #endregion Unit Conversion Helpers
@@ -648,7 +754,7 @@ public partial class CalculationService
     /// <summary>
     /// Matches a number followed by a unit: "5 miles", "100°F", "3.5 gallons".
     /// </summary>
-    [System.Text.RegularExpressions.GeneratedRegex(@"^(?<number>-?\d+\.?\d*)\s*(?<unit>.+)$")]
+    [System.Text.RegularExpressions.GeneratedRegex(@"^(?<number>-?(?:\d+(?::\d{1,2}){1,2}|\d+\.?\d*))\s*(?<unit>.+)$")]
     private static partial System.Text.RegularExpressions.Regex NumberWithUnitPattern();
 
     /// <summary>

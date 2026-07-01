@@ -212,6 +212,16 @@
                     ButtonSymbol="WindowEdit20"
                     ButtonText="Edit Matches"
                     Command="{x:Static local:FindAndReplaceWindow.CopyMatchesCmd}" />
+
+                <local:CollapsibleButton
+                    x:Name="ApplyTemplateButton"
+                    Width="150"
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    ButtonSymbol="DocumentTableSearch24"
+                    ButtonText="Apply Template"
+                    Click="ApplyTemplateButton_Click"
+                    ToolTip="Apply a text-only Grab Template to each match" />
             </StackPanel>
             <StackPanel
                 x:Name="PatternButtonsStack"
@@ -289,8 +299,7 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="60" />
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="120" />
                                 <ColumnDefinition Width="100" />
                                 <ColumnDefinition Width="auto" />
                                 <ColumnDefinition Width="*" />
@@ -302,23 +311,18 @@
                             <TextBlock
                                 Grid.Column="1"
                                 Margin="0,0,8,0"
-                                HorizontalAlignment="right"
-                                Text="At index:" />
+                                Text="{Binding LocationDisplay}" />
                             <TextBlock
                                 Grid.Column="2"
-                                HorizontalAlignment="Left"
-                                Text="{Binding SelectionStart}" />
-                            <TextBlock
-                                Grid.Column="3"
                                 HorizontalAlignment="Right"
                                 Foreground="Gray"
                                 Text="{Binding PreviewLeft}" />
                             <TextBlock
-                                Grid.Column="4"
+                                Grid.Column="3"
                                 FontWeight="Bold"
                                 Text="{Binding Text}" />
                             <TextBlock
-                                Grid.Column="5"
+                                Grid.Column="4"
                                 HorizontalAlignment="Left"
                                 Foreground="Gray"
                                 Text="{Binding PreviewRight}" />

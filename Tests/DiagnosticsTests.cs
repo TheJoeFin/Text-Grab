@@ -103,6 +103,7 @@ public class DiagnosticsTests
         // OCR
         Assert.Contains("\"correctErrors\"", bugReport);
         Assert.Contains("\"correctToLatin\"", bugReport);
+        Assert.Contains("\"paragraphDetection\"", bugReport);
         Assert.Contains("\"useTesseract\"", bugReport);
         Assert.Contains("\"tesseractPathConfigured\"", bugReport);  // bool only — no path exposed
         Assert.Contains("\"uiAutomationEnabled\"", bugReport);

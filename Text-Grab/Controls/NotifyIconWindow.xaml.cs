@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab.Models;
@@ -10,6 +11,7 @@ using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
+using System.Runtime.InteropServices;
 using Wpf.Ui.Tray.Controls;
 
 namespace Text_Grab.Controls;
@@ -17,10 +19,28 @@ namespace Text_Grab.Controls;
 public partial class NotifyIconWindow : Window
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
+    private HwndSource? windowSource;
 
     public NotifyIconWindow()
     {
         InitializeComponent();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+
+        nint windowHandle = new WindowInteropHelper(this).Handle;
+        windowSource = HwndSource.FromHwnd(windowHandle);
+        windowSource?.AddHook(NotifyIconWindowMessageHook);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        windowSource?.RemoveHook(NotifyIconWindowMessageHook);
+        windowSource = null;
+
+        base.OnClosed(e);
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e)
@@ -34,9 +54,10 @@ public partial class NotifyIconWindow : Window
         App.DefaultLaunch();
     }
 
-    private void Window_Activated(object sender, EventArgs e)
+    private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         Hide();
+        HideFromAltTab();
         NotifyIcon.Visibility = Visibility.Visible;
 
         string toolTipText = "Text Grab";
@@ -68,6 +89,11 @@ public partial class NotifyIconWindow : Window
         EditTextWindow etw = new();
         etw.Show();
         etw.Activate();
+    }
+
+    private async void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        await App.OpenFileWithPickerAsync();
     }
 
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
@@ -108,6 +134,29 @@ public partial class NotifyIconWindow : Window
     {
         if (!NotifyIcon.IsVisible)
             NotifyIcon.Visibility = Visibility.Visible;
+    }
+
+    private void HideFromAltTab()
+    {
+        IntPtr handle = new WindowInteropHelper(this).Handle;
+        int exStyle = NativeMethods.GetWindowLong(handle, NativeMethods.GWL_EX_STYLE);
+        NativeMethods.SetWindowLong(handle, NativeMethods.GWL_EX_STYLE, (exStyle | NativeMethods.WS_EX_TOOLWINDOW) & ~NativeMethods.WS_EX_APPWINDOW);
+    }
+
+    private IntPtr NotifyIconWindowMessageHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if ((uint)msg == NativeMethods.WM_TASKBARCREATED)
+            RestoreNotifyIconAfterExplorerRestart();
+
+        return IntPtr.Zero;
+    }
+
+    private void RestoreNotifyIconAfterExplorerRestart()
+    {
+        if (NotifyIcon.IsRegistered)
+            NotifyIcon.Unregister();
+
+        NotifyIcon.Register();
     }
 
     private void LastEditWindow_Click(object sender, RoutedEventArgs e)
@@ -151,7 +200,7 @@ public partial class NotifyIconWindow : Window
 
         BitmapSource? bitmapSource = null;
 
-        if (clipboardImage is System.Windows.Interop.InteropBitmap interopBitmap)
+        if (clipboardImage is InteropBitmap interopBitmap)
         {
             System.Drawing.Bitmap bmp = ImageMethods.InteropBitmapToBitmap(interopBitmap);
             bitmapSource = ImageMethods.BitmapToImageSource(bmp);

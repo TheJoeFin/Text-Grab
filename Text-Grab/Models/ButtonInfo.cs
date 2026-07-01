@@ -36,6 +36,11 @@ public class ButtonInfo
     /// </summary>
     public string TemplateId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// When true, this button requires a Copilot+ PC (Windows AI capable device) to function.
+    /// </summary>
+    public bool RequiresCopilotPlus { get; set; } = false;
+
     public ButtonInfo()
     {
 
@@ -225,6 +230,14 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 1.31,
+            ButtonText = "Join Lines...",
+            SymbolText = "",
+            ClickEvent = "JoinLinesMenuItem_Click",
+            SymbolIcon = SymbolRegular.Merge24
+        },
+        new()
+        {
             OrderNumber = 1.4,
             ButtonText = "New Fullscreen Grab",
             SymbolText = "",
@@ -300,7 +313,7 @@ public class ButtonInfo
             OrderNumber = 2.3,
             ButtonText = "OCR Paste",
             SymbolText = "",
-            Command = "PasteCommand",
+            Command = "OcrPasteCommand",
             SymbolIcon = SymbolRegular.ClipboardImage24
         },
         new()
@@ -350,6 +363,14 @@ public class ButtonInfo
             SymbolText = "",
             ClickEvent = "RemoveDuplicateLines_Click",
             SymbolIcon = SymbolRegular.MultiselectLtr24
+        },
+        new()
+        {
+            OrderNumber = 3.51,
+            ButtonText = "Shuffle Lines",
+            SymbolText = "",
+            ClickEvent = "ShuffleLinesMenuItem_Click",
+            SymbolIcon = SymbolRegular.ArrowShuffle24
         },
         new()
         {
@@ -490,9 +511,9 @@ public class ButtonInfo
         new()
         {
             OrderNumber = 5.4,
-            ButtonText = "Extract Text from Images to txt Files...",
+            ButtonText = "Write .txt File For Each Image",
             SymbolText = "",
-            ClickEvent = "ReadFolderOfImagesWriteTxtFiles_Click",
+            ClickEvent = "ToggleWriteTxtFileForEachImage_Click",
             SymbolIcon = SymbolRegular.TabDesktopImage24
         },
         new()
@@ -521,17 +542,398 @@ public class ButtonInfo
         },
         new()
         {
-            ButtonText = "Edit Bottom Bar",
-            ClickEvent = "EditBottomBarMenuItem_Click",
-            SymbolIcon = SymbolRegular.CalendarEdit24
+            OrderNumber = 6.1,
+            ButtonText = "Close",
+            ClickEvent = "CloseMenuItem_Click",
+            SymbolIcon = SymbolRegular.WindowAdOff20
         },
         new()
         {
-                        ButtonText = "Settings",
-                        ClickEvent = "SettingsMenuItem_Click",
-                        SymbolIcon = SymbolRegular.Settings24
-                    },
-                        ];
+            OrderNumber = 6.2,
+            ButtonText = "Correct Common GUID/UUID Errors",
+            ClickEvent = "CorrectGuid_Click",
+            SymbolIcon = SymbolRegular.TextWholeWord20
+        },
+        new()
+        {
+            OrderNumber = 6.3,
+            ButtonText = "Transpose Table",
+            Command = "TransposeTableCmd",
+            SymbolIcon = SymbolRegular.TableSwitch24
+        },
+        new()
+        {
+            OrderNumber = 6.4,
+            ButtonText = "Add Spreadsheet Row",
+            ClickEvent = "AddSpreadsheetRowMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableInsertRow24
+        },
+        new()
+        {
+            OrderNumber = 6.5,
+            ButtonText = "Add Spreadsheet Column",
+            ClickEvent = "AddSpreadsheetColumnMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableInsertColumn24
+        },
+        new()
+        {
+            OrderNumber = 6.6,
+            ButtonText = "Copy Selected Spreadsheet Cells",
+            ClickEvent = "CopySpreadsheetSelectionMenuItem_Click",
+            SymbolIcon = SymbolRegular.CopySelect20
+        },
+        new()
+        {
+            OrderNumber = 6.7,
+            ButtonText = "Copy Selected Spreadsheet Rows",
+            ClickEvent = "CopySpreadsheetRowsMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableCopy20
+        },
+        new()
+        {
+            OrderNumber = 6.8,
+            ButtonText = "Copy Current Spreadsheet Column",
+            ClickEvent = "CopySpreadsheetColumnMenuItem_Click",
+            SymbolIcon = SymbolRegular.Column20
+        },
+        new()
+        {
+            OrderNumber = 6.9,
+            ButtonText = "Move Spreadsheet Row Up",
+            ClickEvent = "MoveSpreadsheetRowUpMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableInsertRow24
+        },
+        new()
+        {
+            OrderNumber = 6.91,
+            ButtonText = "Move Spreadsheet Row Down",
+            ClickEvent = "MoveSpreadsheetRowDownMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableInsertRow24
+        },
+        new()
+        {
+            OrderNumber = 6.92,
+            ButtonText = "Delete Spreadsheet Row",
+            ClickEvent = "DeleteSpreadsheetRowMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableDeleteRow24
+        },
+        new()
+        {
+            OrderNumber = 6.93,
+            ButtonText = "Move Spreadsheet Column Left",
+            ClickEvent = "MoveSpreadsheetColumnLeftMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableMoveLeft24
+        },
+        new()
+        {
+            OrderNumber = 6.94,
+            ButtonText = "Move Spreadsheet Column Right",
+            ClickEvent = "MoveSpreadsheetColumnRightMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableMoveRight24
+        },
+        new()
+        {
+            OrderNumber = 6.95,
+            ButtonText = "Delete Spreadsheet Column",
+            ClickEvent = "DeleteSpreadsheetColumnMenuItem_Click",
+            SymbolIcon = SymbolRegular.TableDeleteColumn24
+        },
+        new()
+        {
+            OrderNumber = 6.96,
+            ButtonText = "Enter Raw Text Mode",
+            ClickEvent = "EnterRawTextMode_Click",
+            SymbolIcon = SymbolRegular.TextT24
+        },
+        new()
+        {
+            OrderNumber = 6.97,
+            ButtonText = "Enter Spreadsheet Mode",
+            ClickEvent = "EnterSpreadsheetMode_Click",
+            SymbolIcon = SymbolRegular.Table24
+        },
+        new()
+        {
+            OrderNumber = 6.98,
+            ButtonText = "Enter Markdown Mode",
+            ClickEvent = "EnterMarkdownMode_Click",
+            SymbolIcon = SymbolRegular.Markdown20
+        },
+        new()
+        {
+            OrderNumber = 7.1,
+            ButtonText = "Toggle Show Calc Errors",
+            ClickEvent = "ToggleShowMathErrors_Click",
+            SymbolIcon = SymbolRegular.MathSymbols24
+        },
+        new()
+        {
+            OrderNumber = 7.11,
+            ButtonText = "Toggle Calculation Pane",
+            ClickEvent = "CalcToggleButton_Click",
+            SymbolIcon = SymbolRegular.Calculator24
+        },
+        new()
+        {
+            OrderNumber = 7.12,
+            ButtonText = "Copy All Calculation Results",
+            ClickEvent = "CalcCopyAllButton_Click",
+            SymbolIcon = SymbolRegular.CopyAdd24
+        },
+        new()
+        {
+            OrderNumber = 7.2,
+            ButtonText = "Toggle Always On Top",
+            ClickEvent = "ToggleAlwaysOnTop_Click",
+            SymbolIcon = SymbolRegular.WindowLocationTarget20
+        },
+        new()
+        {
+            OrderNumber = 7.21,
+            ButtonText = "Toggle Hide Bottom Bar",
+            ClickEvent = "ToggleHideBottomBar_Click",
+            SymbolIcon = SymbolRegular.PanelBottomContract20
+        },
+        new()
+        {
+            OrderNumber = 7.24,
+            ButtonText = "Restore This Window Position",
+            ClickEvent = "RestoreThisPosition_Click",
+            SymbolIcon = SymbolRegular.WindowWrench24
+        },
+        new()
+        {
+            OrderNumber = 7.25,
+            ButtonText = "Toggle Margins",
+            ClickEvent = "ToggleMargins_Click",
+            SymbolIcon = SymbolRegular.DocumentMargins24
+        },
+        new()
+        {
+            OrderNumber = 7.26,
+            ButtonText = "Toggle Wrap Text",
+            ClickEvent = "ToggleWrapText_Click",
+            SymbolIcon = SymbolRegular.TextWrap24
+        },
+        new()
+        {
+            OrderNumber = 7.27,
+            ButtonText = "Font...",
+            ClickEvent = "FontMenuItem_Click",
+            SymbolIcon = SymbolRegular.TextFont24
+        },
+        new()
+        {
+            OrderNumber = 7.3,
+            ButtonText = "Grab Previous Region",
+            ClickEvent = "PreviousRegion_Click",
+            SymbolIcon = SymbolRegular.WindowArrowUp24
+        },
+        new()
+        {
+            OrderNumber = 7.31,
+            ButtonText = "Edit Last Grab",
+            ClickEvent = "OpenLastAsGrabFrameMenuItem_Click",
+            SymbolIcon = SymbolRegular.ImageEdit24
+        },
+        new()
+        {
+            OrderNumber = 7.4,
+            ButtonText = "Select All",
+            ClickEvent = "SelectAllMenuItem_Click",
+            SymbolIcon = SymbolRegular.SelectAllOn24
+        },
+        new()
+        {
+            OrderNumber = 7.41,
+            ButtonText = "Select None",
+            ClickEvent = "SelectNoneMenuItem_Click",
+            SymbolIcon = SymbolRegular.TextClearFormatting24
+        },
+        new()
+        {
+            OrderNumber = 7.42,
+            ButtonText = "Delete Selected Text",
+            ClickEvent = "DeleteSelectedTextMenuItem_Click",
+            SymbolIcon = SymbolRegular.Delete24
+        },
+        new()
+        {
+            OrderNumber = 7.43,
+            ButtonText = "Show Character Details",
+            ClickEvent = "CharDetailsButton_Click",
+            SymbolIcon = SymbolRegular.TextFontInfo24
+        },
+        new()
+        {
+            OrderNumber = 7.44,
+            ButtonText = "Find Similar Matches",
+            ClickEvent = "SimilarMatchesButton_Click",
+            SymbolIcon = SymbolRegular.DocumentSearch24
+        },
+        new()
+        {
+            OrderNumber = 7.45,
+            ButtonText = "Open Regex Pattern Search",
+            ClickEvent = "RegexPatternButton_Click",
+            SymbolIcon = SymbolRegular.TextEffects24
+        },
+        new()
+        {
+            OrderNumber = 7.46,
+            ButtonText = "Save Regex Pattern",
+            ClickEvent = "SavePatternMenuItem_Click",
+            SymbolIcon = SymbolRegular.SaveCopy24
+        },
+        new()
+        {
+            OrderNumber = 8.1,
+            ButtonText = "Summarize Paragraph",
+            ClickEvent = "SummarizeMenuItem_Click",
+            SymbolIcon = SymbolRegular.BotSparkle24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.2,
+            ButtonText = "Rewrite with Local AI",
+            ClickEvent = "RewriteMenuItem_Click",
+            SymbolIcon = SymbolRegular.BotSparkle24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.3,
+            ButtonText = "Convert to Table",
+            ClickEvent = "ConvertTableMenuItem_Click",
+            SymbolIcon = SymbolRegular.BotSparkle24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.4,
+            ButtonText = "Translate to System Language",
+            ClickEvent = "TranslateToSystemLanguageMenuItem_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.41,
+            ButtonText = "Translate to English",
+            ClickEvent = "TranslateToEnglish_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.42,
+            ButtonText = "Translate to Spanish",
+            ClickEvent = "TranslateToSpanish_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.43,
+            ButtonText = "Translate to French",
+            ClickEvent = "TranslateToFrench_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.44,
+            ButtonText = "Translate to German",
+            ClickEvent = "TranslateToGerman_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.45,
+            ButtonText = "Translate to Italian",
+            ClickEvent = "TranslateToItalian_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.46,
+            ButtonText = "Translate to Portuguese",
+            ClickEvent = "TranslateToPortuguese_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.47,
+            ButtonText = "Translate to Russian",
+            ClickEvent = "TranslateToRussian_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.48,
+            ButtonText = "Translate to Japanese",
+            ClickEvent = "TranslateToJapanese_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.49,
+            ButtonText = "Translate to Chinese (Simplified)",
+            ClickEvent = "TranslateToChineseSimplified_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.5,
+            ButtonText = "Translate to Korean",
+            ClickEvent = "TranslateToKorean_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.51,
+            ButtonText = "Translate to Arabic",
+            ClickEvent = "TranslateToArabic_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.52,
+            ButtonText = "Translate to Hindi",
+            ClickEvent = "TranslateToHindi_Click",
+            SymbolIcon = SymbolRegular.Translate24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.6,
+            ButtonText = "Extract RegEx",
+            ClickEvent = "ExtractRegexMenuItem_Click",
+            SymbolIcon = SymbolRegular.TextWholeWord20,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            ButtonText = "Edit Bottom Bar",
+            ClickEvent = "EditBottomBarMenuItem_Click",
+            SymbolIcon = SymbolRegular.PanelBottom20
+        },
+        new()
+        {
+            ButtonText = "Settings",
+            ClickEvent = "SettingsMenuItem_Click",
+            SymbolIcon = SymbolRegular.Settings24
+        },
+       ];
 
             return _allButtons;
         }

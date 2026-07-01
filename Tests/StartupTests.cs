@@ -1,4 +1,5 @@
 using System.IO;
+using Text_Grab;
 
 namespace Tests;
 
@@ -116,5 +117,33 @@ public class StartupTests
 
         // Assert - New logic should point to base directory (correct)
         Assert.Equal(@"C:\Program Files\Text-Grab\images\logo.png", newLogicPath);
+    }
+
+    [Fact]
+    public void ParseStartupArguments_IgnoresFlagsWhenSelectingPrimaryArgument()
+    {
+        App.StartupArguments startupArguments = App.ParseStartupArguments(["--windowless", "Settings"]);
+
+        Assert.True(startupArguments.IsQuiet);
+        Assert.Equal("Settings", startupArguments.PrimaryArgument);
+    }
+
+    [Fact]
+    public void ParseStartupArguments_FindsGrabFramePathCaseInsensitive()
+    {
+        string tempFilePath = Path.GetTempFileName();
+
+        try
+        {
+            App.StartupArguments startupArguments = App.ParseStartupArguments(["--GRABFRAME", tempFilePath]);
+
+            Assert.True(startupArguments.OpenInGrabFrame);
+            Assert.Equal(tempFilePath, startupArguments.PrimaryArgument);
+            Assert.Equal(Path.GetFullPath(tempFilePath), startupArguments.GrabFramePath);
+        }
+        finally
+        {
+            File.Delete(tempFilePath);
+        }
     }
 }

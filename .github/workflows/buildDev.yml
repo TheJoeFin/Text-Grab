@@ -17,11 +17,11 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: global.json
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }}
       - name: Build
@@ -33,7 +33,7 @@ jobs:
         run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -p:EnableMsixTooling=true -o publish
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Text-Grab
           path: .\publish

@@ -94,6 +94,13 @@ public partial class GrabTemplate
         && !string.IsNullOrWhiteSpace(OutputTemplate);
 
     /// <summary>
+    /// True when this template has no capture regions and therefore operates purely
+    /// on text (its output template uses only literal text and {p:Name:mode} pattern
+    /// placeholders). These can be applied to existing text in the Edit Text Window.
+    /// </summary>
+    public bool IsTextOnly => Regions.Count == 0;
+
+    /// <summary>
     /// Returns all region numbers referenced in the output template.
     /// </summary>
     public IEnumerable<int> GetReferencedRegionNumbers()

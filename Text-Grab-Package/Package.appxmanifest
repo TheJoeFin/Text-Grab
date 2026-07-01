@@ -14,7 +14,7 @@
   <Identity
     Name="40087JoeFinApps.TextGrab"
     Publisher="CN=153F3B0F-BA3D-4964-8098-71AC78A1DF6A"
-    Version="4.13.2.0" />
+    Version="4.14.2.0" />
 
   <Properties>
     <DisplayName>Text Grab</DisplayName>
@@ -79,6 +79,29 @@
 		  </uap2:SupportedVerbs>
 		</uap3:FileTypeAssociation>
 	  </uap3:Extension>
+
+	  <uap3:Extension Category="windows.fileTypeAssociation">
+		<uap3:FileTypeAssociation Name="textgrab.documents">
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.csv</uap:FileType>
+			<uap:FileType>.tsv</uap:FileType>
+			<uap:FileType>.tab</uap:FileType>
+			<uap:FileType>.md</uap:FileType>
+			<uap:FileType>.markdown</uap:FileType>
+			<uap:FileType>.txt</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap2:SupportedVerbs>
+			<uap3:Verb Id="OpenInTextGrab" Parameters="&quot;%1&quot;">Open with Text Grab</uap3:Verb>
+		  </uap2:SupportedVerbs>
+		</uap3:FileTypeAssociation>
+	  </uap3:Extension>
+
+	  <!-- text-grab:// protocol (used by the Text Grab browser extension) -->
+	  <uap:Extension Category="windows.protocol">
+		<uap:Protocol Name="text-grab">
+		  <uap:DisplayName>Text Grab</uap:DisplayName>
+		</uap:Protocol>
+	  </uap:Extension>
 
 	  <!-- Share target integration -->
 	  <uap:Extension Category="windows.shareTarget">

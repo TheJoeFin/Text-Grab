@@ -1,6 +1,6 @@
 # Text Grab - GitHub Copilot Instructions
 
-Text Grab is a Windows-specific .NET 9.0 WPF OCR (Optical Character Recognition) application that extracts text from images using Windows APIs. It provides multiple modes for text capture including full-screen grab, grab frame, edit text window, and quick lookup.
+Text Grab is a Windows-specific .NET 10.0 WPF OCR (Optical Character Recognition) application that extracts text from images using Windows APIs. It provides multiple modes for text capture including full-screen grab, grab frame, edit text window, and quick lookup.
 
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
@@ -17,15 +17,15 @@ Text Grab is a Windows-specific .NET 9.0 WPF OCR (Optical Character Recognition)
 ### Prerequisites (Windows Only)
 For full development on Windows:
 - Windows 10/11 with Windows 10 SDK 22621.0
-- Visual Studio 2019/2022 with workloads:
+- Visual Studio 2022 with workloads:
   - "Universal Windows Platform Development" 
   - ".NET desktop development"
   - ".NET cross-platform development"
-- **OR** .NET 9.0 SDK: https://dotnet.microsoft.com/download/dotnet/9.0
+- **OR** .NET 10.0 SDK: https://dotnet.microsoft.com/download/dotnet/10.0
 
 ### Cross-Platform Dependency Validation
 For non-Windows environments (validation only):
-- Install .NET 9.0: `curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.101`
+- Install .NET 10.0: `curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 10.0.100`
 - Add to PATH: `export PATH="$HOME/.dotnet:$PATH"`
 
 ### Build Commands
@@ -49,7 +49,7 @@ For non-Windows environments (validation only):
 ### Running the Application (Windows Only)
 - Debug in Visual Studio: Set Text-Grab-Package as startup project, press F5
 - Command line debug: `dotnet run --project Text-Grab/Text-Grab.csproj`
-- Production executable: `Text-Grab/bin/Release/net9.0-windows10.0.22621.0/Text-Grab.exe`
+- Production executable: `Text-Grab/bin/Release/net10.0-windows10.0.22621.0/Text-Grab.exe`
 
 ### CLI Usage (Windows Only)
 The application supports command-line arguments:
@@ -83,7 +83,7 @@ The application supports command-line arguments:
 ## Key Project Structure
 
 ### Primary Components
-- **Text-Grab/**: Main WPF application (.NET 9.0)
+- **Text-Grab/**: Main WPF application (.NET 10.0)
 - **Text-Grab-Package/**: Windows application packaging project (.wapproj)
 - **Tests/**: XUnit test suite with WPF support
 - **.github/workflows/buildDev.yml**: CI/CD pipeline (Windows-only)
@@ -158,7 +158,7 @@ dotnet test Tests/Tests.csproj
 .\build-unpackaged.ps1
 
 # Non-Windows Validation Only (ALWAYS include -p:EnableWindowsTargeting=true)
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.101
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 10.0.100
 export PATH="$HOME/.dotnet:$PATH"
 dotnet restore Text-Grab.sln -p:EnableWindowsTargeting=true
 # Note: Full build will fail - only restore and dependency validation possible

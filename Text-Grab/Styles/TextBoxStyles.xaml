@@ -72,8 +72,8 @@
                         <ScrollViewer
                             x:Name="PART_ContentHost"
                             Focusable="false"
-                            HorizontalScrollBarVisibility="Hidden"
-                            VerticalScrollBarVisibility="Hidden" />
+                            HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+                            VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="false">
@@ -126,8 +126,8 @@
                             x:Name="PART_ContentHost"
                             Padding="0"
                             Focusable="false"
-                            HorizontalScrollBarVisibility="Hidden"
-                            VerticalScrollBarVisibility="Hidden" />
+                            HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+                            VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="false">
@@ -169,7 +169,8 @@
                             x:Name="Arrow"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            Data="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}">
+                            Data="{Binding Content,
+                                           RelativeSource={RelativeSource TemplatedParent}}">
                             <Path.Fill>
                                 <SolidColorBrush x:Name="ArrowFill" Color="{DynamicResource ControlMediumColor}" />
                             </Path.Fill>

@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
+using TextBox = Wpf.Ui.Controls.TextBox;
 
 namespace Text_Grab.Controls;
 
@@ -20,9 +24,12 @@ public partial class BottomBarSettings : FluentWindow
     {
         InitializeComponent();
 
-        List<ButtonInfo> allBtns = [.. ButtonInfo.AllButtons];
+        bool canUseCopilotPlus = WindowsAiUtilities.CanDeviceUseWinAI();
+        List<ButtonInfo> allBtns = [.. ButtonInfo.AllButtons
+            .Where(b => !b.RequiresCopilotPlus || canUseCopilotPlus)];
 
-        ButtonsInRightList = [.. CustomBottomBarUtilities.GetCustomBottomBarItemsSetting()];
+        ButtonsInRightList = [.. CustomBottomBarUtilities.GetCustomBottomBarItemsSetting()
+            .Where(b => !b.RequiresCopilotPlus || canUseCopilotPlus)];
         RightListBox.ItemsSource = ButtonsInRightList;
         foreach (ButtonInfo cbutton in ButtonsInRightList)
         {
@@ -31,6 +38,7 @@ public partial class BottomBarSettings : FluentWindow
 
         ButtonsInLeftList = [.. allBtns];
         LeftListBox.ItemsSource = ButtonsInLeftList;
+        _leftListView = CollectionViewSource.GetDefaultView(ButtonsInLeftList);
 
         ShowCursorTextCheckBox.IsChecked = DefaultSettings.ShowCursorText;
         ShowScrollbarCheckBox.IsChecked = DefaultSettings.ScrollBottomBar;
@@ -48,6 +56,7 @@ public partial class BottomBarSettings : FluentWindow
 
     private ObservableCollection<ButtonInfo> ButtonsInLeftList { get; set; }
     private ObservableCollection<ButtonInfo> ButtonsInRightList { get; set; }
+    private ICollectionView _leftListView = null!;
 
     #endregion Properties
 
@@ -90,6 +99,14 @@ public partial class BottomBarSettings : FluentWindow
     private void CloseBTN_Click(object sender, RoutedEventArgs e)
     {
         this.Close();
+    }
+
+    private void FilterSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        string filter = (sender as TextBox)?.Text.Trim() ?? string.Empty;
+        _leftListView.Filter = string.IsNullOrEmpty(filter)
+            ? null
+            : obj => obj is ButtonInfo btn && btn.ButtonText.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
     private void MoveDownButton_Click(object sender, RoutedEventArgs e)

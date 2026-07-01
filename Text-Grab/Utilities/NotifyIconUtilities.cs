@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media.Imaging;
 using Text_Grab.Controls;
 using Text_Grab.Models;
@@ -24,7 +25,7 @@ public static class NotifyIconUtilities
         }
         RegisterHotKeys(app);
 
-        app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
+        app.TextGrabIcon = CreateNotifyIconWindow();
     }
 
     public static async Task ResetNotifyIcon()
@@ -33,12 +34,13 @@ public static class NotifyIconUtilities
         app.TextGrabIcon = null;
 
         UnregisterHotkeys(app);
-        NotifyIconWindow existingIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
-        existingIcon.Close();
+
+        NotifyIconWindow? existingIcon = GetExistingNotifyIconWindow();
+        existingIcon?.Close();
 
         RegisterHotKeys(app);
 
-        app.TextGrabIcon = WindowUtilities.OpenOrActivateWindow<NotifyIconWindow>();
+        app.TextGrabIcon = CreateNotifyIconWindow();
     }
 
     public static void RegisterHotKeys(App app)
@@ -202,5 +204,23 @@ public static class NotifyIconUtilities
             default:
                 break;
         }
+    }
+
+    private static NotifyIconWindow CreateNotifyIconWindow()
+    {
+        NotifyIconWindow? existingIcon = GetExistingNotifyIconWindow();
+
+        if (existingIcon is not null)
+            return existingIcon;
+
+        NotifyIconWindow notifyIconWindow = new();
+        notifyIconWindow.Show();
+
+        return notifyIconWindow;
+    }
+
+    private static NotifyIconWindow? GetExistingNotifyIconWindow()
+    {
+        return Application.Current.Windows.OfType<NotifyIconWindow>().FirstOrDefault();
     }
 }

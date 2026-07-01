@@ -1,13 +1,18 @@
+using ImageMagick;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Text_Grab;
+using Text_Grab.Utilities;
 
 namespace Tests;
 
 public class ImageMethodsTests
 {
+    private const string fontTestPath = @".\Images\FontTest.png";
+    private const string fontSamplePath = @".\Images\font_sample.png";
+
     [WpfFact]
     public void ImageSourceToBitmap_ConvertsBitmapSourceDerivedImages()
     {
@@ -45,5 +50,31 @@ public class ImageMethodsTests
         Bitmap? bitmap = ImageMethods.ImageSourceToBitmap(drawingImage);
 
         Assert.Null(bitmap);
+    }
+
+    [WpfFact]
+    public void BitmapCompare_ReturnsZeroDiff()
+    {
+        string path1 = FileUtilities.GetPathToLocalFile(fontTestPath);
+        MagickImage img1 = new(path1);
+
+        IMagickErrorInfo compare = img1.Compare(img1);
+
+        Assert.NotNull(compare);
+        Assert.Equal(0, compare.NormalizedMeanError);
+    }
+
+    [WpfFact]
+    public void BitmapCompare_ReturnsNonZeroDiff()
+    {
+        string path1 = FileUtilities.GetPathToLocalFile(fontTestPath);
+        string path2 = FileUtilities.GetPathToLocalFile(fontSamplePath);
+        MagickImage img1 = new(path1);
+        MagickImage img2 = new(path2);
+
+        IMagickErrorInfo compare = img1.Compare(img2);
+
+        Assert.NotNull(compare);
+        Assert.NotEqual(0, compare.NormalizedMeanError);
     }
 }

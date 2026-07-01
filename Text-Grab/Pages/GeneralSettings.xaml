@@ -235,11 +235,11 @@
             Checked="AddToContextMenuCheckBox_Checked"
             Unchecked="AddToContextMenuCheckBox_Unchecked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
-                Add "Grab text with Text Grab" to right-click menu for image files
+                Add "Grab text with Text Grab" to right-click menu for image and PDF files
             </TextBlock>
         </ui:ToggleSwitch>
         <TextBlock Style="{StaticResource TextBodyNormal}">
-            Right-click on PNG, JPG, BMP, GIF, or TIFF files to quickly grab text.
+            Right-click on supported image files or PDFs to quickly grab text.
         </TextBlock>
 
         <!--  Register as Open With app for images  -->
@@ -253,11 +253,11 @@
             Checked="RegisterOpenWithCheckBox_Checked"
             Unchecked="RegisterOpenWithCheckBox_Unchecked">
             <TextBlock Style="{StaticResource TextBodyNormal}">
-                Register Text Grab as an "Open with" app for image files
+                Register Text Grab as an "Open with" app for image and PDF files
             </TextBlock>
         </ui:ToggleSwitch>
         <TextBlock Style="{StaticResource TextBodyNormal}">
-            Opens images directly in Grab Frame when using "Open with" from File Explorer.
+            Opens supported images and PDFs directly in Grab Frame when using "Open with" from File Explorer.
         </TextBlock>
 
         <TextBlock
@@ -301,7 +301,17 @@
             Style="{StaticResource TextHeader}"
             Text="Correct Common Errors" />
         <ui:ToggleSwitch
+            Name="ParagraphDetectionToggle"
+            Checked="ParagraphDetectionToggle_Checked"
+            Unchecked="ParagraphDetectionToggle_Unchecked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Detect paragraph wrapping — join wrapped lines into one paragraph
+            </TextBlock>
+        </ui:ToggleSwitch>
+
+        <ui:ToggleSwitch
             Name="ErrorCorrectBox"
+            Margin="0,16,0,0"
             Checked="ErrorCorrectBox_Checked"
             Unchecked="ErrorCorrectBox_Unchecked">
             <TextBlock Style="{StaticResource TextBodyNormal}">

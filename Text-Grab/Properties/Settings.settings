@@ -191,6 +191,12 @@
     <Setting Name="EtwShowSimilarMatches" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="EtwNormalizeLineEndingsOnPaste" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="EtwSpellCheckMode" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Auto</Value>
+    </Setting>
     <Setting Name="RegexList" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
@@ -243,6 +249,10 @@
       <Value Profile="(Default)">100</Value>
     </Setting>
     <Setting Name="TtsVoiceName" Type="System.String" Scope="User">
+    <Setting Name="ParagraphDetection" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="GrabFrameWordGrouping" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
   </Settings>

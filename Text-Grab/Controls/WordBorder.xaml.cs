@@ -23,7 +23,16 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     // Using a DependencyProperty as the backing store for Word.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty WordProperty =
-        DependencyProperty.Register("Word", typeof(string), typeof(WordBorder), new PropertyMetadata(""));
+        DependencyProperty.Register(nameof(Word), typeof(string), typeof(WordBorder), new PropertyMetadata(string.Empty, OnWordChanged));
+
+    public static readonly DependencyProperty DisplayTextProperty =
+        DependencyProperty.Register(nameof(DisplayText), typeof(string), typeof(WordBorder), new PropertyMetadata(string.Empty, OnDisplayTextChanged));
+
+    public static readonly DependencyProperty KeepSingleLineOutputProperty =
+        DependencyProperty.Register(nameof(KeepSingleLineOutput), typeof(bool), typeof(WordBorder), new PropertyMetadata(false, OnLayoutPropertyChanged));
+
+    public static readonly DependencyProperty DisplayLineHeightProperty =
+        DependencyProperty.Register(nameof(DisplayLineHeight), typeof(double), typeof(WordBorder), new PropertyMetadata(0d, OnLayoutPropertyChanged));
 
     public static readonly DependencyProperty TemplateIndexProperty =
         DependencyProperty.Register(nameof(TemplateIndex), typeof(int), typeof(WordBorder),
@@ -41,7 +50,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public static RoutedCommand MergeWordsCommand = new();
     private int contextMenuBaseSize;
     private SolidColorBrush contrastingForeground = new(Colors.White);
-    private DispatcherTimer debounceTimer = new();
+    private readonly DispatcherTimer debounceTimer = new();
+    private bool isSyncingTextProperties;
     private double left = 0;
     private SolidColorBrush matchingBackground = new(Colors.Black);
     private double top = 0;
@@ -59,7 +69,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         StandardInitialization();
 
+        KeepSingleLineOutput = info.KeepSingleLineOutput;
+        DisplayLineHeight = info.DisplayLineHeight;
         Word = info.Word;
+        DisplayText = string.IsNullOrWhiteSpace(info.DisplayText) ? info.Word : info.DisplayText;
         Left = info.BorderRect.Left;
         Top = info.BorderRect.Top;
         Width = info.BorderRect.Width;
@@ -80,10 +93,54 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         InitializeComponent();
         DataContext = this;
-        contextMenuBaseSize = WordBorderBorder.ContextMenu.Items.Count;
+
+        // An empty placeholder keeps ContextMenuOpening firing; the items are
+        // built on first open in EnsureContextMenuItems so the many
+        // WordBorders rendered per OCR pass don't each allocate a menu tree.
+        ContextMenu lazyContextMenu = new();
+        WordBorderBorder.ContextMenu = lazyContextMenu;
+        EditWordTextBox.ContextMenu = lazyContextMenu;
+
+        Loaded += WordBorder_Loaded;
+        SizeChanged += WordBorder_SizeChanged;
 
         debounceTimer.Interval = new(0, 0, 0, 0, 300);
         debounceTimer.Tick += DebounceTimer_Tick;
+    }
+
+    private static void OnDisplayTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not WordBorder wb || wb.isSyncingTextProperties)
+            return;
+
+        wb.isSyncingTextProperties = true;
+        wb.Word = wb.KeepSingleLineOutput
+            ? (e.NewValue as string ?? string.Empty).MakeStringSingleLine()
+            : e.NewValue as string ?? string.Empty;
+        wb.isSyncingTextProperties = false;
+        wb.PropertyChanged?.Invoke(wb, new PropertyChangedEventArgs(nameof(DisplayText)));
+        wb.ApplyTextLayout();
+    }
+
+    private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is WordBorder wb)
+            wb.ApplyTextLayout();
+    }
+
+    private static void OnWordChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not WordBorder wb)
+            return;
+
+        if (!wb.isSyncingTextProperties)
+        {
+            wb.isSyncingTextProperties = true;
+            wb.DisplayText = e.NewValue as string ?? string.Empty;
+            wb.isSyncingTextProperties = false;
+        }
+
+        wb.PropertyChanged?.Invoke(wb, new PropertyChangedEventArgs(nameof(Word)));
     }
     #endregion Constructors
 
@@ -100,6 +157,24 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     public bool IsEditing => EditWordTextBox.IsFocused;
     public bool IsFromEditWindow { get; set; } = false;
     public bool IsSelected { get; set; } = false;
+    public string DisplayText
+    {
+        get { return (string)GetValue(DisplayTextProperty); }
+        set { SetValue(DisplayTextProperty, value); }
+    }
+
+    public double DisplayLineHeight
+    {
+        get { return (double)GetValue(DisplayLineHeightProperty); }
+        set { SetValue(DisplayLineHeightProperty, value); }
+    }
+
+    public bool KeepSingleLineOutput
+    {
+        get { return (bool)GetValue(KeepSingleLineOutputProperty); }
+        set { SetValue(KeepSingleLineOutputProperty, value); }
+    }
+
     public double Left
     {
         get { return left; }
@@ -249,6 +324,30 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
     }
 
+    private void ApplyTextLayout()
+    {
+        if (IsBarcode)
+            return;
+
+        if (KeepSingleLineOutput && DisplayLineHeight > 0)
+        {
+            EditWordTextBox.TextWrapping = TextWrapping.Wrap;
+            EditWordTextBox.Width = Math.Max(Width - 2, 10);
+            EditWordTextBox.Height = Math.Max(Height - 2, 14);
+            EditWordTextBox.FontSize = Math.Max(1, DisplayLineHeight * 0.75);
+            EditWordTextBox.SetValue(TextBlock.LineHeightProperty, Math.Max(1, DisplayLineHeight));
+            EditWordTextBox.SetValue(TextBlock.LineStackingStrategyProperty, LineStackingStrategy.BlockLineHeight);
+            return;
+        }
+
+        EditWordTextBox.TextWrapping = TextWrapping.NoWrap;
+        EditWordTextBox.ClearValue(FrameworkElement.WidthProperty);
+        EditWordTextBox.ClearValue(FrameworkElement.HeightProperty);
+        EditWordTextBox.ClearValue(Control.FontSizeProperty);
+        EditWordTextBox.ClearValue(TextBlock.LineHeightProperty);
+        EditWordTextBox.ClearValue(TextBlock.LineStackingStrategyProperty);
+    }
+
     private void BreakIntoWordsMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (OwnerGrabFrame is null)
@@ -280,12 +379,62 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         OwnerGrabFrame?.DeleteThisWordBorder(this);
     }
 
-    private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    private MenuItem NewContextMenuItem(string header, RoutedEventHandler clickHandler)
     {
-        if (sender is not FrameworkElement senderElement)
+        MenuItem menuItem = new()
+        {
+            Header = header,
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+        menuItem.Click += clickHandler;
+        return menuItem;
+    }
+
+    private void EnsureContextMenuItems(ContextMenu contextMenu)
+    {
+        if (contextMenu.Items.Count > 0)
             return;
 
-        ContextMenu textBoxContextMenu = senderElement.ContextMenu;
+        contextMenu.Items.Add(NewContextMenuItem("Copy Text", CopyWordMenuItem_Click));
+        contextMenu.Items.Add(NewContextMenuItem("Try To Make _Numbers", TryToNumberMenuItem_Click));
+        contextMenu.Items.Add(NewContextMenuItem("Try To Make _Letters", TryToAlphaMenuItem_Click));
+        contextMenu.Items.Add(NewContextMenuItem("Make Text _Single Line", MakeSingleLineMenuItem_Click));
+        contextMenu.Items.Add(new Separator());
+
+        MenuItem translateMenuItem = NewContextMenuItem("Translate to System Language", TranslateWordMenuItem_Click);
+        translateMenuItem.Name = "TranslateWordMenuItem";
+        translateMenuItem.Visibility = Visibility.Collapsed;
+        contextMenu.Items.Add(translateMenuItem);
+        contextMenu.Items.Add(new Separator()
+        {
+            Name = "TranslateSeparator",
+            Visibility = Visibility.Collapsed
+        });
+
+        contextMenu.Items.Add(new MenuItem()
+        {
+            Header = "_Merge Selected Word Borders",
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Command = MergeWordsCommand,
+            InputGestureText = "Ctrl + M"
+        });
+        contextMenu.Items.Add(NewContextMenuItem("_Break into words", BreakIntoWordsMenuItem_Click));
+        contextMenu.Items.Add(NewContextMenuItem("_Search for similar text", SearchForSimilarMenuItem_Click));
+        contextMenu.Items.Add(new Separator());
+        contextMenu.Items.Add(NewContextMenuItem("_Delete", DeleteWordMenuItem_Click));
+
+        contextMenuBaseSize = contextMenu.Items.Count;
+    }
+
+    private void EditWordTextBox_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (sender is not FrameworkElement senderElement
+            || senderElement.ContextMenu is not ContextMenu textBoxContextMenu)
+        {
+            return;
+        }
+
+        EnsureContextMenuItems(textBoxContextMenu);
 
         while (textBoxContextMenu.Items.Count > contextMenuBaseSize)
         {
@@ -316,16 +465,12 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
                 translateMenuItem.Header = $"Translate to {systemLanguage}";
             }
 
-            if (translateSeparator != null)
-                translateSeparator.Visibility = Visibility.Visible;
+            translateSeparator?.Visibility = Visibility.Visible;
         }
         else
         {
-            if (translateMenuItem != null)
-                translateMenuItem.Visibility = Visibility.Collapsed;
-
-            if (translateSeparator != null)
-                translateSeparator.Visibility = Visibility.Collapsed;
+            translateMenuItem?.Visibility = Visibility.Collapsed;
+            translateSeparator?.Visibility = Visibility.Collapsed;
         }
 
         if (Uri.TryCreate(Word, UriKind.Absolute, out Uri? uri))
@@ -335,8 +480,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             if (headerText.Length > maxLength)
                 headerText = string.Concat(headerText.AsSpan(0, maxLength), "...");
 
-            MenuItem urlMi = new();
-            urlMi.Header = headerText;
+            MenuItem urlMi = new()
+            {
+                Header = headerText
+            };
             urlMi.Click += (sender, e) =>
             {
                 Process.Start(new ProcessStartInfo(Word) { UseShellExecute = true });
@@ -472,73 +619,81 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         else
             Select();
     }
-        private void WordBorderControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-            this.MouseDoubleClick -= WordBorderControl_MouseDoubleClick;
-            this.MouseDown -= WordBorderControl_MouseDown;
-            this.Unloaded -= WordBorderControl_Unloaded;
-        }
+    private void WordBorderControl_Unloaded(object sender, RoutedEventArgs e)
+    {
+        this.MouseDoubleClick -= WordBorderControl_MouseDoubleClick;
+        this.MouseDown -= WordBorderControl_MouseDown;
+        this.Unloaded -= WordBorderControl_Unloaded;
+        Loaded -= WordBorder_Loaded;
+        SizeChanged -= WordBorder_SizeChanged;
 
-        private async void TranslateWordMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(Word))
-                return;
+        debounceTimer.Stop();
+        debounceTimer.Tick -= DebounceTimer_Tick;
 
-            if (!WindowsAiUtilities.CanDeviceUseWinAI())
-            {
-                await new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = "Translation Not Available",
-                    Content = "Windows AI is not available on this device.",
-                    CloseButtonText = "OK"
-                }.ShowDialogAsync();
-                return;
-            }
-
-            // Store original text
-            string originalWord = Word;
-
-            try
-            {
-                // Get system language
-                string targetLanguage = GetSystemLanguageName();
-
-                // Translate the word
-                string translatedText = await WindowsAiUtilities.TranslateText(originalWord, targetLanguage);
-
-                // Update the word with translation
-                if (!string.IsNullOrWhiteSpace(translatedText) && translatedText != originalWord)
-                {
-                    // Notify the owner GrabFrame of the change for undo support
-                    if (OwnerGrabFrame != null)
-                    {
-                        OwnerGrabFrame.UndoableWordChange(this, originalWord, true);
-                    }
-
-                    Word = translatedText;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Translation failed: {ex.Message}");
-                await new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = "Translation Error",
-                    Content = $"Translation failed: {ex.Message}",
-                    CloseButtonText = "OK"
-                }.ShowDialogAsync();
-            }
-        }
-
-        /// <summary>
-        /// Gets the system's display language name (e.g., "English", "Spanish", "French")
-        /// Falls back to "English" if the system language is not recognized.
-        /// </summary>
-        private static string GetSystemLanguageName()
-        {
-            // Use the shared utility method from LanguageUtilities
-            return LanguageUtilities.GetSystemLanguageForTranslation();
-        }
-
-        #endregion Methods
+        OwnerGrabFrame = null;
     }
+
+    private void WordBorder_Loaded(object sender, RoutedEventArgs e) => ApplyTextLayout();
+
+    private void WordBorder_SizeChanged(object sender, SizeChangedEventArgs e) => ApplyTextLayout();
+
+    private async void TranslateWordMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(Word))
+            return;
+
+        if (!WindowsAiUtilities.CanDeviceUseWinAI())
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Translation Not Available",
+                Content = "Windows AI is not available on this device.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return;
+        }
+
+        // Store original text
+        string originalWord = Word;
+
+        try
+        {
+            // Get system language
+            string targetLanguage = GetSystemLanguageName();
+
+            // Translate the word
+            string translatedText = await WindowsAiUtilities.TranslateText(originalWord, targetLanguage);
+
+            // Update the word with translation
+            if (!string.IsNullOrWhiteSpace(translatedText) && translatedText != originalWord)
+            {
+                // Notify the owner GrabFrame of the change for undo support
+                OwnerGrabFrame?.UndoableWordChange(this, originalWord, true);
+
+                Word = translatedText;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Translation failed: {ex.Message}");
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Translation Error",
+                Content = $"Translation failed: {ex.Message}",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
+    /// <summary>
+    /// Gets the system's display language name (e.g., "English", "Spanish", "French")
+    /// Falls back to "English" if the system language is not recognized.
+    /// </summary>
+    private static string GetSystemLanguageName()
+    {
+        // Use the shared utility method from LanguageUtilities
+        return LanguageUtilities.GetSystemLanguageForTranslation();
+    }
+
+    #endregion Methods
+}

@@ -12,7 +12,9 @@
     MouseEnter="WordBorder_MouseEnter"
     MouseLeave="WordBorder_MouseLeave"
     MouseMove="WordBorder_MouseEnter"
-    ToolTip="{Binding Path=Word, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+    ToolTip="{Binding Path=Word,
+                      Mode=OneWay,
+                      UpdateSourceTrigger=PropertyChanged}"
     Unloaded="WordBorderControl_Unloaded"
     mc:Ignorable="d">
 
@@ -67,58 +69,6 @@
             </Style.Triggers>
         </Style>
 
-        <ContextMenu x:Key="ContextOptions">
-            <MenuItem
-                x:Name="CopyWordMenuItem"
-                HorizontalAlignment="Left"
-                Click="CopyWordMenuItem_Click"
-                Header="Copy Text" />
-            <MenuItem
-                x:Name="TryToNumberMenuItem"
-                HorizontalAlignment="Left"
-                Click="TryToNumberMenuItem_Click"
-                Header="Try To Make _Numbers" />
-            <MenuItem
-                x:Name="TryToAlphaMenuItem"
-                HorizontalAlignment="Left"
-                Click="TryToAlphaMenuItem_Click"
-                Header="Try To Make _Letters" />
-            <MenuItem
-                x:Name="MakeSingleLineMenuItem"
-                HorizontalAlignment="Left"
-                Click="MakeSingleLineMenuItem_Click"
-                Header="Make Text _Single Line" />
-            <Separator />
-            <MenuItem
-                x:Name="TranslateWordMenuItem"
-                HorizontalAlignment="Left"
-                Click="TranslateWordMenuItem_Click"
-                Header="Translate to System Language"
-                Visibility="Collapsed" />
-            <Separator x:Name="TranslateSeparator" Visibility="Collapsed" />
-            <MenuItem
-                x:Name="MergeWordBordersMenuItem"
-                HorizontalAlignment="Left"
-                Command="{x:Static local:WordBorder.MergeWordsCommand}"
-                Header="_Merge Selected Word Borders"
-                InputGestureText="Ctrl + M" />
-            <MenuItem
-                x:Name="BreakIntoWordsMenuItem"
-                HorizontalAlignment="Left"
-                Click="BreakIntoWordsMenuItem_Click"
-                Header="_Break into words" />
-            <MenuItem
-                x:Name="SearchForSimilarMenuItem"
-                HorizontalAlignment="Left"
-                Click="SearchForSimilarMenuItem_Click"
-                Header="_Search for similar text" />
-            <Separator />
-            <MenuItem
-                x:Name="DeleteWordMenuItem"
-                HorizontalAlignment="Left"
-                Click="DeleteWordMenuItem_Click"
-                Header="_Delete" />
-        </ContextMenu>
     </UserControl.Resources>
 
     <UserControl.CommandBindings>
@@ -133,7 +83,6 @@
             Margin="0,0,0,0"
             BorderBrush="#308E98"
             BorderThickness="0,0,0,2"
-            ContextMenu="{StaticResource ContextOptions}"
             ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
             CornerRadius="0">
             <Grid x:Name="MainGrid" ClipToBounds="True">
@@ -145,7 +94,6 @@
                         Margin="-1,-3,-1,-1"
                         d:Text="Test g"
                         AcceptsReturn="True"
-                        ContextMenu="{StaticResource ContextOptions}"
                         ContextMenuOpening="EditWordTextBox_ContextMenuOpening"
                         FontFamily="Segoe UI"
                         FontSize="12"
@@ -154,26 +102,31 @@
                         GotFocus="EditWordTextBox_GotFocus"
                         MouseDown="EditWordTextBox_MouseDown"
                         Style="{StaticResource TransparentTextBox}"
-                        Text="{Binding ElementName=WordBorderControl, Path=Word, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Text="{Binding ElementName=WordBorderControl,
+                                       Path=DisplayText,
+                                       Mode=TwoWay,
+                                       UpdateSourceTrigger=PropertyChanged}"
                         TextChanged="EditWordTextBox_TextChanged"
                         Visibility="Visible" />
                 </Viewbox>
             </Grid>
         </Border>
         <Border
+            Padding="3,1"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
+            Panel.ZIndex="10"
             Background="#CC1F6B78"
             CornerRadius="0,0,4,0"
-            Padding="3,1"
-            Panel.ZIndex="10"
-            Visibility="{Binding Path=TemplateBadgeVisibility, ElementName=WordBorderControl}">
+            Visibility="{Binding Path=TemplateBadgeVisibility,
+                                 ElementName=WordBorderControl}">
             <TextBlock
                 FontFamily="Segoe UI"
                 FontSize="9"
                 FontWeight="Bold"
                 Foreground="White"
-                Text="{Binding Path=TemplateBadgeText, ElementName=WordBorderControl}" />
+                Text="{Binding Path=TemplateBadgeText,
+                               ElementName=WordBorderControl}" />
         </Border>
         <Border
             Name="MoveResizeBorder"

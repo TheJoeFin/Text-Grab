@@ -18,7 +18,14 @@
       "Bash(curl -o bin/pdm https://app.produckmap.com/cli/pdm)",
       "Bash(chmod +x bin/pdm)",
       "Bash(bin/pdm ui-element:*)",
-      "Bash(bin/pdm *)"
+      "Bash(pdm api *)",
+      "Bash(bin/pdm *)",
+      "Bash(Get-ChildItem -Path \"D:/source/TheJoeFin/Text-Grab/Text-Grab/\" -Directory)",
+      "Bash(Select-Object Name)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(dotnet test *)",
+      "PowerShell(Get-ChildItem *)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": []
   }
