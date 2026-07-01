@@ -1,0 +1,234 @@
+<UserControl
+    x:Class="Text_Grab.Controls.SearchBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Name="SearchBarRoot"
+    d:DesignHeight="34"
+    d:DesignWidth="420"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+    <Grid>
+        <!--  The search input: chip | textbox + placeholder | clear + regex split + exact  -->
+        <Border
+            x:Name="SearchBorder"
+            MinHeight="32"
+            Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+            BorderThickness="1"
+            CornerRadius="5">
+            <Border.Style>
+                <!--  Highlight the whole control when focus is anywhere inside it  -->
+                <Style TargetType="Border">
+                    <Setter Property="BorderBrush" Value="{DynamicResource TextBox.Static.Border}" />
+                    <Style.Triggers>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter Property="BorderBrush" Value="{DynamicResource Teal}" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!--  Smart-pattern chip (shown only while a recognizer is active)  -->
+                <Border
+                    x:Name="PatternChip"
+                    Grid.Column="0"
+                    Margin="5,4"
+                    Padding="6,1"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource DarkTeal}"
+                    CornerRadius="4"
+                    Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            x:Name="PatternChipText"
+                            VerticalAlignment="Center"
+                            Foreground="White" />
+                        <Button
+                            x:Name="ChipClearButton"
+                            Margin="6,0,0,0"
+                            Padding="2"
+                            VerticalAlignment="Center"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="ChipClearButton_Click"
+                            Foreground="White"
+                            ToolTip="Remove pattern">
+                            <ui:SymbolIcon FontSize="12" Symbol="Dismiss24" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!--  Text input with placeholder overlay  -->
+                <Grid Grid.Column="1">
+                    <TextBox
+                        x:Name="InnerTextBox"
+                        Padding="4,0"
+                        VerticalContentAlignment="Center"
+                        AcceptsReturn="{Binding AcceptsReturn,
+                                                ElementName=SearchBarRoot}"
+                        AcceptsTab="{Binding AcceptsTab,
+                                             ElementName=SearchBarRoot}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                        FontFamily="Segoe UI"
+                        Style="{StaticResource TextBoxStyle1}"
+                        Text="{Binding SearchText,
+                                       ElementName=SearchBarRoot,
+                                       Mode=TwoWay,
+                                       UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock
+                        x:Name="PlaceholderTextBlock"
+                        Margin="6,0"
+                        Padding="0"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        IsHitTestVisible="False"
+                        Opacity="0.5"
+                        Text="{Binding PlaceholderText,
+                                       ElementName=SearchBarRoot}" />
+                </Grid>
+
+                <!--  Clear / regex / exact-match controls  -->
+                <StackPanel
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="ClearButton"
+                        Margin="0,0,4,0"
+                        Padding="6,4"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="ClearButton_Click"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        ToolTip="Clear search"
+                        Visibility="Collapsed">
+                        <ui:SymbolIcon FontSize="14" Symbol="Dismiss24" />
+                    </Button>
+                    <!--  Split toggle: regex on/off + a chevron that opens the pattern menu  -->
+                    <Border
+                        x:Name="RegexSplitContainer"
+                        Height="26"
+                        BorderThickness="0"
+                        CornerRadius="4"
+                        SnapsToDevicePixels="True">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource TextBox.Static.Border}" />
+                                <Style.Triggers>
+                                    <!--  When regex is on, the whole split button reads as checked (teal)  -->
+                                    <DataTrigger Binding="{Binding UseRegex, ElementName=SearchBarRoot}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource DarkTeal}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource DarkTeal}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <ToggleButton
+                                x:Name="RegExToggleButton"
+                                Padding="7,4"
+                                VerticalAlignment="Stretch"
+                                AutomationProperties.Name="Use regular expression"
+                                IsChecked="{Binding UseRegex,
+                                                    ElementName=SearchBarRoot,
+                                                    Mode=TwoWay}"
+                                Style="{StaticResource ToggleSplitSegment}"
+                                ToolTip="Search using Regular Expression syntax">
+                                <Viewbox Width="12" Height="12">
+                                    <local:RegExIcon IconColor="{DynamicResource TextFillColorPrimaryBrush}" />
+                                </Viewbox>
+                            </ToggleButton>
+                            <Border Width="1" Background="{DynamicResource TextBox.Static.Border}" />
+                            <Button
+                                x:Name="PatternDropDownButton"
+                                Padding="3,4"
+                                VerticalAlignment="Stretch"
+                                AutomationProperties.Name="Find by pattern"
+                                Click="PatternDropDownButton_Click"
+                                Style="{StaticResource SplitSegmentButton}"
+                                ToolTip="Find by pattern — a saved regex or a smart value (dates, numbers, emails, etc.)">
+                                <ui:SymbolIcon FontSize="11" Symbol="ChevronDown24" />
+                                <Button.ContextMenu>
+                                    <ContextMenu
+                                        x:Name="PatternMenu"
+                                        MaxHeight="360"
+                                        Opened="PatternMenu_Opened">
+                                        <ContextMenu.Template>
+                                            <ControlTemplate TargetType="{x:Type ContextMenu}">
+                                                <Border
+                                                    Padding="2"
+                                                    Background="{DynamicResource SolidBackgroundFillColorBaseAltBrush}"
+                                                    BorderBrush="{DynamicResource TextBox.Static.Border}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4">
+                                                    <ScrollViewer CanContentScroll="False" VerticalScrollBarVisibility="Visible">
+                                                        <ItemsPresenter />
+                                                    </ScrollViewer>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </ContextMenu.Template>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                    <ToggleButton
+                        x:Name="ExactMatchToggleButton"
+                        Height="26"
+                        Margin="4,0"
+                        Padding="7,4"
+                        VerticalAlignment="Center"
+                        BorderThickness="1"
+                        IsChecked="{Binding ExactMatch,
+                                            ElementName=SearchBarRoot,
+                                            Mode=TwoWay}"
+                        Style="{StaticResource ToggleSymbolButton}"
+                        ToolTip="Match search exactly (case sensitive, literal text)"
+                        Visibility="{Binding ShowExactMatchToggle,
+                                             ElementName=SearchBarRoot,
+                                             Converter={StaticResource BoolToVis}}">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Text="Aa" />
+                    </ToggleButton>
+                </StackPanel>
+
+                <!--  WPF-UI style accent underline: clearly shows the field has focus  -->
+                <Border
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Height="2"
+                    VerticalAlignment="Bottom"
+                    Background="{DynamicResource Teal}"
+                    CornerRadius="0,0,4,4">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=SearchBorder}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
