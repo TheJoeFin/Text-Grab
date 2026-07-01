@@ -140,7 +140,6 @@ public partial class GeneralSettings : Page
         TryInsertCheckbox.IsChecked = DefaultSettings.TryInsert;
         InsertDelaySeconds = DefaultSettings.InsertDelay;
         SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
-
         // Context menu integration - only available for unpackaged apps
         if (!AppUtilities.IsPackaged())
         {

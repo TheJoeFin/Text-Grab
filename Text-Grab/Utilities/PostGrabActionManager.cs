@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
+using Text_Grab.Services;
 using Wpf.Ui.Controls;
 
 namespace Text_Grab.Utilities;
@@ -90,6 +91,15 @@ public class PostGrabActionManager
             )
             {
                 OrderNumber = 6.5
+            },
+            new ButtonInfo(
+                buttonText: "Speak text",
+                clickEvent: "SpeakText_Click",
+                symbolIcon: SymbolRegular.Speaker224,
+                defaultCheckState: DefaultCheckState.Off
+            )
+            {
+                OrderNumber = 6.6
             }
             //,
             //new ButtonInfo(
@@ -99,7 +109,7 @@ public class PostGrabActionManager
             //    defaultCheckState: DefaultCheckState.Off
             //)
             //{
-            //    OrderNumber = 6.6
+            //    OrderNumber = 6.7
             //}
         ];
     }
@@ -203,6 +213,10 @@ public class PostGrabActionManager
             case "Insert_Click":
                 // This will be handled separately in FullscreenGrab after closing
                 // Don't modify the text
+                break;
+
+            case "SpeakText_Click":
+                Singleton<TtsService>.Instance.Speak(text);
                 break;
 
             case "Translate_Click":

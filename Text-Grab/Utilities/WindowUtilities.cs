@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Extensions;
+using Text_Grab.Services;
 using Text_Grab.Views;
 using static OSInterop;
 
@@ -391,7 +392,20 @@ public static partial class WindowUtilities
             shouldShutDown = true;
 
         if (shouldShutDown)
-            Application.Current.Shutdown();
+        {
+            TtsService tts = Singleton<TtsService>.Instance;
+            if (tts.IsBusy)
+            {
+                void onDrained()
+                {
+                    tts.Drained -= onDrained;
+                    Application.Current.Dispatcher.Invoke(Application.Current.Shutdown);
+                }
+                tts.Drained += onDrained;
+            }
+            else
+                Application.Current.Shutdown();
+        }
     }
 
     public static bool GetMousePosition(out Point mousePosition)

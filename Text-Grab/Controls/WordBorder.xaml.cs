@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Models;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 
@@ -596,7 +597,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         try { Clipboard.SetDataObject(Word, true); } catch { }
 
-        if (AppUtilities.TextGrabSettings.ShowToast
+        if (AppUtilities.TextGrabSettings.SpeakInsteadOfToast
+            && !IsFromEditWindow)
+            Singleton<TtsService>.Instance.Speak(Word);
+        else if (AppUtilities.TextGrabSettings.ShowToast
             && !IsFromEditWindow)
             NotificationUtilities.ShowToast(Word);
 

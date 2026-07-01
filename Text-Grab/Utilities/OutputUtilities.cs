@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using Text_Grab.Services;
 
 namespace Text_Grab.Utilities;
 
@@ -24,7 +25,9 @@ public class OutputUtilities
         if (!AppUtilities.TextGrabSettings.NeverAutoUseClipboard)
             try { Clipboard.SetDataObject(grabbedText, true); } catch { }
 
-        if (AppUtilities.TextGrabSettings.ShowToast)
+        if (AppUtilities.TextGrabSettings.SpeakInsteadOfToast)
+            Singleton<TtsService>.Instance.Speak(grabbedText);
+        else if (AppUtilities.TextGrabSettings.ShowToast)
             NotificationUtilities.ShowToast(grabbedText);
 
         WindowUtilities.ShouldShutDown();

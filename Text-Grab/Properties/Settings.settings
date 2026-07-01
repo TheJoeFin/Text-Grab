@@ -8,6 +8,9 @@
     <Setting Name="ShowToast" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="SpeakInsteadOfToast" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
     <Setting Name="DefaultLaunch" Type="System.String" Scope="User">
       <Value Profile="(Default)">Fullscreen</Value>
     </Setting>
@@ -57,7 +60,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="FSGMakeSingleLineToggle" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="GlobalHotkeysEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -245,6 +248,10 @@
     <Setting Name="RegisterOpenWith" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="TtsSpeakWordLimit" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
+    <Setting Name="TtsVoiceName" Type="System.String" Scope="User">
     <Setting Name="ParagraphDetection" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>

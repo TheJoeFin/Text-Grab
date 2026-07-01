@@ -110,6 +110,7 @@ public partial class GrabFrame : Window
     private bool isLoadedVisualDocument = false;
     private double frozenFrameContentScale = 1;
     private const string TargetLanguageMenuHeader = "Target Language";
+    private string _lastSpokenFrameText = string.Empty;
     private WindowResizer? windowResizer;
     private bool _isCleanedUp;
 
@@ -1339,12 +1340,16 @@ public partial class GrabFrame : Window
 
         CheckBottomRowButtonsVis();
 
+        Singleton<TtsService>.Instance.Drained += OnTtsDrained;
+
         if (historyItem is not null)
             await LoadContentFromHistory(historyItem);
     }
 
     public void GrabFrame_Unloaded(object sender, RoutedEventArgs e)
     {
+        Singleton<TtsService>.Instance.Drained -= OnTtsDrained;
+
         CleanupGrabFrame();
     }
 
@@ -4830,6 +4835,18 @@ public partial class GrabFrame : Window
 
         FrameText = stringBuilder.ToString();
 
+        // Speak if TTS action is enabled, checked, and text has changed
+        ButtonInfo? speakAction = PostGrabActionManager.GetEnabledPostGrabActions()
+            .FirstOrDefault(a => a.ClickEvent == "SpeakText_Click");
+        if (speakAction is not null
+            && PostGrabActionManager.GetCheckState(speakAction)
+            && FrameText != _lastSpokenFrameText
+            && !string.IsNullOrWhiteSpace(FrameText))
+        {
+            _lastSpokenFrameText = FrameText;
+            SpeakAndShowStopButton(FrameText);
+        }
+
         if (destinationTextBox is not null
             && ShouldUpdateLinkedDestinationText(
                 IsFromEditWindow,
@@ -5148,7 +5165,9 @@ public partial class GrabFrame : Window
         if (!DefaultSettings.NeverAutoUseClipboard)
             try { Clipboard.SetDataObject(outputText, true); } catch { }
 
-        if (DefaultSettings.ShowToast)
+        if (DefaultSettings.SpeakInsteadOfToast)
+            SpeakAndShowStopButton(outputText);
+        else if (DefaultSettings.ShowToast)
             NotificationUtilities.ShowToast(outputText);
 
         if (CloseOnGrabMenuItem.IsChecked)
@@ -5179,11 +5198,30 @@ public partial class GrabFrame : Window
         if (!DefaultSettings.NeverAutoUseClipboard)
             try { Clipboard.SetDataObject(trimmedSingleLineFrameText, true); } catch { }
 
-        if (DefaultSettings.ShowToast)
+        if (DefaultSettings.SpeakInsteadOfToast)
+            SpeakAndShowStopButton(trimmedSingleLineFrameText);
+        else if (DefaultSettings.ShowToast)
             NotificationUtilities.ShowToast(trimmedSingleLineFrameText);
 
         if (CloseOnGrabMenuItem.IsChecked)
             Close();
+    }
+
+    private void SpeakAndShowStopButton(string text)
+    {
+        Singleton<TtsService>.Instance.Speak(text);
+        StopSpeakingBTN.Visibility = Visibility.Visible;
+    }
+
+    private void OnTtsDrained()
+    {
+        Dispatcher.Invoke(() => StopSpeakingBTN.Visibility = Visibility.Collapsed);
+    }
+
+    private void StopSpeakingBTN_Click(object sender, RoutedEventArgs e)
+    {
+        Singleton<TtsService>.Instance.Stop();
+        StopSpeakingBTN.Visibility = Visibility.Collapsed;
     }
 
     private void ScrollBehaviorMenuItem_Click(object sender, RoutedEventArgs e)

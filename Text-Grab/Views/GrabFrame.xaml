@@ -860,6 +860,7 @@
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="110" />
+                        <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
 
                     <controls:SearchBar
@@ -1084,6 +1085,19 @@
                         ButtonText="Grab"
                         Command="{x:Static local:GrabFrame.GrabCommand}"
                         ToolTip="Grab text in the Grab Frame" />
+
+                    <Button
+                        x:Name="StopSpeakingBTN"
+                        Grid.Column="6"
+                        Width="30"
+                        Height="30"
+                        Margin="6,0,0,0"
+                        Click="StopSpeakingBTN_Click"
+                        Style="{StaticResource SymbolButton}"
+                        ToolTip="Stop speaking"
+                        Visibility="Collapsed">
+                        <ui:SymbolIcon Symbol="SpeakerOff24" />
+                    </Button>
                 </Grid>
             </Border>
         </Grid>

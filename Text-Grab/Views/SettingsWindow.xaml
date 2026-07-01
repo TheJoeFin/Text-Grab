@@ -155,6 +155,19 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
+                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:VoiceOutputSettings}">
+                    <ui:NavigationViewItem.Content>
+                        <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
+                            <Run>Voice</Run>
+                            <LineBreak />
+                            <Run>Output</Run>
+                        </TextBlock>
+                    </ui:NavigationViewItem.Content>
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Speaker224" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>
