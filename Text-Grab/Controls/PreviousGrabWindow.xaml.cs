@@ -91,6 +91,11 @@ public partial class PreviousGrabWindow : Window
     public event EventHandler<GrabChoice>? ChoiceSelected;
 
     /// <summary>
+    /// Raised when the user flips the "send to Edit Text Window" toggle in the choice bar.
+    /// </summary>
+    public event EventHandler<bool>? SendToEditTextToggled;
+
+    /// <summary>
     /// Swaps the loading spinner for the success checkmark, then closes shortly after.
     /// </summary>
     public void ShowSuccess()
@@ -115,12 +120,15 @@ public partial class PreviousGrabWindow : Window
     }
 
     /// <summary>
-    /// Shows Cancel / Re-grab while the grab is still running, keeping the spinner visible.
+    /// Shows Cancel / Re-grab and the send-to-Edit-Window toggle while the grab is still
+    /// running, keeping the spinner visible, so the user can adjust where the result goes.
     /// </summary>
-    public void ShowRunningChoices()
+    public void ShowRunningChoices(bool sendToEditTextChecked)
     {
         LoadingViewbox.Visibility = Visibility.Visible;
         SendToGrabFrameButton.Visibility = Visibility.Collapsed;
+        SendToEtwToggleButton.IsChecked = sendToEditTextChecked;
+        SendToEtwToggleButton.Visibility = Visibility.Visible;
         ShowChoiceBar();
     }
 
@@ -131,6 +139,9 @@ public partial class PreviousGrabWindow : Window
     {
         LoadingViewbox.Visibility = Visibility.Collapsed;
         SendToGrabFrameButton.Visibility = Visibility.Visible;
+
+        // No text was produced, so there is nothing to send to an Edit Text Window.
+        SendToEtwToggleButton.Visibility = Visibility.Collapsed;
         ShowChoiceBar();
     }
 
@@ -166,6 +177,9 @@ public partial class PreviousGrabWindow : Window
     private void ReGrabButton_Click(object sender, RoutedEventArgs e) => RaiseChoice(GrabChoice.ReGrab);
 
     private void SendToGrabFrameButton_Click(object sender, RoutedEventArgs e) => RaiseChoice(GrabChoice.SendToGrabFrame);
+
+    private void SendToEtwToggleButton_Click(object sender, RoutedEventArgs e)
+        => SendToEditTextToggled?.Invoke(this, SendToEtwToggleButton.IsChecked is true);
 
     private void RaiseChoice(GrabChoice choice)
     {

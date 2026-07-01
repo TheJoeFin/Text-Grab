@@ -1106,17 +1106,22 @@ public partial class FullscreenGrab
         // TrySetResult is a no-op when the window closes after a real choice was made.
         grabIndicator.Closed += (_, _) => choiceSource.TrySetResult(GrabChoice.Cancel);
 
+        // Route the overlay's Edit Window toggle through the same path as the toolbar
+        // toggle so all grab windows stay in sync and the preference is persisted.
+        grabIndicator.SendToEditTextToggled += (_, isChecked) => WindowUtilities.FullscreenKeyDown(Key.E, isChecked);
+
         grabIndicator.Show();
         SetFullscreenGrabsVisible(false);
 
         using CancellationTokenSource cts = new();
         Task<string> descriptionTask = WindowsAiUtilities.GetTextDescriptionWithWinAI(originalBitmap, cts.Token);
 
-        // If it's still working after two seconds, surface Cancel / Re-grab.
+        // If it's still working after two seconds, surface Cancel / Re-grab and the
+        // Edit Window toggle so the user can adjust where the result goes.
         Task firstFinished = await Task.WhenAny(descriptionTask, Task.Delay(TimeSpan.FromSeconds(2)));
         bool wasSlow = firstFinished != descriptionTask;
         if (wasSlow)
-            grabIndicator.ShowRunningChoices();
+            grabIndicator.ShowRunningChoices(SendToEditTextToggleButton.IsChecked is true);
 
         // Race the description against a user choice made while it is still running.
         Task settled = await Task.WhenAny(descriptionTask, choiceSource.Task);

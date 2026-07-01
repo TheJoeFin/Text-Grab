@@ -122,6 +122,17 @@
                                 Text="Send to Grab Frame" />
                         </StackPanel>
                     </Button>
+                    <ToggleButton
+                        x:Name="SendToEtwToggleButton"
+                        Width="34"
+                        Height="34"
+                        Margin="4,0"
+                        Click="SendToEtwToggleButton_Click"
+                        Style="{StaticResource ToggleSymbolButton}"
+                        ToolTip="Send to an Edit Text Window"
+                        Visibility="Collapsed">
+                        <ui:SymbolIcon Symbol="Window24" />
+                    </ToggleButton>
                 </StackPanel>
             </Viewbox>
         </Border>
