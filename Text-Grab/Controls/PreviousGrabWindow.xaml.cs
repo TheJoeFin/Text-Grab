@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
 namespace Text_Grab.Controls;
@@ -44,6 +45,8 @@ public enum GrabChoice
 public partial class PreviousGrabWindow : Window
 {
     private static readonly TimeSpan flashDuration = TimeSpan.FromMilliseconds(300);
+    private static readonly Duration choiceBarSlideDuration = new(TimeSpan.FromMilliseconds(250));
+    private const double choiceBarSlideDistance = 48;
 
     public PreviousGrabWindow(Rect rect, PreviousGrabIndicator indicator = PreviousGrabIndicator.None, ImageSource? regionBackground = null)
     {
@@ -120,7 +123,19 @@ public partial class PreviousGrabWindow : Window
     private void ShowChoiceBar()
     {
         ChoiceBar.IsEnabled = true;
-        ChoiceBar.Visibility = Visibility.Visible;
+
+        // Animate only on the first reveal, not when the choices change while already visible.
+        if (ChoiceBar.Visibility != Visibility.Visible)
+        {
+            ChoiceBar.Visibility = Visibility.Visible;
+
+            CubicEase easeOut = new() { EasingMode = EasingMode.EaseOut };
+            DoubleAnimation slideUp = new(choiceBarSlideDistance, 0, choiceBarSlideDuration) { EasingFunction = easeOut };
+            DoubleAnimation fadeIn = new(0, 1, choiceBarSlideDuration) { EasingFunction = easeOut };
+            ChoiceBarSlide.BeginAnimation(TranslateTransform.YProperty, slideUp);
+            ChoiceBar.BeginAnimation(OpacityProperty, fadeIn);
+        }
+
         // The overlay is created non-interactive; enable hit testing so the buttons respond.
         IsHitTestVisible = true;
         Activate();
