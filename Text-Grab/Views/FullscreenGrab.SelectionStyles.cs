@@ -1041,8 +1041,16 @@ public partial class FullscreenGrab
         // the frozen background so OCR no longer needs the fullscreen windows on screen; that
         // lets us hide them (so the spinner doesn't hold the whole screen hostage) and offer
         // cancel / re-grab / send-to-grab-frame choices while the description runs.
-        if (selectedLanguage is WindowsAiDescriptionLang && !isSmallClick)
+        if (selectedLanguage is WindowsAiDescriptionLang)
         {
+            // A single click grabs the word under the cursor for OCR languages, but with
+            // AI Description it would describe the entire screen — ignore the click instead.
+            if (isSmallClick)
+            {
+                ResetForNewSelection(selection);
+                return;
+            }
+
             if (selection.CapturedImage is null && GetBitmapSourceForGrabFrame(selection) is BitmapSource preCaptured)
                 selection = selection with { CapturedImage = preCaptured };
 
@@ -1092,6 +1100,11 @@ public partial class FullscreenGrab
         PreviousGrabWindow grabIndicator = new(GetHistoryPositionRect(selection), PreviousGrabIndicator.Loading, snapshot);
         TaskCompletionSource<GrabChoice> choiceSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
         grabIndicator.ChoiceSelected += (_, choice) => choiceSource.TrySetResult(choice);
+
+        // If the overlay closes without a pick (e.g. Alt+F4), count it as Cancel so the
+        // awaits below can't be orphaned while every fullscreen grab window is hidden.
+        // TrySetResult is a no-op when the window closes after a real choice was made.
+        grabIndicator.Closed += (_, _) => choiceSource.TrySetResult(GrabChoice.Cancel);
 
         grabIndicator.Show();
         SetFullscreenGrabsVisible(false);
@@ -1292,7 +1305,7 @@ public partial class FullscreenGrab
                 CaptureDateTime = DateTimeOffset.Now,
                 PositionRect = GetHistoryPositionRect(selection),
                 IsTable = TableToggleButton.IsChecked!.Value,
-                TextContent = TextFromOCR,
+                TextContent = TextFromOCR ?? string.Empty,
                 ImageContent = historyBitmap,
                 SourceMode = TextGrabMode.Fullscreen,
                 SelectionStyle = selection.SelectionStyle,

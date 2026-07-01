@@ -88,7 +88,7 @@ public static class WindowsAiUtilities
                 {
                     // Check for common English words as additional heuristic
                     string lowerText = text.ToLowerInvariant();
-                    string[] commonEnglishWords = { " the ", " and ", " or ", " is ", " are ", " was ", " were ", " in ", " on ", " at ", " to ", " of ", " for ", " with " };
+                    string[] commonEnglishWords = [" the ", " and ", " or ", " is ", " are ", " was ", " were ", " in ", " on ", " at ", " to ", " of ", " for ", " with "];
                     int englishWordCount = commonEnglishWords.Count(w => lowerText.Contains(w));
                     // If text contains multiple common English words, likely already English
                     if (englishWordCount >= 2)
@@ -225,8 +225,10 @@ public static class WindowsAiUtilities
 
     public static async Task<string> GetTextDescriptionWithWinAI(SoftwareBitmap bitmap, CancellationToken cancellationToken = default)
     {
+        // Return empty rather than an error message so callers treat this as a
+        // failed grab instead of committing the message as recognized text.
         if (!CanDeviceDescribeImagesWithWinAI())
-            return "ERROR: Cannot use Windows AI on this device.";
+            return string.Empty;
 
         AIFeatureReadyState readyState = ImageDescriptionGenerator.GetReadyState();
         if (readyState == AIFeatureReadyState.NotReady)
