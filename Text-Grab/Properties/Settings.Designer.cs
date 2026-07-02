@@ -910,7 +910,19 @@ namespace Text_Grab.Properties {
                 this["GrabFrameTranslationEnabled"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GrabFrameSpeakEnabled {
+            get {
+                return ((bool)(this["GrabFrameSpeakEnabled"]));
+            }
+            set {
+                this["GrabFrameSpeakEnabled"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("English")]
