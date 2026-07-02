@@ -29,14 +29,15 @@ public class WindowsSpeechEngine : ITtsEngine
         if (speakingRate >= 0.5 && speakingRate <= 6.0)
             synthesizer.Options.SpeakingRate = speakingRate;
 
-        SpeechSynthesisStream stream = await synthesizer.SynthesizeTextToStreamAsync(text).AsTask();
+        using SpeechSynthesisStream stream = await synthesizer.SynthesizeTextToStreamAsync(text).AsTask();
 
         ct.ThrowIfCancellationRequested();
 
         TaskCompletionSource<bool> tcs = new();
 
         using MediaPlayer player = new();
-        player.Source = MediaSource.CreateFromStream(stream, stream.ContentType);
+        using MediaSource mediaSource = MediaSource.CreateFromStream(stream, stream.ContentType);
+        player.Source = mediaSource;
 
         player.MediaEnded += (s, e) => tcs.TrySetResult(true);
         player.MediaFailed += (s, e) => tcs.TrySetException(new System.Exception(e.ErrorMessage));
