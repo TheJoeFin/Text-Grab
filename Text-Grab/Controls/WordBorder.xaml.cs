@@ -597,10 +597,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
         try { Clipboard.SetDataObject(Word, true); } catch { }
 
-        if (AppUtilities.TextGrabSettings.SpeakInsteadOfToast
-            && !IsFromEditWindow)
-            Singleton<TtsService>.Instance.Speak(Word);
-        else if (AppUtilities.TextGrabSettings.ShowToast
+        if (AppUtilities.TextGrabSettings.ShowToast
             && !IsFromEditWindow)
             NotificationUtilities.ShowToast(Word);
 
