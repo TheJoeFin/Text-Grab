@@ -393,18 +393,12 @@ public static partial class WindowUtilities
 
         if (shouldShutDown)
         {
-            TtsService tts = Singleton<TtsService>.Instance;
-            if (tts.IsBusy)
-            {
-                void onDrained()
-                {
-                    tts.Drained -= onDrained;
-                    Application.Current.Dispatcher.Invoke(Application.Current.Shutdown);
-                }
-                tts.Drained += onDrained;
-            }
-            else
-                Application.Current.Shutdown();
+            // Let any queued/in-flight speech finish before exiting. RunWhenIdle
+            // runs the callback immediately when idle, or once the queue drains;
+            // registration is atomic with the idle check so shutdown can't be
+            // missed if speech finishes right as we ask.
+            Singleton<TtsService>.Instance.RunWhenIdle(
+                () => Application.Current.Dispatcher.Invoke(Application.Current.Shutdown));
         }
     }
 

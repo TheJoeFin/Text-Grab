@@ -111,6 +111,8 @@ public partial class GrabFrame : Window
     private double frozenFrameContentScale = 1;
     private const string TargetLanguageMenuHeader = "Target Language";
     private string _lastSpokenFrameText = string.Empty;
+    private bool _speakOnNextFrameTextUpdate = false;
+    private bool isSpeakEnabled = false;
     private WindowResizer? windowResizer;
     private bool _isCleanedUp;
 
@@ -1382,6 +1384,8 @@ public partial class GrabFrame : Window
         contentChangeTimer.Tick -= ContentChangeTimer_Tick;
         contentChangeDetector.Dispose();
 
+        Singleton<TtsService>.Instance.BusyChanged -= OnTtsBusyChanged;
+
         translationTimer.Stop();
         translationTimer.Tick -= TranslationTimer_Tick;
         translationSemaphore.Dispose();
@@ -2253,6 +2257,12 @@ public partial class GrabFrame : Window
         // drawn word borders become part of the baseline instead of being
         // judged as screen-content changes that re-trigger a refresh.
         contentChangeDetector.Reset();
+
+        // Only a fresh grab (or re-OCR) should trigger auto-speak. Selection,
+        // edits, moves and other overlay mutations also rebuild FrameText, so
+        // arm the speak-on-next-update flag here rather than speaking on every
+        // UpdateFrameText call.
+        _speakOnNextFrameTextUpdate = true;
     }
 
     private async Task DrawOcrRectanglesAsync(string searchWord = "")
@@ -2897,6 +2907,7 @@ public partial class GrabFrame : Window
 
         SetWordGroupingMenuItems();
         GetGrabFrameTranslationSettings();
+        GetGrabFrameSpeakSettings();
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
         SetScrollBehaviorMenuItems();
     }
@@ -4831,16 +4842,19 @@ public partial class GrabFrame : Window
 
         FrameText = stringBuilder.ToString();
 
-        // Speak if TTS action is enabled, checked, and text has changed
-        ButtonInfo? speakAction = PostGrabActionManager.GetEnabledPostGrabActions()
-            .FirstOrDefault(a => a.ClickEvent == "SpeakText_Click");
-        if (speakAction is not null
-            && PostGrabActionManager.GetCheckState(speakAction)
-            && FrameText != _lastSpokenFrameText
-            && !string.IsNullOrWhiteSpace(FrameText))
+        // Speak only when this update follows a fresh grab/re-OCR, speaking is
+        // enabled via the toolbar toggle, and the text actually changed.
+        if (_speakOnNextFrameTextUpdate)
         {
-            _lastSpokenFrameText = FrameText;
-            Singleton<TtsService>.Instance.Speak(FrameText);
+            _speakOnNextFrameTextUpdate = false;
+
+            if (isSpeakEnabled
+                && FrameText != _lastSpokenFrameText
+                && !string.IsNullOrWhiteSpace(FrameText))
+            {
+                _lastSpokenFrameText = FrameText;
+                Singleton<TtsService>.Instance.Speak(FrameText);
+            }
         }
 
         if (destinationTextBox is not null
@@ -5832,6 +5846,46 @@ public partial class GrabFrame : Window
         }
 
         UpdateFrameText();
+    }
+
+    private void GetGrabFrameSpeakSettings()
+    {
+        isSpeakEnabled = DefaultSettings.GrabFrameSpeakEnabled;
+        SpeakToggleButton.IsChecked = isSpeakEnabled;
+
+        TtsService tts = Singleton<TtsService>.Instance;
+        tts.BusyChanged += OnTtsBusyChanged;
+        SetSpeakingProgressVisible(tts.IsBusy);
+    }
+
+    private void SpeakToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (SpeakToggleButton.IsChecked is not bool isChecked)
+            return;
+
+        isSpeakEnabled = isChecked;
+        DefaultSettings.GrabFrameSpeakEnabled = isChecked;
+        DefaultSettings.Save();
+
+        // Turning speaking off should silence anything already queued/playing.
+        if (!isChecked)
+            Singleton<TtsService>.Instance.Stop();
+    }
+
+    private void StopSpeakingButton_Click(object sender, RoutedEventArgs e)
+    {
+        Singleton<TtsService>.Instance.Stop();
+    }
+
+    private void OnTtsBusyChanged(bool isBusy)
+    {
+        // BusyChanged can fire on a background thread; marshal to the UI thread.
+        Dispatcher.BeginInvoke(() => SetSpeakingProgressVisible(isBusy));
+    }
+
+    private void SetSpeakingProgressVisible(bool visible)
+    {
+        SpeakingProgressBorder.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     [GeneratedRegex(@"\{p:([^:}]+):([^:}]+)(?::([^}]*))?\}")]

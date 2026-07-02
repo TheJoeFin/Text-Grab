@@ -765,6 +765,69 @@
                         </Grid>
                     </Border>
                     <Border
+                        x:Name="SpeakingProgressBorder"
+                        Height="40"
+                        Margin="8"
+                        VerticalAlignment="Bottom"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                        BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Visibility="Collapsed">
+                        <Border.Effect>
+                            <DropShadowEffect
+                                BlurRadius="8"
+                                Direction="270"
+                                Opacity="0.3"
+                                ShadowDepth="2"
+                                Color="Black" />
+                        </Border.Effect>
+                        <Grid Margin="8,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon
+                                Grid.Column="0"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                Foreground="{ui:ThemeResource AccentTextFillColorPrimaryBrush}"
+                                Symbol="Speaker224" />
+                            <StackPanel
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical">
+                                <TextBlock
+                                    Margin="0,0,0,2"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+                                    Text="Speaking..." />
+                                <ProgressBar
+                                    Height="6"
+                                    IsIndeterminate="True" />
+                            </StackPanel>
+                            <Button
+                                x:Name="StopSpeakingButton"
+                                Grid.Column="2"
+                                Width="28"
+                                Height="28"
+                                Padding="0"
+                                Margin="12,0,0,0"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Click="StopSpeakingButton_Click"
+                                ToolTip="Stop speaking">
+                                <ui:SymbolIcon
+                                    FontSize="16"
+                                    Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                    Symbol="Stop24" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <Border
                         x:Name="FrameMessageBorder"
                         MaxWidth="420"
                         Margin="16,16,16,20"
@@ -1021,6 +1084,17 @@
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="Enable real-time translation">
                             <ui:SymbolIcon Symbol="LocalLanguage24" />
+                        </ToggleButton>
+
+                        <ToggleButton
+                            x:Name="SpeakToggleButton"
+                            Width="30"
+                            Height="30"
+                            Margin="6,0,0,0"
+                            Click="SpeakToggleButton_Click"
+                            Style="{StaticResource ToggleSymbolButton}"
+                            ToolTip="Speak grabbed text aloud">
+                            <ui:SymbolIcon Symbol="Speaker224" />
                         </ToggleButton>
 
                         <ToggleButton
