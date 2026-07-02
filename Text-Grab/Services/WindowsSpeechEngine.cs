@@ -25,6 +25,10 @@ public class WindowsSpeechEngine : ITtsEngine
                 synthesizer.Voice = voice;
         }
 
+        double speakingRate = Settings.Default.TtsSpeakingRate;
+        if (speakingRate >= 0.5 && speakingRate <= 6.0)
+            synthesizer.Options.SpeakingRate = speakingRate;
+
         SpeechSynthesisStream stream = await synthesizer.SynthesizeTextToStreamAsync(text).AsTask();
 
         ct.ThrowIfCancellationRequested();

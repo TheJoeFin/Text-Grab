@@ -12,89 +12,97 @@
     mc:Ignorable="d">
 
     <ScrollViewer VerticalScrollBarVisibility="Visible">
-    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
-        <TextBlock Style="{StaticResource TextHeader}" Text="Voice Output Settings" />
+        <StackPanel Margin="20,12,40,40" Orientation="Vertical">
+            <TextBlock Style="{StaticResource TextHeader}" Text="Voice Output Settings" />
 
-        <!--  Speak instead of notification  -->
-        <TextBlock
-            Margin="0,16,0,4"
-            FontSize="16"
-            Style="{StaticResource TextHeader}"
-            Text="Notification Behaviour" />
-        <ui:ToggleSwitch
-            x:Name="SpeakInsteadOfToastToggle"
-            Checked="SpeakInsteadOfToastToggle_Checked"
-            Unchecked="SpeakInsteadOfToastToggle_Checked">
-            <TextBlock Style="{StaticResource TextBodyNormal}">
-                Speak text instead of showing notification
+            <!--  Voice selection  -->
+            <TextBlock
+                Margin="0,16,0,4"
+                FontSize="16"
+                Style="{StaticResource TextHeader}"
+                Text="Voice" />
+            <TextBlock Margin="0,0,0,6" Style="{StaticResource TextBodyNormal}">
+                Choose from the voices installed on this device.
             </TextBlock>
-        </ui:ToggleSwitch>
-        <TextBlock Margin="0,4,0,0" Style="{StaticResource TextBodyNormal}">
-            Speaks the grabbed text aloud rather than showing a notification.
-        </TextBlock>
+            <ComboBox
+                x:Name="VoiceComboBox"
+                Width="320"
+                HorizontalAlignment="Left"
+                SelectionChanged="VoiceComboBox_SelectionChanged" />
 
-        <!--  Voice selection  -->
-        <TextBlock
-            Margin="0,16,0,4"
-            FontSize="16"
-            Style="{StaticResource TextHeader}"
-            Text="Voice" />
-        <TextBlock Margin="0,0,0,6" Style="{StaticResource TextBodyNormal}">
-            Choose from the voices installed on this device.
-        </TextBlock>
-        <ComboBox
-            x:Name="VoiceComboBox"
-            Width="320"
-            HorizontalAlignment="Left"
-            SelectionChanged="VoiceComboBox_SelectionChanged" />
+            <!--  Speaking rate  -->
+            <TextBlock
+                Margin="0,16,0,4"
+                FontSize="16"
+                Style="{StaticResource TextHeader}"
+                Text="Speaking Rate" />
+            <TextBlock Margin="0,0,0,6" Style="{StaticResource TextBodyNormal}">
+                How quickly the text is spoken. 1.0 is the default speed.
+            </TextBlock>
+            <StackPanel Orientation="Horizontal">
+                <Slider
+                    x:Name="SpeakingRateSlider"
+                    Width="320"
+                    VerticalAlignment="Center"
+                    IsSnapToTickEnabled="True"
+                    Maximum="4.0"
+                    Minimum="0.5"
+                    TickFrequency="0.1"
+                    ValueChanged="SpeakingRateSlider_ValueChanged" />
+                <TextBlock
+                    x:Name="SpeakingRateValue"
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBodyNormal}" />
+            </StackPanel>
 
-        <!--  Word limit  -->
-        <TextBlock
-            Margin="0,16,0,4"
-            FontSize="16"
-            Style="{StaticResource TextHeader}"
-            Text="Word Limit" />
-        <TextBlock Margin="0,0,0,6" Style="{StaticResource TextBodyNormal}">
-            Stop speaking after this many words. Set to 0 for no limit.
-        </TextBlock>
-        <StackPanel Orientation="Horizontal">
+            <!--  Word limit  -->
             <TextBlock
-                VerticalAlignment="Center"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Speak word limit:" />
-            <TextBox
-                x:Name="TtsSpeakWordLimitTextBox"
-                Width="60"
-                Height="26"
-                Margin="8,0,0,0"
-                HorizontalContentAlignment="Center"
-                VerticalContentAlignment="Center"
-                Background="White"
-                FontWeight="Medium"
-                Foreground="Black"
-                Style="{StaticResource TextBoxStyle1}"
-                TextChanged="TtsSpeakWordLimitTextBox_TextChanged" />
+                Margin="0,16,0,4"
+                FontSize="16"
+                Style="{StaticResource TextHeader}"
+                Text="Word Limit" />
+            <TextBlock Margin="0,0,0,6" Style="{StaticResource TextBodyNormal}">
+                Stop speaking after this many words. Set to 0 for no limit.
+            </TextBlock>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="Speak word limit:" />
+                <TextBox
+                    x:Name="TtsSpeakWordLimitTextBox"
+                    Width="60"
+                    Height="26"
+                    Margin="8,0,0,0"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Background="White"
+                    FontWeight="Medium"
+                    Foreground="Black"
+                    Style="{StaticResource TextBoxStyle1}"
+                    TextChanged="TtsSpeakWordLimitTextBox_TextChanged" />
+                <TextBlock
+                    x:Name="TtsWordLimitError"
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="⚠ Must be a positive number"
+                    Visibility="Collapsed" />
+            </StackPanel>
+
+            <!--  Preview  -->
             <TextBlock
-                x:Name="TtsWordLimitError"
-                Margin="12,0,0,0"
-                VerticalAlignment="Center"
-                Style="{StaticResource TextBodyNormal}"
-                Text="⚠ Must be a positive number"
-                Visibility="Collapsed" />
+                Margin="0,16,0,4"
+                FontSize="16"
+                Style="{StaticResource TextHeader}"
+                Text="Preview" />
+            <Button
+                x:Name="PreviewVoiceButton"
+                HorizontalAlignment="Left"
+                Click="PreviewVoiceButton_Click"
+                Content="Speak sample" />
+
         </StackPanel>
-
-        <!--  Preview  -->
-        <TextBlock
-            Margin="0,16,0,4"
-            FontSize="16"
-            Style="{StaticResource TextHeader}"
-            Text="Preview" />
-        <Button
-            x:Name="PreviewVoiceButton"
-            HorizontalAlignment="Left"
-            Click="PreviewVoiceButton_Click"
-            Content="Speak sample" />
-
-    </StackPanel>
     </ScrollViewer>
 </Page>

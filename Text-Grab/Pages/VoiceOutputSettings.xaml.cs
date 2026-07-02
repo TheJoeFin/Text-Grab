@@ -20,8 +20,6 @@ public partial class VoiceOutputSettings : Page
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
-        SpeakInsteadOfToastToggle.IsChecked = DefaultSettings.SpeakInsteadOfToast;
-
         VoiceComboBox.Items.Clear();
         foreach (VoiceInformation voice in SpeechSynthesizer.AllVoices.OrderBy(v => v.DisplayName))
             VoiceComboBox.Items.Add(voice.DisplayName);
@@ -32,17 +30,23 @@ public partial class VoiceOutputSettings : Page
         else
             VoiceComboBox.SelectedIndex = 0;
 
+        SpeakingRateSlider.Value = DefaultSettings.TtsSpeakingRate;
+        SpeakingRateValue.Text = DefaultSettings.TtsSpeakingRate.ToString("0.0");
+
         TtsSpeakWordLimitTextBox.Text = DefaultSettings.TtsSpeakWordLimit.ToString();
 
         _loaded = true;
     }
 
-    private void SpeakInsteadOfToastToggle_Checked(object sender, RoutedEventArgs e)
+    private void SpeakingRateSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (!_loaded)
             return;
 
-        DefaultSettings.SpeakInsteadOfToast = SpeakInsteadOfToastToggle.IsChecked is true;
+        double rate = System.Math.Round(e.NewValue, 1);
+        SpeakingRateValue.Text = rate.ToString("0.0");
+
+        DefaultSettings.TtsSpeakingRate = rate;
         DefaultSettings.Save();
     }
 
