@@ -2685,6 +2685,21 @@ public partial class GrabFrame : Window
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Freezes the frame when a user starts editing a word border. Editing a word is a strong
+    /// signal the user is correcting recognized text, so the frame should stop updating/resetting
+    /// underneath them. No-op when the frame is already frozen (including loaded images/PDFs).
+    /// This is the public entry point for that intent; the actual freeze routine
+    /// (<see cref="FreezeGrabFrame"/>) stays private to the frame.
+    /// </summary>
+    public void FreezeFrameForWordEditing()
+    {
+        if (IsFreezeMode)
+            return;
+
+        FreezeGrabFrame();
+    }
+
     private void FreezeGrabFrame()
     {
         DisposePreviousFrameContent();
@@ -2759,17 +2774,17 @@ public partial class GrabFrame : Window
             }
 
             FreezeToggleButton.IsChecked = false;
-            UnfreezeGrabFrame();
-            ResetGrabFrame();
+            // Diff the frozen snapshot against the live screen before clearing so
+            // unchanged content keeps its (possibly edited) word borders.
+            UnfreezeGrabFrameWithDiff();
+            return;
         }
-        else
-        {
-            RectanglesCanvas.ContextMenu.IsOpen = false;
-            await Task.Delay(150);
-            FreezeToggleButton.IsChecked = true;
-            ResetGrabFrame();
-            FreezeGrabFrame();
-        }
+
+        RectanglesCanvas.ContextMenu.IsOpen = false;
+        await Task.Delay(150);
+        FreezeToggleButton.IsChecked = true;
+        ResetGrabFrame();
+        FreezeGrabFrame();
 
         reDrawTimer.Stop();
         reDrawTimer.Start();
@@ -2782,7 +2797,7 @@ public partial class GrabFrame : Window
         else if (IsPdfDocumentLoaded)
             FreezeToggleButton.IsChecked = true;
         else
-            UnfreezeGrabFrame();
+            UnfreezeGrabFrameWithDiff();
     }
 
     private static SolidColorBrush GetBackgroundBrushFromOcrBitmap(double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
@@ -4802,6 +4817,93 @@ public partial class GrabFrame : Window
             MainZoomBorder.CanZoom = false;
 
         reDrawTimer.Start();
+    }
+
+    /// <summary>
+    /// Unfreezes a live screen freeze after diffing the frozen snapshot against the
+    /// current screen. If the content changed the frame clears and re-OCRs as usual;
+    /// if it is unchanged the existing word borders (including any manual edits) are
+    /// kept instead of being cleared instantly. Loaded images/PDFs and any state
+    /// without a frozen screen snapshot fall back to the immediate unfreeze.
+    /// </summary>
+    private void UnfreezeGrabFrameWithDiff()
+    {
+        if (IsPdfDocumentLoaded || hasLoadedImageSource || isStaticImageSource
+            || frameContentImageSource is not BitmapSource frozenSource)
+        {
+            UnfreezeGrabFrame();
+            return;
+        }
+
+        System.Drawing.Bitmap frozenBitmap = ImageMethods.BitmapSourceToBitmap(frozenSource);
+
+        // Turn the frame transparent so the live content behind it becomes visible
+        // and can be captured. The word borders and frozen image stay in place until
+        // the diff decides whether they are stale.
+        reDrawTimer.Stop();
+        Topmost = true;
+        GrabFrameImage.Opacity = 0;
+        RectanglesBorder.Background.Opacity = overlayOpacity;
+        FreezeToggleButton.IsChecked = false;
+        SetToolButtonVisibility(FreezeToggleButton, "Freeze", true);
+        Background = new SolidColorBrush(Colors.Transparent);
+        IsFreezeMode = false;
+        UpdateZoomPanMode();
+
+        if (scrollBehavior == ScrollBehavior.ZoomWhenFrozen)
+            MainZoomBorder.CanZoom = false;
+
+        _ = FinishUnfreezeWithDiffAsync(frozenBitmap);
+    }
+
+    private async Task FinishUnfreezeWithDiffAsync(System.Drawing.Bitmap frozenBitmap)
+    {
+        bool contentChanged = true;
+
+        try
+        {
+            // Let the now-transparent frame present before reading the screen,
+            // otherwise the capture would still contain the frozen image we hid.
+            await Task.Delay(120);
+
+            System.Drawing.Rectangle contentRect = GetContentAreaScreenRect();
+            if (contentRect.Width > 1 && contentRect.Height > 1)
+            {
+                using System.Drawing.Bitmap liveCapture =
+                    ImageMethods.GetRegionOfScreenAsBitmap(contentRect, cacheResult: false);
+                contentChanged = ImageChangeDetector.ImagesDifferBeyondThreshold(frozenBitmap, liveCapture);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unfreeze diff failed: {ex.Message}");
+            contentChanged = true;
+        }
+        finally
+        {
+            frozenBitmap.Dispose();
+        }
+
+        if (contentChanged)
+        {
+            // Screen moved on: drop the stale borders and re-OCR the live content.
+            frozenUiAutomationSnapshot = null;
+            liveUiAutomationSnapshot = null;
+            DisposePreviousFrameContent();
+            frameContentImageSource = null;
+            historyItem = null;
+            ResetGrabFrame();
+            reDrawTimer.Stop();
+            reDrawTimer.Start();
+        }
+        else
+        {
+            // Live content still matches the frozen snapshot, so the existing word
+            // borders (including manual corrections) remain valid. Keep them and let
+            // the content-change watcher re-OCR only once the screen actually changes.
+            contentChangeDetector.Reset();
+            ShowFrameMessage("Frame unchanged — keeping recognized words.");
+        }
     }
 
     private async void PreviousPdfPageButton_Click(object sender, RoutedEventArgs e)

@@ -61,6 +61,34 @@ public sealed partial class ImageChangeDetector : IDisposable
     }
 
     /// <summary>
+    /// One-shot comparison of two captures, independent of any running baseline.
+    /// Returns true when they differ by more than <paramref name="threshold"/>
+    /// NormalizedMeanError. Differences at or below the threshold (a blinking
+    /// caret, antialiasing) are treated as unchanged. Returns true (differ) if a
+    /// comparison image cannot be built, so callers default to the safe path.
+    /// Used on unfreeze to decide whether the frozen snapshot still matches the
+    /// live screen.
+    /// </summary>
+    public static bool ImagesDifferBeyondThreshold(Bitmap first, Bitmap second, double threshold = ChangeThreshold)
+    {
+        using Bitmap firstThumbnail = CreateThumbnail(first);
+        using Bitmap secondThumbnail = CreateThumbnail(second);
+
+        MagickImageFactory factory = new();
+        if (factory.Create(firstThumbnail) is not MagickImage firstImage)
+            return true;
+
+        using (firstImage)
+        {
+            if (factory.Create(secondThumbnail) is not MagickImage secondImage)
+                return true;
+
+            using (secondImage)
+                return firstImage.Compare(secondImage).NormalizedMeanError > threshold;
+        }
+    }
+
+    /// <summary>
     /// Drops the baseline so the next capture starts a fresh comparison.
     /// </summary>
     public void Reset()

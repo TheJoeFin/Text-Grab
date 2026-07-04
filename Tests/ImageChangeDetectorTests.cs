@@ -70,4 +70,22 @@ public class ImageChangeDetectorTests
 
         Assert.False(detector.CheckForChangeAndUpdate(image2));
     }
+
+    [Fact]
+    public void ImagesDifferBeyondThreshold_IdenticalImages_ReportsNoDifference()
+    {
+        using Bitmap image1 = new(FileUtilities.GetPathToLocalFile(fontTestPath));
+        using Bitmap image2 = new(FileUtilities.GetPathToLocalFile(fontTestPath));
+
+        Assert.False(ImageChangeDetector.ImagesDifferBeyondThreshold(image1, image2));
+    }
+
+    [Fact]
+    public void ImagesDifferBeyondThreshold_DifferentImages_ReportsDifference()
+    {
+        using Bitmap image1 = new(FileUtilities.GetPathToLocalFile(fontTestPath));
+        using Bitmap image2 = new(FileUtilities.GetPathToLocalFile(fontSamplePath));
+
+        Assert.True(ImageChangeDetector.ImagesDifferBeyondThreshold(image1, image2));
+    }
 }

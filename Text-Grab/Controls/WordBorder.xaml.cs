@@ -495,6 +495,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private void EditWordTextBox_GotFocus(object sender, RoutedEventArgs e)
     {
         Select();
+
+        // The user focusing a word's edit box is a strong signal they are about to correct
+        // recognized text, so freeze the frame to keep it from resetting while they edit.
+        OwnerGrabFrame?.FreezeFrameForWordEditing();
     }
 
     private void EditWordTextBox_MouseDown(object sender, MouseButtonEventArgs e)
