@@ -119,6 +119,76 @@ public class EditTextWindowSpreadsheetTests
     }
 
     [Fact]
+    public void BuildSpreadsheetSelectionMarkdown_BuildsTableFromSelectedCells()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Columns.Add("B", typeof(string));
+        dataTable.Columns.Add("C", typeof(string));
+        dataTable.Rows.Add("a1", "b1", "c1");
+        dataTable.Rows.Add("a2", "b2", "c2");
+
+        string markdown = EditTextWindow.BuildSpreadsheetSelectionMarkdown(
+            dataTable,
+            [
+                (0, 0),
+                (0, 2),
+                (1, 0),
+                (1, 2),
+                (-1, 0),
+                (5, 5)
+            ]);
+
+        string expected = string.Join(
+            Environment.NewLine,
+            "| a1 | c1 |",
+            "| --- | --- |",
+            "| a2 | c2 |");
+
+        Assert.Equal(expected, markdown);
+    }
+
+    [Fact]
+    public void BuildSpreadsheetSelectionMarkdown_EscapesPipesAndNewlines()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Columns.Add("B", typeof(string));
+        dataTable.Rows.Add("has | pipe", "line1\r\nline2");
+
+        string markdown = EditTextWindow.BuildSpreadsheetSelectionMarkdown(
+            dataTable,
+            [
+                (0, 0),
+                (0, 1)
+            ]);
+
+        string expected = string.Join(
+            Environment.NewLine,
+            "| has \\| pipe | line1<br />line2 |",
+            "| --- | --- |");
+
+        Assert.Equal(expected, markdown);
+    }
+
+    [Fact]
+    public void BuildSpreadsheetSelectionMarkdown_ReturnsEmptyWhenNoValidCells()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Rows.Add("a1");
+
+        string markdown = EditTextWindow.BuildSpreadsheetSelectionMarkdown(
+            dataTable,
+            [
+                (-1, 0),
+                (5, 5)
+            ]);
+
+        Assert.Equal(string.Empty, markdown);
+    }
+
+    [Fact]
     public void ExtractSpreadsheetSelectionNumbers_PullsNumericValuesFromSelectedCells()
     {
         DataTable dataTable = new();

@@ -96,6 +96,7 @@
             <Separator />
             <MenuItem Click="CopySpreadsheetRowsMenuItem_Click" Header="Copy Selected Rows" />
             <MenuItem Click="CopySpreadsheetColumnMenuItem_Click" Header="Copy Current Column" />
+            <MenuItem Click="CopySpreadsheetAsMarkdownMenuItem_Click" Header="Copy as Markdown Table" />
         </ContextMenu>
         <ContextMenu x:Key="SpreadsheetRowHeaderContextMenu">
             <MenuItem Click="MoveSpreadsheetRowUpMenuItem_Click" Header="Move Row Up" />

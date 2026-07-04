@@ -641,6 +641,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = TryCopySpreadsheetSelectionToClipboard(GetSelectedSpreadsheetCellCoordinates());
     }
 
+    private void CopySpreadsheetAsMarkdownMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string markdownText = BuildSpreadsheetSelectionMarkdown(
+            spreadsheetTable,
+            GetSelectedOrPopulatedSpreadsheetCellCoordinates());
+
+        if (!string.IsNullOrEmpty(markdownText))
+            TrySetClipboardText(markdownText);
+    }
+
     private void AddSpreadsheetColumnMenuItem_Click(object sender, RoutedEventArgs e)
     {
         int currentColumnIndex =
@@ -1375,6 +1385,56 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     "\t",
                     group.OrderBy(cell => cell.ColumnIndex)
                         .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty))));
+    }
+
+    internal static string BuildSpreadsheetSelectionMarkdown(
+        DataTable dataTable,
+        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
+    {
+        ArgumentNullException.ThrowIfNull(dataTable);
+        ArgumentNullException.ThrowIfNull(cellCoordinates);
+
+        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
+            .Distinct()
+            .Where(cell => cell.RowIndex >= 0
+                && cell.RowIndex < dataTable.Rows.Count
+                && cell.ColumnIndex >= 0
+                && cell.ColumnIndex < dataTable.Columns.Count)];
+
+        if (validCoordinates.Count == 0)
+            return string.Empty;
+
+        List<int> rowIndices = [.. validCoordinates.Select(cell => cell.RowIndex).Distinct().OrderBy(index => index)];
+        List<int> columnIndices = [.. validCoordinates.Select(cell => cell.ColumnIndex).Distinct().OrderBy(index => index)];
+
+        StringBuilder builder = new();
+
+        for (int rowPosition = 0; rowPosition < rowIndices.Count; rowPosition++)
+        {
+            int rowIndex = rowIndices[rowPosition];
+            IEnumerable<string> cellTexts = columnIndices.Select(columnIndex =>
+                EscapeMarkdownTableCell(dataTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty));
+
+            builder.Append($"| {string.Join(" | ", cellTexts)} |");
+            builder.Append(Environment.NewLine);
+
+            if (rowPosition == 0)
+            {
+                builder.Append($"| {string.Join(" | ", Enumerable.Repeat("---", columnIndices.Count))} |");
+                builder.Append(Environment.NewLine);
+            }
+        }
+
+        return builder.ToString().TrimEnd('\r', '\n');
+    }
+
+    private static string EscapeMarkdownTableCell(string value)
+    {
+        return value
+            .Replace("|", "\\|", StringComparison.Ordinal)
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\r", "\n", StringComparison.Ordinal)
+            .Replace("\n", "<br />", StringComparison.Ordinal);
     }
 
     internal static List<double> ExtractSpreadsheetSelectionNumbers(
