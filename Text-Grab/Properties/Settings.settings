@@ -269,5 +269,11 @@
     <Setting Name="GrabFrameHiddenBottomBarTools" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="GrabFrameBorderStyle" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Theme</Value>
+    </Setting>
+    <Setting Name="GrabFrameBorderColor" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#2A767E</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

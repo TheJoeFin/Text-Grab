@@ -7,7 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Text_Grab.Models;
-using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Text_Grab.Views;
 

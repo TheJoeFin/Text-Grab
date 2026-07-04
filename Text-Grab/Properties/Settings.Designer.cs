@@ -1090,5 +1090,29 @@ namespace Text_Grab.Properties {
                 this["GrabFrameHiddenBottomBarTools"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Theme")]
+        public string GrabFrameBorderStyle {
+            get {
+                return ((string)(this["GrabFrameBorderStyle"]));
+            }
+            set {
+                this["GrabFrameBorderStyle"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#2A767E")]
+        public string GrabFrameBorderColor {
+            get {
+                return ((string)(this["GrabFrameBorderColor"]));
+            }
+            set {
+                this["GrabFrameBorderColor"] = value;
+            }
+        }
     }
 }

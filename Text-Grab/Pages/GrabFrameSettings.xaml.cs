@@ -1,7 +1,6 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using Text_Grab;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
@@ -50,7 +49,53 @@ public partial class GrabFrameSettings : Page
                 break;
         }
 
+        GrabFrameBorderStyle borderStyle = GrabFrameBorderStyle.Theme;
+        if (!string.IsNullOrWhiteSpace(DefaultSettings.GrabFrameBorderStyle))
+            _ = Enum.TryParse(DefaultSettings.GrabFrameBorderStyle, out borderStyle);
+
+        switch (borderStyle)
+        {
+            case GrabFrameBorderStyle.HighContrast:
+                HighContrastBorderRadio.IsChecked = true;
+                break;
+            case GrabFrameBorderStyle.Color:
+                ColorBorderRadio.IsChecked = true;
+                break;
+            case GrabFrameBorderStyle.Theme:
+            default:
+                ThemeBorderRadio.IsChecked = true;
+                break;
+        }
+        BorderColorSwatchPanel.IsEnabled = borderStyle == GrabFrameBorderStyle.Color;
+
         _loaded = true;
+    }
+
+    private void BorderStyleRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+
+        GrabFrameBorderStyle borderStyle = GrabFrameBorderStyle.Theme;
+        if (HighContrastBorderRadio.IsChecked == true) borderStyle = GrabFrameBorderStyle.HighContrast;
+        else if (ColorBorderRadio.IsChecked == true) borderStyle = GrabFrameBorderStyle.Color;
+
+        DefaultSettings.GrabFrameBorderStyle = borderStyle.ToString();
+        DefaultSettings.Save();
+        BorderColorSwatchPanel.IsEnabled = borderStyle == GrabFrameBorderStyle.Color;
+    }
+
+    private void BorderColorSwatch_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        if (sender is not Button button || button.Tag is not string hex)
+            return;
+
+        DefaultSettings.GrabFrameBorderColor = hex;
+        DefaultSettings.GrabFrameBorderStyle = GrabFrameBorderStyle.Color.ToString();
+        DefaultSettings.Save();
+
+        ColorBorderRadio.IsChecked = true;
+        BorderColorSwatchPanel.IsEnabled = true;
     }
 
     private void GrabFrameAutoOcrCheckBox_Click(object sender, RoutedEventArgs e)

@@ -79,6 +79,7 @@
             ResizeBorderThickness="8" />
     </WindowChrome.WindowChrome>
     <Border
+        x:Name="FrameBorder"
         BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
         BorderThickness="2"
         ClipToBounds="True">
@@ -238,9 +239,7 @@
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image or PDF..."
                             InputGestureText="Ctrl + O" />
-                        <MenuItem
-                            Click="OpenGrabFrameFileMenuItem_Click"
-                            Header="Open Grab Frame File..." />
+                        <MenuItem Click="OpenGrabFrameFileMenuItem_Click" Header="Open Grab Frame File..." />
                         <MenuItem
                             Click="SaveGrabFrameFileMenuItem_Click"
                             Header="Save Grab Frame File..."
@@ -437,6 +436,68 @@
                             Header="Show Word Borders"
                             IsCheckable="True"
                             IsChecked="True" />
+                        <MenuItem x:Name="FrameBorderMenuItem" Header="Frame Border">
+                            <MenuItem
+                                x:Name="BorderStyleThemeMenuItem"
+                                Click="BorderStyleMenuItem_Click"
+                                Header="Theme (default)"
+                                IsCheckable="True"
+                                Tag="Theme" />
+                            <MenuItem
+                                x:Name="BorderStyleHighContrastMenuItem"
+                                Click="BorderStyleMenuItem_Click"
+                                Header="High contrast (black &amp; white)"
+                                IsCheckable="True"
+                                Tag="HighContrast" />
+                            <Separator />
+                            <MenuItem x:Name="BorderColorMenuItem" Header="Pick a color">
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Teal"
+                                    IsCheckable="True"
+                                    Tag="#2A767E" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Red"
+                                    IsCheckable="True"
+                                    Tag="#E03B3B" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Orange"
+                                    IsCheckable="True"
+                                    Tag="#E0781E" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Yellow"
+                                    IsCheckable="True"
+                                    Tag="#E0C81E" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Green"
+                                    IsCheckable="True"
+                                    Tag="#3BB143" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Blue"
+                                    IsCheckable="True"
+                                    Tag="#2A7EE0" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Purple"
+                                    IsCheckable="True"
+                                    Tag="#8A5CD1" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="White"
+                                    IsCheckable="True"
+                                    Tag="#FFFFFF" />
+                                <MenuItem
+                                    Click="BorderColorMenuItem_Click"
+                                    Header="Black"
+                                    IsCheckable="True"
+                                    Tag="#000000" />
+                            </MenuItem>
+                        </MenuItem>
                         <MenuItem Header="Overlay Opacity">
                             <MenuItem
                                 x:Name="OverlayOpacityOffMenuItem"
@@ -811,17 +872,15 @@
                                     FontWeight="SemiBold"
                                     Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                                     Text="Speaking..." />
-                                <ProgressBar
-                                    Height="6"
-                                    IsIndeterminate="True" />
+                                <ProgressBar Height="6" IsIndeterminate="True" />
                             </StackPanel>
                             <Button
                                 x:Name="StopSpeakingButton"
                                 Grid.Column="2"
                                 Width="28"
                                 Height="28"
-                                Padding="0"
                                 Margin="12,0,0,0"
+                                Padding="0"
                                 VerticalAlignment="Center"
                                 Background="Transparent"
                                 BorderThickness="0"

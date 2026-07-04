@@ -143,5 +143,131 @@
             Style="{StaticResource TextBodyNormal}"
             Text="Translates captured text in place using on-device Windows AI — no internet required. Enter the target language name (e.g. English, French, Spanish)." />
 
+        <TextBlock
+            Margin="0,16,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Frame Border" />
+
+        <StackPanel Margin="12,6,0,0">
+            <RadioButton
+                x:Name="ThemeBorderRadio"
+                Click="BorderStyleRadio_Click"
+                GroupName="GfBorderStyle">
+                Theme — follows the app light/dark theme (default)
+            </RadioButton>
+            <RadioButton
+                x:Name="HighContrastBorderRadio"
+                Click="BorderStyleRadio_Click"
+                GroupName="GfBorderStyle">
+                High contrast — black &amp; white, visible on any background
+            </RadioButton>
+            <RadioButton
+                x:Name="ColorBorderRadio"
+                Click="BorderStyleRadio_Click"
+                GroupName="GfBorderStyle">
+                Pick a color
+            </RadioButton>
+        </StackPanel>
+        <TextBlock
+            Margin="24,6,0,6"
+            Opacity="0.75"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Controls how the Grab Frame outline is drawn. High contrast keeps the frame easy to locate over dark or busy content." />
+
+        <WrapPanel x:Name="BorderColorSwatchPanel" Margin="24,0,0,8">
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#2A767E"
+                ToolTip="Teal">
+                <Border Background="#2A767E" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#E03B3B"
+                ToolTip="Red">
+                <Border Background="#E03B3B" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#E0781E"
+                ToolTip="Orange">
+                <Border Background="#E0781E" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#E0C81E"
+                ToolTip="Yellow">
+                <Border Background="#E0C81E" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#3BB143"
+                ToolTip="Green">
+                <Border Background="#3BB143" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#2A7EE0"
+                ToolTip="Blue">
+                <Border Background="#2A7EE0" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#8A5CD1"
+                ToolTip="Purple">
+                <Border Background="#8A5CD1" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#FFFFFF"
+                ToolTip="White">
+                <Border Background="#FFFFFF" CornerRadius="3" />
+            </Button>
+            <Button
+                Width="30"
+                Height="30"
+                Margin="0,0,6,6"
+                Padding="2"
+                Click="BorderColorSwatch_Click"
+                Tag="#000000"
+                ToolTip="Black">
+                <Border Background="#000000" CornerRadius="3" />
+            </Button>
+        </WrapPanel>
+
     </StackPanel>
 </Page>

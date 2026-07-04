@@ -95,6 +95,8 @@ public partial class GrabFrame : Window
     private readonly ObservableCollection<WordBorder> wordBorders = [];
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private ScrollBehavior scrollBehavior = ScrollBehavior.Resize;
+    private GrabFrameBorderStyle borderStyle = GrabFrameBorderStyle.Theme;
+    private Color borderCustomColor = Color.FromRgb(0x2A, 0x76, 0x7E);
     private GrabFrameWordGroupingMode wordGroupingMode = GrabFrameWordGroupingMode.Paragraph;
     private double overlayOpacity = 0.05;
     private bool isTranslationEnabled = false;
@@ -2932,6 +2934,7 @@ public partial class GrabFrame : Window
 
         SetWordGroupingMenuItems();
         LoadHiddenBottomBarTools();
+        LoadBorderStyle();
         GetGrabFrameTranslationSettings();
         GetGrabFrameSpeakSettings();
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
@@ -2999,6 +3002,100 @@ public partial class GrabFrame : Window
         ApplyBottomBarToolVisibility();
     }
 
+    private void LoadBorderStyle()
+    {
+        if (string.IsNullOrWhiteSpace(DefaultSettings.GrabFrameBorderStyle)
+            || !Enum.TryParse(DefaultSettings.GrabFrameBorderStyle, out borderStyle))
+            borderStyle = GrabFrameBorderStyle.Theme;
+
+        borderCustomColor = ParseColorOrDefault(DefaultSettings.GrabFrameBorderColor, borderCustomColor);
+
+        SetBorderStyleMenuItems();
+        ApplyBorderStyle();
+    }
+
+    private static Color ParseColorOrDefault(string? hex, Color fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(hex))
+        {
+            try
+            {
+                if (ColorConverter.ConvertFromString(hex) is Color parsed)
+                    return parsed;
+            }
+            catch { /* fall through to the default color */ }
+        }
+        return fallback;
+    }
+
+    private void SetBorderStyleMenuItems()
+    {
+        BorderStyleThemeMenuItem.IsChecked = borderStyle == GrabFrameBorderStyle.Theme;
+        BorderStyleHighContrastMenuItem.IsChecked = borderStyle == GrabFrameBorderStyle.HighContrast;
+
+        string currentHex = $"#{borderCustomColor.R:X2}{borderCustomColor.G:X2}{borderCustomColor.B:X2}";
+        foreach (object item in BorderColorMenuItem.Items)
+        {
+            if (item is MenuItem colorItem && colorItem.Tag is string tag)
+                colorItem.IsChecked = borderStyle == GrabFrameBorderStyle.Color
+                    && string.Equals(tag, currentHex, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Applies the current border style to both frame edges: the 1px window
+    /// border (outer ring) and the 2px FrameBorder (inner ring). High contrast
+    /// uses the two as opposing black/white tones so one always contrasts with
+    /// whatever is behind the frame.
+    /// </summary>
+    private void ApplyBorderStyle()
+    {
+        switch (borderStyle)
+        {
+            case GrabFrameBorderStyle.HighContrast:
+                BorderBrush = Brushes.White;
+                FrameBorder.BorderBrush = Brushes.Black;
+                break;
+            case GrabFrameBorderStyle.Color:
+                SolidColorBrush colorBrush = new(borderCustomColor);
+                BorderBrush = colorBrush;
+                FrameBorder.BorderBrush = colorBrush;
+                break;
+            case GrabFrameBorderStyle.Theme:
+            default:
+                // Use dynamic resource references so the border keeps following
+                // live app light/dark theme changes, matching the XAML default.
+                SetResourceReference(BorderBrushProperty, "ApplicationBackgroundBrush");
+                FrameBorder.SetResourceReference(Border.BorderBrushProperty, "ApplicationBackgroundBrush");
+                break;
+        }
+    }
+
+    private void BorderStyleMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || !Enum.TryParse(menuItem.Tag?.ToString(), out borderStyle))
+            return;
+
+        DefaultSettings.GrabFrameBorderStyle = borderStyle.ToString();
+        DefaultSettings.Save();
+        SetBorderStyleMenuItems();
+        ApplyBorderStyle();
+    }
+
+    private void BorderColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string hex)
+            return;
+
+        borderCustomColor = ParseColorOrDefault(hex, borderCustomColor);
+        borderStyle = GrabFrameBorderStyle.Color;
+        DefaultSettings.GrabFrameBorderStyle = borderStyle.ToString();
+        DefaultSettings.GrabFrameBorderColor = hex;
+        DefaultSettings.Save();
+        SetBorderStyleMenuItems();
+        ApplyBorderStyle();
+    }
+
     private void GrabFrameWindow_Activated(object? sender, EventArgs e)
     {
         RectanglesCanvas.Opacity = 1;
@@ -3006,6 +3103,10 @@ public partial class GrabFrame : Window
             reDrawTimer.Start();
         else
             reSearchTimer.Start();
+
+        // Reflect any border change made on the Settings page while away.
+        if (IsLoaded)
+            LoadBorderStyle();
     }
 
     private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
