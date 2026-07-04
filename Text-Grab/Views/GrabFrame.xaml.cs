@@ -115,6 +115,8 @@ public partial class GrabFrame : Window
     private bool isSpeakEnabled = false;
     private WindowResizer? windowResizer;
     private bool _isCleanedUp;
+    private readonly HashSet<string> hiddenBottomBarTools = new(StringComparer.OrdinalIgnoreCase);
+    private bool translateToolAvailable = false;
 
     #endregion Fields
 
@@ -2906,10 +2908,72 @@ public partial class GrabFrame : Window
         }
 
         SetWordGroupingMenuItems();
+        LoadHiddenBottomBarTools();
         GetGrabFrameTranslationSettings();
         GetGrabFrameSpeakSettings();
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
         SetScrollBehaviorMenuItems();
+    }
+
+    private void LoadHiddenBottomBarTools()
+    {
+        hiddenBottomBarTools.Clear();
+
+        string saved = DefaultSettings.GrabFrameHiddenBottomBarTools ?? string.Empty;
+        foreach (string key in saved.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            hiddenBottomBarTools.Add(key);
+
+        ShowRefreshToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Refresh");
+        ShowFreezeToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Freeze");
+        ShowTableToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Table");
+        ShowTranslateToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Translate");
+        ShowSpeakToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Speak");
+        ShowEditTextToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("EditText");
+        ShowTemplateToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Template");
+
+        ApplyBottomBarToolVisibility();
+    }
+
+    private bool IsBottomBarToolHidden(string key) => hiddenBottomBarTools.Contains(key);
+
+    private void SetToolButtonVisibility(UIElement button, string key, bool appAvailable)
+    {
+        button.Visibility = appAvailable && !hiddenBottomBarTools.Contains(key)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void ApplyBottomBarToolVisibility()
+    {
+        // Refresh / OCR Frame buttons swap based on Auto OCR state; that helper honors the hide preference.
+        SetRefreshOrOcrFrameBtnVis();
+
+        // Freeze is only offered when a live (non-static, non-frozen) frame is showing.
+        SetToolButtonVisibility(FreezeToggleButton, "Freeze", !isStaticImageSource && !IsFreezeMode);
+
+        SetToolButtonVisibility(TranslateToggleButton, "Translate", translateToolAvailable);
+
+        // These tools are always available, so their visibility is driven purely by the hide preference.
+        SetToolButtonVisibility(TableToggleButton, "Table", true);
+        SetToolButtonVisibility(SpeakToggleButton, "Speak", true);
+        SetToolButtonVisibility(EditTextToggleButton, "EditText", true);
+        SetToolButtonVisibility(TemplateMenuButton, "Template", true);
+    }
+
+    private void ToggleBottomBarToolMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string key)
+            return;
+
+        if (menuItem.IsChecked)
+            hiddenBottomBarTools.Remove(key);
+        else
+            hiddenBottomBarTools.Add(key);
+
+        DefaultSettings.GrabFrameHiddenBottomBarTools = string.Join(",", hiddenBottomBarTools);
+        DefaultSettings.Save();
+
+        ApplyBottomBarToolVisibility();
     }
 
     private void GrabFrameWindow_Activated(object? sender, EventArgs e)
@@ -4007,16 +4071,19 @@ public partial class GrabFrame : Window
 
     private void SetRefreshOrOcrFrameBtnVis()
     {
+        bool showRefreshTool = !IsBottomBarToolHidden("Refresh");
+
         if (AutoOcrCheckBox.IsChecked is false)
         {
-            OcrFrameBTN.Visibility = Visibility.Visible;
-            OcrFrameBTN.Focus();
+            OcrFrameBTN.Visibility = showRefreshTool ? Visibility.Visible : Visibility.Collapsed;
+            if (showRefreshTool)
+                OcrFrameBTN.Focus();
             RefreshBTN.Visibility = Visibility.Collapsed;
         }
         else
         {
             OcrFrameBTN.Visibility = Visibility.Collapsed;
-            RefreshBTN.Visibility = Visibility.Visible;
+            RefreshBTN.Visibility = showRefreshTool ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 
@@ -4726,7 +4793,7 @@ public partial class GrabFrame : Window
         historyItem = null;
         RectanglesBorder.Background.Opacity = overlayOpacity;
         FreezeToggleButton.IsChecked = false;
-        FreezeToggleButton.Visibility = Visibility.Visible;
+        SetToolButtonVisibility(FreezeToggleButton, "Freeze", true);
         Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
         UpdateZoomPanMode();
@@ -5799,8 +5866,10 @@ public partial class GrabFrame : Window
 
         // Hide translation button if Windows AI is not available
         bool canUseWinAI = WindowsAiUtilities.CanDeviceUseWinAI();
-        TranslateToggleButton.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+        translateToolAvailable = canUseWinAI;
+        SetToolButtonVisibility(TranslateToggleButton, "Translate", canUseWinAI);
         TranslationMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+        ShowTranslateToolMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
 
         if (canUseWinAI)
         {

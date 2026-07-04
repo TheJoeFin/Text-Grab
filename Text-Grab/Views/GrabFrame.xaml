@@ -911,6 +911,61 @@
             </Border>
 
             <Border Grid.Row="3" Background="{ui:ThemeResource ApplicationBackgroundBrush}">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Show Toolbar Buttons" IsEnabled="False" />
+                        <Separator />
+                        <MenuItem
+                            x:Name="ShowRefreshToolMenuItem"
+                            Click="ToggleBottomBarToolMenuItem_Click"
+                            Header="Re-OCR / OCR Frame"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Refresh" />
+                        <MenuItem
+                            x:Name="ShowFreezeToolMenuItem"
+                            Click="ToggleBottomBarToolMenuItem_Click"
+                            Header="Freeze"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Freeze" />
+                        <MenuItem
+                            x:Name="ShowTableToolMenuItem"
+                            Click="ToggleBottomBarToolMenuItem_Click"
+                            Header="Analyze as Table"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Table" />
+                        <MenuItem
+                            x:Name="ShowTranslateToolMenuItem"
+                            Click="ToggleBottomBarToolMenuItem_Click"
+                            Header="Translate"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Translate" />
+                        <MenuItem
+                            x:Name="ShowSpeakToolMenuItem"
+                            Click="ToggleBottomBarToolMenuItem_Click"
+                            Header="Speak"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Speak" />
+                        <MenuItem
+                            x:Name="ShowEditTextToolMenuItem"
+                            Click="ToggleBottomBarToolMenuItem_Click"
+                            Header="Edit Text Window"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="EditText" />
+                        <MenuItem
+                            x:Name="ShowTemplateToolMenuItem"
+                            Click="ToggleBottomBarToolMenuItem_Click"
+                            Header="Grab Template"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Template" />
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid
                     MinHeight="36"
                     Margin="6"

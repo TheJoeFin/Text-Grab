@@ -1078,5 +1078,17 @@ namespace Text_Grab.Properties {
                 this["GrabFrameWordGrouping"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GrabFrameHiddenBottomBarTools {
+            get {
+                return ((string)(this["GrabFrameHiddenBottomBarTools"]));
+            }
+            set {
+                this["GrabFrameHiddenBottomBarTools"] = value;
+            }
+        }
     }
 }
