@@ -317,10 +317,14 @@ public partial class GrabFrame : Window
 
         string imageName = Path.GetFileName(history.ImagePath);
 
-        System.Drawing.Bitmap? bgBitmap = await FileUtilities
-            .GetImageFileAsync(
-                imageName,
-                FileStorageKind.WithHistory);
+        // A Grab Frame file (.tggf) hands us the image already decoded in memory; the
+        // History feature stores it on disk, so only read from the history folder when
+        // the image has not already been loaded.
+        System.Drawing.Bitmap? bgBitmap = history.ImageContent
+            ?? await FileUtilities
+                .GetImageFileAsync(
+                    imageName,
+                    FileStorageKind.WithHistory);
 
         if (bgBitmap is null)
         {
@@ -1336,6 +1340,10 @@ public partial class GrabFrame : Window
         RoutedCommand pasteCommand = new();
         _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
+
+        RoutedCommand saveGrabFrameFileCommand = new();
+        _ = saveGrabFrameFileCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(saveGrabFrameFileCommand, (s, args) => SaveGrabFrameFileMenuItem_Click()));
 
         _ = GrabCommand.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
         // _ = CommandBindings.Add(new CommandBinding(GrabCommand, GrabExecuted));
@@ -3428,6 +3436,76 @@ public partial class GrabFrame : Window
         await TryLoadDocumentFromPath(dlg.FileName);
 
         reDrawTimer.Start();
+    }
+
+    private async void SaveGrabFrameFileMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        Microsoft.Win32.SaveFileDialog dlg = new()
+        {
+            Filter = GrabFrameFileUtilities.GetGrabFrameFileFilter(),
+            DefaultExt = GrabFrameFileUtilities.GrabFrameFileExtension,
+            AddExtension = true,
+            Title = "Save Grab Frame File",
+            FileName = "Grab Frame",
+        };
+
+        if (dlg.ShowDialog() is not true)
+            return;
+
+        HistoryInfo historyInfo = AsHistoryItem();
+
+        try
+        {
+            bool saved = await GrabFrameFileUtilities.SaveGrabFrameFileAsync(historyInfo, dlg.FileName);
+
+            if (!saved)
+            {
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "Text Grab",
+                    Content = $"Failed to save Grab Frame file:\n{dlg.FileName}",
+                    CloseButtonText = "OK"
+                }.ShowDialogAsync();
+            }
+        }
+        finally
+        {
+            // AsHistoryItem() renders a fresh Bitmap from the frame content; dispose it once
+            // the save completes so the GDI handle is released.
+            historyInfo.ImageContent?.Dispose();
+            historyInfo.ClearTransientImage();
+        }
+    }
+
+    private async void OpenGrabFrameFileMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        Microsoft.Win32.OpenFileDialog dlg = new()
+        {
+            Filter = GrabFrameFileUtilities.GetGrabFrameFileFilter(),
+            Title = "Open Grab Frame File",
+            CheckFileExists = true,
+        };
+
+        if (dlg.ShowDialog() is not true || !File.Exists(dlg.FileName))
+            return;
+
+        HistoryInfo? historyInfo = await GrabFrameFileUtilities.LoadGrabFrameFileAsync(dlg.FileName);
+
+        if (historyInfo is null)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Text Grab",
+                Content = $"Failed to open Grab Frame file:\n{dlg.FileName}",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return;
+        }
+
+        // Open the loaded frame in its own window so the current frame is left untouched.
+        GrabFrame grabFrame = new(historyInfo);
+        grabFrame.Show();
+        grabFrame.Activate();
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)

@@ -54,9 +54,11 @@ public class FileUtilities
     {
         string spreadsheetExtensions = GetExtensionsFilterPattern(IoUtilities.SpreadsheetExtensions);
         string markdownExtensions = GetExtensionsFilterPattern(IoUtilities.MarkdownExtensions);
+        string grabFrameExtension = $"*{GrabFrameFileUtilities.GrabFrameFileExtension}";
         string supportedExtensions = string.Join(";", new[]
         {
             GetVisualDocumentFilterPattern(),
+            grabFrameExtension,
             spreadsheetExtensions,
             markdownExtensions,
             "*.txt"
@@ -66,6 +68,7 @@ public class FileUtilities
         {
             $"Supported documents|{supportedExtensions}",
             GetVisualDocumentFilter(),
+            GrabFrameFileUtilities.GetGrabFrameFileFilter(),
             $"Spreadsheet documents|{spreadsheetExtensions}",
             $"Markdown documents|{markdownExtensions}",
             "Text documents (*.txt)|*.txt",

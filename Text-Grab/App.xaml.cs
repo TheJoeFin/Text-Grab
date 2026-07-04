@@ -504,6 +504,9 @@ public partial class App : System.Windows.Application
         if (!File.Exists(possiblePath))
             return false;
 
+        if (GrabFrameFileUtilities.IsGrabFrameFile(possiblePath))
+            return await TryOpenGrabFrameFileAsync(possiblePath, isQuiet);
+
         if (isQuiet)
         {
             (string pathContent, _) = await IoUtilities.GetContentFromPath(possiblePath);
@@ -528,6 +531,31 @@ public partial class App : System.Windows.Application
         return true;
     }
 
+    /// <summary>
+    /// Opens a Grab Frame file (.tggf). In quiet mode the saved OCR text is routed straight to
+    /// the clipboard; otherwise the frame is restored in a new Grab Frame window.
+    /// </summary>
+    private static async Task<bool> TryOpenGrabFrameFileAsync(string path, bool isQuiet)
+    {
+        HistoryInfo? historyInfo = await GrabFrameFileUtilities.LoadGrabFrameFileAsync(path);
+
+        if (historyInfo is null)
+            return false;
+
+        if (isQuiet)
+        {
+            historyInfo.ImageContent?.Dispose();
+            historyInfo.ClearTransientImage();
+            OutputUtilities.HandleTextFromOcr(historyInfo.TextContent, false, false);
+            return true;
+        }
+
+        GrabFrame grabFrame = new(historyInfo);
+        grabFrame.Show();
+        grabFrame.Activate();
+        return true;
+    }
+
     private void appExit(object sender, ExitEventArgs e)
     {
         TextGrabIcon?.Close();
@@ -547,9 +575,10 @@ public partial class App : System.Windows.Application
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
-        // Per-user text-grab:// registration for unpackaged installs
-        // (packaged installs register the protocol via the MSIX manifest).
+        // Per-user text-grab:// and .tggf registration for unpackaged installs
+        // (packaged installs register these via the MSIX manifest).
         ProtocolUtilities.EnsureProtocolRegistration();
+        FileAssociationUtilities.EnsureGrabFrameFileAssociation();
 
         // Register COM server and activator type
         bool handledArgument = false;
@@ -559,7 +588,11 @@ public partial class App : System.Windows.Application
             LaunchFromToast(toastArgs);
         };
 
-        handledArgument = HandleNotifyIcon();
+        // Sets up the tray icon when configured to run in the background. This must not
+        // suppress handling of a file/protocol/share argument: opening a file should always
+        // launch UI, even when run-in-the-background + startup-on-login are enabled. The
+        // return value only decides whether to skip the DefaultLaunch window.
+        bool suppressDefaultLaunch = HandleNotifyIcon();
 
         if (!handledArgument)
             handledArgument = await ShareTargetUtilities.HandleShareTargetActivationAsync();
@@ -569,9 +602,10 @@ public partial class App : System.Windows.Application
 
         WatchTheme();
 
-        if (handledArgument)
+        if (handledArgument || suppressDefaultLaunch)
         {
-            // arguments were passed, so don't show firstRun dialog
+            // arguments were passed (or we launched only to sit in the background),
+            // so don't show firstRun dialog or the default launch window
             _defaultSettings.FirstRun = false;
             _defaultSettings.Save();
             return;

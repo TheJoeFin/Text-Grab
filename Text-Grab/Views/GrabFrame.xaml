@@ -238,6 +238,13 @@
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image or PDF..."
                             InputGestureText="Ctrl + O" />
+                        <MenuItem
+                            Click="OpenGrabFrameFileMenuItem_Click"
+                            Header="Open Grab Frame File..." />
+                        <MenuItem
+                            Click="SaveGrabFrameFileMenuItem_Click"
+                            Header="Save Grab Frame File..."
+                            InputGestureText="Ctrl + S" />
                         <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
                         <Separator />
                         <MenuItem
