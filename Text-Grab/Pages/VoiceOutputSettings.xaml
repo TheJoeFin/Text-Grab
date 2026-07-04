@@ -91,6 +91,22 @@
                     Visibility="Collapsed" />
             </StackPanel>
 
+            <!--  Processing announcement  -->
+            <TextBlock
+                Margin="0,16,0,4"
+                FontSize="16"
+                Style="{StaticResource TextHeader}"
+                Text="Processing Announcement" />
+            <TextBlock Margin="0,0,0,6" Style="{StaticResource TextBodyNormal}">
+                Speak a short announcement when a slow operation (such as an AI image description) is still processing.
+            </TextBlock>
+            <CheckBox
+                x:Name="SpeakProcessingStatusCheckBox"
+                Margin="0,0,0,4"
+                Checked="SpeakProcessingStatusCheckBox_CheckChanged"
+                Content="Announce when a slow operation is processing"
+                Unchecked="SpeakProcessingStatusCheckBox_CheckChanged" />
+
             <!--  Preview  -->
             <TextBlock
                 Margin="0,16,0,4"

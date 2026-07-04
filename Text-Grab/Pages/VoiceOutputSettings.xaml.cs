@@ -35,6 +35,8 @@ public partial class VoiceOutputSettings : Page
 
         TtsSpeakWordLimitTextBox.Text = DefaultSettings.TtsSpeakWordLimit.ToString();
 
+        SpeakProcessingStatusCheckBox.IsChecked = DefaultSettings.SpeakProcessingStatus;
+
         _loaded = true;
     }
 
@@ -77,6 +79,15 @@ public partial class VoiceOutputSettings : Page
         {
             TtsWordLimitError.Visibility = Visibility.Visible;
         }
+    }
+
+    private void SpeakProcessingStatusCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded)
+            return;
+
+        DefaultSettings.SpeakProcessingStatus = SpeakProcessingStatusCheckBox.IsChecked is true;
+        DefaultSettings.Save();
     }
 
     private void PreviewVoiceButton_Click(object sender, RoutedEventArgs e)

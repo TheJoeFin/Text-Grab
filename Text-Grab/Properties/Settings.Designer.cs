@@ -925,6 +925,18 @@ namespace Text_Grab.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool SpeakProcessingStatus {
+            get {
+                return ((bool)(this["SpeakProcessingStatus"]));
+            }
+            set {
+                this["SpeakProcessingStatus"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("English")]
         public string GrabFrameTranslationLanguage {
             get {
