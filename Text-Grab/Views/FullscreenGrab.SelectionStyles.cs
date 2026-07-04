@@ -1121,7 +1121,13 @@ public partial class FullscreenGrab
         Task firstFinished = await Task.WhenAny(descriptionTask, Task.Delay(TimeSpan.FromSeconds(2)));
         bool wasSlow = firstFinished != descriptionTask;
         if (wasSlow)
+        {
             grabIndicator.ShowRunningChoices(SendToEditTextToggleButton.IsChecked is true);
+
+            // Give a speech-reliant user an audible cue that the (slow) work is underway.
+            if (DefaultSettings.SpeakProcessingStatus)
+                Singleton<TtsService>.Instance.Speak($"{selectedOcrLang.DisplayName} is processing");
+        }
 
         // Race the description against a user choice made while it is still running.
         Task settled = await Task.WhenAny(descriptionTask, choiceSource.Task);

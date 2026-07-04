@@ -127,7 +127,6 @@
         <TextBlock Margin="0,4,0,0" Style="{StaticResource TextBodyNormal}">
             Clicking the notification opens the copied text into a new Edit Text Window to display and edit text.
         </TextBlock>
-
         <!--  default launch  -->
         <TextBlock
             Margin="0,16,0,4"
@@ -397,5 +396,6 @@
                 Keep recent history of Grabs and Edit Text Windows
             </TextBlock>
         </ui:ToggleSwitch>
+
     </StackPanel>
 </Page>

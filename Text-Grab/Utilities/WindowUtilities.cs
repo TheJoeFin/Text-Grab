@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Extensions;
+using Text_Grab.Services;
 using Text_Grab.Views;
 using static OSInterop;
 
@@ -391,7 +392,14 @@ public static partial class WindowUtilities
             shouldShutDown = true;
 
         if (shouldShutDown)
-            Application.Current.Shutdown();
+        {
+            // Let any queued/in-flight speech finish before exiting. RunWhenIdle
+            // runs the callback immediately when idle, or once the queue drains;
+            // registration is atomic with the idle check so shutdown can't be
+            // missed if speech finishes right as we ask.
+            Singleton<TtsService>.Instance.RunWhenIdle(
+                () => Application.Current.Dispatcher.Invoke(Application.Current.Shutdown));
+        }
     }
 
     public static bool GetMousePosition(out Point mousePosition)

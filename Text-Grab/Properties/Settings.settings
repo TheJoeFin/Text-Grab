@@ -224,6 +224,12 @@
     <Setting Name="GrabFrameTranslationEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="GrabFrameSpeakEnabled" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SpeakProcessingStatus" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <Setting Name="GrabFrameTranslationLanguage" Type="System.String" Scope="User">
       <Value Profile="(Default)">English</Value>
     </Setting>
@@ -244,6 +250,15 @@
     </Setting>
     <Setting Name="RegisterOpenWith" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="TtsSpeakWordLimit" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
+    <Setting Name="TtsVoiceName" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="TtsSpeakingRate" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="ParagraphDetection" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
