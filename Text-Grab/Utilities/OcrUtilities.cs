@@ -69,10 +69,14 @@ public static partial class OcrUtilities
         }
         else
         {
+            // For CJK languages, filter out likely furigana (small ruby-text
+            // characters above the main text) before merging the words.
+            IEnumerable<IOcrWord> words = FilterFurigana([.. ocrLine.Words]);
+
             bool isFirstWord = true;
             bool isPrevWordSpaceJoining = false;
 
-            foreach (IOcrWord ocrWord in ocrLine.Words)
+            foreach (IOcrWord ocrWord in words)
             {
                 string wordString = ocrWord.Text;
 
@@ -93,6 +97,62 @@ public static partial class OcrUtilities
 
         if (DefaultSettings.CorrectToLatin)
             text.ReplaceGreekOrCyrillicWithLatin();
+    }
+
+    /// <summary>
+    /// Removes words that are likely furigana: small ruby-text characters
+    /// rendered above the main text in Japanese. A word is treated as furigana
+    /// when it is noticeably shorter than the line's median word height and sits
+    /// directly above a larger word that overlaps it horizontally.
+    /// </summary>
+    internal static List<IOcrWord> FilterFurigana(List<IOcrWord> words)
+    {
+        if (words.Count == 0)
+            return words;
+
+        // Furigana is typically around half the height of the main text.
+        List<double> heights = [.. words.Select(w => w.BoundingBox.Height).OrderBy(h => h)];
+        double medianHeight = heights[heights.Count / 2];
+        double furiganaThreshold = medianHeight * 0.6;
+
+        List<IOcrWord> filteredWords = [];
+
+        for (int i = 0; i < words.Count; i++)
+        {
+            IOcrWord word = words[i];
+            bool isProbablyFurigana = false;
+
+            if (word.BoundingBox.Height < furiganaThreshold)
+            {
+                // Only treat it as furigana when a larger word sits below it and
+                // overlaps horizontally (i.e. the kanji it annotates).
+                for (int j = 0; j < words.Count; j++)
+                {
+                    if (i == j)
+                        continue;
+
+                    IOcrWord otherWord = words[j];
+
+                    bool isBelow = otherWord.BoundingBox.Top > word.BoundingBox.Bottom;
+                    bool overlapsHorizontally = !(otherWord.BoundingBox.Right < word.BoundingBox.Left
+                        || otherWord.BoundingBox.Left > word.BoundingBox.Right);
+                    bool isLarger = otherWord.BoundingBox.Height > furiganaThreshold;
+
+                    if (isBelow && overlapsHorizontally && isLarger)
+                    {
+                        isProbablyFurigana = word.Text.Length <= 2;
+                        break;
+                    }
+                }
+            }
+
+            if (!isProbablyFurigana)
+                filteredWords.Add(word);
+        }
+
+        // If everything was filtered, fall back to the original words to avoid
+        // dropping the whole line.
+        return filteredWords.Count > 0 ? filteredWords : words;
     }
 
     public static async Task<string> GetTextFromAbsoluteRectAsync(

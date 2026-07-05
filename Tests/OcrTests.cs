@@ -476,6 +476,33 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         File.Delete(tempFilePath);
     }
 
+    [Fact]
+    public void BuildTextFromOcrLines_FiltersFuriganaForJapanese()
+    {
+        // Given a Japanese line where the kanji 黒 is annotated with the small
+        // furigana くろ rendered directly above it.
+        FakeOcrLine line = new("くろ黒ごま", new Windows.Foundation.Rect(0, 0, 60, 30))
+        {
+            Words =
+            [
+                // Furigana: short and sitting above the kanji it annotates.
+                new FakeOcrWord("くろ", new Windows.Foundation.Rect(0, 0, 16, 8)),
+                // Main text: full-height single characters.
+                new FakeOcrWord("黒", new Windows.Foundation.Rect(0, 10, 20, 20)),
+                new FakeOcrWord("ご", new Windows.Foundation.Rect(20, 10, 20, 20)),
+                new FakeOcrWord("ま", new Windows.Foundation.Rect(40, 10, 20, 20)),
+            ]
+        };
+
+        FakeOcrLinesWords ocrResult = new() { Lines = [line] };
+
+        // When
+        string text = OcrUtilities.BuildTextFromOcrLines(new GlobalLang("ja"), ocrResult);
+
+        // Then the furigana is dropped, leaving only the main text.
+        Assert.Equal("黒ごま", text);
+    }
+
     private sealed class FakeOcrLinesWords : IOcrLinesWords
     {
         public string Text { get; set; } = string.Empty;
@@ -496,6 +523,19 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         public string Text { get; set; }
 
         public IOcrWord[] Words { get; set; } = [];
+
+        public Windows.Foundation.Rect BoundingBox { get; set; }
+    }
+
+    private sealed class FakeOcrWord : IOcrWord
+    {
+        public FakeOcrWord(string text, Windows.Foundation.Rect boundingBox)
+        {
+            Text = text;
+            BoundingBox = boundingBox;
+        }
+
+        public string Text { get; set; }
 
         public Windows.Foundation.Rect BoundingBox { get; set; }
     }
