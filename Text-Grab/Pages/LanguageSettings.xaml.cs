@@ -39,6 +39,8 @@ public partial class LanguageSettings : Page
         LoadWindowsLanguages();
         LoadUiAutomationSettings();
 
+        RemoveFuriganaToggle.IsChecked = DefaultSettings.RemoveFurigana;
+
         if (DefaultSettings.UseTesseract)
         {
             TesseractLanguagesStackPanel.Visibility = Visibility.Visible;
@@ -215,6 +217,16 @@ public partial class LanguageSettings : Page
 
         DefaultSettings.UiAutomationTraversalMode = traversalMode.ToString();
         DefaultSettings.Save();
+    }
+
+    private void RemoveFuriganaToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (loadingLanguageSettings)
+            return;
+
+        DefaultSettings.RemoveFurigana = RemoveFuriganaToggle.IsChecked is true;
+        DefaultSettings.Save();
+        LanguageUtilities.InvalidateAllCaches();
     }
 
     private void WindowsAiDescriptionEnabledToggle_Checked(object sender, RoutedEventArgs e)
