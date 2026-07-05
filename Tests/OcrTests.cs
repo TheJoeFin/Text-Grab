@@ -503,6 +503,238 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         Assert.Equal("黒ごま", text);
     }
 
+    // ----- FilterFurigana unit tests (the geometry heuristic) -----
+
+    [Fact]
+    public void FilterFurigana_EmptyList_ReturnsEmpty()
+    {
+        List<IOcrWord> result = OcrUtilities.FilterFurigana([]);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void FilterFurigana_SingleWord_IsKept()
+    {
+        List<IOcrWord> words = [Word("黒", 0, 0, 20, 20)];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        Assert.Equal(["黒"], result.Select(w => w.Text));
+    }
+
+    [Fact]
+    public void FilterFurigana_UniformHeights_KeepsAllInOrder()
+    {
+        // No word is small relative to the median, so nothing is furigana.
+        List<IOcrWord> words =
+        [
+            Word("黒", 0, 0, 20, 20),
+            Word("ご", 20, 0, 20, 20),
+            Word("ま", 40, 0, 20, 20),
+        ];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        Assert.Equal(["黒", "ご", "ま"], result.Select(w => w.Text));
+    }
+
+    [Fact]
+    public void FilterFurigana_RemovesSmallWordAboveOverlappingKanji()
+    {
+        List<IOcrWord> words =
+        [
+            Word("くろ", 0, 0, 16, 8),   // furigana: short, sitting above
+            Word("黒", 0, 10, 20, 20),   // kanji: taller, below, overlapping
+        ];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        Assert.Equal(["黒"], result.Select(w => w.Text));
+    }
+
+    [Fact]
+    public void FilterFurigana_KeepsSmallWordWhenNotHorizontallyOverlapping()
+    {
+        // Small, but nowhere near a kanji horizontally, so it is real text.
+        List<IOcrWord> words =
+        [
+            Word("くろ", 100, 0, 16, 8),
+            Word("黒", 0, 10, 20, 20),
+        ];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        Assert.Equal(["くろ", "黒"], result.Select(w => w.Text));
+    }
+
+    [Fact]
+    public void FilterFurigana_KeepsSmallWordBelowMainText()
+    {
+        // Furigana sits above its kanji; a small word BELOW a larger word is
+        // not furigana and must be kept.
+        List<IOcrWord> words =
+        [
+            Word("黒", 0, 0, 20, 20),
+            Word("くろ", 0, 22, 16, 8),
+        ];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        Assert.Equal(["黒", "くろ"], result.Select(w => w.Text));
+    }
+
+    [Fact]
+    public void FilterFurigana_KeepsSmallWordWhenWordBelowIsNotLarger()
+    {
+        // A small word directly above another small word is not furigana:
+        // furigana requires a larger word (the kanji) beneath it. The two tall
+        // words only exist to raise the median height.
+        List<IOcrWord> words =
+        [
+            Word("く", 0, 0, 8, 8),
+            Word("ろ", 0, 10, 8, 8),     // below + overlapping, but also small
+            Word("本", 50, 0, 20, 20),
+            Word("語", 80, 0, 20, 20),
+        ];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        Assert.Equal(["く", "ろ", "本", "語"], result.Select(w => w.Text));
+    }
+
+    [Theory]
+    [InlineData("く", true)]        // 1-char ruby is removed
+    [InlineData("くろ", true)]      // 2-char ruby is removed
+    [InlineData("くろが", false)]   // 3+ chars is treated as real text and kept
+    public void FilterFurigana_OnlyRemovesShortWords(string rubyText, bool removed)
+    {
+        List<IOcrWord> words =
+        [
+            Word(rubyText, 0, 0, 16, 8),
+            Word("黒", 0, 10, 20, 20),
+        ];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        string[] expected = removed ? ["黒"] : [rubyText, "黒"];
+        Assert.Equal(expected, result.Select(w => w.Text));
+    }
+
+    [Fact]
+    public void FilterFurigana_RemovesMultipleFuriganaKeepingMainText()
+    {
+        List<IOcrWord> words =
+        [
+            Word("くろ", 0, 0, 16, 8),
+            Word("黒", 0, 10, 20, 20),
+            Word("ごま", 20, 0, 16, 8),
+            Word("米", 20, 10, 20, 20),
+        ];
+
+        List<IOcrWord> result = OcrUtilities.FilterFurigana(words);
+
+        Assert.Equal(["黒", "米"], result.Select(w => w.Text));
+    }
+
+    // ----- BuildTextFromOcrLines integration (language gating) -----
+
+    [Fact]
+    public void BuildTextFromOcrLines_JapaneseWithoutFurigana_IsUnchanged()
+    {
+        FakeOcrLine line = new("黒ごま", new Windows.Foundation.Rect(0, 0, 60, 20))
+        {
+            Words =
+            [
+                Word("黒", 0, 0, 20, 20),
+                Word("ご", 20, 0, 20, 20),
+                Word("ま", 40, 0, 20, 20),
+            ]
+        };
+        FakeOcrLinesWords ocrResult = new() { Lines = [line] };
+
+        string text = OcrUtilities.BuildTextFromOcrLines(new GlobalLang("ja"), ocrResult);
+
+        Assert.Equal("黒ごま", text);
+    }
+
+    [Fact]
+    public void BuildTextFromOcrLines_ChineseText_JoinsWithoutSpaces()
+    {
+        FakeOcrLine line = new("中文", new Windows.Foundation.Rect(0, 0, 40, 20))
+        {
+            Words =
+            [
+                Word("中", 0, 0, 20, 20),
+                Word("文", 20, 0, 20, 20),
+            ]
+        };
+        FakeOcrLinesWords ocrResult = new() { Lines = [line] };
+
+        string text = OcrUtilities.BuildTextFromOcrLines(new GlobalLang("zh-Hans"), ocrResult);
+
+        Assert.Equal("中文", text);
+    }
+
+    [Fact]
+    public void BuildTextFromOcrLines_FiltersRubyTextForChinese()
+    {
+        // The same small-ruby heuristic also runs for Chinese, another
+        // non-space-joining language (e.g. bopomofo above a character).
+        FakeOcrLine line = new("ㄓ中文", new Windows.Foundation.Rect(0, 0, 40, 30))
+        {
+            Words =
+            [
+                Word("ㄓ", 0, 0, 8, 8),
+                Word("中", 0, 10, 20, 20),
+                Word("文", 20, 10, 20, 20),
+            ]
+        };
+        FakeOcrLinesWords ocrResult = new() { Lines = [line] };
+
+        string text = OcrUtilities.BuildTextFromOcrLines(new GlobalLang("zh-Hans"), ocrResult);
+
+        Assert.Equal("中文", text);
+    }
+
+    [Fact]
+    public void BuildTextFromOcrLines_SpaceJoiningLanguage_DoesNotFilterFurigana()
+    {
+        // For space-joining languages the whole line text is used verbatim, so
+        // the furigana heuristic never runs, even with a tiny word present.
+        var settings = AppUtilities.TextGrabSettings;
+        bool originalParagraphDetection = settings.ParagraphDetection;
+        bool originalCorrectErrors = settings.CorrectErrors;
+        settings.ParagraphDetection = false;
+        settings.CorrectErrors = false;
+
+        try
+        {
+            FakeOcrLine line = new("Hello World", new Windows.Foundation.Rect(0, 0, 100, 30))
+            {
+                Words =
+                [
+                    Word("x", 0, 0, 4, 4),   // tiny word that would be furigana in CJK
+                    Word("Hello", 0, 10, 50, 20),
+                    Word("World", 55, 10, 50, 20),
+                ]
+            };
+            FakeOcrLinesWords ocrResult = new() { Lines = [line] };
+
+            string text = OcrUtilities.BuildTextFromOcrLines(new GlobalLang("en-US"), ocrResult);
+
+            Assert.Equal("Hello World" + System.Environment.NewLine, text);
+        }
+        finally
+        {
+            settings.ParagraphDetection = originalParagraphDetection;
+            settings.CorrectErrors = originalCorrectErrors;
+        }
+    }
+
+    private static FakeOcrWord Word(string text, double x, double y, double width, double height)
+        => new(text, new Windows.Foundation.Rect(x, y, width, height));
+
     private sealed class FakeOcrLinesWords : IOcrLinesWords
     {
         public string Text { get; set; } = string.Empty;
