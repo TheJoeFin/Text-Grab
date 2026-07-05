@@ -77,6 +77,47 @@
             FontSize="18"
             FontWeight="Bold"
             Style="{StaticResource TextBodyNormal}"
+            Text="Japanese &amp; Chinese (CJK) Text" />
+        <TextBlock
+            Margin="0,0,0,8"
+            Style="{StaticResource TextBodyNormal}"
+            TextWrapping="Wrap">
+            Furigana are the small kana readings printed above kanji in Japanese (and similar ruby
+            annotations in Chinese). The OCR engine reads them as extra text, which clutters the
+            result. When enabled, Text Grab detects those small ruby lines by their size and position
+            and removes them, keeping only the main text.
+        </TextBlock>
+        <ui:ToggleSwitch
+            x:Name="RemoveFuriganaToggle"
+            Margin="0,0,0,6"
+            Checked="RemoveFuriganaToggle_Checked"
+            Unchecked="RemoveFuriganaToggle_Checked">
+            <TextBlock Style="{StaticResource TextBodyNormal}">
+                Remove furigana (ruby text) from Japanese and Chinese OCR
+            </TextBlock>
+        </ui:ToggleSwitch>
+        <Border
+            Margin="0,0,0,10"
+            Padding="12"
+            Background="#142A767E"
+            BorderBrush="#2A767E"
+            BorderThickness="1"
+            CornerRadius="6">
+            <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
+                This is a work in progress. Furigana detection is based on a size-and-position
+                heuristic, so it can occasionally miss a reading or remove text it shouldn't. I'm
+                actively trying to improve how Text Grab handles Japanese and Chinese. If you have
+                experience with CJK text, OCR, or furigana and would be willing to help, please email
+                me at
+                <Hyperlink NavigateUri="mailto:joe@joefinapps.com" RequestNavigate="Hyperlink_RequestNavigate">joe@joefinapps.com</Hyperlink>. Thank you!
+            </TextBlock>
+        </Border>
+
+        <TextBlock
+            Margin="0,24,0,6"
+            FontSize="18"
+            FontWeight="Bold"
+            Style="{StaticResource TextBodyNormal}"
             Text="Windows Installed Languages" />
         <!--  auto pull and parse which Windows Languages are installed  -->
         <ui:HyperlinkButton
