@@ -27,7 +27,9 @@
       "PowerShell(Get-ChildItem *)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh issue view *)",
-      "Bash(git log *)"
+      "Bash(git log *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr diff *)"
     ],
     "deny": []
   }
