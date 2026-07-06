@@ -278,5 +278,11 @@
     <Setting Name="GrabFrameBorderColor" Type="System.String" Scope="User">
       <Value Profile="(Default)">#2A767E</Value>
     </Setting>
+    <Setting Name="HdrCaptureCorrection" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="HdrBorderlessGranted" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
