@@ -31,7 +31,20 @@ public static class HdrScreenCapture
     // Windows "SDR content brightness" default so the correction is close even without it.
     private const double FallbackSdrWhiteNits = 200.0;
 
-    private const int FrameTimeoutMilliseconds = 1000;
+    // Bounded so a capture that never receives a frame (e.g. WGC not delivering one for fully
+    // static content) falls back to GDI quickly instead of stalling the calling thread — which is
+    // often the UI thread. A healthy capture delivers its first frame within a few refresh
+    // intervals, so this still leaves ample margin.
+    private const int FrameTimeoutMilliseconds = 250;
+
+    private static readonly object _captureLock = new();
+
+    // The D3D11 device, its immediate context, and the WinRT device projection are expensive to
+    // create, so they are built once and reused across captures. A failed capture disposes them via
+    // DisposeSharedDevice so the next call rebuilds a fresh device, which also recovers a lost one.
+    private static ID3D11Device? _sharedDevice;
+    private static ID3D11DeviceContext? _sharedContext;
+    private static IDirect3DDevice? _sharedWinRtDevice;
 
     /// <summary>
     /// Attempts to capture the given virtual-desktop region as an SDR bitmap using HDR-aware
@@ -51,19 +64,105 @@ public static class HdrScreenCapture
         if (!DisplayHdrInfo.TryGetForPoint(centerX, centerY, out MonitorHdrInfo monitor) || !monitor.IsHdrActive)
             return null;
 
-        try
+        lock (_captureLock)
         {
-            return CaptureHdrRegion(region, monitor);
-        }
-        catch
-        {
-            // Any failure in the HDR pipeline: let the caller fall back to the GDI capture.
-            return null;
+            try
+            {
+                return CaptureHdrRegion(region, monitor);
+            }
+            catch
+            {
+                // Any failure in the HDR pipeline (including a lost device): drop the shared device
+                // so the next capture rebuilds it, and let the caller fall back to the GDI capture.
+                DisposeSharedDevice();
+                return null;
+            }
         }
     }
 
     private static Bitmap? CaptureHdrRegion(Rectangle region, MonitorHdrInfo monitor)
     {
+        if (!TryGetSharedDevice(out ID3D11Device d3dDevice, out ID3D11DeviceContext context, out IDirect3DDevice winrtDevice))
+            return null;
+
+        GraphicsCaptureItem? item = CreateItemForMonitor(monitor.Monitor);
+        if (item is null)
+            return null;
+
+        Direct3D11CaptureFramePool framePool = Direct3D11CaptureFramePool.CreateFreeThreaded(
+            winrtDevice,
+            DirectXPixelFormat.R16G16B16A16Float,
+            1,
+            item.Size);
+
+        GraphicsCaptureSession session = framePool.CreateCaptureSession(item);
+        TrySet(() => session.IsCursorCaptureEnabled = false);
+
+        // The yellow/orange capture border is only removable once the app has been granted
+        // "borderless" capture access; setting IsBorderRequired without it throws. The access
+        // request must never block the capture thread (it may show a consent dialog that needs
+        // the UI pump), so we only disable the border when access has already been granted and
+        // otherwise kick off a one-time, non-blocking request that self-heals on later captures.
+        if (_borderlessGranted)
+            TrySet(() => session.IsBorderRequired = false);
+        else
+            EnsureBorderlessRequestedOnce();
+
+        using ManualResetEventSlim frameReady = new(false);
+        Direct3D11CaptureFrame? frame = null;
+
+        void OnFrameArrived(Direct3D11CaptureFramePool sender, object args)
+        {
+            if (frame is not null)
+                return;
+
+            frame = sender.TryGetNextFrame();
+            if (frame is not null)
+                frameReady.Set();
+        }
+
+        framePool.FrameArrived += OnFrameArrived;
+
+        try
+        {
+            session.StartCapture();
+
+            if (!frameReady.Wait(FrameTimeoutMilliseconds) || frame is null)
+                return null;
+
+            return ToneMapFrameToBitmap(frame, region, monitor, d3dDevice, context);
+        }
+        finally
+        {
+            framePool.FrameArrived -= OnFrameArrived;
+            frame?.Dispose();
+            session.Dispose();
+            framePool.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Returns the process-wide D3D11 device, its immediate context, and the WinRT device
+    /// projection, creating them on first use and reusing them on later captures. Every caller runs
+    /// under <see cref="_captureLock"/>, so the shared immediate context is only ever touched by one
+    /// capture at a time. Returns false if a device could not be created.
+    /// </summary>
+    private static bool TryGetSharedDevice(out ID3D11Device device, out ID3D11DeviceContext context, out IDirect3DDevice winrtDevice)
+    {
+        if (_sharedDevice is not null && _sharedContext is not null && _sharedWinRtDevice is not null)
+        {
+            device = _sharedDevice;
+            context = _sharedContext;
+            winrtDevice = _sharedWinRtDevice;
+            return true;
+        }
+
+        DisposeSharedDevice();
+
+        device = null!;
+        context = null!;
+        winrtDevice = null!;
+
         FeatureLevel[] featureLevels =
         [
             FeatureLevel.Level_11_1,
@@ -72,76 +171,41 @@ public static class HdrScreenCapture
             FeatureLevel.Level_10_0,
         ];
 
-        if (D3D11.D3D11CreateDevice(null, DriverType.Hardware, DeviceCreationFlags.BgraSupport, featureLevels, out ID3D11Device? d3dDevice).Failure
-            || d3dDevice is null)
+        if (D3D11.D3D11CreateDevice(null, DriverType.Hardware, DeviceCreationFlags.BgraSupport, featureLevels, out ID3D11Device? created).Failure
+            || created is null)
         {
-            return null;
+            return false;
         }
 
-        using (d3dDevice)
-        using (ID3D11DeviceContext context = d3dDevice.ImmediateContext)
+        IDirect3DDevice? winrt = CreateWinRtDevice(created);
+        if (winrt is null)
         {
-            IDirect3DDevice? winrtDevice = CreateWinRtDevice(d3dDevice);
-            if (winrtDevice is null)
-                return null;
-
-            GraphicsCaptureItem? item = CreateItemForMonitor(monitor.Monitor);
-            if (item is null)
-                return null;
-
-            Direct3D11CaptureFramePool framePool = Direct3D11CaptureFramePool.CreateFreeThreaded(
-                winrtDevice,
-                DirectXPixelFormat.R16G16B16A16Float,
-                1,
-                item.Size);
-
-            GraphicsCaptureSession session = framePool.CreateCaptureSession(item);
-            TrySet(() => session.IsCursorCaptureEnabled = false);
-
-            // The yellow/orange capture border is only removable once the app has been granted
-            // "borderless" capture access; setting IsBorderRequired without it throws. The access
-            // request must never block the capture thread (it may show a consent dialog that needs
-            // the UI pump), so we only disable the border when access has already been granted and
-            // otherwise kick off a one-time, non-blocking request that self-heals on later captures.
-            if (_borderlessGranted)
-                TrySet(() => session.IsBorderRequired = false);
-            else
-                EnsureBorderlessRequestedOnce();
-
-            using ManualResetEventSlim frameReady = new(false);
-            Direct3D11CaptureFrame? frame = null;
-
-            void OnFrameArrived(Direct3D11CaptureFramePool sender, object args)
-            {
-                if (frame is not null)
-                    return;
-
-                frame = sender.TryGetNextFrame();
-                if (frame is not null)
-                    frameReady.Set();
-            }
-
-            framePool.FrameArrived += OnFrameArrived;
-
-            try
-            {
-                session.StartCapture();
-
-                if (!frameReady.Wait(FrameTimeoutMilliseconds) || frame is null)
-                    return null;
-
-                return ToneMapFrameToBitmap(frame, region, monitor, d3dDevice, context);
-            }
-            finally
-            {
-                framePool.FrameArrived -= OnFrameArrived;
-                frame?.Dispose();
-                session.Dispose();
-                framePool.Dispose();
-                item = null;
-                winrtDevice.Dispose();
-            }
+            created.Dispose();
+            return false;
         }
+
+        _sharedDevice = created;
+        _sharedContext = created.ImmediateContext;
+        _sharedWinRtDevice = winrt;
+
+        device = _sharedDevice;
+        context = _sharedContext;
+        winrtDevice = _sharedWinRtDevice;
+        return true;
+    }
+
+    /// <summary>
+    /// Disposes and clears the cached device, context, and WinRT device so the next capture rebuilds
+    /// a fresh device. Called after a capture failure, which also recovers from a lost device.
+    /// </summary>
+    private static void DisposeSharedDevice()
+    {
+        _sharedWinRtDevice?.Dispose();
+        _sharedWinRtDevice = null;
+        _sharedContext?.Dispose();
+        _sharedContext = null;
+        _sharedDevice?.Dispose();
+        _sharedDevice = null;
     }
 
     private static Bitmap? ToneMapFrameToBitmap(
