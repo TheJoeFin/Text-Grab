@@ -1126,5 +1126,29 @@ namespace Text_Grab.Properties {
                 this["GrabFrameBorderColor"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HdrCaptureCorrection {
+            get {
+                return ((bool)(this["HdrCaptureCorrection"]));
+            }
+            set {
+                this["HdrCaptureCorrection"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HdrBorderlessGranted {
+            get {
+                return ((bool)(this["HdrBorderlessGranted"]));
+            }
+            set {
+                this["HdrBorderlessGranted"] = value;
+            }
+        }
     }
 }

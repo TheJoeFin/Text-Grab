@@ -281,6 +281,35 @@
             Margin="0,16,0,4"
             FontSize="16"
             Style="{StaticResource TextHeader}"
+            Text="HDR Displays" />
+        <StackPanel Orientation="Horizontal">
+            <ui:ToggleSwitch
+                Name="HdrCaptureCorrectionToggle"
+                VerticalAlignment="Center"
+                Checked="HdrCaptureCorrectionToggle_Checked"
+                Unchecked="HdrCaptureCorrectionToggle_Unchecked">
+                <TextBlock Style="{StaticResource TextBodyNormal}">
+                    Correct washed-out captures on HDR displays
+                </TextBlock>
+            </ui:ToggleSwitch>
+            <ui:Button
+                Name="CheckHdrPermissionButton"
+                Margin="16,0,0,0"
+                VerticalAlignment="Center"
+                Click="CheckHdrPermissionButton_Click"
+                Content="Check permissions" />
+        </StackPanel>
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            Captures HDR screens at full range and tone-maps them back to SDR so text isn't overly bright. Only affects monitors with HDR turned on.
+        </TextBlock>
+        <TextBlock Style="{StaticResource TextBodyNormal}">
+            Removing the yellow capture border needs Windows "borderless capture" permission. Use Check permissions to grant it.
+        </TextBlock>
+
+        <TextBlock
+            Margin="0,16,0,4"
+            FontSize="16"
+            Style="{StaticResource TextHeader}"
             Text="Web Search Options" />
         <ComboBox
             x:Name="WebSearchersComboBox"

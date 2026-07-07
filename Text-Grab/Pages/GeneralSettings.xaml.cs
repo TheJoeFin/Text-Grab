@@ -132,6 +132,7 @@ public partial class GeneralSettings : Page
 
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
         ReadBarcodesBarcode.IsChecked = DefaultSettings.TryToReadBarcodes;
+        HdrCaptureCorrectionToggle.IsChecked = DefaultSettings.HdrCaptureCorrection;
         HistorySwitch.IsChecked = DefaultSettings.UseHistory;
         ErrorCorrectBox.IsChecked = DefaultSettings.CorrectErrors;
         CorrectToLatin.IsChecked = DefaultSettings.CorrectToLatin;
@@ -267,6 +268,54 @@ public partial class GeneralSettings : Page
             return;
 
         DefaultSettings.TryToReadBarcodes = false;
+    }
+
+    private void HdrCaptureCorrectionToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.HdrCaptureCorrection = true;
+    }
+
+    private void HdrCaptureCorrectionToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.HdrCaptureCorrection = false;
+    }
+
+    private async void CheckHdrPermissionButton_Click(object sender, RoutedEventArgs e)
+    {
+        CheckHdrPermissionButton.IsEnabled = false;
+
+        Windows.Security.Authorization.AppCapabilityAccess.AppCapabilityAccessStatus status =
+            await Utilities.Hdr.HdrScreenCapture.RequestBorderlessAccessAsync();
+
+        CheckHdrPermissionButton.IsEnabled = true;
+
+        bool allowed = status == Windows.Security.Authorization.AppCapabilityAccess.AppCapabilityAccessStatus.Allowed;
+        DefaultSettings.HdrBorderlessGranted = allowed;
+        DefaultSettings.Save();
+
+        string message = status switch
+        {
+            Windows.Security.Authorization.AppCapabilityAccess.AppCapabilityAccessStatus.Allowed
+                => "Borderless capture is allowed. The yellow capture border will no longer appear.",
+            Windows.Security.Authorization.AppCapabilityAccess.AppCapabilityAccessStatus.DeniedByUser
+                => "Borderless capture was denied. You can allow it in Windows Settings under Privacy & security → Graphics capture (or the consent prompt).",
+            Windows.Security.Authorization.AppCapabilityAccess.AppCapabilityAccessStatus.DeniedBySystem
+                => "Borderless capture is blocked on this system, so the capture border can't be removed.",
+            _ => "Borderless capture permission is currently unavailable.",
+        };
+
+        await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "HDR Capture Permission",
+            Content = message,
+            CloseButtonText = "OK"
+        }.ShowDialogAsync();
     }
 
     private void HistorySwitch_Checked(object sender, RoutedEventArgs e)
