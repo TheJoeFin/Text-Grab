@@ -108,7 +108,8 @@ public partial class GeneralSettings : Page
                     StartupOnLoginCheckBox.IsChecked = false;
                     StartupOnLoginCheckBox.IsEnabled = false;
 
-                    StartupTextBlock.Text += "\nDisabled in Task Manager";
+                    StartupTextBlock.Text = "Auto start is disabled in Task Manager";
+                    StartupTextBlock.Visibility = Visibility.Visible;
                     break;
                 case StartupTaskState.Enabled:
                     StartupOnLoginCheckBox.IsChecked = true;

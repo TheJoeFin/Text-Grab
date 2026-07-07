@@ -2,338 +2,270 @@
     x:Class="Text_Grab.Pages.EditTextWindowSettings"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="EditTextWindowSettings"
     d:DesignHeight="900"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
-        <TextBlock Style="{StaticResource TextHeader}" Text="Edit Text Window Settings" />
+    <StackPanel Margin="20,12,24,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource SettingsPageTitle}" Text="Edit Text Window Settings" />
 
-        <TextBlock
-            Margin="0,12,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Window Behavior" />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Window behavior" />
 
-        <CheckBox
-            x:Name="EditWindowStartFullscreenCheckBox"
-            Margin="0,4,0,0"
-            Click="EditWindowStartFullscreenCheckBox_Click"
-            Content="Launch Fullscreen Grab on startup" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="When opening an empty Edit Text Window, immediately trigger a Fullscreen Grab. The window restores from minimized once text is captured." />
+        <controls:SettingsCard
+            Description="When opening an empty Edit Text Window, immediately trigger a Fullscreen Grab. The window restores from minimized once text is captured."
+            HeaderText="Launch Fullscreen Grab on startup"
+            Icon="{ui:SymbolIcon FullScreenMaximize24}">
+            <ui:ToggleSwitch x:Name="EditWindowStartFullscreenCheckBox" Click="EditWindowStartFullscreenCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="EditWindowIsOnTopCheckBox"
-            Margin="0,4,0,0"
-            Click="EditWindowIsOnTopCheckBox_Click"
-            Content="Keep window always on top" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="The Edit Text Window will stay above all other windows." />
+        <controls:SettingsCard
+            Description="The Edit Text Window will stay above all other windows."
+            HeaderText="Keep window always on top"
+            Icon="{ui:SymbolIcon Pin24}">
+            <ui:ToggleSwitch x:Name="EditWindowIsOnTopCheckBox" Click="EditWindowIsOnTopCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="EditWindowIsWordWrapOnCheckBox"
-            Margin="0,4,0,0"
-            Click="EditWindowIsWordWrapOnCheckBox_Click"
-            Content="Enable word wrap" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Wrap long lines of text instead of scrolling horizontally." />
+        <controls:SettingsCard
+            Description="Wrap long lines of text instead of scrolling horizontally."
+            HeaderText="Enable word wrap"
+            Icon="{ui:SymbolIcon TextWrap24}">
+            <ui:ToggleSwitch x:Name="EditWindowIsWordWrapOnCheckBox" Click="EditWindowIsWordWrapOnCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="RestoreEtwPositionsCheckBox"
-            Margin="0,4,0,0"
-            Click="RestoreEtwPositionsCheckBox_Click"
-            Content="Restore window size and position on startup" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Remember and restore the Edit Text Window's size and position between sessions." />
+        <controls:SettingsCard
+            Description="Remember and restore the Edit Text Window's size and position between sessions."
+            HeaderText="Restore window size and position on startup"
+            Icon="{ui:SymbolIcon WindowLocationTarget20}">
+            <ui:ToggleSwitch x:Name="RestoreEtwPositionsCheckBox" Click="RestoreEtwPositionsCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="EtwNormalizeLineEndingsOnPasteCheckBox"
-            Margin="0,4,0,0"
-            Click="EtwNormalizeLineEndingsOnPasteCheckBox_Click"
-            Content="Normalize to Windows line endings on paste" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Convert Unix (LF) and classic Mac (CR) line endings to Windows (CRLF) when pasting text." />
+        <controls:SettingsCard
+            Description="Convert Unix (LF) and classic Mac (CR) line endings to Windows (CRLF) when pasting text."
+            HeaderText="Normalize to Windows line endings on paste"
+            Icon="{ui:SymbolIcon TextParagraph24}">
+            <ui:ToggleSwitch x:Name="EtwNormalizeLineEndingsOnPasteCheckBox" Click="EtwNormalizeLineEndingsOnPasteCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <TextBlock
-            Margin="0,16,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Spell Check" />
+        <controls:SettingsExpander
+            Description="Control when red squiggles appear under misspelled words in the Edit Text Window."
+            HeaderText="Spell check"
+            Icon="{ui:SymbolIcon TextGrammarCheckmark24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="SpellCheckAutoRadio"
+                    Click="SpellCheckModeRadio_Click"
+                    Content="Auto"
+                    GroupName="EtwSpellCheckMode"
+                    Tag="Auto" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Turn spell check off automatically for very large documents or content with several long unspaced tokens (GUIDs, app manifests, base64), and on otherwise."
+                    TextWrapping="Wrap" />
 
-        <TextBlock
-            Margin="0,0,0,6"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Control when red squiggles appear under misspelled words in the Edit Text Window." />
+                <RadioButton
+                    x:Name="SpellCheckAlwaysOnRadio"
+                    Click="SpellCheckModeRadio_Click"
+                    Content="Always on"
+                    GroupName="EtwSpellCheckMode"
+                    Tag="AlwaysOn" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Always spell check, regardless of the content."
+                    TextWrapping="Wrap" />
 
-        <StackPanel Margin="12,0,0,0">
-            <RadioButton
-                x:Name="SpellCheckAutoRadio"
-                Click="SpellCheckModeRadio_Click"
-                Content="Auto"
-                GroupName="EtwSpellCheckMode"
-                Tag="Auto" />
-            <TextBlock
-                Margin="24,0,0,6"
-                Opacity="0.75"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Turn spell check off automatically for very large documents or content with several long unspaced tokens (GUIDs, app manifests, base64), and on otherwise." />
+                <RadioButton
+                    x:Name="SpellCheckOffRadio"
+                    Click="SpellCheckModeRadio_Click"
+                    Content="Off"
+                    GroupName="EtwSpellCheckMode"
+                    Tag="Off" />
+                <TextBlock
+                    Margin="24,0,0,0"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Never spell check."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </controls:SettingsExpander>
 
-            <RadioButton
-                x:Name="SpellCheckAlwaysOnRadio"
-                Click="SpellCheckModeRadio_Click"
-                Content="Always on"
-                GroupName="EtwSpellCheckMode"
-                Tag="AlwaysOn" />
-            <TextBlock
-                Margin="24,0,0,6"
-                Opacity="0.75"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Always spell check, regardless of the content." />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Toolbar and UI" />
 
-            <RadioButton
-                x:Name="SpellCheckOffRadio"
-                Click="SpellCheckModeRadio_Click"
-                Content="Off"
-                GroupName="EtwSpellCheckMode"
-                Tag="Off" />
-            <TextBlock
-                Margin="24,0,0,8"
-                Opacity="0.75"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Never spell check." />
-        </StackPanel>
+        <controls:SettingsCard
+            Description="Collapse the bottom bar that contains status text, character info, regex buttons, and the language picker."
+            HeaderText="Hide bottom toolbar"
+            Icon="{ui:SymbolIcon PanelBottom20}">
+            <ui:ToggleSwitch x:Name="EditWindowBottomBarIsHiddenCheckBox" Click="EditWindowBottomBarIsHiddenCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <TextBlock
-            Margin="0,16,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Toolbar and UI" />
+        <controls:SettingsCard
+            Description="Add an OCR language selector control to the bottom bar."
+            HeaderText="Show language picker in toolbar"
+            Icon="{ui:SymbolIcon LocalLanguage24}">
+            <ui:ToggleSwitch x:Name="EtwShowLangPickerCheckBox" Click="EtwShowLangPickerCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="EditWindowBottomBarIsHiddenCheckBox"
-            Margin="0,4,0,0"
-            Click="EditWindowBottomBarIsHiddenCheckBox_Click"
-            Content="Hide bottom toolbar" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Collapse the bottom bar that contains status text, character info, regex buttons, and the language picker." />
+        <controls:SettingsCard
+            Description="Add responsive horizontal padding to the text area (50–160px depending on window width) to improve readability on wider windows."
+            HeaderText="Show text margins"
+            Icon="{ui:SymbolIcon AutoFitWidth24}">
+            <ui:ToggleSwitch x:Name="EtwUseMarginsCheckBox" Click="EtwUseMarginsCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="EtwShowLangPickerCheckBox"
-            Margin="0,4,0,0"
-            Click="EtwShowLangPickerCheckBox_Click"
-            Content="Show language picker in toolbar" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Add an OCR language selector control to the bottom bar." />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Text" />
 
-        <CheckBox
-            x:Name="EtwUseMarginsCheckBox"
-            Margin="0,4,0,0"
-            Click="EtwUseMarginsCheckBox_Click"
-            Content="Show text margins" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Add responsive horizontal padding to the text area (50–160px depending on window width) to improve readability on wider windows." />
+        <controls:SettingsExpander
+            Description="Default font used when opening a new Edit Text Window."
+            HeaderText="Default font"
+            Icon="{ui:SymbolIcon TextFont24}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Width="90"
+                        VerticalAlignment="Center"
+                        Text="Font family:" />
+                    <TextBox
+                        x:Name="FontFamilyTextBox"
+                        Width="200"
+                        Margin="12,0,0,0"
+                        LostFocus="FontFamilyTextBox_LostFocus" />
+                </StackPanel>
 
-        <TextBlock
-            Margin="0,16,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Default Font" />
+                <StackPanel
+                    Margin="0,8,0,0"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <TextBlock
+                        Width="90"
+                        VerticalAlignment="Center"
+                        Text="Font size:" />
+                    <Slider
+                        x:Name="FontSizeSlider"
+                        Width="200"
+                        Margin="12,0,0,0"
+                        IsSnapToTickEnabled="True"
+                        Maximum="72"
+                        Minimum="8"
+                        SmallChange="1"
+                        TickFrequency="1"
+                        ValueChanged="FontSizeSlider_ValueChanged" />
+                    <TextBlock
+                        x:Name="FontSizeValueText"
+                        Width="36"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center" />
+                </StackPanel>
 
-        <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
-            <TextBlock
-                VerticalAlignment="Center"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Font family:" />
-            <TextBox
-                x:Name="FontFamilyTextBox"
-                Width="200"
-                Margin="12,0,0,0"
-                LostFocus="FontFamilyTextBox_LostFocus" />
-        </StackPanel>
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                    <CheckBox
+                        x:Name="IsFontBoldCheckBox"
+                        Click="IsFontBoldCheckBox_Click"
+                        Content="Bold" />
+                    <CheckBox
+                        x:Name="IsFontItalicCheckBox"
+                        Margin="16,0,0,0"
+                        Click="IsFontItalicCheckBox_Click"
+                        Content="Italic" />
+                    <CheckBox
+                        x:Name="IsFontUnderlineCheckBox"
+                        Margin="16,0,0,0"
+                        Click="IsFontUnderlineCheckBox_Click"
+                        Content="Underline" />
+                    <CheckBox
+                        x:Name="IsFontStrikeoutCheckBox"
+                        Margin="16,0,0,0"
+                        Click="IsFontStrikeoutCheckBox_Click"
+                        Content="Strikeout" />
+                </StackPanel>
+            </StackPanel>
+        </controls:SettingsExpander>
 
-        <StackPanel
-            Margin="0,8,0,0"
-            VerticalAlignment="Center"
-            Orientation="Horizontal">
-            <TextBlock
-                VerticalAlignment="Center"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Font size:" />
-            <Slider
-                x:Name="FontSizeSlider"
-                Width="200"
-                Margin="12,0,0,0"
-                IsSnapToTickEnabled="True"
-                Maximum="72"
-                Minimum="8"
-                SmallChange="1"
-                TickFrequency="1"
-                ValueChanged="FontSizeSlider_ValueChanged" />
-            <TextBlock
-                x:Name="FontSizeValueText"
-                Width="36"
-                Margin="12,0,0,0"
-                HorizontalAlignment="Left"
-                Style="{StaticResource TextBodyNormal}" />
-        </StackPanel>
+        <controls:SettingsExpander
+            Description="Choose which details appear as clickable buttons in the Edit Text Window status bar."
+            HeaderText="Status bar details"
+            Icon="{ui:SymbolIcon AppsListDetail24}">
+            <StackPanel>
+                <CheckBox
+                    x:Name="EtwShowWordCountCheckBox"
+                    Click="EtwShowWordCountCheckBox_Click"
+                    Content="Show word count" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Adds word count alongside the cursor line and column in the status bar (e.g. &quot;Wrds 42, Ln 3, Col 7&quot;)."
+                    TextWrapping="Wrap" />
 
-        <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
-            <CheckBox
-                x:Name="IsFontBoldCheckBox"
-                Click="IsFontBoldCheckBox_Click"
-                Content="Bold" />
-            <CheckBox
-                x:Name="IsFontItalicCheckBox"
-                Margin="16,0,0,0"
-                Click="IsFontItalicCheckBox_Click"
-                Content="Italic" />
-            <CheckBox
-                x:Name="IsFontUnderlineCheckBox"
-                Margin="16,0,0,0"
-                Click="IsFontUnderlineCheckBox_Click"
-                Content="Underline" />
-            <CheckBox
-                x:Name="IsFontStrikeoutCheckBox"
-                Margin="16,0,0,0"
-                Click="IsFontStrikeoutCheckBox_Click"
-                Content="Strikeout" />
-        </StackPanel>
-        <TextBlock
-            Margin="0,4,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Default font used when opening a new Edit Text Window." />
+                <CheckBox
+                    x:Name="EtwShowCharDetailsCheckBox"
+                    Click="EtwShowCharDetailsCheckBox_Click"
+                    Content="Show character details" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="For a single selected character, shows its Unicode code point (e.g. U+0041). For a longer selection, shows the character count."
+                    TextWrapping="Wrap" />
 
-        <TextBlock
-            Margin="0,16,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Status Bar" />
+                <CheckBox
+                    x:Name="EtwShowMatchCountCheckBox"
+                    Click="EtwShowMatchCountCheckBox_Click"
+                    Content="Show exact match count" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Searches the full text for exact copies of the current selection. Click the count to open Find and Replace."
+                    TextWrapping="Wrap" />
 
-        <TextBlock
-            Margin="0,0,0,6"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Choose which details appear as clickable buttons in the Edit Text Window status bar." />
+                <CheckBox
+                    x:Name="EtwShowRegexPatternCheckBox"
+                    Click="EtwShowRegexPatternCheckBox_Click"
+                    Content="Show generated regex pattern" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Displays a regex pattern derived from the current selection. Scroll the mouse wheel over the button to adjust match precision."
+                    TextWrapping="Wrap" />
 
-        <CheckBox
-            x:Name="EtwShowWordCountCheckBox"
-            Margin="0,4,0,0"
-            Click="EtwShowWordCountCheckBox_Click"
-            Content="Show word count" />
-        <TextBlock
-            Margin="24,0,0,6"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Adds word count alongside the cursor line and column in the status bar (e.g. &quot;Wrds 42, Ln 3, Col 7&quot;)." />
+                <CheckBox
+                    x:Name="EtwShowSimilarMatchesCheckBox"
+                    Click="EtwShowSimilarMatchesCheckBox_Click"
+                    Content="Show similar text matches" />
+                <TextBlock
+                    Margin="24,0,0,0"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Counts other text that matches the same character-class pattern as the selection. Scroll the mouse wheel over the button to adjust match precision."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </controls:SettingsExpander>
 
-        <CheckBox
-            x:Name="EtwShowCharDetailsCheckBox"
-            Margin="0,4,0,0"
-            Click="EtwShowCharDetailsCheckBox_Click"
-            Content="Show character details" />
-        <TextBlock
-            Margin="24,0,0,6"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="For a single selected character, shows its Unicode code point (e.g. U+0041). For a longer selection, shows the character count." />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Calculator" />
 
-        <CheckBox
-            x:Name="EtwShowMatchCountCheckBox"
-            Margin="0,4,0,0"
-            Click="EtwShowMatchCountCheckBox_Click"
-            Content="Show exact match count" />
-        <TextBlock
-            Margin="24,0,0,6"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Searches the full text for exact copies of the current selection. Click the count to open Find and Replace." />
+        <controls:SettingsCard
+            Description="Show a right-side panel that evaluates math expressions as you type them in the editor."
+            HeaderText="Show calculator pane"
+            Icon="{ui:SymbolIcon Calculator24}">
+            <ui:ToggleSwitch x:Name="CalcShowPaneCheckBox" Click="CalcShowPaneCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="EtwShowRegexPatternCheckBox"
-            Margin="0,4,0,0"
-            Click="EtwShowRegexPatternCheckBox_Click"
-            Content="Show generated regex pattern" />
-        <TextBlock
-            Margin="24,0,0,6"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Displays a regex pattern derived from the current selection. Scroll the mouse wheel over the button to adjust match precision." />
-
-        <CheckBox
-            x:Name="EtwShowSimilarMatchesCheckBox"
-            Margin="0,4,0,8"
-            Click="EtwShowSimilarMatchesCheckBox_Click"
-            Content="Show similar text matches" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Counts other text that matches the same character-class pattern as the selection. Scroll the mouse wheel over the button to adjust match precision." />
-
-        <TextBlock
-            Margin="0,16,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Calculator" />
-
-        <CheckBox
-            x:Name="CalcShowPaneCheckBox"
-            Margin="0,4,0,0"
-            Click="CalcShowPaneCheckBox_Click"
-            Content="Show calculator pane" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Show a right-side panel that evaluates math expressions as you type them in the editor." />
-
-        <CheckBox
-            x:Name="CalcShowErrorsCheckBox"
-            Margin="0,4,0,0"
-            Click="CalcShowErrorsCheckBox_Click"
-            Content="Show calculator errors" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Display expression evaluation errors inline in the calculator pane." />
+        <controls:SettingsCard
+            Description="Display expression evaluation errors inline in the calculator pane."
+            HeaderText="Show calculator errors"
+            Icon="{ui:SymbolIcon ErrorCircle24}">
+            <ui:ToggleSwitch x:Name="CalcShowErrorsCheckBox" Click="CalcShowErrorsCheckBox_Click" />
+        </controls:SettingsCard>
 
     </StackPanel>
 </Page>
