@@ -1,0 +1,251 @@
+<ui:FluentWindow
+    x:Class="Text_Grab.Controls.SplitColumnWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Text_Grab.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Split into Columns"
+    Width="440"
+    Height="520"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
+    Closed="Window_Closed"
+    KeyUp="Window_KeyUp"
+    Loaded="Window_Loaded"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.CommandBindings>
+        <CommandBinding
+            CanExecute="Split_CanExecute"
+            Command="{x:Static local:SplitColumnWindow.SplitCmd}"
+            Executed="Split_Executed" />
+        <CommandBinding
+            CanExecute="Split_CanExecute"
+            Command="{x:Static local:SplitColumnWindow.ApplyCmd}"
+            Executed="Apply_Executed" />
+    </Window.CommandBindings>
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+    <Grid Margin="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar
+            Title="Split into Columns"
+            Height="32"
+            Margin="2,2,2,0"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+
+        <StackPanel Grid.Row="1" Margin="12,12,12,0">
+            <TextBlock
+                Margin="0,0,0,6"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Cell contents (select text to extract a pattern)" />
+            <TextBox
+                x:Name="SourceTextBox"
+                Height="60"
+                AcceptsReturn="True"
+                IsReadOnly="True"
+                SelectionChanged="SourceTextBox_SelectionChanged"
+                TextWrapping="Wrap"
+                VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="12,12,12,0"
+            Orientation="Horizontal">
+            <RadioButton
+                x:Name="DelimiterRadioButton"
+                Margin="0,0,12,0"
+                Checked="SplitModeRadioButton_Checked"
+                Content="Delimiter"
+                GroupName="SplitMode"
+                IsChecked="True" />
+            <RadioButton
+                x:Name="RegexRadioButton"
+                Margin="0,0,12,0"
+                Checked="SplitModeRadioButton_Checked"
+                Content="Pattern (regex)"
+                GroupName="SplitMode" />
+            <RadioButton
+                x:Name="FixedLengthRadioButton"
+                Checked="SplitModeRadioButton_Checked"
+                Content="Fixed length"
+                GroupName="SplitMode" />
+        </StackPanel>
+
+        <Grid
+            Grid.Row="3"
+            Margin="12,12,12,0"
+            MinHeight="84">
+            <!--  Delimiter panel  -->
+            <StackPanel x:Name="DelimiterPanel" Orientation="Horizontal">
+                <TextBlock
+                    Width="120"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="Split on" />
+                <TextBox
+                    x:Name="DelimiterTextBox"
+                    Width="200"
+                    VerticalAlignment="Center"
+                    MaxLines="1"
+                    TextChanged="SplitInputChanged" />
+            </StackPanel>
+
+            <!--  Regex / pattern panel  -->
+            <StackPanel x:Name="RegexPanel" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource TextBodyNormal}"
+                        Text="Split on" />
+                    <local:InlinePickerRichTextBox
+                        x:Name="PatternPickerBox"
+                        Width="200"
+                        MinHeight="30"
+                        VerticalAlignment="Center"
+                        TextChanged="PatternInputChanged"
+                        ToolTip="Type { to pick a saved or smart pattern, or type a regex to split on." />
+                </StackPanel>
+                <StackPanel
+                    Margin="0,8,0,0"
+                    Orientation="Horizontal">
+                    <ui:ToggleSwitch
+                        x:Name="IgnoreCaseToggle"
+                        VerticalContentAlignment="Center"
+                        Checked="SplitInputChanged"
+                        Unchecked="SplitInputChanged">
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                            Ignore case
+                        </TextBlock>
+                    </ui:ToggleSwitch>
+                    <local:CollapsibleButton
+                        x:Name="ExtractButton"
+                        Margin="16,0,0,0"
+                        VerticalAlignment="Center"
+                        ButtonSymbol="Search24"
+                        ButtonText="Extract from selection"
+                        Click="ExtractButton_Click" />
+                </StackPanel>
+            </StackPanel>
+
+            <!--  Fixed-length panel  -->
+            <StackPanel x:Name="FixedLengthPanel" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource TextBodyNormal}"
+                        Text="Split after" />
+                    <TextBox
+                        x:Name="LengthTextBox"
+                        Width="80"
+                        VerticalAlignment="Center"
+                        MaxLines="1"
+                        Text="10"
+                        TextChanged="SplitInputChanged" />
+                    <TextBlock
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource TextBodyNormal}"
+                        Text="characters" />
+                </StackPanel>
+                <ui:ToggleSwitch
+                    x:Name="FromEndToggle"
+                    Margin="0,8,0,0"
+                    VerticalContentAlignment="Center"
+                    Checked="SplitInputChanged"
+                    Unchecked="SplitInputChanged">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Count from end
+                    </TextBlock>
+                </ui:ToggleSwitch>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel
+            x:Name="SplitterHandlingPanel"
+            Grid.Row="4"
+            Margin="12,12,12,0"
+            Orientation="Horizontal">
+            <TextBlock
+                Width="120"
+                VerticalAlignment="Center"
+                Style="{StaticResource TextBodyNormal}"
+                Text="Splitter" />
+            <RadioButton
+                x:Name="SplitterRemoveRadio"
+                Margin="0,0,12,0"
+                Checked="SplitInputChanged"
+                Content="Remove"
+                GroupName="SplitterHandling"
+                IsChecked="True" />
+            <RadioButton
+                x:Name="SplitterLeftRadio"
+                Margin="0,0,12,0"
+                Checked="SplitInputChanged"
+                Content="Keep left"
+                GroupName="SplitterHandling" />
+            <RadioButton
+                x:Name="SplitterRightRadio"
+                Checked="SplitInputChanged"
+                Content="Keep right"
+                GroupName="SplitterHandling" />
+        </StackPanel>
+
+        <TextBlock
+            Grid.Row="5"
+            Margin="12,8,12,6"
+            Style="{StaticResource TextBodyNormal}"
+            Text="Preview" />
+
+        <TextBox
+            x:Name="PreviewTextBox"
+            Grid.Row="6"
+            Height="64"
+            Margin="12,0,12,0"
+            VerticalAlignment="Top"
+            AcceptsReturn="True"
+            FontFamily="Cascadia Mono, Consolas, Courier New"
+            HorizontalScrollBarVisibility="Auto"
+            IsReadOnly="True"
+            TextWrapping="NoWrap"
+            VerticalScrollBarVisibility="Auto" />
+
+        <StackPanel
+            Grid.Row="7"
+            Margin="0,16,0,12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Orientation="Horizontal">
+            <local:CollapsibleButton
+                x:Name="ApplyButton"
+                VerticalAlignment="Center"
+                ButtonSymbol="ArrowClockwise24"
+                ButtonText="Apply"
+                Command="{x:Static local:SplitColumnWindow.ApplyCmd}" />
+            <local:CollapsibleButton
+                x:Name="DoneButton"
+                Margin="8,0,0,0"
+                VerticalAlignment="Center"
+                ButtonSymbol="Checkmark24"
+                ButtonText="Done"
+                Command="{x:Static local:SplitColumnWindow.SplitCmd}" />
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>
