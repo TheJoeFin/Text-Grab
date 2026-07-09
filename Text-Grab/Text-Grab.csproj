@@ -82,8 +82,12 @@
         <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.1.0" />
         <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.2.0" />
         <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.2.1" />
-        <PackageReference Include="NCalcAsync" Version="6.2.0" />
-        <PackageReference Include="PdfPig" Version="0.1.14" />
+        <PackageReference Include="NCalcAsync" Version="6.4.0" />
+        <PackageReference Include="NuGet.CommandLine" Version="7.6.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="PdfPig" Version="0.1.15" />
         <PackageReference Include="UnitsNet" Version="5.75.0" />
         <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
         <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
