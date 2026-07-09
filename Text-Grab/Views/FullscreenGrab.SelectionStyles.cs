@@ -1064,6 +1064,15 @@ public partial class FullscreenGrab
         PreviousGrabWindow? grabIndicator = null;
         if (selectedLanguage is not UiAutomationLang)
         {
+            // Capture the region before showing the loading indicator so the overlay
+            // itself isn't baked into the OCR input or the saved history screenshot
+            // (issue #662). Small clicks don't use the region bitmap and don't save
+            // to history, so skip the extra capture there.
+            if (!isSmallClick
+                && selection.CapturedImage is null
+                && GetBitmapSourceForGrabFrame(selection) is BitmapSource preCapturedForCommit)
+                selection = selection with { CapturedImage = preCapturedForCommit };
+
             grabIndicator = new(GetHistoryPositionRect(selection), PreviousGrabIndicator.Loading);
             grabIndicator.Show();
         }

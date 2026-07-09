@@ -161,7 +161,8 @@ public static partial class OcrUtilities
     public static async Task<string> GetTextFromAbsoluteRectAsync(
         Rect rect,
         ILanguage language,
-        IReadOnlyCollection<IntPtr>? excludedHandles = null)
+        IReadOnlyCollection<IntPtr>? excludedHandles = null,
+        Bitmap? preCapturedBitmap = null)
     {
         if (IsUiAutomationLanguage(language))
         {
@@ -172,8 +173,7 @@ public static partial class OcrUtilities
             language = GetCompatibleOcrLanguage(language);
         }
 
-        Rectangle selectedRegion = rect.AsRectangle();
-        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
+        Bitmap bmp = preCapturedBitmap ?? ImageMethods.GetRegionOfScreenAsBitmap(rect.AsRectangle());
 
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
@@ -373,14 +373,18 @@ public static partial class OcrUtilities
             return;
 
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+        ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+
+        // Capture the region before showing the loading indicator so the overlay itself
+        // isn't baked into the region's screenshot (issue #662).
+        Bitmap preCapturedBitmap = ImageMethods.GetRegionOfScreenAsBitmap(scaledRect.AsRectangle());
 
         PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
         try
         {
-            ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
+            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language, preCapturedBitmap: preCapturedBitmap);
             (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
                 LanguageUtilities.GetPersistedLanguageIdentity(language);
 
@@ -421,14 +425,18 @@ public static partial class OcrUtilities
             return;
 
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+        ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+
+        // Capture the region before showing the loading indicator so the overlay itself
+        // isn't baked into the region's screenshot (issue #662).
+        Bitmap preCapturedBitmap = ImageMethods.GetRegionOfScreenAsBitmap(scaledRect.AsRectangle());
 
         PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
         try
         {
-            ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
+            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language, preCapturedBitmap: preCapturedBitmap);
             (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
                 LanguageUtilities.GetPersistedLanguageIdentity(language);
 
