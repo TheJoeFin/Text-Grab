@@ -29,7 +29,8 @@
       "Bash(gh issue view *)",
       "Bash(git log *)",
       "Bash(gh pr view *)",
-      "Bash(gh pr diff *)"
+      "Bash(gh pr diff *)",
+      "Bash(git fetch *)"
     ],
     "deny": []
   }
