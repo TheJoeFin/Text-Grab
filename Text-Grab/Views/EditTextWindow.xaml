@@ -83,6 +83,7 @@
         <ContextMenu x:Key="SpreadsheetContextMenu" Opened="SpreadsheetContextMenu_Opened">
             <MenuItem Click="AddSpreadsheetRowMenuItem_Click" Header="Add Row Below" />
             <MenuItem Click="AddSpreadsheetColumnMenuItem_Click" Header="Add Column Right" />
+            <MenuItem Click="SplitSpreadsheetCellsMenuItem_Click" Header="Split into Columns…" />
             <Separator />
             <MenuItem Command="ApplicationCommands.Cut" />
             <MenuItem Command="ApplicationCommands.Copy" />

@@ -682,6 +682,78 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             focusColumn);
     }
 
+    private void SplitSpreadsheetCellsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (editorMode != EtwEditorMode.Spreadsheet)
+            return;
+
+        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
+        if (targetCells.Count == 0)
+            return;
+
+        (int rowIndex, int columnIndex) = targetCells[0];
+        string sampleText = string.Empty;
+        if (rowIndex >= 0 && rowIndex < spreadsheetTable.Rows.Count
+            && columnIndex >= 0 && columnIndex < spreadsheetTable.Columns.Count)
+        {
+            sampleText = spreadsheetTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
+        }
+
+        SplitColumnWindow splitColumnWindow = new()
+        {
+            Owner = this,
+            SampleText = sampleText
+        };
+        splitColumnWindow.ShowDialog();
+    }
+
+    internal void SplitSelectedSpreadsheetCells(SplitColumnOptions options)
+    {
+        if (editorMode != EtwEditorMode.Spreadsheet || tableDocument is null)
+            return;
+
+        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
+        if (targetCells.Count == 0)
+            return;
+
+        ApplySpreadsheetDocumentChange(document =>
+        {
+            // Compute the split for each target cell before mutating the table.
+            List<(int RowIndex, int ColumnIndex, IReadOnlyList<string> Parts)> splits = [];
+            int maxRequiredColumns = document.ColumnCount;
+
+            foreach ((int rowIndex, int columnIndex) in targetCells)
+            {
+                if (rowIndex < 0 || rowIndex >= document.Rows.Count
+                    || columnIndex < 0 || columnIndex >= document.ColumnCount)
+                {
+                    continue;
+                }
+
+                string cellValue = document.Rows[rowIndex][columnIndex] ?? string.Empty;
+                IReadOnlyList<string> parts = ColumnSplitUtilities.SplitCell(cellValue, options);
+                splits.Add((rowIndex, columnIndex, parts));
+                maxRequiredColumns = Math.Max(maxRequiredColumns, columnIndex + parts.Count);
+            }
+
+            // Grow the table so every row has room for the widest split, then pad all rows.
+            document.ColumnCount = Math.Max(document.ColumnCount, maxRequiredColumns);
+            document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, maxRequiredColumns);
+            document.EnsureMinimumSize();
+
+            // Overwrite the original cell and the cells to its right with the resulting parts.
+            foreach ((int rowIndex, int columnIndex, IReadOnlyList<string> parts) in splits)
+            {
+                for (int partIndex = 0; partIndex < parts.Count; partIndex++)
+                {
+                    int targetColumn = columnIndex + partIndex;
+                    if (rowIndex < document.Rows.Count && targetColumn < document.Rows[rowIndex].Count)
+                        document.Rows[rowIndex][targetColumn] = parts[partIndex];
+                }
+            }
+        });
+    }
+
     private void TransposeTableCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         e.CanExecute = editorMode == EtwEditorMode.Spreadsheet;
