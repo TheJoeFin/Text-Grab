@@ -824,6 +824,7 @@
                     HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     HorizontalScrollBarVisibility="Auto"
                     LoadingRow="SpreadsheetDataGrid_LoadingRow"
+                    PreparingCellForEdit="SpreadsheetDataGrid_PreparingCellForEdit"
                     PreviewKeyDown="SpreadsheetDataGrid_PreviewKeyDown"
                     PreviewMouseLeftButtonDown="SpreadsheetDataGrid_PreviewMouseLeftButtonDown"
                     PreviewMouseRightButtonDown="SpreadsheetDataGrid_PreviewMouseRightButtonDown"

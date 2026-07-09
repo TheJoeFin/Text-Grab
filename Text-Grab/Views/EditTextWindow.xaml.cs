@@ -101,6 +101,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private readonly DataTable spreadsheetTable = new();
     private readonly List<DataGridColumn> trackedSpreadsheetColumns = [];
     private List<(int RowIndex, int ColumnIndex)> selectedSpreadsheetCellCoordinates = [];
+    private System.Windows.Controls.TextBox? activeSpreadsheetCellEditor;
+    private string lastSpreadsheetCellEditorSelectedText = string.Empty;
     private EtwEditorMode editorMode = EtwEditorMode.Text;
     private SpellCheckMode spellCheckMode = SpellCheckMode.Auto;
     private bool isSyncingTextFromSpreadsheet = false;
@@ -1097,6 +1099,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SpreadsheetDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
+        DetachSpreadsheetCellEditor();
+
         if (e.EditAction == DataGridEditAction.Cancel)
         {
             pendingSpreadsheetUndoState = null;
@@ -1110,6 +1114,32 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 UpdateLineAndColumnText();
             },
             DispatcherPriority.Background);
+    }
+
+    private void SpreadsheetDataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+    {
+        DetachSpreadsheetCellEditor();
+
+        if (e.EditingElement is not System.Windows.Controls.TextBox cellTextBox)
+            return;
+
+        activeSpreadsheetCellEditor = cellTextBox;
+        lastSpreadsheetCellEditorSelectedText = cellTextBox.SelectedText;
+        cellTextBox.SelectionChanged += SpreadsheetCellEditor_SelectionChanged;
+    }
+
+    private void SpreadsheetCellEditor_SelectionChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.TextBox cellTextBox)
+            lastSpreadsheetCellEditorSelectedText = cellTextBox.SelectedText;
+    }
+
+    private void DetachSpreadsheetCellEditor()
+    {
+        if (activeSpreadsheetCellEditor is not null)
+            activeSpreadsheetCellEditor.SelectionChanged -= SpreadsheetCellEditor_SelectionChanged;
+
+        activeSpreadsheetCellEditor = null;
     }
 
     private void SpreadsheetDataGrid_CurrentCellChanged(object sender, EventArgs e)
@@ -1241,6 +1271,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SpreadsheetDataGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
     {
+        if (activeSpreadsheetCellEditor is null)
+            lastSpreadsheetCellEditorSelectedText = string.Empty;
+
         UpdateSelectedSpreadsheetCellCoordinates();
 
         if (editorMode == EtwEditorMode.Spreadsheet)
@@ -1824,6 +1857,28 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         return FindVisualParent<System.Windows.Controls.DataGridCell>(focusedElement) is not null
             && FindVisualParent<System.Windows.Controls.TextBox>(focusedElement) is not null;
+    }
+
+    private string GetSpreadsheetSelectedText()
+    {
+        if (activeSpreadsheetCellEditor is System.Windows.Controls.TextBox cellTextBox)
+            return cellTextBox.SelectedText;
+
+        if (lastSpreadsheetCellEditorSelectedText.Length > 0)
+            return lastSpreadsheetCellEditorSelectedText;
+
+        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
+        if (targetCells.Count != 1)
+            return string.Empty;
+
+        (int rowIndex, int columnIndex) = targetCells[0];
+        if (rowIndex < 0 || rowIndex >= spreadsheetTable.Rows.Count
+            || columnIndex < 0 || columnIndex >= spreadsheetTable.Columns.Count)
+        {
+            return string.Empty;
+        }
+
+        return spreadsheetTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
     }
 
     internal static bool ShouldHandleSpreadsheetDeleteKey(int selectedCellCount, bool isCellEditorFocused)
@@ -3461,10 +3516,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.Show();
 
+        string selectedText = IsSpreadsheetMode ? GetSpreadsheetSelectedText() : PassedTextControl.SelectedText;
 
-        if (PassedTextControl.SelectedText.Length > 0)
+        if (selectedText.Length > 0)
         {
-            findAndReplaceWindow.SetFindText(PassedTextControl.SelectedText.Trim());
+            findAndReplaceWindow.SetFindText(selectedText.Trim());
             findAndReplaceWindow.SearchForText();
         }
     }
