@@ -78,6 +78,20 @@
         <PackageReference Include="Microsoft.Recognizers.Text.NumberWithUnit" Version="1.8.13" />
         <PackageReference Include="Microsoft.Recognizers.Text.Sequence" Version="1.8.13" />
         <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+        <!-- Windows App SDK (stable) powers the existing on-device OCR / image-description / text AI features. -->
+        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.2.3" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.1.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.2.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.2.1" />
+        <!--
+            Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
+            stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
+            experimental Microsoft.Windows.AI.Speech APIs. NAudio decodes/resamples arbitrary audio
+            (mp3, m4a, wav, ...) to the 16 kHz mono WAV Whisper requires.
+        -->
+        <PackageReference Include="Whisper.net" Version="1.9.1" />
+        <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+        <PackageReference Include="NAudio" Version="2.2.1" />
         <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.3.4" />
         <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.5" />
         <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.3.1" />
