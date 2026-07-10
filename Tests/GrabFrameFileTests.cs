@@ -84,6 +84,48 @@ public class GrabFrameFileTests
     }
 
     [Fact]
+    public async Task SaveGrabFrameFileAsync_DoesNotMutateSuppliedInfo()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tggf");
+
+        string originalWordBordersJson = JsonSerializer.Serialize(new List<WordBorderInfo>
+        {
+            new() { Word = "Hello", BorderRect = new Rect(1, 2, 30, 12), LineNumber = 0 },
+        });
+        Bitmap originalImage = new(64, 48);
+
+        HistoryInfo info = new()
+        {
+            ID = "no-mutate-id",
+            TextContent = "Hello World",
+            SourceMode = TextGrabMode.GrabFrame,
+            ImagePath = "original-image-path.png",
+            WordBorderInfoJson = originalWordBordersJson,
+            WordBorderInfoFileName = "original-borders.json",
+            ImageContent = originalImage,
+        };
+
+        try
+        {
+            bool saved = await GrabFrameFileUtilities.SaveGrabFrameFileAsync(info, tempPath);
+            Assert.True(saved);
+
+            // The save packs these fields into the archive from a copy; the caller's instance
+            // must be left exactly as it was passed in.
+            Assert.Equal(originalWordBordersJson, info.WordBorderInfoJson);
+            Assert.Equal("original-borders.json", info.WordBorderInfoFileName);
+            Assert.Equal("original-image-path.png", info.ImagePath);
+            Assert.Same(originalImage, info.ImageContent);
+        }
+        finally
+        {
+            info.ImageContent?.Dispose();
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task LoadGrabFrameFileAsync_ReturnsNull_ForMissingFile()
     {
         string missingPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tggf");

@@ -67,27 +67,29 @@ public static class GrabFrameFileUtilities
     /// Writes a Grab Frame file to <paramref name="destinationPath"/>. The supplied
     /// <paramref name="info"/> is expected to come from <c>GrabFrame.AsHistoryItem()</c>;
     /// its <see cref="HistoryInfo.ImageContent"/> and <see cref="HistoryInfo.WordBorderInfoJson"/>
-    /// are packed into the archive. The metadata copy has those transient fields cleared so the
-    /// archive stays self-contained.
+    /// are packed into the archive. The serialized metadata is taken from a copy with those
+    /// transient fields cleared, so the caller's <paramref name="info"/> is left untouched.
     /// </summary>
     public static async Task<bool> SaveGrabFrameFileAsync(HistoryInfo info, string destinationPath)
     {
         if (string.IsNullOrWhiteSpace(destinationPath))
             return false;
 
-        // Pull out the payloads that live in their own archive entries, then blank the
-        // pointer fields so the serialized metadata does not duplicate or dangle.
+        // Pull out the payloads that live in their own archive entries.
         string? wordBordersJson = info.WordBorderInfoJson;
         Bitmap? image = info.ImageContent;
 
-        info.WordBorderInfoJson = null;
-        info.WordBorderInfoFileName = null;
-        info.ImagePath = ImageEntryName;
+        // Serialize a copy with the pointer fields blanked so the archive metadata does not
+        // duplicate or dangle — mutating the caller's live instance here would corrupt it.
+        HistoryInfo metadata = info.ShallowCopy();
+        metadata.WordBorderInfoJson = null;
+        metadata.WordBorderInfoFileName = null;
+        metadata.ImagePath = ImageEntryName;
 
         string metadataJson;
         try
         {
-            metadataJson = JsonSerializer.Serialize(info, MetadataJsonOptions);
+            metadataJson = JsonSerializer.Serialize(metadata, MetadataJsonOptions);
         }
         catch (Exception ex)
         {

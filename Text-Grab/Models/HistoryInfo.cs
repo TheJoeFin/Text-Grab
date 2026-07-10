@@ -115,6 +115,13 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     #region Public Methods
 
+    /// <summary>
+    /// Returns a shallow copy of this instance. Reference-typed members (e.g.
+    /// <see cref="ImageContent"/>, the separator lists) are shared, not cloned — callers
+    /// that only need to tweak value/string fields without mutating the original should use this.
+    /// </summary>
+    public HistoryInfo ShallowCopy() => (HistoryInfo)MemberwiseClone();
+
     public void ClearTransientImage()
     {
         // Do not Dispose() here — the bitmap may still be in use by a
