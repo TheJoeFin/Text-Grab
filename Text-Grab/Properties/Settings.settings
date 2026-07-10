@@ -191,6 +191,9 @@
     <Setting Name="EtwNormalizeLineEndingsOnPaste" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="AudioTranscriptionModel" Type="System.String" Scope="User">
+      <Value Profile="(Default)">BaseMultilingual</Value>
+    </Setting>
     <Setting Name="EtwSpellCheckMode" Type="System.String" Scope="User">
       <Value Profile="(Default)">Auto</Value>
     </Setting>

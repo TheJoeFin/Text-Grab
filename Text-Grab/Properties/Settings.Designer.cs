@@ -778,7 +778,19 @@ namespace Text_Grab.Properties {
                 this["EtwNormalizeLineEndingsOnPaste"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("BaseMultilingual")]
+        public string AudioTranscriptionModel {
+            get {
+                return ((string)(this["AudioTranscriptionModel"]));
+            }
+            set {
+                this["AudioTranscriptionModel"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
