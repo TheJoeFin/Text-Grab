@@ -118,11 +118,14 @@ public static class RecognizerExecutor
         if (resolution is null || resolution.Count == 0)
             return result.Text;
 
-        // DateTime family stores a "values" list of dictionaries (datetime, daterange, set, …)
-        if (resolution.TryGetValue("values", out object? valuesObj)
-            && valuesObj is IEnumerable<Dictionary<string, string>> values)
+        // DateTime family stores a "values" list of dictionaries (datetime, daterange, set, …).
+        // Read it structurally rather than casting to a concrete element type: the library
+        // currently uses List<Dictionary<string,string>>, but tolerating any IEnumerable of
+        // dictionaries (e.g. string→object) keeps this working across package versions. The
+        // FormatResolvedValue tests pin both the current and the object-valued shapes.
+        if (resolution.TryGetValue("values", out object? valuesObj))
         {
-            Dictionary<string, string>? first = values.FirstOrDefault();
+            Dictionary<string, string>? first = AsStringDictionary(FirstElement(valuesObj));
             if (first is not null)
             {
                 if (first.TryGetValue("value", out string? v) && IsResolvedValue(v))
@@ -155,4 +158,42 @@ public static class RecognizerExecutor
     private static bool IsResolvedValue(string? value)
         => !string.IsNullOrEmpty(value)
            && !value.Equals("not resolved", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Returns the first element of any non-string enumerable, or null.</summary>
+    private static object? FirstElement(object? value)
+    {
+        if (value is System.Collections.IEnumerable sequence and not string)
+            foreach (object? item in sequence)
+                return item;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Coerces a dictionary of unknown value type into <c>string→string</c>, so resolution
+    /// entries can be read regardless of whether the library stores them as
+    /// <c>Dictionary&lt;string,string&gt;</c> or <c>Dictionary&lt;string,object&gt;</c>.
+    /// Returns null when the value is not a dictionary.
+    /// </summary>
+    private static Dictionary<string, string>? AsStringDictionary(object? value)
+    {
+        switch (value)
+        {
+            case IDictionary<string, string> typed:
+                return new Dictionary<string, string>(typed);
+
+            case System.Collections.IDictionary raw:
+                Dictionary<string, string> result = new();
+                foreach (System.Collections.DictionaryEntry entry in raw)
+                {
+                    if (entry.Key is null)
+                        continue;
+                    result[entry.Key.ToString()!] = entry.Value?.ToString() ?? string.Empty;
+                }
+                return result;
+
+            default:
+                return null;
+        }
+    }
 }

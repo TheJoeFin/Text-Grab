@@ -1,3 +1,4 @@
+using Microsoft.Recognizers.Text;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 
@@ -7,6 +8,15 @@ public class RecognizerExecutorTests
 {
     private static BuiltInRecognizer Get(string id) =>
         BuiltInRecognizer.GetById(id) ?? throw new InvalidOperationException($"missing recognizer {id}");
+
+    private static ModelResult ResultWith(string text, params (string Key, object Value)[] resolution)
+    {
+        SortedDictionary<string, object> map = new();
+        foreach ((string key, object value) in resolution)
+            map[key] = value;
+
+        return new ModelResult { Text = text, Start = 0, End = text.Length - 1, Resolution = map };
+    }
 
     // ── BuiltInRecognizer catalog ─────────────────────────────────────────────
 
@@ -177,6 +187,93 @@ public class RecognizerExecutorTests
         Assert.Equal("all", match.MatchMode);
         Assert.Equal("; ", match.Separator);
         Assert.Equal(RecognizerOutputKind.ResolvedValue, match.OutputKind);
+    }
+
+    // ── FormatResolvedValue – resolution shapes (guards library coupling) ─────
+
+    [Fact]
+    public void FormatResolvedValue_ValuesAsStringDictionaries_ReadsValue()
+    {
+        // The current Recognizers-Text shape: "values" is a list of string→string dictionaries.
+        ModelResult result = ResultWith("on 2026-01-15",
+            ("values", new List<Dictionary<string, string>> { new() { ["value"] = "2026-01-15" } }));
+
+        Assert.Equal("2026-01-15", RecognizerExecutor.FormatResolvedValue(result));
+    }
+
+    [Fact]
+    public void FormatResolvedValue_ValuesAsObjectDictionaries_StillReadsValue()
+    {
+        // A hypothetical future shape: "values" holds string→object dictionaries. This must keep
+        // resolving instead of silently falling back to the matched text (issue: type coupling).
+        ModelResult result = ResultWith("next tuesday",
+            ("values", new List<Dictionary<string, object>> { new() { ["value"] = "2026-01-20" } }));
+
+        Assert.Equal("2026-01-20", RecognizerExecutor.FormatResolvedValue(result));
+    }
+
+    [Fact]
+    public void FormatResolvedValue_ValuesWithStartAndEnd_FormatsRange()
+    {
+        ModelResult result = ResultWith("this week",
+            ("values", new List<Dictionary<string, string>>
+            {
+                new() { ["start"] = "2026-01-01", ["end"] = "2026-01-05" }
+            }));
+
+        Assert.Equal("2026-01-01 → 2026-01-05", RecognizerExecutor.FormatResolvedValue(result));
+    }
+
+    [Fact]
+    public void FormatResolvedValue_ValuesWithOnlyTimex_FallsBackToTimex()
+    {
+        ModelResult result = ResultWith("every monday",
+            ("values", new List<Dictionary<string, string>> { new() { ["timex"] = "XXXX-WXX-1" } }));
+
+        Assert.Equal("XXXX-WXX-1", RecognizerExecutor.FormatResolvedValue(result));
+    }
+
+    [Fact]
+    public void FormatResolvedValue_NotResolvedValue_FallsBackToText()
+    {
+        ModelResult result = ResultWith("someday",
+            ("values", new List<Dictionary<string, string>> { new() { ["value"] = "not resolved" } }));
+
+        Assert.Equal("someday", RecognizerExecutor.FormatResolvedValue(result));
+    }
+
+    [Fact]
+    public void FormatResolvedValue_ValueAndUnit_JoinsWithSpace()
+    {
+        ModelResult result = ResultWith("5 dollars", ("value", "5"), ("unit", "Dollar"));
+
+        Assert.Equal("5 Dollar", RecognizerExecutor.FormatResolvedValue(result));
+    }
+
+    [Fact]
+    public void FormatResolvedValue_EmptyResolution_ReturnsText()
+    {
+        Assert.Equal("plain text", RecognizerExecutor.FormatResolvedValue(ResultWith("plain text")));
+    }
+
+    // ── DateTime recognizer – real "values" path (pins the live library shape) ─
+
+    [Fact]
+    public void GetMatches_DateTime_ResolvesAbsoluteDate()
+    {
+        RecognizerMatch match = RecognizerExecutor.GetMatches(Get("datetime"), "meeting on 2026-01-15")[0];
+
+        // Resolution must produce the normalized date, distinct from the matched span.
+        Assert.Equal("2026-01-15", match.ResolvedValue);
+    }
+
+    [Fact]
+    public void GetMatches_DateTime_ResolvesDateRange()
+    {
+        RecognizerMatch match =
+            RecognizerExecutor.GetMatches(Get("datetime"), "from 2026-01-01 to 2026-01-05")[0];
+
+        Assert.Equal("2026-01-01 → 2026-01-05", match.ResolvedValue);
     }
 
     // ── ApplyTextOnlyTemplate – recognizer-only ───────────────────────────────
