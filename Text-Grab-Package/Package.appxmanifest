@@ -157,5 +157,7 @@
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
     <systemai:Capability Name="systemAIModels"/>
+    <!-- Required for live microphone transcription (NAudio capture + local Whisper). -->
+    <DeviceCapability Name="microphone" />
   </Capabilities>
 </Package>
