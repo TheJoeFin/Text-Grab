@@ -23,7 +23,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
         <EnableMsixTooling>false</EnableMsixTooling>
-        <Version>4.14.2</Version>
+        <Version>4.15.0</Version>
         <!-- Keep manifest-based DPI settings for accurate mixed WPF/WinForms capture behavior. -->
         <NoWarn>$(NoWarn);WFO0003</NoWarn>
     </PropertyGroup>
