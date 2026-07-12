@@ -54,6 +54,15 @@ public class PatternItem
     /// <summary>The backing recognizer when <see cref="Kind"/> is <see cref="PatternKind.Recognizer"/>; otherwise null.</summary>
     public BuiltInRecognizer? Recognizer { get; }
 
+    /// <summary>
+    /// Whether the user has hidden this pattern from pickers. Only meaningful for
+    /// <see cref="PatternKind.Recognizer"/> — saved regexes are deleted rather than hidden.
+    /// </summary>
+    public bool IsHidden { get; }
+
+    /// <summary>The regex text for a saved pattern, or a placeholder for a built-in recognizer (which has no literal pattern).</summary>
+    public string PatternDisplay => SavedRegex?.Pattern ?? "(built-in)";
+
     internal PatternItem(StoredRegex savedRegex)
     {
         Kind = PatternKind.SavedRegex;
@@ -64,7 +73,7 @@ public class PatternItem
         SavedRegex = savedRegex;
     }
 
-    internal PatternItem(BuiltInRecognizer recognizer)
+    internal PatternItem(BuiltInRecognizer recognizer, bool isHidden = false)
     {
         Kind = PatternKind.Recognizer;
         Id = recognizer.Id;
@@ -72,22 +81,33 @@ public class PatternItem
         Description = recognizer.Description;
         GroupLabel = SmartGroup;
         Recognizer = recognizer;
+        IsHidden = isHidden;
     }
 
     /// <summary>
-    /// Returns the full combined catalog: the user's saved regexes first (falling back to the
-    /// built-in defaults when none are saved), then the built-in recognizers.
+    /// Returns the combined catalog: the user's saved regexes first (falling back to the
+    /// built-in defaults when none are saved), then the built-in recognizers. Recognizers the
+    /// user has hidden are excluded unless <paramref name="includeHidden"/> is true — the
+    /// Patterns Manager passes true so it can offer an "unhide" action.
     /// </summary>
-    public static IReadOnlyList<PatternItem> GetAll()
+    public static IReadOnlyList<PatternItem> GetAll(bool includeHidden = false)
     {
         StoredRegex[] saved = AppUtilities.TextGrabSettingsService.LoadStoredRegexes();
         if (saved.Length == 0)
             saved = StoredRegex.GetDefaultPatterns();
 
+        HashSet<string> hiddenIds = [.. AppUtilities.TextGrabSettingsService.LoadHiddenSmartPatternIds()];
+
+        IEnumerable<PatternItem> recognizers = BuiltInRecognizer.GetAll()
+            .Select(r => new PatternItem(r, isHidden: hiddenIds.Contains(r.Id)));
+
+        if (!includeHidden)
+            recognizers = recognizers.Where(r => !r.IsHidden);
+
         return
         [
             .. saved.Select(s => new PatternItem(s)),
-            .. BuiltInRecognizer.GetAll().Select(r => new PatternItem(r)),
+            .. recognizers,
         ];
     }
 
