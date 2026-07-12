@@ -802,7 +802,19 @@ namespace Text_Grab.Properties {
                 this["RegexList"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HiddenSmartPatternIds {
+            get {
+                return ((string)(this["HiddenSmartPatternIds"]));
+            }
+            set {
+                this["HiddenSmartPatternIds"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
