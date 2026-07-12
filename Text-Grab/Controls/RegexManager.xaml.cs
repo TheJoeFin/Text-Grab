@@ -1,9 +1,10 @@
 using Humanizer;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Data;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
@@ -13,7 +14,10 @@ namespace Text_Grab.Controls;
 public partial class RegexManager : FluentWindow
 {
     public EditTextWindow? SourceEditTextWindow;
+
     private ObservableCollection<StoredRegex> RegexPatterns { get; set; } = [];
+    private ObservableCollection<PatternItem> DisplayedPatterns { get; set; } = [];
+    private HashSet<string> HiddenRecognizerIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public RegexManager()
     {
@@ -23,7 +27,11 @@ public partial class RegexManager : FluentWindow
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         LoadRegexPatterns();
-        RegexDataGrid.ItemsSource = RegexPatterns;
+        HiddenRecognizerIds = [.. AppUtilities.TextGrabSettingsService.LoadHiddenSmartPatternIds()];
+        RebuildDisplayedPatterns();
+
+        RegexDataGrid.ItemsSource = DisplayedPatterns;
+        RegexDataGrid.Items.GroupDescriptions.Add(new PropertyGroupDescription(nameof(PatternItem.GroupLabel)));
     }
 
     private void LoadRegexPatterns()
@@ -48,17 +56,56 @@ public partial class RegexManager : FluentWindow
         AppUtilities.TextGrabSettingsService.SaveStoredRegexes(RegexPatterns);
     }
 
+    private void SaveHiddenRecognizerIds()
+    {
+        AppUtilities.TextGrabSettingsService.SaveHiddenSmartPatternIds(HiddenRecognizerIds);
+    }
+
+    /// <summary>Rebuilds the combined saved-regex + recognizer list shown in the grid. Does not touch selection.</summary>
+    private void RebuildDisplayedPatterns()
+    {
+        DisplayedPatterns.Clear();
+        foreach (StoredRegex regex in RegexPatterns)
+            DisplayedPatterns.Add(new PatternItem(regex));
+        foreach (BuiltInRecognizer recognizer in BuiltInRecognizer.GetAll())
+            DisplayedPatterns.Add(new PatternItem(recognizer, isHidden: HiddenRecognizerIds.Contains(recognizer.Id)));
+    }
+
+    private void SelectPatternById(string id)
+    {
+        RegexDataGrid.SelectedItem = DisplayedPatterns.FirstOrDefault(p => p.Id == id);
+    }
+
     private void RegexDataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        bool hasSelection = RegexDataGrid.SelectedItem is not null;
+        PatternItem? selected = RegexDataGrid.SelectedItem as PatternItem;
+        bool isSavedRegex = selected?.Kind == PatternKind.SavedRegex;
+        bool isRecognizer = selected?.Kind == PatternKind.Recognizer;
 
-        EditButton.IsEnabled = hasSelection;
-        DeleteButton.IsEnabled = hasSelection;
-        ExplainButton.IsEnabled = hasSelection;
-        UseButton.IsEnabled = hasSelection;
+        EditButton.IsEnabled = isSavedRegex;
+        UseButton.IsEnabled = isSavedRegex;
+        ExplainButton.IsEnabled = selected is not null;
 
-        if (hasSelection)
-            TestPattern();
+        DeleteButton.Visibility = isRecognizer ? Visibility.Collapsed : Visibility.Visible;
+        DeleteButton.IsEnabled = isSavedRegex;
+
+        HideButton.Visibility = isRecognizer ? Visibility.Visible : Visibility.Collapsed;
+        HideButton.IsEnabled = isRecognizer;
+        if (isRecognizer && selected is not null)
+        {
+            if (selected.IsHidden)
+            {
+                HideButton.Content = "Unhide";
+                HideButton.Icon = new SymbolIcon(SymbolRegular.Eye24);
+            }
+            else
+            {
+                HideButton.Content = "Hide";
+                HideButton.Icon = new SymbolIcon(SymbolRegular.EyeOff24);
+            }
+        }
+
+        TestPattern();
     }
 
     private void AddButton_Click(object sender, RoutedEventArgs e)
@@ -72,13 +119,14 @@ public partial class RegexManager : FluentWindow
         {
             RegexPatterns.Add(dialog.EditedRegex);
             SaveRegexPatterns();
-            RegexDataGrid.SelectedItem = dialog.EditedRegex;
+            RebuildDisplayedPatterns();
+            SelectPatternById(dialog.EditedRegex.Id);
         }
     }
 
     private void EditButton_Click(object sender, RoutedEventArgs e)
     {
-        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
+        if (RegexDataGrid.SelectedItem is not PatternItem { Kind: PatternKind.SavedRegex, SavedRegex: StoredRegex selectedRegex })
             return;
 
         RegexEditorDialog dialog = new(selectedRegex)
@@ -93,14 +141,15 @@ public partial class RegexManager : FluentWindow
             {
                 RegexPatterns[index] = dialog.EditedRegex;
                 SaveRegexPatterns();
-                RegexDataGrid.Items.Refresh();
+                RebuildDisplayedPatterns();
+                SelectPatternById(dialog.EditedRegex.Id);
             }
         }
     }
 
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
-        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
+        if (RegexDataGrid.SelectedItem is not PatternItem { Kind: PatternKind.SavedRegex, SavedRegex: StoredRegex selectedRegex })
             return;
 
         Wpf.Ui.Controls.MessageBoxResult result = new Wpf.Ui.Controls.MessageBox
@@ -115,12 +164,28 @@ public partial class RegexManager : FluentWindow
         {
             RegexPatterns.Remove(selectedRegex);
             SaveRegexPatterns();
+            RebuildDisplayedPatterns();
         }
+    }
+
+    private void HideButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (RegexDataGrid.SelectedItem is not PatternItem { Kind: PatternKind.Recognizer } selected)
+            return;
+
+        if (selected.IsHidden)
+            HiddenRecognizerIds.Remove(selected.Id);
+        else
+            HiddenRecognizerIds.Add(selected.Id);
+
+        SaveHiddenRecognizerIds();
+        RebuildDisplayedPatterns();
+        SelectPatternById(selected.Id);
     }
 
     private void UseButton_Click(object sender, RoutedEventArgs e)
     {
-        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
+        if (RegexDataGrid.SelectedItem is not PatternItem { Kind: PatternKind.SavedRegex, SavedRegex: StoredRegex selectedRegex })
             return;
 
         // Update last used date
@@ -135,12 +200,12 @@ public partial class RegexManager : FluentWindow
         findWindow.Activate();
         findWindow.SearchForText();
 
-        // Close the Regex Manager after opening Find and Replace
+        // Close the Patterns Manager after opening Find and Replace
         Close();
     }
 
     /// <summary>
-    /// Opens the Regex Manager in "add mode" with a pre-filled pattern
+    /// Opens the Patterns Manager in "add mode" with a pre-filled pattern
     /// </summary>
     public void AddPatternFromText(string pattern, string sourceText, EditTextWindow? source = null)
     {
@@ -158,7 +223,8 @@ public partial class RegexManager : FluentWindow
         {
             RegexPatterns.Add(dialog.EditedRegex);
             SaveRegexPatterns();
-            RegexDataGrid.SelectedItem = dialog.EditedRegex;
+            RebuildDisplayedPatterns();
+            SelectPatternById(dialog.EditedRegex.Id);
         }
     }
 
@@ -178,7 +244,7 @@ public partial class RegexManager : FluentWindow
         if (!IsLoaded)
             return;
 
-        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
+        if (RegexDataGrid.SelectedItem is not PatternItem selected)
         {
             MatchCountText.Text = "0";
             return;
@@ -191,23 +257,39 @@ public partial class RegexManager : FluentWindow
             return;
         }
 
+        if (selected.Kind == PatternKind.SavedRegex && !IsValidRegexPattern(selected.SavedRegex?.Pattern))
+        {
+            MatchCountText.Text = "Invalid Pattern";
+            return;
+        }
+
+        MatchCountText.Text = PatternExecutor.GetMatches(selected, testText).Count.ToString();
+    }
+
+    private static bool IsValidRegexPattern(string? pattern)
+    {
+        if (string.IsNullOrEmpty(pattern))
+            return true;
+
         try
         {
-            MatchCollection matches = Regex.Matches(testText, selectedRegex.Pattern, RegexOptions.Multiline);
-            MatchCountText.Text = matches.Count.ToString();
+            _ = new System.Text.RegularExpressions.Regex(pattern);
+            return true;
         }
         catch (ArgumentException)
         {
-            MatchCountText.Text = "Invalid Pattern";
+            return false;
         }
     }
 
     private void ExplainButton_Click(object sender, RoutedEventArgs e)
     {
-        if (RegexDataGrid.SelectedItem is not StoredRegex selectedRegex)
+        if (RegexDataGrid.SelectedItem is not PatternItem selected)
             return;
 
-        string explanation = StringMethods.ExplainRegexPattern(selectedRegex.Pattern);
+        string explanation = selected.Kind == PatternKind.SavedRegex && selected.SavedRegex is not null
+            ? StringMethods.ExplainRegexPattern(selected.SavedRegex.Pattern)
+            : selected.Description;
 
         Wpf.Ui.Controls.MessageBox messageBox = new()
         {

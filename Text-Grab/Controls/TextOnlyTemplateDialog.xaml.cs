@@ -23,7 +23,7 @@ public partial class TextOnlyTemplateDialog : FluentWindow
     private void OnActivated(object? sender, EventArgs e)
     {
         // Refresh the pattern picker each time the dialog regains focus so patterns
-        // created in the Regex Manager become available without reopening this dialog.
+        // created in the Patterns Manager become available without reopening this dialog.
         if (IsLoaded)
             LoadPatternItems();
     }
@@ -106,7 +106,7 @@ public partial class TextOnlyTemplateDialog : FluentWindow
 
     private void ManagePatternsButton_Click(object sender, RoutedEventArgs e)
     {
-        // Open the Regex Manager so the user can create a new pattern. When they return
+        // Open the Patterns Manager so the user can create a new pattern. When they return
         // focus to this dialog, OnActivated reloads the picker so the new pattern is usable.
         RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
         regexManager.Show();

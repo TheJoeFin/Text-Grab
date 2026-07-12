@@ -582,7 +582,7 @@
                     <MenuItem
                         x:Name="RegexManagerMenuItem"
                         Click="RegexManagerMenuItem_Click"
-                        Header="Open _Regex Manager..." />
+                        Header="Open _Patterns Manager..." />
                     <Separator />
                     <MenuItem
                         x:Name="QuickSimpleLookupMenuItem"

@@ -182,7 +182,7 @@
                     Padding="4"
                     Click="SavePatternButton_Click"
                     Icon="{ui:SymbolIcon Save24}"
-                    ToolTip="Save pattern to Regex Manager"
+                    ToolTip="Save pattern to Patterns Manager"
                     Visibility="Collapsed" />
 
                 <local:CollapsibleButton

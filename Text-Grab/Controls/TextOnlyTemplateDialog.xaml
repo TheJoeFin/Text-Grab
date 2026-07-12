@@ -63,7 +63,7 @@
                     Click="ManagePatternsButton_Click"
                     Content="New Regex..."
                     Icon="{ui:SymbolIcon Add24}"
-                    ToolTip="Open the Regex Manager to create or edit patterns" />
+                    ToolTip="Open the Patterns Manager to create or edit patterns" />
             </Grid>
 
             <TextBlock

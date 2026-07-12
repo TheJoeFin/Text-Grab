@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Title="Regular Expression Manager"
+    Title="Patterns Manager"
     Width="900"
     Height="600"
     MinWidth="700"
@@ -28,7 +28,7 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
-            Title="Regular Expression Manager"
+            Title="Patterns Manager"
             Height="32"
             Margin="2,2,2,0"
             Padding="8,2"
@@ -42,34 +42,39 @@
             <DataGrid
                 x:Name="RegexDataGrid"
                 AutoGenerateColumns="False"
-                CanUserAddRows="True"
-                CanUserDeleteRows="True"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                CellStyle="{DynamicResource DataGridCellStyleDark}"
+                ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
                 HeadersVisibility="Column"
                 HorizontalScrollBarVisibility="Disabled"
+                IsReadOnly="True"
                 SelectionChanged="RegexDataGrid_SelectionChanged"
-                SelectionMode="Single">
+                SelectionMode="Single"
+                SelectionUnit="FullRow">
+                <DataGrid.RowStyle>
+                    <Style BasedOn="{StaticResource DataGridRowStyleDark}" TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                                <Setter Property="FontStyle" Value="Italic" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Width="auto"
                         Binding="{Binding Name}"
-                        Header="Name"
-                        IsReadOnly="False" />
+                        Header="Name" />
                     <DataGridTextColumn
                         Width="*"
-                        Binding="{Binding Pattern}"
-                        Header="Pattern"
-                        IsReadOnly="False" />
+                        Binding="{Binding PatternDisplay}"
+                        Header="Pattern" />
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding Description}"
-                        Header="Description"
-                        IsReadOnly="False" />
-                    <DataGridCheckBoxColumn
-                        Width="70"
-                        Binding="{Binding IsDefault}"
-                        Header="Default"
-                        IsReadOnly="True"
-                        Visibility="Collapsed" />
+                        Header="Description" />
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
@@ -85,7 +90,7 @@
                 Padding="10,6"
                 Click="ShowTestToggle_Click"
                 Content="Show Test"
-                IsChecked="True"
+                IsChecked="False"
                 Style="{DynamicResource ToggleSymbolButton}" />
             <ui:Button
                 x:Name="AddButton"
@@ -108,6 +113,14 @@
                 Content="Delete"
                 Icon="{ui:SymbolIcon Delete24}"
                 IsEnabled="False" />
+            <ui:Button
+                x:Name="HideButton"
+                Margin="0,0,6,0"
+                Click="HideButton_Click"
+                Content="Hide"
+                Icon="{ui:SymbolIcon EyeOff24}"
+                IsEnabled="False"
+                Visibility="Collapsed" />
             <ui:Button
                 x:Name="ExplainButton"
                 Margin="0,0,6,0"
