@@ -72,7 +72,7 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
-                <RowDefinition Height="auto" MinHeight="40" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <ToggleButton
                 x:Name="MoreOptionsToggleButton"
@@ -82,9 +82,36 @@
                 BorderBrush="Transparent"
                 Click="MoreOptionsToggleButton_Click"
                 Content="▼"
-                Foreground="White"
                 IsChecked="True"
-                Style="{DynamicResource ToggleSymbolButton}" />
+                RenderTransformOrigin="0.5,0.5"
+                Style="{DynamicResource ToggleSymbolButton}"
+                ToolTip="Show or hide more options">
+                <ToggleButton.RenderTransform>
+                    <RotateTransform Angle="0" />
+                </ToggleButton.RenderTransform>
+                <ToggleButton.Triggers>
+                    <EventTrigger RoutedEvent="ToggleButton.Checked">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetProperty="RenderTransform.Angle"
+                                    To="0"
+                                    Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                    <EventTrigger RoutedEvent="ToggleButton.Unchecked">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetProperty="RenderTransform.Angle"
+                                    To="-90"
+                                    Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </ToggleButton.Triggers>
+            </ToggleButton>
 
             <local:SearchBar
                 x:Name="SearchBar"

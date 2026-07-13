@@ -12,6 +12,18 @@
     mc:Ignorable="d">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <!--  Same as SplitSegmentButton, plus: white foreground while regex mode is on, so the chevron
+              stays visible against the teal fill RegexSplitContainer applies for that state.  -->
+        <Style
+            x:Key="PatternDropDownButtonStyle"
+            BasedOn="{StaticResource SplitSegmentButton}"
+            TargetType="Button">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding UseRegex, ElementName=SearchBarRoot}" Value="True">
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <!--  The search input: chip | textbox + placeholder | clear + regex split + exact  -->
@@ -149,7 +161,7 @@
                                 Style="{StaticResource ToggleSplitSegment}"
                                 ToolTip="Search using Regular Expression syntax">
                                 <Viewbox Width="12" Height="12">
-                                    <local:RegExIcon IconColor="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <local:RegExIcon />
                                 </Viewbox>
                             </ToggleButton>
                             <Border Width="1" Background="{DynamicResource TextBox.Static.Border}" />
@@ -159,7 +171,7 @@
                                 VerticalAlignment="Stretch"
                                 AutomationProperties.Name="Find by pattern"
                                 Click="PatternDropDownButton_Click"
-                                Style="{StaticResource SplitSegmentButton}"
+                                Style="{StaticResource PatternDropDownButtonStyle}"
                                 ToolTip="Find by pattern — a saved regex or a smart value (dates, numbers, emails, etc.)">
                                 <ui:SymbolIcon FontSize="11" Symbol="ChevronDown24" />
                                 <Button.ContextMenu>
