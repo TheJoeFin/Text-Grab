@@ -31,7 +31,9 @@
                             ClickMode="Press"
                             Focusable="False"
                             Foreground="{TemplateBinding Foreground}"
-                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            IsChecked="{Binding IsDropDownOpen,
+                                                Mode=TwoWay,
+                                                RelativeSource={RelativeSource TemplatedParent}}">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
                                     <Border
@@ -52,9 +54,12 @@
                             <ContentPresenter
                                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                 VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource TemplatedParent}}"
-                                ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource TemplatedParent}}"
-                                ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}"
+                                Content="{Binding SelectionBoxItem,
+                                                  RelativeSource={RelativeSource TemplatedParent}}"
+                                ContentTemplate="{Binding SelectionBoxItemTemplate,
+                                                          RelativeSource={RelativeSource TemplatedParent}}"
+                                ContentTemplateSelector="{Binding ItemTemplateSelector,
+                                                                  RelativeSource={RelativeSource TemplatedParent}}"
                                 IsHitTestVisible="False"
                                 SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                         </ToggleButton>
@@ -67,7 +72,8 @@
                             PopupAnimation="Fade">
                             <Border
                                 x:Name="DropDownBorder"
-                                MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                MinWidth="{Binding ActualWidth,
+                                                   RelativeSource={RelativeSource TemplatedParent}}"
                                 Margin="0,4,0,0"
                                 Padding="4"
                                 Background="{DynamicResource ApplicationBackgroundBrush}"
