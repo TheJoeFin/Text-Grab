@@ -2974,8 +2974,9 @@ public partial class GrabFrame : Window
         // Refresh / OCR Frame buttons swap based on Auto OCR state; that helper honors the hide preference.
         SetRefreshOrOcrFrameBtnVis();
 
-        // Freeze is only offered when a live (non-static, non-frozen) frame is showing.
-        SetToolButtonVisibility(FreezeToggleButton, "Freeze", !isStaticImageSource && !IsFreezeMode);
+        // Freeze doubles as Unfreeze while frozen, so it must stay available in both
+        // states — only a static (already-frozen) image source makes it irrelevant.
+        SetToolButtonVisibility(FreezeToggleButton, "Freeze", !isStaticImageSource);
 
         SetToolButtonVisibility(TranslateToggleButton, "Translate", translateToolAvailable);
 

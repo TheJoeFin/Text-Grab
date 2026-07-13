@@ -301,21 +301,37 @@ public partial class FullscreenGrab : Window
 
     private void CheckIfAnyPostActionsSelected()
     {
-        if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu || !flyoutMenu.HasItems)
-            return;
+        bool hasCheckedAction = false;
 
-        foreach (MenuItem item in GetActionablePostGrabMenuItems(flyoutMenu))
+        if (NextStepDropDownButton.Flyout is ContextMenu flyoutMenu && flyoutMenu.HasItems)
         {
-            if (item.IsChecked)
+            foreach (MenuItem item in GetActionablePostGrabMenuItems(flyoutMenu))
             {
-                if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
-                    NextStepDropDownButton.Background = tealButtonStyle;
-                return;
+                if (item.IsChecked)
+                {
+                    hasCheckedAction = true;
+                    break;
+                }
             }
         }
 
-        if (FindResource("ControlFillColorDefaultBrush") is SolidColorBrush SymbolButtonStyle)
-            NextStepDropDownButton.Background = SymbolButtonStyle;
+        if (hasCheckedAction)
+        {
+            if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
+                NextStepDropDownButton.Background = tealButtonStyle;
+            NextStepDropDownButton.Foreground = Brushes.White;
+            NextStepSymbolIcon.Foreground = Brushes.White;
+        }
+        else
+        {
+            if (FindResource("ControlFillColorDefaultBrush") is SolidColorBrush symbolButtonStyle)
+                NextStepDropDownButton.Background = symbolButtonStyle;
+            if (FindResource("TextFillColorPrimaryBrush") is SolidColorBrush textBrush)
+            {
+                NextStepDropDownButton.Foreground = textBrush;
+                NextStepSymbolIcon.Foreground = textBrush;
+            }
+        }
     }
 
     private static bool CheckIfCheckingOrUnchecking(object? sender)
@@ -533,6 +549,19 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
 
         WindowUtilities.FullscreenKeyDown(Key.F, isActive);
+    }
+
+    private void NextStepDropDownButton_MouseEnter(object sender, MouseEventArgs e)
+    {
+        // Background fill on hover comes from the SymbolDropDownButton style; only the
+        // icon/chevron foreground needs to be forced white here to stay legible on it.
+        NextStepDropDownButton.Foreground = Brushes.White;
+        NextStepSymbolIcon.Foreground = Brushes.White;
+    }
+
+    private void NextStepDropDownButton_MouseLeave(object sender, MouseEventArgs e)
+    {
+        CheckIfAnyPostActionsSelected();
     }
 
     private async void FreezeUnfreeze(bool Activate)
