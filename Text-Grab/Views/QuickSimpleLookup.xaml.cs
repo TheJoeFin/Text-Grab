@@ -522,6 +522,16 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                                 openedHistoryItemOrLink = true;
                                 break;
                             }
+                        case LookupItemKind.PdfDocument when lItem.HistoryItem is not null:
+                            {
+                                GrabFrame gf = !string.IsNullOrWhiteSpace(lItem.HistoryItem.SourcePath)
+                                    && File.Exists(lItem.HistoryItem.SourcePath)
+                                        ? new GrabFrame(lItem.HistoryItem, lItem.HistoryItem.SourcePath)
+                                        : new GrabFrame(lItem.HistoryItem);
+                                gf.Show();
+                                openedHistoryItemOrLink = true;
+                                break;
+                            }
                         case LookupItemKind.Link:
                             Process.Start(new ProcessStartInfo(lItem.LongValue) { UseShellExecute = true });
                             openedHistoryItemOrLink = true;
@@ -784,7 +794,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
                 if (selectedLookupItem.Kind is LookupItemKind.EditWindow)
                     Singleton<HistoryService>.Instance.RemoveTextHistoryItem(selectedLookupItem.HistoryItem);
-                else if (selectedLookupItem.Kind is LookupItemKind.GrabFrame)
+                else if (selectedLookupItem.Kind is LookupItemKind.GrabFrame or LookupItemKind.PdfDocument)
                     Singleton<HistoryService>.Instance.RemoveImageHistoryItem(selectedLookupItem.HistoryItem);
             }
         }
@@ -998,6 +1008,12 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             LookupItem newItem = new(historyItem);
             ItemsDictionary.Add(newItem);
         }
+
+        foreach (HistoryInfo historyItem in Singleton<HistoryService>.Instance.GetRecentPdfDocuments())
+        {
+            LookupItem newItem = new(historyItem);
+            ItemsDictionary.Add(newItem);
+        }
     }
 
     private void AddGrabTemplatesToItemsDictionary()
@@ -1101,6 +1117,17 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
                 EditTextWindow etw3 = new(lookupItem.LongValue, false);
                 etw3.Show();
+                break;
+            case LookupItemKind.PdfDocument:
+                if (lookupItem.HistoryItem is not null)
+                {
+                    GrabFrame pdfFrame = !string.IsNullOrWhiteSpace(lookupItem.HistoryItem.SourcePath)
+                        && File.Exists(lookupItem.HistoryItem.SourcePath)
+                            ? new GrabFrame(lookupItem.HistoryItem, lookupItem.HistoryItem.SourcePath)
+                            : new GrabFrame(lookupItem.HistoryItem);
+                    pdfFrame.Show();
+                    return;
+                }
                 break;
             case LookupItemKind.Link:
                 StringBuilder sb2 = new();

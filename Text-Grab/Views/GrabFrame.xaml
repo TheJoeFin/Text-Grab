@@ -245,6 +245,7 @@
                             Header="Save Grab Frame File..."
                             InputGestureText="Ctrl + S" />
                         <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
+                        <MenuItem x:Name="OpenRecentPdfsMenuItem" Header="Recent PDFs" />
                         <Separator />
                         <MenuItem
                             Name="GrabMenuItem"
@@ -1079,7 +1080,7 @@
                             <MenuItem
                                 Name="EditMatchesMenuItem"
                                 Click="EditMatchesMenuItem_Click"
-                                Header="Edit Selected in new Window" />
+                                Header="Edit Matches in New Window" />
                         </MenuItem>
                     </Menu>
 

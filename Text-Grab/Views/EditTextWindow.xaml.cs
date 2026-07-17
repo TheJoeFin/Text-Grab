@@ -3832,6 +3832,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         LoadRecentTextHistory();
         await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
+        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentPdfs(OpenRecentPdfsMenuItem);
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -6336,7 +6337,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
-        OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
+        OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyRecentGrabs();
     }
 
     private void SpreadsheetContextMenu_Opened(object sender, RoutedEventArgs e)

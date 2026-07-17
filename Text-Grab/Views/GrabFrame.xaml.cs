@@ -63,6 +63,7 @@ public partial class GrabFrame : Window
     private PdfDocumentRenderer? _loadedPdfDocument;
     private PdfPageContent? _currentPdfPageContent;
     private int _currentPdfPageIndex = -1;
+    private int _initialPdfPageIndex;
     private bool hasLoadedImageSource = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
@@ -119,8 +120,25 @@ public partial class GrabFrame : Window
     private bool _isCleanedUp;
     private readonly HashSet<string> hiddenBottomBarTools = new(StringComparer.OrdinalIgnoreCase);
     private bool translateToolAvailable = false;
+    private readonly List<GrabFrameSearchMatch> currentSearchMatches = [];
 
     #endregion Fields
+
+    private sealed record GrabFrameSearchMatch(
+        string Text,
+        IReadOnlyList<WordBorder> WordBorders,
+        PdfTextLineOverlay? PdfTextLine)
+    {
+        public bool IsSelected => PdfTextLine?.IsSelected
+            ?? (WordBorders.Count > 0 && WordBorders.All(wordBorder => wordBorder.IsSelected));
+    }
+
+    private sealed record GrabFrameSearchUnit(
+        string Text,
+        IReadOnlyList<(WordBorder WordBorder, int Start, int Length)> WordSegments,
+        PdfTextLineOverlay? PdfTextLine,
+        double Top,
+        double Left);
 
     #region Constructors
 
@@ -178,6 +196,13 @@ public partial class GrabFrame : Window
         }
 
         Loaded += async (s, e) => await TryLoadDocumentFromPath(absolutePath);
+    }
+
+    public GrabFrame(HistoryInfo historyInfo, string sourcePath)
+        : this(sourcePath)
+    {
+        historyItem = historyInfo;
+        _initialPdfPageIndex = Math.Max(0, historyInfo.SourcePageIndex);
     }
 
     /// <summary>
@@ -1223,6 +1248,7 @@ public partial class GrabFrame : Window
 
         (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
             LanguageUtilities.GetPersistedLanguageIdentity(currentLanguage ?? CurrentLanguage);
+        bool isPdfHistory = IsPdfDocumentLoaded || historyItem?.IsPdfDocument is true;
 
         HistoryInfo historyInfo = new()
         {
@@ -1240,6 +1266,13 @@ public partial class GrabFrame : Window
             ManualTableColumnSeparators = tableEditState.ManualColumnSeparators.Count > 0 ? [.. tableEditState.ManualColumnSeparators] : null,
             ManualTableRowSeparators = tableEditState.ManualRowSeparators.Count > 0 ? [.. tableEditState.ManualRowSeparators] : null,
             SourceMode = TextGrabMode.GrabFrame,
+            SourceContentKind = isPdfHistory ? OpenContentKind.PdfDocument : OpenContentKind.Image,
+            SourcePath = IsPdfDocumentLoaded
+                ? _currentImagePath ?? string.Empty
+                : historyItem?.SourcePath ?? string.Empty,
+            SourcePageIndex = IsPdfDocumentLoaded
+                ? _currentPdfPageIndex
+                : historyItem?.SourcePageIndex ?? 0,
         };
 
         return historyInfo;
@@ -1958,6 +1991,7 @@ public partial class GrabFrame : Window
 
     private void ClearRenderedWordBorders()
     {
+        currentSearchMatches.Clear();
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
         ClearRenderedPdfTextLines();
@@ -2579,23 +2613,18 @@ public partial class GrabFrame : Window
 
     private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        List<WordBorder> selectedWords = [.. wordBorders.Where(m => m.IsSelected)];
-        if (selectedWords.Count == 0)
+        List<string> selectedMatches =
+        [
+            .. currentSearchMatches
+                .Where(match => match.IsSelected && !string.IsNullOrEmpty(match.Text))
+                .Select(match => match.Text)
+        ];
+
+        if (selectedMatches.Count == 0)
             return;
 
         EditTextWindow editWindow = new();
-        bool isSpaceJoiningLang = CurrentLanguage.IsSpaceJoining();
-        DpiScale dpiScale = VisualTreeHelper.GetDpi(this);
-
-        // Convert to model-only infos and generate text
-        List<WordBorderInfo> infos = [.. selectedWords.Select(wb => new WordBorderInfo(wb))];
-        ResultTable tmp = new();
-        tmp.AnalyzeAsTable(infos, new System.Drawing.Rectangle(0, 0, (int)ActualWidth, (int)ActualHeight));
-        StringBuilder sb = new();
-        ResultTable.GetTextFromTabledWordBorders(sb, infos, isSpaceJoiningLang);
-        string stringForETW = sb.ToString();
-
-        editWindow.AddThisText(stringForETW);
+        editWindow.AddThisText(string.Join(Environment.NewLine, selectedMatches));
         editWindow.Show();
     }
 
@@ -3430,6 +3459,7 @@ public partial class GrabFrame : Window
     private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
+        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentPdfs(OpenRecentPdfsMenuItem);
     }
 
     private void MergeWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -4076,11 +4106,7 @@ public partial class GrabFrame : Window
 
         if (!TextSearchUtilities.HasSearchText(searchText) && !isSearchSelectionOverridden)
         {
-            foreach (WordBorder wb in wordBorders)
-                wb.Deselect();
-
-            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
-                pdfTextLine.Deselect();
+            ClearSearchMatchesAndSelection();
             MatchesTXTBLK.Text = $"0 Matches";
             UpdateFrameText();
             return;
@@ -4099,40 +4125,19 @@ public partial class GrabFrame : Window
         }
         catch (Exception)
         {
-            foreach (WordBorder wb in wordBorders)
-                wb.Deselect();
-
-            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
-                pdfTextLine.Deselect();
+            ClearSearchMatchesAndSelection();
             UpdateFrameText();
             MatchesTXTBLK.Text = $"Search Error";
             return;
         }
 
-        int numberOfMatches = 0;
-
         if (!isSearchSelectionOverridden)
         {
-            foreach (WordBorder wb in wordBorders)
+            ClearSearchMatchesAndSelection();
+            foreach (GrabFrameSearchUnit searchUnit in GetSearchUnits())
             {
-                int numberOfMatchesInWord = regex.Count(wb.Word);
-                numberOfMatches += numberOfMatchesInWord;
-
-                if (numberOfMatchesInWord > 0)
-                    wb.Select();
-                else
-                    wb.Deselect();
-            }
-
-            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
-            {
-                int numberOfMatchesInLine = regex.Count(pdfTextLine.Text);
-                numberOfMatches += numberOfMatchesInLine;
-
-                if (numberOfMatchesInLine > 0)
-                    pdfTextLine.Select();
-                else
-                    pdfTextLine.Deselect();
+                foreach (Match match in regex.Matches(searchUnit.Text).Cast<Match>().Where(match => match.Success))
+                    AddSearchMatch(searchUnit, match.Index, match.Length, match.Value);
             }
         }
 
@@ -4144,10 +4149,8 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (numberOfMatches == 1)
-            MatchesTXTBLK.Text = $"{numberOfMatches} Match";
-        else
-            MatchesTXTBLK.Text = $"{numberOfMatches} Matches";
+        int numberOfMatches = currentSearchMatches.Count;
+        MatchesTXTBLK.Text = numberOfMatches == 1 ? "1 Match" : $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
         LanguagesComboBox.Visibility = Visibility.Collapsed;
 
@@ -4164,45 +4167,177 @@ public partial class GrabFrame : Window
 
     private void RunPatternSearch(PatternItem pattern, string narrowText = "")
     {
-        int numberOfMatches = 0;
-
         if (!isSearchSelectionOverridden)
         {
-            foreach (WordBorder wb in wordBorders)
+            ClearSearchMatchesAndSelection();
+            foreach (GrabFrameSearchUnit searchUnit in GetSearchUnits())
             {
-                int count = MatchesNarrowText(wb.Word, narrowText)
-                    ? PatternExecutor.GetMatches(pattern, wb.Word).Count
-                    : 0;
-                numberOfMatches += count;
-
-                if (count > 0)
-                    wb.Select();
-                else
-                    wb.Deselect();
-            }
-
-            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
-            {
-                int count = MatchesNarrowText(pdfTextLine.Text, narrowText)
-                    ? PatternExecutor.GetMatches(pattern, pdfTextLine.Text).Count
-                    : 0;
-                numberOfMatches += count;
-
-                if (count > 0)
-                    pdfTextLine.Select();
-                else
-                    pdfTextLine.Deselect();
+                foreach (RecognizerMatch match in PatternExecutor.GetMatches(pattern, searchUnit.Text)
+                    .Where(match => MatchesNarrowText(match.Text, narrowText)))
+                    AddSearchMatch(searchUnit, match.Start, match.Length, match.Text);
             }
         }
 
         UpdateFrameText();
 
+        int numberOfMatches = currentSearchMatches.Count;
         MatchesTXTBLK.Text = numberOfMatches == 1 ? "1 Match" : $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
         LanguagesComboBox.Visibility = Visibility.Collapsed;
 
         if (TemplateSavePanel.Visibility == Visibility.Visible)
             UpdateTemplateBadges();
+    }
+
+    private void AddSearchMatch(GrabFrameSearchUnit searchUnit, int start, int length, string text)
+    {
+        if (length <= 0 || string.IsNullOrEmpty(text))
+            return;
+
+        List<WordBorder> matchedWordBorders =
+        [
+            .. searchUnit.WordSegments
+                .Where(segment => SpansOverlap(segment.Start, segment.Length, start, length))
+                .Select(segment => segment.WordBorder)
+        ];
+
+        if (searchUnit.PdfTextLine is null && matchedWordBorders.Count == 0)
+            return;
+
+        foreach (WordBorder wordBorder in matchedWordBorders)
+            wordBorder.Select();
+
+        searchUnit.PdfTextLine?.Select();
+        currentSearchMatches.Add(new GrabFrameSearchMatch(text, matchedWordBorders, searchUnit.PdfTextLine));
+    }
+
+    private void ClearSearchMatchesAndSelection()
+    {
+        currentSearchMatches.Clear();
+
+        foreach (WordBorder wordBorder in wordBorders)
+            wordBorder.Deselect();
+
+        foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
+            pdfTextLine.Deselect();
+    }
+
+    private List<GrabFrameSearchUnit> GetSearchUnits()
+    {
+        List<GrabFrameSearchUnit> searchUnits = [];
+        bool isRightToLeft = CurrentLanguage.IsRightToLeft();
+
+        foreach (List<WordBorder> lineWords in GroupWordBordersIntoSearchLines())
+        {
+            (string lineText, IReadOnlyList<(int SourceIndex, int Start, int Length)> textSegments) =
+                BuildSearchText(
+                    [.. lineWords.Select(wordBorder => (wordBorder.Word, wordBorder.Left))],
+                    isSpaceJoining,
+                    isRightToLeft);
+
+            List<(WordBorder WordBorder, int Start, int Length)> segments =
+            [
+                .. textSegments.Select(segment => (
+                    lineWords[segment.SourceIndex],
+                    segment.Start,
+                    segment.Length))
+            ];
+
+            if (lineWords.Count > 0)
+            {
+                searchUnits.Add(new GrabFrameSearchUnit(
+                    lineText,
+                    segments,
+                    null,
+                    lineWords.Min(wordBorder => wordBorder.Top),
+                    lineWords.Min(wordBorder => wordBorder.Left)));
+            }
+        }
+
+        searchUnits.AddRange(pdfTextLineOverlays.Select(pdfTextLine => new GrabFrameSearchUnit(
+            pdfTextLine.Text,
+            [],
+            pdfTextLine,
+            pdfTextLine.Top,
+            pdfTextLine.Left)));
+
+        return [.. searchUnits.OrderBy(unit => unit.Top).ThenBy(unit => unit.Left)];
+    }
+
+    private List<List<WordBorder>> GroupWordBordersIntoSearchLines()
+    {
+        List<List<WordBorder>> lines = [];
+
+        foreach (WordBorder wordBorder in wordBorders.OrderBy(wordBorder => wordBorder.Top).ThenBy(wordBorder => wordBorder.Left))
+        {
+            List<WordBorder>? matchingLine = lines.LastOrDefault(line =>
+                AreOnSameSearchLine(
+                    line[0].LineNumber,
+                    line.Average(item => item.Top),
+                    line.Max(item => item.Height),
+                    wordBorder.LineNumber,
+                    wordBorder.Top,
+                    wordBorder.Height));
+
+            if (matchingLine is null)
+                lines.Add([wordBorder]);
+            else
+                matchingLine.Add(wordBorder);
+        }
+
+        return lines;
+    }
+
+    internal static (string Text, IReadOnlyList<(int SourceIndex, int Start, int Length)> Segments) BuildSearchText(
+        IReadOnlyList<(string Text, double Left)> sourceItems,
+        bool isSpaceJoining,
+        bool isRightToLeft)
+    {
+        IEnumerable<(string Text, double Left, int SourceIndex)> orderedItems = sourceItems
+            .Select((item, index) => (item.Text, item.Left, SourceIndex: index));
+        orderedItems = isRightToLeft
+            ? orderedItems.OrderByDescending(item => item.Left)
+            : orderedItems.OrderBy(item => item.Left);
+
+        string separator = isSpaceJoining ? " " : string.Empty;
+        StringBuilder text = new();
+        List<(int SourceIndex, int Start, int Length)> segments = [];
+
+        foreach ((string itemText, double _, int sourceIndex) in orderedItems)
+        {
+            if (text.Length > 0)
+                text.Append(separator);
+
+            int start = text.Length;
+            text.Append(itemText);
+            segments.Add((sourceIndex, start, itemText.Length));
+        }
+
+        return (text.ToString(), segments);
+    }
+
+    internal static bool AreOnSameSearchLine(
+        int firstLineNumber,
+        double firstTop,
+        double firstHeight,
+        int secondLineNumber,
+        double secondTop,
+        double secondHeight)
+    {
+        if (firstLineNumber != secondLineNumber)
+            return false;
+
+        double firstCenter = firstTop + (firstHeight / 2);
+        double secondCenter = secondTop + (secondHeight / 2);
+        return Math.Abs(firstCenter - secondCenter) <= Math.Max(firstHeight, secondHeight) * 0.6;
+    }
+
+    internal static bool SpansOverlap(int firstStart, int firstLength, int secondStart, int secondLength)
+    {
+        return firstLength > 0
+            && secondLength > 0
+            && firstStart < secondStart + secondLength
+            && secondStart < firstStart + firstLength;
     }
 
     private void ResetGrabFrame()
@@ -4761,7 +4896,9 @@ public partial class GrabFrame : Window
             _loadedPdfDocument = await PdfDocumentRenderer.LoadAsync(path);
             MarkLoadedVisualDocumentOpened();
             _currentImagePath = Path.GetFullPath(path);
-            await ShowPdfPageAsync(0);
+            int pageIndex = Math.Min(_initialPdfPageIndex, Math.Max(0, _loadedPdfDocument.PageCount - 1));
+            _initialPdfPageIndex = 0;
+            await ShowPdfPageAsync(pageIndex);
         }
         catch (Exception ex)
         {

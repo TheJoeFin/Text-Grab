@@ -910,7 +910,7 @@ public partial class FullscreenGrab : Window
 
     private void RegionClickCanvas_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        EditLastGrabMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
+        EditLastGrabMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyRecentGrabs();
     }
 
     private void RegionClickCanvas_MouseLeave(object sender, MouseEventArgs e)
