@@ -127,6 +127,66 @@ public class GrabFrameFileTests
     }
 
     [Fact]
+    public async Task SaveGrabFrameFileAsync_PreservesExistingFile_WhenAtomicReplaceFails()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tggf");
+        byte[] originalContent = "existing grab frame content"u8.ToArray();
+        await File.WriteAllBytesAsync(tempPath, originalContent, TestContext.Current.CancellationToken);
+
+        HistoryInfo info = new()
+        {
+            ID = "replacement",
+            TextContent = "replacement content",
+            SourceMode = TextGrabMode.GrabFrame,
+        };
+
+        bool saved;
+        try
+        {
+            using (FileStream lockedFile = new(tempPath, FileMode.Open, FileAccess.Read, FileShare.None))
+                saved = await GrabFrameFileUtilities.SaveGrabFrameFileAsync(info, tempPath);
+
+            Assert.False(saved);
+            Assert.Equal(
+                originalContent,
+                await File.ReadAllBytesAsync(tempPath, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveGrabFrameFileAsync_AtomicallyReplacesExistingFile()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tggf");
+        await File.WriteAllTextAsync(tempPath, "old content", TestContext.Current.CancellationToken);
+
+        HistoryInfo info = new()
+        {
+            ID = "replacement",
+            TextContent = "new content",
+            SourceMode = TextGrabMode.GrabFrame,
+        };
+
+        try
+        {
+            Assert.True(await GrabFrameFileUtilities.SaveGrabFrameFileAsync(info, tempPath));
+
+            HistoryInfo? loaded = await GrabFrameFileUtilities.LoadGrabFrameFileAsync(tempPath);
+            Assert.NotNull(loaded);
+            Assert.Equal("new content", loaded!.TextContent);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task LoadGrabFrameFileAsync_ReturnsNull_ForMissingFile()
     {
         string missingPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tggf");

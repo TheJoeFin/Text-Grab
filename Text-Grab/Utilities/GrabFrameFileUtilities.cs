@@ -110,6 +110,9 @@ public static class GrabFrameFileUtilities
         string tempPath = Path.Combine(
             string.IsNullOrEmpty(directory) ? Path.GetTempPath() : directory,
             $"{Guid.NewGuid():N}.tggf.tmp");
+        string backupPath = Path.Combine(
+            string.IsNullOrEmpty(directory) ? Path.GetTempPath() : directory,
+            $"{Guid.NewGuid():N}.tggf.bak");
 
         try
         {
@@ -128,19 +131,18 @@ public static class GrabFrameFileUtilities
                 }
             });
 
-            // Move into place only after a fully written archive so an in-progress or failed
-            // save never clobbers an existing file at the destination.
-            if (File.Exists(destinationPath))
-                File.Delete(destinationPath);
-
-            File.Move(tempPath, destinationPath);
+            ReplaceFileAtomically(tempPath, destinationPath, backupPath);
             return true;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Failed to save Grab Frame file '{destinationPath}': {ex}");
-            TryDeleteFile(tempPath);
             return false;
+        }
+        finally
+        {
+            TryDeleteFile(tempPath);
+            TryDeleteFile(backupPath);
         }
     }
 
@@ -306,6 +308,24 @@ public static class GrabFrameFileUtilities
         catch (UnauthorizedAccessException ex)
         {
             Debug.WriteLine($"Access denied deleting temporary Grab Frame file '{path}': {ex}");
+        }
+    }
+
+    private static void ReplaceFileAtomically(string tempPath, string destinationPath, string backupPath)
+    {
+        if (!File.Exists(destinationPath))
+        {
+            File.Move(tempPath, destinationPath);
+            return;
+        }
+
+        try
+        {
+            File.Replace(tempPath, destinationPath, backupPath, ignoreMetadataErrors: true);
+        }
+        catch (FileNotFoundException) when (!File.Exists(destinationPath))
+        {
+            File.Move(tempPath, destinationPath);
         }
     }
 }
