@@ -260,6 +260,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     internal void EnterSpreadsheetMode() => SetEditorMode(EtwEditorMode.Spreadsheet);
 
+    public event EventHandler? EditorModeChanged;
+
     /// <summary>
     /// Pastes the clipboard into the spreadsheet editor, parsing HTML tables
     /// (including colspan/rowspan) when present. Used by the text-grab://
@@ -1159,6 +1161,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         UpdateSpreadsheetModeUi();
         UpdateLineAndColumnText();
+        EditorModeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void SpreadsheetDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)

@@ -72,11 +72,19 @@ public partial class FindAndReplaceWindow : FluentWindow
         get => textEditWindow;
         set
         {
-            textEditWindow?.PassedTextControl.TextChanged -= EditTextBoxChanged;
+            if (textEditWindow is not null)
+            {
+                textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
+                textEditWindow.EditorModeChanged -= EditTextWindow_EditorModeChanged;
+            }
 
             textEditWindow = value;
 
-            textEditWindow?.PassedTextControl.TextChanged += EditTextBoxChanged;
+            if (textEditWindow is not null)
+            {
+                textEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+                textEditWindow.EditorModeChanged += EditTextWindow_EditorModeChanged;
+            }
         }
     }
     private string? Pattern { get; set; }
@@ -101,6 +109,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         if (IsSpreadsheetSearch) { SearchSpreadsheetCells(); return; }
 
+        RefreshSourceTextFromEditor();
         FindResults.Clear();
         ResultsListView.ItemsSource = null;
 
@@ -131,9 +140,6 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         if (!SearchBar.UseRegex)
             Pattern = Pattern.EscapeSpecialRegexChars(SearchBar.ExactMatch);
-
-        if (string.IsNullOrEmpty(StringFromWindow) && TextEditWindow is not null)
-            StringFromWindow = TextEditWindow.GetSelectedTextOrAllText();
 
         try
         {
@@ -214,8 +220,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     /// </summary>
     private void SearchByRecognizer(BuiltInRecognizer recognizer, string narrowText = "")
     {
-        if (string.IsNullOrEmpty(StringFromWindow) && TextEditWindow is not null)
-            StringFromWindow = TextEditWindow.GetSelectedTextOrAllText();
+        RefreshSourceTextFromEditor();
 
         Matches = null;
 
@@ -440,6 +445,23 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         ChangeFindTextTimer.Start();
     }
+
+    private void EditTextWindow_EditorModeChanged(object? sender, EventArgs e)
+    {
+        ChangeFindTextTimer.Stop();
+        SearchForText();
+    }
+
+    private void RefreshSourceTextFromEditor()
+    {
+        StringFromWindow = ResolveSearchSourceText(
+            StringFromWindow,
+            textEditWindow?.PassedTextControl.Text,
+            IsSpreadsheetSearch);
+    }
+
+    internal static string ResolveSearchSourceText(string cachedText, string? editorText, bool isSpreadsheetSearch)
+        => !isSpreadsheetSearch && editorText is not null ? editorText : cachedText;
 
     private void ExtractPattern_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
@@ -834,7 +856,11 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
         PrecisionSliderTimer.Tick -= PrecisionSlider_Tick;
-        textEditWindow?.PassedTextControl.TextChanged -= EditTextBoxChanged;
+        if (textEditWindow is not null)
+        {
+            textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
+            textEditWindow.EditorModeChanged -= EditTextWindow_EditorModeChanged;
+        }
     }
     private void Window_KeyUp(object sender, KeyEventArgs e)
     {

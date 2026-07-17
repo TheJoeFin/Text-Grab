@@ -21,4 +21,19 @@ public class FindAndReplaceWindowTests
             $"word word{Environment.NewLine}line{Environment.NewLine}break{Environment.NewLine}tab\tvalue",
             editText);
     }
+
+    [Theory]
+    [InlineData("old value", "new value", false, "new value")]
+    [InlineData("old value", "new value", true, "old value")]
+    [InlineData("cached", null, false, "cached")]
+    public void ResolveSearchSourceText_UsesCurrentEditorTextOutsideSpreadsheetMode(
+        string cachedText,
+        string? editorText,
+        bool isSpreadsheetSearch,
+        string expected)
+    {
+        Assert.Equal(
+            expected,
+            FindAndReplaceWindow.ResolveSearchSourceText(cachedText, editorText, isSpreadsheetSearch));
+    }
 }
