@@ -15,6 +15,8 @@ namespace Text_Grab.Utilities;
 
 public class ClipboardUtilities
 {
+    private const int MaxHtmlTableSpan = 16_384;
+
     public static async Task<(bool, string)> TryGetClipboardText()
     {
         DataPackageView? dataPackageView = null;
@@ -259,9 +261,7 @@ public class ClipboardUtilities
                 int nextFreeCol = 0;
                 foreach ((string text, int colspan, int rowspan) in parsedCells)
                 {
-                    // Advance past columns already occupied by rowspan carry-overs
-                    while (rowData.ContainsKey(nextFreeCol))
-                        nextFreeCol++;
+                    nextFreeCol = FindNextFreeColumnRange(rowData, nextFreeCol, colspan);
 
                     for (int cs = 0; cs < colspan; cs++)
                         rowData[nextFreeCol + cs] = text;
@@ -287,6 +287,31 @@ public class ClipboardUtilities
         }
 
         return result;
+    }
+
+    private static int FindNextFreeColumnRange(
+        IReadOnlyDictionary<int, string> rowData,
+        int startColumn,
+        int columnCount)
+    {
+        int candidate = Math.Max(0, startColumn);
+
+        while (true)
+        {
+            bool foundOccupiedColumn = false;
+            for (int offset = 0; offset < columnCount; offset++)
+            {
+                if (!rowData.ContainsKey(candidate + offset))
+                    continue;
+
+                candidate += offset + 1;
+                foundOccupiedColumn = true;
+                break;
+            }
+
+            if (!foundOccupiedColumn)
+                return candidate;
+        }
     }
 
     private static List<(string Text, int ColSpan, int RowSpan)> ParseHtmlRowCells(string rowHtml)
@@ -350,7 +375,9 @@ public class ClipboardUtilities
 
         if (valueEnd == valueStart) return 1;
 
-        return int.TryParse(tagAttributes[valueStart..valueEnd], out int span) && span >= 1 ? span : 1;
+        return int.TryParse(tagAttributes[valueStart..valueEnd], out int span) && span >= 1
+            ? Math.Min(span, MaxHtmlTableSpan)
+            : 1;
     }
 
     private static string CleanHtmlCellContent(string html)

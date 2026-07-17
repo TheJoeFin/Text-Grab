@@ -135,6 +135,24 @@ public class ClipboardUtilitiesTests
         Assert.Equal("Tall\tBottom", lines[1]);
     }
 
+    [Fact]
+    public void ConvertHtmlToTabSeparated_DoesNotOverwriteRowspanWithColspan()
+    {
+        string html = """
+            <!--StartFragment--><table>
+                <tr><td>Left</td><td rowspan="2">Tall</td><td>Right</td></tr>
+                <tr><td colspan="2">Merged</td></tr>
+            </table><!--EndFragment-->
+            """;
+
+        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+
+        string[] lines = result.Split('\n');
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("Left\tTall\tRight", lines[0]);
+        Assert.Equal("\tTall\tMerged\tMerged", lines[1]);
+    }
+
     // The Text Grab browser extension's Table mode (including its layout
     // reconstruction fallback for non-<table> grids) writes a clean
     // <table><tr><td>…</td></tr></table> to the clipboard with <br> for
