@@ -31,6 +31,15 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public string ImagePath { get; set; } = string.Empty;
 
+    public OpenContentKind SourceContentKind { get; set; } = OpenContentKind.Image;
+
+    public string SourcePath { get; set; } = string.Empty;
+
+    public int SourcePageIndex { get; set; }
+
+    [JsonIgnore]
+    public bool IsPdfDocument => SourceContentKind == OpenContentKind.PdfDocument;
+
     public bool IsTable { get; set; } = false;
 
     public double DpiScaleFactor { get; set; } = 1.0;
