@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Vortice.Direct3D;
@@ -25,6 +27,11 @@ namespace Text_Grab.Utilities.Hdr;
 /// </summary>
 public static class HdrScreenCapture
 {
+    internal readonly record struct HdrCaptureSegment(
+        MonitorHdrInfo Monitor,
+        Rectangle CaptureRegion,
+        Point Destination);
+
     private static readonly Guid ID3D11Texture2DGuid = new("6f15aaf2-d208-4e89-9ab4-489535d34f9c");
 
     // Reasonable default when the OS won't report the SDR white level; matches the typical
@@ -58,17 +65,16 @@ public static class HdrScreenCapture
         if (!GraphicsCaptureSession.IsSupported())
             return null;
 
-        int centerX = region.Left + region.Width / 2;
-        int centerY = region.Top + region.Height / 2;
-
-        if (!DisplayHdrInfo.TryGetForPoint(centerX, centerY, out MonitorHdrInfo monitor) || !monitor.IsHdrActive)
+        IReadOnlyList<MonitorHdrInfo> monitors = DisplayHdrInfo.GetForRegion(region);
+        HdrCaptureSegment[] segments = BuildCaptureSegments(region, monitors);
+        if (segments.Length == 0)
             return null;
 
         lock (_captureLock)
         {
             try
             {
-                return CaptureHdrRegion(region, monitor);
+                return CaptureCompositeRegion(region, segments);
             }
             catch
             {
@@ -77,6 +83,63 @@ public static class HdrScreenCapture
                 DisposeSharedDevice();
                 return null;
             }
+        }
+    }
+
+    internal static HdrCaptureSegment[] BuildCaptureSegments(
+        Rectangle region,
+        IEnumerable<MonitorHdrInfo> monitors)
+        => monitors
+            .Where(monitor => monitor.IsHdrActive)
+            .Select(monitor =>
+            {
+                Rectangle intersection = Rectangle.Intersect(region, monitor.DesktopRect);
+                return new HdrCaptureSegment(
+                    monitor,
+                    intersection,
+                    new Point(intersection.Left - region.Left, intersection.Top - region.Top));
+            })
+            .Where(segment => segment.CaptureRegion.Width > 0 && segment.CaptureRegion.Height > 0)
+            .ToArray();
+
+    private static Bitmap? CaptureCompositeRegion(
+        Rectangle region,
+        IReadOnlyList<HdrCaptureSegment> segments)
+    {
+        Bitmap composite = new(region.Width, region.Height, PixelFormat.Format32bppArgb);
+
+        try
+        {
+            using (Graphics graphics = Graphics.FromImage(composite))
+            {
+                graphics.CopyFromScreen(
+                    region.Left,
+                    region.Top,
+                    0,
+                    0,
+                    composite.Size,
+                    CopyPixelOperation.SourceCopy);
+            }
+
+            foreach (HdrCaptureSegment segment in segments)
+            {
+                using Bitmap? hdrSegment = CaptureHdrRegion(segment.CaptureRegion, segment.Monitor);
+                if (hdrSegment is null)
+                {
+                    composite.Dispose();
+                    return null;
+                }
+
+                using Graphics graphics = Graphics.FromImage(composite);
+                graphics.DrawImageUnscaled(hdrSegment, segment.Destination);
+            }
+
+            return composite;
+        }
+        catch
+        {
+            composite.Dispose();
+            throw;
         }
     }
 

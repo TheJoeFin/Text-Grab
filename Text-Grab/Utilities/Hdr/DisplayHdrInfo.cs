@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.InteropServices;
+using Vortice;
 using Vortice.DXGI;
 
 namespace Text_Grab.Utilities.Hdr;
@@ -31,12 +34,21 @@ public static class DisplayHdrInfo
     /// </summary>
     public static bool TryGetForPoint(int x, int y, out MonitorHdrInfo info)
     {
-        info = default;
+        info = GetAll().FirstOrDefault(monitor => monitor.DesktopRect.Contains(x, y));
+        return info.Monitor != IntPtr.Zero;
+    }
+
+    internal static IReadOnlyList<MonitorHdrInfo> GetForRegion(Rectangle region)
+        => [.. GetAll().Where(monitor => Rectangle.Intersect(region, monitor.DesktopRect) is { Width: > 0, Height: > 0 })];
+
+    private static IReadOnlyList<MonitorHdrInfo> GetAll()
+    {
+        List<MonitorHdrInfo> monitors = [];
 
         try
         {
             if (DXGI.CreateDXGIFactory1(out IDXGIFactory1? factory).Failure || factory is null)
-                return false;
+                return monitors;
 
             using (factory)
             {
@@ -53,21 +65,17 @@ public static class DisplayHdrInfo
                                     continue;
 
                                 OutputDescription1 desc = output6.Description1;
-                                var coords = desc.DesktopCoordinates;
+                                RawRect coords = desc.DesktopCoordinates;
                                 Rectangle rect = new(
                                     coords.Left,
                                     coords.Top,
                                     coords.Right - coords.Left,
                                     coords.Bottom - coords.Top);
 
-                                if (!rect.Contains(x, y))
-                                    continue;
-
                                 bool hdrActive = desc.ColorSpace == ColorSpaceType.RgbFullG2084NoneP2020;
                                 double sdrWhite = hdrActive ? GetSdrWhiteNits(desc.DeviceName) : 0;
 
-                                info = new MonitorHdrInfo(desc.Monitor, rect, hdrActive, sdrWhite);
-                                return true;
+                                monitors.Add(new MonitorHdrInfo(desc.Monitor, rect, hdrActive, sdrWhite));
                             }
                         }
                     }
@@ -77,10 +85,10 @@ public static class DisplayHdrInfo
         catch
         {
             // Any failure enumerating adapters means we can't confirm HDR; caller falls back to GDI.
-            return false;
+            monitors.Clear();
         }
 
-        return false;
+        return monitors;
     }
 
     /// <summary>
