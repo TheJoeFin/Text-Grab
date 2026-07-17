@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.IO;
+using System.IO.Compression;
 using System.Text.Json;
 using System.Windows;
 using Text_Grab;
@@ -133,6 +134,38 @@ public class GrabFrameFileTests
         HistoryInfo? loaded = await GrabFrameFileUtilities.LoadGrabFrameFileAsync(missingPath);
 
         Assert.Null(loaded);
+    }
+
+    [Fact]
+    public async Task LoadGrabFrameFileAsync_ReturnsNull_ForOversizedMetadata()
+    {
+        string tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tggf");
+
+        try
+        {
+            using (FileStream zipStream = new(tempPath, FileMode.Create, FileAccess.Write))
+            using (ZipArchive archive = new(zipStream, ZipArchiveMode.Create))
+            using (StreamWriter writer = new(archive.CreateEntry("metadata.json").Open()))
+                writer.Write(new string('a', checked((int)GrabFrameFileUtilities.MaxMetadataBytes + 1)));
+
+            HistoryInfo? loaded = await GrabFrameFileUtilities.LoadGrabFrameFileAsync(tempPath);
+
+            Assert.Null(loaded);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [Theory]
+    [InlineData(8_000, 5_000, true)]
+    [InlineData(8_001, 5_000, false)]
+    [InlineData(16_385, 1, false)]
+    public void AreImageDimensionsAllowed_EnforcesDimensionAndPixelLimits(int width, int height, bool expected)
+    {
+        Assert.Equal(expected, GrabFrameFileUtilities.AreImageDimensionsAllowed(width, height));
     }
 
     [Theory]
