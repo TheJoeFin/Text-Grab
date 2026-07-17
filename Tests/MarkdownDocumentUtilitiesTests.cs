@@ -73,6 +73,27 @@ Console.WriteLine("hi");
     }
 
     [WpfFact]
+    public void Markdown_OrderedList_RoundTripsStartNumber()
+    {
+        const string markdown = """
+            5. fifth
+            6. sixth
+            """;
+
+        FlowDocument document = MarkdownDocumentUtilities.CreateFlowDocument(
+            markdown,
+            new FontFamily("Segoe UI"),
+            16);
+
+        System.Windows.Documents.List list =
+            Assert.IsType<System.Windows.Documents.List>(Assert.Single(document.Blocks));
+        string serialized = MarkdownDocumentUtilities.SerializeToMarkdown(document);
+
+        Assert.Equal(5, list.StartIndex);
+        Assert.Equal($"5. fifth{Environment.NewLine}6. sixth", serialized);
+    }
+
+    [WpfFact]
     public void PlainText_WithMarkdownCharacters_IsEscapedDuringSerialization()
     {
         FlowDocument document = new();
