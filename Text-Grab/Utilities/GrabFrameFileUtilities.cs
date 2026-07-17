@@ -32,6 +32,15 @@ public static class GrabFrameFileUtilities
 {
     public const string GrabFrameFileExtension = ".tggf";
 
+    internal const long MaxArchiveBytes = 128L * 1024 * 1024;
+    internal const long MaxMetadataBytes = 4L * 1024 * 1024;
+    internal const long MaxWordBordersBytes = 32L * 1024 * 1024;
+    internal const long MaxImageBytes = 64L * 1024 * 1024;
+    internal const long MaxExpandedBytes = 96L * 1024 * 1024;
+    internal const long MaxImagePixelCount = 40_000_000;
+    internal const int MaxImageDimension = 16_384;
+    private const int MaxArchiveEntries = 16;
+    private const double MaxCompressionRatio = 1_000;
     private const string MetadataEntryName = "metadata.json";
     private const string WordBordersEntryName = "wordborders.json";
     private const string ImageEntryName = "image.png";
@@ -151,25 +160,34 @@ public static class GrabFrameFileUtilities
             return await Task.Run(() =>
             {
                 using FileStream zipStream = File.OpenRead(sourcePath);
+                if (zipStream.Length > MaxArchiveBytes)
+                    throw new InvalidDataException("The Grab Frame file exceeds the maximum supported size.");
+
                 using ZipArchive archive = new(zipStream, ZipArchiveMode.Read);
+                if (archive.Entries.Count > MaxArchiveEntries)
+                    throw new InvalidDataException("The Grab Frame file contains too many entries.");
+
+                long remainingExpandedBytes = MaxExpandedBytes;
 
                 ZipArchiveEntry? metadataEntry = archive.GetEntry(MetadataEntryName);
                 if (metadataEntry is null)
                     return null;
 
                 HistoryInfo? info = JsonSerializer.Deserialize<HistoryInfo>(
-                    ReadEntryText(metadataEntry), MetadataJsonOptions);
+                    ReadEntryText(metadataEntry, MaxMetadataBytes, ref remainingExpandedBytes), MetadataJsonOptions);
 
                 if (info is null)
                     return null;
 
                 ZipArchiveEntry? wordBordersEntry = archive.GetEntry(WordBordersEntryName);
-                info.WordBorderInfoJson = wordBordersEntry is null ? null : ReadEntryText(wordBordersEntry);
+                info.WordBorderInfoJson = wordBordersEntry is null
+                    ? null
+                    : ReadEntryText(wordBordersEntry, MaxWordBordersBytes, ref remainingExpandedBytes);
                 info.WordBorderInfoFileName = null;
 
                 ZipArchiveEntry? imageEntry = archive.GetEntry(ImageEntryName);
                 if (imageEntry is not null)
-                    info.ImageContent = ReadImageEntry(imageEntry);
+                    info.ImageContent = ReadImageEntry(imageEntry, ref remainingExpandedBytes);
 
                 if (string.IsNullOrWhiteSpace(info.ID))
                     info.ID = Guid.NewGuid().ToString();
@@ -206,24 +224,72 @@ public static class GrabFrameFileUtilities
         imageStream.CopyTo(entryStream);
     }
 
-    private static Bitmap ReadImageEntry(ZipArchiveEntry entry)
+    private static Bitmap ReadImageEntry(ZipArchiveEntry entry, ref long remainingExpandedBytes)
     {
-        // Copy into memory and build a self-contained Bitmap. A Bitmap constructed directly
-        // from a stream keeps the stream alive for its lifetime, so clone into an owned bitmap.
-        using Stream entryStream = entry.Open();
-        using MemoryStream imageStream = new();
-        entryStream.CopyTo(imageStream);
-        imageStream.Position = 0;
+        byte[] imageBytes = ReadEntryBytes(entry, MaxImageBytes, ref remainingExpandedBytes);
+        using MemoryStream imageStream = new(imageBytes, writable: false);
+        using Image decoded = Image.FromStream(imageStream, useEmbeddedColorManagement: false, validateImageData: true);
 
-        using Bitmap decoded = new(imageStream);
+        if (!AreImageDimensionsAllowed(decoded.Width, decoded.Height))
+            throw new InvalidDataException("The Grab Frame image dimensions exceed the supported limit.");
+
         return new Bitmap(decoded);
     }
 
-    private static string ReadEntryText(ZipArchiveEntry entry)
+    private static string ReadEntryText(ZipArchiveEntry entry, long maxEntryBytes, ref long remainingExpandedBytes)
     {
+        byte[] content = ReadEntryBytes(entry, maxEntryBytes, ref remainingExpandedBytes);
+        return Encoding.UTF8.GetString(content);
+    }
+
+    private static byte[] ReadEntryBytes(ZipArchiveEntry entry, long maxEntryBytes, ref long remainingExpandedBytes)
+    {
+        ValidateEntrySize(entry, maxEntryBytes, remainingExpandedBytes);
+
         using Stream entryStream = entry.Open();
-        using StreamReader reader = new(entryStream, Encoding.UTF8);
-        return reader.ReadToEnd();
+        using MemoryStream content = new((int)entry.Length);
+        byte[] buffer = new byte[81920];
+        long totalBytesRead = 0;
+
+        while (true)
+        {
+            int bytesRead = entryStream.Read(buffer, 0, buffer.Length);
+            if (bytesRead == 0)
+                break;
+
+            totalBytesRead += bytesRead;
+            if (totalBytesRead > maxEntryBytes || totalBytesRead > remainingExpandedBytes)
+                throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' exceeds the supported size.");
+
+            content.Write(buffer, 0, bytesRead);
+        }
+
+        if (totalBytesRead != entry.Length)
+            throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' has an invalid length.");
+
+        remainingExpandedBytes -= totalBytesRead;
+        return content.ToArray();
+    }
+
+    private static void ValidateEntrySize(ZipArchiveEntry entry, long maxEntryBytes, long remainingExpandedBytes)
+    {
+        if (entry.Length < 0 || entry.Length > maxEntryBytes || entry.Length > remainingExpandedBytes)
+            throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' exceeds the supported size.");
+
+        if (entry.Length == 0)
+            return;
+
+        if (entry.CompressedLength <= 0 || entry.Length / (double)entry.CompressedLength > MaxCompressionRatio)
+            throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' has an unsafe compression ratio.");
+    }
+
+    internal static bool AreImageDimensionsAllowed(int width, int height)
+    {
+        return width > 0
+            && height > 0
+            && width <= MaxImageDimension
+            && height <= MaxImageDimension
+            && (long)width * height <= MaxImagePixelCount;
     }
 
     private static void TryDeleteFile(string path)

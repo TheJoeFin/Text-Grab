@@ -66,11 +66,15 @@ internal sealed class PdfPageTextLine
 internal sealed class PdfDocumentRenderer : IDisposable
 {
     private const double DefaultRenderScale = 2.0;
+    internal const long MaxRenderPixelCount = 20_000_000;
     private const int MaxCachedPages = 10;
+    private const long MaxCachedPageBytes = 256L * 1024 * 1024;
     private readonly WinPdfDocument renderDocument;
     private readonly PigPdfDocument textDocument;
     private readonly Dictionary<int, PdfPageContent> pageCache = [];
+    private readonly Dictionary<int, long> pageCacheSizes = [];
     private readonly LinkedList<int> cacheOrder = new();
+    private long cachedPageBytes;
 
     private PdfDocumentRenderer(string filePath, WinPdfDocument renderDocument, PigPdfDocument textDocument)
     {
@@ -85,6 +89,10 @@ internal sealed class PdfDocumentRenderer : IDisposable
 
     public void Dispose()
     {
+        pageCache.Clear();
+        pageCacheSizes.Clear();
+        cacheOrder.Clear();
+        cachedPageBytes = 0;
         textDocument.Dispose();
     }
 
@@ -141,14 +149,15 @@ internal sealed class PdfDocumentRenderer : IDisposable
             List<Windows.Foundation.Rect> imageRegions = ExtractImageRegions(textPage, renderedPage.PixelWidth, renderedPage.PixelHeight);
 
             PdfPageContent pageContent = new(pageIndex, renderedPage, nativeLines, imageRegions);
+            long pageSizeBytes = EstimateBitmapBytes(renderedPage);
 
-            if (pageCache.Count >= MaxCachedPages && cacheOrder.First is LinkedListNode<int> oldest)
-            {
-                pageCache.Remove(oldest.Value);
-                cacheOrder.RemoveFirst();
-            }
+            while (cacheOrder.First is not null
+                && (pageCache.Count >= MaxCachedPages || cachedPageBytes + pageSizeBytes > MaxCachedPageBytes))
+                RemoveOldestCachedPage();
 
             pageCache[pageIndex] = pageContent;
+            pageCacheSizes[pageIndex] = pageSizeBytes;
+            cachedPageBytes += pageSizeBytes;
             cacheOrder.AddLast(pageIndex);
             return pageContent;
         }
@@ -300,7 +309,25 @@ internal sealed class PdfDocumentRenderer : IDisposable
             scaledHeight *= scaleDownRatio;
         }
 
-        return ((uint)Math.Max(1, Math.Round(scaledWidth)), (uint)Math.Max(1, Math.Round(scaledHeight)));
+        double pixelCount = scaledWidth * scaledHeight;
+        if (pixelCount > MaxRenderPixelCount)
+        {
+            double scaleDownRatio = Math.Sqrt(MaxRenderPixelCount / pixelCount);
+            scaledWidth *= scaleDownRatio;
+            scaledHeight *= scaleDownRatio;
+        }
+
+        uint width = (uint)Math.Max(1, Math.Round(scaledWidth));
+        uint height = (uint)Math.Max(1, Math.Round(scaledHeight));
+
+        if ((ulong)width * height > MaxRenderPixelCount)
+        {
+            double scaleDownRatio = Math.Sqrt((double)MaxRenderPixelCount / ((double)width * height));
+            width = (uint)Math.Max(1, Math.Floor(width * scaleDownRatio));
+            height = (uint)Math.Max(1, Math.Floor(height * scaleDownRatio));
+        }
+
+        return (width, height);
     }
 
     internal static bool ShouldIncludeOcrLine(Windows.Foundation.Rect sourceRect, IReadOnlyList<Windows.Foundation.Rect> imageRegions)
@@ -378,6 +405,12 @@ internal sealed class PdfDocumentRenderer : IDisposable
         return new Windows.Foundation.Rect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
     }
 
+    private static long EstimateBitmapBytes(BitmapSource bitmap)
+    {
+        int bitsPerPixel = Math.Max(bitmap.Format.BitsPerPixel, 32);
+        return checked((long)bitmap.PixelWidth * bitmap.PixelHeight * bitsPerPixel / 8);
+    }
+
     private async Task<IReadOnlyList<PdfPageTextLine>> GetOcrLinesAsync(
         BitmapSource renderedPage,
         ILanguage language,
@@ -441,6 +474,19 @@ internal sealed class PdfDocumentRenderer : IDisposable
 
         using Bitmap renderedBitmap = ImageMethods.GetBitmapFromIRandomAccessStream(renderedStream);
         return ImageMethods.BitmapToImageSource(renderedBitmap);
+    }
+
+    private void RemoveOldestCachedPage()
+    {
+        if (cacheOrder.First is not LinkedListNode<int> oldest)
+            return;
+
+        int pageIndex = oldest.Value;
+        cacheOrder.RemoveFirst();
+        pageCache.Remove(pageIndex);
+
+        if (pageCacheSizes.Remove(pageIndex, out long pageSizeBytes))
+            cachedPageBytes -= pageSizeBytes;
     }
 
     private void ValidatePageIndex(int pageIndex)
