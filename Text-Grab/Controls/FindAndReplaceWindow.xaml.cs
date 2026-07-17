@@ -181,6 +181,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             {
                 Index = m.Index,
                 Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Value),
+                RawText = m.Value,
                 PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12).MakeStringSingleLine(),
                 PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12).MakeStringSingleLine(),
                 Length = m.Length,
@@ -239,6 +240,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             {
                 Index = m.Start,
                 Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Text),
+                RawText = m.Text,
                 PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Start, 12).MakeStringSingleLine(),
                 PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Start + m.Length, 12).MakeStringSingleLine(),
                 Length = m.Length,
@@ -336,32 +338,33 @@ public partial class FindAndReplaceWindow : FluentWindow
             return;
         }
 
-        if (Matches is null || Matches.Count < 1 || string.IsNullOrEmpty(SearchBar.SearchText))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        e.CanExecute = FindResults.Count > 0
+            && (SearchBar.SelectedPattern is not null || !string.IsNullOrEmpty(SearchBar.SearchText));
     }
 
     private void CopyMatchesCmd_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (textEditWindow is null) return;
 
-        if (!IsSpreadsheetSearch && (Matches is null || Matches.Count < 1))
+        if (FindResults.Count == 0)
             return;
-
-        StringBuilder stringBuilder = new();
 
         IList selection = ResultsListView.SelectedItems;
         if (selection.Count < 2)
             selection = ResultsListView.Items;
 
-        foreach (object? item in selection)
-            if (item is FindResult findResult)
-                stringBuilder.AppendLine(findResult.Text);
+        string matchText = GetMatchTextForEditing(selection.OfType<FindResult>());
+        if (string.IsNullOrEmpty(matchText))
+            return;
 
         EditTextWindow etw = new();
-        etw.AddThisText(stringBuilder.ToString());
+        etw.AddThisText(matchText);
         etw.Show();
+    }
+
+    internal static string GetMatchTextForEditing(IEnumerable<FindResult> findResults)
+    {
+        return string.Join(Environment.NewLine, findResults.Select(findResult => findResult.RawText));
     }
 
     private void DeleteAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)

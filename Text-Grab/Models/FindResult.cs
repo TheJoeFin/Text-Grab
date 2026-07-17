@@ -5,6 +5,8 @@ public class FindResult
 {
     public string Text { get; set; } = "";
 
+    public string RawText { get; set; } = "";
+
     public int Count { get; set; } = 0;
 
     public int Index { get; set; }

@@ -2992,6 +2992,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                         ColumnIndex = col,
                         Index = m.Index,
                         Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Value),
+                        RawText = m.Value,
                         PreviewLeft = cellValue[previewStart..m.Index],
                         PreviewRight = cellValue[(m.Index + m.Length)..previewEnd],
                         Length = m.Length,
