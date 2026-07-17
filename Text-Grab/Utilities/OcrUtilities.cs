@@ -579,9 +579,9 @@ public static partial class OcrUtilities
 
         public int StartingLineNumber => Lines.Count == 0 ? 0 : Lines[0].LineNumber;
 
-        public string DisplayText => string.Join(Environment.NewLine, Lines.Select(static line => line.Text));
+        public string DisplayText => string.Join(Environment.NewLine, Lines.Select(static line => line.Text.MakeStringSingleLine()));
 
-        public string SingleLineText => string.Join(" ", Lines.Select(static line => line.Text).Where(static text => !string.IsNullOrWhiteSpace(text)));
+        public string SingleLineText => string.Join(" ", Lines.Select(static line => line.Text.MakeStringSingleLine()).Where(static text => !string.IsNullOrWhiteSpace(text)));
     }
 
     internal static string BuildTextFromOcrLines(ILanguage language, IOcrLinesWords ocrResult)
@@ -827,6 +827,12 @@ public static partial class OcrUtilities
         double minHeight = Math.Min(currentHeight, nextHeight);
         double maxHeight = Math.Max(currentHeight, nextHeight);
         if (maxHeight / minHeight > 1.5)
+            return false;
+
+        // Consecutive OCR entries must advance to a distinct visual row. Without
+        // this guard, duplicate or horizontally split entries on the same row have
+        // a negative gap and are incorrectly merged into a one-line-tall paragraph.
+        if (nextTop - currentTop < minHeight * 0.5)
             return false;
 
         // If the vertical gap between line bounding boxes is less than 0.6× the average line

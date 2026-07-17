@@ -2207,10 +2207,10 @@ public partial class GrabFrame : Window
             StringBuilder rtlText = new(ocrText);
             rtlText.ReverseWordsForRightToLeft();
             rtlText.RemoveTrailingNewlines();
-            return rtlText.ToString();
+            return rtlText.ToString().MakeStringSingleLine();
         }
 
-        return ocrText;
+        return ocrText.MakeStringSingleLine();
     }
 
     private WordBorder CreateWordBorderFromSourceRect(

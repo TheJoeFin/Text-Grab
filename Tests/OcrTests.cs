@@ -195,7 +195,9 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
     [InlineData(10, 10, 25, 10, true)]   // bounding-box gap = 5
     [InlineData(10, 10, 26, 10, false)]  // threshold boundary: gap = 6
     [InlineData(10, 10, 27, 10, false)]  // bounding-box gap = 7
-    [InlineData(10, 10, 10, 10, true)]   // overlapping bounding boxes
+    [InlineData(10, 10, 10, 10, false)]  // same visual row
+    [InlineData(10, 10, 14, 10, false)]  // insufficient vertical advance
+    [InlineData(10, 10, 18, 10, true)]   // distinct rows with slight overlap
     [InlineData(10, 10, 16, 30, false)]  // height ratio = 3
     [InlineData(10, 0, 13, 10, false)]   // zero height
     public void IsWrappedParagraph_ReturnsExpected(
@@ -279,6 +281,36 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         Assert.Equal(0, groups[0].BoundingBox.Y);
         Assert.Equal(24, groups[0].BoundingBox.Height);
         Assert.Equal("New paragraph.", groups[1].SingleLineText);
+    }
+
+    [Fact]
+    public void GroupWrappedParagraphLines_DoesNotMergeEntriesOnTheSameVisualRow()
+    {
+        List<OcrUtilities.PositionedOcrLine> lines =
+        [
+            new(0, "Left entry", new Windows.Foundation.Rect(0, 10, 50, 10)),
+            new(1, "Right entry", new Windows.Foundation.Rect(60, 10, 50, 10)),
+        ];
+
+        List<OcrUtilities.GroupedOcrLines> groups = OcrUtilities.GroupWrappedParagraphLines(lines);
+
+        Assert.Equal(2, groups.Count);
+        Assert.All(groups, group => Assert.DoesNotContain(Environment.NewLine, group.DisplayText));
+        Assert.All(groups, group => Assert.Equal(10, group.BoundingBox.Height));
+    }
+
+    [Fact]
+    public void GroupWrappedParagraphLines_RemovesEmbeddedLineBreaksFromIndividualOcrLines()
+    {
+        List<OcrUtilities.PositionedOcrLine> lines =
+        [
+            new(0, $"First{Environment.NewLine}line", new Windows.Foundation.Rect(0, 0, 100, 10)),
+        ];
+
+        OcrUtilities.GroupedOcrLines group = Assert.Single(OcrUtilities.GroupWrappedParagraphLines(lines));
+
+        Assert.Equal("First line", group.DisplayText);
+        Assert.Equal("First line", group.SingleLineText);
     }
 
     private const string jaTestPath = @".\Images\Ja-Lang-Image.png";
