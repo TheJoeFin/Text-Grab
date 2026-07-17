@@ -6387,14 +6387,30 @@ public partial class GrabFrame : Window
         if (SpeakToggleButton.IsChecked is not bool isChecked)
             return;
 
+        bool wasSpeakEnabled = isSpeakEnabled;
         isSpeakEnabled = isChecked;
         DefaultSettings.GrabFrameSpeakEnabled = isChecked;
         DefaultSettings.Save();
 
         // Turning speaking off should silence anything already queued/playing.
         if (!isChecked)
+        {
             Singleton<TtsService>.Instance.Stop();
+            return;
+        }
+
+        if (ShouldSpeakCurrentFrameWhenEnabled(wasSpeakEnabled, isChecked, FrameText))
+        {
+            _lastSpokenFrameText = FrameText;
+            Singleton<TtsService>.Instance.Speak(FrameText);
+        }
     }
+
+    internal static bool ShouldSpeakCurrentFrameWhenEnabled(
+        bool wasSpeakEnabled,
+        bool isSpeakEnabled,
+        string frameText)
+        => !wasSpeakEnabled && isSpeakEnabled && !string.IsNullOrWhiteSpace(frameText);
 
     private void StopSpeakingButton_Click(object sender, RoutedEventArgs e)
     {

@@ -15,6 +15,7 @@ public class TtsService
     private CancellationTokenSource _speechCts = new();
     private readonly object _lock = new();
     private int _pendingCount = 0;
+    private bool _isBusy;
 
     private event Action? Drained;
 
@@ -26,7 +27,7 @@ public class TtsService
 
     public bool IsBusy
     {
-        get { lock (_lock) return _pendingCount > 0; }
+        get { lock (_lock) return _isBusy; }
     }
 
     public ITtsEngine Engine
@@ -46,17 +47,22 @@ public class TtsService
 
         text = ApplyWordLimit(text);
 
-        bool becameBusy;
         lock (_lock)
         {
-            becameBusy = _pendingCount == 0;
             _pendingCount++;
+            if (!_queue.Writer.TryWrite(text))
+            {
+                _pendingCount--;
+                PublishIdleIfDrained();
+                return;
+            }
+
+            if (!_isBusy)
+            {
+                _isBusy = true;
+                BusyChanged?.Invoke(true);
+            }
         }
-
-        _queue.Writer.TryWrite(text);
-
-        if (becameBusy)
-            BusyChanged?.Invoke(true);
     }
 
     public void Stop()
@@ -64,21 +70,14 @@ public class TtsService
         _speechCts.Cancel();
         _speechCts = new CancellationTokenSource();
 
-        bool drained;
         lock (_lock)
         {
-            bool wasBusy = _pendingCount > 0;
             while (_queue.Reader.TryRead(out _))
                 _pendingCount--;
-            // If an item is still in flight it stays counted; the drain loop
-            // fires the idle transition when its cancelled Speak returns.
-            drained = wasBusy && _pendingCount == 0;
-        }
 
-        if (drained)
-        {
-            Drained?.Invoke();
-            BusyChanged?.Invoke(false);
+            // If an item is still in flight it stays counted; the drain loop
+            // publishes idle when its cancelled Speak returns.
+            PublishIdleIfDrained();
         }
     }
 
@@ -140,18 +139,30 @@ public class TtsService
                 }
                 finally
                 {
-                    bool drained;
                     lock (_lock)
-                        drained = --_pendingCount == 0;
-
-                    if (drained)
                     {
-                        Drained?.Invoke();
-                        BusyChanged?.Invoke(false);
+                        _pendingCount--;
+                        PublishIdleIfDrained();
                     }
                 }
             }
         }
         catch (OperationCanceledException) { }
+    }
+
+    private void PublishIdleIfDrained()
+    {
+        if (_pendingCount != 0)
+            return;
+
+        Drained?.Invoke();
+
+        // A drain callback may synchronously queue more speech. Keep the existing
+        // busy state in that case so an older completion cannot publish stale idle.
+        if (_pendingCount == 0 && _isBusy)
+        {
+            _isBusy = false;
+            BusyChanged?.Invoke(false);
+        }
     }
 }
