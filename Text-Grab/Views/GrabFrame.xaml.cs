@@ -118,6 +118,7 @@ public partial class GrabFrame : Window
     private bool isSpeakEnabled = false;
     private WindowResizer? windowResizer;
     private bool _isCleanedUp;
+    private int _freezeTransitionVersion;
     private readonly HashSet<string> hiddenBottomBarTools = new(StringComparer.OrdinalIgnoreCase);
     private bool translateToolAvailable = false;
     private readonly List<GrabFrameSearchMatch> currentSearchMatches = [];
@@ -1401,6 +1402,7 @@ public partial class GrabFrame : Window
         if (_isCleanedUp)
             return;
         _isCleanedUp = true;
+        _freezeTransitionVersion++;
 
         MainZoomBorder.ResetRequested -= MainZoomBorder_ResetRequested;
         Activated -= GrabFrameWindow_Activated;
@@ -2741,6 +2743,8 @@ public partial class GrabFrame : Window
 
     private void FreezeGrabFrame()
     {
+        _freezeTransitionVersion++;
+        Opacity = 1;
         DisposePreviousFrameContent();
         GrabFrameImage.Opacity = 1;
         if (frameContentImageSource is not null)
@@ -5110,6 +5114,8 @@ public partial class GrabFrame : Window
         if (IsPdfDocumentLoaded)
             return;
 
+        _freezeTransitionVersion++;
+        Opacity = 1;
         reDrawTimer.Stop();
         ClearLoadedPdfDocument();
         ClearLoadedVisualDocumentState();
@@ -5153,10 +5159,11 @@ public partial class GrabFrame : Window
         }
 
         System.Drawing.Bitmap frozenBitmap = ImageMethods.BitmapSourceToBitmap(frozenSource);
+        System.Drawing.Rectangle contentRect = GetContentAreaScreenRect();
+        int transitionVersion = ++_freezeTransitionVersion;
 
-        // Turn the frame transparent so the live content behind it becomes visible
-        // and can be captured. The word borders and frozen image stay in place until
-        // the diff decides whether they are stale.
+        // Hide the entire layered window so neither its tint, borders, nor controls
+        // contaminate the live screen sample used for the comparison.
         reDrawTimer.Stop();
         Topmost = true;
         GrabFrameImage.Opacity = 0;
@@ -5166,24 +5173,35 @@ public partial class GrabFrame : Window
         Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
         UpdateZoomPanMode();
+        Opacity = 0;
 
         if (scrollBehavior == ScrollBehavior.ZoomWhenFrozen)
             MainZoomBorder.CanZoom = false;
 
-        _ = FinishUnfreezeWithDiffAsync(frozenBitmap);
+        _ = FinishUnfreezeWithDiffAsync(frozenBitmap, contentRect, transitionVersion);
     }
 
-    private async Task FinishUnfreezeWithDiffAsync(System.Drawing.Bitmap frozenBitmap)
+    private async Task FinishUnfreezeWithDiffAsync(
+        System.Drawing.Bitmap frozenBitmap,
+        System.Drawing.Rectangle contentRect,
+        int transitionVersion)
     {
         bool contentChanged = true;
 
         try
         {
-            // Let the now-transparent frame present before reading the screen,
-            // otherwise the capture would still contain the frozen image we hid.
+            // Let the compositor present the fully hidden window before sampling.
             await Task.Delay(120);
 
-            System.Drawing.Rectangle contentRect = GetContentAreaScreenRect();
+            if (!ShouldApplyUnfreezeResult(
+                transitionVersion,
+                _freezeTransitionVersion,
+                IsFreezeMode,
+                _isCleanedUp))
+            {
+                return;
+            }
+
             if (contentRect.Width > 1 && contentRect.Height > 1)
             {
                 using System.Drawing.Bitmap liveCapture =
@@ -5200,6 +5218,17 @@ public partial class GrabFrame : Window
         {
             frozenBitmap.Dispose();
         }
+
+        if (!ShouldApplyUnfreezeResult(
+            transitionVersion,
+            _freezeTransitionVersion,
+            IsFreezeMode,
+            _isCleanedUp))
+        {
+            return;
+        }
+
+        Opacity = 1;
 
         if (contentChanged)
         {
@@ -5222,6 +5251,13 @@ public partial class GrabFrame : Window
             ShowFrameMessage("Frame unchanged — keeping recognized words.");
         }
     }
+
+    internal static bool ShouldApplyUnfreezeResult(
+        int transitionVersion,
+        int currentTransitionVersion,
+        bool isFreezeMode,
+        bool isCleanedUp)
+        => transitionVersion == currentTransitionVersion && !isFreezeMode && !isCleanedUp;
 
     private async void PreviousPdfPageButton_Click(object sender, RoutedEventArgs e)
     {
