@@ -78,17 +78,8 @@
                         ScrollViewer.VerticalScrollBarVisibility="Visible">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="46" Header="Icon">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Viewbox Height="24">
-                                                <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
-                                            </Viewbox>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                                 <GridViewColumn
-                                    Width="300"
+                                    Width="346"
                                     DisplayMemberBinding="{Binding ButtonText}"
                                     Header="Action Name" />
                             </GridView>
@@ -197,17 +188,8 @@
                         ScrollViewer.VerticalScrollBarVisibility="Visible">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="46" Header="Icon">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Viewbox Height="24">
-                                                <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
-                                            </Viewbox>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                                 <GridViewColumn
-                                    Width="180"
+                                    Width="226"
                                     DisplayMemberBinding="{Binding ButtonText}"
                                     Header="Action Name" />
                                 <GridViewColumn Width="120" Header="Default">
