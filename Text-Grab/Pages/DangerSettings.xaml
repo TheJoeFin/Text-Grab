@@ -22,6 +22,7 @@
             <controls:CollapsibleButton
                 x:Name="ShutdownButton"
                 Margin="0"
+                ButtonSymbol="Power24"
                 ButtonText="Shutdown Text Grab"
                 Click="ShutdownButton_Click" />
         </controls:SettingsCard>
@@ -30,7 +31,7 @@
             <controls:CollapsibleButton
                 x:Name="RetrySettingTrayButton"
                 Margin="0"
-                ButtonSymbol="TrayItemAdd24"
+                ButtonSymbol="ArrowClockwise24"
                 ButtonText="Reset Tray Icon"
                 Click="RetrySettingTrayButton_Click" />
         </controls:SettingsCard>
