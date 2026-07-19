@@ -68,7 +68,7 @@
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
@@ -158,21 +158,23 @@
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
                 Visibility="Visible" />
 
-            <StackPanel
-                x:Name="MoreOptionsHozStack"
+            <Grid
+                x:Name="BulkActionsGrid"
                 Grid.Row="2"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
-                Margin="0,6,0,0"
-                HorizontalAlignment="Right"
+                Margin="6,6,6,0"
                 d:Visibility="Visible"
-                Orientation="Horizontal"
                 Visibility="Visible">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
                 <local:CollapsibleButton
                     x:Name="DeleteAllMatches"
-                    Width="140"
-                    Margin="0,0,6,0"
+                    Grid.Column="0"
+                    Margin="0,0,3,0"
                     VerticalAlignment="Center"
                     Background="Red"
                     ButtonSymbol="DeleteLines20"
@@ -181,41 +183,30 @@
 
                 <local:CollapsibleButton
                     x:Name="ReplaceAllButton"
-                    Grid.Row="2"
-                    Grid.Column="2"
-                    Width="130"
-                    Height="30"
-                    Margin="0,0,6,0"
-                    Padding="4"
+                    Grid.Column="1"
+                    Margin="3,0,0,0"
+                    VerticalAlignment="Center"
                     ButtonSymbol="ArrowRepeatAll24"
                     ButtonText="Replace All"
                     Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}" />
-            </StackPanel>
-            <StackPanel
-                x:Name="EvenMoreOptionsHozStack"
+            </Grid>
+            <Grid
+                x:Name="MatchActionsGrid"
                 Grid.Row="3"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
-                Margin="0,6,0,0"
-                HorizontalAlignment="Right"
+                Margin="6,6,6,0"
                 d:Visibility="Visible"
-                Orientation="Horizontal"
                 Visibility="Visible">
-                <ui:Button
-                    x:Name="SavePatternButton"
-                    Width="32"
-                    Height="32"
-                    Margin="0,0,6,0"
-                    Padding="4"
-                    Click="SavePatternButton_Click"
-                    Icon="{ui:SymbolIcon Save24}"
-                    ToolTip="Save pattern to Patterns Manager"
-                    Visibility="Collapsed" />
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
                 <local:CollapsibleButton
                     x:Name="MatchesToEditWindow"
-                    Width="130"
-                    Margin="0,0,6,0"
+                    Grid.Column="0"
+                    Margin="0,0,3,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="WindowEdit20"
                     ButtonText="Edit Matches"
@@ -223,51 +214,34 @@
 
                 <local:CollapsibleButton
                     x:Name="ApplyTemplateButton"
-                    Width="150"
-                    Margin="0,0,6,0"
+                    Grid.Column="1"
+                    Margin="3,0,0,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="DocumentTableSearch24"
                     ButtonText="Apply Template"
                     Click="ApplyTemplateButton_Click"
                     ToolTip="Apply a text-only Grab Template to each match" />
-            </StackPanel>
-            <StackPanel
-                x:Name="PatternButtonsStack"
+            </Grid>
+            <Grid
+                x:Name="PatternActionsGrid"
                 Grid.Row="4"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
-                HorizontalAlignment="Right"
-                Orientation="Horizontal"
+                Margin="6,6,6,0"
                 Visibility="Visible">
-                <StackPanel
-                    x:Name="PrecisionSliderPanel"
-                    Margin="6,-4,12,0"
-                    VerticalAlignment="Center"
-                    Orientation="Vertical"
-                    Visibility="Collapsed">
-                    <TextBlock
-                        Margin="0,0,0,2"
-                        HorizontalAlignment="Center"
-                        Style="{StaticResource TextBodyNormal}">
-                        Precision
-                    </TextBlock>
-                    <Slider
-                        x:Name="PrecisionSlider"
-                        Width="120"
-                        VerticalAlignment="Center"
-                        IsSnapToTickEnabled="True"
-                        Maximum="5"
-                        Minimum="0"
-                        TickFrequency="1"
-                        TickPlacement="BottomRight"
-                        ToolTip="Adjust regex pattern precision (0=least precise, 5=most precise)"
-                        ValueChanged="PrecisionSlider_ValueChanged"
-                        Value="3" />
-                </StackPanel>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
                 <local:CollapsibleButton
                     x:Name="ManageRegexButton"
-                    Margin="0,0,6,0"
+                    Grid.Column="0"
+                    Margin="0,0,3,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="Book24"
                     ButtonText="Manage Patterns"
@@ -275,13 +249,53 @@
 
                 <local:CollapsibleButton
                     x:Name="ExtractSimplePattern"
-                    Width="130"
-                    Margin="0,0,6,0"
+                    Grid.Column="1"
+                    Margin="3,0,0,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="LightbulbFilament24"
                     ButtonText="Extract Regex"
                     Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}" />
-            </StackPanel>
+
+                <StackPanel
+                    Grid.Row="1"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <ui:Button
+                        x:Name="SavePatternButton"
+                        Width="32"
+                        Height="30"
+                        Margin="0,6,6,0"
+                        Padding="4"
+                        Click="SavePatternButton_Click"
+                        Icon="{ui:SymbolIcon Save24}"
+                        ToolTip="Save pattern to Patterns Manager"
+                        Visibility="Collapsed" />
+                    <StackPanel
+                        x:Name="PrecisionSliderPanel"
+                        Margin="0,6,0,0"
+                        Orientation="Horizontal"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource TextBodyNormal}"
+                            Text="Precision" />
+                        <Slider
+                            x:Name="PrecisionSlider"
+                            Width="160"
+                            VerticalAlignment="Center"
+                            IsSnapToTickEnabled="True"
+                            Maximum="5"
+                            Minimum="0"
+                            TickFrequency="1"
+                            TickPlacement="BottomRight"
+                            ToolTip="Adjust regex pattern precision (0=least precise, 5=most precise)"
+                            ValueChanged="PrecisionSlider_ValueChanged"
+                            Value="3" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
 
         </Grid>
 

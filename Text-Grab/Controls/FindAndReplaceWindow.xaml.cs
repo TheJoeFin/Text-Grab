@@ -851,9 +851,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         ReplaceTextBox.Visibility = optionsVisibility;
         ReplaceButton.Visibility = optionsVisibility;
         ReplaceAllButton.Visibility = optionsVisibility;
-        MoreOptionsHozStack.Visibility = optionsVisibility;
-        EvenMoreOptionsHozStack.Visibility = optionsVisibility;
-        PatternButtonsStack.Visibility = optionsVisibility;
+        BulkActionsGrid.Visibility = optionsVisibility;
+        MatchActionsGrid.Visibility = optionsVisibility;
+        PatternActionsGrid.Visibility = optionsVisibility;
     }
 
     private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
