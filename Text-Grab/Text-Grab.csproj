@@ -87,7 +87,7 @@
              build tool. Exclude all its assets so nuget.exe never flows into the app output. -->
         <PackageReference Include="NuGet.CommandLine" Version="7.6.0" ExcludeAssets="all" PrivateAssets="all" />
         <PackageReference Include="PdfPig" Version="0.1.15" />
-        <PackageReference Include="UnitsNet" Version="5.75.0" />
+        <PackageReference Include="UnitsNet" Version="5.75.1" />
         <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
         <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
         <PackageReference Include="WPF-UI" Version="4.3.0" />
