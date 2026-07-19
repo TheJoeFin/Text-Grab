@@ -315,20 +315,22 @@
                         Click="AddRemoveAtMenuItem_Click"
                         Header="_Add, Remove, Limit..." />
                     <MenuItem Command="{x:Static local:EditTextWindow.TransposeTableCmd}" Header="_Transpose Table" />
-                    <MenuItem
-                        x:Name="ApplyGrabTemplateMenuItem"
-                        Header="Apply Grab Template"
-                        Visibility="Collapsed" />
-                    <MenuItem
-                        x:Name="ApplyGrabTemplatePerLineMenuItem"
-                        Header="Apply Grab Template Per Line"
-                        Visibility="Collapsed" />
-                    <MenuItem
-                        x:Name="ApplyPatternMenuItem"
-                        Header="Apply Pattern" />
-                    <MenuItem
-                        x:Name="ApplyPatternPerLineMenuItem"
-                        Header="Apply Pattern Per Line" />
+                    <MenuItem x:Name="ApplyMenuItem" Header="Apply Grab Template or Pattern">
+                        <MenuItem
+                            x:Name="ApplyGrabTemplateMenuItem"
+                            Header="Grab Templates"
+                            Visibility="Collapsed" />
+                        <MenuItem x:Name="ApplyPatternMenuItem" Header="Patterns" />
+                        <MenuItem x:Name="ApplySmartPatternMenuItem" Header="Smart Patterns" />
+                    </MenuItem>
+                    <MenuItem x:Name="ApplyPerLineMenuItem" Header="Apply Per Line (Template or Pattern)">
+                        <MenuItem
+                            x:Name="ApplyGrabTemplatePerLineMenuItem"
+                            Header="Grab Templates"
+                            Visibility="Collapsed" />
+                        <MenuItem x:Name="ApplyPatternPerLineMenuItem" Header="Patterns" />
+                        <MenuItem x:Name="ApplySmartPatternPerLineMenuItem" Header="Smart Patterns" />
+                    </MenuItem>
                     <Separator />
                     <MenuItem
                         x:Name="AddSpreadsheetRowMenuItem"

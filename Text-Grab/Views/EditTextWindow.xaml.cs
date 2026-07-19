@@ -3129,39 +3129,41 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void EditMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         // Load text-only templates fresh each time the Edit menu opens and use them to
-        // populate both the whole-text and per-line apply submenus.
+        // populate the Grab Templates group in both apply flyouts.
         List<GrabTemplate> textOnlyTemplates = [.. GrabTemplateManager.GetAllTemplates().Where(template => template.IsTextOnly && template.IsValid)];
 
         PopulateTemplateMenu(ApplyGrabTemplateMenuItem, textOnlyTemplates, ApplyGrabTemplateItem_Click);
         PopulateTemplateMenu(ApplyGrabTemplatePerLineMenuItem, textOnlyTemplates, ApplyGrabTemplatePerLineItem_Click);
 
-        // Patterns: saved regexes and built-in recognizers, listed together under "Apply Pattern".
-        PopulatePatternMenu(ApplyPatternMenuItem, ApplyPatternItem_Click);
-        PopulatePatternMenu(ApplyPatternPerLineMenuItem, ApplyPatternPerLineItem_Click);
+        List<PatternItem> patterns = [.. PatternItem.GetAll()];
+        PopulatePatternMenu(
+            ApplyPatternMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
+            ApplyPatternItem_Click);
+        PopulatePatternMenu(
+            ApplySmartPatternMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.Recognizer),
+            ApplyPatternItem_Click);
+        PopulatePatternMenu(
+            ApplyPatternPerLineMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
+            ApplyPatternPerLineItem_Click);
+        PopulatePatternMenu(
+            ApplySmartPatternPerLineMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.Recognizer),
+            ApplyPatternPerLineItem_Click);
     }
 
-    private static void PopulatePatternMenu(MenuItem parent, RoutedEventHandler clickHandler)
+    private static void PopulatePatternMenu(
+        MenuItem parent,
+        IEnumerable<PatternItem> patterns,
+        RoutedEventHandler clickHandler)
     {
         // Rebuild each time the menu opens so newly saved regexes appear.
         parent.Items.Clear();
 
-        string? currentGroup = null;
-        foreach (PatternItem pattern in PatternItem.GetAll())
+        foreach (PatternItem pattern in patterns)
         {
-            // Header rows separate the "Saved Patterns" and "Smart Patterns" subsections.
-            if (pattern.GroupLabel != currentGroup)
-            {
-                currentGroup = pattern.GroupLabel;
-                if (parent.Items.Count > 0)
-                    parent.Items.Add(new Separator());
-
-                parent.Items.Add(new MenuItem
-                {
-                    Header = currentGroup,
-                    IsEnabled = false,
-                });
-            }
-
             MenuItem patternItem = new()
             {
                 Header = pattern.Name,
@@ -3171,6 +3173,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             patternItem.Click += clickHandler;
             parent.Items.Add(patternItem);
         }
+
+        parent.Visibility = parent.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ApplyPatternItem_Click(object sender, RoutedEventArgs e)
