@@ -974,10 +974,19 @@ public partial class FullscreenGrab : Window
             Singleton<HistoryService>.Instance.SaveToHistory(historyInfo);
     }
 
+    internal static Rect GetFullscreenClipBounds(Size renderedSize)
+    {
+        return new Rect(0, 0, renderedSize.Width, renderedSize.Height);
+    }
+
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        FullWindow.Rect = GetFullscreenClipBounds(e.NewSize);
+    }
+
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Maximized;
-        FullWindow.Rect = new Rect(0, 0, Width, Height);
         KeyDown += FullscreenGrab_KeyDown;
         KeyUp += FullscreenGrab_KeyUp;
 

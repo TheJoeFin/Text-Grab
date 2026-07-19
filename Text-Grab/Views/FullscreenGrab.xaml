@@ -14,6 +14,7 @@
     Closing="Window_Closing"
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
+    SizeChanged="Window_SizeChanged"
     ShowInTaskbar="False"
     Topmost="False"
     Unloaded="Window_Unloaded"
