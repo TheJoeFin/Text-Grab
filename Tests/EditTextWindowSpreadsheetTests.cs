@@ -232,6 +232,42 @@ public class EditTextWindowSpreadsheetTests
     }
 
     [Fact]
+    public void SearchSpreadsheetDocumentCells_SmartPatternFindsAndNarrowsCellMatches()
+    {
+        PatternItem emailPattern = new(
+            BuiltInRecognizer.GetById("email") ?? throw new InvalidOperationException("missing email recognizer"));
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(
+            "Name\tEmail\r\nAlice\ta@b.com\r\nBob\tc@d.org",
+            minimumRowCount: 3,
+            minimumColumnCount: 2);
+
+        List<FindResult> allMatches = EditTextWindow.SearchSpreadsheetDocumentCells(document, emailPattern);
+        List<FindResult> narrowedMatches = EditTextWindow.SearchSpreadsheetDocumentCells(document, emailPattern, "C@D");
+
+        Assert.Collection(
+            allMatches,
+            first =>
+            {
+                Assert.Equal(1, first.RowIndex);
+                Assert.Equal(1, first.ColumnIndex);
+                Assert.Equal("a@b.com", first.RawText);
+                Assert.Equal(1, first.Count);
+            },
+            second =>
+            {
+                Assert.Equal(2, second.RowIndex);
+                Assert.Equal(1, second.ColumnIndex);
+                Assert.Equal("c@d.org", second.RawText);
+                Assert.Equal(2, second.Count);
+            });
+
+        FindResult narrowedMatch = Assert.Single(narrowedMatches);
+        Assert.Equal(2, narrowedMatch.RowIndex);
+        Assert.Equal(1, narrowedMatch.ColumnIndex);
+        Assert.Equal("c@d.org", narrowedMatch.RawText);
+    }
+
+    [Fact]
     public void BuildSpreadsheetSelectionNumbersPreviewText_FormatsExtractedNumbersForCalcPane()
     {
         DataTable dataTable = new();

@@ -59,6 +59,9 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private bool IsSpreadsheetSearch => textEditWindow?.IsSpreadsheetMode is true;
 
+    private bool IsSmartPatternSearch =>
+        SearchBar.SelectedPattern is { Kind: PatternKind.Recognizer, Recognizer: not null };
+
     public List<FindResult> FindResults { get; set; } = [];
 
     public string StringFromWindow
@@ -287,20 +290,33 @@ public partial class FindAndReplaceWindow : FluentWindow
         ResultsListView.ItemsSource = null;
         Matches = null;
 
-        if (textEditWindow is null || !TextSearchUtilities.HasSearchText(SearchBar.SearchText))
+        if (textEditWindow is null)
         {
             MatchesText.Text = "0 Matches";
             return;
         }
 
-        Regex? regex = BuildCurrentRegex();
-        if (regex is null) { MatchesText.Text = "0 Matches"; return; }
-
         textEditWindow.CommitSpreadsheetAndSync();
 
         List<FindResult> results;
-        try { results = textEditWindow.SearchSpreadsheetCells(regex); }
-        catch (RegexMatchTimeoutException) { MatchesText.Text = "Regex timeout"; return; }
+        if (SearchBar.SelectedPattern is { Kind: PatternKind.Recognizer, Recognizer: not null } selectedPattern)
+        {
+            results = textEditWindow.SearchSpreadsheetCells(selectedPattern, SearchBar.SearchText);
+        }
+        else
+        {
+            if (!TextSearchUtilities.HasSearchText(SearchBar.SearchText))
+            {
+                MatchesText.Text = "0 Matches";
+                return;
+            }
+
+            Regex? regex = BuildCurrentRegex();
+            if (regex is null) { MatchesText.Text = "0 Matches"; return; }
+
+            try { results = textEditWindow.SearchSpreadsheetCells(regex); }
+            catch (RegexMatchTimeoutException) { MatchesText.Text = "Regex timeout"; return; }
+        }
 
         FindResults.AddRange(results);
         if (FindResults.Count == 0) { MatchesText.Text = "0 Matches"; return; }
@@ -337,14 +353,8 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void CopyMatchesCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (IsSpreadsheetSearch)
-        {
-            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(SearchBar.SearchText);
-            return;
-        }
-
         e.CanExecute = FindResults.Count > 0
-            && (SearchBar.SelectedPattern is not null || !string.IsNullOrEmpty(SearchBar.SearchText));
+            && (IsSmartPatternSearch || !string.IsNullOrEmpty(SearchBar.SearchText));
     }
 
     private void CopyMatchesCmd_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -376,7 +386,9 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         if (IsSpreadsheetSearch)
         {
-            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(SearchBar.SearchText);
+            e.CanExecute = !IsSmartPatternSearch
+                && FindResults.Count > 0
+                && !string.IsNullOrEmpty(SearchBar.SearchText);
             return;
         }
 
@@ -392,6 +404,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         if (IsSpreadsheetSearch)
         {
+            if (IsSmartPatternSearch) return;
             if (FindResults.Count == 0) return;
             SetWindowToLoading();
             Regex? regex = BuildCurrentRegex();
@@ -500,7 +513,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
     {
-        if (TextSearchUtilities.HasSearchText(SearchBar.SearchText))
+        if (IsSmartPatternSearch || TextSearchUtilities.HasSearchText(SearchBar.SearchText))
             SearchForText();
 
         // Update save button visibility on load
@@ -600,7 +613,9 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         if (IsSpreadsheetSearch)
         {
-            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(ReplaceTextBox.Text);
+            e.CanExecute = !IsSmartPatternSearch
+                && FindResults.Count > 0
+                && !string.IsNullOrEmpty(ReplaceTextBox.Text);
             return;
         }
 
@@ -619,6 +634,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         if (IsSpreadsheetSearch)
         {
+            if (IsSmartPatternSearch) return;
             if (ResultsListView.SelectedIndex == -1) ResultsListView.SelectedIndex = 0;
             if (ResultsListView.SelectedItem is not FindResult fr) return;
             Regex? regex = BuildCurrentRegex();
@@ -648,6 +664,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         if (IsSpreadsheetSearch)
         {
+            if (IsSmartPatternSearch) return;
             if (FindResults.Count == 0) return;
             SetWindowToLoading();
             Regex? regex = BuildCurrentRegex();
@@ -841,10 +858,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (!TextSearchUtilities.HasSearchText(SearchBar.SearchText))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        e.CanExecute = IsSmartPatternSearch || TextSearchUtilities.HasSearchText(SearchBar.SearchText);
     }
 
     private void TextSearch_Executed(object sender, ExecutedRoutedEventArgs e)

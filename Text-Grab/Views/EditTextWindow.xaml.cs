@@ -2974,36 +2974,81 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public List<FindResult> SearchSpreadsheetCells(Regex pattern)
     {
-        if (tableDocument is null) return [];
-        tableDocument.EnsureMinimumSize();
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        return tableDocument is null
+            ? []
+            : FindSpreadsheetDocumentMatches(
+                tableDocument,
+                cellValue =>
+                [
+                    .. pattern.Matches(cellValue)
+                        .Cast<Match>()
+                        .Select(match => new RecognizerMatch(match.Index, match.Length, match.Value, match.Value))
+                ]);
+    }
+
+    public List<FindResult> SearchSpreadsheetCells(PatternItem pattern, string narrowText = "")
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        return tableDocument is null
+            ? []
+            : SearchSpreadsheetDocumentCells(tableDocument, pattern, narrowText);
+    }
+
+    internal static List<FindResult> SearchSpreadsheetDocumentCells(
+        EditTextTableDocument document,
+        PatternItem pattern,
+        string narrowText = "")
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        return FindSpreadsheetDocumentMatches(
+            document,
+            cellValue =>
+            [
+                .. PatternExecutor.GetMatches(pattern, cellValue)
+                    .Where(match => string.IsNullOrEmpty(narrowText)
+                        || match.Text.Contains(narrowText, StringComparison.CurrentCultureIgnoreCase))
+            ]);
+    }
+
+    private static List<FindResult> FindSpreadsheetDocumentMatches(
+        EditTextTableDocument document,
+        Func<string, IReadOnlyList<RecognizerMatch>> getMatches)
+    {
+        document.EnsureMinimumSize();
         List<FindResult> results = [];
         int count = 1;
 
-        for (int row = 0; row < tableDocument.RowCount; row++)
+        for (int row = 0; row < document.RowCount; row++)
         {
-            List<string> rowData = tableDocument.Rows[row];
-            for (int col = 0; col < tableDocument.ColumnCount; col++)
+            List<string> rowData = document.Rows[row];
+            for (int col = 0; col < document.ColumnCount; col++)
             {
                 string cellValue = col < rowData.Count ? rowData[col] ?? string.Empty : string.Empty;
-                foreach (Match m in pattern.Matches(cellValue))
+                foreach (RecognizerMatch match in getMatches(cellValue))
                 {
-                    int previewStart = Math.Max(0, m.Index - 12);
-                    int previewEnd = Math.Min(cellValue.Length, m.Index + m.Length + 12);
+                    int previewStart = Math.Max(0, match.Start - 12);
+                    int previewEnd = Math.Min(cellValue.Length, match.Start + match.Length + 12);
                     results.Add(new FindResult
                     {
                         RowIndex = row,
                         ColumnIndex = col,
-                        Index = m.Index,
-                        Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Value),
-                        RawText = m.Value,
-                        PreviewLeft = cellValue[previewStart..m.Index],
-                        PreviewRight = cellValue[(m.Index + m.Length)..previewEnd],
-                        Length = m.Length,
+                        Index = match.Start,
+                        Text = TextSearchUtilities.FormatMatchTextForDisplay(match.Text),
+                        RawText = match.Text,
+                        PreviewLeft = cellValue[previewStart..match.Start],
+                        PreviewRight = cellValue[(match.Start + match.Length)..previewEnd],
+                        Length = match.Length,
                         Count = count++
                     });
                 }
             }
         }
+
         return results;
     }
 
