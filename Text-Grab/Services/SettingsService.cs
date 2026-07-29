@@ -54,7 +54,7 @@ internal class SettingsService : IDisposable
     public SettingsService()
         : this(
             Properties.Settings.Default,
-            AppUtilities.IsPackaged() ? ApplicationData.Current.LocalSettings : null)
+            AppUtilities.IsPackaged() && AutomationProfile.Current is null ? ApplicationData.Current.LocalSettings : null)
     {
     }
 
@@ -72,7 +72,14 @@ internal class SettingsService : IDisposable
         _saveClassicSettingsChanges = saveClassicSettingsChanges;
         Dictionary<string, JsonElement> regularSettingsSidecarSnapshot = ReadRegularSettingsSidecarSnapshot();
 
-        if (ClassicSettings.FirstRun)
+        if (AutomationProfile.Current is AutomationProfile profile
+            && !File.Exists(profile.ClassicSettingsFilePath))
+        {
+            profile.ApplySeed(ClassicSettings);
+            if (_saveClassicSettingsChanges)
+                ClassicSettings.Save();
+        }
+        else if (ClassicSettings.FirstRun)
         {
             if (_localSettings is not null && _localSettings.Values.Count > 0)
             {
@@ -540,6 +547,9 @@ internal class SettingsService : IDisposable
 
     private static string GetManagedJsonSettingsFolderPath()
     {
+        if (AutomationProfile.Current is AutomationProfile profile)
+            return profile.ManagedSettingsDirectory;
+
         if (AppUtilities.IsPackaged())
             return Path.Combine(ApplicationData.Current.LocalFolder.Path, ManagedJsonSettingsFolderName);
 
@@ -731,6 +741,9 @@ internal class SettingsService : IDisposable
 
     private static string GetRegularSettingsSidecarFilePath()
     {
+        if (AutomationProfile.Current is AutomationProfile profile)
+            return Path.Combine(profile.SettingsDirectory, RegularSettingsSidecarFileName);
+
         if (AppUtilities.IsPackaged())
             return Path.Combine(ApplicationData.Current.LocalFolder.Path, RegularSettingsSidecarFileName);
 
