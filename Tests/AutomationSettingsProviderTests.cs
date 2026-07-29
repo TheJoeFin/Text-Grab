@@ -9,6 +9,11 @@ using Text_Grab.Utilities;
 
 namespace Tests;
 
+// Shares the "Settings isolation" collection so it never runs in parallel with other
+// tests that touch Settings.Default: OverrideCurrentForTests flips process-global
+// AutomationProfile state, which would otherwise redirect a concurrent Save into this
+// test's temporary profile directory.
+[Collection("Settings isolation")]
 public class AutomationSettingsProviderTests
 {
     [Fact]
