@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Welcome to Text Grab"
+    AutomationProperties.AutomationId="FirstRunWindow"
     Width="1120"
     Height="820"
     MinWidth="760"
@@ -185,6 +186,7 @@
                                 <StackPanel Margin="0,28,0,0" Orientation="Horizontal">
                                     <Button
                                         x:Name="OkayButton"
+                                        AutomationProperties.AutomationId="FirstRun.StartButton"
                                         Width="220"
                                         Click="OkayButton_Click"
                                         Style="{StaticResource TealColor}">
@@ -196,6 +198,7 @@
 
                                     <Button
                                         x:Name="SettingsButton"
+                                        AutomationProperties.AutomationId="FirstRun.OpenSettingsButton"
                                         Width="160"
                                         Margin="12,0,0,0"
                                         Click="SettingsButton_Click"
@@ -411,6 +414,7 @@
 
                                 <Button
                                     x:Name="TryFullscreen"
+                                    AutomationProperties.AutomationId="FirstRun.PreviewFullscreenButton"
                                     Grid.Row="3"
                                     Margin="0,18,0,0"
                                     Click="TryFullscreen_Click"
@@ -423,6 +427,7 @@
 
                                 <RadioButton
                                     x:Name="FullScreenRDBTN"
+                                    AutomationProperties.AutomationId="FirstRun.DefaultFullscreenRadio"
                                     Grid.Row="4"
                                     Margin="0,18,0,0"
                                     Checked="RadioButton_Checked"
@@ -478,6 +483,7 @@
 
                                 <Button
                                     x:Name="TryGrabFrame"
+                                    AutomationProperties.AutomationId="FirstRun.PreviewGrabFrameButton"
                                     Grid.Row="3"
                                     Margin="0,18,0,0"
                                     Click="TryGrabFrame_Click"
@@ -490,6 +496,7 @@
 
                                 <RadioButton
                                     x:Name="GrabFrameRDBTN"
+                                    AutomationProperties.AutomationId="FirstRun.DefaultGrabFrameRadio"
                                     Grid.Row="4"
                                     Margin="0,18,0,0"
                                     Checked="RadioButton_Checked"
@@ -545,6 +552,7 @@
 
                                 <Button
                                     x:Name="TryEditWindow"
+                                    AutomationProperties.AutomationId="FirstRun.PreviewEditTextButton"
                                     Grid.Row="3"
                                     Margin="0,18,0,0"
                                     Click="TryEditWindow_Click"
@@ -557,6 +565,7 @@
 
                                 <RadioButton
                                     x:Name="EditWindowRDBTN"
+                                    AutomationProperties.AutomationId="FirstRun.DefaultEditTextRadio"
                                     Grid.Row="4"
                                     Margin="0,18,0,0"
                                     Checked="RadioButton_Checked"
@@ -612,6 +621,7 @@
 
                                 <Button
                                     x:Name="TryQuickLookup"
+                                    AutomationProperties.AutomationId="FirstRun.PreviewQuickLookupButton"
                                     Grid.Row="3"
                                     Margin="0,18,0,0"
                                     Click="TryQuickLookup_Click"
@@ -624,6 +634,7 @@
 
                                 <RadioButton
                                     x:Name="QuickLookupRDBTN"
+                                    AutomationProperties.AutomationId="FirstRun.DefaultQuickLookupRadio"
                                     Grid.Row="4"
                                     Margin="0,18,0,0"
                                     Checked="RadioButton_Checked"
@@ -657,6 +668,7 @@
                                     Text="Open copied text in an Edit Text Window straight from the toast notification." />
                                 <ui:ToggleSwitch
                                     x:Name="NotificationsCheckBox"
+                                    AutomationProperties.AutomationId="FirstRun.NotificationsToggle"
                                     Margin="0,20,0,0"
                                     Checked="NotificationsCheckBox_Checked"
                                     Unchecked="NotificationsCheckBox_Checked">
@@ -676,7 +688,7 @@
                                     Margin="0,10,0,0"
                                     Style="{StaticResource CardBody}"
                                     Text="Keep Text Grab running in the background so hotkeys and faster relaunch are ready when you need them." />
-                                <ui:ToggleSwitch x:Name="BackgroundCheckBox" Margin="0,20,0,0">
+                                <ui:ToggleSwitch x:Name="BackgroundCheckBox" AutomationProperties.AutomationId="FirstRun.BackgroundToggle" Margin="0,20,0,0">
                                     <TextBlock Style="{StaticResource CardBody}" Text="Run Text Grab in the background" />
                                 </ui:ToggleSwitch>
                             </StackPanel>
@@ -695,11 +707,13 @@
                                     Text="Launch Text Grab when Windows starts so your preferred mode is always close at hand." />
                                 <ui:ToggleSwitch
                                     x:Name="StartupCheckbox"
+                                    AutomationProperties.AutomationId="FirstRun.StartupToggle"
                                     Margin="0,20,0,0"
                                     Checked="StartupCheckbox_Checked"
                                     Unchecked="StartupCheckbox_Checked">
                                     <TextBlock
                                         x:Name="StartupTextblock"
+                                        AutomationProperties.AutomationId="FirstRun.StartupStatus"
                                         Style="{StaticResource CardBody}"
                                         Text="Start Text Grab on startup" />
                                 </ui:ToggleSwitch>
@@ -880,6 +894,7 @@
                                 Orientation="Horizontal">
                                 <Button
                                     x:Name="LicensesButton"
+                                    AutomationProperties.AutomationId="FirstRun.LicensesButton"
                                     Width="120"
                                     Margin="0,0,12,0"
                                     Click="LicensesButton_Click"
