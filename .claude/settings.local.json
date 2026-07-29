@@ -39,7 +39,9 @@
       "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" story-map *)",
       "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" type *)",
       "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" ui-element *)",
-      "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" api *)"
+      "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" api *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)"
     ],
     "deny": []
   }
