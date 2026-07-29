@@ -48,7 +48,13 @@ public partial class FullscreenGrab : Window
     private const double EdgePanSpeed = 8.0;
     private const string EditPostGrabActionsTag = "EditPostGrabActions";
     private const string ClosePostGrabMenuTag = "ClosePostGrabMenu";
+
+    // The window is created tiny (see WindowUtilities.LaunchFullScreenGrab) and only
+    // maximized in Window_Loaded. If that maximize is dropped the overlay is left as a
+    // tiny useless box, so these two checks re-assert the maximized state.
+    private const double MinimumMaximizedDimension = 200.0;
     private readonly DispatcherTimer edgePanTimer;
+    private readonly DispatcherTimer maximizeGuardTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _isCleanedUp;
 
     #endregion Fields
@@ -67,6 +73,9 @@ public partial class FullscreenGrab : Window
             Interval = TimeSpan.FromMilliseconds(16)
         };
         edgePanTimer.Tick += EdgePanTimer_Tick;
+
+        maximizeGuardTimer.Tick += MaximizeGuardTimer_Tick;
+        LayoutUpdated += FullscreenGrab_LayoutUpdated;
 
         Closed += FullscreenGrab_Closed;
     }
@@ -984,9 +993,47 @@ public partial class FullscreenGrab : Window
         FullWindow.Rect = GetFullscreenClipBounds(e.NewSize);
     }
 
+    /// <summary>
+    /// The overlay must always cover the whole screen. It's created tiny and maximized
+    /// in Window_Loaded, so a window that is not maximized, or that reports maximized but
+    /// is still smaller than a real screen, needs the maximized state re-applied.
+    /// </summary>
+    internal static bool ShouldForceMaximize(WindowState state, double width, double height)
+    {
+        if (state != WindowState.Maximized)
+            return true;
+
+        return width < MinimumMaximizedDimension || height < MinimumMaximizedDimension;
+    }
+
+    private void EnsureWindowMaximized()
+    {
+        if (_isCleanedUp)
+            return;
+
+        if (ShouldForceMaximize(WindowState, ActualWidth, ActualHeight))
+            WindowState = WindowState.Maximized;
+    }
+
+    private void FullscreenGrab_LayoutUpdated(object? sender, EventArgs e)
+    {
+        EnsureWindowMaximized();
+    }
+
+    private void MaximizeGuardTimer_Tick(object? sender, EventArgs e)
+    {
+        EnsureWindowMaximized();
+
+        // Startup safety net only — once we're genuinely full-screen, stop ticking.
+        // LayoutUpdated still guards against any later shrink.
+        if (!ShouldForceMaximize(WindowState, ActualWidth, ActualHeight))
+            maximizeGuardTimer.Stop();
+    }
+
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Maximized;
+        maximizeGuardTimer.Start();
         KeyDown += FullscreenGrab_KeyDown;
         KeyUp += FullscreenGrab_KeyUp;
 
@@ -1113,6 +1160,9 @@ public partial class FullscreenGrab : Window
 
         edgePanTimer.Stop();
         edgePanTimer.Tick -= EdgePanTimer_Tick;
+        maximizeGuardTimer.Stop();
+        maximizeGuardTimer.Tick -= MaximizeGuardTimer_Tick;
+        LayoutUpdated -= FullscreenGrab_LayoutUpdated;
         windowSelectionTimer.Stop();
         windowSelectionTimer.Tick -= WindowSelectionTimer_Tick;
 
