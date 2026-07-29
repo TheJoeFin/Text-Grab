@@ -21,7 +21,7 @@ New-Item -ItemType Directory -Path $diagnosticsDirectory, $xunitDirectory -Force
 
 $laneSettings = @{
     'smoke-unpackaged-x64' = @{ Suites = @('Harness', 'Lifecycle', 'CliProtocol'); Platform = 'x64'; SystemIntegration = $false; Package = $false; PackageLifecycle = $false; RequiredCapabilities = @(); RequiresDisposableVm = $false }
-    'system-integration' = @{ Suites = @('SystemIntegration'); Platform = 'x64'; SystemIntegration = $true; Package = $false; PackageLifecycle = $false; RequiredCapabilities = @('interactiveDesktop'); RequiresDisposableVm = $false }
+    'system-integration' = @{ Suites = @('SystemIntegration', 'FullscreenGrab'); Platform = 'x64'; SystemIntegration = $true; Package = $false; PackageLifecycle = $false; RequiredCapabilities = @('interactiveDesktop'); RequiresDisposableVm = $false }
     'display-mixed-dpi' = @{ Suites = @('Display'); Platform = 'x64'; SystemIntegration = $false; Package = $false; PackageLifecycle = $false; RequiredCapabilities = @('interactiveDesktop', 'multiMonitor', 'mixedDpi'); RequiresDisposableVm = $false }
     'packaged' = @{ Suites = @('PackagedVm'); Platform = 'x64'; SystemIntegration = $false; Package = $true; PackageLifecycle = $true; RequiredCapabilities = @('packageSupport', 'disposableVm'); RequiresDisposableVm = $true }
     'arm64' = @{ Suites = @('Harness', 'Architecture', 'Ocr'); Platform = 'ARM64'; SystemIntegration = $false; Package = $false; PackageLifecycle = $false; RequiredCapabilities = @('arm64', 'winrtOcr'); RequiresDisposableVm = $false }

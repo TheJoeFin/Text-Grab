@@ -119,7 +119,7 @@ if (-not $SkipXunit) {
 }
 
 $standardDirectory = Join-Path $runRoot 'ui-standard'
-$standardSuites = @('Harness', 'Lifecycle', 'CliProtocol', 'GrabFrame', 'EditText', 'QuickLookup', 'Settings', 'PatternsBulk')
+$standardSuites = @('Harness', 'Lifecycle', 'CliProtocol', 'FullscreenGrab', 'GrabFrame', 'EditText', 'QuickLookup', 'Settings', 'PatternsBulk')
 Invoke-SignoffStep -Name 'ui-standard-safe' -Artifact $standardDirectory -UiLane -MinimumExecuted 1 -Action {
     $arguments = @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'Run-UiTests.ps1'), '-Configuration', $Configuration, '-ArtifactRoot', $standardDirectory, '-Suite', ($standardSuites -join ','))
     if ($Record) { $arguments += '-Record' }
@@ -140,7 +140,7 @@ if ($IncludeSystemIntegration) {
     Invoke-SignoffStep -Name 'ui-system-integration' -Artifact $systemDirectory -UiLane -MinimumExecuted 1 -Action {
         # Ordinary system integration intentionally omits the disposable-registration
         # argument and therefore cannot rewrite HKCU protocol/file associations.
-        & pwsh -NoProfile -File (Join-Path $PSScriptRoot 'Run-UiTests.ps1') -Configuration $Configuration -ArtifactRoot $systemDirectory -Suite SystemIntegration -SystemIntegration
+        & pwsh -NoProfile -File (Join-Path $PSScriptRoot 'Run-UiTests.ps1') -Configuration $Configuration -ArtifactRoot $systemDirectory -Suite SystemIntegration,FullscreenGrab -SystemIntegration
     }
 }
 

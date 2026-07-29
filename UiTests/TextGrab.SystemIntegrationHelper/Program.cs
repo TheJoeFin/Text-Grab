@@ -33,13 +33,14 @@ internal static partial class Program
                 "--click" => Click(args, false),
                 "--right-click" => Click(args, true),
                 "--drag" => Drag(args),
+                "--move" => MoveCursor(args),
                 "--escape" => SendKey(VirtualKeyEscape),
                 "--set-text" => SetText(args),
                 "--set-image" => SetImage(),
                 "--set-files" => SetFiles(args),
                 "--drag-files" => DragFiles(args),
                 "--hold-hotkey" => HoldHotkey(args),
-                _ => Fail("Expected --preflight, --click, --right-click, --drag, --escape, --set-text, --set-image, --set-files, --drag-files, or --hold-hotkey.")
+                _ => Fail("Expected --preflight, --click, --right-click, --drag, --move, --escape, --set-text, --set-image, --set-files, --drag-files, or --hold-hotkey.")
             };
         }
         catch (Exception exception)
@@ -92,6 +93,19 @@ internal static partial class Program
         Move(endX, endY);
         Thread.Sleep(75);
         SendMouse(MouseLeftUp);
+        return 0;
+    }
+
+    private static int MoveCursor(string[] args)
+    {
+        RequireArgumentCount(args, 3);
+        int x = int.Parse(args[1]);
+        int y = int.Parse(args[2]);
+        // Two absolute moves guarantee a WM_MOUSEMOVE delta so auto-hiding UI, such as the
+        // Fullscreen Grab toolbar, reveals itself even when the cursor already sits at (x, y).
+        Move(x + 3, y + 3);
+        Thread.Sleep(40);
+        Move(x, y);
         return 0;
     }
 
