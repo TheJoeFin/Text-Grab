@@ -1,0 +1,197 @@
+name: Interactive UI CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "Lane to run. all-enabled runs only provisioned specialized lanes."
+        required: true
+        default: smoke-unpackaged-x64
+        type: choice
+        options:
+          - smoke-unpackaged-x64
+          - system-integration
+          - display-mixed-dpi
+          - packaged
+          - arm64
+          - copilot-plus-winai
+          - all-enabled
+      configuration:
+        description: Build configuration
+        required: true
+        default: Debug
+        type: choice
+        options: [Debug, Release]
+      record:
+        description: Capture WinApp recordings where supported
+        required: true
+        default: true
+        type: boolean
+      run_xunit:
+        description: Run the normal xUnit suite before UI automation
+        required: true
+        default: true
+        type: boolean
+      dry_run:
+        description: Print the selected lane configuration without building or automating
+        required: true
+        default: false
+        type: boolean
+  schedule:
+    - cron: "17 4 * * 2-6"
+
+permissions:
+  contents: read
+
+# This workflow intentionally has no pull_request trigger and is not a PR gate.
+# An interactive runner must be a dedicated logged-in desktop, not a runner service.
+# Specialized runners declare TEXT_GRAB_INTERACTIVE_CAPABILITIES themselves; the
+# disposable package runner must expose TEXT_GRAB_DISPOSABLE_VM=1 itself. The
+# workflow never manufactures that destructive-lifecycle confirmation. Its
+# current user must be allowed to trust and remove the per-run test signer.
+concurrency:
+  group: interactive-ui-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  interactive-ui:
+    name: ${{ matrix.lane }}
+    # Scheduled runs exercise the baseline lane. A specialized lane runs only when
+    # selected manually, or through all-enabled after its repository variable is true.
+    if: >-
+      (github.event_name == 'schedule' && matrix.scheduled == 'true') ||
+      (github.event_name == 'workflow_dispatch' && (
+        inputs.lane == matrix.lane ||
+        (inputs.lane == 'all-enabled' &&
+          (matrix.default_enabled == 'true' || vars[matrix.enable_variable] == 'true'))
+      ))
+    runs-on: ${{ fromJSON(matrix.runner_labels) }}
+    timeout-minutes: 90
+    concurrency:
+      # desktop is an exclusive label: provision one runner with each desktop label.
+      group: text-grab-interactive-desktop-${{ matrix.desktop }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      # Matrix entries are intentionally serialized, including all-enabled dispatches.
+      max-parallel: 1
+      matrix:
+        include:
+          - lane: smoke-unpackaged-x64
+            desktop: text-grab-ui-x64
+            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-x64"]'
+            required_capabilities: ""
+            require_mixed_dpi: "false"
+            destructive: "false"
+            scheduled: "true"
+            default_enabled: "true"
+            enable_variable: INTERACTIVE_CI_SMOKE_ENABLED
+          - lane: system-integration
+            desktop: text-grab-ui-system
+            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-system"]'
+            required_capabilities: system-integration
+            require_mixed_dpi: "false"
+            destructive: "true"
+            scheduled: "false"
+            default_enabled: "false"
+            enable_variable: INTERACTIVE_CI_SYSTEM_INTEGRATION_ENABLED
+          - lane: display-mixed-dpi
+            desktop: text-grab-ui-mixed-dpi
+            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-mixed-dpi"]'
+            required_capabilities: mixed-dpi
+            require_mixed_dpi: "true"
+            destructive: "false"
+            scheduled: "false"
+            default_enabled: "false"
+            enable_variable: INTERACTIVE_CI_MIXED_DPI_ENABLED
+          - lane: packaged
+            desktop: text-grab-ui-packaged
+            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-packaged"]'
+            required_capabilities: packaged,disposable-vm
+            require_mixed_dpi: "false"
+            destructive: "true"
+            scheduled: "false"
+            default_enabled: "false"
+            enable_variable: INTERACTIVE_CI_PACKAGED_ENABLED
+          - lane: arm64
+            desktop: text-grab-ui-arm64
+            runner_labels: '["self-hosted","Windows","ARM64","text-grab-ui","text-grab-ui-arm64"]'
+            required_capabilities: arm64,winrt-ocr
+            require_mixed_dpi: "false"
+            destructive: "false"
+            scheduled: "false"
+            default_enabled: "false"
+            enable_variable: INTERACTIVE_CI_ARM64_ENABLED
+          - lane: copilot-plus-winai
+            desktop: text-grab-ui-copilot-plus
+            runner_labels: '["self-hosted","Windows","ARM64","text-grab-ui","text-grab-ui-copilot-plus"]'
+            required_capabilities: arm64,winrt-ocr,windows-ai,packaged
+            require_mixed_dpi: "false"
+            destructive: "false"
+            scheduled: "false"
+            default_enabled: "false"
+            enable_variable: INTERACTIVE_CI_COPILOT_PLUS_WINAI_ENABLED
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Prepare artifacts
+        shell: pwsh
+        run: New-Item -ItemType Directory -Path UiTests\artifacts\ci\${{ matrix.lane }} -Force | Out-Null
+
+      - name: Verify interactive runner
+        shell: pwsh
+        run: >-
+          .\UiTests\Test-InteractiveCiPreflight.ps1
+          -OutputPath UiTests\artifacts\ci\${{ matrix.lane }}\preflight.json
+          -RequiredCapability "${{ matrix.required_capabilities }}".Split(',', [System.StringSplitOptions]::RemoveEmptyEntries)
+          -RequireDisplay
+          -RequireMixedDpi:${{ matrix.require_mixed_dpi }}
+          -Destructive:${{ matrix.destructive }}
+          -MinimumFreeDiskGB 25
+
+      - name: Build and run ${{ matrix.lane }}
+        shell: pwsh
+        run: |
+          $arguments = @(
+            '-NoProfile', '-File', '.\UiTests\Invoke-InteractiveCiLane.ps1',
+            '-Lane', '${{ matrix.lane }}',
+            '-ArtifactRoot', '.\UiTests\artifacts\ci\${{ matrix.lane }}',
+            '-Configuration', '${{ inputs.configuration || 'Debug' }}'
+          )
+          if ('${{ inputs.record }}' -ne 'false') { $arguments += '-Record' }
+          if ('${{ inputs.run_xunit }}' -eq 'false') { $arguments += '-SkipXunit' }
+          if ('${{ inputs.dry_run }}' -eq 'true') { $arguments += '-DryRun' }
+          & pwsh @arguments
+          exit $LASTEXITCODE
+
+      - name: Publish UI test summary
+        if: always()
+        shell: pwsh
+        run: |
+          $junit = Get-ChildItem UiTests\artifacts\ci\${{ matrix.lane }} -Filter junit.xml -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $junit) {
+            "## ${{ matrix.lane }}`nNo UI JUnit report was produced." >> $env:GITHUB_STEP_SUMMARY
+            exit 0
+          }
+          [xml]$report = Get-Content -LiteralPath $junit.FullName
+          $suite = $report.testsuite
+          @(
+            "## ${{ matrix.lane }}",
+            "| Tests | Failures | Skipped | Duration |",
+            "| ---: | ---: | ---: | ---: |",
+            "| $($suite.tests) | $($suite.failures) | $($suite.skipped) | $($suite.time)s |",
+            "",
+            "JUnit: ``$($junit.FullName)``"
+          ) | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload interactive UI artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: interactive-ui-${{ matrix.lane }}-${{ github.run_attempt }}
+          path: UiTests\artifacts\ci\${{ matrix.lane }}
+          if-no-files-found: warn
