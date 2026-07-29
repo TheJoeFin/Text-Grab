@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Patterns Manager"
+    AutomationProperties.AutomationId="RegexManagerDialog"
     Width="900"
     Height="600"
     MinWidth="700"
@@ -41,6 +42,7 @@
             Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
             <DataGrid
                 x:Name="RegexDataGrid"
+                AutomationProperties.AutomationId="RegexManager.PatternsGrid"
                 AutoGenerateColumns="False"
                 CanUserAddRows="False"
                 CanUserDeleteRows="False"
@@ -86,6 +88,7 @@
             Orientation="Horizontal">
             <ToggleButton
                 x:Name="ShowTestToggle"
+                AutomationProperties.AutomationId="RegexManager.ShowTestToggle"
                 Margin="0,0,6,0"
                 Padding="10,6"
                 Click="ShowTestToggle_Click"
@@ -94,12 +97,14 @@
                 Style="{DynamicResource ToggleSymbolButton}" />
             <ui:Button
                 x:Name="AddButton"
+                AutomationProperties.AutomationId="RegexManager.AddButton"
                 Margin="0,0,6,0"
                 Click="AddButton_Click"
                 Content="Add New"
                 Icon="{ui:SymbolIcon Add24}" />
             <ui:Button
                 x:Name="EditButton"
+                AutomationProperties.AutomationId="RegexManager.EditButton"
                 Margin="0,0,6,0"
                 Click="EditButton_Click"
                 Content="Edit"
@@ -107,6 +112,7 @@
                 IsEnabled="False" />
             <ui:Button
                 x:Name="DeleteButton"
+                AutomationProperties.AutomationId="RegexManager.DeleteButton"
                 Margin="0,0,6,0"
                 Appearance="Danger"
                 Click="DeleteButton_Click"
@@ -123,6 +129,7 @@
                 Visibility="Collapsed" />
             <ui:Button
                 x:Name="ExplainButton"
+                AutomationProperties.AutomationId="RegexManager.ExplainButton"
                 Margin="0,0,6,0"
                 Click="ExplainButton_Click"
                 Content="Explain"
@@ -130,6 +137,7 @@
                 IsEnabled="False" />
             <ui:Button
                 x:Name="UseButton"
+                AutomationProperties.AutomationId="RegexManager.UseButton"
                 Margin="0,0,6,0"
                 Appearance="Primary"
                 Click="UseButton_Click"
@@ -140,6 +148,7 @@
 
         <Border
             x:Name="TestPanel"
+            AutomationProperties.AutomationId="RegexManager.TestPanel"
             Grid.Row="3"
             Margin="6"
             Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
@@ -161,6 +170,7 @@
                 <Grid Grid.Row="1">
                     <TextBox
                         x:Name="TestTextBox"
+                        AutomationProperties.AutomationId="RegexManager.TestText"
                         MinHeight="160"
                         Margin="6,0,6,6"
                         AcceptsReturn="True"
@@ -189,6 +199,7 @@
                         Text="Matches:" />
                     <TextBlock
                         x:Name="MatchCountText"
+                        AutomationProperties.AutomationId="RegexManager.MatchCount"
                         VerticalAlignment="Center"
                         FontWeight="Bold"
                         Text="0" />

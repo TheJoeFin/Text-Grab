@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab QR Code"
+    AutomationProperties.AutomationId="QrCodeDialog"
     Width="400"
     Height="600"
     Closing="FluentWindow_Closing"
@@ -33,23 +34,27 @@
             Icon="{StaticResource TextGrabIcon}" />
         <TextBox
             x:Name="QrCodeTextBox"
+            AutomationProperties.AutomationId="QrCode.Content"
             Grid.Row="1"
             Margin="12,0"
             TextChanged="QrCodeTextBox_TextChanged" />
         <StackPanel Grid.Row="2" Orientation="Horizontal">
             <local:CollapsibleButton
                 x:Name="SaveButton"
+                AutomationProperties.AutomationId="QrCode.SaveButton"
                 Margin="12,0,0,0"
                 ButtonSymbol="Save24"
                 ButtonText="PNG..."
                 Click="SaveButton_Click" />
             <local:CollapsibleButton
                 x:Name="SvgButton"
+                AutomationProperties.AutomationId="QrCode.SaveSvgButton"
                 ButtonSymbol="Save24"
                 ButtonText="Svg..."
                 Click="SvgButton_Click" />
             <local:CollapsibleButton
                 x:Name="CopyButton"
+                AutomationProperties.AutomationId="QrCode.CopyButton"
                 ButtonSymbol="ImageCopy24"
                 ButtonText="Copy PNG to clipboard"
                 Click="CopyButton_Click" />
@@ -64,6 +69,7 @@
                 Text="Error Correction Level" />
             <ComboBox
                 x:Name="ErrorCorrectionComboBox"
+                AutomationProperties.AutomationId="QrCode.ErrorCorrection"
                 VerticalAlignment="Center"
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 SelectionChanged="ErrorCorrectionComboBox_SelectionChanged">
@@ -78,6 +84,7 @@
         </StackPanel>
         <TextBlock
             x:Name="LengthErrorTextBlock"
+            AutomationProperties.AutomationId="QrCode.Error"
             Grid.Row="4"
             Padding="20,4"
             HorizontalAlignment="Center"
@@ -90,6 +97,7 @@
         </TextBlock>
         <Image
             Name="CodeImage"
+            AutomationProperties.AutomationId="QrCode.Image"
             Grid.Row="5"
             Margin="0"
             MouseLeftButtonDown="CodeImage_MouseLeftButtonDown" />

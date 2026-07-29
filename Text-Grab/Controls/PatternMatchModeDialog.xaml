@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Pattern Match Options"
+    AutomationProperties.AutomationId="PatternMatchDialog"
     Width="420"
     Height="450"
     MinWidth="380"
@@ -34,12 +35,14 @@
         <StackPanel Grid.Row="1" Margin="12">
             <TextBlock
                 x:Name="PatternNameLabel"
+                AutomationProperties.AutomationId="PatternMatch.PatternName"
                 Margin="0,0,0,8"
                 FontWeight="SemiBold"
                 Text="Pattern:" />
 
             <TextBlock Margin="0,0,0,4" Text="Match Mode:" />
             <StackPanel x:Name="MatchModePanel" Margin="0,0,0,12">
+            AutomationProperties.AutomationId="PatternMatch.ModeOptions" Margin="0,0,0,12">
                 <RadioButton
                     Checked="MatchModeRadioButton_Checked"
                     Content="First Match"
@@ -65,6 +68,7 @@
 
             <StackPanel
                 x:Name="OutputPanel"
+                AutomationProperties.AutomationId="PatternMatch.OutputOptions"
                 Margin="0,0,0,12"
                 Visibility="Collapsed">
                 <TextBlock Margin="0,0,0,4" Text="Output:" />
@@ -82,23 +86,28 @@
 
             <StackPanel
                 x:Name="SeparatorPanel"
+                AutomationProperties.AutomationId="PatternMatch.SeparatorOptions"
                 Margin="0,0,0,12"
                 Visibility="Collapsed">
                 <TextBlock Margin="0,0,0,4" Text="Separator:" />
                 <TextBox x:Name="SeparatorTextBox" Text=", " />
+                AutomationProperties.AutomationId="PatternMatch.Separator" Text=", " />
             </StackPanel>
 
             <StackPanel
                 x:Name="IndicesPanel"
+                AutomationProperties.AutomationId="PatternMatch.IndicesOptions"
                 Margin="0,0,0,12"
                 Visibility="Collapsed">
                 <TextBlock Margin="0,0,0,4" Text="Match indices (1-based, comma-separated):" />
                 <TextBox
                     x:Name="IndicesTextBox"
+                    AutomationProperties.AutomationId="PatternMatch.Indices"
                     Text="1"
                     TextChanged="IndicesTextBox_TextChanged" />
                 <TextBlock
                     x:Name="IndicesErrorText"
+                    AutomationProperties.AutomationId="PatternMatch.IndicesError"
                     Margin="0,4,0,0"
                     FontSize="11"
                     Foreground="Red"
@@ -114,11 +123,12 @@
             Orientation="Horizontal">
             <ui:Button
                 x:Name="OkButton"
+                AutomationProperties.AutomationId="PatternMatch.OkButton"
                 Margin="0,0,6,0"
                 Appearance="Primary"
                 Click="OkButton_Click"
                 Content="OK" />
-            <ui:Button Click="CancelButton_Click" Content="Cancel" />
+            <ui:Button AutomationProperties.AutomationId="PatternMatch.CancelButton" Click="CancelButton_Click" Content="Cancel" />
         </StackPanel>
     </Grid>
 </ui:FluentWindow>

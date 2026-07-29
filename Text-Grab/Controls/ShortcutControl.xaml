@@ -7,12 +7,14 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="ShortcutUserControl"
+    AutomationProperties.Name="{Binding ElementName=ShortcutUserControl, Path=ShortcutName}"
     Margin="0,0,0,3"
     HorizontalAlignment="Stretch"
     d:DataContext="{d:DesignInstance Type=local:ShortcutControl}"
     d:DesignHeight="60"
     d:DesignWidth="500"
     BorderThickness="3"
+    Loaded="ShortcutControl_Loaded"
     PreviewKeyDown="ShortcutControl_PreviewKeyDown"
     PreviewKeyUp="ShortcutControl_PreviewKeyUp"
     mc:Ignorable="d">
@@ -52,7 +54,7 @@
                 Grid.Column="1"
                 VerticalAlignment="Center"
                 Orientation="Horizontal">
-                <ToggleButton x:Name="RecordingToggleButton" Click="RecordingToggleButton_Click">
+                <ToggleButton x:Name="RecordingToggleButton" AutomationProperties.Name="Record shortcut" Click="RecordingToggleButton_Click">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Record24" />
                         <TextBlock

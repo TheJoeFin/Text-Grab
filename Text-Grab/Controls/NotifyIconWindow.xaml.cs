@@ -221,7 +221,7 @@ public partial class NotifyIconWindow : Window
         if (bitmapSource is null)
             return;
 
-        string tempPath = Path.Combine(Path.GetTempPath(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
+        string tempPath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
 
         using (FileStream fileStream = new(tempPath, FileMode.Create))
         {
