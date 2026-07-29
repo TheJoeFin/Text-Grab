@@ -143,7 +143,8 @@ public partial class DangerSettings : System.Windows.Controls.Page
         try
         {
             // Set default directory to Documents folder (where exports are saved)
-            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string documentsPath = AutomationProfile.Current?.OutputDirectory
+                ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
             OpenFileDialog openFileDialog = new()
             {

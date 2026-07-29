@@ -157,7 +157,7 @@ public partial class LanguageSettings : Page
 
         string tesseractPath = Path.GetDirectoryName(DefaultSettings.TesseractPath) ?? "c:\\";
         string tesseractFilePath = $"{tesseractPath}\\tessdata\\{pickedLanguageFile}";
-        string tempFilePath = Path.Combine(Path.GetTempPath(), pickedLanguageFile);
+        string tempFilePath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), pickedLanguageFile);
 
         TesseractGitHubFileDownloader fileDownloader = new();
         await fileDownloader.DownloadFileAsync(pickedLanguageFile, tempFilePath);

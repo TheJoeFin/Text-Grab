@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="QuickLookupSettings"
+    AutomationProperties.AutomationId="Settings.QuickLookupPage"
     d:DesignHeight="500"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
@@ -29,13 +30,15 @@
                 </Grid.ColumnDefinitions>
                 <TextBox
                     x:Name="LookupFileLocationTextBox"
+                    AutomationProperties.AutomationId="Settings.QuickLookup.FileLocation"
                     HorizontalAlignment="Stretch"
                     LostFocus="LookupFileLocationTextBox_LostFocus" />
                 <Button
                     Grid.Column="1"
                     Margin="8,0,0,0"
                     Click="BrowseLookupFileButton_Click"
-                    Content="Browse..." />
+                    Content="Browse..."
+                    AutomationProperties.AutomationId="Settings.QuickLookup.BrowseFileButton" />
             </Grid>
         </controls:SettingsExpander>
 
@@ -45,7 +48,7 @@
             Description="Append recent Edit Text Window sessions and Grab Frame captures to the bottom of the lookup grid."
             HeaderText="Show history in lookup grid"
             Icon="{ui:SymbolIcon History24}">
-            <ui:ToggleSwitch x:Name="LookupSearchHistoryCheckBox" Click="LookupSearchHistoryCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="LookupSearchHistoryCheckBox" AutomationProperties.AutomationId="Settings.QuickLookup.SearchHistoryToggle" Click="LookupSearchHistoryCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsExpander
@@ -53,13 +56,14 @@
             HeaderText="Paste selected value into the previously focused app"
             Icon="{ui:SymbolIcon ClipboardPaste24}">
             <controls:SettingsExpander.SettingsContent>
-                <ui:ToggleSwitch x:Name="TryInsertCheckBox" Click="TryInsertCheckBox_Click" />
+                <ui:ToggleSwitch x:Name="TryInsertCheckBox" AutomationProperties.AutomationId="Settings.QuickLookup.InsertToggle" Click="TryInsertCheckBox_Click" />
             </controls:SettingsExpander.SettingsContent>
             <StackPanel>
                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                     <TextBlock VerticalAlignment="Center" Text="Insert delay (seconds):" />
                     <Slider
                         x:Name="InsertDelaySlider"
+                        AutomationProperties.AutomationId="Settings.QuickLookup.InsertDelay"
                         Width="200"
                         Margin="12,0,0,0"
                         IsSnapToTickEnabled="True"
@@ -70,6 +74,7 @@
                         ValueChanged="InsertDelaySlider_ValueChanged" />
                     <TextBlock
                         x:Name="InsertDelayValueText"
+                        AutomationProperties.AutomationId="Settings.QuickLookup.InsertDelayValue"
                         Width="40"
                         Margin="12,0,0,0"
                         VerticalAlignment="Center" />

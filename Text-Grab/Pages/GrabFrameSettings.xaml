@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="GrabFrameSettings"
+    AutomationProperties.AutomationId="Settings.GrabFramePage"
     d:DesignHeight="700"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
@@ -21,21 +22,21 @@
             Description="Freeze and run OCR automatically after dragging the frame. When off, a manual OCR button is shown instead of the Refresh button."
             HeaderText="Automatically run OCR on capture"
             Icon="{ui:SymbolIcon ScanText24}">
-            <ui:ToggleSwitch x:Name="GrabFrameAutoOcrCheckBox" Click="GrabFrameAutoOcrCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="GrabFrameAutoOcrCheckBox" AutomationProperties.AutomationId="Settings.GrabFrame.AutoOcrToggle" Click="GrabFrameAutoOcrCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="When grabbing, replace the current selection in the Edit Text Window with captured text. When off, text is appended instead."
             HeaderText="Update Edit Text Window on each grab"
             Icon="{ui:SymbolIcon WindowEdit20}">
-            <ui:ToggleSwitch x:Name="GrabFrameUpdateEtwCheckBox" Click="GrabFrameUpdateEtwCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="GrabFrameUpdateEtwCheckBox" AutomationProperties.AutomationId="Settings.GrabFrame.UpdateEditTextToggle" Click="GrabFrameUpdateEtwCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="Automatically close the Grab Frame window after a grab or trim executes."
             HeaderText="Close Grab Frame after grabbing text"
             Icon="{ui:SymbolIcon DismissSquare24}">
-            <ui:ToggleSwitch x:Name="CloseFrameOnGrabCheckBox" Click="CloseFrameOnGrabCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="CloseFrameOnGrabCheckBox" AutomationProperties.AutomationId="Settings.GrabFrame.CloseAfterGrabToggle" Click="CloseFrameOnGrabCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsExpander
@@ -45,24 +46,28 @@
             <StackPanel>
                 <RadioButton
                     x:Name="NoneScrollRadio"
+                    AutomationProperties.AutomationId="Settings.GrabFrame.Scroll.None"
                     Click="ScrollBehaviorRadio_Click"
                     GroupName="GfScrollBehavior">
                     None — scroll wheel does nothing
                 </RadioButton>
                 <RadioButton
                     x:Name="ResizeScrollRadio"
+                    AutomationProperties.AutomationId="Settings.GrabFrame.Scroll.Resize"
                     Click="ScrollBehaviorRadio_Click"
                     GroupName="GfScrollBehavior">
                     Resize — scroll wheel resizes the frame
                 </RadioButton>
                 <RadioButton
                     x:Name="ZoomScrollRadio"
+                    AutomationProperties.AutomationId="Settings.GrabFrame.Scroll.Zoom"
                     Click="ScrollBehaviorRadio_Click"
                     GroupName="GfScrollBehavior">
                     Zoom — scroll wheel zooms the captured image
                 </RadioButton>
                 <RadioButton
                     x:Name="ZoomWhenFrozenScrollRadio"
+                    AutomationProperties.AutomationId="Settings.GrabFrame.Scroll.ZoomWhenFrozen"
                     Click="ScrollBehaviorRadio_Click"
                     GroupName="GfScrollBehavior">
                     Zoom when frozen — zoom only after freezing the frame
@@ -76,7 +81,7 @@
             Description="Scan for barcodes and QR codes alongside OCR text. Each barcode found appears as its own selectable word border."
             HeaderText="Read barcodes in Grab Frame"
             Icon="{ui:SymbolIcon BarcodeScanner24}">
-            <ui:ToggleSwitch x:Name="GrabFrameReadBarcodesCheckBox" Click="GrabFrameReadBarcodesCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="GrabFrameReadBarcodesCheckBox" AutomationProperties.AutomationId="Settings.GrabFrame.ReadBarcodesToggle" Click="GrabFrameReadBarcodesCheckBox_Click" />
         </controls:SettingsCard>
 
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Translation" />
@@ -86,13 +91,14 @@
             HeaderText="Enable translation overlay (requires Windows AI)"
             Icon="{ui:SymbolIcon Translate24}">
             <controls:SettingsExpander.SettingsContent>
-                <ui:ToggleSwitch x:Name="GrabFrameTranslationCheckBox" Click="GrabFrameTranslationCheckBox_Click" />
+                <ui:ToggleSwitch x:Name="GrabFrameTranslationCheckBox" AutomationProperties.AutomationId="Settings.GrabFrame.TranslationToggle" Click="GrabFrameTranslationCheckBox_Click" />
             </controls:SettingsExpander.SettingsContent>
             <StackPanel>
                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                     <TextBlock VerticalAlignment="Center" Text="Translation language:" />
                     <TextBox
                         x:Name="GrabFrameTranslationLanguageText"
+                        AutomationProperties.AutomationId="Settings.GrabFrame.TranslationLanguage"
                         Width="180"
                         Margin="12,0,0,0"
                         LostFocus="GrabFrameTranslationLanguageText_LostFocus" />
