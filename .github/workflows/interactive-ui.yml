@@ -54,17 +54,73 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Lane selection cannot live in the interactive-ui job's `if:` because the
+  # `matrix` context is not available there (it is only expanded afterwards).
+  # This job resolves the lane catalog against the event, dispatch inputs, and
+  # repository variables, then emits a dynamic matrix the real job consumes.
+  select-lanes:
+    name: Select lanes
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+      has_lanes: ${{ steps.select.outputs.has_lanes }}
+    steps:
+      - id: select
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_LANE: ${{ inputs.lane }}
+          # All repository variables, so per-lane enable flags can be resolved by name.
+          REPO_VARS: ${{ toJSON(vars) }}
+        run: |
+          # The full lane catalog. `scheduled`, `default_enabled`, and
+          # `enable_variable` drive selection only; the remaining fields are
+          # consumed by the interactive-ui job via the emitted matrix.
+          $lanes = @(
+            [ordered]@{ lane = 'smoke-unpackaged-x64'; desktop = 'text-grab-ui-x64';         runner_labels = '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-x64"]';               required_capabilities = '';                              require_mixed_dpi = 'false'; destructive = 'false'; scheduled = 'true';  default_enabled = 'true';  enable_variable = 'INTERACTIVE_CI_SMOKE_ENABLED' }
+            [ordered]@{ lane = 'system-integration';   desktop = 'text-grab-ui-system';      runner_labels = '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-system"]';            required_capabilities = 'system-integration';            require_mixed_dpi = 'false'; destructive = 'true';  scheduled = 'false'; default_enabled = 'false'; enable_variable = 'INTERACTIVE_CI_SYSTEM_INTEGRATION_ENABLED' }
+            [ordered]@{ lane = 'display-mixed-dpi';     desktop = 'text-grab-ui-mixed-dpi';   runner_labels = '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-mixed-dpi"]';         required_capabilities = 'mixed-dpi';                     require_mixed_dpi = 'true';  destructive = 'false'; scheduled = 'false'; default_enabled = 'false'; enable_variable = 'INTERACTIVE_CI_MIXED_DPI_ENABLED' }
+            [ordered]@{ lane = 'packaged';              desktop = 'text-grab-ui-packaged';    runner_labels = '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-packaged"]';          required_capabilities = 'packaged,disposable-vm';        require_mixed_dpi = 'false'; destructive = 'true';  scheduled = 'false'; default_enabled = 'false'; enable_variable = 'INTERACTIVE_CI_PACKAGED_ENABLED' }
+            [ordered]@{ lane = 'arm64';                 desktop = 'text-grab-ui-arm64';       runner_labels = '["self-hosted","Windows","ARM64","text-grab-ui","text-grab-ui-arm64"]';          required_capabilities = 'arm64,winrt-ocr';               require_mixed_dpi = 'false'; destructive = 'false'; scheduled = 'false'; default_enabled = 'false'; enable_variable = 'INTERACTIVE_CI_ARM64_ENABLED' }
+            [ordered]@{ lane = 'copilot-plus-winai';    desktop = 'text-grab-ui-copilot-plus'; runner_labels = '["self-hosted","Windows","ARM64","text-grab-ui","text-grab-ui-copilot-plus"]';    required_capabilities = 'arm64,winrt-ocr,windows-ai,packaged'; require_mixed_dpi = 'false'; destructive = 'false'; scheduled = 'false'; default_enabled = 'false'; enable_variable = 'INTERACTIVE_CI_COPILOT_PLUS_WINAI_ENABLED' }
+          )
+
+          $eventName = $env:EVENT_NAME
+          $inputLane = $env:INPUT_LANE
+
+          # Repository variable names are case-insensitive; resolve them that way.
+          $rawVars = ($env:REPO_VARS | ConvertFrom-Json -AsHashtable)
+          $repoVars = [System.Collections.Hashtable]::new([System.StringComparer]::OrdinalIgnoreCase)
+          if ($null -ne $rawVars) {
+            foreach ($key in $rawVars.Keys) { $repoVars[$key] = $rawVars[$key] }
+          }
+
+          $selected = $lanes | Where-Object {
+            if ($eventName -eq 'schedule') {
+              return $_.scheduled -eq 'true'
+            }
+            if ($eventName -eq 'workflow_dispatch') {
+              if ($inputLane -eq $_.lane) { return $true }
+              if ($inputLane -eq 'all-enabled') {
+                if ($_.default_enabled -eq 'true') { return $true }
+                return ($repoVars[$_.enable_variable] -eq 'true')
+              }
+            }
+            return $false
+          }
+
+          $selected = @($selected)
+          $matrixJson = @{ include = $selected } | ConvertTo-Json -Depth 5 -Compress
+          $hasLanes = if ($selected.Count -gt 0) { 'true' } else { 'false' }
+
+          Write-Host "Selected $($selected.Count) lane(s): $(($selected | ForEach-Object { $_.lane }) -join ', ')"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "matrix=$matrixJson"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "has_lanes=$hasLanes"
+
   interactive-ui:
     name: ${{ matrix.lane }}
-    # Scheduled runs exercise the baseline lane. A specialized lane runs only when
-    # selected manually, or through all-enabled after its repository variable is true.
-    if: >-
-      (github.event_name == 'schedule' && matrix.scheduled == 'true') ||
-      (github.event_name == 'workflow_dispatch' && (
-        inputs.lane == matrix.lane ||
-        (inputs.lane == 'all-enabled' &&
-          (matrix.default_enabled == 'true' || vars[matrix.enable_variable] == 'true'))
-      ))
+    needs: select-lanes
+    if: needs.select-lanes.outputs.has_lanes == 'true'
     runs-on: ${{ fromJSON(matrix.runner_labels) }}
     timeout-minutes: 90
     concurrency:
@@ -75,62 +131,7 @@ jobs:
       fail-fast: false
       # Matrix entries are intentionally serialized, including all-enabled dispatches.
       max-parallel: 1
-      matrix:
-        include:
-          - lane: smoke-unpackaged-x64
-            desktop: text-grab-ui-x64
-            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-x64"]'
-            required_capabilities: ""
-            require_mixed_dpi: "false"
-            destructive: "false"
-            scheduled: "true"
-            default_enabled: "true"
-            enable_variable: INTERACTIVE_CI_SMOKE_ENABLED
-          - lane: system-integration
-            desktop: text-grab-ui-system
-            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-system"]'
-            required_capabilities: system-integration
-            require_mixed_dpi: "false"
-            destructive: "true"
-            scheduled: "false"
-            default_enabled: "false"
-            enable_variable: INTERACTIVE_CI_SYSTEM_INTEGRATION_ENABLED
-          - lane: display-mixed-dpi
-            desktop: text-grab-ui-mixed-dpi
-            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-mixed-dpi"]'
-            required_capabilities: mixed-dpi
-            require_mixed_dpi: "true"
-            destructive: "false"
-            scheduled: "false"
-            default_enabled: "false"
-            enable_variable: INTERACTIVE_CI_MIXED_DPI_ENABLED
-          - lane: packaged
-            desktop: text-grab-ui-packaged
-            runner_labels: '["self-hosted","Windows","X64","text-grab-ui","text-grab-ui-packaged"]'
-            required_capabilities: packaged,disposable-vm
-            require_mixed_dpi: "false"
-            destructive: "true"
-            scheduled: "false"
-            default_enabled: "false"
-            enable_variable: INTERACTIVE_CI_PACKAGED_ENABLED
-          - lane: arm64
-            desktop: text-grab-ui-arm64
-            runner_labels: '["self-hosted","Windows","ARM64","text-grab-ui","text-grab-ui-arm64"]'
-            required_capabilities: arm64,winrt-ocr
-            require_mixed_dpi: "false"
-            destructive: "false"
-            scheduled: "false"
-            default_enabled: "false"
-            enable_variable: INTERACTIVE_CI_ARM64_ENABLED
-          - lane: copilot-plus-winai
-            desktop: text-grab-ui-copilot-plus
-            runner_labels: '["self-hosted","Windows","ARM64","text-grab-ui","text-grab-ui-copilot-plus"]'
-            required_capabilities: arm64,winrt-ocr,windows-ai,packaged
-            require_mixed_dpi: "false"
-            destructive: "false"
-            scheduled: "false"
-            default_enabled: "false"
-            enable_variable: INTERACTIVE_CI_COPILOT_PLUS_WINAI_ENABLED
+      matrix: ${{ fromJSON(needs.select-lanes.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v6
