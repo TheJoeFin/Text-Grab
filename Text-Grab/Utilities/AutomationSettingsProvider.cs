@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace Text_Grab.Utilities;
 
-public sealed class AutomationSettingsProvider : LocalFileSettingsProvider
+public sealed class AutomationSettingsProvider : LocalFileSettingsProvider, IApplicationSettingsProvider
 {
     public override SettingsPropertyValueCollection GetPropertyValues(
         SettingsContext context,
@@ -50,6 +50,33 @@ public sealed class AutomationSettingsProvider : LocalFileSettingsProvider
         File.WriteAllText(
             profile.ClassicSettingsFilePath,
             JsonSerializer.Serialize(storedValues, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    // Upgrade/Reset/GetPreviousVersion reach into the legacy per-user user.config. Under
+    // an automation profile the classic store lives entirely in the profile directory, so
+    // these must be no-ops; otherwise defer to the LocalFileSettingsProvider base behavior.
+    void IApplicationSettingsProvider.Reset(SettingsContext context)
+    {
+        if (AutomationProfile.Current is not null)
+            return;
+
+        base.Reset(context);
+    }
+
+    void IApplicationSettingsProvider.Upgrade(SettingsContext context, SettingsPropertyCollection properties)
+    {
+        if (AutomationProfile.Current is not null)
+            return;
+
+        base.Upgrade(context, properties);
+    }
+
+    SettingsPropertyValue IApplicationSettingsProvider.GetPreviousVersion(SettingsContext context, SettingsProperty property)
+    {
+        if (AutomationProfile.Current is not null)
+            return new SettingsPropertyValue(property) { PropertyValue = null, IsDirty = false };
+
+        return base.GetPreviousVersion(context, property);
     }
 
     private static Dictionary<string, string> ReadValues(string path)

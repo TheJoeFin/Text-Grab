@@ -22,6 +22,9 @@ internal sealed class AutomationProfile
     private static readonly Lazy<AutomationProfile?> CurrentProfile = new(
         () => TryCreate(Environment.GetCommandLineArgs(), Environment.GetEnvironmentVariable));
 
+    private static AutomationProfile? _currentOverride;
+    private static bool _hasCurrentOverride;
+
     private readonly IReadOnlyDictionary<string, JsonElement> _seedValues;
 
     private AutomationProfile(
@@ -36,7 +39,33 @@ internal sealed class AutomationProfile
         _seedValues = seedValues;
     }
 
-    internal static AutomationProfile? Current => CurrentProfile.Value;
+    internal static AutomationProfile? Current => _hasCurrentOverride ? _currentOverride : CurrentProfile.Value;
+
+    // Test seam: the ambient profile is otherwise derived once from the process command
+    // line / environment via a Lazy, which unit tests cannot control. The returned scope
+    // restores the previous state on dispose.
+    internal static IDisposable OverrideCurrentForTests(AutomationProfile? profile) =>
+        new CurrentOverrideScope(profile);
+
+    private sealed class CurrentOverrideScope : IDisposable
+    {
+        private readonly AutomationProfile? _previousProfile;
+        private readonly bool _hadOverride;
+
+        internal CurrentOverrideScope(AutomationProfile? profile)
+        {
+            _previousProfile = _currentOverride;
+            _hadOverride = _hasCurrentOverride;
+            _currentOverride = profile;
+            _hasCurrentOverride = true;
+        }
+
+        public void Dispose()
+        {
+            _currentOverride = _previousProfile;
+            _hasCurrentOverride = _hadOverride;
+        }
+    }
 
     internal string RootPath { get; }
     internal bool AllowsSystemIntegration { get; }
