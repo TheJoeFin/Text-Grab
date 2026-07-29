@@ -50,6 +50,9 @@ public static class GrabTemplateManager
         if (TestFilePath is not null)
             return TestFilePath;
 
+        if (AutomationProfile.Current is AutomationProfile profile)
+            return profile.TemplatesFilePath;
+
         if (AppUtilities.IsPackaged())
         {
             string localFolder = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
@@ -112,6 +115,9 @@ public static class GrabTemplateManager
             string? testDir = Path.GetDirectoryName(TestFilePath);
             return Path.Combine(testDir ?? Path.GetTempPath(), "template-images");
         }
+
+        if (AutomationProfile.Current is AutomationProfile profile)
+            return profile.TemplateImagesDirectory;
 
         if (AppUtilities.IsPackaged())
         {

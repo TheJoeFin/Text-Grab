@@ -23,12 +23,13 @@ public static partial class HotKeyManager
             return null;
     }
 
-    public static int RegisterHotKey(Keys key, KeyModifiers modifiers)
+    public static int? RegisterHotKey(Keys key, KeyModifiers modifiers)
     {
         _windowReadyEvent?.WaitOne();
         int id = Interlocked.Increment(ref _id);
-        _wnd?.Invoke(new RegisterHotKeyDelegate(RegisterHotKeyInternal), _hwnd, id, (uint)modifiers, (uint)key);
-        return id;
+        object? result = _wnd?.Invoke(new RegisterHotKeyDelegate(RegisterHotKeyInternal), _hwnd, id, (uint)modifiers, (uint)key);
+        bool registered = result is bool success && success;
+        return registered ? id : null;
     }
 
     public static void UnregisterHotKey(int id)
@@ -36,13 +37,13 @@ public static partial class HotKeyManager
         _wnd?.Invoke(new UnRegisterHotKeyDelegate(UnRegisterHotKeyInternal), _hwnd, id);
     }
 
-    private delegate void RegisterHotKeyDelegate(IntPtr hwnd, int id, uint modifiers, uint key);
+    private delegate bool RegisterHotKeyDelegate(IntPtr hwnd, int id, uint modifiers, uint key);
 
     private delegate void UnRegisterHotKeyDelegate(IntPtr hwnd, int id);
 
-    private static void RegisterHotKeyInternal(IntPtr hwnd, int id, uint modifiers, uint key)
+    private static bool RegisterHotKeyInternal(IntPtr hwnd, int id, uint modifiers, uint key)
     {
-        RegisterHotKey(hwnd, id, modifiers, key);
+        return RegisterHotKey(hwnd, id, modifiers, key);
     }
 
     private static void UnRegisterHotKeyInternal(IntPtr hwnd, int id)

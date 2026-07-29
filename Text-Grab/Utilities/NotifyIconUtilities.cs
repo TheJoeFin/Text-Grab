@@ -17,6 +17,9 @@ public static class NotifyIconUtilities
 {
     public static void SetupNotifyIcon()
     {
+        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+            return;
+
         App app = (App)App.Current;
         if (app.TextGrabIcon is not null
             || app.NumberOfRunningInstances > 1)
@@ -45,11 +48,21 @@ public static class NotifyIconUtilities
 
     public static void RegisterHotKeys(App app)
     {
+        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+            return;
+
         IEnumerable<ShortcutKeySet> shortcuts = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
 
         foreach (ShortcutKeySet keySet in shortcuts)
-            if (keySet.IsEnabled && HotKeyManager.RegisterHotKey(keySet) is int id)
+        {
+            if (!keySet.IsEnabled)
+                continue;
+
+            if (HotKeyManager.RegisterHotKey(keySet) is int id)
                 app.HotKeyIds.Add(id);
+            else
+                AutomationDiagnostics.Record("hotkey-registration-failed", new { keySet.Action, keySet.Name, keySet.NonModifierKey, keySet.Modifiers });
+        }
 
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
@@ -188,7 +201,7 @@ public static class NotifyIconUtilities
                     if (bitmapSource is null)
                         return;
 
-                    string tempPath = Path.Combine(Path.GetTempPath(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
+                    string tempPath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
                     using (FileStream fileStream = new(tempPath, FileMode.Create))
                     {
                         PngBitmapEncoder encoder = new();

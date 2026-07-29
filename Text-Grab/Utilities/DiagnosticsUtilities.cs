@@ -48,8 +48,10 @@ public static class DiagnosticsUtilities
         string bugReportJson = await GenerateBugReportAsync();
 
         string fileName = $"TextGrab_BugReport_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-        string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string filePath = Path.Combine(documentsPath, fileName);
+        string outputDirectory = AutomationProfile.Current?.OutputDirectory
+            ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        Directory.CreateDirectory(outputDirectory);
+        string filePath = Path.Combine(outputDirectory, fileName);
 
         await File.WriteAllTextAsync(filePath, bugReportJson);
 
