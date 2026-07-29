@@ -108,10 +108,10 @@ public static class GrabFrameFileUtilities
 
         string? directory = Path.GetDirectoryName(destinationPath);
         string tempPath = Path.Combine(
-            string.IsNullOrEmpty(directory) ? Path.GetTempPath() : directory,
+            string.IsNullOrEmpty(directory) ? AutomationProfile.GetTemporaryDirectory() : directory,
             $"{Guid.NewGuid():N}.tggf.tmp");
         string backupPath = Path.Combine(
-            string.IsNullOrEmpty(directory) ? Path.GetTempPath() : directory,
+            string.IsNullOrEmpty(directory) ? AutomationProfile.GetTemporaryDirectory() : directory,
             $"{Guid.NewGuid():N}.tggf.bak");
 
         try

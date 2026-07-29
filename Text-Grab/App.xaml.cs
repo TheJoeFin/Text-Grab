@@ -33,6 +33,7 @@ public partial class App : System.Windows.Application
 
     #region Fields
 
+    private static readonly AutomationProfile? _automationProfile = AutomationProfile.Current;
     private static readonly Settings _defaultSettings = AppUtilities.TextGrabSettings;
     private static RegistryMonitor? _themeRegistryMonitor;
     private static RegistryKey? _themeRegistryKey;
@@ -258,8 +259,18 @@ public partial class App : System.Windows.Application
         string? primaryArgument = null;
         string? grabFramePath = null;
 
-        foreach (string arg in args)
+        string[] startupArgs = [.. args];
+        for (int index = 0; index < startupArgs.Length; index++)
         {
+            string arg = startupArgs[index];
+            if (AutomationProfile.IsAutomationArgument(arg))
+            {
+                if (string.Equals(arg, "--automation-profile", StringComparison.OrdinalIgnoreCase))
+                    index++;
+
+                continue;
+            }
+
             if (string.Equals(arg, "--windowless", StringComparison.OrdinalIgnoreCase))
             {
                 isQuiet = true;
@@ -558,6 +569,7 @@ public partial class App : System.Windows.Application
 
     private void appExit(object sender, ExitEventArgs e)
     {
+        AutomationDiagnostics.Record("exit", new { e.ApplicationExitCode });
         TextGrabIcon?.Close();
 
         NotifyIconUtilities.UnregisterHotkeys(this);
@@ -572,13 +584,23 @@ public partial class App : System.Windows.Application
 
     private async void appStartup(object sender, StartupEventArgs e)
     {
+        if (_automationProfile is not null)
+        {
+            AutomationDiagnostics.Initialize(_automationProfile);
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        }
+
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
         // Per-user text-grab:// and .tggf registration for unpackaged installs
         // (packaged installs register these via the MSIX manifest).
-        ProtocolUtilities.EnsureProtocolRegistration();
-        FileAssociationUtilities.EnsureGrabFrameFileAssociation();
+        if (_automationProfile is null || _automationProfile.AllowsPersistentRegistration)
+        {
+            ProtocolUtilities.EnsureProtocolRegistration();
+            FileAssociationUtilities.EnsureGrabFrameFileAssociation();
+        }
 
         // Register COM server and activator type
         bool handledArgument = false;
@@ -608,6 +630,7 @@ public partial class App : System.Windows.Application
             // so don't show firstRun dialog or the default launch window
             _defaultSettings.FirstRun = false;
             _defaultSettings.Save();
+            AutomationDiagnostics.RecordReady(handledArgument, suppressDefaultLaunch);
             return;
         }
 
@@ -615,21 +638,30 @@ public partial class App : System.Windows.Application
         {
             _defaultSettings.CorrectToLatin = LanguageUtilities.IsCurrentLanguageLatinBased();
             ShowAndSetFirstRun();
+            AutomationDiagnostics.RecordReady(handledArgument, suppressDefaultLaunch);
             return;
         }
 
         DefaultLaunch();
+        AutomationDiagnostics.RecordReady(handledArgument, suppressDefaultLaunch);
     }
 
     private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         // unhandled exceptions thrown from UI thread
         Debug.WriteLine($"Unhandled exception: {e.Exception}");
+        AutomationDiagnostics.RecordUnhandledException("dispatcher", e.Exception);
         e.Handled = true;
+
+        if (_automationProfile is not null)
+            Current.Dispatcher.BeginInvoke(() => Shutdown(-1));
     }
 
     private bool HandleNotifyIcon()
     {
+        if (_automationProfile is { AllowsSystemIntegration: false })
+            return false;
+
         if (_defaultSettings.RunInTheBackground && NumberOfRunningInstances < 2)
         {
             NotifyIconUtilities.SetupNotifyIcon();
@@ -653,6 +685,17 @@ public partial class App : System.Windows.Application
             EditTextWindow mtw = new(argsInvoked);
             mtw.Show();
         });
+    }
+
+    private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+            AutomationDiagnostics.RecordUnhandledException("app-domain", exception);
+    }
+
+    private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        AutomationDiagnostics.RecordUnhandledException("task-scheduler", e.Exception);
     }
     #endregion Methods
 }

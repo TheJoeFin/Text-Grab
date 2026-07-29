@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Find and Replace"
+    AutomationProperties.AutomationId="FindReplaceDialog"
     Width="520"
     Height="560"
     MinWidth="400"
@@ -76,6 +77,7 @@
             </Grid.RowDefinitions>
             <ToggleButton
                 x:Name="MoreOptionsToggleButton"
+                AutomationProperties.AutomationId="FindReplace.MoreOptionsToggle"
                 Width="32"
                 Margin="6,6,0,0"
                 Background="Transparent"
@@ -115,6 +117,7 @@
 
             <local:SearchBar
                 x:Name="SearchBar"
+                AutomationProperties.AutomationId="FindReplace.Search"
                 Grid.Column="1"
                 Margin="6,6,6,0"
                 VerticalAlignment="Center"
@@ -127,6 +130,7 @@
                 ShowExactMatchToggle="True" />
             <local:CollapsibleButton
                 x:Name="FindButton"
+                AutomationProperties.AutomationId="FindReplace.FindButton"
                 Grid.Row="0"
                 Grid.Column="2"
                 Width="130"
@@ -138,6 +142,7 @@
 
             <TextBox
                 x:Name="ReplaceTextBox"
+                AutomationProperties.AutomationId="FindReplace.ReplaceText"
                 Grid.Row="1"
                 Grid.Column="1"
                 Margin="6,6,6,0"
@@ -148,6 +153,7 @@
                 Visibility="Visible" />
             <local:CollapsibleButton
                 x:Name="ReplaceButton"
+                AutomationProperties.AutomationId="FindReplace.ReplaceButton"
                 Grid.Row="1"
                 Grid.Column="2"
                 Width="130"
@@ -173,6 +179,7 @@
 
                 <local:CollapsibleButton
                     x:Name="DeleteAllMatches"
+                    AutomationProperties.AutomationId="FindReplace.DeleteAllButton"
                     Grid.Column="0"
                     Margin="0,0,3,0"
                     VerticalAlignment="Center"
@@ -183,6 +190,7 @@
 
                 <local:CollapsibleButton
                     x:Name="ReplaceAllButton"
+                    AutomationProperties.AutomationId="FindReplace.ReplaceAllButton"
                     Grid.Column="1"
                     Margin="3,0,0,0"
                     VerticalAlignment="Center"
@@ -310,6 +318,7 @@
         <Border Grid.Row="3" Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
             <ui:ListView
                 x:Name="ResultsListView"
+                AutomationProperties.AutomationId="FindReplace.Results"
                 Grid.Row="2"
                 Background="Transparent"
                 Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
@@ -356,6 +365,7 @@
 
         <ui:ProgressRing
             x:Name="LoadingSpinner"
+            AutomationProperties.AutomationId="FindReplace.Loading"
             Grid.Row="3"
             IsIndeterminate="True"
             Visibility="Collapsed" />

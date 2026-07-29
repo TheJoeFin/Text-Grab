@@ -483,7 +483,7 @@ public static partial class OcrUtilities
         }
 
         // get temp path
-        string tempPath = Path.GetTempPath();
+        string tempPath = AutomationProfile.GetTemporaryDirectory();
         string tempFileName = Path.GetRandomFileName() + ".bmp";
         string tempFilePath = Path.Combine(tempPath, tempFileName);
         try

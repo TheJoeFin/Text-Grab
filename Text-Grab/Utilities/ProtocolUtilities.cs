@@ -147,6 +147,9 @@ internal static class ProtocolUtilities
     /// </summary>
     private static IEnumerable<string> AllowedFileRoots()
     {
+        if (AutomationProfile.Current is AutomationProfile profile)
+            yield return profile.TemporaryDirectory;
+
         yield return Path.GetTempPath();
 
         string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);

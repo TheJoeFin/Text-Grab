@@ -172,6 +172,9 @@ public static class TesseractHelper
 
     public static string TempImagePath()
     {
+        if (AutomationProfile.Current is not null)
+            return Path.Combine(AutomationProfile.GetTemporaryDirectory(), "tempImage.png");
+
         string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
         if (exePath is null)
         {

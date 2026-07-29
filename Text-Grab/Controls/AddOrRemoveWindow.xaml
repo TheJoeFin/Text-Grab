@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Add or remove text on each line"
+    AutomationProperties.AutomationId="AddRemoveDialog"
     Width="330"
     Height="320"
     Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -53,6 +54,7 @@
             </Grid.ColumnDefinitions>
             <RadioButton
                 x:Name="AddRadioButton"
+                AutomationProperties.AutomationId="AddRemove.Mode.Add"
                 Grid.Column="0"
                 Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
@@ -64,6 +66,7 @@
             </RadioButton>
             <RadioButton
                 x:Name="RemoveRadioButton"
+                AutomationProperties.AutomationId="AddRemove.Mode.Remove"
                 Grid.Column="1"
                 Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
@@ -77,6 +80,7 @@
             </RadioButton>
             <RadioButton
                 x:Name="LimitRadioButton"
+                AutomationProperties.AutomationId="AddRemove.Mode.Limit"
                 Grid.Column="2"
                 Margin="0,0,12,0"
                 VerticalContentAlignment="Center"
@@ -99,6 +103,7 @@
             </TextBlock>
             <RadioButton
                 x:Name="BeginningRDBTN"
+                AutomationProperties.AutomationId="AddRemove.Position.Beginning"
                 Grid.Row="1"
                 Margin="12,0,12,0"
                 VerticalContentAlignment="Center"
@@ -116,6 +121,7 @@
                 IsChecked="False" />-->
             <RadioButton
                 x:Name="EndRDBTN"
+                AutomationProperties.AutomationId="AddRemove.Position.End"
                 Grid.Row="1"
                 VerticalContentAlignment="Center"
                 GroupName="PlaceRDBTNs"
@@ -137,6 +143,7 @@
                 Text="Number of characters" />
             <TextBox
                 x:Name="LengthTextBox"
+                AutomationProperties.AutomationId="AddRemove.Length"
                 Width="50"
                 VerticalAlignment="Center"
                 IsEnabled="False"
@@ -155,6 +162,7 @@
                 Text="Text to add" />
             <TextBox
                 x:Name="TextToAddTextBox"
+                AutomationProperties.AutomationId="AddRemove.Text"
                 Width="128"
                 VerticalAlignment="Center"
                 AcceptsTab="True"
@@ -168,6 +176,7 @@
             Orientation="Horizontal">
             <local:CollapsibleButton
                 x:Name="ApplyButton"
+                AutomationProperties.AutomationId="AddRemove.ApplyButton"
                 Grid.Row="7"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"
@@ -177,6 +186,7 @@
                 IsSymbol="True" />
             <local:CollapsibleButton
                 x:Name="DoneButton"
+                AutomationProperties.AutomationId="AddRemove.DoneButton"
                 Grid.Row="7"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"

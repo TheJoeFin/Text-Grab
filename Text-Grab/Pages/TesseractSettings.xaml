@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="TesseractSettings"
+    AutomationProperties.AutomationId="Settings.TesseractPage"
     d:DesignHeight="1450"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
@@ -24,11 +25,13 @@
             Icon="{ui:SymbolIcon PuzzlePiece24}">
             <ui:ToggleSwitch
                 Name="UseTesseractCheckBox"
+                AutomationProperties.AutomationId="Settings.Tesseract.EnabledToggle"
                 Checked="UseTesseractCheckBox_Checked"
                 Unchecked="UseTesseractCheckBox_Checked" />
         </controls:SettingsCard>
         <TextBlock
             x:Name="CouldNotFindTessTxtBlk"
+            AutomationProperties.AutomationId="Settings.Tesseract.NotFoundStatus"
             Margin="1,4,0,4"
             Style="{StaticResource TextBodyNormal}"
             Text="⚠️ Could not locate Tesseract.exe"
@@ -46,6 +49,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBox
                     x:Name="TesseractPathTextBox"
+                    AutomationProperties.AutomationId="Settings.Tesseract.Path"
                     HorizontalAlignment="Stretch"
                     FontFamily="Cascadia Code"
                     TextChanged="TesseractPathTextBox_TextChanged">
@@ -53,6 +57,7 @@
                 </TextBox>
                 <Button
                     x:Name="OpenPathButton"
+                    AutomationProperties.AutomationId="Settings.Tesseract.OpenFolderButton"
                     Grid.Column="1"
                     Margin="8,0,0,0"
                     Click="OpenPathButton_Click"
@@ -73,12 +78,14 @@
                 <StackPanel Orientation="Horizontal">
                     <Button
                         x:Name="WinGetCodeCopyButton"
+                        AutomationProperties.AutomationId="Settings.Tesseract.CopyInstallCommandButton"
+                        AutomationProperties.Name="Copy Tesseract install command"
                         Width="40"
                         Click="WinGetCodeCopyButton_Click"
                         Style="{StaticResource SymbolButton}">
                         <ui:SymbolIcon Symbol="Copy24" />
                     </Button>
-                    <TextBox x:Name="WinGetInstallTextBox" FontFamily="Cascadia Code">
+                    <TextBox x:Name="WinGetInstallTextBox" AutomationProperties.AutomationId="Settings.Tesseract.InstallCommand" FontFamily="Cascadia Code">
                         winget install -e --id UB-Mannheim.TesseractOCR
                     </TextBox>
                 </StackPanel>

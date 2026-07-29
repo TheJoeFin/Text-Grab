@@ -9,6 +9,7 @@
     xmlns:pages="clr-namespace:Text_Grab.Pages"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab Settings"
+    AutomationProperties.AutomationId="SettingsWindow"
     Width="660"
     Height="700"
     MinWidth="200"
@@ -52,11 +53,12 @@
             Icon="{StaticResource TextGrabIcon}" />
         <ui:NavigationView
             x:Name="SettingsNavView"
+            AutomationProperties.AutomationId="Settings.Navigation"
             Grid.Row="1"
             IsBackButtonVisible="Collapsed"
             PaneDisplayMode="LeftFluent">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:GeneralSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.General" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:GeneralSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock
                             Style="{StaticResource NavMenuContent}"
@@ -68,7 +70,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:FullscreenGrabSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.FullscreenGrab" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:FullscreenGrabSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
                             <Run>Fullscreen</Run>
@@ -81,7 +83,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:GrabFrameSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.GrabFrame" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:GrabFrameSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
                             <Run>Grab Frame</Run>
@@ -92,7 +94,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:QuickLookupSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.QuickLookup" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:QuickLookupSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
                             <Run>Quick Simple</Run>
@@ -105,7 +107,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:EditTextWindowSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.EditText" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:EditTextWindowSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
                             <Run>Edit Text</Run>
@@ -118,7 +120,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:LanguageSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.Languages" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:LanguageSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock
                             Style="{StaticResource NavMenuContent}"
@@ -130,7 +132,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:KeysSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.Shortcuts" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:KeysSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
                             <Run>Keyboard</Run>
@@ -143,7 +145,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:TesseractSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.Tesseract" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:TesseractSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock
                             Style="{StaticResource NavMenuContent}"
@@ -155,7 +157,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:VoiceOutputSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.VoiceOutput" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:VoiceOutputSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock Style="{StaticResource NavMenuContent}" TextWrapping="Wrap">
                             <Run>Voice</Run>
@@ -171,7 +173,7 @@
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:DangerSettings}">
+                <ui:NavigationViewItem AutomationProperties.AutomationId="Settings.Nav.Danger" NavigationCacheMode="Enabled" TargetPageType="{x:Type pages:DangerSettings}">
                     <ui:NavigationViewItem.Content>
                         <TextBlock
                             Style="{StaticResource NavMenuContent}"

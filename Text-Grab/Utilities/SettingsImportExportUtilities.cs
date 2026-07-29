@@ -34,7 +34,7 @@ public static class SettingsImportExportUtilities
     /// <returns>The full path to the created ZIP file.</returns>
     public static async Task<string> ExportSettingsToZipAsync(bool includeHistory)
     {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Export_{Guid.NewGuid()}");
+        string tempDir = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Export_{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
 
         try
@@ -58,8 +58,10 @@ public static class SettingsImportExportUtilities
 
             // Create zip file
             string zipFileName = $"TextGrab_Settings_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
-            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string zipFilePath = Path.Combine(documentsPath, zipFileName);
+            string outputDirectory = AutomationProfile.Current?.OutputDirectory
+                ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            Directory.CreateDirectory(outputDirectory);
+            string zipFilePath = Path.Combine(outputDirectory, zipFileName);
 
             if (File.Exists(zipFilePath))
                 File.Delete(zipFilePath);
@@ -82,7 +84,7 @@ public static class SettingsImportExportUtilities
     /// <param name="zipFilePath">The full path to the ZIP file to import.</param>
     public static async Task ImportSettingsFromZipAsync(string zipFilePath)
     {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Import_{Guid.NewGuid()}");
+        string tempDir = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Import_{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
         SettingsService settingsService = AppUtilities.TextGrabSettingsService;
 

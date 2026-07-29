@@ -209,7 +209,7 @@ public static class WindowsAiUtilities
     /// </summary>
     public static async Task<string> GetTextDescriptionWithWinAI(Bitmap bmp, CancellationToken cancellationToken)
     {
-        string tempFilePath = System.IO.Path.GetTempFileName();
+        string tempFilePath = AutomationProfile.GetTemporaryFilePath(".png");
         bmp.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
         try
         {
@@ -289,7 +289,7 @@ public static class WindowsAiUtilities
 
     public static async Task<WinAiOcrLinesWords?> GetOcrResultAsync(Bitmap bmp)
     {
-        string tempFilePath = System.IO.Path.GetTempFileName();
+        string tempFilePath = AutomationProfile.GetTemporaryFilePath(".png");
         bmp.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
         SoftwareBitmap softwareBitmap = await tempFilePath.FilePathToSoftwareBitmapAsync();
 

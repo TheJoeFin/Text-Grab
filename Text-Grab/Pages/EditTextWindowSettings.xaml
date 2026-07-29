@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="EditTextWindowSettings"
+    AutomationProperties.AutomationId="Settings.EditTextPage"
     d:DesignHeight="900"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
@@ -21,35 +22,35 @@
             Description="When opening an empty Edit Text Window, immediately trigger a Fullscreen Grab. The window restores from minimized once text is captured."
             HeaderText="Launch Fullscreen Grab on startup"
             Icon="{ui:SymbolIcon FullScreenMaximize24}">
-            <ui:ToggleSwitch x:Name="EditWindowStartFullscreenCheckBox" Click="EditWindowStartFullscreenCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="EditWindowStartFullscreenCheckBox" AutomationProperties.AutomationId="Settings.EditText.StartFullscreenToggle" Click="EditWindowStartFullscreenCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="The Edit Text Window will stay above all other windows."
             HeaderText="Keep window always on top"
             Icon="{ui:SymbolIcon Pin24}">
-            <ui:ToggleSwitch x:Name="EditWindowIsOnTopCheckBox" Click="EditWindowIsOnTopCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="EditWindowIsOnTopCheckBox" AutomationProperties.AutomationId="Settings.EditText.TopmostToggle" Click="EditWindowIsOnTopCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="Wrap long lines of text instead of scrolling horizontally."
             HeaderText="Enable word wrap"
             Icon="{ui:SymbolIcon TextWrap24}">
-            <ui:ToggleSwitch x:Name="EditWindowIsWordWrapOnCheckBox" Click="EditWindowIsWordWrapOnCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="EditWindowIsWordWrapOnCheckBox" AutomationProperties.AutomationId="Settings.EditText.WordWrapToggle" Click="EditWindowIsWordWrapOnCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="Remember and restore the Edit Text Window's size and position between sessions."
             HeaderText="Restore window size and position on startup"
             Icon="{ui:SymbolIcon WindowLocationTarget20}">
-            <ui:ToggleSwitch x:Name="RestoreEtwPositionsCheckBox" Click="RestoreEtwPositionsCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="RestoreEtwPositionsCheckBox" AutomationProperties.AutomationId="Settings.EditText.RestorePositionToggle" Click="RestoreEtwPositionsCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="Convert Unix (LF) and classic Mac (CR) line endings to Windows (CRLF) when pasting text."
             HeaderText="Normalize to Windows line endings on paste"
             Icon="{ui:SymbolIcon TextParagraph24}">
-            <ui:ToggleSwitch x:Name="EtwNormalizeLineEndingsOnPasteCheckBox" Click="EtwNormalizeLineEndingsOnPasteCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="EtwNormalizeLineEndingsOnPasteCheckBox" AutomationProperties.AutomationId="Settings.EditText.NormalizeLineEndingsToggle" Click="EtwNormalizeLineEndingsOnPasteCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsExpander
@@ -59,6 +60,7 @@
             <StackPanel>
                 <RadioButton
                     x:Name="SpellCheckAutoRadio"
+                    AutomationProperties.AutomationId="Settings.EditText.SpellCheck.Auto"
                     Click="SpellCheckModeRadio_Click"
                     Content="Auto"
                     GroupName="EtwSpellCheckMode"
@@ -72,6 +74,7 @@
 
                 <RadioButton
                     x:Name="SpellCheckAlwaysOnRadio"
+                    AutomationProperties.AutomationId="Settings.EditText.SpellCheck.AlwaysOn"
                     Click="SpellCheckModeRadio_Click"
                     Content="Always on"
                     GroupName="EtwSpellCheckMode"
@@ -85,6 +88,7 @@
 
                 <RadioButton
                     x:Name="SpellCheckOffRadio"
+                    AutomationProperties.AutomationId="Settings.EditText.SpellCheck.Off"
                     Click="SpellCheckModeRadio_Click"
                     Content="Off"
                     GroupName="EtwSpellCheckMode"
@@ -104,21 +108,21 @@
             Description="Collapse the bottom bar that contains status text, character info, regex buttons, and the language picker."
             HeaderText="Hide bottom toolbar"
             Icon="{ui:SymbolIcon PanelBottom20}">
-            <ui:ToggleSwitch x:Name="EditWindowBottomBarIsHiddenCheckBox" Click="EditWindowBottomBarIsHiddenCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="EditWindowBottomBarIsHiddenCheckBox" AutomationProperties.AutomationId="Settings.EditText.HideBottomBarToggle" Click="EditWindowBottomBarIsHiddenCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="Add an OCR language selector control to the bottom bar."
             HeaderText="Show language picker in toolbar"
             Icon="{ui:SymbolIcon LocalLanguage24}">
-            <ui:ToggleSwitch x:Name="EtwShowLangPickerCheckBox" Click="EtwShowLangPickerCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="EtwShowLangPickerCheckBox" AutomationProperties.AutomationId="Settings.EditText.ShowLanguagePickerToggle" Click="EtwShowLangPickerCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="Add responsive horizontal padding to the text area (50–160px depending on window width) to improve readability on wider windows."
             HeaderText="Show text margins"
             Icon="{ui:SymbolIcon AutoFitWidth24}">
-            <ui:ToggleSwitch x:Name="EtwUseMarginsCheckBox" Click="EtwUseMarginsCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="EtwUseMarginsCheckBox" AutomationProperties.AutomationId="Settings.EditText.UseMarginsToggle" Click="EtwUseMarginsCheckBox_Click" />
         </controls:SettingsCard>
 
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Text" />
@@ -135,6 +139,7 @@
                         Text="Font family:" />
                     <TextBox
                         x:Name="FontFamilyTextBox"
+                        AutomationProperties.AutomationId="Settings.EditText.FontFamily"
                         Width="200"
                         Margin="12,0,0,0"
                         LostFocus="FontFamilyTextBox_LostFocus" />
@@ -150,6 +155,7 @@
                         Text="Font size:" />
                     <Slider
                         x:Name="FontSizeSlider"
+                        AutomationProperties.AutomationId="Settings.EditText.FontSize"
                         Width="200"
                         Margin="12,0,0,0"
                         IsSnapToTickEnabled="True"
@@ -257,14 +263,14 @@
             Description="Show a right-side panel that evaluates math expressions as you type them in the editor."
             HeaderText="Show calculator pane"
             Icon="{ui:SymbolIcon Calculator24}">
-            <ui:ToggleSwitch x:Name="CalcShowPaneCheckBox" Click="CalcShowPaneCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="CalcShowPaneCheckBox" AutomationProperties.AutomationId="Settings.EditText.CalculatorPaneToggle" Click="CalcShowPaneCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsCard
             Description="Display expression evaluation errors inline in the calculator pane."
             HeaderText="Show calculator errors"
             Icon="{ui:SymbolIcon ErrorCircle24}">
-            <ui:ToggleSwitch x:Name="CalcShowErrorsCheckBox" Click="CalcShowErrorsCheckBox_Click" />
+            <ui:ToggleSwitch x:Name="CalcShowErrorsCheckBox" AutomationProperties.AutomationId="Settings.EditText.CalculatorErrorsToggle" Click="CalcShowErrorsCheckBox_Click" />
         </controls:SettingsCard>
 
     </StackPanel>

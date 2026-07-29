@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="New Text-Only Template"
+    AutomationProperties.AutomationId="TextTemplateDialog"
     Width="520"
     Height="340"
     MinWidth="400"
@@ -36,12 +37,14 @@
             <TextBlock Margin="0,0,0,4" Text="Template Name:" />
             <TextBox
                 x:Name="TemplateNameBox"
+                AutomationProperties.AutomationId="TextTemplate.Name"
                 Margin="0,0,0,12"
                 TextChanged="ValidateInput" />
 
             <TextBlock Margin="0,0,0,4" Text="Output (type { to pick):" />
             <controls:InlinePickerRichTextBox
                 x:Name="OutputTemplateBox"
+                AutomationProperties.AutomationId="TextTemplate.Output"
                 MinHeight="80"
                 Margin="0,0,0,4"
                 AcceptsReturn="True"
@@ -68,6 +71,7 @@
 
             <TextBlock
                 x:Name="ErrorText"
+                AutomationProperties.AutomationId="TextTemplate.Error"
                 Margin="0,6,0,0"
                 Foreground="Red"
                 Text=""
@@ -81,6 +85,7 @@
             Orientation="Horizontal">
             <ui:Button
                 x:Name="SaveButton"
+                AutomationProperties.AutomationId="TextTemplate.SaveButton"
                 Margin="0,0,6,0"
                 Appearance="Primary"
                 Click="SaveButton_Click"

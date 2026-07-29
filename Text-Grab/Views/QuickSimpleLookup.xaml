@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Quick Simple Lookup"
+    AutomationProperties.AutomationId="QuickLookupWindow"
     Width="800"
     Height="400"
     Closed="FluentWindow_Closed"
@@ -49,6 +50,7 @@
             </Grid.ColumnDefinitions>
             <controls:SearchBar
                 x:Name="SearchBar"
+                AutomationProperties.AutomationId="QuickLookup.Search"
                 Grid.Column="0"
                 Margin="6,0,0,0"
                 VerticalAlignment="Center"
@@ -58,6 +60,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <controls:CollapsibleButton
                     x:Name="AddItemBtn"
+                    AutomationProperties.AutomationId="QuickLookup.AddItemButton"
                     Background="DarkGreen"
                     ButtonSymbol="Add24"
                     ButtonText="Add Item"
@@ -66,6 +69,7 @@
                     Visibility="Collapsed" />
                 <controls:CollapsibleButton
                     x:Name="NewFullscreen"
+                    AutomationProperties.AutomationId="QuickLookup.NewFullscreenButton"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     ButtonSymbol="SlideAdd24"
@@ -75,6 +79,7 @@
                     ToolTip="New Fullscreen Grab (Ctrl + F)" />
                 <controls:CollapsibleButton
                     x:Name="SaveBTN"
+                    AutomationProperties.AutomationId="QuickLookup.SaveButton"
                     ButtonSymbol="Save24"
                     ButtonText="Save Lookup Data"
                     Click="SaveBTN_Click"
@@ -83,6 +88,8 @@
                     Visibility="Collapsed" />
                 <ToggleButton
                     x:Name="PasteToggleButton"
+                    AutomationProperties.AutomationId="QuickLookup.InsertToggle"
+                    AutomationProperties.Name="Insert selected value into the previously focused app"
                     Grid.Column="0"
                     Margin="0,0,5,0"
                     Padding="7,4"
@@ -96,6 +103,8 @@
                 </ToggleButton>
                 <ToggleButton
                     x:Name="EditWindowToggleButton"
+                    AutomationProperties.AutomationId="QuickLookup.SendToEditTextToggle"
+                    AutomationProperties.Name="Send selected value to Edit Text Window"
                     Grid.Column="0"
                     Margin="0,0,5,0"
                     Padding="7,4"
@@ -115,7 +124,7 @@
                     ClipToBounds="True"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     IsMainMenu="True">
-                    <MenuItem>
+                    <MenuItem AutomationProperties.AutomationId="QuickLookup.MoreMenu" AutomationProperties.Name="More lookup actions">
                         <MenuItem.Header>
                             <TextBlock
                                 Height="40"
@@ -127,33 +136,40 @@
                         </MenuItem.Header>
                         <MenuItem
                             x:Name="SaveMenuItem"
+                            AutomationProperties.AutomationId="QuickLookup.Menu.Save"
                             Click="SaveBTN_Click"
                             Header="Save Lookup Data" />
                         <MenuItem
                             x:Name="PickSaveLocation"
+                            AutomationProperties.AutomationId="QuickLookup.Menu.ChangeFileLocation"
                             Click="PickSaveLocation_Click"
                             Header="Change Lookup Data File Location..." />
                         <MenuItem
                             x:Name="ParseClipboardMenuItem"
+                            AutomationProperties.AutomationId="QuickLookup.Menu.ParseClipboard"
                             Click="ParseBTN_Click"
                             Header="Parse Excel Copied Table" />
                         <MenuItem
                             x:Name="ParseCSVFileMenuItem"
+                            AutomationProperties.AutomationId="QuickLookup.Menu.ImportCsv"
                             Click="ParseCSVFileMenuItem_Click"
                             Header="Add Rows from CSV File..." />
                         <MenuItem
                             x:Name="SearchHistory"
+                            AutomationProperties.AutomationId="QuickLookup.Menu.SearchHistory"
                             Click="SearchHistory_Click"
                             Header="Search History"
                             IsCheckable="True" />
                         <MenuItem
                             x:Name="TextGrabSettingsMenuItem"
+                            AutomationProperties.AutomationId="QuickLookup.Menu.OpenSettings"
                             Click="TextGrabSettingsMenuItem_Click"
                             Header="Text Grab Settings" />
                     </MenuItem>
                 </Menu>
                 <controls:CollapsibleButton
                     x:Name="EnterButton"
+                    AutomationProperties.AutomationId="QuickLookup.CopySelectedButton"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     ButtonSymbol="ArrowRight24"
@@ -174,6 +190,7 @@
         </Grid>
         <DataGrid
             x:Name="MainDataGrid"
+            AutomationProperties.AutomationId="QuickLookup.ResultsGrid"
             Grid.Row="2"
             AlternatingRowBackground="{DynamicResource ApplicationBackgroundBrush}"
             AutoGenerateColumns="False"
@@ -261,6 +278,7 @@
                 <ContextMenu>
                     <MenuItem
                         x:Name="DeleteItem"
+                        AutomationProperties.AutomationId="QuickLookup.Context.DeleteItem"
                         Click="DeleteItem_Click"
                         Header="Delete">
                         <MenuItem.Icon>
@@ -269,6 +287,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="OpenInETWMenuItem"
+                        AutomationProperties.AutomationId="QuickLookup.Context.OpenInEditText"
                         Click="OpenInETWMenuItem_Click"
                         Header="Open in Edit Text Window">
                         <MenuItem.Icon>
@@ -303,6 +322,7 @@
             </TextBlock>
             <TextBlock
                 x:Name="RowCountTextBlock"
+                AutomationProperties.AutomationId="QuickLookup.ResultCount"
                 Grid.Column="2"
                 Padding="10,4"
                 HorizontalAlignment="Right"
@@ -312,6 +332,7 @@
         </Grid>
         <Grid
             x:Name="ErrorBar"
+            AutomationProperties.AutomationId="QuickLookup.ErrorStatus"
             Grid.Row="5"
             Background="DarkRed"
             Visibility="Collapsed">
@@ -327,6 +348,7 @@
                 Text="⚠️ Failed to add text to clipboard." />
             <ui:Button
                 Name="ErrorBarOkay"
+                AutomationProperties.AutomationId="QuickLookup.ErrorDismissButton"
                 Grid.Column="2"
                 Margin="8,4"
                 Padding="12,3,12,4"

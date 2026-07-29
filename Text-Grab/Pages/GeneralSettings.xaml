@@ -9,6 +9,7 @@
     xmlns:models="clr-namespace:Text_Grab.Models"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="GeneralSettings"
+    AutomationProperties.AutomationId="Settings.GeneralPage"
     d:DesignHeight="1450"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
@@ -26,6 +27,7 @@
             <!--  Version Text  -->
             <TextBlock
                 x:Name="VersionTextblock"
+                AutomationProperties.AutomationId="Settings.General.Version"
                 VerticalAlignment="Center"
                 Style="{StaticResource TextBodyNormal}"
                 Text="Version X.X" />
@@ -43,6 +45,7 @@
 
             <controls:CollapsibleButton
                 x:Name="AboutBTN"
+                AutomationProperties.AutomationId="Settings.General.AboutButton"
                 Grid.Column="3"
                 Margin="0"
                 ButtonSymbol="Info24"
@@ -85,16 +88,19 @@
             <StackPanel>
                 <RadioButton
                     x:Name="SystemThemeRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.Theme.System"
                     Checked="SystemThemeRdBtn_Checked"
                     Content="System"
                     GroupName="ThemeGroup" />
                 <RadioButton
                     x:Name="LightThemeRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.Theme.Light"
                     Checked="LightThemeRdBtn_Checked"
                     Content="Light"
                     GroupName="ThemeGroup" />
                 <RadioButton
                     x:Name="DarkThemeRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.Theme.Dark"
                     Checked="DarkThemeRdBtn_Checked"
                     Content="Dark"
                     GroupName="ThemeGroup" />
@@ -109,6 +115,7 @@
             Icon="{ui:SymbolIcon Alert24}">
             <ui:ToggleSwitch
                 Name="ShowToastCheckBox"
+                AutomationProperties.AutomationId="Settings.General.NotificationsToggle"
                 Checked="ShowToastCheckBox_Checked"
                 Unchecked="ShowToastCheckBox_Unchecked" />
         </controls:SettingsCard>
@@ -120,6 +127,7 @@
             <StackPanel>
                 <RadioButton
                     x:Name="FullScreenRDBTN"
+                    AutomationProperties.AutomationId="Settings.General.DefaultLaunch.Fullscreen"
                     Checked="FullScreenRDBTN_Checked"
                     GroupName="DefaultLaunch">
                     <StackPanel Orientation="Horizontal">
@@ -133,6 +141,7 @@
                 </RadioButton>
                 <RadioButton
                     x:Name="GrabFrameRDBTN"
+                    AutomationProperties.AutomationId="Settings.General.DefaultLaunch.GrabFrame"
                     Checked="GrabFrameRDBTN_Checked"
                     GroupName="DefaultLaunch">
                     <StackPanel Orientation="Horizontal">
@@ -146,6 +155,7 @@
                 </RadioButton>
                 <RadioButton
                     x:Name="EditTextRDBTN"
+                    AutomationProperties.AutomationId="Settings.General.DefaultLaunch.EditText"
                     Checked="EditTextRDBTN_Checked"
                     GroupName="DefaultLaunch">
                     <StackPanel Orientation="Horizontal">
@@ -159,6 +169,7 @@
                 </RadioButton>
                 <RadioButton
                     x:Name="QuickLookupRDBTN"
+                    AutomationProperties.AutomationId="Settings.General.DefaultLaunch.QuickLookup"
                     Checked="QuickLookupRDBTN_Checked"
                     GroupName="DefaultLaunch">
                     <StackPanel Orientation="Horizontal">
@@ -179,6 +190,7 @@
             Icon="{ui:SymbolIcon Desktop24}">
             <ui:ToggleSwitch
                 Name="RunInBackgroundChkBx"
+                AutomationProperties.AutomationId="Settings.General.BackgroundToggle"
                 Checked="RunInBackgroundChkBx_Checked"
                 Unchecked="RunInBackgroundChkBx_Checked" />
         </controls:SettingsCard>
@@ -186,11 +198,13 @@
         <controls:SettingsCard HeaderText="Auto start Text Grab when you login" Icon="{ui:SymbolIcon Power24}">
             <ui:ToggleSwitch
                 Name="StartupOnLoginCheckBox"
+                AutomationProperties.AutomationId="Settings.General.StartupToggle"
                 Checked="StartupOnLoginCheckBox_Checked"
                 Unchecked="StartupOnLoginCheckBox_Unchecked" />
         </controls:SettingsCard>
         <TextBlock
             x:Name="StartupTextBlock"
+            AutomationProperties.AutomationId="Settings.General.StartupStatus"
             Margin="1,0,0,8"
             FontSize="12"
             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -205,6 +219,7 @@
             Icon="{ui:SymbolIcon CursorClick24}">
             <ui:ToggleSwitch
                 Name="AddToContextMenuCheckBox"
+                AutomationProperties.AutomationId="Settings.General.ContextMenuToggle"
                 Checked="AddToContextMenuCheckBox_Checked"
                 Unchecked="AddToContextMenuCheckBox_Unchecked" />
         </controls:SettingsCard>
@@ -215,6 +230,7 @@
             Icon="{ui:SymbolIcon Open24}">
             <ui:ToggleSwitch
                 Name="RegisterOpenWithCheckBox"
+                AutomationProperties.AutomationId="Settings.General.OpenWithToggle"
                 Checked="RegisterOpenWithCheckBox_Checked"
                 Unchecked="RegisterOpenWithCheckBox_Unchecked" />
         </controls:SettingsCard>
@@ -227,6 +243,7 @@
             Icon="{ui:SymbolIcon BarcodeScanner24}">
             <ui:ToggleSwitch
                 Name="ReadBarcodesBarcode"
+                AutomationProperties.AutomationId="Settings.General.ReadBarcodesToggle"
                 Checked="ReadBarcodesBarcode_Checked"
                 Unchecked="ReadBarcodesBarcode_Unchecked" />
         </controls:SettingsCard>
@@ -238,6 +255,7 @@
             <controls:SettingsExpander.SettingsContent>
                 <ui:ToggleSwitch
                     Name="HdrCaptureCorrectionToggle"
+                    AutomationProperties.AutomationId="Settings.General.HdrCorrectionToggle"
                     Checked="HdrCaptureCorrectionToggle_Checked"
                     Unchecked="HdrCaptureCorrectionToggle_Unchecked" />
             </controls:SettingsExpander.SettingsContent>
@@ -249,6 +267,7 @@
                     TextWrapping="Wrap" />
                 <ui:Button
                     Name="CheckHdrPermissionButton"
+                    AutomationProperties.AutomationId="Settings.General.CheckHdrPermissionButton"
                     Margin="0,8,0,0"
                     HorizontalAlignment="Left"
                     Click="CheckHdrPermissionButton_Click"
@@ -259,6 +278,7 @@
         <controls:SettingsCard HeaderText="Web search engine" Icon="{ui:SymbolIcon Search24}">
             <ComboBox
                 x:Name="WebSearchersComboBox"
+                AutomationProperties.AutomationId="Settings.General.WebSearchEngine"
                 Width="240"
                 IsTextSearchCaseSensitive="False"
                 SelectionChanged="WebSearchersComboBox_SelectionChanged">
@@ -275,6 +295,7 @@
         <controls:SettingsCard HeaderText="Detect paragraph wrapping — join wrapped lines into one paragraph" Icon="{ui:SymbolIcon TextParagraph24}">
             <ui:ToggleSwitch
                 Name="ParagraphDetectionToggle"
+                AutomationProperties.AutomationId="Settings.General.ParagraphDetectionToggle"
                 Checked="ParagraphDetectionToggle_Checked"
                 Unchecked="ParagraphDetectionToggle_Unchecked" />
         </controls:SettingsCard>
@@ -282,6 +303,7 @@
         <controls:SettingsCard HeaderText="Correct common confusions between numbers and letters" Icon="{ui:SymbolIcon Wand24}">
             <ui:ToggleSwitch
                 Name="ErrorCorrectBox"
+                AutomationProperties.AutomationId="Settings.General.ErrorCorrectionToggle"
                 Checked="ErrorCorrectBox_Checked"
                 Unchecked="ErrorCorrectBox_Unchecked" />
         </controls:SettingsCard>
@@ -289,6 +311,7 @@
         <controls:SettingsCard HeaderText="Correct misidentifications between Greek and Cyrillic to Latin letters" Icon="{ui:SymbolIcon TextT24}">
             <ui:ToggleSwitch
                 Name="CorrectToLatin"
+                AutomationProperties.AutomationId="Settings.General.CorrectToLatinToggle"
                 Checked="CorrectToLatin_Checked"
                 Unchecked="CorrectToLatin_Unchecked" />
         </controls:SettingsCard>
@@ -298,6 +321,7 @@
         <controls:SettingsCard HeaderText="Never automatically add text to the clipboard" Icon="{ui:SymbolIcon ClipboardLetter24}">
             <ui:ToggleSwitch
                 Name="NeverUseClipboardChkBx"
+                AutomationProperties.AutomationId="Settings.General.DisableClipboardToggle"
                 Checked="NeverUseClipboardChkBx_Checked"
                 Unchecked="NeverUseClipboardChkBx_Unchecked" />
         </controls:SettingsCard>
@@ -309,6 +333,7 @@
             <controls:SettingsExpander.SettingsContent>
                 <ui:ToggleSwitch
                     Name="TryInsertCheckbox"
+                    AutomationProperties.AutomationId="Settings.General.InsertAfterCaptureToggle"
                     Checked="TryInsertCheckbox_Checked"
                     Unchecked="TryInsertCheckbox_Unchecked" />
             </controls:SettingsExpander.SettingsContent>
@@ -316,6 +341,7 @@
                 <TextBlock VerticalAlignment="Center" Text="Insert after" />
                 <TextBox
                     x:Name="SecondsTextBox"
+                    AutomationProperties.AutomationId="Settings.General.InsertDelay"
                     Width="40"
                     Height="26"
                     Margin="8,0,0,0"
@@ -333,6 +359,7 @@
                     Text="seconds" />
                 <TextBlock
                     x:Name="DelayTimeErrorSeconds"
+                    AutomationProperties.AutomationId="Settings.General.InsertDelayError"
                     Margin="12,0,0,0"
                     VerticalAlignment="Center"
                     Text="⚠ Pick a number between 0 and 10"
@@ -348,6 +375,7 @@
             Icon="{ui:SymbolIcon History24}">
             <ui:ToggleSwitch
                 Name="HistorySwitch"
+                AutomationProperties.AutomationId="Settings.General.HistoryToggle"
                 Checked="HistorySwitch_Checked"
                 Unchecked="HistorySwitch_Unchecked" />
         </controls:SettingsCard>

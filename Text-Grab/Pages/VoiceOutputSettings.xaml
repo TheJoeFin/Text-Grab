@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="VoiceOutputSettings"
+    AutomationProperties.AutomationId="Settings.VoiceOutputPage"
     d:DesignHeight="700"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
@@ -24,6 +25,7 @@
                 Icon="{ui:SymbolIcon PersonVoice24}">
                 <ComboBox
                     x:Name="VoiceComboBox"
+                    AutomationProperties.AutomationId="Settings.VoiceOutput.Voice"
                     Width="260"
                     SelectionChanged="VoiceComboBox_SelectionChanged" />
             </controls:SettingsCard>
@@ -35,6 +37,7 @@
                 <StackPanel Orientation="Horizontal">
                     <Slider
                         x:Name="SpeakingRateSlider"
+                        AutomationProperties.AutomationId="Settings.VoiceOutput.Rate"
                         Width="200"
                         VerticalAlignment="Center"
                         IsSnapToTickEnabled="True"
@@ -44,6 +47,7 @@
                         ValueChanged="SpeakingRateSlider_ValueChanged" />
                     <TextBlock
                         x:Name="SpeakingRateValue"
+                        AutomationProperties.AutomationId="Settings.VoiceOutput.RateValue"
                         Width="32"
                         Margin="12,0,0,0"
                         VerticalAlignment="Center" />
@@ -57,12 +61,14 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock
                         x:Name="TtsWordLimitError"
+                        AutomationProperties.AutomationId="Settings.VoiceOutput.WordLimitError"
                         Margin="0,0,12,0"
                         VerticalAlignment="Center"
                         Text="⚠ Must be a positive number"
                         Visibility="Collapsed" />
                     <TextBox
                         x:Name="TtsSpeakWordLimitTextBox"
+                        AutomationProperties.AutomationId="Settings.VoiceOutput.WordLimit"
                         Width="60"
                         Height="26"
                         HorizontalContentAlignment="Center"
@@ -81,6 +87,7 @@
                 Icon="{ui:SymbolIcon ReadAloud24}">
                 <ui:ToggleSwitch
                     x:Name="SpeakProcessingStatusCheckBox"
+                    AutomationProperties.AutomationId="Settings.VoiceOutput.ProcessingAnnouncementToggle"
                     Checked="SpeakProcessingStatusCheckBox_CheckChanged"
                     Unchecked="SpeakProcessingStatusCheckBox_CheckChanged" />
             </controls:SettingsCard>
@@ -91,6 +98,7 @@
                 Icon="{ui:SymbolIcon Play24}">
                 <Button
                     x:Name="PreviewVoiceButton"
+                    AutomationProperties.AutomationId="Settings.VoiceOutput.PreviewButton"
                     Click="PreviewVoiceButton_Click"
                     Content="Speak sample" />
             </controls:SettingsCard>

@@ -76,6 +76,10 @@ Get the code:
 - Run tests with `dotnet test Tests\Tests.csproj`
 - In VS Code, press `F5` to launch with the included debug configuration.
 
+### UI automation
+
+The Windows UI automation inventory, safe local release sign-off command, runner requirements, and opt-in system/package lanes are documented in [UiTests/README.md](UiTests/README.md).
+
 ## Choose from Four Modes
 
 ### 1. Full-Screen Mode (basis of [Text Extractor](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor))

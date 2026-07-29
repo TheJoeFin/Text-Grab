@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="LanguageSettings"
+    AutomationProperties.AutomationId="Settings.LanguagesPage"
     d:DesignHeight="450"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
@@ -24,12 +25,14 @@
             </Grid.ColumnDefinitions>
             <TextBlock
                 Name="StatusTextBlock"
+                AutomationProperties.AutomationId="Settings.Languages.WindowsAiStatus"
                 Margin="0,2,6,0"
                 FontWeight="Black"
                 Style="{StaticResource TextBodyNormal}"
                 Text="STATUS" />
             <TextBlock
                 Name="ReasonTextBlock"
+                AutomationProperties.AutomationId="Settings.Languages.WindowsAiReason"
                 Grid.Column="1"
                 Margin="0,2,6,0"
                 FontStyle="Italic"
@@ -56,6 +59,7 @@
             Icon="{ui:SymbolIcon BrainCircuit24}">
             <ui:ToggleSwitch
                 x:Name="WindowsAiDescriptionEnabledToggle"
+                AutomationProperties.AutomationId="Settings.Languages.WindowsAiDescriptionToggle"
                 Checked="WindowsAiDescriptionEnabledToggle_Checked"
                 Unchecked="WindowsAiDescriptionEnabledToggle_Checked" />
         </controls:SettingsCard>
@@ -73,6 +77,7 @@
             <controls:SettingsExpander.SettingsContent>
                 <ui:ToggleSwitch
                     x:Name="RemoveFuriganaToggle"
+                    AutomationProperties.AutomationId="Settings.Languages.RemoveFuriganaToggle"
                     Checked="RemoveFuriganaToggle_Checked"
                     Unchecked="RemoveFuriganaToggle_Checked" />
             </controls:SettingsExpander.SettingsContent>
@@ -114,6 +119,7 @@
         <!--  Show the commands to execute to add other languages  -->
         <ui:ListView
             x:Name="WindowsLanguagesListView"
+            AutomationProperties.AutomationId="Settings.Languages.WindowsInstalledList"
             MaxWidth="600"
             HorizontalAlignment="Left">
             <ListView.ItemTemplate>
@@ -135,6 +141,7 @@
             <!--  Link to the GitHub Repo to download other languages  -->
             <ui:HyperlinkButton
                 x:Name="OpenPathButton"
+                AutomationProperties.AutomationId="Settings.Languages.OpenTesseractFolderButton"
                 HorizontalAlignment="Left"
                 Click="OpenPathButton_Click">
                 <StackPanel Margin="4,0" Orientation="Horizontal">
@@ -144,6 +151,7 @@
             </ui:HyperlinkButton>
             <ui:ListView
                 x:Name="TesseractLanguagesListView"
+                AutomationProperties.AutomationId="Settings.Languages.TesseractInstalledList"
                 MaxWidth="600"
                 HorizontalAlignment="Left">
                 <ListView.ItemTemplate>
@@ -162,6 +170,7 @@
             <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                 <ComboBox
                     x:Name="AllLanguagesComboBox"
+                    AutomationProperties.AutomationId="Settings.Languages.TesseractLanguage"
                     Width="300"
                     IsEditable="True"
                     IsTextSearchCaseSensitive="False"
@@ -172,7 +181,7 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <Button Margin="12,0,0,0" Click="InstallButton_Click">
+                <Button AutomationProperties.AutomationId="Settings.Languages.InstallTesseractLanguageButton" Margin="12,0,0,0" Click="InstallButton_Click">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Shield24" />
                         <TextBlock Margin="6,0,0,0" Text="Install" />
@@ -181,6 +190,7 @@
             </StackPanel>
             <TextBlock
                 x:Name="ErrorsAndOutputText"
+                AutomationProperties.AutomationId="Settings.Languages.TesseractStatus"
                 FontFamily="Cascadia Code"
                 Style="{StaticResource TextBodyNormal}" />
         </StackPanel>
@@ -194,6 +204,7 @@
             <controls:SettingsExpander.SettingsContent>
                 <ui:ToggleSwitch
                     x:Name="UiAutomationEnabledToggle"
+                    AutomationProperties.AutomationId="Settings.Languages.DirectTextToggle"
                     Checked="UiAutomationEnabledToggle_Checked"
                     Unchecked="UiAutomationEnabledToggle_Checked" />
             </controls:SettingsExpander.SettingsContent>
@@ -213,12 +224,14 @@
                 <StackPanel x:Name="UiAutomationAdvancedOptionsPanel">
                     <ui:ToggleSwitch
                         x:Name="UiAutomationFallbackToggle"
+                        AutomationProperties.AutomationId="Settings.Languages.DirectTextFallbackToggle"
                         Checked="UiAutomationFallbackToggle_Checked"
                         Unchecked="UiAutomationFallbackToggle_Checked">
                         <TextBlock Text="Fall back to OCR when UI Automation returns no text" TextWrapping="Wrap" />
                     </ui:ToggleSwitch>
                     <ui:ToggleSwitch
                         x:Name="UiAutomationPreferFocusedToggle"
+                        AutomationProperties.AutomationId="Settings.Languages.DirectTextPreferFocusedToggle"
                         Margin="0,8,0,0"
                         Checked="UiAutomationPreferFocusedToggle_Checked"
                         Unchecked="UiAutomationPreferFocusedToggle_Checked">
@@ -226,6 +239,7 @@
                     </ui:ToggleSwitch>
                     <ui:ToggleSwitch
                         x:Name="UiAutomationIncludeOffscreenToggle"
+                        AutomationProperties.AutomationId="Settings.Languages.DirectTextIncludeOffscreenToggle"
                         Margin="0,8,0,0"
                         Checked="UiAutomationIncludeOffscreenToggle_Checked"
                         Unchecked="UiAutomationIncludeOffscreenToggle_Checked">
@@ -238,6 +252,7 @@
                             Text="Traversal mode" />
                         <ComboBox
                             x:Name="UiAutomationTraversalModeComboBox"
+                            AutomationProperties.AutomationId="Settings.Languages.DirectTextTraversalMode"
                             Width="180"
                             SelectionChanged="UiAutomationTraversalModeComboBox_SelectionChanged" />
                     </StackPanel>

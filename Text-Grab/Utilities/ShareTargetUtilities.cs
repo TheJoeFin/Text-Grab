@@ -116,7 +116,7 @@ public static class ShareTargetUtilities
         var bitmapRef = await data.GetBitmapAsync();
         using var stream = await bitmapRef.OpenReadAsync();
 
-        string tempPath = Path.Combine(Path.GetTempPath(), $"TextGrab_Share_{Guid.NewGuid():N}.png");
+        string tempPath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Share_{Guid.NewGuid():N}.png");
 
         using (var fileStream = File.Create(tempPath))
         {
