@@ -355,6 +355,15 @@ function Get-UiTestTargetArguments {
         [Parameter(Mandatory)][string]$AutomationId
     )
 
+    # The Fullscreen Grab overlay is a transparent, owned WPF window whose UIA element tree
+    # cannot be reached when scoped to its HWND. Such targets are flagged AppScope so element
+    # lookups resolve against the whole process (--app) instead of a single window (--window).
+    if ($Target.PSObject.Properties['AppScope'] -and $Target.AppScope) {
+        if ([string]::IsNullOrWhiteSpace([string]$Target.ProcessId)) {
+            throw "No process id is available while targeting AutomationId '$AutomationId'."
+        }
+        return @($AutomationId, '--app', [string]$Target.ProcessId)
+    }
     if ([string]::IsNullOrWhiteSpace([string]$Target.WindowHandle)) {
         throw "No HWND is available while targeting AutomationId '$AutomationId'."
     }
@@ -427,6 +436,12 @@ function Get-UiTestProperty {
     $arguments = @('ui', 'get-property') + (Get-UiTestTargetArguments -Target $Target -AutomationId $AutomationId) + @('--property', $Property)
     $result = Invoke-UiTestWinApp -Arguments $arguments -Json
     if ($result -is [string]) { return $result }
+    # WinApp v0.5 returns { elementId, properties: { <Property>: <value> } }.
+    $propertiesNode = $result.PSObject.Properties['properties']
+    if ($null -ne $propertiesNode -and $null -ne $propertiesNode.Value) {
+        $named = $propertiesNode.Value.PSObject.Properties[$Property]
+        if ($null -ne $named) { return [string]$named.Value }
+    }
     $valueProperty = $result.PSObject.Properties['value']
     if ($null -ne $valueProperty) { return [string]$valueProperty.Value }
     $valueProperty = $result.PSObject.Properties['Value']
@@ -549,17 +564,34 @@ function Save-UiTestRecording {
     return $path
 }
 
+function Invoke-UiTestClipboardAction {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][scriptblock]$Action, [int]$Attempts = 25)
+
+    # The Win32 clipboard is a single global resource; another process (e.g. Text Grab writing
+    # a fresh grab result) can hold it open, making Clipboard calls throw CLIPBRD_E_CANT_OPEN.
+    # Retry briefly so snapshot/restore is robust to that transient contention.
+    for ($attempt = 1; ; $attempt++) {
+        try { return & $Action }
+        catch {
+            if ($attempt -ge $Attempts) { throw }
+            Start-Sleep -Milliseconds 100
+        }
+    }
+}
+
 function Get-UiTestClipboardSnapshot {
     [CmdletBinding()]
     param()
 
     Add-Type -AssemblyName PresentationCore
     Add-Type -AssemblyName WindowsBase
-    [System.Windows.Clipboard]::ContainsText() | Out-Null
-    [pscustomobject]@{
-        DataObject = [System.Windows.Clipboard]::GetDataObject()
-        HasText = [System.Windows.Clipboard]::ContainsText()
-        Text = if ([System.Windows.Clipboard]::ContainsText()) { [System.Windows.Clipboard]::GetText() } else { $null }
+    Invoke-UiTestClipboardAction -Action {
+        [pscustomobject]@{
+            DataObject = [System.Windows.Clipboard]::GetDataObject()
+            HasText = [System.Windows.Clipboard]::ContainsText()
+            Text = if ([System.Windows.Clipboard]::ContainsText()) { [System.Windows.Clipboard]::GetText() } else { $null }
+        }
     }
 }
 
@@ -569,14 +601,16 @@ function Restore-UiTestClipboardSnapshot {
 
     Add-Type -AssemblyName PresentationCore
     Add-Type -AssemblyName WindowsBase
-    if ($null -ne $Snapshot.DataObject) {
-        [System.Windows.Clipboard]::SetDataObject($Snapshot.DataObject, $true)
-    }
-    elseif ($Snapshot.HasText) {
-        [System.Windows.Clipboard]::SetText([string]$Snapshot.Text)
-    }
-    else {
-        [System.Windows.Clipboard]::Clear()
+    Invoke-UiTestClipboardAction -Action {
+        if ($null -ne $Snapshot.DataObject) {
+            [System.Windows.Clipboard]::SetDataObject($Snapshot.DataObject, $true)
+        }
+        elseif ($Snapshot.HasText) {
+            [System.Windows.Clipboard]::SetText([string]$Snapshot.Text)
+        }
+        else {
+            [System.Windows.Clipboard]::Clear()
+        }
     }
 }
 

@@ -507,7 +507,7 @@
           "test": "overlay-launches-with-selection-canvas",
           "file": "UiTests\\Suites\\FullscreenGrab.Tests.ps1",
           "coverageLevel": "partial",
-          "remainingReason": "Deterministic always-on smoke asserts the overlay window and selection canvas launch; the toolbar and multi-monitor dimming are not asserted here."
+          "remainingReason": "Deterministic always-on smoke launches Fullscreen Grab from the command line, hooks the overlay by process id, and asserts its full-screen capture surface rendered; the toolbar (real-input reveal) and multi-monitor dimming are not asserted here."
         }
       ]
     },

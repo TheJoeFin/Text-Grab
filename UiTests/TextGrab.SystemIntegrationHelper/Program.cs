@@ -22,9 +22,17 @@ internal static partial class Program
     private const uint VirtualKeyEscape = 0x1b;
     private const uint KeyUp = 0x0002;
 
+    // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2. Must be set before any screen metric is read
+    // or synthetic input is injected so that GetSystemMetrics and MOUSEEVENTF_ABSOLUTE mapping
+    // operate in physical pixels — the same coordinate space WinApp/UIA reports element bounds
+    // in. Without this the process is DPI-unaware and every coordinate is off by the display
+    // scale factor (e.g. 2x at 200%).
+    private static readonly IntPtr PerMonitorAwareV2 = -4;
+
     [STAThread]
     private static int Main(string[] args)
     {
+        SetProcessDpiAwarenessContext(PerMonitorAwareV2);
         try
         {
             return args.FirstOrDefault() switch
@@ -293,6 +301,10 @@ internal static partial class Program
 
     [LibraryImport("user32.dll")]
     private static partial int GetSystemMetrics(int index);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetProcessDpiAwarenessContext(IntPtr value);
 
     [LibraryImport("user32.dll", SetLastError = true)]
     private static partial uint SendInput(uint inputs, INPUT[] input, int size);
