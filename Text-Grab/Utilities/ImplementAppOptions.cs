@@ -16,6 +16,9 @@ internal class ImplementAppOptions
 
     public static async Task ImplementStartupOption(bool startupOnLogin)
     {
+        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+            return;
+
         if (startupOnLogin)
             await SetForStartup();
         else
@@ -24,6 +27,9 @@ internal class ImplementAppOptions
 
     public static void ImplementBackgroundOption(bool runInBackground)
     {
+        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+            return;
+
         if (runInBackground)
         {
             NotifyIconUtilities.SetupNotifyIcon();
@@ -38,6 +44,9 @@ internal class ImplementAppOptions
 
     public static void RegisterAsImageOpenWithApp()
     {
+        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+            return;
+
         if (AppUtilities.IsPackaged())
             return; // Packaged apps use the appxmanifest for file associations
 
@@ -103,6 +112,9 @@ internal class ImplementAppOptions
 
     public static void UnregisterAsImageOpenWithApp()
     {
+        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+            return;
+
         if (AppUtilities.IsPackaged())
             return;
 

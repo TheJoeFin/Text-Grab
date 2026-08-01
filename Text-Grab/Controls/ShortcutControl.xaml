@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="Text_Grab.Controls.ShortcutControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,12 +7,14 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="ShortcutUserControl"
-    Margin="0,0,0,4"
-    HorizontalAlignment="Left"
+    AutomationProperties.Name="{Binding ElementName=ShortcutUserControl, Path=ShortcutName}"
+    Margin="0,0,0,3"
+    HorizontalAlignment="Stretch"
     d:DataContext="{d:DesignInstance Type=local:ShortcutControl}"
-    d:DesignHeight="100"
-    d:DesignWidth="400"
+    d:DesignHeight="60"
+    d:DesignWidth="500"
     BorderThickness="3"
+    Loaded="ShortcutControl_Loaded"
     PreviewKeyDown="ShortcutControl_PreviewKeyDown"
     PreviewKeyUp="ShortcutControl_PreviewKeyUp"
     mc:Ignorable="d">
@@ -20,31 +22,39 @@
         <BitmapImage x:Key="WinSymIcon" UriSource="/Text-Grab;component/Images/WinSym.png" />
     </UserControl.Resources>
     <Border
-        Padding="10,8"
-        HorizontalAlignment="Left"
+        Padding="14,10"
+        HorizontalAlignment="Stretch"
         Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
+        BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1"
         CornerRadius="4">
-        <StackPanel HorizontalAlignment="Left" Orientation="Vertical">
-            <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                <ui:ToggleSwitch
-                    x:Name="IsEnabledToggleSwitch"
-                    Click="IsEnabledToggleSwitch_Click"
-                    IsChecked="{Binding Path=IsShortcutEnabled, ElementName=ShortcutUserControl, Mode=TwoWay}">
-                    <TextBlock
-                        x:Name="ShortcutNameBlock"
-                        Grid.Column="0"
-                        Margin="8,0,20,0"
-                        d:Text="ShortcutName"
-                        Style="{StaticResource TextBodyNormal}"
-                        Text="{Binding ElementName=ShortcutUserControl, Path=ShortcutName, Mode=TwoWay}" />
-                </ui:ToggleSwitch>
-            </StackPanel>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ui:ToggleSwitch
+                x:Name="IsEnabledToggleSwitch"
+                VerticalAlignment="Center"
+                Click="IsEnabledToggleSwitch_Click"
+                IsChecked="{Binding Path=IsShortcutEnabled, ElementName=ShortcutUserControl, Mode=TwoWay}">
+                <TextBlock
+                    x:Name="ShortcutNameBlock"
+                    Margin="8,0,20,0"
+                    d:Text="ShortcutName"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="{Binding ElementName=ShortcutUserControl, Path=ShortcutName, Mode=TwoWay}" />
+            </ui:ToggleSwitch>
             <StackPanel
                 x:Name="ButtonsPanel"
-                Margin="0,8,0,0"
-                HorizontalAlignment="Left"
+                Grid.Column="1"
+                VerticalAlignment="Center"
                 Orientation="Horizontal">
-                <ToggleButton x:Name="RecordingToggleButton" Click="RecordingToggleButton_Click">
+                <ToggleButton x:Name="RecordingToggleButton" AutomationProperties.Name="Record shortcut" Click="RecordingToggleButton_Click">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Record24" />
                         <TextBlock
@@ -58,6 +68,7 @@
                     Width="24"
                     Height="24"
                     Margin="4,0"
+                    VerticalAlignment="Center"
                     Background="White"
                     CornerRadius="5">
                     <Image
@@ -73,6 +84,7 @@
                     Height="24"
                     Margin="4,0"
                     Padding="6,0,0,1"
+                    VerticalAlignment="Center"
                     Background="White"
                     CornerRadius="5">
                     <TextBlock
@@ -89,6 +101,7 @@
                     Height="24"
                     Margin="4,0"
                     Padding="6,0,0,1"
+                    VerticalAlignment="Center"
                     Background="White"
                     CornerRadius="5">
                     <TextBlock
@@ -105,6 +118,7 @@
                     Height="24"
                     Margin="4,0"
                     Padding="6,0,0,1"
+                    VerticalAlignment="Center"
                     Background="White"
                     CornerRadius="5">
                     <TextBlock
@@ -121,6 +135,7 @@
                     MinWidth="24"
                     Margin="4,0"
                     Padding="4,0"
+                    VerticalAlignment="Center"
                     Background="White"
                     CornerRadius="5"
                     Visibility="Visible">
@@ -136,10 +151,13 @@
             </StackPanel>
             <TextBlock
                 x:Name="ErrorText"
-                Margin="8,0,20,0"
+                Grid.Row="1"
+                Grid.ColumnSpan="2"
+                Margin="0,6,0,0"
                 d:Text="This is error message text"
-                Style="{StaticResource TextBodyNormal}" />
-
-        </StackPanel>
+                Style="{StaticResource TextBodyNormal}"
+                TextWrapping="Wrap"
+                Visibility="Collapsed" />
+        </Grid>
     </Border>
 </UserControl>

@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Find and Replace"
+    AutomationProperties.AutomationId="FindReplaceDialog"
     Width="520"
     Height="560"
     MinWidth="400"
@@ -68,35 +69,68 @@
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
-                <RowDefinition Height="auto" MinHeight="40" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <ToggleButton
                 x:Name="MoreOptionsToggleButton"
+                AutomationProperties.AutomationId="FindReplace.MoreOptionsToggle"
                 Width="32"
                 Margin="6,6,0,0"
                 Background="Transparent"
                 BorderBrush="Transparent"
                 Click="MoreOptionsToggleButton_Click"
                 Content="▼"
-                Foreground="White"
                 IsChecked="True"
-                Style="{DynamicResource ToggleSymbolButton}" />
+                RenderTransformOrigin="0.5,0.5"
+                Style="{DynamicResource ToggleSymbolButton}"
+                ToolTip="Show or hide more options">
+                <ToggleButton.RenderTransform>
+                    <RotateTransform Angle="0" />
+                </ToggleButton.RenderTransform>
+                <ToggleButton.Triggers>
+                    <EventTrigger RoutedEvent="ToggleButton.Checked">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetProperty="RenderTransform.Angle"
+                                    To="0"
+                                    Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                    <EventTrigger RoutedEvent="ToggleButton.Unchecked">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    Storyboard.TargetProperty="RenderTransform.Angle"
+                                    To="-90"
+                                    Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </ToggleButton.Triggers>
+            </ToggleButton>
 
-            <TextBox
-                x:Name="FindTextBox"
+            <local:SearchBar
+                x:Name="SearchBar"
+                AutomationProperties.AutomationId="FindReplace.Search"
                 Grid.Column="1"
                 Margin="6,6,6,0"
-                VerticalContentAlignment="Center"
+                VerticalAlignment="Center"
                 AcceptsReturn="True"
                 AcceptsTab="True"
-                FontFamily="Segoe UI"
-                KeyUp="FindTextBox_KeyUp" />
+                ExactMatchChanged="OptionsChangedRefresh"
+                KeyUp="FindTextBox_KeyUp"
+                PlaceholderText="Find..."
+                SearchChanged="SearchBar_SearchChanged"
+                ShowExactMatchToggle="True" />
             <local:CollapsibleButton
                 x:Name="FindButton"
+                AutomationProperties.AutomationId="FindReplace.FindButton"
                 Grid.Row="0"
                 Grid.Column="2"
                 Width="130"
@@ -108,6 +142,7 @@
 
             <TextBox
                 x:Name="ReplaceTextBox"
+                AutomationProperties.AutomationId="FindReplace.ReplaceText"
                 Grid.Row="1"
                 Grid.Column="1"
                 Margin="6,6,6,0"
@@ -118,6 +153,7 @@
                 Visibility="Visible" />
             <local:CollapsibleButton
                 x:Name="ReplaceButton"
+                AutomationProperties.AutomationId="FindReplace.ReplaceButton"
                 Grid.Row="1"
                 Grid.Column="2"
                 Width="130"
@@ -128,32 +164,24 @@
                 Command="{x:Static local:FindAndReplaceWindow.ReplaceOneCmd}"
                 Visibility="Visible" />
 
-            <StackPanel
-                x:Name="MoreOptionsHozStack"
+            <Grid
+                x:Name="BulkActionsGrid"
                 Grid.Row="2"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
-                Margin="0,6,0,0"
-                HorizontalAlignment="Right"
+                Margin="6,6,6,0"
                 d:Visibility="Visible"
-                Orientation="Horizontal"
                 Visibility="Visible">
-                <ui:ToggleSwitch
-                    x:Name="ExactMatchCheckBox"
-                    Margin="6"
-                    VerticalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="OptionsChangedRefresh"
-                    Unchecked="OptionsChangedRefresh">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Match Exactly
-                    </TextBlock>
-                </ui:ToggleSwitch>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
                 <local:CollapsibleButton
                     x:Name="DeleteAllMatches"
-                    Width="140"
-                    Margin="0,0,6,0"
+                    AutomationProperties.AutomationId="FindReplace.DeleteAllButton"
+                    Grid.Column="0"
+                    Margin="0,0,3,0"
                     VerticalAlignment="Center"
                     Background="Red"
                     ButtonSymbol="DeleteLines20"
@@ -162,52 +190,31 @@
 
                 <local:CollapsibleButton
                     x:Name="ReplaceAllButton"
-                    Grid.Row="2"
-                    Grid.Column="2"
-                    Width="130"
-                    Height="30"
-                    Margin="0,0,6,0"
-                    Padding="4"
+                    AutomationProperties.AutomationId="FindReplace.ReplaceAllButton"
+                    Grid.Column="1"
+                    Margin="3,0,0,0"
+                    VerticalAlignment="Center"
                     ButtonSymbol="ArrowRepeatAll24"
                     ButtonText="Replace All"
                     Command="{x:Static local:FindAndReplaceWindow.ReplaceAllCmd}" />
-            </StackPanel>
-            <StackPanel
-                x:Name="EvenMoreOptionsHozStack"
+            </Grid>
+            <Grid
+                x:Name="MatchActionsGrid"
                 Grid.Row="3"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
-                Margin="0,6,0,0"
-                HorizontalAlignment="Right"
+                Margin="6,6,6,0"
                 d:Visibility="Visible"
-                Orientation="Horizontal"
                 Visibility="Visible">
-                <ui:Button
-                    x:Name="SavePatternButton"
-                    Width="32"
-                    Height="32"
-                    Margin="0,0,6,0"
-                    Padding="4"
-                    Click="SavePatternButton_Click"
-                    Icon="{ui:SymbolIcon Save24}"
-                    ToolTip="Save pattern to Regex Manager"
-                    Visibility="Collapsed" />
-                <ui:ToggleSwitch
-                    x:Name="UsePatternCheckBox"
-                    Margin="6"
-                    VerticalAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    Checked="UsePatternCheckBox_CheckedChanged"
-                    Unchecked="UsePatternCheckBox_CheckedChanged">
-                    <TextBlock Style="{StaticResource TextBodyNormal}">
-                        Use Regex
-                    </TextBlock>
-                </ui:ToggleSwitch>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
                 <local:CollapsibleButton
                     x:Name="MatchesToEditWindow"
-                    Width="130"
-                    Margin="0,0,6,0"
+                    Grid.Column="0"
+                    Margin="0,0,3,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="WindowEdit20"
                     ButtonText="Edit Matches"
@@ -215,65 +222,88 @@
 
                 <local:CollapsibleButton
                     x:Name="ApplyTemplateButton"
-                    Width="150"
-                    Margin="0,0,6,0"
+                    Grid.Column="1"
+                    Margin="3,0,0,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="DocumentTableSearch24"
                     ButtonText="Apply Template"
                     Click="ApplyTemplateButton_Click"
                     ToolTip="Apply a text-only Grab Template to each match" />
-            </StackPanel>
-            <StackPanel
-                x:Name="PatternButtonsStack"
+            </Grid>
+            <Grid
+                x:Name="PatternActionsGrid"
                 Grid.Row="4"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
-                HorizontalAlignment="Right"
-                Orientation="Horizontal"
+                Margin="6,6,6,0"
                 Visibility="Visible">
-                <StackPanel
-                    x:Name="PrecisionSliderPanel"
-                    Margin="6,-4,12,0"
-                    VerticalAlignment="Center"
-                    Orientation="Vertical"
-                    Visibility="Collapsed">
-                    <TextBlock
-                        Margin="0,0,0,2"
-                        HorizontalAlignment="Center"
-                        Style="{StaticResource TextBodyNormal}">
-                        Precision
-                    </TextBlock>
-                    <Slider
-                        x:Name="PrecisionSlider"
-                        Width="120"
-                        VerticalAlignment="Center"
-                        IsSnapToTickEnabled="True"
-                        Maximum="5"
-                        Minimum="0"
-                        TickFrequency="1"
-                        TickPlacement="BottomRight"
-                        ToolTip="Adjust regex pattern precision (0=least precise, 5=most precise)"
-                        ValueChanged="PrecisionSlider_ValueChanged"
-                        Value="3" />
-                </StackPanel>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
                 <local:CollapsibleButton
                     x:Name="ManageRegexButton"
-                    Margin="0,0,6,0"
+                    Grid.Column="0"
+                    Margin="0,0,3,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="Book24"
-                    ButtonText="Saved Patterns"
+                    ButtonText="Manage Patterns"
                     Click="ManageRegexButton_Click" />
 
                 <local:CollapsibleButton
                     x:Name="ExtractSimplePattern"
-                    Width="130"
-                    Margin="0,0,6,0"
+                    Grid.Column="1"
+                    Margin="3,0,0,0"
                     VerticalAlignment="Center"
                     ButtonSymbol="LightbulbFilament24"
                     ButtonText="Extract Regex"
                     Command="{x:Static local:FindAndReplaceWindow.ExtractPatternCmd}" />
-            </StackPanel>
+
+                <StackPanel
+                    Grid.Row="1"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <ui:Button
+                        x:Name="SavePatternButton"
+                        Width="32"
+                        Height="30"
+                        Margin="0,6,6,0"
+                        Padding="4"
+                        Click="SavePatternButton_Click"
+                        Icon="{ui:SymbolIcon Save24}"
+                        ToolTip="Save pattern to Patterns Manager"
+                        Visibility="Collapsed" />
+                    <StackPanel
+                        x:Name="PrecisionSliderPanel"
+                        Margin="0,6,0,0"
+                        Orientation="Horizontal"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource TextBodyNormal}"
+                            Text="Precision" />
+                        <Slider
+                            x:Name="PrecisionSlider"
+                            Width="160"
+                            VerticalAlignment="Center"
+                            IsSnapToTickEnabled="True"
+                            Maximum="5"
+                            Minimum="0"
+                            TickFrequency="1"
+                            TickPlacement="BottomRight"
+                            ToolTip="Adjust regex pattern precision (0=least precise, 5=most precise)"
+                            ValueChanged="PrecisionSlider_ValueChanged"
+                            Value="3" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
 
         </Grid>
 
@@ -288,6 +318,7 @@
         <Border Grid.Row="3" Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
             <ui:ListView
                 x:Name="ResultsListView"
+                AutomationProperties.AutomationId="FindReplace.Results"
                 Grid.Row="2"
                 Background="Transparent"
                 Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
@@ -334,6 +365,7 @@
 
         <ui:ProgressRing
             x:Name="LoadingSpinner"
+            AutomationProperties.AutomationId="FindReplace.Loading"
             Grid.Row="3"
             IsIndeterminate="True"
             Visibility="Collapsed" />

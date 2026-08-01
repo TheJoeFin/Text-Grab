@@ -31,6 +31,15 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public string ImagePath { get; set; } = string.Empty;
 
+    public OpenContentKind SourceContentKind { get; set; } = OpenContentKind.Image;
+
+    public string SourcePath { get; set; } = string.Empty;
+
+    public int SourcePageIndex { get; set; }
+
+    [JsonIgnore]
+    public bool IsPdfDocument => SourceContentKind == OpenContentKind.PdfDocument;
+
     public bool IsTable { get; set; } = false;
 
     public double DpiScaleFactor { get; set; } = 1.0;
@@ -75,6 +84,7 @@ public class HistoryInfo : IEquatable<HistoryInfo>
                 LanguageKind.Global => new GlobalLang(new Language(normalizedLanguageTag)),
                 LanguageKind.Tesseract => new TessLang(normalizedLanguageTag),
                 LanguageKind.WindowsAi => new WindowsAiLang(),
+                LanguageKind.WindowsAiDescription => new WindowsAiDescriptionLang(),
                 LanguageKind.UiAutomation => CaptureLanguageUtilities.GetUiAutomationFallbackLanguage(),
                 _ => new GlobalLang(LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US")),
             };
@@ -113,6 +123,13 @@ public class HistoryInfo : IEquatable<HistoryInfo>
     #endregion Properties
 
     #region Public Methods
+
+    /// <summary>
+    /// Returns a shallow copy of this instance. Reference-typed members (e.g.
+    /// <see cref="ImageContent"/>, the separator lists) are shared, not cloned — callers
+    /// that only need to tweak value/string fields without mutating the original should use this.
+    /// </summary>
+    public HistoryInfo ShallowCopy() => (HistoryInfo)MemberwiseClone();
 
     public void ClearTransientImage()
     {

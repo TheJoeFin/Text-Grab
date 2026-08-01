@@ -1,0 +1,3221 @@
+{
+  "schemaVersion": 2,
+  "source": {
+    "manual": "External MANUAL-TESTING.md (not stored in this checkout)",
+    "scope": "Sections 1-20 contain the 154 behavioral checks. Section 0 is an environment matrix and is intentionally recorded here as context rather than duplicate inventory items.",
+    "environmentMatrix": [
+      "Store install on Windows 11 (packaged / MSIX)",
+      "GitHub release unpackaged build on Windows 11",
+      "Windows 10 (WinRT OCR path; WinAI unavailable)",
+      "Copilot+ PC (NPU) required for WinAI capture",
+      "x64 and ARM64 binaries",
+      "Multi-monitor with mixed DPI",
+      "Single monitor at non-100% scaling"
+    ]
+  },
+  "classificationNotes": {
+    "existing unit test": "Existing Tests coverage verifies the deterministic logic named in currentCoverage; it does not claim the manual UI surface is automated.",
+    "winapp UIA": "Deterministic UI Automation coverage using stable automation contracts; a contract-level mapping records when a scenario is not fully driven.",
+    "real-input automation": "Unlocked-desktop coverage with physical input, focus, tray, hotkey, drag/drop, or clipboard behavior; capability-gated mappings skip safely when unavailable.",
+    "fixture-assisted automation": "Planned coverage against deterministic external images or a fixture host.",
+    "packaged/VM lane": "Planned disposable-user or resettable-VM coverage for installation and shell integration.",
+    "hardware/display lane": "Planned capability-labelled machine coverage for display, OCR engine, language pack, or hardware-specific behavior.",
+    "manual-only": "Requires a subjective human observation, such as visual artwork or audible speech quality."
+  },
+  "items": [
+    {
+      "id": "fresh-install-first-run",
+      "manualSection": "1. Install, first run, and lifecycle",
+      "description": "Fresh install launches without error; First Run window appears",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The safe contract test verifies that the lifecycle runner declares and strongly gates installation; actual first-run execution is recorded only on a selected resettable VM.",
+      "automationTests": [
+        {
+          "suite": "PackagedVm",
+          "test": "disposable-vm-script-has-scenario-results-and-strong-gating",
+          "file": "UiTests\\Suites\\PackagedVm.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The safe contract test verifies that the lifecycle runner declares and strongly gates installation; actual first-run execution is recorded only on a selected resettable VM."
+        }
+      ]
+    },
+    {
+      "id": "first-run-dismissal-persistence",
+      "manualSection": "1. Install, first run, and lifecycle",
+      "description": "First Run window explains modes and closes cleanly; does not reappear on next launch",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "The isolated-profile flow verifies dismissal and selected launch mode; package persistence is covered only in the disposable VM lane.",
+      "automationTests": [
+        {
+          "suite": "Lifecycle",
+          "test": "first-run-start-dismisses-into-selected-mode-with-isolated-profile",
+          "file": "UiTests\\Suites\\Lifecycle.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "The isolated-profile flow verifies dismissal and selected launch mode; package persistence is covered only in the disposable VM lane."
+        }
+      ]
+    },
+    {
+      "id": "app-tray-icon-art",
+      "manualSection": "1. Install, first run, and lifecycle",
+      "description": "App icon / tray icon shows correct art",
+      "coverageClassification": "manual-only",
+      "automationLane": "manual-visual",
+      "currentCoverage": [],
+      "implementationStatus": "manual-required",
+      "coverageLevel": "manual",
+      "remainingReason": "Visual review is required to judge whether the application and notification-area artwork is correct.",
+      "manualException": "Visual review is required to judge whether the application and notification-area artwork is correct."
+    },
+    {
+      "id": "single-instance-launch",
+      "manualSection": "1. Install, first run, and lifecycle",
+      "description": "Second launch attempt does not create a duplicate instance (single-instance behavior)",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [
+        "Tests\\StartupTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Checks a deterministic launch has one target window, not the packaged singleton broker.",
+      "automationTests": [
+        {
+          "suite": "Lifecycle",
+          "test": "isolated-profile-default-launch-has-one-target-window",
+          "file": "UiTests\\Suites\\Lifecycle.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Checks a deterministic launch has one target window, not the packaged singleton broker."
+        }
+      ]
+    },
+    {
+      "id": "store-uninstall-reinstall",
+      "manualSection": "1. Install, first run, and lifecycle",
+      "description": "Uninstall (Store) removes app; settings behavior as expected on reinstall",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The safe contract test verifies that the lifecycle runner declares and strongly gates uninstall/reinstall; destructive execution is recorded only on a selected resettable VM.",
+      "automationTests": [
+        {
+          "suite": "PackagedVm",
+          "test": "disposable-vm-script-has-scenario-results-and-strong-gating",
+          "file": "UiTests\\Suites\\PackagedVm.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The safe contract test verifies that the lifecycle runner declares and strongly gates uninstall/reinstall; destructive execution is recorded only on a selected resettable VM."
+        }
+      ]
+    },
+    {
+      "id": "upgrade-preserves-user-data",
+      "manualSection": "1. Install, first run, and lifecycle",
+      "description": "Upgrade over a previous version preserves settings, history, saved patterns, templates, and lookup data",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The safe contract test verifies that the lifecycle runner declares and strongly gates upgrade-state validation; preservation is executed only with supplied packages on a selected resettable VM.",
+      "automationTests": [
+        {
+          "suite": "PackagedVm",
+          "test": "disposable-vm-script-has-scenario-results-and-strong-gating",
+          "file": "UiTests\\Suites\\PackagedVm.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The safe contract test verifies that the lifecycle runner declares and strongly gates upgrade-state validation; preservation is executed only with supplied packages on a selected resettable VM."
+        }
+      ]
+    },
+    {
+      "id": "background-process-tray",
+      "manualSection": "2. System tray & background process",
+      "description": "Enabling the background process adds the tray icon and keeps the app resident",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an unlocked, isolated Explorer desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "tray-background-and-process-cleanup",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an unlocked, isolated Explorer desktop."
+        }
+      ]
+    },
+    {
+      "id": "tray-default-action",
+      "manualSection": "2. System tray & background process",
+      "description": "Tray left-click / double-click opens the expected default action",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Validates tray lifecycle and cleanup; default click semantics require Explorer-specific UIA availability.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "tray-background-and-process-cleanup",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Validates tray lifecycle and cleanup; default click semantics require Explorer-specific UIA availability."
+        }
+      ]
+    },
+    {
+      "id": "tray-menu-modes",
+      "manualSection": "2. System tray & background process",
+      "description": "Tray right-click menu lists all modes (Fullscreen, Grab Frame, Edit Text, Quick Lookup, Settings) and each launches",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Validates tray lifecycle; menu enumeration and every action remain Explorer-capability dependent.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "tray-background-and-process-cleanup",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Validates tray lifecycle; menu enumeration and every action remain Explorer-capability dependent."
+        }
+      ]
+    },
+    {
+      "id": "tray-exit-terminates",
+      "manualSection": "2. System tray & background process",
+      "description": "Tray menu Exit fully terminates the process (no lingering process in Task Manager)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "full",
+      "remainingReason": "Uses the isolated process and exact-PID cleanup checks.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "tray-background-and-process-cleanup",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "full",
+          "remainingReason": "Uses the isolated process and exact-PID cleanup checks."
+        }
+      ]
+    },
+    {
+      "id": "background-process-disable",
+      "manualSection": "2. System tray & background process",
+      "description": "Disabling the background process removes the tray icon and unregisters hotkeys",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an unlocked, isolated Explorer desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "tray-disable-removes-explorer-icon-and-hotkey-registration",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an unlocked, isolated Explorer desktop."
+        }
+      ]
+    },
+    {
+      "id": "run-at-startup",
+      "manualSection": "2. System tray & background process",
+      "description": "\"Run at startup\" setting actually launches the app on Windows sign-in",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The package declaration is asserted; a real sign-in is intentionally not performed on a developer desktop.",
+      "automationTests": [
+        {
+          "suite": "PackagedVm",
+          "test": "package-manifest-declares-protocol-file-share-startup-and-toast-contracts",
+          "file": "UiTests\\Suites\\PackagedVm.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The package declaration is asserted; a real sign-in is intentionally not performed on a developer desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-fullscreen-grab",
+      "manualSection": "3. Global hotkeys",
+      "description": "Fullscreen Grab",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an unlocked, isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an unlocked, isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-grab-frame",
+      "manualSection": "3. Global hotkeys",
+      "description": "Grab Frame",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an unlocked, isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an unlocked, isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-quick-lookup",
+      "manualSection": "3. Global hotkeys",
+      "description": "Quick Simple Lookup",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an unlocked, isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an unlocked, isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-edit-text",
+      "manualSection": "3. Global hotkeys",
+      "description": "Edit Text Window",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an unlocked, isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an unlocked, isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-previous-region",
+      "manualSection": "3. Global hotkeys",
+      "description": "Previous Region Grab (re-grabs last region)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Base global activation is covered; previous-region state restoration is not separately asserted.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Base global activation is covered; previous-region state restoration is not separately asserted."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-previous-edit-window",
+      "manualSection": "3. Global hotkeys",
+      "description": "Previous Edit Window (reopens last edit content)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Base global activation is covered; previous-window state restoration is not separately asserted.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Base global activation is covered; previous-window state restoration is not separately asserted."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-previous-grab-frame",
+      "manualSection": "3. Global hotkeys",
+      "description": "Previous Grab Frame (reopens last grab frame)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Base global activation is covered; previous-frame state restoration is not separately asserted.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Base global activation is covered; previous-frame state restoration is not separately asserted."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-open-clipboard-content",
+      "manualSection": "3. Global hotkeys",
+      "description": "Open Clipboard Content (text → Edit Text; image → Grab Frame; file-drop image → Grab Frame)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses real clipboard formats on an unlocked isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "clipboard-text-image-and-file-drop-activation-restores-content",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses real clipboard formats on an unlocked isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-rebinding",
+      "manualSection": "3. Global hotkeys",
+      "description": "Rebinding a hotkey in settings takes effect without restart",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses foreground physical input on an isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "hotkey-rebinding-record-control-updates-active-registration",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses foreground physical input on an isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-disable",
+      "manualSection": "3. Global hotkeys",
+      "description": "Disabling global hotkeys stops all of them from firing",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses foreground physical input on an isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkey-disable-stops-registration",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses foreground physical input on an isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "hotkey-conflict-reporting",
+      "manualSection": "3. Global hotkeys",
+      "description": "A hotkey conflict (already owned by Windows/another app) is reported, not silently swallowed",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires a reservable hotkey on an unlocked isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "hotkey-conflict-does-not-steal-owned-combination",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires a reservable hotkey on an unlocked isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-overlay-monitors",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Launches as a dimmed full-screen overlay across the correct monitor(s)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Launch and cancellation are exercised; multi-monitor dimming is not pixel-asserted.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-real-region-empty-retry-and-cancel-inputs",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Launch and cancellation are exercised; multi-monitor dimming is not pixel-asserted."
+        },
+        {
+          "suite": "FullscreenGrab",
+          "test": "toolbar-reveals-on-mouse-move-and-capture-mode-is-settable",
+          "file": "UiTests\\Suites\\FullscreenGrab.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Real-input launch and mouse-move toolbar reveal are exercised; multi-monitor dimming is not pixel-asserted."
+        },
+        {
+          "suite": "FullscreenGrab",
+          "test": "overlay-launches-with-selection-canvas",
+          "file": "UiTests\\Suites\\FullscreenGrab.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Deterministic always-on smoke launches Fullscreen Grab from the command line, hooks the overlay by process id, and asserts its full-screen capture surface rendered; the toolbar (real-input reveal) and multi-monitor dimming are not asserted here."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-region-copy",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Region drag-select copies recognized text to the clipboard",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses real pointer input and clipboard output.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-real-region-empty-retry-and-cancel-inputs",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses real pointer input and clipboard output."
+        },
+        {
+          "suite": "FullscreenGrab",
+          "test": "real-region-drag-selects-known-fixture-text-to-clipboard",
+          "file": "UiTests\\Suites\\FullscreenGrab.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Drives a real click-drag over known fixture text and asserts clipboard output; uses real pointer input."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-word-click",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Single-click on a word copies just that word (bounding-box behavior)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable dynamic word selectors are asserted; a single-word OCR click is not independently asserted.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable dynamic word selectors are asserted; a single-word OCR click is not independently asserted."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-empty-region-retry",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Selecting an empty/no-text region keeps the overlay active for a retry",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses a real empty-region drag.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-real-region-empty-retry-and-cancel-inputs",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses a real empty-region drag."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-cancel-inputs",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Escape, right-click → Cancel, and Alt+F4 all exit",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Escape is asserted; right-click cancellation and Alt+F4 share the same close contract.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-real-region-empty-retry-and-cancel-inputs",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Escape is asserted; right-click cancellation and Alt+F4 share the same close contract."
+        },
+        {
+          "suite": "FullscreenGrab",
+          "test": "toolbar-reveals-on-mouse-move-and-capture-mode-is-settable",
+          "file": "UiTests\\Suites\\FullscreenGrab.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Escape dismissal after a mouse-move reveal is exercised; right-click Cancel and Alt+F4 share the same close contract."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-selection-styles",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Selection styles all behave:",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\FullscreenGrabSelectionStyleTests.cs::ShouldKeepTopToolbarVisible_MatchesSelectionState"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        },
+        {
+          "suite": "FullscreenGrab",
+          "test": "toolbar-reveals-on-mouse-move-and-capture-mode-is-settable",
+          "file": "UiTests\\Suites\\FullscreenGrab.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Real-input run reveals the toolbar and asserts the selection-style control is addressable; per-style selection behavior is not driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-style-region",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Region",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\FullscreenGrabSelectionStyleTests.cs::ShouldUseOverlayCutout_MatchesSelectionStyle"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-style-window",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Window (highlights and captures a whole window)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\FullscreenGrabSelectionStyleTests.cs::ShouldCommitWindowSelection_RequiresSameWindowHandleOnMouseUp"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-style-freeform",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Freeform",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-style-adjust-after",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Adjust-after (lets you tweak the selection before grabbing)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-output-modes",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Default mode variants produce correct output:",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-output-paragraph",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Default (paragraph)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-output-single-line",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Single line (joins to one line)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-output-table",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Table (produces tab/columnar output)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-post-grab-actions",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Post-grab action(s) run after capture (see §11)",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-mixed-dpi",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Works correctly on the **secondary monitor** and across **mixed-DPI** monitors (selection rectangle aligns with the cursor; captured pixels match the selection)",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "mixed-dpi-hardware",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Fixture placement/DPI is asserted; fullscreen pixel-selection alignment is not yet pixel-compared.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "mixed-dpi-second-monitor-reflow-and-screenshot",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Fixture placement/DPI is asserted; fullscreen pixel-selection alignment is not yet pixel-compared."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-zoom-magnifier",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Zoom / magnifier during selection tracks correctly",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\FullscreenGrabZoomCaptureTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-output-controls-and-word-peers-have-stable-selectors",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable fullscreen controls/selectors are asserted; this specific behavior is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "fullscreen-hdr-tone-map",
+      "manualSection": "4. Full-Screen Grab",
+      "description": "Grabbing over an HDR display yields readable (tone-mapped) capture",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "hdr-hardware",
+      "currentCoverage": [
+        "Tests\\HdrToneMapperTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "HDR capability and fixture availability are asserted; OCR readability remains hardware-dependent.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "hdr-capture-fixture-is-available-on-hdr-monitors",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "HDR capability and fixture availability are asserted; OCR readability remains hardware-dependent."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-move-resize",
+      "manualSection": "5. Grab Frame",
+      "description": "Opens as a movable, resizable frame",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "The file-backed frame and controls are asserted; manual resizing is not driven.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "image-file-route-opens-grab-frame-with-deterministic-controls",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "The file-backed frame and controls are asserted; manual resizing is not driven."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-rerun-ocr",
+      "manualSection": "5. Grab Frame",
+      "description": "Moving/resizing the frame re-runs OCR over the new area",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Refresh/table controls are invoked; moving live screen content is not asserted.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "table-and-refresh-controls-are-addressable-for-file-backed-captures",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Refresh/table controls are invoked; moving live screen content is not asserted."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-word-borders",
+      "manualSection": "5. Grab Frame",
+      "description": "Word borders appear over recognized words; clicking a border grabs that word",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The frame surface is addressed; OCR word-border click output is not asserted.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "table-and-refresh-controls-are-addressable-for-file-backed-captures",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The frame surface is addressed; OCR word-border click output is not asserted."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-search-borders",
+      "manualSection": "5. Grab Frame",
+      "description": "Search box filters/highlights matching word borders",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The registered test documents the foreground-input boundary.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "search-text-entry-requires-foreground-real-input",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The registered test documents the foreground-input boundary."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-copy-all",
+      "manualSection": "5. Grab Frame",
+      "description": "Grab button copies all recognized text",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Image routing and stable controls are asserted; clipboard OCR output is covered by the system lane.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "image-file-route-opens-grab-frame-with-deterministic-controls",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Image routing and stable controls are asserted; clipboard OCR output is covered by the system lane."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-table-editing",
+      "manualSection": "5. Grab Frame",
+      "description": "Table mode toggles column/row structure and edit-state behaves (add/remove/merge separators)",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\GrabFrameTableModeTests.cs::ShouldAllowWordBorderMerging_RequiresMultipleSelectedWordBorders"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Table toggle and refresh are invoked; all separator editing operations are not asserted.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "table-and-refresh-controls-are-addressable-for-file-backed-captures",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Table toggle and refresh are invoked; all separator editing operations are not asserted."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-refresh-ocr",
+      "manualSection": "5. Grab Frame",
+      "description": "Refresh/re-OCR button works after moving content underneath",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Refresh is invoked on a file-backed capture; live-content movement is not asserted.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "table-and-refresh-controls-are-addressable-for-file-backed-captures",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Refresh is invoked on a file-backed capture; live-content movement is not asserted."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-open-image",
+      "manualSection": "5. Grab Frame",
+      "description": "Open an image file into Grab Frame (menu + `--grabframe`)",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "full",
+      "remainingReason": "Uses a deterministic image and --grabframe route.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "image-file-route-opens-grab-frame-with-deterministic-controls",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "full",
+          "remainingReason": "Uses a deterministic image and --grabframe route."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-open-pdf",
+      "manualSection": "5. Grab Frame",
+      "description": "Open a PDF into Grab Frame; page navigation works",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents the native picker/OCR capability requirement.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "pdf-save-reopen-and-barcode-routing-need-file-picker-or-ocr-capability",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents the native picker/OCR capability requirement."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-file-drop",
+      "manualSection": "5. Grab Frame",
+      "description": "Drag-and-drop an image file onto the frame opens it",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses a real OLE drag source on an isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "real-ole-file-drop-targets-edit-text-and-grab-frame",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses a real OLE drag source on an isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-border-style",
+      "manualSection": "5. Grab Frame",
+      "description": "Frame border style setting is honored (Theme / High-Contrast / fixed Color)",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "display-hardware",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Theme/high-contrast fixture is captured; each fixed border color is not pixel-asserted.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "contrast-surface-reflects-theme-and-high-contrast-capability",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Theme/high-contrast fixture is captured; each fixed border color is not pixel-asserted."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-save-reopen",
+      "manualSection": "5. Grab Frame",
+      "description": "Save Grab Frame to file and reopen reproduces the state",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents native picker dependency.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "pdf-save-reopen-and-barcode-routing-need-file-picker-or-ocr-capability",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents native picker dependency."
+        }
+      ]
+    },
+    {
+      "id": "grab-frame-view-scale",
+      "manualSection": "5. Grab Frame",
+      "description": "View scaling / zoom of the frame content behaves",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\GrabFrameViewScaleUtilitiesTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Frame controls are stable; visual zoom behavior is not pixel-asserted.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "image-file-route-opens-grab-frame-with-deterministic-controls",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Frame controls are stable; visual zoom behavior is not pixel-asserted."
+        }
+      ]
+    },
+    {
+      "id": "edit-cleanup-single-line",
+      "manualSection": "6. Edit Text Window",
+      "description": "Make single line",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\StringMethodTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-cleanup-case",
+      "manualSection": "6. Edit Text Window",
+      "description": "Toggle case (UPPER / lower / Title)",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\StringMethodTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-cleanup-trim",
+      "manualSection": "6. Edit Text Window",
+      "description": "Trim spaces and empty lines",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\StringMethodTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-cleanup-duplicates",
+      "manualSection": "6. Edit Text Window",
+      "description": "Remove duplicate lines",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\StringMethodTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-cleanup-reserved-characters",
+      "manualSection": "6. Edit Text Window",
+      "description": "Replace reserved characters",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\StringMethodTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-cleanup-pattern-extraction",
+      "manualSection": "6. Edit Text Window",
+      "description": "Extract by pattern (phone/email/custom)",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\PatternExecutorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-find-replace",
+      "manualSection": "6. Edit Text Window",
+      "description": "Find and Replace (incl. match count and replace-all)",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\FindAndReplaceWindowTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "full",
+      "remainingReason": "Sets values and verifies replace-all editor output.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "find-replace-dialog-replaces-editor-content",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "full",
+          "remainingReason": "Sets values and verifies replace-all editor output."
+        }
+      ]
+    },
+    {
+      "id": "edit-extract-regex",
+      "manualSection": "6. Edit Text Window",
+      "description": "Extract RegEx",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\PatternExecutorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-launch-urls",
+      "manualSection": "6. Edit Text Window",
+      "description": "Launch URLs found in text",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-suggested-pattern",
+      "manualSection": "6. Edit Text Window",
+      "description": "Selecting text generates a suggested pattern; breadth adjustment works",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\ExtractedPatternTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-stacked-to-table",
+      "manualSection": "6. Edit Text Window",
+      "description": "Convert stacked data → table",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\EditTextTableDocumentTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-spreadsheet-editing",
+      "manualSection": "6. Edit Text Window",
+      "description": "Enter Spreadsheet mode; edit cells; straighten columns",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\EditTextWindowSpreadsheetTests.cs::SetSpreadsheetDocumentCellValues_SetsOnlyRequestedCells"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-spreadsheet-copy",
+      "manualSection": "6. Edit Text Window",
+      "description": "Copy selected rows / copy current column",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\EditTextWindowSpreadsheetTests.cs::BuildSpreadsheetSelectionText_IncludesOnlySelectedCells"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-spreadsheet-transpose",
+      "manualSection": "6. Edit Text Window",
+      "description": "Transpose table",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\EditTextTableDocumentTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-spreadsheet-delimited-output",
+      "manualSection": "6. Edit Text Window",
+      "description": "Save/copy as delimited data",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\EditTextTableDocumentTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-spreadsheet-undo-redo",
+      "manualSection": "6. Edit Text Window",
+      "description": "Undo/redo across spreadsheet edits",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\SpreadsheetUndoHistoryTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-calc-pane-live",
+      "manualSection": "6. Edit Text Window",
+      "description": "Pane opens alongside text and evaluates line by line live",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Pane presence is asserted; per-line calculation output remains unit-tested.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "calculator-pane-surface-can-be-entered",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Pane presence is asserted; per-line calculation output remains unit-tested."
+        }
+      ]
+    },
+    {
+      "id": "edit-calc-basic-math",
+      "manualSection": "6. Edit Text Window",
+      "description": "Basic math, functions, variables/constants",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\CalculatorTests.cs::NCalc_SupportsBasicMathFunctions"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-calc-units-dates",
+      "manualSection": "6. Edit Text Window",
+      "description": "Unit conversions and date math produce answers",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\UnitConversionTests.cs",
+        "Tests\\CalculatorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-calc-aggregates",
+      "manualSection": "6. Edit Text Window",
+      "description": "Aggregate (sum/avg/median/etc.) over a selection",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\CalculatorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-calc-copy-results-errors",
+      "manualSection": "6. Edit Text Window",
+      "description": "Copy all results; show/hide errors toggle",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "edit-open-text-file",
+      "manualSection": "6. Edit Text Window",
+      "description": "Open a `.txt` file (menu + CLI + drag-drop)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered native-dialog test documents the current WinApp invocation limitation.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "native-open-and-save-as-dialogs-use-dedicated-hwnd-targets",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered native-dialog test documents the current WinApp invocation limitation."
+        }
+      ]
+    },
+    {
+      "id": "edit-save-dirty-title",
+      "manualSection": "6. Edit Text Window",
+      "description": "Save / Save As; title bar reflects dirty state and file name",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered native-dialog test documents the current WinApp invocation limitation.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "native-open-and-save-as-dialogs-use-dedicated-hwnd-targets",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered native-dialog test documents the current WinApp invocation limitation."
+        }
+      ]
+    },
+    {
+      "id": "edit-clipboard-watcher",
+      "manualSection": "6. Edit Text Window",
+      "description": "Watch Clipboard appends clipboard changes live",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses real clipboard updates and restores the original content.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "clipboard-watcher-observes-text-and-restores-original-clipboard",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses real clipboard updates and restores the original content."
+        }
+      ]
+    },
+    {
+      "id": "edit-spell-check-modes",
+      "manualSection": "6. Edit Text Window",
+      "description": "Spell check appears/does-not-appear per Auto/AlwaysOn/Off setting",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered test documents the NavigationView coordinate limitation.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "settings-page-navigation-and-persistence-need-dpi-correct-navigationview-clicks",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered test documents the NavigationView coordinate limitation."
+        }
+      ]
+    },
+    {
+      "id": "edit-markdown-mode",
+      "manualSection": "6. Edit Text Window",
+      "description": "Markdown mode renders/handles markdown",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\MarkdownDocumentUtilitiesTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present.",
+      "automationTests": [
+        {
+          "suite": "EditText",
+          "test": "editor-value-and-single-line-transform-are-uia-driven",
+          "file": "UiTests\\Suites\\EditText.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Editor UIA interaction is asserted; the detailed transform remains covered by the preserved xUnit reference where present."
+        }
+      ]
+    },
+    {
+      "id": "lookup-hotkey-focus",
+      "manualSection": "7. Quick Simple Lookup",
+      "description": "Hotkey (default Win+Shift+Q) opens the lookup window focused on the search box",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Global lookup activation is exercised; focus is not separately asserted.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "global-hotkeys-launch-actions-and-clean-up",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Global lookup activation is exercised; focus is not separately asserted."
+        }
+      ]
+    },
+    {
+      "id": "lookup-live-filtering",
+      "manualSection": "7. Quick Simple Lookup",
+      "description": "Typing filters entries live",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "full",
+      "remainingReason": "Writes targeted foreground input and waits for the result count.",
+      "automationTests": [
+        {
+          "suite": "QuickLookup",
+          "test": "lookup-filter-text-entry-uses-targeted-foreground-input",
+          "file": "UiTests\\Suites\\QuickLookup.Tests.ps1",
+          "coverageLevel": "full",
+          "remainingReason": "Writes targeted foreground input and waits for the result count."
+        }
+      ]
+    },
+    {
+      "id": "lookup-enter-copy",
+      "manualSection": "7. Quick Simple Lookup",
+      "description": "Enter copies the top result's value to the clipboard",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Copy control is addressable; clipboard result is not asserted.",
+      "automationTests": [
+        {
+          "suite": "QuickLookup",
+          "test": "lookup-window-and-copy-controls-are-uia-addressable",
+          "file": "UiTests\\Suites\\QuickLookup.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Copy control is addressable; clipboard result is not asserted."
+        }
+      ]
+    },
+    {
+      "id": "lookup-crud-persistence",
+      "manualSection": "7. Quick Simple Lookup",
+      "description": "Add / edit / delete entries persists across restart",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents DataGrid/native dialog dependency.",
+      "automationTests": [
+        {
+          "suite": "QuickLookup",
+          "test": "lookup-crud-import-export-needs-datagrid-row-and-native-file-dialog-driving",
+          "file": "UiTests\\Suites\\QuickLookup.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents DataGrid/native dialog dependency."
+        }
+      ]
+    },
+    {
+      "id": "lookup-import-export",
+      "manualSection": "7. Quick Simple Lookup",
+      "description": "Import and export of lookup data works",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents DataGrid/native dialog dependency.",
+      "automationTests": [
+        {
+          "suite": "QuickLookup",
+          "test": "lookup-crud-import-export-needs-datagrid-row-and-native-file-dialog-driving",
+          "file": "UiTests\\Suites\\QuickLookup.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents DataGrid/native dialog dependency."
+        }
+      ]
+    },
+    {
+      "id": "lookup-pattern-entries",
+      "manualSection": "7. Quick Simple Lookup",
+      "description": "Pattern-based entries resolve correctly",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\PatternExecutorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Lookup surface is asserted; pattern resolution remains xUnit-covered.",
+      "automationTests": [
+        {
+          "suite": "QuickLookup",
+          "test": "lookup-window-and-copy-controls-are-uia-addressable",
+          "file": "UiTests\\Suites\\QuickLookup.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Lookup surface is asserted; pattern resolution remains xUnit-covered."
+        }
+      ]
+    },
+    {
+      "id": "ocr-winrt",
+      "manualSection": "8. OCR / capture engines",
+      "description": "WinRT OCR (Windows) — default path",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [
+        "Tests\\OcrTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires installed WinRT OCR language packs.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "winrt-ocr-font-table-and-qr-fixtures-match-unit-expectations",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires installed WinRT OCR language packs."
+        }
+      ]
+    },
+    {
+      "id": "ocr-tesseract",
+      "manualSection": "8. OCR / capture engines",
+      "description": "Tesseract — select engine, confirm it runs; missing/added language data handled",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [
+        "Tests\\RecognizerExecutorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires Tesseract with English language data.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "tesseract-font-fixture-has-normalized-expected-output",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires Tesseract with English language data."
+        }
+      ]
+    },
+    {
+      "id": "ocr-winai",
+      "manualSection": "8. OCR / capture engines",
+      "description": "WinAI (Copilot+/NPU) — offered automatically only where supported; produces output; gracefully hidden where unsupported",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "copilot-plus-hardware",
+      "currentCoverage": [
+        "Tests\\WindowsAiUtilitiesTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires packaged ARM64 Windows AI capability.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "windows-ai-conditional-lane-is-only-enabled-on-supported-packaged-arm64",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires packaged ARM64 Windows AI capability."
+        }
+      ]
+    },
+    {
+      "id": "automation-direct-text",
+      "manualSection": "8. OCR / capture engines",
+      "description": "Direct Text (UI Automation) — reads a native text control without OCR; accurate; traversal-mode setting (Fast/Balanced/Thorough) affects results",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [
+        "Tests\\UiAutomationUtilitiesTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Native value accuracy is asserted; traversal-mode outcomes are not separately asserted.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "direct-text-uia-and-rtl-cjk-fixtures-are-addressable",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Native value accuracy is asserted; traversal-mode outcomes are not separately asserted."
+        }
+      ]
+    },
+    {
+      "id": "language-picker-installed-packs",
+      "manualSection": "9. Languages",
+      "description": "Installed Windows language packs appear in the language picker",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "language-pack-machine",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an installed CJK OCR pack; picker enumeration is not separately asserted.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "installed-cjk-language-pack-exercises-japanese-fixture",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an installed CJK OCR pack; picker enumeration is not separately asserted."
+        }
+      ]
+    },
+    {
+      "id": "language-switch-recognition",
+      "manualSection": "9. Languages",
+      "description": "Switching capture language changes recognition for that language",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [
+        "Tests\\CaptureLanguageUtilitiesTests.cs",
+        "Tests\\LanguageServiceTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires installed language packs; selection UI is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "installed-cjk-language-pack-exercises-japanese-fixture",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires installed language packs; selection UI is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "language-rtl-cjk",
+      "manualSection": "9. Languages",
+      "description": "Right-to-left / CJK sample recognized and rendered correctly",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [
+        "Tests\\LanguageTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "RTL/CJK fixture addressability is asserted; OCR recognition requires the capability lane.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "direct-text-uia-and-rtl-cjk-fixtures-are-addressable",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "RTL/CJK fixture addressability is asserted; OCR recognition requires the capability lane."
+        }
+      ]
+    },
+    {
+      "id": "language-tesseract-independent",
+      "manualSection": "9. Languages",
+      "description": "Tesseract language selection independent from Windows language",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Tesseract execution is asserted; independent selector behavior is not separately driven.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "tesseract-font-fixture-has-normalized-expected-output",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Tesseract execution is asserted; independent selector behavior is not separately driven."
+        }
+      ]
+    },
+    {
+      "id": "patterns-built-in",
+      "manualSection": "10. Patterns / RegEx",
+      "description": "Built-in patterns (email, phone, URL, GUID, date, currency) match sample data",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\PatternExecutorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Fixtures and preserved xUnit coverage are asserted; nested UI flow is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-and-bulk-fixtures-are-available-under-the-repository",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Fixtures and preserved xUnit coverage are asserted; nested UI flow is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "patterns-custom-create-save",
+      "manualSection": "10. Patterns / RegEx",
+      "description": "Create, test, explain, and save a custom pattern",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents nested-menu support gap.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-regex-template-and-folder-flows-need-nested-menu-or-folder-picker-support",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents nested-menu support gap."
+        }
+      ]
+    },
+    {
+      "id": "patterns-cross-feature-use",
+      "manualSection": "10. Patterns / RegEx",
+      "description": "Saved patterns are usable in Find/Replace, Extract, Quick Lookup, and Templates",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents nested-menu support gap.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-regex-template-and-folder-flows-need-nested-menu-or-folder-picker-support",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents nested-menu support gap."
+        }
+      ]
+    },
+    {
+      "id": "patterns-invalid-regex",
+      "manualSection": "10. Patterns / RegEx",
+      "description": "Invalid regex is reported rather than crashing",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\PatternExecutorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Fixtures and preserved xUnit coverage are asserted; nested UI flow is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-and-bulk-fixtures-are-available-under-the-repository",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Fixtures and preserved xUnit coverage are asserted; nested UI flow is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "post-grab-each-action",
+      "manualSection": "11. Post-grab actions & Grab Templates",
+      "description": "Each post-grab action runs after a grab (trim each line, remove duplicates, fix GUID, insert into active app, open web search, etc.)",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\FullscreenGrabPostGrabActionTests.cs",
+        "Tests\\PostGrabActionManagerTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "External insertion is exercised; individual deterministic action transforms remain xUnit-covered.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "external-insertion-returns-to-fixture-focus-target",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "External insertion is exercised; individual deterministic action transforms remain xUnit-covered."
+        }
+      ]
+    },
+    {
+      "id": "post-grab-insert-active-app",
+      "manualSection": "11. Post-grab actions & Grab Templates",
+      "description": "\"Try to insert text into active app\" pastes into the previously focused app",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses an external fixture focus target on an isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "external-insertion-returns-to-fixture-focus-target",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses an external fixture focus target on an isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "post-grab-template-save-apply",
+      "manualSection": "11. Post-grab actions & Grab Templates",
+      "description": "Save a combination of actions as a template and re-apply it",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\GrabTemplateManagerTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents nested-menu support gap.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-regex-template-and-folder-flows-need-nested-menu-or-folder-picker-support",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents nested-menu support gap."
+        }
+      ]
+    },
+    {
+      "id": "grab-template-named-regions",
+      "manualSection": "11. Post-grab actions & Grab Templates",
+      "description": "Grab Template with named capture regions extracts fixed fields correctly",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\GrabTemplateExecutorTests.cs::ApplyOutputTemplate_MultipleRegions_SubstitutesAll"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Fixtures and preserved xUnit coverage are asserted; full template UI flow is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-and-bulk-fixtures-are-available-under-the-repository",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Fixtures and preserved xUnit coverage are asserted; full template UI flow is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "grab-template-pattern-placeholders",
+      "manualSection": "11. Post-grab actions & Grab Templates",
+      "description": "Grab Template with pattern placeholders (first/last/all/specific match) works",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\GrabTemplateExecutorTests.cs::ApplyPatternPlaceholders_FirstMatch_ReturnsFirstOccurrence"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Fixtures and preserved xUnit coverage are asserted; full template UI flow is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-and-bulk-fixtures-are-available-under-the-repository",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Fixtures and preserved xUnit coverage are asserted; full template UI flow is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "grab-template-output-formatting",
+      "manualSection": "11. Post-grab actions & Grab Templates",
+      "description": "Output template formatting (labels, tabs, line breaks, placeholders) renders as authored",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\GrabTemplateExecutorTests.cs::ApplyOutputTemplate_NewlineEscape_InsertsNewline"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Fixtures and preserved xUnit coverage are asserted; full template UI flow is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-and-bulk-fixtures-are-available-under-the-repository",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Fixtures and preserved xUnit coverage are asserted; full template UI flow is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "grab-template-single-bulk",
+      "manualSection": "11. Post-grab actions & Grab Templates",
+      "description": "Templates apply during single capture and during bulk processing",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [
+        "Tests\\GrabTemplateExecutorTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents folder-picker support gap.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-regex-template-and-folder-flows-need-nested-menu-or-folder-picker-support",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents folder-picker support gap."
+        }
+      ]
+    },
+    {
+      "id": "bulk-open-folder",
+      "manualSection": "12. Bulk folder processing",
+      "description": "Open a folder (menu + CLI `\"folder path\"`) scans supported images/PDFs",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents shell/OCR capability dependency.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "windowless-folder-routing-and-bulk-output-require-ocr-and-shell-capabilities",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents shell/OCR capability dependency."
+        }
+      ]
+    },
+    {
+      "id": "bulk-combined-metadata",
+      "manualSection": "12. Bulk folder processing",
+      "description": "Optional file names / headers / footers appear in combined output",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Fixtures are verified; combined output is not asserted.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-and-bulk-fixtures-are-available-under-the-repository",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Fixtures are verified; combined output is not asserted."
+        }
+      ]
+    },
+    {
+      "id": "bulk-recursive",
+      "manualSection": "12. Bulk folder processing",
+      "description": "Recursive subfolder processing toggle works",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents shell/OCR capability dependency.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "windowless-folder-routing-and-bulk-output-require-ocr-and-shell-capabilities",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents shell/OCR capability dependency."
+        }
+      ]
+    },
+    {
+      "id": "bulk-template",
+      "manualSection": "12. Bulk folder processing",
+      "description": "Applying a grab template during the batch works",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents folder-picker support gap.",
+      "automationTests": [
+        {
+          "suite": "PatternsBulk",
+          "test": "pattern-regex-template-and-folder-flows-need-nested-menu-or-folder-picker-support",
+          "file": "UiTests\\Suites\\PatternsBulk.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents folder-picker support gap."
+        }
+      ]
+    },
+    {
+      "id": "bulk-write-text-files",
+      "manualSection": "12. Bulk folder processing",
+      "description": "Writing `.txt` output files produces one file per item, correct content",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents shell/OCR capability dependency.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "windowless-folder-routing-and-bulk-output-require-ocr-and-shell-capabilities",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents shell/OCR capability dependency."
+        }
+      ]
+    },
+    {
+      "id": "bulk-open-edit-text",
+      "manualSection": "12. Bulk folder processing",
+      "description": "Combined result opens in Edit Text for further cleanup",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "interactive-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents shell/OCR capability dependency.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "windowless-folder-routing-and-bulk-output-require-ocr-and-shell-capabilities",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents shell/OCR capability dependency."
+        }
+      ]
+    },
+    {
+      "id": "cli-fullscreen",
+      "manualSection": "13. Command-line interface",
+      "description": "`Fullscreen`",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Deterministic window modes are asserted; this route is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "cli-modes-route-to-their-own-window-contracts",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Deterministic window modes are asserted; this route is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "cli-grab-frame",
+      "manualSection": "13. Command-line interface",
+      "description": "`GrabFrame`",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Deterministic window modes are asserted; this route is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "cli-modes-route-to-their-own-window-contracts",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Deterministic window modes are asserted; this route is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "cli-edit-text",
+      "manualSection": "13. Command-line interface",
+      "description": "`EditText`",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Deterministic window modes are asserted; this route is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "cli-modes-route-to-their-own-window-contracts",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Deterministic window modes are asserted; this route is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "cli-quick-lookup",
+      "manualSection": "13. Command-line interface",
+      "description": "`QuickLookup`",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Deterministic window modes are asserted; this route is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "cli-modes-route-to-their-own-window-contracts",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Deterministic window modes are asserted; this route is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "cli-settings",
+      "manualSection": "13. Command-line interface",
+      "description": "`Settings`",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Deterministic window modes are asserted; this route is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "cli-modes-route-to-their-own-window-contracts",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Deterministic window modes are asserted; this route is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "cli-grab-frame-file",
+      "manualSection": "13. Command-line interface",
+      "description": "`--grabframe \"file\"` opens image/PDF in Grab Frame",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [
+        "Tests\\GrabFrameFileTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "full",
+      "remainingReason": "Uses a copied local fixture and verifies Grab Frame UI.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "grabframe-flag-and-safe-protocol-activation-route-a-local-fixture",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "full",
+          "remainingReason": "Uses a copied local fixture and verifies Grab Frame UI."
+        }
+      ]
+    },
+    {
+      "id": "cli-windowless-file",
+      "manualSection": "13. Command-line interface",
+      "description": "`--windowless \"file\"` OCRs and copies without opening a window",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents OCR and shell output dependency.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "windowless-folder-routing-and-bulk-output-require-ocr-and-shell-capabilities",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents OCR and shell output dependency."
+        }
+      ]
+    },
+    {
+      "id": "cli-file-path-routing",
+      "manualSection": "13. Command-line interface",
+      "description": "`\"file path\"` — text → Edit Text; image/PDF → Grab Frame",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [
+        "Tests\\FilesIoTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Image/protocol routing is asserted; text-file route is not independently asserted.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "grabframe-flag-and-safe-protocol-activation-route-a-local-fixture",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Image/protocol routing is asserted; text-file route is not independently asserted."
+        }
+      ]
+    },
+    {
+      "id": "cli-folder-path-routing",
+      "manualSection": "13. Command-line interface",
+      "description": "`\"folder path\"` — opens Edit Text and scans images",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "process-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents shell/OCR capability dependency.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "windowless-folder-routing-and-bulk-output-require-ocr-and-shell-capabilities",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents shell/OCR capability dependency."
+        }
+      ]
+    },
+    {
+      "id": "integration-file-associations",
+      "manualSection": "14. Files, associations, protocol & share",
+      "description": "File-type associations (if registered) open the right mode",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The package manifest declaration is asserted; real file-association activation is executed only by the selected disposable-VM lifecycle runner.",
+      "automationTests": [
+        {
+          "suite": "PackagedVm",
+          "test": "package-manifest-declares-protocol-file-share-startup-and-toast-contracts",
+          "file": "UiTests\\Suites\\PackagedVm.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The package manifest declaration is asserted; real file-association activation is executed only by the selected disposable-VM lifecycle runner."
+        }
+      ]
+    },
+    {
+      "id": "integration-protocol",
+      "manualSection": "14. Files, associations, protocol & share",
+      "description": "Custom protocol / URI activation launches expected mode",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [
+        "Tests\\ProtocolUtilitiesTests.cs::TryParseProtocolUri_ParsesCommands"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Safe in-process URI routing is asserted; registered protocol activation requires the package VM lane.",
+      "automationTests": [
+        {
+          "suite": "CliProtocol",
+          "test": "grabframe-flag-and-safe-protocol-activation-route-a-local-fixture",
+          "file": "UiTests\\Suites\\CliProtocol.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Safe in-process URI routing is asserted; registered protocol activation requires the package VM lane."
+        }
+      ]
+    },
+    {
+      "id": "integration-share-target",
+      "manualSection": "14. Files, associations, protocol & share",
+      "description": "Windows Share target receives shared image/text and processes it",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "The package manifest declaration is asserted; real share-target activation is executed only by the selected disposable-VM lifecycle runner.",
+      "automationTests": [
+        {
+          "suite": "PackagedVm",
+          "test": "package-manifest-declares-protocol-file-share-startup-and-toast-contracts",
+          "file": "UiTests\\Suites\\PackagedVm.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "The package manifest declaration is asserted; real share-target activation is executed only by the selected disposable-VM lifecycle runner."
+        }
+      ]
+    },
+    {
+      "id": "integration-file-drop",
+      "manualSection": "14. Files, associations, protocol & share",
+      "description": "Drag-and-drop of files onto each window behaves as documented",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses a real OLE drag source on an isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "real-ole-file-drop-targets-edit-text-and-grab-frame",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses a real OLE drag source on an isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "barcode-qr-payload",
+      "manualSection": "15. Barcodes / QR",
+      "description": "QR code in a capture is decoded to its payload",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\BarcodeUtilitiesTests.cs::ReadTestSingleQRCode"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Fixture and preserved barcode unit coverage are asserted; route output is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "winrt-ocr-font-table-and-qr-fixtures-match-unit-expectations",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Fixture and preserved barcode unit coverage are asserted; route output is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "barcode-one-dimensional",
+      "manualSection": "15. Barcodes / QR",
+      "description": "Common 1D barcode decoded",
+      "coverageClassification": "existing unit test",
+      "automationLane": "unit",
+      "currentCoverage": [
+        "Tests\\BarcodeUtilitiesTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Fixture and preserved barcode unit coverage are asserted; route output is not independently driven.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "winrt-ocr-font-table-and-qr-fixtures-match-unit-expectations",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Fixture and preserved barcode unit coverage are asserted; route output is not independently driven."
+        }
+      ]
+    },
+    {
+      "id": "barcode-output-routing",
+      "manualSection": "15. Barcodes / QR",
+      "description": "Output kind = Barcode routes the decoded value correctly",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [
+        "Tests\\BarcodeUtilitiesTests.cs::TryToReadBarcodes_WithTwoQrCodes_ReturnsTwoResults"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents OCR/native picker dependency.",
+      "automationTests": [
+        {
+          "suite": "GrabFrame",
+          "test": "pdf-save-reopen-and-barcode-routing-need-file-picker-or-ocr-capability",
+          "file": "UiTests\\Suites\\GrabFrame.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents OCR/native picker dependency."
+        }
+      ]
+    },
+    {
+      "id": "settings-general",
+      "manualSection": "16. Settings",
+      "description": "General",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "settings-navigation-contract-is-present",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support."
+        }
+      ]
+    },
+    {
+      "id": "settings-fullscreen",
+      "manualSection": "16. Settings",
+      "description": "Full-Screen Grab",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "settings-navigation-contract-is-present",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support."
+        }
+      ]
+    },
+    {
+      "id": "settings-grab-frame",
+      "manualSection": "16. Settings",
+      "description": "Grab Frame",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "settings-navigation-contract-is-present",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support."
+        }
+      ]
+    },
+    {
+      "id": "settings-edit-text",
+      "manualSection": "16. Settings",
+      "description": "Edit Text Window",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "settings-navigation-contract-is-present",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support."
+        }
+      ]
+    },
+    {
+      "id": "settings-quick-lookup",
+      "manualSection": "16. Settings",
+      "description": "Quick Lookup",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "settings-navigation-contract-is-present",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support."
+        }
+      ]
+    },
+    {
+      "id": "settings-hotkeys",
+      "manualSection": "16. Settings",
+      "description": "Keys / hotkeys",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Uses real keyboard input on an isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "hotkey-rebinding-record-control-updates-active-registration",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Uses real keyboard input on an isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "settings-language",
+      "manualSection": "16. Settings",
+      "description": "Language",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "settings-navigation-contract-is-present",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Stable settings navigation IDs are asserted; page interaction is limited by current runner coordinate support."
+        }
+      ]
+    },
+    {
+      "id": "settings-tesseract",
+      "manualSection": "16. Settings",
+      "description": "Tesseract (path detection / download guidance)",
+      "coverageClassification": "fixture-assisted automation",
+      "automationLane": "ocr-fixture",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires Tesseract with English language data.",
+      "automationTests": [
+        {
+          "suite": "OcrCapability",
+          "test": "tesseract-font-fixture-has-normalized-expected-output",
+          "file": "UiTests\\Suites\\OcrCapability.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires Tesseract with English language data."
+        }
+      ]
+    },
+    {
+      "id": "settings-voice-output",
+      "manualSection": "16. Settings",
+      "description": "Voice Output",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Automation IDs and configuration surface are asserted; audible output is manual-only.",
+      "automationTests": [
+        {
+          "suite": "NotificationsTtsShare",
+          "test": "voice-configuration-and-preview-contract-is-present",
+          "file": "UiTests\\Suites\\NotificationsTtsShare.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Automation IDs and configuration surface are asserted; audible output is manual-only."
+        }
+      ]
+    },
+    {
+      "id": "settings-danger-confirmation",
+      "manualSection": "16. Settings",
+      "description": "Danger settings (reset / destructive actions confirm before acting)",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents destructive confirmation/native picker dependency.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "import-export-and-reset-use-native-pickers-or-confirmations",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents destructive confirmation/native picker dependency."
+        }
+      ]
+    },
+    {
+      "id": "settings-import-export",
+      "manualSection": "16. Settings",
+      "description": "Settings **export** produces a file; **import** restores it on a clean profile",
+      "coverageClassification": "winapp UIA",
+      "automationLane": "interactive-ui",
+      "currentCoverage": [
+        "Tests\\SettingsImportExportTests.cs::RoundTripSettingsExportImportPreservesAllValues"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Registered boundary test documents native picker dependency; xUnit preserves deterministic round-trip coverage.",
+      "automationTests": [
+        {
+          "suite": "Settings",
+          "test": "import-export-and-reset-use-native-pickers-or-confirmations",
+          "file": "UiTests\\Suites\\Settings.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Registered boundary test documents native picker dependency; xUnit preserves deterministic round-trip coverage."
+        }
+      ]
+    },
+    {
+      "id": "tts-read-text",
+      "manualSection": "17. Voice output / TTS",
+      "description": "Read selected/recognized text aloud",
+      "coverageClassification": "manual-only",
+      "automationLane": "manual-audio",
+      "currentCoverage": [],
+      "implementationStatus": "manual-required",
+      "coverageLevel": "manual",
+      "remainingReason": "A human must judge audibility and intelligibility of spoken text.",
+      "manualException": "A human must judge audibility and intelligibility of spoken text."
+    },
+    {
+      "id": "tts-voice-selection",
+      "manualSection": "17. Voice output / TTS",
+      "description": "Voice selection setting is honored",
+      "coverageClassification": "manual-only",
+      "automationLane": "manual-audio",
+      "currentCoverage": [],
+      "implementationStatus": "manual-required",
+      "coverageLevel": "manual",
+      "remainingReason": "A human must judge that the selected voice is the intended audible voice.",
+      "manualException": "A human must judge that the selected voice is the intended audible voice."
+    },
+    {
+      "id": "tts-start-stop",
+      "manualSection": "17. Voice output / TTS",
+      "description": "Start/stop behaves; no orphaned speech after closing the window",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires an installed Windows voice; start/stop mechanics are asserted, not quality.",
+      "automationTests": [
+        {
+          "suite": "NotificationsTtsShare",
+          "test": "tts-engine-start-stop-and-toggle-contract",
+          "file": "UiTests\\Suites\\NotificationsTtsShare.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires an installed Windows voice; start/stop mechanics are asserted, not quality."
+        }
+      ]
+    },
+    {
+      "id": "theme-system-live",
+      "manualSection": "18. Themes & display",
+      "description": "System theme follows Windows light/dark and updates live on OS change",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "display-hardware",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Captures the current theme/high-contrast state; live OS switching is not performed.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "contrast-surface-reflects-theme-and-high-contrast-capability",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Captures the current theme/high-contrast state; live OS switching is not performed."
+        }
+      ]
+    },
+    {
+      "id": "theme-forced-light-dark",
+      "manualSection": "18. Themes & display",
+      "description": "Forced Light and forced Dark render all windows correctly (no unreadable controls)",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "display-hardware",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Captures the current contrast surface; all window pixels are not compared.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "contrast-surface-reflects-theme-and-high-contrast-capability",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Captures the current contrast surface; all window pixels are not compared."
+        }
+      ]
+    },
+    {
+      "id": "theme-high-contrast",
+      "manualSection": "18. Themes & display",
+      "description": "High-contrast / accessibility color settings usable",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "display-hardware",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires high contrast to be enabled on the runner.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "contrast-surface-reflects-theme-and-high-contrast-capability",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires high contrast to be enabled on the runner."
+        }
+      ]
+    },
+    {
+      "id": "display-dpi-scaling",
+      "manualSection": "18. Themes & display",
+      "description": "All windows scale correctly at 125%/150%/175%/200% DPI",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "display-hardware",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Fixture metrics are asserted; every requested scale is runner-configured.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "coordinate-dpi-grid-reports-window-bounds-monitor-and-dpi",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Fixture metrics are asserted; every requested scale is runner-configured."
+        }
+      ]
+    },
+    {
+      "id": "display-mixed-dpi-reflow",
+      "manualSection": "18. Themes & display",
+      "description": "Dragging a window between monitors of different DPI reflows without clipping",
+      "coverageClassification": "hardware/display lane",
+      "automationLane": "display-hardware",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Requires two monitors at distinct DPI scales.",
+      "automationTests": [
+        {
+          "suite": "DisplayHardware",
+          "test": "mixed-dpi-second-monitor-reflow-and-screenshot",
+          "file": "UiTests\\Suites\\DisplayHardware.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Requires two monitors at distinct DPI scales."
+        }
+      ]
+    },
+    {
+      "id": "notification-post-grab",
+      "manualSection": "19. Notifications",
+      "description": "Post-grab / action notifications appear via Windows notifications",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Notification creation route is source-contract asserted; shell display needs packaged runner.",
+      "automationTests": [
+        {
+          "suite": "NotificationsTtsShare",
+          "test": "notification-creation-and-click-routing-requires-notification-capability",
+          "file": "UiTests\\Suites\\NotificationsTtsShare.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Notification creation route is source-contract asserted; shell display needs packaged runner."
+        }
+      ]
+    },
+    {
+      "id": "notification-click-action",
+      "manualSection": "19. Notifications",
+      "description": "Clicking a notification performs its associated action",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Click routing source contract is asserted; shell activation needs packaged runner.",
+      "automationTests": [
+        {
+          "suite": "NotificationsTtsShare",
+          "test": "notification-creation-and-click-routing-requires-notification-capability",
+          "file": "UiTests\\Suites\\NotificationsTtsShare.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Click routing source contract is asserted; shell activation needs packaged runner."
+        }
+      ]
+    },
+    {
+      "id": "notification-os-disabled",
+      "manualSection": "19. Notifications",
+      "description": "No notification errors when notifications are disabled at OS level",
+      "coverageClassification": "packaged/VM lane",
+      "automationLane": "packaged-vm",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "contract",
+      "remainingReason": "Creation route is asserted; toggling OS notification policy is runner-managed.",
+      "automationTests": [
+        {
+          "suite": "NotificationsTtsShare",
+          "test": "notification-creation-and-click-routing-requires-notification-capability",
+          "file": "UiTests\\Suites\\NotificationsTtsShare.Tests.ps1",
+          "coverageLevel": "contract",
+          "remainingReason": "Creation route is asserted; toggling OS notification policy is runner-managed."
+        }
+      ]
+    },
+    {
+      "id": "reliability-unhandled-exceptions",
+      "manualSection": "20. Cross-cutting checks",
+      "description": "No unhandled-exception dialogs during any of the above",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Repeated isolated flow detects failures/leaks but cannot prove absence across every scenario.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-smoke-repetition-has-no-window-or-temp-leak",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Repeated isolated flow detects failures/leaks but cannot prove absence across every scenario."
+        }
+      ]
+    },
+    {
+      "id": "reliability-idle-resources",
+      "manualSection": "20. Cross-cutting checks",
+      "description": "Memory/CPU return to idle after closing windows (no runaway background use)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Exact process cleanup is asserted; CPU/memory idle thresholds are not measured.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "tray-background-and-process-cleanup",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Exact process cleanup is asserted; CPU/memory idle thresholds are not measured."
+        }
+      ]
+    },
+    {
+      "id": "reliability-repeated-grabs",
+      "manualSection": "20. Cross-cutting checks",
+      "description": "Repeated grabs (20+) do not leak windows or degrade performance",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Three repetitions and leak checks are automated; 20+ performance testing remains a release-runner policy.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-smoke-repetition-has-no-window-or-temp-leak",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Three repetitions and leak checks are automated; 20+ performance testing remains a release-runner policy."
+        }
+      ]
+    },
+    {
+      "id": "reliability-clipboard-integrity",
+      "manualSection": "20. Cross-cutting checks",
+      "description": "Clipboard content is never corrupted (image left intact when only text expected, etc.)",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [],
+      "implementationStatus": "implemented",
+      "coverageLevel": "capability-gated",
+      "remainingReason": "Snapshots and restores real clipboard formats on an isolated desktop.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "clipboard-text-image-and-file-drop-activation-restores-content",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "capability-gated",
+          "remainingReason": "Snapshots and restores real clipboard formats on an isolated desktop."
+        }
+      ]
+    },
+    {
+      "id": "reliability-temp-files",
+      "manualSection": "20. Cross-cutting checks",
+      "description": "All temp files (e.g. clipboard PNGs) are cleaned up or bounded",
+      "coverageClassification": "real-input automation",
+      "automationLane": "interactive-desktop",
+      "currentCoverage": [
+        "Tests\\ClipboardUtilitiesTests.cs"
+      ],
+      "implementationStatus": "implemented",
+      "coverageLevel": "partial",
+      "remainingReason": "Checks bounded profile temp files during repeated fullscreen launch/close.",
+      "automationTests": [
+        {
+          "suite": "SystemIntegration",
+          "test": "fullscreen-smoke-repetition-has-no-window-or-temp-leak",
+          "file": "UiTests\\Suites\\SystemIntegration.Tests.ps1",
+          "coverageLevel": "partial",
+          "remainingReason": "Checks bounded profile temp files during repeated fullscreen launch/close."
+        }
+      ]
+    }
+  ]
+}

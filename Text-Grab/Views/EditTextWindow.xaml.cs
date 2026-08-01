@@ -101,6 +101,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private readonly DataTable spreadsheetTable = new();
     private readonly List<DataGridColumn> trackedSpreadsheetColumns = [];
     private List<(int RowIndex, int ColumnIndex)> selectedSpreadsheetCellCoordinates = [];
+    private System.Windows.Controls.TextBox? activeSpreadsheetCellEditor;
+    private string lastSpreadsheetCellEditorSelectedText = string.Empty;
     private EtwEditorMode editorMode = EtwEditorMode.Text;
     private SpellCheckMode spellCheckMode = SpellCheckMode.Auto;
     private bool isSyncingTextFromSpreadsheet = false;
@@ -257,6 +259,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     internal void EnterSpreadsheetMode() => SetEditorMode(EtwEditorMode.Spreadsheet);
+
+    public event EventHandler? EditorModeChanged;
 
     /// <summary>
     /// Pastes the clipboard into the spreadsheet editor, parsing HTML tables
@@ -641,6 +645,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = TryCopySpreadsheetSelectionToClipboard(GetSelectedSpreadsheetCellCoordinates());
     }
 
+    private void CopySpreadsheetAsMarkdownMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string markdownText = BuildSpreadsheetSelectionMarkdown(
+            spreadsheetTable,
+            GetSelectedOrPopulatedSpreadsheetCellCoordinates());
+
+        if (!string.IsNullOrEmpty(markdownText))
+            TrySetClipboardText(markdownText);
+    }
+
     private void AddSpreadsheetColumnMenuItem_Click(object sender, RoutedEventArgs e)
     {
         int currentColumnIndex =
@@ -668,6 +682,78 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             document => document.InsertRow(insertIndex),
             insertIndex,
             focusColumn);
+    }
+
+    private void SplitSpreadsheetCellsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (editorMode != EtwEditorMode.Spreadsheet)
+            return;
+
+        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
+        if (targetCells.Count == 0)
+            return;
+
+        (int rowIndex, int columnIndex) = targetCells[0];
+        string sampleText = string.Empty;
+        if (rowIndex >= 0 && rowIndex < spreadsheetTable.Rows.Count
+            && columnIndex >= 0 && columnIndex < spreadsheetTable.Columns.Count)
+        {
+            sampleText = spreadsheetTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
+        }
+
+        SplitColumnWindow splitColumnWindow = new()
+        {
+            Owner = this,
+            SampleText = sampleText
+        };
+        splitColumnWindow.ShowDialog();
+    }
+
+    internal void SplitSelectedSpreadsheetCells(SplitColumnOptions options)
+    {
+        if (editorMode != EtwEditorMode.Spreadsheet || tableDocument is null)
+            return;
+
+        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
+        if (targetCells.Count == 0)
+            return;
+
+        ApplySpreadsheetDocumentChange(document =>
+        {
+            // Compute the split for each target cell before mutating the table.
+            List<(int RowIndex, int ColumnIndex, IReadOnlyList<string> Parts)> splits = [];
+            int maxRequiredColumns = document.ColumnCount;
+
+            foreach ((int rowIndex, int columnIndex) in targetCells)
+            {
+                if (rowIndex < 0 || rowIndex >= document.Rows.Count
+                    || columnIndex < 0 || columnIndex >= document.ColumnCount)
+                {
+                    continue;
+                }
+
+                string cellValue = document.Rows[rowIndex][columnIndex] ?? string.Empty;
+                IReadOnlyList<string> parts = ColumnSplitUtilities.SplitCell(cellValue, options);
+                splits.Add((rowIndex, columnIndex, parts));
+                maxRequiredColumns = Math.Max(maxRequiredColumns, columnIndex + parts.Count);
+            }
+
+            // Grow the table so every row has room for the widest split, then pad all rows.
+            document.ColumnCount = Math.Max(document.ColumnCount, maxRequiredColumns);
+            document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, maxRequiredColumns);
+            document.EnsureMinimumSize();
+
+            // Overwrite the original cell and the cells to its right with the resulting parts.
+            foreach ((int rowIndex, int columnIndex, IReadOnlyList<string> parts) in splits)
+            {
+                for (int partIndex = 0; partIndex < parts.Count; partIndex++)
+                {
+                    int targetColumn = columnIndex + partIndex;
+                    if (rowIndex < document.Rows.Count && targetColumn < document.Rows[rowIndex].Count)
+                        document.Rows[rowIndex][targetColumn] = parts[partIndex];
+                }
+            }
+        });
     }
 
     private void TransposeTableCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1075,6 +1161,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         UpdateSpreadsheetModeUi();
         UpdateLineAndColumnText();
+        EditorModeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void SpreadsheetDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
@@ -1087,6 +1174,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SpreadsheetDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
+        DetachSpreadsheetCellEditor();
+
         if (e.EditAction == DataGridEditAction.Cancel)
         {
             pendingSpreadsheetUndoState = null;
@@ -1100,6 +1189,32 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 UpdateLineAndColumnText();
             },
             DispatcherPriority.Background);
+    }
+
+    private void SpreadsheetDataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+    {
+        DetachSpreadsheetCellEditor();
+
+        if (e.EditingElement is not System.Windows.Controls.TextBox cellTextBox)
+            return;
+
+        activeSpreadsheetCellEditor = cellTextBox;
+        lastSpreadsheetCellEditorSelectedText = cellTextBox.SelectedText;
+        cellTextBox.SelectionChanged += SpreadsheetCellEditor_SelectionChanged;
+    }
+
+    private void SpreadsheetCellEditor_SelectionChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.TextBox cellTextBox)
+            lastSpreadsheetCellEditorSelectedText = cellTextBox.SelectedText;
+    }
+
+    private void DetachSpreadsheetCellEditor()
+    {
+        if (activeSpreadsheetCellEditor is not null)
+            activeSpreadsheetCellEditor.SelectionChanged -= SpreadsheetCellEditor_SelectionChanged;
+
+        activeSpreadsheetCellEditor = null;
     }
 
     private void SpreadsheetDataGrid_CurrentCellChanged(object sender, EventArgs e)
@@ -1231,6 +1346,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SpreadsheetDataGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
     {
+        if (activeSpreadsheetCellEditor is null)
+            lastSpreadsheetCellEditorSelectedText = string.Empty;
+
         UpdateSelectedSpreadsheetCellCoordinates();
 
         if (editorMode == EtwEditorMode.Spreadsheet)
@@ -1375,6 +1493,56 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     "\t",
                     group.OrderBy(cell => cell.ColumnIndex)
                         .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty))));
+    }
+
+    internal static string BuildSpreadsheetSelectionMarkdown(
+        DataTable dataTable,
+        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
+    {
+        ArgumentNullException.ThrowIfNull(dataTable);
+        ArgumentNullException.ThrowIfNull(cellCoordinates);
+
+        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
+            .Distinct()
+            .Where(cell => cell.RowIndex >= 0
+                && cell.RowIndex < dataTable.Rows.Count
+                && cell.ColumnIndex >= 0
+                && cell.ColumnIndex < dataTable.Columns.Count)];
+
+        if (validCoordinates.Count == 0)
+            return string.Empty;
+
+        List<int> rowIndices = [.. validCoordinates.Select(cell => cell.RowIndex).Distinct().OrderBy(index => index)];
+        List<int> columnIndices = [.. validCoordinates.Select(cell => cell.ColumnIndex).Distinct().OrderBy(index => index)];
+
+        StringBuilder builder = new();
+
+        for (int rowPosition = 0; rowPosition < rowIndices.Count; rowPosition++)
+        {
+            int rowIndex = rowIndices[rowPosition];
+            IEnumerable<string> cellTexts = columnIndices.Select(columnIndex =>
+                EscapeMarkdownTableCell(dataTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty));
+
+            builder.Append($"| {string.Join(" | ", cellTexts)} |");
+            builder.Append(Environment.NewLine);
+
+            if (rowPosition == 0)
+            {
+                builder.Append($"| {string.Join(" | ", Enumerable.Repeat("---", columnIndices.Count))} |");
+                builder.Append(Environment.NewLine);
+            }
+        }
+
+        return builder.ToString().TrimEnd('\r', '\n');
+    }
+
+    private static string EscapeMarkdownTableCell(string value)
+    {
+        return value
+            .Replace("|", "\\|", StringComparison.Ordinal)
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\r", "\n", StringComparison.Ordinal)
+            .Replace("\n", "<br />", StringComparison.Ordinal);
     }
 
     internal static List<double> ExtractSpreadsheetSelectionNumbers(
@@ -1764,6 +1932,28 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         return FindVisualParent<System.Windows.Controls.DataGridCell>(focusedElement) is not null
             && FindVisualParent<System.Windows.Controls.TextBox>(focusedElement) is not null;
+    }
+
+    private string GetSpreadsheetSelectedText()
+    {
+        if (activeSpreadsheetCellEditor is System.Windows.Controls.TextBox cellTextBox)
+            return cellTextBox.SelectedText;
+
+        if (lastSpreadsheetCellEditorSelectedText.Length > 0)
+            return lastSpreadsheetCellEditorSelectedText;
+
+        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
+        if (targetCells.Count != 1)
+            return string.Empty;
+
+        (int rowIndex, int columnIndex) = targetCells[0];
+        if (rowIndex < 0 || rowIndex >= spreadsheetTable.Rows.Count
+            || columnIndex < 0 || columnIndex >= spreadsheetTable.Columns.Count)
+        {
+            return string.Empty;
+        }
+
+        return spreadsheetTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
     }
 
     internal static bool ShouldHandleSpreadsheetDeleteKey(int selectedCellCount, bool isCellEditorFocused)
@@ -2784,35 +2974,81 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public List<FindResult> SearchSpreadsheetCells(Regex pattern)
     {
-        if (tableDocument is null) return [];
-        tableDocument.EnsureMinimumSize();
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        return tableDocument is null
+            ? []
+            : FindSpreadsheetDocumentMatches(
+                tableDocument,
+                cellValue =>
+                [
+                    .. pattern.Matches(cellValue)
+                        .Cast<Match>()
+                        .Select(match => new RecognizerMatch(match.Index, match.Length, match.Value, match.Value))
+                ]);
+    }
+
+    public List<FindResult> SearchSpreadsheetCells(PatternItem pattern, string narrowText = "")
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        return tableDocument is null
+            ? []
+            : SearchSpreadsheetDocumentCells(tableDocument, pattern, narrowText);
+    }
+
+    internal static List<FindResult> SearchSpreadsheetDocumentCells(
+        EditTextTableDocument document,
+        PatternItem pattern,
+        string narrowText = "")
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        return FindSpreadsheetDocumentMatches(
+            document,
+            cellValue =>
+            [
+                .. PatternExecutor.GetMatches(pattern, cellValue)
+                    .Where(match => string.IsNullOrEmpty(narrowText)
+                        || match.Text.Contains(narrowText, StringComparison.CurrentCultureIgnoreCase))
+            ]);
+    }
+
+    private static List<FindResult> FindSpreadsheetDocumentMatches(
+        EditTextTableDocument document,
+        Func<string, IReadOnlyList<RecognizerMatch>> getMatches)
+    {
+        document.EnsureMinimumSize();
         List<FindResult> results = [];
         int count = 1;
 
-        for (int row = 0; row < tableDocument.RowCount; row++)
+        for (int row = 0; row < document.RowCount; row++)
         {
-            List<string> rowData = tableDocument.Rows[row];
-            for (int col = 0; col < tableDocument.ColumnCount; col++)
+            List<string> rowData = document.Rows[row];
+            for (int col = 0; col < document.ColumnCount; col++)
             {
                 string cellValue = col < rowData.Count ? rowData[col] ?? string.Empty : string.Empty;
-                foreach (Match m in pattern.Matches(cellValue))
+                foreach (RecognizerMatch match in getMatches(cellValue))
                 {
-                    int previewStart = Math.Max(0, m.Index - 12);
-                    int previewEnd = Math.Min(cellValue.Length, m.Index + m.Length + 12);
+                    int previewStart = Math.Max(0, match.Start - 12);
+                    int previewEnd = Math.Min(cellValue.Length, match.Start + match.Length + 12);
                     results.Add(new FindResult
                     {
                         RowIndex = row,
                         ColumnIndex = col,
-                        Index = m.Index,
-                        Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Value),
-                        PreviewLeft = cellValue[previewStart..m.Index],
-                        PreviewRight = cellValue[(m.Index + m.Length)..previewEnd],
-                        Length = m.Length,
+                        Index = match.Start,
+                        Text = TextSearchUtilities.FormatMatchTextForDisplay(match.Text),
+                        RawText = match.Text,
+                        PreviewLeft = cellValue[previewStart..match.Start],
+                        PreviewRight = cellValue[(match.Start + match.Length)..previewEnd],
+                        Length = match.Length,
                         Count = count++
                     });
                 }
             }
         }
+
         return results;
     }
 
@@ -2893,11 +3129,85 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void EditMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         // Load text-only templates fresh each time the Edit menu opens and use them to
-        // populate both the whole-text and per-line apply submenus.
+        // populate the Grab Templates group in both apply flyouts.
         List<GrabTemplate> textOnlyTemplates = [.. GrabTemplateManager.GetAllTemplates().Where(template => template.IsTextOnly && template.IsValid)];
 
         PopulateTemplateMenu(ApplyGrabTemplateMenuItem, textOnlyTemplates, ApplyGrabTemplateItem_Click);
         PopulateTemplateMenu(ApplyGrabTemplatePerLineMenuItem, textOnlyTemplates, ApplyGrabTemplatePerLineItem_Click);
+
+        List<PatternItem> patterns = [.. PatternItem.GetAll()];
+        PopulatePatternMenu(
+            ApplyPatternMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
+            ApplyPatternItem_Click);
+        PopulatePatternMenu(
+            ApplySmartPatternMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.Recognizer),
+            ApplyPatternItem_Click);
+        PopulatePatternMenu(
+            ApplyPatternPerLineMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
+            ApplyPatternPerLineItem_Click);
+        PopulatePatternMenu(
+            ApplySmartPatternPerLineMenuItem,
+            patterns.Where(pattern => pattern.Kind == PatternKind.Recognizer),
+            ApplyPatternPerLineItem_Click);
+    }
+
+    private static void PopulatePatternMenu(
+        MenuItem parent,
+        IEnumerable<PatternItem> patterns,
+        RoutedEventHandler clickHandler)
+    {
+        // Rebuild each time the menu opens so newly saved regexes appear.
+        parent.Items.Clear();
+
+        foreach (PatternItem pattern in patterns)
+        {
+            MenuItem patternItem = new()
+            {
+                Header = pattern.Name,
+                ToolTip = string.IsNullOrWhiteSpace(pattern.Description) ? null : pattern.Description,
+                Tag = pattern,
+            };
+            patternItem.Click += clickHandler;
+            parent.Items.Add(patternItem);
+        }
+
+        parent.Visibility = parent.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void ApplyPatternItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PatternItem pattern })
+            return;
+
+        ApplySelectedTextOrAllTextTransform(text => PatternExecutor.Apply(pattern, text));
+    }
+
+    private void ApplyPatternPerLineItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PatternItem pattern })
+            return;
+
+        ApplySelectedTextOrAllTextTransform(text => ApplyPatternPerLine(pattern, text));
+    }
+
+    /// <summary>
+    /// Splits <paramref name="text"/> into lines and applies the pattern to each
+    /// non-blank line independently, preserving blank lines and line structure.
+    /// </summary>
+    private static string ApplyPatternPerLine(PatternItem pattern, string text)
+    {
+        string[] lines = text.Split(Environment.NewLine);
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(lines[i]))
+                lines[i] = PatternExecutor.Apply(pattern, lines[i]);
+        }
+
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static void PopulateTemplateMenu(MenuItem parent, List<GrabTemplate> templates, RoutedEventHandler clickHandler)
@@ -3331,11 +3641,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.Show();
 
+        string selectedText = IsSpreadsheetMode ? GetSpreadsheetSelectedText() : PassedTextControl.SelectedText;
 
-        if (PassedTextControl.SelectedText.Length > 0)
+        if (selectedText.Length > 0)
         {
-            findAndReplaceWindow.FindTextBox.Text = PassedTextControl.SelectedText.Trim();
-            findAndReplaceWindow.FindTextBox.Select(findAndReplaceWindow.FindTextBox.Text.Length, 0);
+            findAndReplaceWindow.SetFindText(selectedText.Trim());
             findAndReplaceWindow.SearchForText();
         }
     }
@@ -3575,6 +3885,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         LoadRecentTextHistory();
         await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
+        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentPdfs(OpenRecentPdfsMenuItem);
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -4807,6 +5118,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RoutedCommand openRecentEditWindow = new();
         _ = openRecentEditWindow.InputGestures.Add(new KeyGesture(Key.T, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(openRecentEditWindow, OpenRecentEditWindowExecuted));
+
+        RoutedCommand findAndReplaceCommand = new();
+        _ = findAndReplaceCommand.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
+        _ = CommandBindings.Add(new CommandBinding(findAndReplaceCommand, FindAndReplaceMenuItem_Click));
 
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
@@ -6075,7 +6390,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
-        OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
+        OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyRecentGrabs();
     }
 
     private void SpreadsheetContextMenu_Opened(object sender, RoutedEventArgs e)
@@ -6493,8 +6808,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // Open Find and Replace window with this pattern and execute search
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findWindow.FindTextBox.Text = storedPattern.Pattern;
-        findWindow.UsePatternCheckBox.IsChecked = true;
+        findWindow.SetFindText(storedPattern.Pattern, useRegex: true);
         findWindow.TextEditWindow = this;
         findWindow.StringFromWindow = PassedTextControl.Text;
         findWindow.SearchForText();

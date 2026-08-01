@@ -3,6 +3,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -80,6 +83,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         ResultColumnID = info.ResultColumnID;
         ResultRowID = info.ResultRowID;
         IsBarcode = info.IsBarcode;
+        AutomationProperties.SetAutomationId(this, $"WordBorder.{ResultRowID}.{ResultColumnID}");
+        AutomationProperties.SetAutomationId(EditWordTextBox, $"WordBorder.{ResultRowID}.{ResultColumnID}.Text");
 
         if (info.MatchingBackground != "Transparent"
             && new BrushConverter().ConvertFromString(info.MatchingBackground) is SolidColorBrush solidColorBrush)
@@ -119,6 +124,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         wb.isSyncingTextProperties = false;
         wb.PropertyChanged?.Invoke(wb, new PropertyChangedEventArgs(nameof(DisplayText)));
         wb.ApplyTextLayout();
+        if (UIElementAutomationPeer.FromElement(wb) is WordBorderAutomationPeer peer)
+            peer.RaiseValueChanged(e.OldValue as string ?? string.Empty, e.NewValue as string ?? string.Empty);
     }
 
     private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -147,6 +154,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    protected override AutomationPeer OnCreateAutomationPeer() => new WordBorderAutomationPeer(this);
+
     #endregion Events
 
     #region Properties
@@ -160,6 +169,35 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     {
         get { return (string)GetValue(DisplayTextProperty); }
         set { SetValue(DisplayTextProperty, value); }
+    }
+
+    internal sealed class WordBorderAutomationPeer(WordBorder owner) : FrameworkElementAutomationPeer(owner), IValueProvider
+    {
+        private WordBorder WordBorder => (WordBorder)Owner;
+
+        public bool IsReadOnly => !WordBorder.IsEnabled;
+
+        public string Value => WordBorder.DisplayText;
+
+        protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Edit;
+
+        protected override string GetClassNameCore() => nameof(WordBorder);
+
+        protected override string GetNameCore() => WordBorder.DisplayText;
+
+        public override object? GetPattern(PatternInterface patternInterface) =>
+            patternInterface == PatternInterface.Value ? this : base.GetPattern(patternInterface);
+
+        public void SetValue(string value)
+        {
+            if (IsReadOnly)
+                throw new ElementNotEnabledException();
+
+            WordBorder.DisplayText = value;
+        }
+
+        internal void RaiseValueChanged(string oldValue, string newValue) =>
+            RaisePropertyChangedEvent(ValuePatternIdentifiers.ValueProperty, oldValue, newValue);
     }
 
     public double DisplayLineHeight
@@ -494,6 +532,10 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private void EditWordTextBox_GotFocus(object sender, RoutedEventArgs e)
     {
         Select();
+
+        // The user focusing a word's edit box is a strong signal they are about to correct
+        // recognized text, so freeze the frame to keep it from resetting while they edit.
+        OwnerGrabFrame?.FreezeFrameForWordEditing();
     }
 
     private void EditWordTextBox_MouseDown(object sender, MouseButtonEventArgs e)

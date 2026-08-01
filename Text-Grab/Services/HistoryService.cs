@@ -27,6 +27,7 @@ public partial class HistoryService : IDisposable
 
     private static readonly int maxHistoryTextOnly = 100;
     private static readonly int maxHistoryWithImages = 10;
+    private static readonly int maxHistoryPdfDocuments = 10;
     private const string WordBorderInfoFileSuffix = ".wordborders.json";
     private static readonly TimeSpan historyCacheCheckInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan historyCacheIdleLifetime = TimeSpan.FromMinutes(2);
@@ -122,7 +123,7 @@ public partial class HistoryService : IDisposable
     {
         EnsureImageHistoryLoaded();
         TouchHistoryCache();
-        HistoryInfo? lastHistoryItem = HistoryWithImage.LastOrDefault();
+        HistoryInfo? lastHistoryItem = GetMostRecentGrab(HistoryWithImage);
 
         if (lastHistoryItem is not HistoryInfo historyInfo)
             return false;
@@ -132,6 +133,13 @@ public partial class HistoryService : IDisposable
         try { grabFrame.Show(); }
         catch { return false; }
         return true;
+    }
+
+    internal static HistoryInfo? GetMostRecentGrab(IEnumerable<HistoryInfo> historyItems)
+    {
+        return historyItems
+            .Where(history => !history.IsPdfDocument)
+            .MaxBy(history => history.CaptureDateTime);
     }
 
     public string GetLastTextHistory()
@@ -150,14 +158,21 @@ public partial class HistoryService : IDisposable
     {
         EnsureImageHistoryLoaded();
         TouchHistoryCache();
-        return [.. HistoryWithImage];
+        return [.. HistoryWithImage.Where(history => !history.IsPdfDocument)];
     }
 
-    public bool HasAnyHistoryWithImages()
+    public List<HistoryInfo> GetRecentPdfDocuments()
     {
         EnsureImageHistoryLoaded();
         TouchHistoryCache();
-        return HistoryWithImage.Count > 0;
+        return [.. HistoryWithImage.Where(history => history.IsPdfDocument)];
+    }
+
+    public bool HasAnyRecentGrabs()
+    {
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
+        return HistoryWithImage.Any(history => !history.IsPdfDocument);
     }
 
     public async Task LoadHistories()
@@ -187,22 +202,31 @@ public partial class HistoryService : IDisposable
 
     public async Task PopulateMenuItemWithRecentGrabs(MenuItem recentGrabsMenuItem)
     {
-        List<HistoryInfo> grabsHistory = GetRecentGrabs();
-        grabsHistory = [.. grabsHistory.OrderByDescending(x => x.CaptureDateTime)];
+        await PopulateMenuItemWithImageHistory(recentGrabsMenuItem, GetRecentGrabs());
+    }
 
-        ClearRecentGrabsMenuItems(recentGrabsMenuItem);
+    public async Task PopulateMenuItemWithRecentPdfs(MenuItem recentPdfsMenuItem)
+    {
+        await PopulateMenuItemWithImageHistory(recentPdfsMenuItem, GetRecentPdfDocuments());
+    }
 
-        if (grabsHistory.Count < 1)
+    private async Task PopulateMenuItemWithImageHistory(MenuItem historyMenuItem, List<HistoryInfo> historyItems)
+    {
+        historyItems = [.. historyItems.OrderByDescending(x => x.CaptureDateTime)];
+
+        ClearRecentGrabsMenuItems(historyMenuItem);
+
+        if (historyItems.Count < 1)
         {
-            recentGrabsMenuItem.IsEnabled = false;
+            historyMenuItem.IsEnabled = false;
             return;
         }
 
-        recentGrabsMenuItem.IsEnabled = true;
+        historyMenuItem.IsEnabled = true;
 
         string historyBasePath = await FileUtilities.GetPathToHistory();
 
-        foreach (HistoryInfo history in grabsHistory)
+        foreach (HistoryInfo history in historyItems)
         {
             string imageFullPath = Path.Combine(historyBasePath, history.ImagePath);
             if (string.IsNullOrWhiteSpace(history.ImagePath) || !File.Exists(imageFullPath))
@@ -212,17 +236,22 @@ public partial class HistoryService : IDisposable
             menuItem.Click += RecentGrabMenuItem_Click;
 
             string snippet = history.TextContent.Trim().Replace("\t", " ").MakeStringSingleLine().Truncate(40);
-            menuItem.Header = $"{history.CaptureDateTime.Humanize().Trim()} | {snippet}";
+            string sourceName = history.IsPdfDocument && !string.IsNullOrWhiteSpace(history.SourcePath)
+                ? $"{Path.GetFileName(history.SourcePath)} | "
+                : string.Empty;
+            menuItem.Header = $"{history.CaptureDateTime.Humanize().Trim()} | {sourceName}{snippet}";
             menuItem.Icon = new SymbolIcon
             {
-                Symbol = history.EditorMode switch
+                Symbol = history.IsPdfDocument
+                    ? SymbolRegular.DocumentSearch24
+                    : history.EditorMode switch
                 {
                     EtwEditorMode.Spreadsheet => SymbolRegular.Table24,
                     EtwEditorMode.Markdown => SymbolRegular.Markdown20,
                     _ => SymbolRegular.TextT24,
-                }
+                },
             };
-            recentGrabsMenuItem.Items.Add(menuItem);
+            historyMenuItem.Items.Add(menuItem);
         }
     }
 
@@ -248,7 +277,11 @@ public partial class HistoryService : IDisposable
             return;
         }
 
-        GrabFrame grabFrame = new(selectedHistory);
+        GrabFrame grabFrame = selectedHistory.IsPdfDocument
+            && !string.IsNullOrWhiteSpace(selectedHistory.SourcePath)
+            && File.Exists(selectedHistory.SourcePath)
+                ? new GrabFrame(selectedHistory, selectedHistory.SourcePath)
+                : new GrabFrame(selectedHistory);
         try { grabFrame.Show(); }
         catch { menuItem.IsEnabled = false; }
     }
@@ -369,7 +402,10 @@ public partial class HistoryService : IDisposable
             ClearOldImages();
             NormalizeHistoryCompatibilityData(HistoryWithImage);
             PersistWordBorderData(HistoryWithImage);
-            WriteHistoryFiles(HistoryWithImage, nameof(HistoryWithImage), maxHistoryWithImages);
+            WriteHistoryFiles(
+                HistoryWithImage,
+                nameof(HistoryWithImage),
+                maxHistoryWithImages + maxHistoryPdfDocuments);
             DeleteUnusedWordBorderFiles(HistoryWithImage);
         }
 
@@ -600,20 +636,33 @@ public partial class HistoryService : IDisposable
     }
     private void ClearOldImages()
     {
-        int numberToRemove = HistoryWithImage.Count - maxHistoryWithImages;
+        List<HistoryInfo> imagesToRemove = GetExcessVisualHistoryItems(HistoryWithImage);
 
-        if (numberToRemove < 1)
+        if (imagesToRemove.Count == 0)
             return;
 
-        List<HistoryInfo> imagesToRemove = [.. HistoryWithImage.Take(numberToRemove)];
-
-        for (int i = 0; i < numberToRemove; i++)
-            HistoryWithImage.RemoveAt(0);
+        foreach (HistoryInfo historyItem in imagesToRemove)
+            HistoryWithImage.Remove(historyItem);
 
         foreach (HistoryInfo infoItem in imagesToRemove)
             DeleteHistoryArtifacts(infoItem);
 
         ClearTransientHistoryPayloads(imagesToRemove);
+    }
+
+    internal static List<HistoryInfo> GetExcessVisualHistoryItems(IEnumerable<HistoryInfo> historyItems)
+    {
+        return
+        [
+            .. historyItems
+                .Where(history => !history.IsPdfDocument)
+                .OrderBy(history => history.CaptureDateTime)
+                .SkipLast(maxHistoryWithImages),
+            .. historyItems
+                .Where(history => history.IsPdfDocument)
+                .OrderBy(history => history.CaptureDateTime)
+                .SkipLast(maxHistoryPdfDocuments),
+        ];
     }
 
     private void DisposeCachedBitmap()

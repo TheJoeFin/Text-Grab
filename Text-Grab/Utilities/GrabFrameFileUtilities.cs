@@ -1,0 +1,331 @@
+using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Text_Grab.Models;
+
+namespace Text_Grab.Utilities;
+
+/// <summary>
+/// Reads and writes Text Grab Grab Frame files (<c>.tggf</c>). A Grab Frame file bundles
+/// the word borders, frame settings, and the source image together in a single document so
+/// a Grab Frame session can be saved to disk and reopened later.
+///
+/// The format is a ZIP container with three entries:
+/// <list type="bullet">
+///   <item><c>metadata.json</c> — the <see cref="HistoryInfo"/> describing the frame
+///   (language, table state, position, source mode, and the OCR text).</item>
+///   <item><c>wordborders.json</c> — the serialized <see cref="System.Collections.Generic.List{T}"/>
+///   of <see cref="WordBorderInfo"/>.</item>
+///   <item><c>image.png</c> — the frame's source image.</item>
+/// </list>
+/// Reusing <see cref="HistoryInfo"/> and <see cref="WordBorderInfo"/> lets a loaded file flow
+/// through the same GrabFrame code path as the History feature.
+/// </summary>
+public static class GrabFrameFileUtilities
+{
+    public const string GrabFrameFileExtension = ".tggf";
+
+    internal const long MaxArchiveBytes = 128L * 1024 * 1024;
+    internal const long MaxMetadataBytes = 4L * 1024 * 1024;
+    internal const long MaxWordBordersBytes = 32L * 1024 * 1024;
+    internal const long MaxImageBytes = 64L * 1024 * 1024;
+    internal const long MaxExpandedBytes = 96L * 1024 * 1024;
+    internal const long MaxImagePixelCount = 40_000_000;
+    internal const int MaxImageDimension = 16_384;
+    private const int MaxArchiveEntries = 16;
+    private const double MaxCompressionRatio = 1_000;
+    private const string MetadataEntryName = "metadata.json";
+    private const string WordBordersEntryName = "wordborders.json";
+    private const string ImageEntryName = "image.png";
+
+    private static readonly JsonSerializerOptions MetadataJsonOptions = new()
+    {
+        AllowTrailingCommas = true,
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    public static bool IsGrabFrameFileExtension(string? extension)
+    {
+        return !string.IsNullOrWhiteSpace(extension)
+            && string.Equals(extension, GrabFrameFileExtension, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsGrabFrameFile(string? path)
+    {
+        return !string.IsNullOrWhiteSpace(path)
+            && IsGrabFrameFileExtension(Path.GetExtension(path));
+    }
+
+    /// <summary>
+    /// The FileDialog filter string for Grab Frame files.
+    /// </summary>
+    public static string GetGrabFrameFileFilter()
+    {
+        return $"Text Grab Frame (*{GrabFrameFileExtension})|*{GrabFrameFileExtension}";
+    }
+
+    /// <summary>
+    /// Writes a Grab Frame file to <paramref name="destinationPath"/>. The supplied
+    /// <paramref name="info"/> is expected to come from <c>GrabFrame.AsHistoryItem()</c>;
+    /// its <see cref="HistoryInfo.ImageContent"/> and <see cref="HistoryInfo.WordBorderInfoJson"/>
+    /// are packed into the archive. The serialized metadata is taken from a copy with those
+    /// transient fields cleared, so the caller's <paramref name="info"/> is left untouched.
+    /// </summary>
+    public static async Task<bool> SaveGrabFrameFileAsync(HistoryInfo info, string destinationPath)
+    {
+        if (string.IsNullOrWhiteSpace(destinationPath))
+            return false;
+
+        // Pull out the payloads that live in their own archive entries.
+        string? wordBordersJson = info.WordBorderInfoJson;
+        Bitmap? image = info.ImageContent;
+
+        // Serialize a copy with the pointer fields blanked so the archive metadata does not
+        // duplicate or dangle — mutating the caller's live instance here would corrupt it.
+        HistoryInfo metadata = info.ShallowCopy();
+        metadata.WordBorderInfoJson = null;
+        metadata.WordBorderInfoFileName = null;
+        metadata.ImagePath = ImageEntryName;
+
+        string metadataJson;
+        try
+        {
+            metadataJson = JsonSerializer.Serialize(metadata, MetadataJsonOptions);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to serialize Grab Frame metadata: {ex}");
+            return false;
+        }
+
+        string? directory = Path.GetDirectoryName(destinationPath);
+        string tempPath = Path.Combine(
+            string.IsNullOrEmpty(directory) ? AutomationProfile.GetTemporaryDirectory() : directory,
+            $"{Guid.NewGuid():N}.tggf.tmp");
+        string backupPath = Path.Combine(
+            string.IsNullOrEmpty(directory) ? AutomationProfile.GetTemporaryDirectory() : directory,
+            $"{Guid.NewGuid():N}.tggf.bak");
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                using (FileStream zipStream = new(tempPath, FileMode.Create, FileAccess.Write))
+                using (ZipArchive archive = new(zipStream, ZipArchiveMode.Create))
+                {
+                    WriteTextEntry(archive, MetadataEntryName, metadataJson);
+
+                    if (!string.IsNullOrWhiteSpace(wordBordersJson))
+                        WriteTextEntry(archive, WordBordersEntryName, wordBordersJson);
+
+                    if (image is not null)
+                        WriteImageEntry(archive, ImageEntryName, image);
+                }
+            });
+
+            ReplaceFileAtomically(tempPath, destinationPath, backupPath);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to save Grab Frame file '{destinationPath}': {ex}");
+            return false;
+        }
+        finally
+        {
+            TryDeleteFile(tempPath);
+            TryDeleteFile(backupPath);
+        }
+    }
+
+    /// <summary>
+    /// Reads a Grab Frame file and returns a <see cref="HistoryInfo"/> with the image loaded into
+    /// <see cref="HistoryInfo.ImageContent"/> and the word borders placed inline in
+    /// <see cref="HistoryInfo.WordBorderInfoJson"/>, ready to hand to <c>new GrabFrame(historyInfo)</c>.
+    /// Returns <c>null</c> when the file is missing, unreadable, or malformed.
+    /// </summary>
+    public static async Task<HistoryInfo?> LoadGrabFrameFileAsync(string sourcePath)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            return null;
+
+        try
+        {
+            return await Task.Run(() =>
+            {
+                using FileStream zipStream = File.OpenRead(sourcePath);
+                if (zipStream.Length > MaxArchiveBytes)
+                    throw new InvalidDataException("The Grab Frame file exceeds the maximum supported size.");
+
+                using ZipArchive archive = new(zipStream, ZipArchiveMode.Read);
+                if (archive.Entries.Count > MaxArchiveEntries)
+                    throw new InvalidDataException("The Grab Frame file contains too many entries.");
+
+                long remainingExpandedBytes = MaxExpandedBytes;
+
+                ZipArchiveEntry? metadataEntry = archive.GetEntry(MetadataEntryName);
+                if (metadataEntry is null)
+                    return null;
+
+                HistoryInfo? info = JsonSerializer.Deserialize<HistoryInfo>(
+                    ReadEntryText(metadataEntry, MaxMetadataBytes, ref remainingExpandedBytes), MetadataJsonOptions);
+
+                if (info is null)
+                    return null;
+
+                ZipArchiveEntry? wordBordersEntry = archive.GetEntry(WordBordersEntryName);
+                info.WordBorderInfoJson = wordBordersEntry is null
+                    ? null
+                    : ReadEntryText(wordBordersEntry, MaxWordBordersBytes, ref remainingExpandedBytes);
+                info.WordBorderInfoFileName = null;
+
+                ZipArchiveEntry? imageEntry = archive.GetEntry(ImageEntryName);
+                if (imageEntry is not null)
+                    info.ImageContent = ReadImageEntry(imageEntry, ref remainingExpandedBytes);
+
+                if (string.IsNullOrWhiteSpace(info.ID))
+                    info.ID = Guid.NewGuid().ToString();
+
+                return info;
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to load Grab Frame file '{sourcePath}': {ex}");
+            return null;
+        }
+    }
+
+    private static void WriteTextEntry(ZipArchive archive, string entryName, string content)
+    {
+        ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+        using Stream entryStream = entry.Open();
+        using StreamWriter writer = new(entryStream, new UTF8Encoding(false));
+        writer.Write(content);
+    }
+
+    private static void WriteImageEntry(ZipArchive archive, string entryName, Bitmap image)
+    {
+        ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+
+        // GDI+ requires a seekable stream to encode a PNG; the zip entry stream is not
+        // seekable, so encode into memory first and copy the bytes across.
+        using MemoryStream imageStream = new();
+        image.Save(imageStream, ImageFormat.Png);
+        imageStream.Position = 0;
+
+        using Stream entryStream = entry.Open();
+        imageStream.CopyTo(entryStream);
+    }
+
+    private static Bitmap ReadImageEntry(ZipArchiveEntry entry, ref long remainingExpandedBytes)
+    {
+        byte[] imageBytes = ReadEntryBytes(entry, MaxImageBytes, ref remainingExpandedBytes);
+        using MemoryStream imageStream = new(imageBytes, writable: false);
+        using Image decoded = Image.FromStream(imageStream, useEmbeddedColorManagement: false, validateImageData: true);
+
+        if (!AreImageDimensionsAllowed(decoded.Width, decoded.Height))
+            throw new InvalidDataException("The Grab Frame image dimensions exceed the supported limit.");
+
+        return new Bitmap(decoded);
+    }
+
+    private static string ReadEntryText(ZipArchiveEntry entry, long maxEntryBytes, ref long remainingExpandedBytes)
+    {
+        byte[] content = ReadEntryBytes(entry, maxEntryBytes, ref remainingExpandedBytes);
+        return Encoding.UTF8.GetString(content);
+    }
+
+    private static byte[] ReadEntryBytes(ZipArchiveEntry entry, long maxEntryBytes, ref long remainingExpandedBytes)
+    {
+        ValidateEntrySize(entry, maxEntryBytes, remainingExpandedBytes);
+
+        using Stream entryStream = entry.Open();
+        using MemoryStream content = new((int)entry.Length);
+        byte[] buffer = new byte[81920];
+        long totalBytesRead = 0;
+
+        while (true)
+        {
+            int bytesRead = entryStream.Read(buffer, 0, buffer.Length);
+            if (bytesRead == 0)
+                break;
+
+            totalBytesRead += bytesRead;
+            if (totalBytesRead > maxEntryBytes || totalBytesRead > remainingExpandedBytes)
+                throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' exceeds the supported size.");
+
+            content.Write(buffer, 0, bytesRead);
+        }
+
+        if (totalBytesRead != entry.Length)
+            throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' has an invalid length.");
+
+        remainingExpandedBytes -= totalBytesRead;
+        return content.ToArray();
+    }
+
+    private static void ValidateEntrySize(ZipArchiveEntry entry, long maxEntryBytes, long remainingExpandedBytes)
+    {
+        if (entry.Length < 0 || entry.Length > maxEntryBytes || entry.Length > remainingExpandedBytes)
+            throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' exceeds the supported size.");
+
+        if (entry.Length == 0)
+            return;
+
+        if (entry.CompressedLength <= 0 || entry.Length / (double)entry.CompressedLength > MaxCompressionRatio)
+            throw new InvalidDataException($"The Grab Frame entry '{entry.FullName}' has an unsafe compression ratio.");
+    }
+
+    internal static bool AreImageDimensionsAllowed(int width, int height)
+    {
+        return width > 0
+            && height > 0
+            && width <= MaxImageDimension
+            && height <= MaxImageDimension
+            && (long)width * height <= MaxImagePixelCount;
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (IOException ex)
+        {
+            Debug.WriteLine($"Failed to delete temporary Grab Frame file '{path}': {ex}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Debug.WriteLine($"Access denied deleting temporary Grab Frame file '{path}': {ex}");
+        }
+    }
+
+    private static void ReplaceFileAtomically(string tempPath, string destinationPath, string backupPath)
+    {
+        if (!File.Exists(destinationPath))
+        {
+            File.Move(tempPath, destinationPath);
+            return;
+        }
+
+        try
+        {
+            File.Replace(tempPath, destinationPath, backupPath, ignoreMetadataErrors: true);
+        }
+        catch (FileNotFoundException) when (!File.Exists(destinationPath))
+        {
+            File.Move(tempPath, destinationPath);
+        }
+    }
+}

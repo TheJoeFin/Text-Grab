@@ -34,6 +34,7 @@ public static partial class OcrUtilities
     private static readonly Regex _cachedSpaceJoiningWordRegex = SpaceJoiningWordRegex();
 
     private static bool IsUiAutomationLanguage(ILanguage language) => language is UiAutomationLang;
+    private static bool IsWindowsAiDescriptionLanguage(ILanguage language) => language is WindowsAiDescriptionLang;
 
     private static ILanguage GetCompatibleOcrLanguage(ILanguage language)
     {
@@ -68,10 +69,17 @@ public static partial class OcrUtilities
         }
         else
         {
+            // For CJK languages, filter out likely furigana (small ruby-text
+            // characters above the main text) before merging the words. This is
+            // opt-in via the RemoveFurigana setting.
+            IEnumerable<IOcrWord> words = DefaultSettings.RemoveFurigana
+                ? FilterFurigana([.. ocrLine.Words])
+                : ocrLine.Words;
+
             bool isFirstWord = true;
             bool isPrevWordSpaceJoining = false;
 
-            foreach (IOcrWord ocrWord in ocrLine.Words)
+            foreach (IOcrWord ocrWord in words)
             {
                 string wordString = ocrWord.Text;
 
@@ -94,10 +102,67 @@ public static partial class OcrUtilities
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
+    /// <summary>
+    /// Removes words that are likely furigana: small ruby-text characters
+    /// rendered above the main text in Japanese. A word is treated as furigana
+    /// when it is noticeably shorter than the line's median word height and sits
+    /// directly above a larger word that overlaps it horizontally.
+    /// </summary>
+    internal static List<IOcrWord> FilterFurigana(List<IOcrWord> words)
+    {
+        if (words.Count == 0)
+            return words;
+
+        // Furigana is typically around half the height of the main text.
+        List<double> heights = [.. words.Select(w => w.BoundingBox.Height).OrderBy(h => h)];
+        double medianHeight = heights[heights.Count / 2];
+        double furiganaThreshold = medianHeight * 0.6;
+
+        List<IOcrWord> filteredWords = [];
+
+        for (int i = 0; i < words.Count; i++)
+        {
+            IOcrWord word = words[i];
+            bool isProbablyFurigana = false;
+
+            if (word.BoundingBox.Height < furiganaThreshold)
+            {
+                // Only treat it as furigana when a larger word sits below it and
+                // overlaps horizontally (i.e. the kanji it annotates).
+                for (int j = 0; j < words.Count; j++)
+                {
+                    if (i == j)
+                        continue;
+
+                    IOcrWord otherWord = words[j];
+
+                    bool isBelow = otherWord.BoundingBox.Top > word.BoundingBox.Bottom;
+                    bool overlapsHorizontally = !(otherWord.BoundingBox.Right < word.BoundingBox.Left
+                        || otherWord.BoundingBox.Left > word.BoundingBox.Right);
+                    bool isLarger = otherWord.BoundingBox.Height > furiganaThreshold;
+
+                    if (isBelow && overlapsHorizontally && isLarger)
+                    {
+                        isProbablyFurigana = word.Text.Length <= 2;
+                        break;
+                    }
+                }
+            }
+
+            if (!isProbablyFurigana)
+                filteredWords.Add(word);
+        }
+
+        // If everything was filtered, fall back to the original words to avoid
+        // dropping the whole line.
+        return filteredWords.Count > 0 ? filteredWords : words;
+    }
+
     public static async Task<string> GetTextFromAbsoluteRectAsync(
         Rect rect,
         ILanguage language,
-        IReadOnlyCollection<IntPtr>? excludedHandles = null)
+        IReadOnlyCollection<IntPtr>? excludedHandles = null,
+        Bitmap? preCapturedBitmap = null)
     {
         if (IsUiAutomationLanguage(language))
         {
@@ -108,8 +173,7 @@ public static partial class OcrUtilities
             language = GetCompatibleOcrLanguage(language);
         }
 
-        Rectangle selectedRegion = rect.AsRectangle();
-        Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(selectedRegion);
+        Bitmap bmp = preCapturedBitmap ?? ImageMethods.GetRegionOfScreenAsBitmap(rect.AsRectangle());
 
         return GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
@@ -215,6 +279,9 @@ public static partial class OcrUtilities
         language = GetCompatibleOcrLanguage(language);
         using Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(region);
 
+        if (IsWindowsAiDescriptionLanguage(language))
+            return (await GetOcrResultFromImageAsync(bmp, language), 1.0);
+
         if (language is WindowsAiLang)
         {
             return (await WindowsAiUtilities.GetOcrResultAsync(bmp), 1.0);
@@ -236,6 +303,9 @@ public static partial class OcrUtilities
     {
         language = GetCompatibleOcrLanguage(language);
 
+        if (IsWindowsAiDescriptionLanguage(language))
+            return (await GetOcrResultFromImageAsync(bmp, language), 1.0);
+
         if (language is WindowsAiLang)
             return (await WindowsAiUtilities.GetOcrResultAsync(bmp), 1.0);
 
@@ -251,6 +321,9 @@ public static partial class OcrUtilities
     public static async Task<IOcrLinesWords> GetOcrResultFromImageAsync(SoftwareBitmap scaledBitmap, ILanguage language)
     {
         language = GetCompatibleOcrLanguage(language);
+
+        if (IsWindowsAiDescriptionLanguage(language))
+            return await GetWindowsAiDescriptionOcrResultAsync(scaledBitmap);
 
         if (language is WindowsAiLang winAiLang)
         {
@@ -300,14 +373,18 @@ public static partial class OcrUtilities
             return;
 
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+        ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+
+        // Capture the region before showing the loading indicator so the overlay itself
+        // isn't baked into the region's screenshot (issue #662).
+        Bitmap preCapturedBitmap = ImageMethods.GetRegionOfScreenAsBitmap(scaledRect.AsRectangle());
 
         PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
         try
         {
-            ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
+            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language, preCapturedBitmap: preCapturedBitmap);
             (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
                 LanguageUtilities.GetPersistedLanguageIdentity(language);
 
@@ -348,14 +425,18 @@ public static partial class OcrUtilities
             return;
 
         Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+        ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
+
+        // Capture the region before showing the loading indicator so the overlay itself
+        // isn't baked into the region's screenshot (issue #662).
+        Bitmap preCapturedBitmap = ImageMethods.GetRegionOfScreenAsBitmap(scaledRect.AsRectangle());
 
         PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
         try
         {
-            ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language);
+            string grabbedText = await GetTextFromAbsoluteRectAsync(scaledRect, language, preCapturedBitmap: preCapturedBitmap);
             (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
                 LanguageUtilities.GetPersistedLanguageIdentity(language);
 
@@ -402,23 +483,37 @@ public static partial class OcrUtilities
         }
 
         // get temp path
-        string tempPath = Path.GetTempPath();
+        string tempPath = AutomationProfile.GetTemporaryDirectory();
         string tempFileName = Path.GetRandomFileName() + ".bmp";
         string tempFilePath = Path.Combine(tempPath, tempFileName);
-        bitmap.Save(tempFilePath, ImageFormat.Bmp);
-
-        string result = await WindowsAiUtilities.GetTextWithWinAI(tempFilePath);
-
-        OcrOutput paragraphsOutput = new()
+        try
         {
-            Kind = OcrOutputKind.Paragraph,
-            RawOutput = result,
-            Language = language,
-            SourceBitmap = bitmap,
-        };
+            bitmap.Save(tempFilePath, ImageFormat.Bmp);
 
-        List<OcrOutput> outputs = [paragraphsOutput];
-        return outputs;
+            string result = await WindowsAiUtilities.GetTextWithWinAI(tempFilePath);
+
+            OcrOutput paragraphsOutput = new()
+            {
+                Kind = OcrOutputKind.Paragraph,
+                RawOutput = result,
+                Language = language,
+                SourceBitmap = bitmap,
+            };
+
+            List<OcrOutput> outputs = [paragraphsOutput];
+            return outputs;
+        }
+        finally
+        {
+            if (File.Exists(tempFilePath))
+                File.Delete(tempFilePath);
+        }
+    }
+
+    public static async Task<List<OcrOutput>> GetTextFromWinAiDescriptionAsync(Bitmap bitmap, WindowsAiDescriptionLang language)
+    {
+        IOcrLinesWords descriptionResult = await GetOcrResultFromImageAsync(bitmap, language);
+        return [GetTextFromOcrResult(language, bitmap, descriptionResult)];
     }
 
     public static async Task<List<OcrOutput>> GetTextFromImageAsync(Bitmap bitmap, ILanguage language)
@@ -441,6 +536,10 @@ public static partial class OcrUtilities
         else if (language is WindowsAiLang winAiLang)
         {
             outputs.AddRange(await GetTextFromWinAiAsync(bitmap, winAiLang));
+        }
+        else if (language is WindowsAiDescriptionLang windowsAiDescriptionLang)
+        {
+            outputs.AddRange(await GetTextFromWinAiDescriptionAsync(bitmap, windowsAiDescriptionLang));
         }
         else
         {
@@ -480,9 +579,9 @@ public static partial class OcrUtilities
 
         public int StartingLineNumber => Lines.Count == 0 ? 0 : Lines[0].LineNumber;
 
-        public string DisplayText => string.Join(Environment.NewLine, Lines.Select(static line => line.Text));
+        public string DisplayText => string.Join(Environment.NewLine, Lines.Select(static line => line.Text.MakeStringSingleLine()));
 
-        public string SingleLineText => string.Join(" ", Lines.Select(static line => line.Text).Where(static text => !string.IsNullOrWhiteSpace(text)));
+        public string SingleLineText => string.Join(" ", Lines.Select(static line => line.Text.MakeStringSingleLine()).Where(static text => !string.IsNullOrWhiteSpace(text)));
     }
 
     internal static string BuildTextFromOcrLines(ILanguage language, IOcrLinesWords ocrResult)
@@ -510,7 +609,23 @@ public static partial class OcrUtilities
         }
         else
         {
-            foreach (IOcrLine ocrLine in lines)
+            // Windows OCR returns CJK lines - especially furigana ruby lines and
+            // stray fragments - in an order that does not follow the page's reading
+            // flow, so re-sort by geometry (top-to-bottom, then left-to-right)
+            // before joining. Space-joining languages keep the engine order because
+            // paragraph detection above already handles their layout.
+            IReadOnlyList<IOcrLine> orderedLines = isSpaceJoiningOCRLang
+                ? lines
+                : OrderLinesForReadingFlow(lines);
+
+            // Windows OCR emits furigana (Japanese ruby readings) as their own
+            // short lines sitting directly above the kanji they annotate, so the
+            // word-level filter above never catches them. Drop those whole lines
+            // when furigana removal is enabled.
+            if (!isSpaceJoiningOCRLang && DefaultSettings.RemoveFurigana)
+                orderedLines = FilterFuriganaLines(orderedLines);
+
+            foreach (IOcrLine ocrLine in orderedLines)
                 ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
         }
 
@@ -518,6 +633,108 @@ public static partial class OcrUtilities
             text.ReverseWordsForRightToLeft();
 
         return text.ToString();
+    }
+
+    /// <summary>
+    /// Re-orders OCR lines into natural reading flow: groups lines that share a
+    /// horizontal row (their vertical extents overlap), orders rows top-to-bottom,
+    /// and orders the lines within each row left-to-right. Windows OCR frequently
+    /// returns CJK lines out of order (furigana above kanji, trailing fragments),
+    /// which scrambles the concatenated text without this pass.
+    /// </summary>
+    internal static IReadOnlyList<IOcrLine> OrderLinesForReadingFlow(IReadOnlyList<IOcrLine> lines)
+    {
+        if (lines.Count <= 1)
+            return lines;
+
+        // Stable sort by the top edge so rows are discovered top-to-bottom.
+        List<IOcrLine> byTop = [.. lines.OrderBy(line => line.BoundingBox.Top)];
+
+        List<List<IOcrLine>> rows = [];
+        double currentRowTop = 0;
+        double currentRowBottom = 0;
+
+        foreach (IOcrLine line in byTop)
+        {
+            Windows.Foundation.Rect box = line.BoundingBox;
+
+            if (rows.Count > 0)
+            {
+                double overlap = Math.Min(currentRowBottom, box.Bottom) - Math.Max(currentRowTop, box.Top);
+                double minHeight = Math.Min(currentRowBottom - currentRowTop, box.Height);
+
+                // A line joins the current row when it overlaps the row's vertical
+                // band by more than half of the shorter of the two heights.
+                if (minHeight > 0 && overlap > minHeight * 0.5)
+                {
+                    rows[^1].Add(line);
+                    currentRowTop = Math.Min(currentRowTop, box.Top);
+                    currentRowBottom = Math.Max(currentRowBottom, box.Bottom);
+                    continue;
+                }
+            }
+
+            rows.Add([line]);
+            currentRowTop = box.Top;
+            currentRowBottom = box.Bottom;
+        }
+
+        List<IOcrLine> ordered = [];
+        foreach (List<IOcrLine> row in rows)
+            ordered.AddRange(row.OrderBy(line => line.BoundingBox.Left));
+
+        return ordered;
+    }
+
+    /// <summary>
+    /// Removes whole OCR lines that are likely furigana: short ruby-reading lines
+    /// that sit directly above a substantially taller line overlapping them
+    /// horizontally (the kanji they annotate). Windows OCR returns furigana as
+    /// their own lines, so this complements the word-level <see cref="FilterFurigana"/>.
+    /// The heuristic is intentionally conservative and geometry-only; it can miss
+    /// mis-detected readings and is offered as an opt-in, experimental setting.
+    /// </summary>
+    internal static IReadOnlyList<IOcrLine> FilterFuriganaLines(IReadOnlyList<IOcrLine> lines)
+    {
+        if (lines.Count < 2)
+            return lines;
+
+        List<IOcrLine> kept = [];
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            Windows.Foundation.Rect box = lines[i].BoundingBox;
+            bool isFurigana = false;
+
+            for (int j = 0; j < lines.Count; j++)
+            {
+                if (i == j)
+                    continue;
+
+                Windows.Foundation.Rect other = lines[j].BoundingBox;
+
+                bool isBelow = other.Top >= box.Bottom;
+                bool overlapsHorizontally = !(other.Right < box.Left || other.Left > box.Right);
+                // The annotated kanji is markedly taller than its reading.
+                bool isSubstantiallyTaller = other.Height > box.Height * 1.4;
+                // Ruby text hugs the top of its character; a large vertical gap
+                // means these are separate lines of body text, not a reading.
+                bool isCloseAbove = other.Top - box.Bottom < box.Height;
+
+                if (isBelow && overlapsHorizontally && isSubstantiallyTaller && isCloseAbove)
+                {
+                    isFurigana = true;
+                    break;
+                }
+            }
+
+            if (!isFurigana)
+                kept.Add(lines[i]);
+        }
+
+        // Never drop everything - fall back to the input if the heuristic would
+        // erase the whole result.
+        return kept.Count > 0 ? kept : lines;
     }
 
     internal static bool ShouldUseParagraphDetection(bool isSpaceJoiningLanguage, bool isTableMode = false)
@@ -612,6 +829,12 @@ public static partial class OcrUtilities
         if (maxHeight / minHeight > 1.5)
             return false;
 
+        // Consecutive OCR entries must advance to a distinct visual row. Without
+        // this guard, duplicate or horizontally split entries on the same row have
+        // a negative gap and are incorrectly merged into a one-line-tall paragraph.
+        if (nextTop - currentTop < minHeight * 0.5)
+            return false;
+
         // If the vertical gap between line bounding boxes is less than 0.6× the average line
         // height, the lines are part of the same paragraph (normal line spacing); otherwise
         // the extra whitespace signals a paragraph break.
@@ -702,9 +925,19 @@ public static partial class OcrUtilities
 
     public static async Task<double> GetIdealScaleFactorForOcrAsync(Bitmap bitmap, ILanguage selectedLanguage)
     {
+        if (IsWindowsAiDescriptionLanguage(selectedLanguage))
+            return 1.0;
+
         selectedLanguage = GetCompatibleOcrLanguage(selectedLanguage);
         IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(bitmap, selectedLanguage);
         return GetIdealScaleFactorForOcrResult(ocrResult, bitmap.Height, bitmap.Width);
+    }
+
+    private static async Task<IOcrLinesWords> GetWindowsAiDescriptionOcrResultAsync(SoftwareBitmap softwareBitmap)
+    {
+        string description = await WindowsAiUtilities.GetTextDescriptionWithWinAI(softwareBitmap);
+        Windows.Foundation.Rect fullBounds = new(0, 0, softwareBitmap.PixelWidth, softwareBitmap.PixelHeight);
+        return GeneratedOcrLinesWords.FromParagraph(description, fullBounds);
     }
 
     private static double GetIdealScaleFactorForOcrResult(IOcrLinesWords ocrResult, int height, int width)

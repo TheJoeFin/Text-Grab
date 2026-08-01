@@ -1,5 +1,6 @@
 ﻿using Microsoft.Graphics.Imaging;
 using Microsoft.Windows.AI;
+using Microsoft.Windows.AI.ContentSafety;
 using Microsoft.Windows.AI.Imaging;
 using Microsoft.Windows.AI.Text;
 using System;
@@ -87,7 +88,7 @@ public static class WindowsAiUtilities
                 {
                     // Check for common English words as additional heuristic
                     string lowerText = text.ToLowerInvariant();
-                    string[] commonEnglishWords = { " the ", " and ", " or ", " is ", " are ", " was ", " were ", " in ", " on ", " at ", " to ", " of ", " for ", " with " };
+                    string[] commonEnglishWords = [" the ", " and ", " or ", " is ", " are ", " was ", " were ", " in ", " on ", " at ", " to ", " of ", " for ", " with "];
                     int englishWordCount = commonEnglishWords.Count(w => lowerText.Contains(w));
                     // If text contains multiple common English words, likely already English
                     if (englishWordCount >= 2)
@@ -125,35 +126,45 @@ public static class WindowsAiUtilities
 
     public static bool CanDeviceUseWinAI()
     {
-        // Check if the app is packaged and if the AI feature is supported
-        if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())
-            return false;
+        return CanDeviceUseWinAiFeature(TextRecognizer.GetReadyState);
+    }
 
-        // Today, Windows AI Text Recognition is only supported on ARM64
-        Architecture arch = RuntimeInformation.ProcessArchitecture;
-        if (arch != Architecture.Arm64 && !Settings.Default.OverrideAiArchCheck)
-            return false;
+    public static bool CanDeviceDescribeImagesWithWinAI()
+    {
+        return CanDeviceUseWinAiFeature(ImageDescriptionGenerator.GetReadyState);
+    }
 
-        // After checking for Arm64 the remainder checks should be good to catch supporting devices
+    private static bool CanDeviceUseWinAiFeature(Func<AIFeatureReadyState> getReadyState)
+    {
+        if (!MeetsWindowsAiPrerequisites())
+            return false;
 
         try
         {
-            AIFeatureReadyState readyState = TextRecognizer.GetReadyState();
-            if (readyState == AIFeatureReadyState.NotSupportedOnCurrentSystem)
-                return false;
-            else
-                return true;
+            return getReadyState() != AIFeatureReadyState.NotSupportedOnCurrentSystem;
         }
         catch (Exception)
         {
 #if DEBUG
             throw;
-#endif
-
-#pragma warning disable CS0162 // Unreachable code detected
+#else
             return false;
-#pragma warning restore CS0162 // Unreachable code detected
+#endif
         }
+    }
+
+    private static bool MeetsWindowsAiPrerequisites()
+    {
+        // Check if the app is packaged and if the AI feature is supported
+        if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())
+            return false;
+
+        // Today, Windows AI features are only supported on ARM64 unless overridden for debugging.
+        Architecture arch = RuntimeInformation.ProcessArchitecture;
+        if (arch != Architecture.Arm64 && !Settings.Default.OverrideAiArchCheck)
+            return false;
+
+        return true;
     }
 
     public static async Task<string> GetTextWithWinAI(string imagePath)
@@ -170,7 +181,7 @@ public static class WindowsAiUtilities
         using TextRecognizer textRecognizer = await TextRecognizer.CreateAsync();
 
         SoftwareBitmap bitmap = await imagePath.FilePathToSoftwareBitmapAsync();
-        ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
+        using ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
 
         RecognizedText? result = textRecognizer?
             .RecognizeTextFromImage(imageBuffer);
@@ -186,9 +197,99 @@ public static class WindowsAiUtilities
         return stringBuilder.ToString();
     }
 
+    public static async Task<string> GetTextDescriptionWithWinAI(string imagePath)
+    {
+        using SoftwareBitmap bitmap = await imagePath.FilePathToSoftwareBitmapAsync();
+        return await GetTextDescriptionWithWinAI(bitmap);
+    }
+
+    /// <summary>
+    /// Describes a <see cref="Bitmap"/> with Windows AI. The <paramref name="cancellationToken"/>
+    /// aborts the on-device inference; a cancelled call throws <see cref="OperationCanceledException"/>.
+    /// </summary>
+    public static async Task<string> GetTextDescriptionWithWinAI(Bitmap bmp, CancellationToken cancellationToken)
+    {
+        string tempFilePath = AutomationProfile.GetTemporaryFilePath(".png");
+        bmp.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
+        try
+        {
+            using SoftwareBitmap softwareBitmap = await tempFilePath.FilePathToSoftwareBitmapAsync();
+            return await GetTextDescriptionWithWinAI(softwareBitmap, cancellationToken);
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempFilePath))
+                System.IO.File.Delete(tempFilePath);
+        }
+    }
+
+    public static async Task<string> GetTextDescriptionWithWinAI(SoftwareBitmap bitmap, CancellationToken cancellationToken = default)
+    {
+        // Return empty rather than an error message so callers treat this as a
+        // failed grab instead of committing the message as recognized text.
+        if (!CanDeviceDescribeImagesWithWinAI())
+            return string.Empty;
+
+        AIFeatureReadyState readyState = ImageDescriptionGenerator.GetReadyState();
+        if (readyState == AIFeatureReadyState.NotReady)
+        {
+            // EnsureReadyAsync may download the model; thread the token so Cancel
+            // aborts the wait, and bail out if the feature still failed to get ready.
+            AIFeatureReadyResult readyResult = await ImageDescriptionGenerator.EnsureReadyAsync().AsTask(cancellationToken);
+            if (readyResult.Status != AIFeatureReadyResultState.Success)
+            {
+                Debug.WriteLine($"Image description model not ready: {readyResult.Status}");
+                return string.Empty;
+            }
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using ImageDescriptionGenerator imageDescriptionGenerator = await ImageDescriptionGenerator.CreateAsync();
+        using ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
+        return await GetTextDescriptionWithWinAI(imageDescriptionGenerator, imageBuffer, cancellationToken);
+    }
+
+    private static async Task<string> GetTextDescriptionWithWinAI(ImageDescriptionGenerator imageDescriptionGenerator, ImageBuffer imageBuffer, CancellationToken cancellationToken = default)
+    {
+        // Create content moderation thresholds object.
+        ContentFilterOptions filterOptions = new();
+        filterOptions.ResponseMaxAllowedSeverityLevel.SelfHarm = SeverityLevel.Medium;
+        filterOptions.ResponseMaxAllowedSeverityLevel.Violent = SeverityLevel.Medium;
+
+        try
+        {
+            // Get text description. Awaiting DescribeAsync already waits for the on-device
+            // inference to finish; AsTask threads the cancellation token so the model call
+            // itself is aborted when the user cancels.
+            ImageDescriptionResult languageModelResponse = await imageDescriptionGenerator.DescribeAsync(
+                                                                                imageBuffer,
+                                                                                ImageDescriptionKind.AccessibleDescription,
+                                                                                filterOptions).AsTask(cancellationToken);
+
+            if (languageModelResponse.Status != ImageDescriptionResultStatus.Complete)
+            {
+                Debug.WriteLine($"Image description did not complete. Status: {languageModelResponse.Status}");
+                return string.Empty;
+            }
+
+            return languageModelResponse.Description?.Trim() ?? string.Empty;
+        }
+        catch (OperationCanceledException)
+        {
+            // Let cancellation propagate so callers can distinguish it from an empty result.
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Image description failed: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
     public static async Task<WinAiOcrLinesWords?> GetOcrResultAsync(Bitmap bmp)
     {
-        string tempFilePath = System.IO.Path.GetTempFileName();
+        string tempFilePath = AutomationProfile.GetTemporaryFilePath(".png");
         bmp.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
         SoftwareBitmap softwareBitmap = await tempFilePath.FilePathToSoftwareBitmapAsync();
 
@@ -597,7 +698,7 @@ public static class WindowsAiUtilities
                     return line[8..].Trim();
                 return line;
             })
-            .FirstOrDefault(line => line.Length > 0 && 
+            .FirstOrDefault(line => line.Length > 0 &&
                                    (line.Contains('[') || line.Contains('(') ||
                                     line.Contains('\\') || line.Contains('^') || line.Contains('$') ||
                                     line.Contains('+') || line.Contains('*') || line.Contains('?') ||

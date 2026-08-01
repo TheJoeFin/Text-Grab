@@ -22,7 +22,7 @@ namespace Text_Grab.Pages;
 public partial class LanguageSettings : Page
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
-    private bool loadingUiAutomationSettings = false;
+    private bool loadingLanguageSettings = false;
 
 
     public LanguageSettings()
@@ -32,12 +32,14 @@ public partial class LanguageSettings : Page
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
-        loadingUiAutomationSettings = true;
+        loadingLanguageSettings = true;
 
         LoadAiStatus();
-
+        LoadWindowsAiDescriptionSettings();
         LoadWindowsLanguages();
         LoadUiAutomationSettings();
+
+        RemoveFuriganaToggle.IsChecked = DefaultSettings.RemoveFurigana;
 
         if (DefaultSettings.UseTesseract)
         {
@@ -49,7 +51,7 @@ public partial class LanguageSettings : Page
             TesseractLanguagesStackPanel.Visibility = Visibility.Collapsed;
         }
 
-        loadingUiAutomationSettings = false;
+        loadingLanguageSettings = false;
     }
 
     private void LoadAiStatus()
@@ -138,6 +140,12 @@ public partial class LanguageSettings : Page
         UpdateUiAutomationControlState();
     }
 
+    private void LoadWindowsAiDescriptionSettings()
+    {
+        WindowsAiDescriptionEnabledToggle.IsChecked = DefaultSettings.WindowsAiDescriptionEnabled;
+        WindowsAiDescriptionEnabledToggle.IsEnabled = WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI();
+    }
+
     private async void InstallButton_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(AllLanguagesComboBox.Text))
@@ -149,7 +157,7 @@ public partial class LanguageSettings : Page
 
         string tesseractPath = Path.GetDirectoryName(DefaultSettings.TesseractPath) ?? "c:\\";
         string tesseractFilePath = $"{tesseractPath}\\tessdata\\{pickedLanguageFile}";
-        string tempFilePath = Path.Combine(Path.GetTempPath(), pickedLanguageFile);
+        string tempFilePath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), pickedLanguageFile);
 
         TesseractGitHubFileDownloader fileDownloader = new();
         await fileDownloader.DownloadFileAsync(pickedLanguageFile, tempFilePath);
@@ -165,7 +173,7 @@ public partial class LanguageSettings : Page
 
     private void UiAutomationEnabledToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (loadingUiAutomationSettings)
+        if (loadingLanguageSettings)
             return;
 
         DefaultSettings.UiAutomationEnabled = UiAutomationEnabledToggle.IsChecked is true;
@@ -176,7 +184,7 @@ public partial class LanguageSettings : Page
 
     private void UiAutomationFallbackToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (loadingUiAutomationSettings)
+        if (loadingLanguageSettings)
             return;
 
         DefaultSettings.UiAutomationFallbackToOcr = UiAutomationFallbackToggle.IsChecked is true;
@@ -185,7 +193,7 @@ public partial class LanguageSettings : Page
 
     private void UiAutomationPreferFocusedToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (loadingUiAutomationSettings)
+        if (loadingLanguageSettings)
             return;
 
         DefaultSettings.UiAutomationPreferFocusedElement = UiAutomationPreferFocusedToggle.IsChecked is true;
@@ -194,7 +202,7 @@ public partial class LanguageSettings : Page
 
     private void UiAutomationIncludeOffscreenToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (loadingUiAutomationSettings)
+        if (loadingLanguageSettings)
             return;
 
         DefaultSettings.UiAutomationIncludeOffscreen = UiAutomationIncludeOffscreenToggle.IsChecked is true;
@@ -203,12 +211,38 @@ public partial class LanguageSettings : Page
 
     private void UiAutomationTraversalModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (loadingUiAutomationSettings
+        if (loadingLanguageSettings
             || UiAutomationTraversalModeComboBox.SelectedItem is not UiAutomationTraversalMode traversalMode)
             return;
 
         DefaultSettings.UiAutomationTraversalMode = traversalMode.ToString();
         DefaultSettings.Save();
+    }
+
+    private void RemoveFuriganaToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (loadingLanguageSettings)
+            return;
+
+        DefaultSettings.RemoveFurigana = RemoveFuriganaToggle.IsChecked is true;
+        DefaultSettings.Save();
+        LanguageUtilities.InvalidateAllCaches();
+    }
+
+    private void WindowsAiDescriptionEnabledToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (loadingLanguageSettings)
+            return;
+
+        if (!WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
+        {
+            WindowsAiDescriptionEnabledToggle.IsChecked = false;
+            return;
+        }
+
+        DefaultSettings.WindowsAiDescriptionEnabled = WindowsAiDescriptionEnabledToggle.IsChecked is true;
+        DefaultSettings.Save();
+        LanguageUtilities.InvalidateAllCaches();
     }
 
     private void UpdateUiAutomationControlState()

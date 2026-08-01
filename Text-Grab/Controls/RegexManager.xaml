@@ -6,7 +6,8 @@
     xmlns:local="clr-namespace:Text_Grab.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Title="Regular Expression Manager"
+    Title="Patterns Manager"
+    AutomationProperties.AutomationId="RegexManagerDialog"
     Width="900"
     Height="600"
     MinWidth="700"
@@ -28,7 +29,7 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
-            Title="Regular Expression Manager"
+            Title="Patterns Manager"
             Height="32"
             Margin="2,2,2,0"
             Padding="8,2"
@@ -41,35 +42,41 @@
             Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}">
             <DataGrid
                 x:Name="RegexDataGrid"
+                AutomationProperties.AutomationId="RegexManager.PatternsGrid"
                 AutoGenerateColumns="False"
-                CanUserAddRows="True"
-                CanUserDeleteRows="True"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                CellStyle="{DynamicResource DataGridCellStyleDark}"
+                ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyleDark}"
                 HeadersVisibility="Column"
                 HorizontalScrollBarVisibility="Disabled"
+                IsReadOnly="True"
                 SelectionChanged="RegexDataGrid_SelectionChanged"
-                SelectionMode="Single">
+                SelectionMode="Single"
+                SelectionUnit="FullRow">
+                <DataGrid.RowStyle>
+                    <Style BasedOn="{StaticResource DataGridRowStyleDark}" TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                                <Setter Property="FontStyle" Value="Italic" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Width="auto"
                         Binding="{Binding Name}"
-                        Header="Name"
-                        IsReadOnly="False" />
+                        Header="Name" />
                     <DataGridTextColumn
                         Width="*"
-                        Binding="{Binding Pattern}"
-                        Header="Pattern"
-                        IsReadOnly="False" />
+                        Binding="{Binding PatternDisplay}"
+                        Header="Pattern" />
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding Description}"
-                        Header="Description"
-                        IsReadOnly="False" />
-                    <DataGridCheckBoxColumn
-                        Width="70"
-                        Binding="{Binding IsDefault}"
-                        Header="Default"
-                        IsReadOnly="True"
-                        Visibility="Collapsed" />
+                        Header="Description" />
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
@@ -81,20 +88,23 @@
             Orientation="Horizontal">
             <ToggleButton
                 x:Name="ShowTestToggle"
+                AutomationProperties.AutomationId="RegexManager.ShowTestToggle"
                 Margin="0,0,6,0"
                 Padding="10,6"
                 Click="ShowTestToggle_Click"
                 Content="Show Test"
-                IsChecked="True"
+                IsChecked="False"
                 Style="{DynamicResource ToggleSymbolButton}" />
             <ui:Button
                 x:Name="AddButton"
+                AutomationProperties.AutomationId="RegexManager.AddButton"
                 Margin="0,0,6,0"
                 Click="AddButton_Click"
                 Content="Add New"
                 Icon="{ui:SymbolIcon Add24}" />
             <ui:Button
                 x:Name="EditButton"
+                AutomationProperties.AutomationId="RegexManager.EditButton"
                 Margin="0,0,6,0"
                 Click="EditButton_Click"
                 Content="Edit"
@@ -102,6 +112,7 @@
                 IsEnabled="False" />
             <ui:Button
                 x:Name="DeleteButton"
+                AutomationProperties.AutomationId="RegexManager.DeleteButton"
                 Margin="0,0,6,0"
                 Appearance="Danger"
                 Click="DeleteButton_Click"
@@ -109,7 +120,16 @@
                 Icon="{ui:SymbolIcon Delete24}"
                 IsEnabled="False" />
             <ui:Button
+                x:Name="HideButton"
+                Margin="0,0,6,0"
+                Click="HideButton_Click"
+                Content="Hide"
+                Icon="{ui:SymbolIcon EyeOff24}"
+                IsEnabled="False"
+                Visibility="Collapsed" />
+            <ui:Button
                 x:Name="ExplainButton"
+                AutomationProperties.AutomationId="RegexManager.ExplainButton"
                 Margin="0,0,6,0"
                 Click="ExplainButton_Click"
                 Content="Explain"
@@ -117,6 +137,7 @@
                 IsEnabled="False" />
             <ui:Button
                 x:Name="UseButton"
+                AutomationProperties.AutomationId="RegexManager.UseButton"
                 Margin="0,0,6,0"
                 Appearance="Primary"
                 Click="UseButton_Click"
@@ -127,6 +148,7 @@
 
         <Border
             x:Name="TestPanel"
+            AutomationProperties.AutomationId="RegexManager.TestPanel"
             Grid.Row="3"
             Margin="6"
             Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
@@ -148,6 +170,7 @@
                 <Grid Grid.Row="1">
                     <TextBox
                         x:Name="TestTextBox"
+                        AutomationProperties.AutomationId="RegexManager.TestText"
                         MinHeight="160"
                         Margin="6,0,6,6"
                         AcceptsReturn="True"
@@ -176,6 +199,7 @@
                         Text="Matches:" />
                     <TextBlock
                         x:Name="MatchCountText"
+                        AutomationProperties.AutomationId="RegexManager.MatchCount"
                         VerticalAlignment="Center"
                         FontWeight="Bold"
                         Text="0" />

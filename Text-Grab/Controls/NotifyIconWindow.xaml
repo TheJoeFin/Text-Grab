@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="NotifyIconWindow"
+    AutomationProperties.AutomationId="NotifyIconWindow"
     Width="0"
     Height="0"
     Background="Transparent"
@@ -24,6 +25,8 @@
     <Grid>
         <WpfUiIcon:NotifyIcon
             x:Name="NotifyIcon"
+            AutomationProperties.AutomationId="NotifyIcon"
+            AutomationProperties.Name="Text Grab notification icon"
             Icon="/Images/TealSelect40.png"
             IsVisibleChanged="NotifyIcon_IsVisibleChanged"
             LeftClick="NotifyIcon_LeftClick"
@@ -32,6 +35,7 @@
                 <ContextMenu Opened="ContextMenu_Opened">
                     <MenuItem
                         x:Name="SettingsMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.Settings"
                         Click="SettingsMenuItem_Click"
                         Header="Settings">
                         <MenuItem.Icon>
@@ -41,6 +45,7 @@
                     <Separator />
                     <MenuItem
                         x:Name="OpenFileMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.OpenFile"
                         Click="OpenFileMenuItem_Click"
                         Header="Open File...">
                         <MenuItem.Icon>
@@ -49,6 +54,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="OpenClipboardImageGrabFrame"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.PasteGrabFrame"
                         Click="OpenClipboardImageGrabFrame_Click"
                         Header="Paste in Grab Frame"
                         IsEnabled="False">
@@ -58,6 +64,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="LastGrabMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.EditLastGrab"
                         Click="LastGrabMenuItem_Click"
                         Header="Edit Last Grab">
                         <MenuItem.Icon>
@@ -66,6 +73,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="LookupMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.QuickLookup"
                         Click="LookupMenuItem_Click"
                         Header="Quick Simple Lookup">
                         <MenuItem.Icon>
@@ -74,6 +82,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="PreviousRegionMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.PreviousRegion"
                         Click="PreviousRegionMenuItem_Click"
                         Header="Grab Previous Region">
                         <MenuItem.Icon>
@@ -83,6 +92,7 @@
                     <Separator />
                     <MenuItem
                         x:Name="FullscreenGrabMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.FullscreenGrab"
                         Click="FullscreenGrabMenuItem_Click"
                         Header="Fullscreen Grab">
                         <MenuItem.Icon>
@@ -91,6 +101,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="GrabFrameMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.GrabFrame"
                         Click="GrabFrameMenuItem_Click"
                         Header="Grab Frame">
                         <MenuItem.Icon>
@@ -99,6 +110,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="LastEditWindow"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.LastEditText"
                         Click="LastEditWindow_Click"
                         Header="Last Edit Text Window">
                         <MenuItem.Icon>
@@ -107,6 +119,7 @@
                     </MenuItem>
                     <MenuItem
                         x:Name="EditWindowMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.EditText"
                         Click="EditWindowMenuItem_Click"
                         Header="Edit Text Window">
                         <MenuItem.Icon>
@@ -116,6 +129,7 @@
                     <Separator />
                     <MenuItem
                         x:Name="CloseMenuItem"
+                        AutomationProperties.AutomationId="NotifyIcon.Menu.Close"
                         Click="Exit_Click"
                         Header="Close Text Grab">
                         <MenuItem.Icon>

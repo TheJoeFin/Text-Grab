@@ -15,7 +15,10 @@ public class FileUtilities
 {
     public static Task<Bitmap?> GetImageFileAsync(string fileName, FileStorageKind storageKind)
     {
-        if (AppUtilities.IsPackaged())
+        if (AutomationProfile.Current is not null)
+            return GetImageFileUnpackaged(fileName, storageKind);
+
+        if (AppUtilities.IsPackaged() && AutomationProfile.Current is null)
             return GetImageFilePackaged(fileName, storageKind);
 
         return GetImageFileUnpackaged(fileName, storageKind);
@@ -54,9 +57,11 @@ public class FileUtilities
     {
         string spreadsheetExtensions = GetExtensionsFilterPattern(IoUtilities.SpreadsheetExtensions);
         string markdownExtensions = GetExtensionsFilterPattern(IoUtilities.MarkdownExtensions);
+        string grabFrameExtension = $"*{GrabFrameFileUtilities.GrabFrameFileExtension}";
         string supportedExtensions = string.Join(";", new[]
         {
             GetVisualDocumentFilterPattern(),
+            grabFrameExtension,
             spreadsheetExtensions,
             markdownExtensions,
             "*.txt"
@@ -66,6 +71,7 @@ public class FileUtilities
         {
             $"Supported documents|{supportedExtensions}",
             GetVisualDocumentFilter(),
+            GrabFrameFileUtilities.GetGrabFrameFileFilter(),
             $"Spreadsheet documents|{spreadsheetExtensions}",
             $"Markdown documents|{markdownExtensions}",
             "Text documents (*.txt)|*.txt",
@@ -85,6 +91,9 @@ public class FileUtilities
 
     public static async Task<string> GetPathToHistory()
     {
+        if (AutomationProfile.Current is AutomationProfile profile)
+            return profile.HistoryDirectory;
+
         if (AppUtilities.IsPackaged())
         {
             StorageFolder historyFolder = await GetStorageFolderPackaged("", FileStorageKind.WithHistory);
@@ -96,6 +105,9 @@ public class FileUtilities
 
     public static Task<string> GetTextFileAsync(string fileName, FileStorageKind storageKind)
     {
+        if (AutomationProfile.Current is not null)
+            return GetTextFileUnpackaged(fileName, storageKind);
+
         if (AppUtilities.IsPackaged())
             return GetTextFilePackaged(fileName, storageKind);
 
@@ -104,6 +116,9 @@ public class FileUtilities
 
     public static Task<bool> SaveImageFile(Bitmap image, string filename, FileStorageKind storageKind)
     {
+        if (AutomationProfile.Current is not null)
+            return SaveImageFileUnpackaged(image, filename, storageKind);
+
         if (AppUtilities.IsPackaged())
             return SaveImagePackaged(image, filename, storageKind);
 
@@ -112,6 +127,9 @@ public class FileUtilities
 
     public static Task<bool> SaveTextFile(string textContent, string filename, FileStorageKind storageKind)
     {
+        if (AutomationProfile.Current is not null)
+            return SaveTextFileUnpackaged(textContent, filename, storageKind);
+
         if (AppUtilities.IsPackaged())
             return SaveTextFilePackaged(textContent, filename, storageKind);
 
@@ -217,6 +235,16 @@ public class FileUtilities
 
     private static string GetFolderPathUnpackaged(string filename, FileStorageKind storageKind)
     {
+        if (AutomationProfile.Current is AutomationProfile profile)
+        {
+            return storageKind switch
+            {
+                FileStorageKind.WithExe => profile.DataDirectory,
+                FileStorageKind.WithHistory => profile.HistoryDirectory,
+                _ => filename
+            };
+        }
+
         string defaultFallback = "c:\\Text-Grab";
 
         string? executableDirectory = Path.GetDirectoryName(GetExePath());
@@ -341,7 +369,7 @@ public class FileUtilities
     public static async void TryDeleteHistoryDirectory()
     {
         FileStorageKind historyFolderKind = FileStorageKind.WithHistory;
-        if (AppUtilities.IsPackaged())
+        if (AppUtilities.IsPackaged() && AutomationProfile.Current is null)
         {
             StorageFolder historyFolder = await GetStorageFolderPackaged("", historyFolderKind);
 

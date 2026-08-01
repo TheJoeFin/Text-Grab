@@ -21,6 +21,7 @@ internal class SettingsService : IDisposable
     private static readonly Dictionary<string, string> ManagedJsonSettingFiles = new(StringComparer.Ordinal)
     {
         [nameof(Properties.Settings.RegexList)] = "RegexList.json",
+        [nameof(Properties.Settings.HiddenSmartPatternIds)] = "HiddenSmartPatternIds.json",
         [nameof(Properties.Settings.ShortcutKeySets)] = "ShortcutKeySets.json",
         [nameof(Properties.Settings.BottomButtonsJson)] = "BottomButtons.json",
         [nameof(Properties.Settings.WebSearchItemsJson)] = "WebSearchItems.json",
@@ -36,6 +37,7 @@ internal class SettingsService : IDisposable
     private readonly Lock _managedJsonLock = new();
     private bool _suppressManagedJsonPropertyChanged;
     private StoredRegex[]? _cachedRegexPatterns;
+    private List<string>? _cachedHiddenSmartPatternIds;
     private List<ShortcutKeySet>? _cachedShortcutKeySets;
     private List<ButtonInfo>? _cachedBottomBarButtons;
     private List<WebSearchUrlModel>? _cachedWebSearchUrls;
@@ -52,7 +54,7 @@ internal class SettingsService : IDisposable
     public SettingsService()
         : this(
             Properties.Settings.Default,
-            AppUtilities.IsPackaged() ? ApplicationData.Current.LocalSettings : null)
+            AppUtilities.IsPackaged() && AutomationProfile.Current is null ? ApplicationData.Current.LocalSettings : null)
     {
     }
 
@@ -70,7 +72,14 @@ internal class SettingsService : IDisposable
         _saveClassicSettingsChanges = saveClassicSettingsChanges;
         Dictionary<string, JsonElement> regularSettingsSidecarSnapshot = ReadRegularSettingsSidecarSnapshot();
 
-        if (ClassicSettings.FirstRun)
+        if (AutomationProfile.Current is AutomationProfile profile
+            && !File.Exists(profile.ClassicSettingsFilePath))
+        {
+            profile.ApplySeed(ClassicSettings);
+            if (_saveClassicSettingsChanges)
+                ClassicSettings.Save();
+        }
+        else if (ClassicSettings.FirstRun)
         {
             if (_localSettings is not null && _localSettings.Values.Count > 0)
             {
@@ -224,6 +233,23 @@ internal class SettingsService : IDisposable
             materialized,
             CloneStoredRegexes,
             ref _cachedRegexPatterns);
+    }
+
+    public List<string> LoadHiddenSmartPatternIds() =>
+        LoadManagedJson(
+            nameof(Properties.Settings.HiddenSmartPatternIds),
+            static () => [],
+            CloneHiddenSmartPatternIds,
+            ref _cachedHiddenSmartPatternIds);
+
+    public void SaveHiddenSmartPatternIds(IEnumerable<string> hiddenIds)
+    {
+        List<string> materialized = CloneHiddenSmartPatternIds(hiddenIds);
+        SaveManagedJson(
+            nameof(Properties.Settings.HiddenSmartPatternIds),
+            materialized,
+            CloneHiddenSmartPatternIds,
+            ref _cachedHiddenSmartPatternIds);
     }
 
     public List<ShortcutKeySet> LoadShortcutKeySets() =>
@@ -521,6 +547,9 @@ internal class SettingsService : IDisposable
 
     private static string GetManagedJsonSettingsFolderPath()
     {
+        if (AutomationProfile.Current is AutomationProfile profile)
+            return profile.ManagedSettingsDirectory;
+
         if (AppUtilities.IsPackaged())
             return Path.Combine(ApplicationData.Current.LocalFolder.Path, ManagedJsonSettingsFolderName);
 
@@ -712,6 +741,9 @@ internal class SettingsService : IDisposable
 
     private static string GetRegularSettingsSidecarFilePath()
     {
+        if (AutomationProfile.Current is AutomationProfile profile)
+            return Path.Combine(profile.SettingsDirectory, RegularSettingsSidecarFileName);
+
         if (AppUtilities.IsPackaged())
             return Path.Combine(ApplicationData.Current.LocalFolder.Path, RegularSettingsSidecarFileName);
 
@@ -727,6 +759,9 @@ internal class SettingsService : IDisposable
             {
                 case nameof(Properties.Settings.RegexList):
                     _cachedRegexPatterns = null;
+                    break;
+                case nameof(Properties.Settings.HiddenSmartPatternIds):
+                    _cachedHiddenSmartPatternIds = null;
                     break;
                 case nameof(Properties.Settings.ShortcutKeySets):
                     _cachedShortcutKeySets = null;
@@ -758,6 +793,9 @@ internal class SettingsService : IDisposable
             CreatedDate = regex.CreatedDate,
             LastUsedDate = regex.LastUsedDate,
         })];
+
+    private static List<string> CloneHiddenSmartPatternIds(IEnumerable<string> hiddenIds) =>
+        [.. hiddenIds];
 
     private static List<ShortcutKeySet> CloneShortcutKeySets(IEnumerable<ShortcutKeySet> shortcutKeySets) =>
         [.. shortcutKeySets.Select(static shortcut => new ShortcutKeySet

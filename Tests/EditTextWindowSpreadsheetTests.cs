@@ -119,6 +119,76 @@ public class EditTextWindowSpreadsheetTests
     }
 
     [Fact]
+    public void BuildSpreadsheetSelectionMarkdown_BuildsTableFromSelectedCells()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Columns.Add("B", typeof(string));
+        dataTable.Columns.Add("C", typeof(string));
+        dataTable.Rows.Add("a1", "b1", "c1");
+        dataTable.Rows.Add("a2", "b2", "c2");
+
+        string markdown = EditTextWindow.BuildSpreadsheetSelectionMarkdown(
+            dataTable,
+            [
+                (0, 0),
+                (0, 2),
+                (1, 0),
+                (1, 2),
+                (-1, 0),
+                (5, 5)
+            ]);
+
+        string expected = string.Join(
+            Environment.NewLine,
+            "| a1 | c1 |",
+            "| --- | --- |",
+            "| a2 | c2 |");
+
+        Assert.Equal(expected, markdown);
+    }
+
+    [Fact]
+    public void BuildSpreadsheetSelectionMarkdown_EscapesPipesAndNewlines()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Columns.Add("B", typeof(string));
+        dataTable.Rows.Add("has | pipe", "line1\r\nline2");
+
+        string markdown = EditTextWindow.BuildSpreadsheetSelectionMarkdown(
+            dataTable,
+            [
+                (0, 0),
+                (0, 1)
+            ]);
+
+        string expected = string.Join(
+            Environment.NewLine,
+            "| has \\| pipe | line1<br />line2 |",
+            "| --- | --- |");
+
+        Assert.Equal(expected, markdown);
+    }
+
+    [Fact]
+    public void BuildSpreadsheetSelectionMarkdown_ReturnsEmptyWhenNoValidCells()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Rows.Add("a1");
+
+        string markdown = EditTextWindow.BuildSpreadsheetSelectionMarkdown(
+            dataTable,
+            [
+                (-1, 0),
+                (5, 5)
+            ]);
+
+        Assert.Equal(string.Empty, markdown);
+    }
+
+    [Fact]
     public void ExtractSpreadsheetSelectionNumbers_PullsNumericValuesFromSelectedCells()
     {
         DataTable dataTable = new();
@@ -159,6 +229,42 @@ public class EditTextWindowSpreadsheetTests
             ]);
 
         Assert.Empty(numbers);
+    }
+
+    [Fact]
+    public void SearchSpreadsheetDocumentCells_SmartPatternFindsAndNarrowsCellMatches()
+    {
+        PatternItem emailPattern = new(
+            BuiltInRecognizer.GetById("email") ?? throw new InvalidOperationException("missing email recognizer"));
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(
+            "Name\tEmail\r\nAlice\ta@b.com\r\nBob\tc@d.org",
+            minimumRowCount: 3,
+            minimumColumnCount: 2);
+
+        List<FindResult> allMatches = EditTextWindow.SearchSpreadsheetDocumentCells(document, emailPattern);
+        List<FindResult> narrowedMatches = EditTextWindow.SearchSpreadsheetDocumentCells(document, emailPattern, "C@D");
+
+        Assert.Collection(
+            allMatches,
+            first =>
+            {
+                Assert.Equal(1, first.RowIndex);
+                Assert.Equal(1, first.ColumnIndex);
+                Assert.Equal("a@b.com", first.RawText);
+                Assert.Equal(1, first.Count);
+            },
+            second =>
+            {
+                Assert.Equal(2, second.RowIndex);
+                Assert.Equal(1, second.ColumnIndex);
+                Assert.Equal("c@d.org", second.RawText);
+                Assert.Equal(2, second.Count);
+            });
+
+        FindResult narrowedMatch = Assert.Single(narrowedMatches);
+        Assert.Equal(2, narrowedMatch.RowIndex);
+        Assert.Equal(1, narrowedMatch.ColumnIndex);
+        Assert.Equal("c@d.org", narrowedMatch.RawText);
     }
 
     [Fact]

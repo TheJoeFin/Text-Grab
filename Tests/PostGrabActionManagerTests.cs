@@ -13,7 +13,7 @@ public class PostGrabActionManagerTests
 
         // Assert
         Assert.NotNull(actions);
-        Assert.Equal(5, actions.Count);
+        Assert.Equal(6, actions.Count);
     }
 
     [Fact]
@@ -28,6 +28,7 @@ public class PostGrabActionManagerTests
         Assert.Contains(actions, a => a.ButtonText == "Remove duplicate lines");
         Assert.Contains(actions, a => a.ButtonText == "Web Search");
         Assert.Contains(actions, a => a.ButtonText == "Try to insert text");
+        Assert.Contains(actions, a => a.ButtonText == "Speak text");
         //Assert.Contains(actions, a => a.ButtonText == "Translate to system language");
     }
 
@@ -101,6 +102,21 @@ public class PostGrabActionManagerTests
         string[] lines = result.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(3, lines.Length);
         Assert.Single(lines, l => l == "Line 1");
+    }
+
+    [Fact]
+    public async Task ExecutePostGrabAction_SpeakText_ReturnsTextUnchanged()
+    {
+        // Arrange
+        ButtonInfo action = PostGrabActionManager.GetDefaultPostGrabActions()
+            .First(a => a.ClickEvent == "SpeakText_Click");
+        string input = "Hello world";
+
+        // Act
+        string result = await PostGrabActionManager.ExecutePostGrabAction(action, input);
+
+        // Assert — TTS is fire-and-forget; text must pass through unchanged
+        Assert.Equal(input, result);
     }
 
     [Fact]

@@ -48,7 +48,13 @@ public partial class FullscreenGrab : Window
     private const double EdgePanSpeed = 8.0;
     private const string EditPostGrabActionsTag = "EditPostGrabActions";
     private const string ClosePostGrabMenuTag = "ClosePostGrabMenu";
+
+    // The window is created tiny (see WindowUtilities.LaunchFullScreenGrab) and only
+    // maximized in Window_Loaded. If that maximize is dropped the overlay is left as a
+    // tiny useless box, so these two checks re-assert the maximized state.
+    private const double MinimumMaximizedDimension = 200.0;
     private readonly DispatcherTimer edgePanTimer;
+    private readonly DispatcherTimer maximizeGuardTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _isCleanedUp;
 
     #endregion Fields
@@ -67,6 +73,9 @@ public partial class FullscreenGrab : Window
             Interval = TimeSpan.FromMilliseconds(16)
         };
         edgePanTimer.Tick += EdgePanTimer_Tick;
+
+        maximizeGuardTimer.Tick += MaximizeGuardTimer_Tick;
+        LayoutUpdated += FullscreenGrab_LayoutUpdated;
 
         Closed += FullscreenGrab_Closed;
     }
@@ -301,21 +310,37 @@ public partial class FullscreenGrab : Window
 
     private void CheckIfAnyPostActionsSelected()
     {
-        if (NextStepDropDownButton.Flyout is not ContextMenu flyoutMenu || !flyoutMenu.HasItems)
-            return;
+        bool hasCheckedAction = false;
 
-        foreach (MenuItem item in GetActionablePostGrabMenuItems(flyoutMenu))
+        if (NextStepDropDownButton.Flyout is ContextMenu flyoutMenu && flyoutMenu.HasItems)
         {
-            if (item.IsChecked)
+            foreach (MenuItem item in GetActionablePostGrabMenuItems(flyoutMenu))
             {
-                if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
-                    NextStepDropDownButton.Background = tealButtonStyle;
-                return;
+                if (item.IsChecked)
+                {
+                    hasCheckedAction = true;
+                    break;
+                }
             }
         }
 
-        if (FindResource("ControlFillColorDefaultBrush") is SolidColorBrush SymbolButtonStyle)
-            NextStepDropDownButton.Background = SymbolButtonStyle;
+        if (hasCheckedAction)
+        {
+            if (FindResource("DarkTeal") is SolidColorBrush tealButtonStyle)
+                NextStepDropDownButton.Background = tealButtonStyle;
+            NextStepDropDownButton.Foreground = Brushes.White;
+            NextStepSymbolIcon.Foreground = Brushes.White;
+        }
+        else
+        {
+            if (FindResource("ControlFillColorDefaultBrush") is SolidColorBrush symbolButtonStyle)
+                NextStepDropDownButton.Background = symbolButtonStyle;
+            if (FindResource("TextFillColorPrimaryBrush") is SolidColorBrush textBrush)
+            {
+                NextStepDropDownButton.Foreground = textBrush;
+                NextStepSymbolIcon.Foreground = textBrush;
+            }
+        }
     }
 
     private static bool CheckIfCheckingOrUnchecking(object? sender)
@@ -533,6 +558,19 @@ public partial class FullscreenGrab : Window
         bool isActive = CheckIfCheckingOrUnchecking(sender);
 
         WindowUtilities.FullscreenKeyDown(Key.F, isActive);
+    }
+
+    private void NextStepDropDownButton_MouseEnter(object sender, MouseEventArgs e)
+    {
+        // Background fill on hover comes from the SymbolDropDownButton style; only the
+        // icon/chevron foreground needs to be forced white here to stay legible on it.
+        NextStepDropDownButton.Foreground = Brushes.White;
+        NextStepSymbolIcon.Foreground = Brushes.White;
+    }
+
+    private void NextStepDropDownButton_MouseLeave(object sender, MouseEventArgs e)
+    {
+        CheckIfAnyPostActionsSelected();
     }
 
     private async void FreezeUnfreeze(bool Activate)
@@ -881,7 +919,7 @@ public partial class FullscreenGrab : Window
 
     private void RegionClickCanvas_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        EditLastGrabMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyHistoryWithImages();
+        EditLastGrabMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyRecentGrabs();
     }
 
     private void RegionClickCanvas_MouseLeave(object sender, MouseEventArgs e)
@@ -945,10 +983,57 @@ public partial class FullscreenGrab : Window
             Singleton<HistoryService>.Instance.SaveToHistory(historyInfo);
     }
 
+    internal static Rect GetFullscreenClipBounds(Size renderedSize)
+    {
+        return new Rect(0, 0, renderedSize.Width, renderedSize.Height);
+    }
+
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        FullWindow.Rect = GetFullscreenClipBounds(e.NewSize);
+    }
+
+    /// <summary>
+    /// The overlay must always cover the whole screen. It's created tiny and maximized
+    /// in Window_Loaded, so a window that is not maximized, or that reports maximized but
+    /// is still smaller than a real screen, needs the maximized state re-applied.
+    /// </summary>
+    internal static bool ShouldForceMaximize(WindowState state, double width, double height)
+    {
+        if (state != WindowState.Maximized)
+            return true;
+
+        return width < MinimumMaximizedDimension || height < MinimumMaximizedDimension;
+    }
+
+    private void EnsureWindowMaximized()
+    {
+        if (_isCleanedUp)
+            return;
+
+        if (ShouldForceMaximize(WindowState, ActualWidth, ActualHeight))
+            WindowState = WindowState.Maximized;
+    }
+
+    private void FullscreenGrab_LayoutUpdated(object? sender, EventArgs e)
+    {
+        EnsureWindowMaximized();
+    }
+
+    private void MaximizeGuardTimer_Tick(object? sender, EventArgs e)
+    {
+        EnsureWindowMaximized();
+
+        // Startup safety net only — once we're genuinely full-screen, stop ticking.
+        // LayoutUpdated still guards against any later shrink.
+        if (!ShouldForceMaximize(WindowState, ActualWidth, ActualHeight))
+            maximizeGuardTimer.Stop();
+    }
+
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Maximized;
-        FullWindow.Rect = new Rect(0, 0, Width, Height);
+        maximizeGuardTimer.Start();
         KeyDown += FullscreenGrab_KeyDown;
         KeyUp += FullscreenGrab_KeyUp;
 
@@ -1075,6 +1160,9 @@ public partial class FullscreenGrab : Window
 
         edgePanTimer.Stop();
         edgePanTimer.Tick -= EdgePanTimer_Tick;
+        maximizeGuardTimer.Stop();
+        maximizeGuardTimer.Tick -= MaximizeGuardTimer_Tick;
+        LayoutUpdated -= FullscreenGrab_LayoutUpdated;
         windowSelectionTimer.Stop();
         windowSelectionTimer.Tick -= WindowSelectionTimer_Tick;
 

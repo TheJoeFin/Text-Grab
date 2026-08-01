@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Edit Regex Pattern"
+    AutomationProperties.AutomationId="RegexEditorDialog"
     Width="600"
     Height="400"
     MinWidth="500"
@@ -35,12 +36,14 @@
                 <TextBlock Margin="0,0,0,4" Text="Name:" />
                 <TextBox
                     x:Name="NameTextBox"
+                    AutomationProperties.AutomationId="RegexEditor.Name"
                     Margin="0,0,0,12"
                     TextChanged="ValidateInput" />
 
                 <TextBlock Margin="0,0,0,4" Text="Pattern:" />
                 <TextBox
                     x:Name="PatternTextBox"
+                    AutomationProperties.AutomationId="RegexEditor.Pattern"
                     Height="80"
                     Margin="0,0,0,12"
                     AcceptsReturn="True"
@@ -51,6 +54,7 @@
                 <TextBlock Margin="0,0,0,4" Text="Description:" />
                 <TextBox
                     x:Name="DescriptionTextBox"
+                    AutomationProperties.AutomationId="RegexEditor.Description"
                     Height="60"
                     Margin="0,0,0,12"
                     AcceptsReturn="True"
@@ -59,6 +63,7 @@
 
                 <TextBlock
                     x:Name="ErrorText"
+                    AutomationProperties.AutomationId="RegexEditor.Error"
                     Margin="0,0,0,6"
                     Foreground="Red"
                     Text=""
@@ -118,12 +123,13 @@
             Orientation="Horizontal">
             <ui:Button
                 x:Name="SaveButton"
+                AutomationProperties.AutomationId="RegexEditor.SaveButton"
                 Margin="0,0,6,0"
                 Appearance="Primary"
                 Click="SaveButton_Click"
                 Content="Save"
                 IsEnabled="False" />
-            <ui:Button Click="CancelButton_Click" Content="Cancel" />
+            <ui:Button AutomationProperties.AutomationId="RegexEditor.CancelButton" Click="CancelButton_Click" Content="Cancel" />
         </StackPanel>
     </Grid>
 </ui:FluentWindow>

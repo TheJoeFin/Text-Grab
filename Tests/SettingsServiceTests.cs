@@ -308,6 +308,24 @@ public class SettingsServiceTests : IDisposable
         Assert.Contains("survived-upgrade", settings.RegexList);
     }
 
+    [Fact]
+    public void SaveHiddenSmartPatternIds_FileBackedModeWritesBothStores()
+    {
+        Settings settings = new()
+        {
+            EnableFileBackedManagedSettings = true
+        };
+        SettingsService service = CreateService(settings);
+
+        service.SaveHiddenSmartPatternIds(["email", "url"]);
+
+        string filePath = Path.Combine(_tempFolder, "HiddenSmartPatternIds.json");
+        Assert.Contains("email", settings.HiddenSmartPatternIds);
+        Assert.True(File.Exists(filePath));
+        Assert.Contains("email", File.ReadAllText(filePath));
+        Assert.Equal(["email", "url"], service.LoadHiddenSmartPatternIds());
+    }
+
     private SettingsService CreateService(Settings settings) =>
         new(
             settings,

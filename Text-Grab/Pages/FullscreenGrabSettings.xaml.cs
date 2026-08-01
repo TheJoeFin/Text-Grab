@@ -145,7 +145,7 @@ public partial class FullscreenGrabSettings : Page
     private void ShadeOverlayCheckBox_Click(object sender, RoutedEventArgs e)
     {
         if (!_loaded) return;
-        bool isChecked = sender is CheckBox cb && cb.IsChecked == true;
+        bool isChecked = sender is System.Windows.Controls.Primitives.ToggleButton cb && cb.IsChecked == true;
         DefaultSettings.FsgShadeOverlay = isChecked;
         DefaultSettings.Save();
     }

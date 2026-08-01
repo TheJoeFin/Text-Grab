@@ -2,102 +2,91 @@
     x:Class="Text_Grab.Pages.QuickLookupSettings"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="QuickLookupSettings"
+    AutomationProperties.AutomationId="Settings.QuickLookupPage"
     d:DesignHeight="500"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
-        <TextBlock Style="{StaticResource TextHeader}" Text="Quick Simple Lookup Settings" />
+    <StackPanel Margin="20,12,24,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource SettingsPageTitle}" Text="Quick Simple Lookup Settings" />
 
-        <TextBlock
-            Margin="0,12,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Lookup File" />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Lookup file" />
 
-        <TextBlock
-            Margin="0,0,0,6"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Path to a CSV file with ShortValue and LongValue columns. Leave empty to use a default cache file stored alongside the app." />
+        <controls:SettingsExpander
+            Description="Path to a CSV file with ShortValue and LongValue columns. Leave empty to use a default cache file stored alongside the app."
+            HeaderText="Lookup file location"
+            Icon="{ui:SymbolIcon DocumentTable24}"
+            IsExpanded="True">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox
+                    x:Name="LookupFileLocationTextBox"
+                    AutomationProperties.AutomationId="Settings.QuickLookup.FileLocation"
+                    HorizontalAlignment="Stretch"
+                    LostFocus="LookupFileLocationTextBox_LostFocus" />
+                <Button
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Click="BrowseLookupFileButton_Click"
+                    Content="Browse..."
+                    AutomationProperties.AutomationId="Settings.QuickLookup.BrowseFileButton" />
+            </Grid>
+        </controls:SettingsExpander>
 
-        <StackPanel Orientation="Horizontal">
-            <TextBox
-                x:Name="LookupFileLocationTextBox"
-                Width="340"
-                LostFocus="LookupFileLocationTextBox_LostFocus" />
-            <Button
-                Margin="8,0,0,0"
-                Click="BrowseLookupFileButton_Click"
-                Content="Browse..." />
-        </StackPanel>
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Behavior" />
 
-        <TextBlock
-            Margin="0,16,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Behavior" />
+        <controls:SettingsCard
+            Description="Append recent Edit Text Window sessions and Grab Frame captures to the bottom of the lookup grid."
+            HeaderText="Show history in lookup grid"
+            Icon="{ui:SymbolIcon History24}">
+            <ui:ToggleSwitch x:Name="LookupSearchHistoryCheckBox" AutomationProperties.AutomationId="Settings.QuickLookup.SearchHistoryToggle" Click="LookupSearchHistoryCheckBox_Click" />
+        </controls:SettingsCard>
 
-        <CheckBox
-            x:Name="LookupSearchHistoryCheckBox"
-            Margin="0,4,0,0"
-            Click="LookupSearchHistoryCheckBox_Click"
-            Content="Show history in lookup grid" />
-        <TextBlock
-            Margin="24,0,0,8"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Append recent Edit Text Window sessions and Grab Frame captures to the bottom of the lookup grid." />
-
-        <TextBlock
-            Margin="0,16,0,6"
-            FontSize="18"
-            FontWeight="Bold"
-            Style="{StaticResource TextBodyNormal}"
-            Text="Post-selection insert" />
-
-        <CheckBox
-            x:Name="TryInsertCheckBox"
-            Margin="0,4,0,0"
-            Click="TryInsertCheckBox_Click"
-            Content="Paste selected value into the previously focused app" />
-
-        <StackPanel
-            Margin="24,6,0,0"
-            VerticalAlignment="Center"
-            Orientation="Horizontal">
-            <TextBlock
-                VerticalAlignment="Center"
-                Style="{StaticResource TextBodyNormal}"
-                Text="Insert delay (seconds):" />
-            <Slider
-                x:Name="InsertDelaySlider"
-                Width="200"
-                Margin="12,0,0,0"
-                IsSnapToTickEnabled="True"
-                Maximum="5"
-                Minimum="0"
-                SmallChange="0.1"
-                TickFrequency="0.1"
-                ValueChanged="InsertDelaySlider_ValueChanged" />
-            <TextBlock
-                x:Name="InsertDelayValueText"
-                Width="40"
-                Margin="12,0,0,0"
-                HorizontalAlignment="Left"
-                Style="{StaticResource TextBodyNormal}" />
-        </StackPanel>
-        <TextBlock
-            Margin="24,2,0,0"
-            Opacity="0.75"
-            Style="{StaticResource TextBodyNormal}"
-            Text="After pressing Enter to select, Quick Lookup closes and sends Ctrl+V to the previously focused app after this delay — giving you time to switch windows." />
+        <controls:SettingsExpander
+            Description="After pressing Enter to select, close Quick Lookup and paste into the previously focused app."
+            HeaderText="Paste selected value into the previously focused app"
+            Icon="{ui:SymbolIcon ClipboardPaste24}">
+            <controls:SettingsExpander.SettingsContent>
+                <ui:ToggleSwitch x:Name="TryInsertCheckBox" AutomationProperties.AutomationId="Settings.QuickLookup.InsertToggle" Click="TryInsertCheckBox_Click" />
+            </controls:SettingsExpander.SettingsContent>
+            <StackPanel>
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="Insert delay (seconds):" />
+                    <Slider
+                        x:Name="InsertDelaySlider"
+                        AutomationProperties.AutomationId="Settings.QuickLookup.InsertDelay"
+                        Width="200"
+                        Margin="12,0,0,0"
+                        IsSnapToTickEnabled="True"
+                        Maximum="5"
+                        Minimum="0"
+                        SmallChange="0.1"
+                        TickFrequency="0.1"
+                        ValueChanged="InsertDelaySlider_ValueChanged" />
+                    <TextBlock
+                        x:Name="InsertDelayValueText"
+                        AutomationProperties.AutomationId="Settings.QuickLookup.InsertDelayValue"
+                        Width="40"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock
+                    Margin="0,4,0,0"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Quick Lookup sends Ctrl+V to the previously focused app after this delay — giving you time to switch windows."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </controls:SettingsExpander>
 
     </StackPanel>
 </Page>

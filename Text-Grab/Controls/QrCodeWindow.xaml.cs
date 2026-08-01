@@ -173,7 +173,7 @@ public partial class QrCodeWindow : FluentWindow
         UiTitleBar.Title = $"QR Code: {TextOfCode.Truncate(30)}";
         int trimLength = TextOfCode.Length < maxLength ? TextOfCode.Length : maxLength;
         qrCodeFileName = $"QR-{TextOfCode[..trimLength].ReplaceReservedCharacters()}";
-        tempPath = Path.Combine(Path.GetTempPath(), qrCodeFileName + ".png");
+        tempPath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), qrCodeFileName + ".png");
 
         QrBitmap.Save(tempPath, ImageFormat.Png);
         hBitmap = QrBitmap.GetHbitmap();

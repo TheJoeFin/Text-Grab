@@ -59,6 +59,9 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private bool IsSpreadsheetSearch => textEditWindow?.IsSpreadsheetMode is true;
 
+    private bool IsSmartPatternSearch =>
+        SearchBar.SelectedPattern is { Kind: PatternKind.Recognizer, Recognizer: not null };
+
     public List<FindResult> FindResults { get; set; } = [];
 
     public string StringFromWindow
@@ -72,11 +75,19 @@ public partial class FindAndReplaceWindow : FluentWindow
         get => textEditWindow;
         set
         {
-            textEditWindow?.PassedTextControl.TextChanged -= EditTextBoxChanged;
+            if (textEditWindow is not null)
+            {
+                textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
+                textEditWindow.EditorModeChanged -= EditTextWindow_EditorModeChanged;
+            }
 
             textEditWindow = value;
 
-            textEditWindow?.PassedTextControl.TextChanged += EditTextBoxChanged;
+            if (textEditWindow is not null)
+            {
+                textEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
+                textEditWindow.EditorModeChanged += EditTextWindow_EditorModeChanged;
+            }
         }
     }
     private string? Pattern { get; set; }
@@ -85,41 +96,60 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     #region Methods
 
+    /// <summary>
+    /// Loads text into the shared search bar (optionally enabling regex) and places the caret at
+    /// the end. Used by other windows that open Find &amp; Replace pre-filled with a pattern.
+    /// </summary>
+    public void SetFindText(string text, bool useRegex = false)
+    {
+        SearchBar.SearchText = text;
+        if (useRegex)
+            SearchBar.UseRegex = true;
+        SearchBar.FocusInput();
+    }
+
     public void SearchForText()
     {
         if (IsSpreadsheetSearch) { SearchSpreadsheetCells(); return; }
 
+        RefreshSourceTextFromEditor();
         FindResults.Clear();
         ResultsListView.ItemsSource = null;
 
-        if (!TextSearchUtilities.HasSearchText(FindTextBox.Text))
+        // Recognizers are find-only (no regex replace). A saved regex, by contrast, has already
+        // been loaded into the find box, so it flows through the normal regex search below.
+        // When a recognizer chip is active, any typed text narrows its matches.
+        if (SearchBar.SelectedPattern is { Kind: PatternKind.Recognizer, Recognizer: { } selectedRecognizer })
+        {
+            SearchByRecognizer(selectedRecognizer, SearchBar.SearchText);
+            return;
+        }
+
+        if (!TextSearchUtilities.HasSearchText(SearchBar.SearchText))
         {
             Matches = null;
             MatchesText.Text = "0 Matches";
             return;
         }
 
-        Pattern = FindTextBox.Text;
+        Pattern = SearchBar.SearchText;
 
         // Auto-detect regex pattern: if starts with ^ and ends with $, enable regex mode and strip anchors
         if (Pattern.StartsWith('^') && Pattern.EndsWith('$') && Pattern.Length > 2)
         {
-            UsePatternCheckBox.IsChecked = true;
+            SearchBar.UseRegex = true;
             Pattern = Pattern[1..^1]; // Strip ^ from start and $ from end
         }
 
-        if (UsePatternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
-            Pattern = Pattern.EscapeSpecialRegexChars(matchExactly);
-
-        if (string.IsNullOrEmpty(StringFromWindow) && TextEditWindow is not null)
-            StringFromWindow = TextEditWindow.GetSelectedTextOrAllText();
+        if (!SearchBar.UseRegex)
+            Pattern = Pattern.EscapeSpecialRegexChars(SearchBar.ExactMatch);
 
         try
         {
             // When using pattern mode with inline flags, rely on the inline flags for case sensitivity
             // Otherwise, use RegexOptions for backward compatibility
-            bool usingPatternMode = UsePatternCheckBox.IsChecked is true;
-            bool exactMatch = ExactMatchCheckBox.IsChecked is true;
+            bool usingPatternMode = SearchBar.UseRegex;
+            bool exactMatch = SearchBar.ExactMatch;
             Regex regex = TextSearchUtilities.CreateFindAndReplaceSearchRegex(Pattern, usingPatternMode, exactMatch);
             Matches = regex.Matches(StringFromWindow);
         }
@@ -160,6 +190,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             {
                 Index = m.Index,
                 Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Value),
+                RawText = m.Value,
                 PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Index, 12).MakeStringSingleLine(),
                 PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Index + m.Length, 12).MakeStringSingleLine(),
                 Length = m.Length,
@@ -184,18 +215,72 @@ public partial class FindAndReplaceWindow : FluentWindow
         }
     }
 
+    /// <summary>
+    /// Finds every entity the recognizer detects in the source text and lists them as
+    /// <see cref="FindResult"/>s. When <paramref name="narrowText"/> is supplied, only matches
+    /// whose text contains it are kept (the chip + free-text case). Leaves <see cref="Matches"/>
+    /// null (like spreadsheet search), so regex-based replace/navigation is disabled in recognizer mode.
+    /// </summary>
+    private void SearchByRecognizer(BuiltInRecognizer recognizer, string narrowText = "")
+    {
+        RefreshSourceTextFromEditor();
+
+        Matches = null;
+
+        IReadOnlyList<RecognizerMatch> recognizerMatches = RecognizerExecutor.GetMatches(recognizer, StringFromWindow);
+
+        if (!string.IsNullOrEmpty(narrowText))
+            recognizerMatches = [.. recognizerMatches.Where(m => m.Text.Contains(narrowText, StringComparison.CurrentCultureIgnoreCase))];
+
+        if (recognizerMatches.Count == 0)
+        {
+            MatchesText.Text = "0 Matches";
+            return;
+        }
+
+        MatchesText.Text = recognizerMatches.Count == 1 ? "1 Match" : $"{recognizerMatches.Count} Matches";
+        ResultsListView.IsEnabled = true;
+
+        int count = 1;
+        foreach (RecognizerMatch m in recognizerMatches)
+        {
+            FindResult fr = new()
+            {
+                Index = m.Start,
+                Text = TextSearchUtilities.FormatMatchTextForDisplay(m.Text),
+                RawText = m.Text,
+                PreviewLeft = StringMethods.GetCharactersToLeftOfNewLine(ref stringFromWindow, m.Start, 12).MakeStringSingleLine(),
+                PreviewRight = StringMethods.GetCharactersToRightOfNewLine(ref stringFromWindow, m.Start + m.Length, 12).MakeStringSingleLine(),
+                Length = m.Length,
+                Count = count,
+            };
+            FindResults.Add(fr);
+            count++;
+        }
+
+        ResultsListView.ItemsSource = FindResults;
+
+        if (textEditWindow is not null && this.IsFocused)
+        {
+            RecognizerMatch first = recognizerMatches[0];
+            textEditWindow.PassedTextControl.Select(first.Start, first.Length);
+            textEditWindow.PassedTextControl.Focus();
+            this.Focus();
+        }
+    }
+
     private Regex? BuildCurrentRegex()
     {
-        string rawPattern = FindTextBox.Text;
+        string rawPattern = SearchBar.SearchText;
         if (!TextSearchUtilities.HasSearchText(rawPattern)) return null;
 
         if (rawPattern.StartsWith('^') && rawPattern.EndsWith('$') && rawPattern.Length > 2)
             rawPattern = rawPattern[1..^1];
 
-        if (UsePatternCheckBox.IsChecked is false && ExactMatchCheckBox.IsChecked is bool matchExactly)
-            rawPattern = rawPattern.EscapeSpecialRegexChars(matchExactly);
+        if (!SearchBar.UseRegex)
+            rawPattern = rawPattern.EscapeSpecialRegexChars(SearchBar.ExactMatch);
 
-        try { return TextSearchUtilities.CreateReplacementRegex(rawPattern, ExactMatchCheckBox.IsChecked is true); }
+        try { return TextSearchUtilities.CreateReplacementRegex(rawPattern, SearchBar.ExactMatch); }
         catch { return null; }
     }
 
@@ -205,20 +290,33 @@ public partial class FindAndReplaceWindow : FluentWindow
         ResultsListView.ItemsSource = null;
         Matches = null;
 
-        if (textEditWindow is null || !TextSearchUtilities.HasSearchText(FindTextBox.Text))
+        if (textEditWindow is null)
         {
             MatchesText.Text = "0 Matches";
             return;
         }
 
-        Regex? regex = BuildCurrentRegex();
-        if (regex is null) { MatchesText.Text = "0 Matches"; return; }
-
         textEditWindow.CommitSpreadsheetAndSync();
 
         List<FindResult> results;
-        try { results = textEditWindow.SearchSpreadsheetCells(regex); }
-        catch (RegexMatchTimeoutException) { MatchesText.Text = "Regex timeout"; return; }
+        if (SearchBar.SelectedPattern is { Kind: PatternKind.Recognizer, Recognizer: not null } selectedPattern)
+        {
+            results = textEditWindow.SearchSpreadsheetCells(selectedPattern, SearchBar.SearchText);
+        }
+        else
+        {
+            if (!TextSearchUtilities.HasSearchText(SearchBar.SearchText))
+            {
+                MatchesText.Text = "0 Matches";
+                return;
+            }
+
+            Regex? regex = BuildCurrentRegex();
+            if (regex is null) { MatchesText.Text = "0 Matches"; return; }
+
+            try { results = textEditWindow.SearchSpreadsheetCells(regex); }
+            catch (RegexMatchTimeoutException) { MatchesText.Text = "Regex timeout"; return; }
+        }
 
         FindResults.AddRange(results);
         if (FindResults.Count == 0) { MatchesText.Text = "0 Matches"; return; }
@@ -255,49 +353,46 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void CopyMatchesCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (IsSpreadsheetSearch)
-        {
-            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(FindTextBox.Text);
-            return;
-        }
-
-        if (Matches is null || Matches.Count < 1 || string.IsNullOrEmpty(FindTextBox.Text))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        e.CanExecute = FindResults.Count > 0
+            && (IsSmartPatternSearch || !string.IsNullOrEmpty(SearchBar.SearchText));
     }
 
     private void CopyMatchesCmd_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (textEditWindow is null) return;
 
-        if (!IsSpreadsheetSearch && (Matches is null || Matches.Count < 1))
+        if (FindResults.Count == 0)
             return;
-
-        StringBuilder stringBuilder = new();
 
         IList selection = ResultsListView.SelectedItems;
         if (selection.Count < 2)
             selection = ResultsListView.Items;
 
-        foreach (object? item in selection)
-            if (item is FindResult findResult)
-                stringBuilder.AppendLine(findResult.Text);
+        string matchText = GetMatchTextForEditing(selection.OfType<FindResult>());
+        if (string.IsNullOrEmpty(matchText))
+            return;
 
         EditTextWindow etw = new();
-        etw.AddThisText(stringBuilder.ToString());
+        etw.AddThisText(matchText);
         etw.Show();
+    }
+
+    internal static string GetMatchTextForEditing(IEnumerable<FindResult> findResults)
+    {
+        return string.Join(Environment.NewLine, findResults.Select(findResult => findResult.RawText));
     }
 
     private void DeleteAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (IsSpreadsheetSearch)
         {
-            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(FindTextBox.Text);
+            e.CanExecute = !IsSmartPatternSearch
+                && FindResults.Count > 0
+                && !string.IsNullOrEmpty(SearchBar.SearchText);
             return;
         }
 
-        if (Matches is not null && Matches.Count > 1 && !string.IsNullOrEmpty(FindTextBox.Text))
+        if (Matches is not null && Matches.Count > 1 && !string.IsNullOrEmpty(SearchBar.SearchText))
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -309,6 +404,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         if (IsSpreadsheetSearch)
         {
+            if (IsSmartPatternSearch) return;
             if (FindResults.Count == 0) return;
             SetWindowToLoading();
             Regex? regex = BuildCurrentRegex();
@@ -363,6 +459,23 @@ public partial class FindAndReplaceWindow : FluentWindow
         ChangeFindTextTimer.Start();
     }
 
+    private void EditTextWindow_EditorModeChanged(object? sender, EventArgs e)
+    {
+        ChangeFindTextTimer.Stop();
+        SearchForText();
+    }
+
+    private void RefreshSourceTextFromEditor()
+    {
+        StringFromWindow = ResolveSearchSourceText(
+            StringFromWindow,
+            textEditWindow?.PassedTextControl.Text,
+            IsSpreadsheetSearch);
+    }
+
+    internal static string ResolveSearchSourceText(string cachedText, string? editorText, bool isSpreadsheetSearch)
+        => !isSpreadsheetSearch && editorText is not null ? editorText : cachedText;
+
     private void ExtractPattern_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         if (IsSpreadsheetSearch) { e.CanExecute = false; return; }
@@ -382,15 +495,15 @@ public partial class FindAndReplaceWindow : FluentWindow
         string? selection = textEditWindow.PassedTextControl.SelectedText;
 
         // Generate all precision levels from the selected text
-        // Use inverse of ExactMatchCheckBox: when exact match is OFF, ignore case
-        bool ignoreCase = ExactMatchCheckBox.IsChecked is not true;
+        // Use inverse of the exact-match toggle: when exact match is OFF, ignore case
+        bool ignoreCase = !SearchBar.ExactMatch;
         extractedPattern = new ExtractedPattern(selection, ignoreCase);
 
         int precisionLevel = (int)PrecisionSlider.Value;
         string simplePattern = extractedPattern.GetPattern(precisionLevel);
 
-        UsePatternCheckBox.IsChecked = true;
-        FindTextBox.Text = simplePattern;
+        SearchBar.UseRegex = true;
+        SearchBar.SearchText = simplePattern;
 
         // Show the slider now that we have an extracted pattern
         PrecisionSliderPanel.Visibility = Visibility.Visible;
@@ -400,13 +513,13 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     private void FindAndReplacedLoaded(object sender, RoutedEventArgs e)
     {
-        if (TextSearchUtilities.HasSearchText(FindTextBox.Text))
+        if (IsSmartPatternSearch || TextSearchUtilities.HasSearchText(SearchBar.SearchText))
             SearchForText();
 
         // Update save button visibility on load
         UpdateSaveButtonVisibility();
 
-        FindTextBox.Focus();
+        SearchBar.FocusInput();
     }
 
     private void FindTextBox_KeyUp(object sender, KeyEventArgs e)
@@ -446,9 +559,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         SetExtraOptionsVisibility(optionsVisibility);
     }
 
-    private void OptionsChangedRefresh(object sender, RoutedEventArgs e)
+    private void OptionsChangedRefresh(object? sender, EventArgs e)
     {
-        bool ignoreCase = ExactMatchCheckBox.IsChecked is not true;
+        bool ignoreCase = !SearchBar.ExactMatch;
 
         // If we have an extracted pattern and the case sensitivity changed, update it
         if (extractedPattern is not null)
@@ -459,13 +572,13 @@ public partial class FindAndReplaceWindow : FluentWindow
 
                 // Update the FindTextBox with the regenerated pattern
                 int precisionLevel = (int)PrecisionSlider.Value;
-                FindTextBox.Text = extractedPattern.GetPattern(precisionLevel);
+                SearchBar.SearchText = extractedPattern.GetPattern(precisionLevel);
             }
         }
-        else if (UsePatternCheckBox.IsChecked is true && TextSearchUtilities.HasSearchText(FindTextBox.Text))
+        else if (SearchBar.UseRegex && TextSearchUtilities.HasSearchText(SearchBar.SearchText))
         {
             // No extracted pattern, but we're in pattern mode - manually toggle (?i) flag
-            string currentPattern = FindTextBox.Text;
+            string currentPattern = SearchBar.SearchText;
             bool hasIgnoreCaseFlag = currentPattern.StartsWith("(?i)");
             bool hasCaseSensitiveFlag = currentPattern.StartsWith("(?-i)");
 
@@ -475,18 +588,18 @@ public partial class FindAndReplaceWindow : FluentWindow
                 if (hasCaseSensitiveFlag)
                 {
                     // Replace (?-i) with (?i)
-                    FindTextBox.Text = "(?i)" + currentPattern[5..];
+                    SearchBar.SearchText = "(?i)" + currentPattern[5..];
                 }
                 else
                 {
                     // Add (?i) at the beginning
-                    FindTextBox.Text = $"(?i){currentPattern}";
+                    SearchBar.SearchText = $"(?i){currentPattern}";
                 }
             }
             else if (!ignoreCase && hasIgnoreCaseFlag)
             {
                 // Need case-sensitive: remove (?i) flag
-                FindTextBox.Text = currentPattern[4..];
+                SearchBar.SearchText = currentPattern[4..];
             }
         }
 
@@ -500,7 +613,9 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         if (IsSpreadsheetSearch)
         {
-            e.CanExecute = FindResults.Count > 0 && !string.IsNullOrEmpty(ReplaceTextBox.Text);
+            e.CanExecute = !IsSmartPatternSearch
+                && FindResults.Count > 0
+                && !string.IsNullOrEmpty(ReplaceTextBox.Text);
             return;
         }
 
@@ -519,6 +634,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         if (IsSpreadsheetSearch)
         {
+            if (IsSmartPatternSearch) return;
             if (ResultsListView.SelectedIndex == -1) ResultsListView.SelectedIndex = 0;
             if (ResultsListView.SelectedItem is not FindResult fr) return;
             Regex? regex = BuildCurrentRegex();
@@ -548,6 +664,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         if (IsSpreadsheetSearch)
         {
+            if (IsSmartPatternSearch) return;
             if (FindResults.Count == 0) return;
             SetWindowToLoading();
             Regex? regex = BuildCurrentRegex();
@@ -734,17 +851,14 @@ public partial class FindAndReplaceWindow : FluentWindow
         ReplaceTextBox.Visibility = optionsVisibility;
         ReplaceButton.Visibility = optionsVisibility;
         ReplaceAllButton.Visibility = optionsVisibility;
-        MoreOptionsHozStack.Visibility = optionsVisibility;
-        EvenMoreOptionsHozStack.Visibility = optionsVisibility;
-        PatternButtonsStack.Visibility = optionsVisibility;
+        BulkActionsGrid.Visibility = optionsVisibility;
+        MatchActionsGrid.Visibility = optionsVisibility;
+        PatternActionsGrid.Visibility = optionsVisibility;
     }
 
     private void TextSearch_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (!TextSearchUtilities.HasSearchText(FindTextBox.Text))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        e.CanExecute = IsSmartPatternSearch || TextSearchUtilities.HasSearchText(SearchBar.SearchText);
     }
 
     private void TextSearch_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -756,14 +870,18 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         ChangeFindTextTimer.Tick -= ChangeFindText_Tick;
         PrecisionSliderTimer.Tick -= PrecisionSlider_Tick;
-        textEditWindow?.PassedTextControl.TextChanged -= EditTextBoxChanged;
+        if (textEditWindow is not null)
+        {
+            textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
+            textEditWindow.EditorModeChanged -= EditTextWindow_EditorModeChanged;
+        }
     }
     private void Window_KeyUp(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
         {
-            if (TextSearchUtilities.HasSearchText(FindTextBox.Text))
-                FindTextBox.Clear();
+            if (TextSearchUtilities.HasSearchText(SearchBar.SearchText))
+                SearchBar.SearchText = string.Empty;
             else
                 this.Close();
         }
@@ -780,7 +898,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             return;
 
         // Only update if regex mode is enabled
-        if (UsePatternCheckBox?.IsChecked is not true)
+        if (!SearchBar.UseRegex)
             return;
 
         int precisionLevel = (int)e.NewValue;
@@ -788,7 +906,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         // Get the pre-generated pattern at this precision level (instant, no recalculation!)
         string pattern = extractedPattern.GetPattern(precisionLevel);
 
-        FindTextBox.Text = pattern;
+        SearchBar.SearchText = pattern;
 
         // Use debounced search instead of immediate search
         PrecisionSliderTimer.Stop();
@@ -805,7 +923,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     private void SavePatternButton_Click(object sender, RoutedEventArgs e)
     {
         // Get the current pattern from the FindTextBox
-        string pattern = FindTextBox.Text;
+        string pattern = SearchBar.SearchText;
 
         if (string.IsNullOrWhiteSpace(pattern))
             return;
@@ -827,10 +945,19 @@ public partial class FindAndReplaceWindow : FluentWindow
         regexManager.AddPatternFromText(pattern, sourceText, textEditWindow);
     }
 
-    private void UsePatternCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Re-runs the search (debounced) whenever the shared search bar's text, regex/exact toggles,
+    /// or selected pattern change. Keyboard specifics (Enter, clearing an extracted pattern) are
+    /// handled in <see cref="FindTextBox_KeyUp"/>.
+    /// </summary>
+    private void SearchBar_SearchChanged(object? sender, EventArgs e)
     {
-        // Update save button visibility when regex mode is toggled
+        if (!IsLoaded)
+            return;
+
         UpdateSaveButtonVisibility();
+        ChangeFindTextTimer.Stop();
+        ChangeFindTextTimer.Start();
     }
 
     private void UpdateSaveButtonVisibility()
@@ -840,9 +967,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         // 2. Find text is not empty
         // 3. Pattern doesn't already exist in saved patterns
         SavePatternButton.Visibility =
-            (UsePatternCheckBox.IsChecked is true &&
-             !string.IsNullOrWhiteSpace(FindTextBox.Text) &&
-             !IsPatternAlreadySaved(FindTextBox.Text))
+            (SearchBar.UseRegex &&
+             !string.IsNullOrWhiteSpace(SearchBar.SearchText) &&
+             !IsPatternAlreadySaved(SearchBar.SearchText))
                 ? Visibility.Visible
                 : Visibility.Collapsed;
     }
@@ -866,7 +993,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         extractedPattern = pattern;
 
         // Ensure the pattern's case sensitivity matches the current checkbox state
-        bool ignoreCase = ExactMatchCheckBox.IsChecked is not true;
+        bool ignoreCase = !SearchBar.ExactMatch;
         extractedPattern.IgnoreCase = ignoreCase;
 
         // If a precision level was provided, use it; otherwise use the current slider value
@@ -875,9 +1002,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         // Update the slider to reflect the precision level being used
         PrecisionSlider.Value = levelToUse;
 
-        FindTextBox.Text = pattern.GetPattern(levelToUse);
+        SearchBar.SearchText = pattern.GetPattern(levelToUse);
 
-        UsePatternCheckBox.IsChecked = true;
+        SearchBar.UseRegex = true;
 
         // Show the slider now that we have an extracted pattern
         PrecisionSliderPanel.Visibility = Visibility.Visible;

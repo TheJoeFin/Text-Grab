@@ -23,7 +23,7 @@ public partial class TextOnlyTemplateDialog : FluentWindow
     private void OnActivated(object? sender, EventArgs e)
     {
         // Refresh the pattern picker each time the dialog regains focus so patterns
-        // created in the Regex Manager become available without reopening this dialog.
+        // created in the Patterns Manager become available without reopening this dialog.
         if (IsLoaded)
             LoadPatternItems();
     }
@@ -39,16 +39,52 @@ public partial class TextOnlyTemplateDialog : FluentWindow
         TemplateNameBox.Focus();
         LoadPatternItems();
         OutputTemplateBox.PatternItemSelected = OnPatternItemSelected;
+        OutputTemplateBox.RecognizerItemSelected = OnRecognizerItemSelected;
     }
 
     private void LoadPatternItems()
     {
-        StoredRegex[] patterns = AppUtilities.TextGrabSettingsService.LoadStoredRegexes();
-        if (patterns.Length == 0)
-            patterns = StoredRegex.GetDefaultPatterns();
+        OutputTemplateBox.ItemsSource =
+        [
+            .. PatternItem.GetAll().Select(InlinePickerItemFor),
+        ];
+    }
 
-        OutputTemplateBox.ItemsSource = [.. patterns.Select(p =>
-            new InlinePickerItem(p.Name, $"{{p:{p.Name}:first}}", "Patterns"))];
+    /// <summary>
+    /// Builds a picker entry for a unified pattern: a saved regex emits a <c>{p:}</c>
+    /// placeholder, a recognizer emits <c>{r:}</c>, and the group label drives the
+    /// "Saved Patterns" / "Smart Patterns" subsection headers.
+    /// </summary>
+    internal static InlinePickerItem InlinePickerItemFor(PatternItem pattern)
+    {
+        string placeholder = pattern.Kind == PatternKind.SavedRegex
+            ? $"{{p:{pattern.Name}:first}}"
+            : $"{{r:{pattern.Name}:first}}";
+
+        return new InlinePickerItem(pattern.Name, placeholder, pattern.GroupLabel)
+        {
+            Kind = pattern.Kind,
+        };
+    }
+
+    private TemplateRecognizerMatch? OnRecognizerItemSelected(InlinePickerItem item)
+    {
+        BuiltInRecognizer? recognizer = BuiltInRecognizer.GetByName(item.DisplayName);
+
+        PatternMatchModeDialog dialog = new(recognizer?.Id ?? string.Empty, item.DisplayName, isRecognizer: true)
+        {
+            Owner = this,
+        };
+
+        if (dialog.ShowDialog() is not true || dialog.Result is null)
+            return null;
+
+        return new TemplateRecognizerMatch(
+            recognizerId: recognizer?.Id ?? string.Empty,
+            recognizerName: item.DisplayName,
+            matchMode: dialog.Result.MatchMode,
+            separator: dialog.Result.Separator,
+            outputKind: dialog.SelectedOutputKind);
     }
 
     private TemplatePatternMatch? OnPatternItemSelected(InlinePickerItem item)
@@ -70,7 +106,7 @@ public partial class TextOnlyTemplateDialog : FluentWindow
 
     private void ManagePatternsButton_Click(object sender, RoutedEventArgs e)
     {
-        // Open the Regex Manager so the user can create a new pattern. When they return
+        // Open the Patterns Manager so the user can create a new pattern. When they return
         // focus to this dialog, OnActivated reloads the picker so the new pattern is usable.
         RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
         regexManager.Show();
@@ -119,6 +155,7 @@ public partial class TextOnlyTemplateDialog : FluentWindow
         newTemplate.Name = name;
         newTemplate.OutputTemplate = outputTemplate;
         newTemplate.PatternMatches = GrabTemplateExecutor.ParsePatternMatchesFromOutputTemplate(outputTemplate);
+        newTemplate.RecognizerMatches = GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate(outputTemplate);
 
         GrabTemplateManager.AddOrUpdateTemplate(newTemplate);
         DialogResult = true;

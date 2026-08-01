@@ -87,6 +87,16 @@ public enum ScrollBehavior
     ZoomWhenFrozen = 3,
 }
 
+public enum GrabFrameBorderStyle
+{
+    // Follow the app light/dark theme (current behavior).
+    Theme = 0,
+    // Two-tone white+black border; one tone always contrasts with any background.
+    HighContrast = 1,
+    // A fixed user-picked color.
+    Color = 2,
+}
+
 public enum SpellCheckMode
 {
     // Enable spell check unless the text looks like it would choke the checker
@@ -104,6 +114,7 @@ public enum LanguageKind
     Tesseract = 1,
     WindowsAi = 2,
     UiAutomation = 3,
+    WindowsAiDescription = 4,
 }
 
 public enum UiAutomationTraversalMode

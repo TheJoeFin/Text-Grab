@@ -1,0 +1,128 @@
+<Window x:Class="TextGrab.AutomationHost.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Text Grab Automation Fixture Host"
+        Width="1000"
+        Height="780"
+        MinWidth="700"
+        MinHeight="560"
+        Loaded="Window_Loaded"
+        LocationChanged="Window_Changed"
+        SizeChanged="Window_Changed"
+        Activated="Window_Activated"
+        AutomationProperties.AutomationId="FixtureHostWindow"
+        AutomationProperties.Name="Text Grab automation fixture host">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   FontSize="20"
+                   FontWeight="SemiBold"
+                   Text="Text Grab Automation Fixture Host"
+                   AutomationProperties.AutomationId="FixtureHostTitle"/>
+
+        <Grid Grid.Row="1" Margin="0,12,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock VerticalAlignment="Center" Text="Surface:"/>
+            <ComboBox x:Name="SurfaceSelector"
+                      Grid.Column="1"
+                      Margin="8,0"
+                      SelectedValuePath="Content"
+                      SelectionChanged="SurfaceSelector_SelectionChanged"
+                      AutomationProperties.AutomationId="SurfaceSelector"
+                      AutomationProperties.Name="Fixture surface selector">
+                <ComboBoxItem Content="KnownText"/>
+                <ComboBoxItem Content="DirectText"/>
+                <ComboBoxItem Content="Multilingual"/>
+                <ComboBoxItem Content="OcrSamples"/>
+                <ComboBoxItem Content="QrBarcode"/>
+                <ComboBoxItem Content="Table"/>
+                <ComboBoxItem Content="Empty"/>
+                <ComboBoxItem Content="Contrast"/>
+                <ComboBoxItem Content="CoordinateDpi"/>
+            </ComboBox>
+            <Button Grid.Column="2"
+                    Padding="10,4"
+                    Click="ShowSelectedSurface_Click"
+                    Content="Show surface"
+                    AutomationProperties.AutomationId="ShowSurfaceButton"/>
+            <TextBox x:Name="SurfaceTextInput"
+                     Grid.Column="3"
+                     Margin="12,0"
+                     VerticalContentAlignment="Center"
+                     AutomationProperties.AutomationId="SurfaceTextInput"
+                     AutomationProperties.Name="Replacement surface text"/>
+            <Button Grid.Column="4"
+                    Padding="10,4"
+                    Click="UpdateContent_Click"
+                    Content="Update text"
+                    AutomationProperties.AutomationId="UpdateSurfaceTextButton"/>
+            <Button Grid.Column="5"
+                    Margin="8,0,0,0"
+                    Padding="10,4"
+                    Click="ResetWindowBounds_Click"
+                    Content="Reset bounds"
+                    AutomationProperties.AutomationId="ResetWindowBoundsButton"/>
+        </Grid>
+
+        <TextBox x:Name="WindowMetricsText"
+                 Grid.Row="2"
+                 IsReadOnly="True"
+                 TextWrapping="Wrap"
+                 Margin="0,0,0,8"
+                 AutomationProperties.AutomationId="WindowState"
+                 AutomationProperties.Name="Current window bounds monitor and DPI"/>
+
+        <Border Grid.Row="3" BorderBrush="Gray" BorderThickness="1" Padding="12">
+            <ContentControl x:Name="SurfaceContent"
+                            AutomationProperties.AutomationId="FixtureSurfaceContent"
+                            AutomationProperties.Name="Current deterministic fixture surface"/>
+        </Border>
+
+        <Grid Grid.Row="4" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="InputTarget"
+                     Height="62"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     TextChanged="InputTarget_TextChanged"
+                     AutomationProperties.AutomationId="PostGrabInputTarget"
+                     AutomationProperties.Name="Post-grab text input target"/>
+            <TextBlock Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Text="Received:"/>
+            <TextBox x:Name="ReceivedText"
+                     Grid.Column="2"
+                     Height="62"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     AutomationProperties.AutomationId="ReceivedInputText"
+                     AutomationProperties.Name="Received post-grab text"/>
+            <Button Grid.Column="3"
+                    Margin="8,0,0,0"
+                    Padding="10,4"
+                    Click="ClearInput_Click"
+                    Content="Clear"
+                    AutomationProperties.AutomationId="ClearInputButton"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -13,6 +13,7 @@ public enum LookupItemKind
     Command = 4,
     Dynamic = 5,
     GrabTemplate = 6,
+    PdfDocument = 7,
 }
 
 public class LookupItem : IEquatable<LookupItem>
@@ -33,6 +34,7 @@ public class LookupItem : IEquatable<LookupItem>
                 LookupItemKind.Command => Wpf.Ui.Controls.SymbolRegular.WindowConsole20,
                 LookupItemKind.Dynamic => Wpf.Ui.Controls.SymbolRegular.Flash24,
                 LookupItemKind.GrabTemplate => Wpf.Ui.Controls.SymbolRegular.DocumentTableSearch24,
+                LookupItemKind.PdfDocument => Wpf.Ui.Controls.SymbolRegular.DocumentSearch24,
                 _ => Wpf.Ui.Controls.SymbolRegular.Copy20,
             };
         }
@@ -60,7 +62,9 @@ public class LookupItem : IEquatable<LookupItem>
 
         HistoryItem = historyInfo;
 
-        if (string.IsNullOrEmpty(historyInfo.ImagePath))
+        if (historyInfo.IsPdfDocument)
+            Kind = LookupItemKind.PdfDocument;
+        else if (string.IsNullOrEmpty(historyInfo.ImagePath))
             Kind = LookupItemKind.EditWindow;
         else
             Kind = LookupItemKind.GrabFrame;

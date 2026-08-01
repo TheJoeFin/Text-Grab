@@ -28,9 +28,11 @@ public class LanguageService
     private ILanguage? _cachedOcrLanguage;
     private readonly object _cacheLock = new();
 
-    // Static instance of WindowsAiLang to avoid allocations
+    // Static instances of pseudo-languages to avoid allocations
     private static readonly WindowsAiLang _windowsAiLangInstance = new();
     private static readonly string _windowsAiLangTag = _windowsAiLangInstance.LanguageTag;
+    private static readonly WindowsAiDescriptionLang _windowsAiDescriptionLangInstance = new();
+    private static readonly string _windowsAiDescriptionLangTag = _windowsAiDescriptionLangInstance.LanguageTag;
     private static readonly UiAutomationLang _uiAutomationLangInstance = new();
     private static readonly string _uiAutomationLangTag = _uiAutomationLangInstance.LanguageTag;
 
@@ -83,6 +85,12 @@ public class LanguageService
                 languages.Add(_windowsAiLangInstance);
             }
 
+            if (AppUtilities.TextGrabSettings.WindowsAiDescriptionEnabled
+                && WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
+            {
+                languages.Add(_windowsAiDescriptionLangInstance);
+            }
+
             foreach (Language lang in OcrEngine.AvailableRecognizerLanguages)
             {
                 // Wrap Windows.Globalization.Language in a compatible ILanguage implementation
@@ -103,6 +111,7 @@ public class LanguageService
         {
             Language lang => lang.LanguageTag,
             WindowsAiLang => _windowsAiLangTag,
+            WindowsAiDescriptionLang => _windowsAiDescriptionLangTag,
             UiAutomationLang => _uiAutomationLangTag,
             TessLang tessLang => tessLang.RawTag,
             GlobalLang gLang => gLang.LanguageTag,
@@ -119,6 +128,7 @@ public class LanguageService
         {
             Language => LanguageKind.Global,
             WindowsAiLang => LanguageKind.WindowsAi,
+            WindowsAiDescriptionLang => LanguageKind.WindowsAiDescription,
             UiAutomationLang => LanguageKind.UiAutomation,
             TessLang => LanguageKind.Tesseract,
             _ => LanguageKind.Global, // Default fallback
@@ -174,18 +184,31 @@ public class LanguageService
             {
                 if (lastUsedLang == _windowsAiLangTag)
                 {
-                    // If the last used language is Windows AI, return static instance
-                    _cachedOcrLanguage = _windowsAiLangInstance;
-                    return _cachedOcrLanguage;
-                }
+                    if (WindowsAiUtilities.CanDeviceUseWinAI())
+                    {
+                        _cachedOcrLanguage = _windowsAiLangInstance;
+                        return _cachedOcrLanguage;
+                    }
 
-                if (lastUsedLang == _uiAutomationLangTag && AppUtilities.TextGrabSettings.UiAutomationEnabled)
+                    selectedLanguage = GetCurrentInputLanguage();
+                }
+                else if (lastUsedLang == _windowsAiDescriptionLangTag)
+                {
+                    if (AppUtilities.TextGrabSettings.WindowsAiDescriptionEnabled
+                        && WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
+                    {
+                        _cachedOcrLanguage = _windowsAiDescriptionLangInstance;
+                        return _cachedOcrLanguage;
+                    }
+
+                    selectedLanguage = GetCurrentInputLanguage();
+                }
+                else if (lastUsedLang == _uiAutomationLangTag && AppUtilities.TextGrabSettings.UiAutomationEnabled)
                 {
                     _cachedOcrLanguage = _uiAutomationLangInstance;
                     return _cachedOcrLanguage;
                 }
-
-                if (lastUsedLang == _uiAutomationLangTag)
+                else if (lastUsedLang == _uiAutomationLangTag)
                 {
                     selectedLanguage = CaptureLanguageUtilities.GetUiAutomationFallbackLanguage();
                 }

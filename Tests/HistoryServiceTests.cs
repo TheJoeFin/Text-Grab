@@ -94,6 +94,78 @@ public class HistoryServiceTests
         Assert.Equal("image-2", historyService.GetLastFullScreenGrabInfo()?.ID);
     }
 
+    [Fact]
+    public void ImageHistory_SeparatesPdfDocumentsFromRecentGrabs()
+    {
+        HistoryInfo olderGrab = new()
+        {
+            ID = "grab",
+            CaptureDateTime = new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero),
+            ImagePath = "grab.bmp",
+            SourceContentKind = OpenContentKind.Image,
+        };
+        HistoryInfo newerPdf = new()
+        {
+            ID = "pdf",
+            CaptureDateTime = new DateTimeOffset(2024, 1, 2, 12, 0, 0, TimeSpan.Zero),
+            ImagePath = "pdf-page.bmp",
+            SourceContentKind = OpenContentKind.PdfDocument,
+            SourcePath = @"C:\documents\sample.pdf",
+            SourcePageIndex = 4,
+        };
+
+        HistoryService historyService = new();
+        SetPrivateField(historyService, "HistoryWithImage", new List<HistoryInfo> { olderGrab, newerPdf });
+        SetPrivateField(historyService, "_imageHistoryLoaded", true);
+
+        Assert.Same(olderGrab, Assert.Single(historyService.GetRecentGrabs()));
+        Assert.Same(newerPdf, Assert.Single(historyService.GetRecentPdfDocuments()));
+        Assert.Equal(4, newerPdf.SourcePageIndex);
+        Assert.True(historyService.HasAnyRecentGrabs());
+        Assert.Same(olderGrab, HistoryService.GetMostRecentGrab([olderGrab, newerPdf]));
+    }
+
+    [Fact]
+    public void GetMostRecentGrab_ReturnsNull_WhenHistoryOnlyContainsPdfs()
+    {
+        HistoryInfo pdf = new()
+        {
+            CaptureDateTime = DateTimeOffset.UtcNow,
+            SourceContentKind = OpenContentKind.PdfDocument,
+        };
+
+        Assert.Null(HistoryService.GetMostRecentGrab([pdf]));
+    }
+
+    [Fact]
+    public void VisualHistoryRetention_LimitsGrabsAndPdfsIndependently()
+    {
+        List<HistoryInfo> historyItems = [];
+        for (int index = 0; index < 12; index++)
+        {
+            historyItems.Add(new HistoryInfo
+            {
+                ID = $"grab-{index}",
+                CaptureDateTime = new DateTimeOffset(2024, 1, 1, 0, index, 0, TimeSpan.Zero),
+                SourceContentKind = OpenContentKind.Image,
+            });
+            historyItems.Add(new HistoryInfo
+            {
+                ID = $"pdf-{index}",
+                CaptureDateTime = new DateTimeOffset(2024, 1, 2, 0, index, 0, TimeSpan.Zero),
+                SourceContentKind = OpenContentKind.PdfDocument,
+            });
+        }
+
+        List<HistoryInfo> itemsToRemove = HistoryService.GetExcessVisualHistoryItems(historyItems);
+
+        Assert.Equal(4, itemsToRemove.Count);
+        Assert.Contains(itemsToRemove, history => history.ID == "grab-0");
+        Assert.Contains(itemsToRemove, history => history.ID == "grab-1");
+        Assert.Contains(itemsToRemove, history => history.ID == "pdf-0");
+        Assert.Contains(itemsToRemove, history => history.ID == "pdf-1");
+    }
+
     [WpfFact]
     public async Task ImageHistory_KeepsInlineWordBorderJsonWhileMirroringSidecarStorage()
     {

@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Post-Grab Actions Settings"
+    AutomationProperties.AutomationId="PostGrabActionsDialog"
     Width="900"
     Height="700"
     Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -73,22 +74,14 @@
                 <Grid>
                     <ui:ListView
                         x:Name="AvailableActionsListBox"
+                        AutomationProperties.AutomationId="PostGrabActions.AvailableList"
                         d:ItemsSource="{d:SampleData ItemCount=5}"
                         ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                         ScrollViewer.VerticalScrollBarVisibility="Visible">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="46" Header="Icon">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Viewbox Height="24">
-                                                <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
-                                            </Viewbox>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                                 <GridViewColumn
-                                    Width="300"
+                                    Width="346"
                                     DisplayMemberBinding="{Binding ButtonText}"
                                     Header="Action Name" />
                             </GridView>
@@ -115,6 +108,7 @@
             VerticalAlignment="Center">
             <ui:Button
                 x:Name="AddButton"
+                AutomationProperties.AutomationId="PostGrabActions.AddButton"
                 Width="100"
                 Margin="0,0,0,8"
                 HorizontalAlignment="Center"
@@ -127,6 +121,7 @@
             </ui:Button>
             <ui:Button
                 x:Name="RemoveButton"
+                AutomationProperties.AutomationId="PostGrabActions.RemoveButton"
                 Width="100"
                 Margin="0,0,0,8"
                 HorizontalAlignment="Center"
@@ -140,6 +135,7 @@
             <Separator Margin="0,8" />
             <ui:Button
                 x:Name="MoveUpButton"
+                AutomationProperties.AutomationId="PostGrabActions.MoveUpButton"
                 Width="100"
                 Margin="0,0,0,8"
                 HorizontalAlignment="Center"
@@ -152,6 +148,7 @@
             </ui:Button>
             <ui:Button
                 x:Name="MoveDownButton"
+                AutomationProperties.AutomationId="PostGrabActions.MoveDownButton"
                 Width="100"
                 HorizontalAlignment="Center"
                 Click="MoveDownButton_Click"
@@ -192,22 +189,14 @@
                     CornerRadius="8">
                     <ui:ListView
                         x:Name="EnabledActionsListBox"
+                        AutomationProperties.AutomationId="PostGrabActions.EnabledList"
                         d:ItemsSource="{d:SampleData ItemCount=5}"
                         ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                         ScrollViewer.VerticalScrollBarVisibility="Visible">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="46" Header="Icon">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Viewbox Height="24">
-                                                <ui:SymbolIcon FontSize="24" Symbol="{Binding Path=SymbolIcon, Mode=OneWay}" />
-                                            </Viewbox>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                                 <GridViewColumn
-                                    Width="180"
+                                    Width="226"
                                     DisplayMemberBinding="{Binding ButtonText}"
                                     Header="Action Name" />
                                 <GridViewColumn Width="120" Header="Default">
@@ -229,6 +218,7 @@
                 <!--  Stay Open Toggle  -->
                 <ui:ToggleSwitch
                     x:Name="StayOpenToggle"
+                    AutomationProperties.AutomationId="PostGrabActions.StayOpenToggle"
                     Grid.Row="3"
                     Margin="0,16,0,0"
                     Content="Keep menu open after clicking an action"
@@ -305,6 +295,7 @@
                         Orientation="Horizontal">
                         <ui:Button
                             x:Name="NewTemplateFromImageButton"
+                            AutomationProperties.AutomationId="PostGrabActions.NewImageTemplateButton"
                             Margin="0,0,6,0"
                             Click="NewTemplateFromImageButton_Click"
                             ToolTip="Pick an image to use as reference for a new grab template">
@@ -315,6 +306,7 @@
                         </ui:Button>
                         <ui:Button
                             x:Name="NewTextOnlyTemplateButton"
+                            AutomationProperties.AutomationId="PostGrabActions.NewTextTemplateButton"
                             Margin="0,0,6,0"
                             Click="NewTextOnlyTemplateButton_Click"
                             ToolTip="Create a new template with a name and output template, without a reference image">
@@ -325,6 +317,7 @@
                         </ui:Button>
                         <ui:Button
                             x:Name="EditTemplateRegionsButton"
+                            AutomationProperties.AutomationId="PostGrabActions.EditTemplateButton"
                             Margin="0,0,6,0"
                             Click="EditTemplateRegionsButton_Click"
                             ToolTip="Open the selected template in a Grab Frame to edit its regions">
@@ -335,6 +328,7 @@
                         </ui:Button>
                         <ui:Button
                             x:Name="DeleteTemplateButton"
+                            AutomationProperties.AutomationId="PostGrabActions.DeleteTemplateButton"
                             Click="DeleteTemplateButton_Click"
                             ToolTip="Delete the selected Grab Template">
                             <StackPanel Orientation="Horizontal">
@@ -349,6 +343,7 @@
                 <Grid Grid.Row="1">
                     <ui:ListView
                         x:Name="TemplatesListBox"
+                        AutomationProperties.AutomationId="PostGrabActions.TemplatesList"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                         SelectionChanged="TemplatesListBox_SelectionChanged">
@@ -470,12 +465,14 @@
             Orientation="Horizontal">
             <ui:Button
                 x:Name="ResetButton"
+                AutomationProperties.AutomationId="PostGrabActions.ResetButton"
                 Margin="0,0,8,0"
                 Click="ResetButton_Click"
                 Content="Reset to Defaults"
                 ToolTip="Reset to default post-grab actions" />
             <ui:Button
                 x:Name="SaveButton"
+                AutomationProperties.AutomationId="PostGrabActions.SaveButton"
                 Margin="0,0,8,0"
                 Appearance="Primary"
                 Click="SaveButton_Click"
@@ -483,6 +480,7 @@
                 ToolTip="Save changes and close" />
             <ui:Button
                 x:Name="CancelButton"
+                AutomationProperties.AutomationId="PostGrabActions.CancelButton"
                 Click="CancelButton_Click"
                 Content="Cancel"
                 ToolTip="Close without saving" />

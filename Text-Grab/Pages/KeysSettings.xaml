@@ -1,4 +1,4 @@
-﻿<Page
+<Page
     x:Class="Text_Grab.Pages.KeysSettings"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -8,79 +8,93 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="KeysSettings"
+    AutomationProperties.AutomationId="Settings.ShortcutsPage"
     d:DesignHeight="1450"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
-        <TextBlock Style="{StaticResource TextHeader}" Text="Shortcut Key Settings" />
+    <StackPanel Margin="20,12,24,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource SettingsPageTitle}" Text="Shortcut Key Settings" />
 
-        <ui:ToggleSwitch
-            Name="RunInBackgroundChkBx"
-            Margin="0,12,0,0"
-            Checked="RunInBackgroundChkBx_Checked"
-            Unchecked="RunInBackgroundChkBx_Unchecked">
-            <TextBlock Style="{StaticResource TextBodyNormal}">
-                Run Text Grab in the background and enable hotkeys
-            </TextBlock>
-        </ui:ToggleSwitch>
-        <TextBlock Margin="24,0,0,0" Style="{StaticResource TextBodyNormal}">
-            <Run FontStyle="Italic">For this setting to take effect close all instances of Text Grab.</Run>
-        </TextBlock>
-        <ui:ToggleSwitch
-            x:Name="GlobalHotkeysCheckbox"
-            Margin="0,12,0,0"
-            Checked="GlobalHotkeysCheckbox_Checked"
-            IsEnabled="{Binding IsChecked, ElementName=RunInBackgroundChkBx, Mode=OneWay}"
-            Unchecked="GlobalHotkeysCheckbox_Unchecked">
-            <TextBlock Style="{StaticResource TextBodyNormal}">
-                <Run FontWeight="Bold">Global hotkeys</Run>
-            </TextBlock>
-        </ui:ToggleSwitch>
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Background and hotkeys" />
+
+        <controls:SettingsCard
+            Description="For this setting to take effect close all instances of Text Grab."
+            HeaderText="Run Text Grab in the background and enable hotkeys"
+            Icon="{ui:SymbolIcon Desktop24}">
+            <ui:ToggleSwitch
+                Name="RunInBackgroundChkBx"
+                AutomationProperties.AutomationId="Settings.Shortcuts.BackgroundToggle"
+                Checked="RunInBackgroundChkBx_Checked"
+                Unchecked="RunInBackgroundChkBx_Unchecked" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            Description="Trigger Text Grab from anywhere using the shortcuts below."
+            HeaderText="Global hotkeys"
+            Icon="{ui:SymbolIcon Keyboard24}">
+            <ui:ToggleSwitch
+                x:Name="GlobalHotkeysCheckbox"
+                AutomationProperties.AutomationId="Settings.Shortcuts.GlobalHotkeysToggle"
+                Checked="GlobalHotkeysCheckbox_Checked"
+                IsEnabled="{Binding IsChecked, ElementName=RunInBackgroundChkBx, Mode=OneWay}"
+                Unchecked="GlobalHotkeysCheckbox_Unchecked" />
+        </controls:SettingsCard>
+
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Shortcuts" />
+
         <StackPanel
             x:Name="ShortcutsStackPanel"
-            Margin="24,8,20,0"
+            AutomationProperties.AutomationId="Settings.Shortcuts.List"
             IsEnabled="{Binding IsChecked, ElementName=GlobalHotkeysCheckbox, Mode=OneWay}"
             Orientation="Vertical">
             <controls:ShortcutControl
                 x:Name="FsgShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.FullscreenGrab"
                 IsShortcutEnabled="True"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Full Screen Grab" />
             <controls:ShortcutControl
                 x:Name="GlrShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.LastRegion"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Grab Last Region" />
             <controls:ShortcutControl
                 x:Name="GfShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.GrabFrame"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Grab Frame" />
             <controls:ShortcutControl
                 x:Name="LgfShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.LastGrabFrame"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Open Last Grab Frame" />
             <controls:ShortcutControl
                 x:Name="EtwShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.EditText"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Edit Text Window" />
             <controls:ShortcutControl
                 x:Name="LetwShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.LastEditText"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Last Edit Text Window" />
             <controls:ShortcutControl
                 x:Name="QslShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.QuickLookup"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Quick Simple Lookup" />
             <controls:ShortcutControl
                 x:Name="OccShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.ClipboardContent"
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Open Clipboard Content" />

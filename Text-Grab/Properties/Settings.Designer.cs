@@ -12,7 +12,7 @@ namespace Text_Grab.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.7.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.9.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -778,7 +778,7 @@ namespace Text_Grab.Properties {
                 this["EtwNormalizeLineEndingsOnPaste"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
@@ -790,7 +790,7 @@ namespace Text_Grab.Properties {
                 this["EtwSpellCheckMode"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -805,6 +805,18 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HiddenSmartPatternIds {
+            get {
+                return ((string)(this["HiddenSmartPatternIds"]));
+            }
+            set {
+                this["HiddenSmartPatternIds"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool OverrideAiArchCheck {
             get {
@@ -812,6 +824,18 @@ namespace Text_Grab.Properties {
             }
             set {
                 this["OverrideAiArchCheck"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool WindowsAiDescriptionEnabled {
+            get {
+                return ((bool)(this["WindowsAiDescriptionEnabled"]));
+            }
+            set {
+                this["WindowsAiDescriptionEnabled"] = value;
             }
         }
         
@@ -901,6 +925,30 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GrabFrameSpeakEnabled {
+            get {
+                return ((bool)(this["GrabFrameSpeakEnabled"]));
+            }
+            set {
+                this["GrabFrameSpeakEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool SpeakProcessingStatus {
+            get {
+                return ((bool)(this["SpeakProcessingStatus"]));
+            }
+            set {
+                this["SpeakProcessingStatus"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("English")]
         public string GrabFrameTranslationLanguage {
             get {
@@ -985,6 +1033,42 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int TtsSpeakWordLimit {
+            get {
+                return ((int)(this["TtsSpeakWordLimit"]));
+            }
+            set {
+                this["TtsSpeakWordLimit"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TtsVoiceName {
+            get {
+                return ((string)(this["TtsVoiceName"]));
+            }
+            set {
+                this["TtsVoiceName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public double TtsSpeakingRate {
+            get {
+                return ((double)(this["TtsSpeakingRate"]));
+            }
+            set {
+                this["TtsSpeakingRate"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool ParagraphDetection {
             get {
@@ -997,6 +1081,18 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool RemoveFurigana {
+            get {
+                return ((bool)(this["RemoveFurigana"]));
+            }
+            set {
+                this["RemoveFurigana"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string GrabFrameWordGrouping {
             get {
@@ -1004,6 +1100,66 @@ namespace Text_Grab.Properties {
             }
             set {
                 this["GrabFrameWordGrouping"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GrabFrameHiddenBottomBarTools {
+            get {
+                return ((string)(this["GrabFrameHiddenBottomBarTools"]));
+            }
+            set {
+                this["GrabFrameHiddenBottomBarTools"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Theme")]
+        public string GrabFrameBorderStyle {
+            get {
+                return ((string)(this["GrabFrameBorderStyle"]));
+            }
+            set {
+                this["GrabFrameBorderStyle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#2A767E")]
+        public string GrabFrameBorderColor {
+            get {
+                return ((string)(this["GrabFrameBorderColor"]));
+            }
+            set {
+                this["GrabFrameBorderColor"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HdrCaptureCorrection {
+            get {
+                return ((bool)(this["HdrCaptureCorrection"]));
+            }
+            set {
+                this["HdrCaptureCorrection"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HdrBorderlessGranted {
+            get {
+                return ((bool)(this["HdrBorderlessGranted"]));
+            }
+            set {
+                this["HdrBorderlessGranted"] = value;
             }
         }
     }

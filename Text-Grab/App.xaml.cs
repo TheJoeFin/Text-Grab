@@ -33,6 +33,7 @@ public partial class App : System.Windows.Application
 
     #region Fields
 
+    private static readonly AutomationProfile? _automationProfile = AutomationProfile.Current;
     private static readonly Settings _defaultSettings = AppUtilities.TextGrabSettings;
     private static RegistryMonitor? _themeRegistryMonitor;
     private static RegistryKey? _themeRegistryKey;
@@ -258,8 +259,18 @@ public partial class App : System.Windows.Application
         string? primaryArgument = null;
         string? grabFramePath = null;
 
-        foreach (string arg in args)
+        string[] startupArgs = [.. args];
+        for (int index = 0; index < startupArgs.Length; index++)
         {
+            string arg = startupArgs[index];
+            if (AutomationProfile.IsAutomationArgument(arg))
+            {
+                if (string.Equals(arg, "--automation-profile", StringComparison.OrdinalIgnoreCase))
+                    index++;
+
+                continue;
+            }
+
             if (string.Equals(arg, "--windowless", StringComparison.OrdinalIgnoreCase))
             {
                 isQuiet = true;
@@ -504,6 +515,9 @@ public partial class App : System.Windows.Application
         if (!File.Exists(possiblePath))
             return false;
 
+        if (GrabFrameFileUtilities.IsGrabFrameFile(possiblePath))
+            return await TryOpenGrabFrameFileAsync(possiblePath, isQuiet);
+
         if (isQuiet)
         {
             (string pathContent, _) = await IoUtilities.GetContentFromPath(possiblePath);
@@ -528,8 +542,34 @@ public partial class App : System.Windows.Application
         return true;
     }
 
+    /// <summary>
+    /// Opens a Grab Frame file (.tggf). In quiet mode the saved OCR text is routed straight to
+    /// the clipboard; otherwise the frame is restored in a new Grab Frame window.
+    /// </summary>
+    private static async Task<bool> TryOpenGrabFrameFileAsync(string path, bool isQuiet)
+    {
+        HistoryInfo? historyInfo = await GrabFrameFileUtilities.LoadGrabFrameFileAsync(path);
+
+        if (historyInfo is null)
+            return false;
+
+        if (isQuiet)
+        {
+            historyInfo.ImageContent?.Dispose();
+            historyInfo.ClearTransientImage();
+            OutputUtilities.HandleTextFromOcr(historyInfo.TextContent, false, false);
+            return true;
+        }
+
+        GrabFrame grabFrame = new(historyInfo);
+        grabFrame.Show();
+        grabFrame.Activate();
+        return true;
+    }
+
     private void appExit(object sender, ExitEventArgs e)
     {
+        AutomationDiagnostics.Record("exit", new { e.ApplicationExitCode });
         TextGrabIcon?.Close();
 
         NotifyIconUtilities.UnregisterHotkeys(this);
@@ -544,12 +584,23 @@ public partial class App : System.Windows.Application
 
     private async void appStartup(object sender, StartupEventArgs e)
     {
+        if (_automationProfile is not null)
+        {
+            AutomationDiagnostics.Initialize(_automationProfile);
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        }
+
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
-        // Per-user text-grab:// registration for unpackaged installs
-        // (packaged installs register the protocol via the MSIX manifest).
-        ProtocolUtilities.EnsureProtocolRegistration();
+        // Per-user text-grab:// and .tggf registration for unpackaged installs
+        // (packaged installs register these via the MSIX manifest).
+        if (_automationProfile is null || _automationProfile.AllowsPersistentRegistration)
+        {
+            ProtocolUtilities.EnsureProtocolRegistration();
+            FileAssociationUtilities.EnsureGrabFrameFileAssociation();
+        }
 
         // Register COM server and activator type
         bool handledArgument = false;
@@ -559,7 +610,11 @@ public partial class App : System.Windows.Application
             LaunchFromToast(toastArgs);
         };
 
-        handledArgument = HandleNotifyIcon();
+        // Sets up the tray icon when configured to run in the background. This must not
+        // suppress handling of a file/protocol/share argument: opening a file should always
+        // launch UI, even when run-in-the-background + startup-on-login are enabled. The
+        // return value only decides whether to skip the DefaultLaunch window.
+        bool suppressDefaultLaunch = HandleNotifyIcon();
 
         if (!handledArgument)
             handledArgument = await ShareTargetUtilities.HandleShareTargetActivationAsync();
@@ -569,11 +624,13 @@ public partial class App : System.Windows.Application
 
         WatchTheme();
 
-        if (handledArgument)
+        if (handledArgument || suppressDefaultLaunch)
         {
-            // arguments were passed, so don't show firstRun dialog
+            // arguments were passed (or we launched only to sit in the background),
+            // so don't show firstRun dialog or the default launch window
             _defaultSettings.FirstRun = false;
             _defaultSettings.Save();
+            AutomationDiagnostics.RecordReady(handledArgument, suppressDefaultLaunch);
             return;
         }
 
@@ -581,21 +638,30 @@ public partial class App : System.Windows.Application
         {
             _defaultSettings.CorrectToLatin = LanguageUtilities.IsCurrentLanguageLatinBased();
             ShowAndSetFirstRun();
+            AutomationDiagnostics.RecordReady(handledArgument, suppressDefaultLaunch);
             return;
         }
 
         DefaultLaunch();
+        AutomationDiagnostics.RecordReady(handledArgument, suppressDefaultLaunch);
     }
 
     private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         // unhandled exceptions thrown from UI thread
         Debug.WriteLine($"Unhandled exception: {e.Exception}");
+        AutomationDiagnostics.RecordUnhandledException("dispatcher", e.Exception);
         e.Handled = true;
+
+        if (_automationProfile is not null)
+            Current.Dispatcher.BeginInvoke(() => Shutdown(-1));
     }
 
     private bool HandleNotifyIcon()
     {
+        if (_automationProfile is { AllowsSystemIntegration: false })
+            return false;
+
         if (_defaultSettings.RunInTheBackground && NumberOfRunningInstances < 2)
         {
             NotifyIconUtilities.SetupNotifyIcon();
@@ -619,6 +685,17 @@ public partial class App : System.Windows.Application
             EditTextWindow mtw = new(argsInvoked);
             mtw.Show();
         });
+    }
+
+    private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+            AutomationDiagnostics.RecordUnhandledException("app-domain", exception);
+    }
+
+    private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        AutomationDiagnostics.RecordUnhandledException("task-scheduler", e.Exception);
     }
     #endregion Methods
 }

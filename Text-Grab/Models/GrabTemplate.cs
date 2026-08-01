@@ -78,6 +78,12 @@ public partial class GrabTemplate
     /// </summary>
     public List<TemplatePatternMatch> PatternMatches { get; set; } = [];
 
+    /// <summary>
+    /// Recognizer references used in the output template via {r:Name:mode} syntax.
+    /// Each maps a <see cref="BuiltInRecognizer"/> to a match-selection mode and output kind.
+    /// </summary>
+    public List<TemplateRecognizerMatch> RecognizerMatches { get; set; } = [];
+
     public GrabTemplate() { }
 
     public GrabTemplate(string name)

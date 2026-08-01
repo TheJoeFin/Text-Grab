@@ -178,7 +178,8 @@ public static partial class MarkdownDocumentUtilities
                 WpfList list = new()
                 {
                     MarkerStyle = listBlock.IsOrdered ? TextMarkerStyle.Decimal : TextMarkerStyle.Disc,
-                    Margin = new Thickness(0, 4, 0, 4)
+                    Margin = new Thickness(0, 4, 0, 4),
+                    StartIndex = GetOrderedListStart(listBlock),
                 };
                 SetQuoteDepth(list, quoteDepth);
 
@@ -443,12 +444,14 @@ public static partial class MarkdownDocumentUtilities
     {
         string quotePrefix = GetQuotePrefix(GetQuoteDepth(list));
         bool isOrdered = list.MarkerStyle == TextMarkerStyle.Decimal;
-        int itemIndex = 1;
+        int itemIndex = isOrdered ? Math.Max(1, list.StartIndex) : 1;
+        bool isFirstItem = true;
 
         foreach (ListItem item in list.ListItems)
         {
-            if (itemIndex > 1)
+            if (!isFirstItem)
                 builder.AppendLine();
+            isFirstItem = false;
 
             StringBuilder itemBuilder = new();
             bool wroteItemBlock = false;
@@ -475,6 +478,15 @@ public static partial class MarkdownDocumentUtilities
 
             itemIndex++;
         }
+    }
+
+    private static int GetOrderedListStart(ListBlock listBlock)
+    {
+        return listBlock.IsOrdered
+            && int.TryParse(listBlock.OrderedStart, out int startIndex)
+            && startIndex > 0
+                ? startIndex
+                : 1;
     }
 
     private static void WriteTable(StringBuilder builder, WpfTable table)

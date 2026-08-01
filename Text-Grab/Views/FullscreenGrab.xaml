@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab"
+    AutomationProperties.AutomationId="FullscreenGrabWindow"
     Width="800"
     Height="450"
     AllowsTransparency="True"
@@ -15,6 +16,7 @@
     Loaded="Window_Loaded"
     ResizeMode="NoResize"
     ShowInTaskbar="False"
+    SizeChanged="Window_SizeChanged"
     Topmost="False"
     Unloaded="Window_Unloaded"
     WindowStyle="None"
@@ -30,9 +32,11 @@
     </Window.Resources>
 
     <Grid d:Background="NavajoWhite">
-        <Image x:Name="BackgroundImage" Stretch="UniformToFill" />
+        <Image x:Name="BackgroundImage" AutomationProperties.AutomationId="FullscreenGrab.BackgroundImage" Stretch="UniformToFill" />
         <Canvas
             Name="RegionClickCanvas"
+            AutomationProperties.AutomationId="FullscreenGrab.SelectionCanvas"
+            AutomationProperties.Name="Capture selection surface"
             ContextMenuOpening="RegionClickCanvas_ContextMenuOpening"
             Cursor="Cross"
             MouseDown="RegionClickCanvas_MouseDown"
@@ -61,16 +65,19 @@
                 <ContextMenu>
                     <MenuItem
                         Name="SingleLineMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.SingleLine"
                         Click="SingleLineMenuItem_Click"
                         Header="Make Result Text Single Line"
                         IsCheckable="True" />
                     <MenuItem
                         Name="TableMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.Table"
                         Click="TableToggleButton_Click"
                         Header="OCR text as a table"
                         IsCheckable="True" />
                     <MenuItem
                         Name="FreezeMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.Freeze"
                         Click="FreezeMenuItem_Click"
                         Header="Freeze"
                         IsCheckable="True"
@@ -78,6 +85,7 @@
                     <MenuItem Header="Selection Style">
                         <MenuItem
                             x:Name="RegionSelectionMenuItem"
+                            AutomationProperties.AutomationId="FullscreenGrab.Menu.SelectionStyle.Region"
                             Click="SelectionStyleMenuItem_Click"
                             Header="Rectangle 1 - Drag a box"
                             InputGestureText="R"
@@ -86,6 +94,7 @@
                             Tag="Region" />
                         <MenuItem
                             x:Name="WindowSelectionMenuItem"
+                            AutomationProperties.AutomationId="FullscreenGrab.Menu.SelectionStyle.Window"
                             Click="SelectionStyleMenuItem_Click"
                             Header="Window - Hover and click"
                             InputGestureText="W"
@@ -93,6 +102,7 @@
                             Tag="Window" />
                         <MenuItem
                             x:Name="FreeformSelectionMenuItem"
+                            AutomationProperties.AutomationId="FullscreenGrab.Menu.SelectionStyle.Freeform"
                             Click="SelectionStyleMenuItem_Click"
                             Header="Freeform - Draw any shape"
                             InputGestureText="D"
@@ -100,6 +110,7 @@
                             Tag="Freeform" />
                         <MenuItem
                             x:Name="AdjustAfterSelectionMenuItem"
+                            AutomationProperties.AutomationId="FullscreenGrab.Menu.SelectionStyle.AdjustAfter"
                             Click="SelectionStyleMenuItem_Click"
                             Header="Rectangle 2 - Drag, then adjust"
                             InputGestureText="A"
@@ -109,34 +120,40 @@
                     <Separator />
                     <MenuItem
                         Name="NewGrabFrameMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.NewGrabFrame"
                         Click="NewGrabFrameMenuItem_Click"
                         Header="Place Grab Frame"
                         IsCheckable="True" />
                     <MenuItem
                         Name="SendToEtwMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.SendToEditText"
                         Click="SendToEditTextToggleButton_Click"
                         Header="Send to Edit Text Window"
                         IsCheckable="True" />
                     <MenuItem
                         Name="EditLastGrabMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.EditLastGrab"
                         Click="EditLastGrab_Click"
                         Header="Edit Last Grab" />
                     <MenuItem
                         Name="SettingsMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.OpenSettings"
                         Click="SettingsMenuItem_Click"
                         Header="Settings" />
                     <Separator />
                     <MenuItem
                         Name="CancelMenuItem"
+                        AutomationProperties.AutomationId="FullscreenGrab.Menu.Cancel"
                         Click="CancelMenuItem_Click"
                         Header="Cancel" />
                 </ContextMenu>
             </Canvas.ContextMenu>
         </Canvas>
-        <Canvas x:Name="SelectionOutlineHost" IsHitTestVisible="False" />
-        <Canvas x:Name="TemplateOverlayHost" IsHitTestVisible="False" />
+        <Canvas x:Name="SelectionOutlineHost" AutomationProperties.AutomationId="FullscreenGrab.SelectionOutline" IsHitTestVisible="False" />
+        <Canvas x:Name="TemplateOverlayHost" AutomationProperties.AutomationId="FullscreenGrab.TemplateOverlay" IsHitTestVisible="False" />
         <Border
             x:Name="TopButtonsStackPanel"
+            AutomationProperties.AutomationId="FullscreenGrab.Toolbar"
             Margin="12"
             Padding="8"
             HorizontalAlignment="Center"
@@ -162,6 +179,8 @@
                 Orientation="Horizontal">
                 <ComboBox
                     x:Name="SelectionStyleComboBox"
+                    AutomationProperties.AutomationId="FullscreenGrab.SelectionStyle"
+                    AutomationProperties.Name="Capture selection style"
                     Width="34"
                     Height="34"
                     Margin="0,0,4,0"
@@ -184,6 +203,8 @@
                 </ComboBox>
                 <ComboBox
                     x:Name="LanguagesComboBox"
+                    AutomationProperties.AutomationId="FullscreenGrab.Language"
+                    AutomationProperties.Name="OCR language"
                     Height="34"
                     Margin="0"
                     Padding="8,0"
@@ -203,11 +224,15 @@
                 </ComboBox>
                 <ToggleButton
                     x:Name="FreezeToggleButton"
+                    AutomationProperties.AutomationId="FullscreenGrab.FreezeToggle"
+                    AutomationProperties.Name="Freeze screen"
                     Width="34"
                     Height="34"
                     Margin="4,0,2,0"
                     Click="FreezeMenuItem_Click"
-                    IsChecked="{Binding IsChecked, ElementName=FreezeMenuItem, Mode=TwoWay}"
+                    IsChecked="{Binding IsChecked,
+                                        ElementName=FreezeMenuItem,
+                                        Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(F) Freeze what is on screens">
                     <wpfui:SymbolIcon Symbol="Pause24" />
@@ -221,6 +246,8 @@
                     <StackPanel Orientation="Horizontal">
                         <ToggleButton
                             x:Name="StandardModeToggleButton"
+                            AutomationProperties.AutomationId="FullscreenGrab.StandardModeToggle"
+                            AutomationProperties.Name="Normal multi-line OCR mode"
                             Width="30"
                             Height="30"
                             Margin="0"
@@ -232,36 +259,48 @@
                         </ToggleButton>
                         <ToggleButton
                             x:Name="SingleLineToggleButton"
+                            AutomationProperties.AutomationId="FullscreenGrab.SingleLineToggle"
+                            AutomationProperties.Name="Single-line OCR mode"
                             Width="30"
                             Height="30"
                             Margin="0"
                             d:IsChecked="True"
                             Click="SingleLineMenuItem_Click"
-                            IsChecked="{Binding IsChecked, ElementName=SingleLineMenuItem, Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=SingleLineMenuItem,
+                                                Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(S) Make result a single line">
                             <wpfui:SymbolIcon Symbol="SubtractSquare24" />
                         </ToggleButton>
                         <ToggleButton
                             x:Name="TableToggleButton"
+                            AutomationProperties.AutomationId="FullscreenGrab.TableToggle"
+                            AutomationProperties.Name="Table OCR mode"
                             Width="30"
                             Height="30"
                             Margin="0"
                             d:IsChecked="True"
                             Click="TableToggleButton_Click"
-                            IsChecked="{Binding IsChecked, ElementName=TableMenuItem, Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=TableMenuItem,
+                                                Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) OCR text as a table">
                             <wpfui:SymbolIcon Symbol="Table24" />
                         </ToggleButton>
                         <ToggleButton
                             x:Name="NewGrabFrameToggleButton"
+                            AutomationProperties.AutomationId="FullscreenGrab.NewGrabFrameToggle"
+                            AutomationProperties.Name="Place Grab Frame"
                             Width="30"
                             Height="30"
                             Margin="0"
                             d:IsChecked="True"
                             Click="NewGrabFrameMenuItem_Click"
-                            IsChecked="{Binding IsChecked, ElementName=NewGrabFrameMenuItem, Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked,
+                                                ElementName=NewGrabFrameMenuItem,
+                                                Mode=TwoWay}"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(G) Place a Grab Frame">
                             <wpfui:SymbolIcon Symbol="PanelBottom20" />
@@ -270,12 +309,17 @@
                 </Border>
                 <wpfui:DropDownButton
                     x:Name="NextStepDropDownButton"
+                    AutomationProperties.AutomationId="FullscreenGrab.NextStepMenu"
+                    AutomationProperties.Name="Post-capture actions"
                     Height="34"
                     Margin="2,0"
                     IsDefault="True"
+                    MouseEnter="NextStepDropDownButton_MouseEnter"
+                    MouseLeave="NextStepDropDownButton_MouseLeave"
+                    Style="{StaticResource SymbolDropDownButton}"
                     ToolTip="Actions to perform after grabbing text...">
                     <wpfui:DropDownButton.Icon>
-                        <wpfui:SymbolIcon Symbol="FlashFlow24" />
+                        <wpfui:SymbolIcon x:Name="NextStepSymbolIcon" Symbol="FlashFlow24" />
                     </wpfui:DropDownButton.Icon>
                     <wpfui:DropDownButton.Flyout>
                         <ContextMenu
@@ -336,6 +380,7 @@
                 </wpfui:DropDownButton>
                 <Button
                     x:Name="AcceptSelectionButton"
+                    AutomationProperties.AutomationId="FullscreenGrab.AcceptSelectionButton"
                     Width="44"
                     Height="34"
                     Margin="2,0"
@@ -345,18 +390,24 @@
                     Visibility="Collapsed" />
                 <ToggleButton
                     x:Name="SendToEditTextToggleButton"
+                    AutomationProperties.AutomationId="FullscreenGrab.SendToEditTextToggle"
+                    AutomationProperties.Name="Send result to Edit Text Window"
                     Width="34"
                     Height="34"
                     Margin="2,0"
                     d:IsChecked="True"
                     Click="SendToEditTextToggleButton_Click"
-                    IsChecked="{Binding IsChecked, ElementName=SendToEtwMenuItem, Mode=TwoWay}"
+                    IsChecked="{Binding IsChecked,
+                                        ElementName=SendToEtwMenuItem,
+                                        Mode=TwoWay}"
                     Style="{StaticResource ToggleSymbolButton}"
                     ToolTip="(E) Send to an Edit Text Window">
                     <wpfui:SymbolIcon Symbol="Window24" />
                 </ToggleButton>
                 <Button
                     x:Name="SettingsButton"
+                    AutomationProperties.AutomationId="FullscreenGrab.SettingsButton"
+                    AutomationProperties.Name="Settings"
                     Width="34"
                     Height="34"
                     Margin="2,0"
@@ -367,6 +418,8 @@
                 </Button>
                 <Button
                     x:Name="CancelButton"
+                    AutomationProperties.AutomationId="FullscreenGrab.CancelButton"
+                    AutomationProperties.Name="Cancel capture"
                     Width="34"
                     Height="34"
                     Margin="2,0,0,0"

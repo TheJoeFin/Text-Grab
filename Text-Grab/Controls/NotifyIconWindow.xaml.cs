@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -51,7 +52,13 @@ public partial class NotifyIconWindow : Window
     private void NotifyIcon_LeftClick(NotifyIcon sender, RoutedEventArgs e)
     {
         e.Handled = true;
-        App.DefaultLaunch();
+        RunAfterTrayIconInteraction(App.DefaultLaunch);
+    }
+
+    private void RunAfterTrayIconInteraction(Action action)
+    {
+        // Let the shell's tray interaction release foreground ownership first.
+        Dispatcher.BeginInvoke(action, DispatcherPriority.Background);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -105,7 +112,7 @@ public partial class NotifyIconWindow : Window
 
     private void FullscreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        WindowUtilities.LaunchFullScreenGrab();
+        RunAfterTrayIconInteraction(() => WindowUtilities.LaunchFullScreenGrab());
     }
 
     private async void PreviousRegionMenuItem_Click(object sender, RoutedEventArgs e)
@@ -214,7 +221,7 @@ public partial class NotifyIconWindow : Window
         if (bitmapSource is null)
             return;
 
-        string tempPath = Path.Combine(Path.GetTempPath(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
+        string tempPath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
 
         using (FileStream fileStream = new(tempPath, FileMode.Create))
         {

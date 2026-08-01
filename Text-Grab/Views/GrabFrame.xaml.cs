@@ -63,6 +63,7 @@ public partial class GrabFrame : Window
     private PdfDocumentRenderer? _loadedPdfDocument;
     private PdfPageContent? _currentPdfPageContent;
     private int _currentPdfPageIndex = -1;
+    private int _initialPdfPageIndex;
     private bool hasLoadedImageSource = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
@@ -95,6 +96,8 @@ public partial class GrabFrame : Window
     private readonly ObservableCollection<WordBorder> wordBorders = [];
     private static readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private ScrollBehavior scrollBehavior = ScrollBehavior.Resize;
+    private GrabFrameBorderStyle borderStyle = GrabFrameBorderStyle.Theme;
+    private Color borderCustomColor = Color.FromRgb(0x2A, 0x76, 0x7E);
     private GrabFrameWordGroupingMode wordGroupingMode = GrabFrameWordGroupingMode.Paragraph;
     private double overlayOpacity = 0.05;
     private bool isTranslationEnabled = false;
@@ -110,10 +113,33 @@ public partial class GrabFrame : Window
     private bool isLoadedVisualDocument = false;
     private double frozenFrameContentScale = 1;
     private const string TargetLanguageMenuHeader = "Target Language";
+    private string _lastSpokenFrameText = string.Empty;
+    private bool _speakOnNextFrameTextUpdate = false;
+    private bool isSpeakEnabled = false;
     private WindowResizer? windowResizer;
     private bool _isCleanedUp;
+    private int _freezeTransitionVersion;
+    private readonly HashSet<string> hiddenBottomBarTools = new(StringComparer.OrdinalIgnoreCase);
+    private bool translateToolAvailable = false;
+    private readonly List<GrabFrameSearchMatch> currentSearchMatches = [];
 
     #endregion Fields
+
+    private sealed record GrabFrameSearchMatch(
+        string Text,
+        IReadOnlyList<WordBorder> WordBorders,
+        PdfTextLineOverlay? PdfTextLine)
+    {
+        public bool IsSelected => PdfTextLine?.IsSelected
+            ?? (WordBorders.Count > 0 && WordBorders.All(wordBorder => wordBorder.IsSelected));
+    }
+
+    private sealed record GrabFrameSearchUnit(
+        string Text,
+        IReadOnlyList<(WordBorder WordBorder, int Start, int Length)> WordSegments,
+        PdfTextLineOverlay? PdfTextLine,
+        double Top,
+        double Left);
 
     #region Constructors
 
@@ -171,6 +197,13 @@ public partial class GrabFrame : Window
         }
 
         Loaded += async (s, e) => await TryLoadDocumentFromPath(absolutePath);
+    }
+
+    public GrabFrame(HistoryInfo historyInfo, string sourcePath)
+        : this(sourcePath)
+    {
+        historyItem = historyInfo;
+        _initialPdfPageIndex = Math.Max(0, historyInfo.SourcePageIndex);
     }
 
     /// <summary>
@@ -279,7 +312,7 @@ public partial class GrabFrame : Window
                 string value = BuildPatternPlaceholderValue(pm);
                 // Only add if not already in the list (avoid duplicates with the default "first" items)
                 if (!items.Any(i => i.Value == value))
-                    items.Add(new InlinePickerItem(displayLabel, value, "Patterns"));
+                    items.Add(new InlinePickerItem(displayLabel, value, PatternItem.SavedGroup));
             }
             TemplateOutputBox.ItemsSource = items;
         }
@@ -312,10 +345,14 @@ public partial class GrabFrame : Window
 
         string imageName = Path.GetFileName(history.ImagePath);
 
-        System.Drawing.Bitmap? bgBitmap = await FileUtilities
-            .GetImageFileAsync(
-                imageName,
-                FileStorageKind.WithHistory);
+        // A Grab Frame file (.tggf) hands us the image already decoded in memory; the
+        // History feature stores it on disk, so only read from the history folder when
+        // the image has not already been loaded.
+        System.Drawing.Bitmap? bgBitmap = history.ImageContent
+            ?? await FileUtilities
+                .GetImageFileAsync(
+                    imageName,
+                    FileStorageKind.WithHistory);
 
         if (bgBitmap is null)
         {
@@ -380,7 +417,7 @@ public partial class GrabFrame : Window
         TableToggleButton.IsChecked = history.IsTable;
 
         if (ShouldRefreshOcrBordersForTableModeActivation())
-            await DrawRectanglesAroundWords(SearchBox.Text);
+            await DrawRectanglesAroundWords(SearchBar.SearchText);
 
         UpdateFrameText();
         history.ClearTransientImage();
@@ -1212,6 +1249,7 @@ public partial class GrabFrame : Window
 
         (string languageTag, LanguageKind languageKind, bool usedUiAutomation) =
             LanguageUtilities.GetPersistedLanguageIdentity(currentLanguage ?? CurrentLanguage);
+        bool isPdfHistory = IsPdfDocumentLoaded || historyItem?.IsPdfDocument is true;
 
         HistoryInfo historyInfo = new()
         {
@@ -1229,6 +1267,13 @@ public partial class GrabFrame : Window
             ManualTableColumnSeparators = tableEditState.ManualColumnSeparators.Count > 0 ? [.. tableEditState.ManualColumnSeparators] : null,
             ManualTableRowSeparators = tableEditState.ManualRowSeparators.Count > 0 ? [.. tableEditState.ManualRowSeparators] : null,
             SourceMode = TextGrabMode.GrabFrame,
+            SourceContentKind = isPdfHistory ? OpenContentKind.PdfDocument : OpenContentKind.Image,
+            SourcePath = IsPdfDocumentLoaded
+                ? _currentImagePath ?? string.Empty
+                : historyItem?.SourcePath ?? string.Empty,
+            SourcePageIndex = IsPdfDocumentLoaded
+                ? _currentPdfPageIndex
+                : historyItem?.SourcePageIndex ?? 0,
         };
 
         return historyInfo;
@@ -1332,6 +1377,10 @@ public partial class GrabFrame : Window
         _ = pasteCommand.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(pasteCommand, PasteExecuted));
 
+        RoutedCommand saveGrabFrameFileCommand = new();
+        _ = saveGrabFrameFileCommand.InputGestures.Add(new KeyGesture(Key.S, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(saveGrabFrameFileCommand, (s, args) => SaveGrabFrameFileMenuItem_Click()));
+
         _ = GrabCommand.InputGestures.Add(new KeyGesture(Key.G, ModifierKeys.Control));
         // _ = CommandBindings.Add(new CommandBinding(GrabCommand, GrabExecuted));
 
@@ -1353,6 +1402,7 @@ public partial class GrabFrame : Window
         if (_isCleanedUp)
             return;
         _isCleanedUp = true;
+        _freezeTransitionVersion++;
 
         MainZoomBorder.ResetRequested -= MainZoomBorder_ResetRequested;
         Activated -= GrabFrameWindow_Activated;
@@ -1381,6 +1431,8 @@ public partial class GrabFrame : Window
         contentChangeTimer.Tick -= ContentChangeTimer_Tick;
         contentChangeDetector.Dispose();
 
+        Singleton<TtsService>.Instance.BusyChanged -= OnTtsBusyChanged;
+
         translationTimer.Stop();
         translationTimer.Tick -= TranslationTimer_Tick;
         translationSemaphore.Dispose();
@@ -1402,10 +1454,7 @@ public partial class GrabFrame : Window
         AspectRationMI.Unchecked -= AspectRationMI_Checked;
         FreezeMI.Click -= FreezeMI_Click;
 
-        SearchBox.TextChanged -= SearchBox_TextChanged;
-
-        ClearBTN.Click -= ClearBTN_Click;
-        ExactMatchChkBx.Click -= ExactMatchChkBx_Click;
+        SearchBar.SearchChanged -= SearchBar_SearchChanged;
 
         RefreshBTN.Click -= RefreshBTN_Click;
         FreezeToggleButton.Click -= FreezeToggleButton_Click;
@@ -1607,9 +1656,9 @@ public partial class GrabFrame : Window
         string wordPattern = wordBorder.Word.ExtractSimplePattern();
         if (wordTextBox.SelectionLength != 0)
             wordPattern = wordTextBox.SelectedText;
-        SearchWithRegexCheckBox.IsChecked = true;
-        Keyboard.Focus(SearchBox);
-        SearchBox.Text = wordPattern;
+        SearchBar.UseRegex = true;
+        SearchBar.SearchText = wordPattern;
+        SearchBar.FocusInput();
     }
 
     [LibraryImport("user32.dll")]
@@ -1787,17 +1836,12 @@ public partial class GrabFrame : Window
 
         if (Width < 390)
         {
-            SearchBox.Visibility = Visibility.Collapsed;
-            ClearBTN.Visibility = Visibility.Collapsed;
+            SearchBar.Visibility = Visibility.Collapsed;
             MatchesMenu.Visibility = Visibility.Collapsed;
         }
         else
         {
-            SearchBox.Visibility = Visibility.Visible;
-            if (!string.IsNullOrEmpty(SearchBox.Text))
-                ClearBTN.Visibility = Visibility.Visible;
-            else
-                ClearBTN.Visibility = Visibility.Collapsed;
+            SearchBar.Visibility = Visibility.Visible;
         }
 
         if (Width < 480)
@@ -1893,12 +1937,6 @@ public partial class GrabFrame : Window
             UpdateFrameText();
     }
 
-    private void ClearBTN_Click(object sender, RoutedEventArgs e)
-    {
-        SearchBox.Text = "";
-        MatchesMenu.Visibility = Visibility.Collapsed;
-    }
-
     private async void ContactMenuItem_Click(object sender, RoutedEventArgs e)
     {
         _ = await Launcher.LaunchUriAsync(new Uri(string.Format("mailto:support@textgrab.net")));
@@ -1955,6 +1993,7 @@ public partial class GrabFrame : Window
 
     private void ClearRenderedWordBorders()
     {
+        currentSearchMatches.Clear();
         RectanglesCanvas.Children.Clear();
         wordBorders.Clear();
         ClearRenderedPdfTextLines();
@@ -2168,10 +2207,10 @@ public partial class GrabFrame : Window
             StringBuilder rtlText = new(ocrText);
             rtlText.ReverseWordsForRightToLeft();
             rtlText.RemoveTrailingNewlines();
-            return rtlText.ToString();
+            return rtlText.ToString().MakeStringSingleLine();
         }
 
-        return ocrText;
+        return ocrText.MakeStringSingleLine();
     }
 
     private WordBorder CreateWordBorderFromSourceRect(
@@ -2266,6 +2305,12 @@ public partial class GrabFrame : Window
         // drawn word borders become part of the baseline instead of being
         // judged as screen-content changes that re-trigger a refresh.
         contentChangeDetector.Reset();
+
+        // Only a fresh grab (or re-OCR) should trigger auto-speak. Selection,
+        // edits, moves and other overlay mutations also rebuild FrameText, so
+        // arm the speak-on-next-update flag here rather than speaking on every
+        // UpdateFrameText call.
+        _speakOnNextFrameTextUpdate = true;
     }
 
     private async Task DrawOcrRectanglesAsync(string searchWord = "")
@@ -2283,7 +2328,7 @@ public partial class GrabFrame : Window
         IsOcrValid = true;
 
         if (string.IsNullOrWhiteSpace(searchWord))
-            searchWord = SearchBox.Text;
+            searchWord = SearchBar.SearchText;
 
         ClearRenderedWordBorders();
 
@@ -2400,7 +2445,7 @@ public partial class GrabFrame : Window
         ocrResultOfWindow = null;
 
         if (string.IsNullOrWhiteSpace(searchWord))
-            searchWord = SearchBox.Text;
+            searchWord = SearchBar.SearchText;
 
         ClearRenderedWordBorders();
 
@@ -2463,7 +2508,7 @@ public partial class GrabFrame : Window
         IsOcrValid = true;
 
         if (string.IsNullOrWhiteSpace(searchWord))
-            searchWord = SearchBox.Text;
+            searchWord = SearchBar.SearchText;
 
         ClearRenderedWordBorders();
 
@@ -2570,23 +2615,18 @@ public partial class GrabFrame : Window
 
     private void EditMatchesMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        List<WordBorder> selectedWords = [.. wordBorders.Where(m => m.IsSelected)];
-        if (selectedWords.Count == 0)
+        List<string> selectedMatches =
+        [
+            .. currentSearchMatches
+                .Where(match => match.IsSelected && !string.IsNullOrEmpty(match.Text))
+                .Select(match => match.Text)
+        ];
+
+        if (selectedMatches.Count == 0)
             return;
 
         EditTextWindow editWindow = new();
-        bool isSpaceJoiningLang = CurrentLanguage.IsSpaceJoining();
-        DpiScale dpiScale = VisualTreeHelper.GetDpi(this);
-
-        // Convert to model-only infos and generate text
-        List<WordBorderInfo> infos = [.. selectedWords.Select(wb => new WordBorderInfo(wb))];
-        ResultTable tmp = new();
-        tmp.AnalyzeAsTable(infos, new System.Drawing.Rectangle(0, 0, (int)ActualWidth, (int)ActualHeight));
-        StringBuilder sb = new();
-        ResultTable.GetTextFromTabledWordBorders(sb, infos, isSpaceJoiningLang);
-        string stringForETW = sb.ToString();
-
-        editWindow.AddThisText(stringForETW);
+        editWindow.AddThisText(string.Join(Environment.NewLine, selectedMatches));
         editWindow.Show();
     }
 
@@ -2651,8 +2691,8 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (TextSearchUtilities.HasSearchText(SearchBox.Text) && SearchBox.Text != "Search For Text...")
-            SearchBox.Text = "";
+        if (TextSearchUtilities.HasSearchText(SearchBar.SearchText) && SearchBar.SearchText != "Search For Text...")
+            SearchBar.SearchText = "";
         else if (RectanglesCanvas.Children.Count > 0)
         {
             CancelTablePlacement(clearManualSeparators: true);
@@ -2665,12 +2705,6 @@ public partial class GrabFrame : Window
         }
         else
             Close();
-    }
-
-    private void ExactMatchChkBx_Click(object sender, RoutedEventArgs e)
-    {
-        reSearchTimer.Stop();
-        reSearchTimer.Start();
     }
 
     private void ExitEditMode()
@@ -2692,8 +2726,25 @@ public partial class GrabFrame : Window
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Freezes the frame when a user starts editing a word border. Editing a word is a strong
+    /// signal the user is correcting recognized text, so the frame should stop updating/resetting
+    /// underneath them. No-op when the frame is already frozen (including loaded images/PDFs).
+    /// This is the public entry point for that intent; the actual freeze routine
+    /// (<see cref="FreezeGrabFrame"/>) stays private to the frame.
+    /// </summary>
+    public void FreezeFrameForWordEditing()
+    {
+        if (IsFreezeMode)
+            return;
+
+        FreezeGrabFrame();
+    }
+
     private void FreezeGrabFrame()
     {
+        _freezeTransitionVersion++;
+        Opacity = 1;
         DisposePreviousFrameContent();
         GrabFrameImage.Opacity = 1;
         if (frameContentImageSource is not null)
@@ -2766,17 +2817,17 @@ public partial class GrabFrame : Window
             }
 
             FreezeToggleButton.IsChecked = false;
-            UnfreezeGrabFrame();
-            ResetGrabFrame();
+            // Diff the frozen snapshot against the live screen before clearing so
+            // unchanged content keeps its (possibly edited) word borders.
+            UnfreezeGrabFrameWithDiff();
+            return;
         }
-        else
-        {
-            RectanglesCanvas.ContextMenu.IsOpen = false;
-            await Task.Delay(150);
-            FreezeToggleButton.IsChecked = true;
-            ResetGrabFrame();
-            FreezeGrabFrame();
-        }
+
+        RectanglesCanvas.ContextMenu.IsOpen = false;
+        await Task.Delay(150);
+        FreezeToggleButton.IsChecked = true;
+        ResetGrabFrame();
+        FreezeGrabFrame();
 
         reDrawTimer.Stop();
         reDrawTimer.Start();
@@ -2789,7 +2840,7 @@ public partial class GrabFrame : Window
         else if (IsPdfDocumentLoaded)
             FreezeToggleButton.IsChecked = true;
         else
-            UnfreezeGrabFrame();
+            UnfreezeGrabFrameWithDiff();
     }
 
     private static SolidColorBrush GetBackgroundBrushFromOcrBitmap(double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
@@ -2915,9 +2966,168 @@ public partial class GrabFrame : Window
         }
 
         SetWordGroupingMenuItems();
+        LoadHiddenBottomBarTools();
+        LoadBorderStyle();
         GetGrabFrameTranslationSettings();
+        GetGrabFrameSpeakSettings();
         _ = Enum.TryParse(DefaultSettings.GrabFrameScrollBehavior, out scrollBehavior);
         SetScrollBehaviorMenuItems();
+    }
+
+    private void LoadHiddenBottomBarTools()
+    {
+        hiddenBottomBarTools.Clear();
+
+        string saved = DefaultSettings.GrabFrameHiddenBottomBarTools ?? string.Empty;
+        foreach (string key in saved.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            hiddenBottomBarTools.Add(key);
+
+        ShowRefreshToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Refresh");
+        ShowFreezeToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Freeze");
+        ShowTableToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Table");
+        ShowTranslateToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Translate");
+        ShowSpeakToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Speak");
+        ShowEditTextToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("EditText");
+        ShowTemplateToolMenuItem.IsChecked = !hiddenBottomBarTools.Contains("Template");
+
+        ApplyBottomBarToolVisibility();
+    }
+
+    private bool IsBottomBarToolHidden(string key) => hiddenBottomBarTools.Contains(key);
+
+    private void SetToolButtonVisibility(UIElement button, string key, bool appAvailable)
+    {
+        button.Visibility = appAvailable && !hiddenBottomBarTools.Contains(key)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void ApplyBottomBarToolVisibility()
+    {
+        // Refresh / OCR Frame buttons swap based on Auto OCR state; that helper honors the hide preference.
+        SetRefreshOrOcrFrameBtnVis();
+
+        // Freeze doubles as Unfreeze while frozen, so it must stay available in both
+        // states — only a static (already-frozen) image source makes it irrelevant.
+        SetToolButtonVisibility(FreezeToggleButton, "Freeze", !isStaticImageSource);
+
+        SetToolButtonVisibility(TranslateToggleButton, "Translate", translateToolAvailable);
+
+        // These tools are always available, so their visibility is driven purely by the hide preference.
+        SetToolButtonVisibility(TableToggleButton, "Table", true);
+        SetToolButtonVisibility(SpeakToggleButton, "Speak", true);
+        SetToolButtonVisibility(EditTextToggleButton, "EditText", true);
+        SetToolButtonVisibility(TemplateMenuButton, "Template", true);
+    }
+
+    private void ToggleBottomBarToolMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string key)
+            return;
+
+        if (menuItem.IsChecked)
+            hiddenBottomBarTools.Remove(key);
+        else
+            hiddenBottomBarTools.Add(key);
+
+        DefaultSettings.GrabFrameHiddenBottomBarTools = string.Join(",", hiddenBottomBarTools);
+        DefaultSettings.Save();
+
+        ApplyBottomBarToolVisibility();
+    }
+
+    private void LoadBorderStyle()
+    {
+        if (string.IsNullOrWhiteSpace(DefaultSettings.GrabFrameBorderStyle)
+            || !Enum.TryParse(DefaultSettings.GrabFrameBorderStyle, out borderStyle))
+            borderStyle = GrabFrameBorderStyle.Theme;
+
+        borderCustomColor = ParseColorOrDefault(DefaultSettings.GrabFrameBorderColor, borderCustomColor);
+
+        SetBorderStyleMenuItems();
+        ApplyBorderStyle();
+    }
+
+    private static Color ParseColorOrDefault(string? hex, Color fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(hex))
+        {
+            try
+            {
+                if (ColorConverter.ConvertFromString(hex) is Color parsed)
+                    return parsed;
+            }
+            catch { /* fall through to the default color */ }
+        }
+        return fallback;
+    }
+
+    private void SetBorderStyleMenuItems()
+    {
+        BorderStyleThemeMenuItem.IsChecked = borderStyle == GrabFrameBorderStyle.Theme;
+        BorderStyleHighContrastMenuItem.IsChecked = borderStyle == GrabFrameBorderStyle.HighContrast;
+
+        string currentHex = $"#{borderCustomColor.R:X2}{borderCustomColor.G:X2}{borderCustomColor.B:X2}";
+        foreach (object item in BorderColorMenuItem.Items)
+        {
+            if (item is MenuItem colorItem && colorItem.Tag is string tag)
+                colorItem.IsChecked = borderStyle == GrabFrameBorderStyle.Color
+                    && string.Equals(tag, currentHex, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Applies the current border style to both frame edges: the 1px window
+    /// border (outer ring) and the 2px FrameBorder (inner ring). High contrast
+    /// uses the two as opposing black/white tones so one always contrasts with
+    /// whatever is behind the frame.
+    /// </summary>
+    private void ApplyBorderStyle()
+    {
+        switch (borderStyle)
+        {
+            case GrabFrameBorderStyle.HighContrast:
+                BorderBrush = Brushes.White;
+                FrameBorder.BorderBrush = Brushes.Black;
+                break;
+            case GrabFrameBorderStyle.Color:
+                SolidColorBrush colorBrush = new(borderCustomColor);
+                BorderBrush = colorBrush;
+                FrameBorder.BorderBrush = colorBrush;
+                break;
+            case GrabFrameBorderStyle.Theme:
+            default:
+                // Use dynamic resource references so the border keeps following
+                // live app light/dark theme changes, matching the XAML default.
+                SetResourceReference(BorderBrushProperty, "ApplicationBackgroundBrush");
+                FrameBorder.SetResourceReference(Border.BorderBrushProperty, "ApplicationBackgroundBrush");
+                break;
+        }
+    }
+
+    private void BorderStyleMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || !Enum.TryParse(menuItem.Tag?.ToString(), out borderStyle))
+            return;
+
+        DefaultSettings.GrabFrameBorderStyle = borderStyle.ToString();
+        DefaultSettings.Save();
+        SetBorderStyleMenuItems();
+        ApplyBorderStyle();
+    }
+
+    private void BorderColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string hex)
+            return;
+
+        borderCustomColor = ParseColorOrDefault(hex, borderCustomColor);
+        borderStyle = GrabFrameBorderStyle.Color;
+        DefaultSettings.GrabFrameBorderStyle = borderStyle.ToString();
+        DefaultSettings.GrabFrameBorderColor = hex;
+        DefaultSettings.Save();
+        SetBorderStyleMenuItems();
+        ApplyBorderStyle();
     }
 
     private void GrabFrameWindow_Activated(object? sender, EventArgs e)
@@ -2927,6 +3137,10 @@ public partial class GrabFrame : Window
             reDrawTimer.Start();
         else
             reSearchTimer.Start();
+
+        // Reflect any border change made on the Settings page while away.
+        if (IsLoaded)
+            LoadBorderStyle();
     }
 
     private void GrabFrameWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -3249,6 +3463,7 @@ public partial class GrabFrame : Window
     private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
+        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentPdfs(OpenRecentPdfsMenuItem);
     }
 
     private void MergeWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -3357,6 +3572,76 @@ public partial class GrabFrame : Window
         await TryLoadDocumentFromPath(dlg.FileName);
 
         reDrawTimer.Start();
+    }
+
+    private async void SaveGrabFrameFileMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        Microsoft.Win32.SaveFileDialog dlg = new()
+        {
+            Filter = GrabFrameFileUtilities.GetGrabFrameFileFilter(),
+            DefaultExt = GrabFrameFileUtilities.GrabFrameFileExtension,
+            AddExtension = true,
+            Title = "Save Grab Frame File",
+            FileName = "Grab Frame",
+        };
+
+        if (dlg.ShowDialog() is not true)
+            return;
+
+        HistoryInfo historyInfo = AsHistoryItem();
+
+        try
+        {
+            bool saved = await GrabFrameFileUtilities.SaveGrabFrameFileAsync(historyInfo, dlg.FileName);
+
+            if (!saved)
+            {
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "Text Grab",
+                    Content = $"Failed to save Grab Frame file:\n{dlg.FileName}",
+                    CloseButtonText = "OK"
+                }.ShowDialogAsync();
+            }
+        }
+        finally
+        {
+            // AsHistoryItem() renders a fresh Bitmap from the frame content; dispose it once
+            // the save completes so the GDI handle is released.
+            historyInfo.ImageContent?.Dispose();
+            historyInfo.ClearTransientImage();
+        }
+    }
+
+    private async void OpenGrabFrameFileMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        Microsoft.Win32.OpenFileDialog dlg = new()
+        {
+            Filter = GrabFrameFileUtilities.GetGrabFrameFileFilter(),
+            Title = "Open Grab Frame File",
+            CheckFileExists = true,
+        };
+
+        if (dlg.ShowDialog() is not true || !File.Exists(dlg.FileName))
+            return;
+
+        HistoryInfo? historyInfo = await GrabFrameFileUtilities.LoadGrabFrameFileAsync(dlg.FileName);
+
+        if (historyInfo is null)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Text Grab",
+                Content = $"Failed to open Grab Frame file:\n{dlg.FileName}",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return;
+        }
+
+        // Open the loaded frame in its own window so the current frame is left untouched.
+        GrabFrame grabFrame = new(historyInfo);
+        grabFrame.Show();
+        grabFrame.Activate();
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -3652,7 +3937,7 @@ public partial class GrabFrame : Window
         if (AutoOcrCheckBox.IsChecked is false)
             return;
 
-        if (SearchBox.Text is string searchText)
+        if (SearchBar.SearchText is string searchText)
         {
             // Timer-driven redraws are not user actions, so the word borders
             // they render must not be recorded in the undo stack; recording
@@ -3794,7 +4079,7 @@ public partial class GrabFrame : Window
         if (AutoOcrCheckBox.IsChecked is false)
             FreezeGrabFrame();
 
-        if (SearchBox.Text is string searchText)
+        if (SearchBar.SearchText is string searchText)
             await DrawRectanglesAroundWords(searchText);
 
         UndoRedo.EndTransaction();
@@ -3814,23 +4099,25 @@ public partial class GrabFrame : Window
     private void ReSearchTimer_Tick(object? sender, EventArgs e)
     {
         reSearchTimer.Stop();
-        if (SearchBox.Text is not string searchText)
+        string searchText = SearchBar.SearchText;
+
+        // A smart pattern (recognizer) chip is active; typed text narrows its matches.
+        if (SearchBar.SelectedPattern is { } selectedPattern)
+        {
+            RunPatternSearch(selectedPattern, searchText);
             return;
+        }
 
         if (!TextSearchUtilities.HasSearchText(searchText) && !isSearchSelectionOverridden)
         {
-            foreach (WordBorder wb in wordBorders)
-                wb.Deselect();
-
-            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
-                pdfTextLine.Deselect();
+            ClearSearchMatchesAndSelection();
             MatchesTXTBLK.Text = $"0 Matches";
             UpdateFrameText();
             return;
         }
 
-        if (SearchWithRegexCheckBox.IsChecked is false && ExactMatchChkBx.IsChecked is bool matchExactly)
-            searchText = searchText.EscapeSpecialRegexChars(matchExactly);
+        if (!SearchBar.UseRegex)
+            searchText = searchText.EscapeSpecialRegexChars(SearchBar.ExactMatch);
 
         Regex regex;
 
@@ -3838,44 +4125,23 @@ public partial class GrabFrame : Window
         {
             regex = TextSearchUtilities.CreateGrabFrameSearchRegex(
                 searchText,
-                ExactMatchChkBx.IsChecked is true);
+                SearchBar.ExactMatch);
         }
         catch (Exception)
         {
-            foreach (WordBorder wb in wordBorders)
-                wb.Deselect();
-
-            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
-                pdfTextLine.Deselect();
+            ClearSearchMatchesAndSelection();
             UpdateFrameText();
             MatchesTXTBLK.Text = $"Search Error";
             return;
         }
 
-        int numberOfMatches = 0;
-
         if (!isSearchSelectionOverridden)
         {
-            foreach (WordBorder wb in wordBorders)
+            ClearSearchMatchesAndSelection();
+            foreach (GrabFrameSearchUnit searchUnit in GetSearchUnits())
             {
-                int numberOfMatchesInWord = regex.Count(wb.Word);
-                numberOfMatches += numberOfMatchesInWord;
-
-                if (numberOfMatchesInWord > 0)
-                    wb.Select();
-                else
-                    wb.Deselect();
-            }
-
-            foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
-            {
-                int numberOfMatchesInLine = regex.Count(pdfTextLine.Text);
-                numberOfMatches += numberOfMatchesInLine;
-
-                if (numberOfMatchesInLine > 0)
-                    pdfTextLine.Select();
-                else
-                    pdfTextLine.Deselect();
+                foreach (Match match in regex.Matches(searchUnit.Text).Cast<Match>().Where(match => match.Success))
+                    AddSearchMatch(searchUnit, match.Index, match.Length, match.Value);
             }
         }
 
@@ -3887,15 +4153,195 @@ public partial class GrabFrame : Window
             return;
         }
 
-        if (numberOfMatches == 1)
-            MatchesTXTBLK.Text = $"{numberOfMatches} Match";
-        else
-            MatchesTXTBLK.Text = $"{numberOfMatches} Matches";
+        int numberOfMatches = currentSearchMatches.Count;
+        MatchesTXTBLK.Text = numberOfMatches == 1 ? "1 Match" : $"{numberOfMatches} Matches";
         MatchesMenu.Visibility = Visibility.Visible;
         LanguagesComboBox.Visibility = Visibility.Collapsed;
 
         if (TemplateSavePanel.Visibility == Visibility.Visible)
             UpdateTemplateBadges();
+    }
+
+    /// <summary>
+    /// Selects every word border / PDF line that contains at least one entity recognized
+    /// by <paramref name="recognizer"/>, and reports the total recognized-entity count.
+    /// </summary>
+    private static bool MatchesNarrowText(string text, string narrowText)
+        => string.IsNullOrEmpty(narrowText) || text.Contains(narrowText, StringComparison.CurrentCultureIgnoreCase);
+
+    private void RunPatternSearch(PatternItem pattern, string narrowText = "")
+    {
+        if (!isSearchSelectionOverridden)
+        {
+            ClearSearchMatchesAndSelection();
+            foreach (GrabFrameSearchUnit searchUnit in GetSearchUnits())
+            {
+                foreach (RecognizerMatch match in PatternExecutor.GetMatches(pattern, searchUnit.Text)
+                    .Where(match => MatchesNarrowText(match.Text, narrowText)))
+                    AddSearchMatch(searchUnit, match.Start, match.Length, match.Text);
+            }
+        }
+
+        UpdateFrameText();
+
+        int numberOfMatches = currentSearchMatches.Count;
+        MatchesTXTBLK.Text = numberOfMatches == 1 ? "1 Match" : $"{numberOfMatches} Matches";
+        MatchesMenu.Visibility = Visibility.Visible;
+        LanguagesComboBox.Visibility = Visibility.Collapsed;
+
+        if (TemplateSavePanel.Visibility == Visibility.Visible)
+            UpdateTemplateBadges();
+    }
+
+    private void AddSearchMatch(GrabFrameSearchUnit searchUnit, int start, int length, string text)
+    {
+        if (length <= 0 || string.IsNullOrEmpty(text))
+            return;
+
+        List<WordBorder> matchedWordBorders =
+        [
+            .. searchUnit.WordSegments
+                .Where(segment => SpansOverlap(segment.Start, segment.Length, start, length))
+                .Select(segment => segment.WordBorder)
+        ];
+
+        if (searchUnit.PdfTextLine is null && matchedWordBorders.Count == 0)
+            return;
+
+        foreach (WordBorder wordBorder in matchedWordBorders)
+            wordBorder.Select();
+
+        searchUnit.PdfTextLine?.Select();
+        currentSearchMatches.Add(new GrabFrameSearchMatch(text, matchedWordBorders, searchUnit.PdfTextLine));
+    }
+
+    private void ClearSearchMatchesAndSelection()
+    {
+        currentSearchMatches.Clear();
+
+        foreach (WordBorder wordBorder in wordBorders)
+            wordBorder.Deselect();
+
+        foreach (PdfTextLineOverlay pdfTextLine in pdfTextLineOverlays)
+            pdfTextLine.Deselect();
+    }
+
+    private List<GrabFrameSearchUnit> GetSearchUnits()
+    {
+        List<GrabFrameSearchUnit> searchUnits = [];
+        bool isRightToLeft = CurrentLanguage.IsRightToLeft();
+
+        foreach (List<WordBorder> lineWords in GroupWordBordersIntoSearchLines())
+        {
+            (string lineText, IReadOnlyList<(int SourceIndex, int Start, int Length)> textSegments) =
+                BuildSearchText(
+                    [.. lineWords.Select(wordBorder => (wordBorder.Word, wordBorder.Left))],
+                    isSpaceJoining,
+                    isRightToLeft);
+
+            List<(WordBorder WordBorder, int Start, int Length)> segments =
+            [
+                .. textSegments.Select(segment => (
+                    lineWords[segment.SourceIndex],
+                    segment.Start,
+                    segment.Length))
+            ];
+
+            if (lineWords.Count > 0)
+            {
+                searchUnits.Add(new GrabFrameSearchUnit(
+                    lineText,
+                    segments,
+                    null,
+                    lineWords.Min(wordBorder => wordBorder.Top),
+                    lineWords.Min(wordBorder => wordBorder.Left)));
+            }
+        }
+
+        searchUnits.AddRange(pdfTextLineOverlays.Select(pdfTextLine => new GrabFrameSearchUnit(
+            pdfTextLine.Text,
+            [],
+            pdfTextLine,
+            pdfTextLine.Top,
+            pdfTextLine.Left)));
+
+        return [.. searchUnits.OrderBy(unit => unit.Top).ThenBy(unit => unit.Left)];
+    }
+
+    private List<List<WordBorder>> GroupWordBordersIntoSearchLines()
+    {
+        List<List<WordBorder>> lines = [];
+
+        foreach (WordBorder wordBorder in wordBorders.OrderBy(wordBorder => wordBorder.Top).ThenBy(wordBorder => wordBorder.Left))
+        {
+            List<WordBorder>? matchingLine = lines.LastOrDefault(line =>
+                AreOnSameSearchLine(
+                    line[0].LineNumber,
+                    line.Average(item => item.Top),
+                    line.Max(item => item.Height),
+                    wordBorder.LineNumber,
+                    wordBorder.Top,
+                    wordBorder.Height));
+
+            if (matchingLine is null)
+                lines.Add([wordBorder]);
+            else
+                matchingLine.Add(wordBorder);
+        }
+
+        return lines;
+    }
+
+    internal static (string Text, IReadOnlyList<(int SourceIndex, int Start, int Length)> Segments) BuildSearchText(
+        IReadOnlyList<(string Text, double Left)> sourceItems,
+        bool isSpaceJoining,
+        bool isRightToLeft)
+    {
+        IEnumerable<(string Text, double Left, int SourceIndex)> orderedItems = sourceItems
+            .Select((item, index) => (item.Text, item.Left, SourceIndex: index));
+        orderedItems = isRightToLeft
+            ? orderedItems.OrderByDescending(item => item.Left)
+            : orderedItems.OrderBy(item => item.Left);
+
+        string separator = isSpaceJoining ? " " : string.Empty;
+        StringBuilder text = new();
+        List<(int SourceIndex, int Start, int Length)> segments = [];
+
+        foreach ((string itemText, double _, int sourceIndex) in orderedItems)
+        {
+            if (text.Length > 0)
+                text.Append(separator);
+
+            int start = text.Length;
+            text.Append(itemText);
+            segments.Add((sourceIndex, start, itemText.Length));
+        }
+
+        return (text.ToString(), segments);
+    }
+
+    internal static bool AreOnSameSearchLine(
+        int firstLineNumber,
+        double firstTop,
+        double firstHeight,
+        int secondLineNumber,
+        double secondTop,
+        double secondHeight)
+    {
+        if (firstLineNumber != secondLineNumber)
+            return false;
+
+        double firstCenter = firstTop + (firstHeight / 2);
+        double secondCenter = secondTop + (secondHeight / 2);
+        return Math.Abs(firstCenter - secondCenter) <= Math.Max(firstHeight, secondHeight) * 0.6;
+    }
+
+    internal static bool SpansOverlap(int firstStart, int firstLength, int secondStart, int secondLength)
+    {
+        return firstLength > 0
+            && secondLength > 0
+            && firstStart < secondStart + secondLength
+            && secondStart < firstStart + firstLength;
     }
 
     private void ResetGrabFrame()
@@ -3927,33 +4373,12 @@ public partial class GrabFrame : Window
         UpdateFrameText();
     }
 
-    private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
-    {
-        isSearchSelectionOverridden = false;
-        reSearchTimer.Stop();
-        reSearchTimer.Start();
-    }
-
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void SearchBar_SearchChanged(object? sender, EventArgs e)
     {
         if (!IsLoaded)
             return;
 
-        if (sender is not TextBox searchBox) return;
-
-        if (string.IsNullOrEmpty(SearchBox.Text))
-        {
-            ClearBTN.Visibility = Visibility.Collapsed;
-            SearchLabel.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            ClearBTN.Visibility = Visibility.Visible;
-            SearchLabel.Visibility = Visibility.Collapsed;
-        }
-
         isSearchSelectionOverridden = false;
-
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
@@ -3980,16 +4405,19 @@ public partial class GrabFrame : Window
 
     private void SetRefreshOrOcrFrameBtnVis()
     {
+        bool showRefreshTool = !IsBottomBarToolHidden("Refresh");
+
         if (AutoOcrCheckBox.IsChecked is false)
         {
-            OcrFrameBTN.Visibility = Visibility.Visible;
-            OcrFrameBTN.Focus();
+            OcrFrameBTN.Visibility = showRefreshTool ? Visibility.Visible : Visibility.Collapsed;
+            if (showRefreshTool)
+                OcrFrameBTN.Focus();
             RefreshBTN.Visibility = Visibility.Collapsed;
         }
         else
         {
             OcrFrameBTN.Visibility = Visibility.Collapsed;
-            RefreshBTN.Visibility = Visibility.Visible;
+            RefreshBTN.Visibility = showRefreshTool ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 
@@ -4056,7 +4484,10 @@ public partial class GrabFrame : Window
         // Parse pattern references from the output template
         List<TemplatePatternMatch> patternMatches = ParsePatternMatchesFromTemplate(outputTemplateText);
 
-        if (wordBorders.Count == 0 && patternMatches.Count == 0)
+        // Parse recognizer references from the output template
+        List<TemplateRecognizerMatch> recognizerMatches = GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate(outputTemplateText);
+
+        if (wordBorders.Count == 0 && patternMatches.Count == 0 && recognizerMatches.Count == 0)
         {
             await new Wpf.Ui.Controls.MessageBox
             {
@@ -4090,6 +4521,7 @@ public partial class GrabFrame : Window
             ReferenceImageHeight = ch,
             Regions = regions,
             PatternMatches = patternMatches,
+            RecognizerMatches = recognizerMatches,
         };
 
         if (_editingTemplate is not null)
@@ -4330,22 +4762,35 @@ public partial class GrabFrame : Window
                 return new InlinePickerItem(label, $"{{{i + 1}}}", "Regions");
             })];
 
-        // Pattern items from saved StoredRegex patterns
-        List<InlinePickerItem> patternItems = LoadPatternPickerItems();
-        items.AddRange(patternItems);
+        // Pattern items — saved regexes and built-in recognizers as one "Patterns" concept,
+        // split into "Saved Patterns" / "Smart Patterns" subsections.
+        items.AddRange(PatternItem.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
 
         TemplateOutputBox.ItemsSource = items;
 
-        // Wire up the pattern selection callback
+        // Wire up the pattern / recognizer selection callbacks
         TemplateOutputBox.PatternItemSelected ??= OnPatternItemSelected;
+        TemplateOutputBox.RecognizerItemSelected ??= OnRecognizerItemSelected;
     }
 
-    private static List<InlinePickerItem> LoadPatternPickerItems()
+    private TemplateRecognizerMatch? OnRecognizerItemSelected(InlinePickerItem item)
     {
-        StoredRegex[] patterns = LoadSavedPatterns();
+        BuiltInRecognizer? recognizer = BuiltInRecognizer.GetByName(item.DisplayName);
 
-        return [.. patterns.Select(p =>
-            new InlinePickerItem(p.Name, $"{{p:{p.Name}:first}}", "Patterns"))];
+        PatternMatchModeDialog dialog = new(recognizer?.Id ?? string.Empty, item.DisplayName, isRecognizer: true)
+        {
+            Owner = this,
+        };
+
+        if (dialog.ShowDialog() is not true || dialog.Result is null)
+            return null;
+
+        return new TemplateRecognizerMatch(
+            recognizerId: recognizer?.Id ?? string.Empty,
+            recognizerName: item.DisplayName,
+            matchMode: dialog.Result.MatchMode,
+            separator: dialog.Result.Separator,
+            outputKind: dialog.SelectedOutputKind);
     }
 
     private TemplatePatternMatch? OnPatternItemSelected(InlinePickerItem item)
@@ -4381,7 +4826,7 @@ public partial class GrabFrame : Window
 
         if (ShouldRefreshOcrBordersForTableModeActivation())
         {
-            await DrawRectanglesAroundWords(SearchBox.Text);
+            await DrawRectanglesAroundWords(SearchBar.SearchText);
             UpdateFrameText();
             return;
         }
@@ -4455,7 +4900,9 @@ public partial class GrabFrame : Window
             _loadedPdfDocument = await PdfDocumentRenderer.LoadAsync(path);
             MarkLoadedVisualDocumentOpened();
             _currentImagePath = Path.GetFullPath(path);
-            await ShowPdfPageAsync(0);
+            int pageIndex = Math.Min(_initialPdfPageIndex, Math.Max(0, _loadedPdfDocument.PageCount - 1));
+            _initialPdfPageIndex = 0;
+            await ShowPdfPageAsync(pageIndex);
         }
         catch (Exception ex)
         {
@@ -4667,6 +5114,8 @@ public partial class GrabFrame : Window
         if (IsPdfDocumentLoaded)
             return;
 
+        _freezeTransitionVersion++;
+        Opacity = 1;
         reDrawTimer.Stop();
         ClearLoadedPdfDocument();
         ClearLoadedVisualDocumentState();
@@ -4682,7 +5131,7 @@ public partial class GrabFrame : Window
         historyItem = null;
         RectanglesBorder.Background.Opacity = overlayOpacity;
         FreezeToggleButton.IsChecked = false;
-        FreezeToggleButton.Visibility = Visibility.Visible;
+        SetToolButtonVisibility(FreezeToggleButton, "Freeze", true);
         Background = new SolidColorBrush(Colors.Transparent);
         IsFreezeMode = false;
         UpdateZoomPanMode();
@@ -4692,6 +5141,123 @@ public partial class GrabFrame : Window
 
         reDrawTimer.Start();
     }
+
+    /// <summary>
+    /// Unfreezes a live screen freeze after diffing the frozen snapshot against the
+    /// current screen. If the content changed the frame clears and re-OCRs as usual;
+    /// if it is unchanged the existing word borders (including any manual edits) are
+    /// kept instead of being cleared instantly. Loaded images/PDFs and any state
+    /// without a frozen screen snapshot fall back to the immediate unfreeze.
+    /// </summary>
+    private void UnfreezeGrabFrameWithDiff()
+    {
+        if (IsPdfDocumentLoaded || hasLoadedImageSource || isStaticImageSource
+            || frameContentImageSource is not BitmapSource frozenSource)
+        {
+            UnfreezeGrabFrame();
+            return;
+        }
+
+        System.Drawing.Bitmap frozenBitmap = ImageMethods.BitmapSourceToBitmap(frozenSource);
+        System.Drawing.Rectangle contentRect = GetContentAreaScreenRect();
+        int transitionVersion = ++_freezeTransitionVersion;
+
+        // Hide the entire layered window so neither its tint, borders, nor controls
+        // contaminate the live screen sample used for the comparison.
+        reDrawTimer.Stop();
+        Topmost = true;
+        GrabFrameImage.Opacity = 0;
+        RectanglesBorder.Background.Opacity = overlayOpacity;
+        FreezeToggleButton.IsChecked = false;
+        SetToolButtonVisibility(FreezeToggleButton, "Freeze", true);
+        Background = new SolidColorBrush(Colors.Transparent);
+        IsFreezeMode = false;
+        UpdateZoomPanMode();
+        Opacity = 0;
+
+        if (scrollBehavior == ScrollBehavior.ZoomWhenFrozen)
+            MainZoomBorder.CanZoom = false;
+
+        _ = FinishUnfreezeWithDiffAsync(frozenBitmap, contentRect, transitionVersion);
+    }
+
+    private async Task FinishUnfreezeWithDiffAsync(
+        System.Drawing.Bitmap frozenBitmap,
+        System.Drawing.Rectangle contentRect,
+        int transitionVersion)
+    {
+        bool contentChanged = true;
+
+        try
+        {
+            // Let the compositor present the fully hidden window before sampling.
+            await Task.Delay(120);
+
+            if (!ShouldApplyUnfreezeResult(
+                transitionVersion,
+                _freezeTransitionVersion,
+                IsFreezeMode,
+                _isCleanedUp))
+            {
+                return;
+            }
+
+            if (contentRect.Width > 1 && contentRect.Height > 1)
+            {
+                using System.Drawing.Bitmap liveCapture =
+                    ImageMethods.GetRegionOfScreenAsBitmap(contentRect, cacheResult: false);
+                contentChanged = ImageChangeDetector.ImagesDifferBeyondThreshold(frozenBitmap, liveCapture);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unfreeze diff failed: {ex.Message}");
+            contentChanged = true;
+        }
+        finally
+        {
+            frozenBitmap.Dispose();
+        }
+
+        if (!ShouldApplyUnfreezeResult(
+            transitionVersion,
+            _freezeTransitionVersion,
+            IsFreezeMode,
+            _isCleanedUp))
+        {
+            return;
+        }
+
+        Opacity = 1;
+
+        if (contentChanged)
+        {
+            // Screen moved on: drop the stale borders and re-OCR the live content.
+            frozenUiAutomationSnapshot = null;
+            liveUiAutomationSnapshot = null;
+            DisposePreviousFrameContent();
+            frameContentImageSource = null;
+            historyItem = null;
+            ResetGrabFrame();
+            reDrawTimer.Stop();
+            reDrawTimer.Start();
+        }
+        else
+        {
+            // Live content still matches the frozen snapshot, so the existing word
+            // borders (including manual corrections) remain valid. Keep them and let
+            // the content-change watcher re-OCR only once the screen actually changes.
+            contentChangeDetector.Reset();
+            ShowFrameMessage("Frame unchanged — keeping recognized words.");
+        }
+    }
+
+    internal static bool ShouldApplyUnfreezeResult(
+        int transitionVersion,
+        int currentTransitionVersion,
+        bool isFreezeMode,
+        bool isCleanedUp)
+        => transitionVersion == currentTransitionVersion && !isFreezeMode && !isCleanedUp;
 
     private async void PreviousPdfPageButton_Click(object sender, RoutedEventArgs e)
     {
@@ -4797,6 +5363,21 @@ public partial class GrabFrame : Window
         }
 
         FrameText = stringBuilder.ToString();
+
+        // Speak only when this update follows a fresh grab/re-OCR, speaking is
+        // enabled via the toolbar toggle, and the text actually changed.
+        if (_speakOnNextFrameTextUpdate)
+        {
+            _speakOnNextFrameTextUpdate = false;
+
+            if (isSpeakEnabled
+                && FrameText != _lastSpokenFrameText
+                && !string.IsNullOrWhiteSpace(FrameText))
+            {
+                _lastSpokenFrameText = FrameText;
+                Singleton<TtsService>.Instance.Speak(FrameText);
+            }
+        }
 
         if (destinationTextBox is not null
             && ShouldUpdateLinkedDestinationText(
@@ -5480,7 +6061,7 @@ public partial class GrabFrame : Window
         DefaultSettings.Save();
         SetWordGroupingMenuItems();
 
-        await DrawRectanglesAroundWords(SearchBox.Text);
+        await DrawRectanglesAroundWords(SearchBar.SearchText);
         UpdateFrameText();
     }
 
@@ -5740,8 +6321,10 @@ public partial class GrabFrame : Window
 
         // Hide translation button if Windows AI is not available
         bool canUseWinAI = WindowsAiUtilities.CanDeviceUseWinAI();
-        TranslateToggleButton.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+        translateToolAvailable = canUseWinAI;
+        SetToolButtonVisibility(TranslateToggleButton, "Translate", canUseWinAI);
         TranslationMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
+        ShowTranslateToolMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;
 
         if (canUseWinAI)
         {
@@ -5787,6 +6370,62 @@ public partial class GrabFrame : Window
         }
 
         UpdateFrameText();
+    }
+
+    private void GetGrabFrameSpeakSettings()
+    {
+        isSpeakEnabled = DefaultSettings.GrabFrameSpeakEnabled;
+        SpeakToggleButton.IsChecked = isSpeakEnabled;
+
+        TtsService tts = Singleton<TtsService>.Instance;
+        tts.BusyChanged += OnTtsBusyChanged;
+        SetSpeakingProgressVisible(tts.IsBusy);
+    }
+
+    private void SpeakToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (SpeakToggleButton.IsChecked is not bool isChecked)
+            return;
+
+        bool wasSpeakEnabled = isSpeakEnabled;
+        isSpeakEnabled = isChecked;
+        DefaultSettings.GrabFrameSpeakEnabled = isChecked;
+        DefaultSettings.Save();
+
+        // Turning speaking off should silence anything already queued/playing.
+        if (!isChecked)
+        {
+            Singleton<TtsService>.Instance.Stop();
+            return;
+        }
+
+        if (ShouldSpeakCurrentFrameWhenEnabled(wasSpeakEnabled, isChecked, FrameText))
+        {
+            _lastSpokenFrameText = FrameText;
+            Singleton<TtsService>.Instance.Speak(FrameText);
+        }
+    }
+
+    internal static bool ShouldSpeakCurrentFrameWhenEnabled(
+        bool wasSpeakEnabled,
+        bool isSpeakEnabled,
+        string frameText)
+        => !wasSpeakEnabled && isSpeakEnabled && !string.IsNullOrWhiteSpace(frameText);
+
+    private void StopSpeakingButton_Click(object sender, RoutedEventArgs e)
+    {
+        Singleton<TtsService>.Instance.Stop();
+    }
+
+    private void OnTtsBusyChanged(bool isBusy)
+    {
+        // BusyChanged can fire on a background thread; marshal to the UI thread.
+        Dispatcher.BeginInvoke(() => SetSpeakingProgressVisible(isBusy));
+    }
+
+    private void SetSpeakingProgressVisible(bool visible)
+    {
+        SpeakingProgressBorder.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     [GeneratedRegex(@"\{p:([^:}]+):([^:}]+)(?::([^}]*))?\}")]

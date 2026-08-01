@@ -25,7 +25,23 @@
       "PowerShell(dotnet build *)",
       "PowerShell(dotnet test *)",
       "PowerShell(Get-ChildItem *)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh issue view *)",
+      "Bash(git log *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr diff *)",
+      "Bash(git fetch *)",
+      "WebFetch(domain:app.produckmap.com)",
+      "Read(//c/Users/josep/.claude/skills/pdm/**)",
+      "Read(//c/Users/josep/.claude/skills/pdm/bin/**)",
+      "PowerShell(& \"C:\\\\Users\\\\josep\\\\.claude\\\\skills\\\\pdm\\\\bin\\\\pdm.ps1\" *)",
+      "PowerShell(& \"C:\\\\Users\\\\josep\\\\.claude\\\\skills\\\\pdm\\\\bin\\\\pdm.ps1\" auth)",
+      "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" story-map *)",
+      "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" type *)",
+      "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" ui-element *)",
+      "Bash(\"/c/Users/josep/.claude/skills/pdm/bin/pdm\" api *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)"
     ],
     "deny": []
   }

@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Edit Text"
+    AutomationProperties.AutomationId="EditTextWindow"
     Width="800"
     Height="500"
     MinWidth="200"
@@ -83,6 +84,7 @@
         <ContextMenu x:Key="SpreadsheetContextMenu" Opened="SpreadsheetContextMenu_Opened">
             <MenuItem Click="AddSpreadsheetRowMenuItem_Click" Header="Add Row Below" />
             <MenuItem Click="AddSpreadsheetColumnMenuItem_Click" Header="Add Column Right" />
+            <MenuItem Click="SplitSpreadsheetCellsMenuItem_Click" Header="Split into Columns…" />
             <Separator />
             <MenuItem Command="ApplicationCommands.Cut" />
             <MenuItem Command="ApplicationCommands.Copy" />
@@ -96,6 +98,7 @@
             <Separator />
             <MenuItem Click="CopySpreadsheetRowsMenuItem_Click" Header="Copy Selected Rows" />
             <MenuItem Click="CopySpreadsheetColumnMenuItem_Click" Header="Copy Current Column" />
+            <MenuItem Click="CopySpreadsheetAsMarkdownMenuItem_Click" Header="Copy as Markdown Table" />
         </ContextMenu>
         <ContextMenu x:Key="SpreadsheetRowHeaderContextMenu">
             <MenuItem Click="MoveSpreadsheetRowUpMenuItem_Click" Header="Move Row Up" />
@@ -189,6 +192,7 @@
         </Grid.RowDefinitions>
         <ui:TitleBar
             x:Name="UiTitleBar"
+            AutomationProperties.AutomationId="EditText.TitleBar"
             Title="Edit Text"
             Height="32"
             Margin="2,2,2,0"
@@ -203,44 +207,58 @@
                 Grid.Column="0"
                 ClipToBounds="True"
                 IsMainMenu="True">
-                <MenuItem Header="_File" SubmenuOpened="MenuItem_SubmenuOpened">
+                <MenuItem
+                    AutomationProperties.AutomationId="EditText.Menu.File"
+                    Header="_File"
+                    SubmenuOpened="MenuItem_SubmenuOpened">
                     <MenuItem
                         x:Name="OpenFileMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.OpenFile"
                         Click="OpenFileMenuItem_Click"
                         Header="_Open File..."
                         InputGestureText="Ctrl + O" />
                     <MenuItem x:Name="OpenRecentMenuItem" Header="Recent" />
                     <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
+                    <MenuItem x:Name="OpenRecentPdfsMenuItem" Header="Recent PDFs" />
                     <MenuItem
                         x:Name="SaveFileMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.Save"
                         Click="SaveBTN_Click"
                         Header="_Save"
                         InputGestureText="Ctrl + S" />
                     <MenuItem
                         x:Name="SaveAsFileMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.SaveAs"
                         Click="SaveAsBTN_Click"
                         Header="Save _As..."
                         InputGestureText="Ctrl + Shift + S" />
                     <MenuItem
                         x:Name="CopyAndCloseMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.CopyAndClose"
                         Click="CopyCloseBTN_Click"
                         Header="_Copy And Close" />
                     <MenuItem
                         x:Name="CloseAndInsertMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.CloseAndInsert"
                         Click="CopyClosePasteBTN_Click"
                         Header="Close and I_nsert" />
                     <Separator />
                     <MenuItem
                         x:Name="SettingsMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.OpenSettings"
                         Click="SettingsMenuItem_Click"
                         Header="Text Grab Sett_ings..." />
                     <MenuItem
                         x:Name="CloseMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.Close"
                         Click="CloseMenuItem_Click"
                         Header="Close"
                         InputGestureText="Alt + F4" />
                 </MenuItem>
-                <MenuItem Header="_Edit" SubmenuOpened="EditMenuItem_SubmenuOpened">
+                <MenuItem
+                    AutomationProperties.AutomationId="EditText.Menu.Edit"
+                    Header="_Edit"
+                    SubmenuOpened="EditMenuItem_SubmenuOpened">
                     <MenuItem Command="ApplicationCommands.Undo" />
                     <MenuItem Command="ApplicationCommands.Redo" />
                     <Separator />
@@ -258,10 +276,12 @@
                         Header="Launch URL" />
                     <MenuItem
                         x:Name="SingleLineMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.SingleLine"
                         Command="{x:Static local:EditTextWindow.SingleLineCmd}"
                         Header="Make _Single Line" />
                     <MenuItem
                         x:Name="JoinLinesMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.JoinLines"
                         Click="JoinLinesMenuItem_Click"
                         Header="_Join Lines..." />
                     <MenuItem
@@ -309,17 +329,26 @@
                         Header="_Unstack Text (Select First Column)" />
                     <MenuItem
                         x:Name="AddRemoveAtMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.AddRemoveLimit"
                         Click="AddRemoveAtMenuItem_Click"
                         Header="_Add, Remove, Limit..." />
                     <MenuItem Command="{x:Static local:EditTextWindow.TransposeTableCmd}" Header="_Transpose Table" />
-                    <MenuItem
-                        x:Name="ApplyGrabTemplateMenuItem"
-                        Header="Apply Grab Template"
-                        Visibility="Collapsed" />
-                    <MenuItem
-                        x:Name="ApplyGrabTemplatePerLineMenuItem"
-                        Header="Apply Grab Template Per Line"
-                        Visibility="Collapsed" />
+                    <MenuItem x:Name="ApplyMenuItem" Header="Apply Grab Template or Pattern">
+                        <MenuItem
+                            x:Name="ApplyGrabTemplateMenuItem"
+                            Header="Grab Templates"
+                            Visibility="Collapsed" />
+                        <MenuItem x:Name="ApplyPatternMenuItem" Header="Patterns" />
+                        <MenuItem x:Name="ApplySmartPatternMenuItem" Header="Smart Patterns" />
+                    </MenuItem>
+                    <MenuItem x:Name="ApplyPerLineMenuItem" Header="Apply Per Line (Template or Pattern)">
+                        <MenuItem
+                            x:Name="ApplyGrabTemplatePerLineMenuItem"
+                            Header="Grab Templates"
+                            Visibility="Collapsed" />
+                        <MenuItem x:Name="ApplyPatternPerLineMenuItem" Header="Patterns" />
+                        <MenuItem x:Name="ApplySmartPatternPerLineMenuItem" Header="Smart Patterns" />
+                    </MenuItem>
                     <Separator />
                     <MenuItem
                         x:Name="AddSpreadsheetRowMenuItem"
@@ -332,11 +361,13 @@
                         Header="Add Spreadsheet Column"
                         Visibility="Collapsed" />
                 </MenuItem>
-                <MenuItem Header="_Selection">
+                <MenuItem AutomationProperties.AutomationId="EditText.Menu.Selection" Header="_Selection">
                     <MenuItem
                         x:Name="FindAndReplaceMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.FindAndReplace"
                         Click="FindAndReplaceMenuItem_Click"
-                        Header="Find and Replace" />
+                        Header="Find and Replace"
+                        InputGestureText="Ctrl + Shift + F" />
                     <MenuItem
                         x:Name="DefaultWebSearch"
                         Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
@@ -483,19 +514,22 @@
                         Click="LearnAiMenuItem_Click"
                         Header="_Learn About Local AI Features..." />
                 </MenuItem>
-                <MenuItem Header="F_ormat">
+                <MenuItem AutomationProperties.AutomationId="EditText.Menu.Format" Header="F_ormat">
                     <MenuItem
                         x:Name="RawTextModeMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.RawTextMode"
                         Click="EditorModeMenuItem_Click"
                         Header="Raw Text"
                         IsCheckable="True" />
                     <MenuItem
                         x:Name="SpreadsheetModeMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.SpreadsheetMode"
                         Click="EditorModeMenuItem_Click"
                         Header="Spreadsheet"
                         IsCheckable="True" />
                     <MenuItem
                         x:Name="MarkdownModeMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.MarkdownMode"
                         Click="EditorModeMenuItem_Click"
                         Header="Markdown"
                         IsCheckable="True" />
@@ -546,10 +580,12 @@
                 </MenuItem>
                 <MenuItem
                     x:Name="CaptureMenuItem"
+                    AutomationProperties.AutomationId="EditText.Menu.Capture"
                     Header="_Capture"
                     SubmenuOpened="CaptureMenuItem_SubmenuOpened">
                     <MenuItem
                         x:Name="FullScreenGrabMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.FullscreenGrab"
                         Click="FullScreenGrabMenuItem_Click"
                         Header="New _Fullscreen Grab"
                         InputGestureText="Ctrl + F" />
@@ -563,6 +599,7 @@
                         Header="Grab previous region" />
                     <MenuItem
                         x:Name="GrabFrameMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.GrabFrame"
                         Click="GrabFrameMenuItem_Click"
                         Header="New _Grab Frame"
                         InputGestureText="Ctrl + G" />
@@ -572,16 +609,19 @@
                         Header="Manage Grab _Templates..." />
                     <MenuItem
                         x:Name="RegexManagerMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.RegexManager"
                         Click="RegexManagerMenuItem_Click"
-                        Header="Open _Regex Manager..." />
+                        Header="Open _Patterns Manager..." />
                     <Separator />
                     <MenuItem
                         x:Name="QuickSimpleLookupMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.QuickLookup"
                         Click="LaunchQuickSimpleLookup"
                         Header="Add From _Quick Simple Lookup"
                         InputGestureText="Ctrl + Q" />
                     <MenuItem
                         x:Name="ClipboardWatcherMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.ClipboardWatcher"
                         Header="_Watch Clipboard For Changes"
                         IsCheckable="True"
                         IsChecked="False" />
@@ -707,6 +747,7 @@
                 Orientation="Horizontal">
                 <Button
                     x:Name="AddSpreadsheetRowButton"
+                    AutomationProperties.AutomationId="EditText.AddSpreadsheetRowButton"
                     Width="32"
                     Height="32"
                     Margin="0,0,4,0"
@@ -720,6 +761,7 @@
                 </Button>
                 <Button
                     x:Name="AddSpreadsheetColumnButton"
+                    AutomationProperties.AutomationId="EditText.AddSpreadsheetColumnButton"
                     Width="32"
                     Height="32"
                     Margin="0,0,4,0"
@@ -733,6 +775,8 @@
                 </Button>
                 <Button
                     x:Name="CalcToggleButton"
+                    AutomationProperties.AutomationId="EditText.CalculatorToggle"
+                    AutomationProperties.Name="Show calculator pane"
                     Width="32"
                     Height="32"
                     Padding="0"
@@ -752,6 +796,7 @@
             <Grid Grid.Column="0">
                 <TextBox
                     x:Name="PassedTextControl"
+                    AutomationProperties.AutomationId="EditText.Editor"
                     AcceptsReturn="True"
                     AcceptsTab="True"
                     AllowDrop="True"
@@ -772,6 +817,7 @@
                     VerticalScrollBarVisibility="Auto" />
                 <RichTextBox
                     x:Name="MarkdownEditorControl"
+                    AutomationProperties.AutomationId="EditText.MarkdownEditor"
                     AllowDrop="True"
                     Background="{DynamicResource ControlFillColorDefaultBrush}"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
@@ -799,6 +845,7 @@
                     Visibility="Collapsed" />
                 <DataGrid
                     x:Name="SpreadsheetDataGrid"
+                    AutomationProperties.AutomationId="EditText.SpreadsheetGrid"
                     AlternatingRowBackground="{DynamicResource ApplicationBackgroundBrush}"
                     AutoGenerateColumns="False"
                     Background="Transparent"
@@ -816,6 +863,7 @@
                     HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     HorizontalScrollBarVisibility="Auto"
                     LoadingRow="SpreadsheetDataGrid_LoadingRow"
+                    PreparingCellForEdit="SpreadsheetDataGrid_PreparingCellForEdit"
                     PreviewKeyDown="SpreadsheetDataGrid_PreviewKeyDown"
                     PreviewMouseLeftButtonDown="SpreadsheetDataGrid_PreviewMouseLeftButtonDown"
                     PreviewMouseRightButtonDown="SpreadsheetDataGrid_PreviewMouseRightButtonDown"
@@ -832,6 +880,7 @@
             </Grid>
             <TextBox
                 x:Name="CalcResultsTextControl"
+                AutomationProperties.AutomationId="EditText.CalculatorResults"
                 Grid.Column="1"
                 MinWidth="150"
                 AcceptsReturn="True"
@@ -887,6 +936,7 @@
 
             <Border
                 x:Name="CalcAggregateStatusBorder"
+                AutomationProperties.AutomationId="EditText.CalculatorAggregateStatus"
                 Grid.Column="1"
                 Margin="8,0,0,8"
                 Padding="6,3"
@@ -958,6 +1008,8 @@
                 Orientation="Horizontal">
                 <Button
                     x:Name="CalcCopyAllButton"
+                    AutomationProperties.AutomationId="EditText.CalculatorCopyAllButton"
+                    AutomationProperties.Name="Copy all calculator results"
                     Width="24"
                     Height="24"
                     Margin="0,0,4,0"
@@ -970,6 +1022,8 @@
                 </Button>
                 <Button
                     x:Name="CalcInfoButton"
+                    AutomationProperties.AutomationId="EditText.CalculatorInfoButton"
+                    AutomationProperties.Name="Calculator information"
                     Width="24"
                     Height="24"
                     Padding="0"
@@ -1118,6 +1172,7 @@
             VerticalScrollBarVisibility="Disabled">
             <Grid
                 x:Name="BottomBar"
+                AutomationProperties.AutomationId="EditText.StatusBar"
                 Grid.Row="2"
                 Background="Transparent">
                 <Grid.ColumnDefinitions>
@@ -1136,6 +1191,7 @@
                     Orientation="Horizontal">
                     <Button
                         x:Name="MatchCountButton"
+                        AutomationProperties.AutomationId="EditText.MatchCountButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
                         Background="Transparent"
@@ -1151,6 +1207,7 @@
                     </Button>
                     <Button
                         x:Name="SimilarMatchesButton"
+                        AutomationProperties.AutomationId="EditText.SimilarMatchesButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
                         Background="Transparent"
@@ -1180,6 +1237,7 @@
                     </Button>
                     <Button
                         x:Name="RegexPatternButton"
+                        AutomationProperties.AutomationId="EditText.RegexPatternButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
                         Background="Transparent"
@@ -1209,6 +1267,7 @@
                     </Button>
                     <Button
                         x:Name="CharDetailsButton"
+                        AutomationProperties.AutomationId="EditText.CharacterDetailsButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
                         Background="Transparent"
@@ -1225,6 +1284,7 @@
                     </Button>
                     <TextBlock
                         x:Name="BottomBarText"
+                        AutomationProperties.AutomationId="EditText.StatusText"
                         FontFamily="Cascadia Mono"
                         Text="Ln 1, Col 0" />
                 </StackPanel>
@@ -1253,6 +1313,7 @@
         </ScrollViewer>
         <StackPanel
             x:Name="LoadingStack"
+            AutomationProperties.AutomationId="EditText.LoadingStatus"
             Grid.RowSpan="4"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
@@ -1265,6 +1326,7 @@
                 IsIndeterminate="True" />
             <TextBlock
                 x:Name="ProgressText"
+                AutomationProperties.AutomationId="EditText.ProgressText"
                 Margin="0,12,0,0"
                 FontSize="16"
                 FontWeight="Bold"
@@ -1273,6 +1335,7 @@
         </StackPanel>
         <ui:ContentDialogHost
             x:Name="PendingFileCloseDialogHost"
+            AutomationProperties.AutomationId="EditText.PendingFileCloseDialog"
             Grid.RowSpan="4"
             Panel.ZIndex="999"
             IsDisableSiblingsEnabled="True" />

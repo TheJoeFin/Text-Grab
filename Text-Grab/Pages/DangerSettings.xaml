@@ -1,4 +1,4 @@
-﻿<Page
+<Page
     x:Class="Text_Grab.Pages.DangerSettings"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -8,70 +8,88 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="DangerSettings"
+    AutomationProperties.AutomationId="Settings.DangerPage"
     d:DesignHeight="450"
     d:DesignWidth="800"
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <StackPanel Margin="20,12,40,40" Orientation="Vertical">
-        <TextBlock Style="{StaticResource TextHeader}" Text="Dangerous Options" />
+    <StackPanel Margin="20,12,24,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource SettingsPageTitle}" Text="Dangerous Options" />
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Shutdown Text Grab.
-        </TextBlock>
-        <controls:CollapsibleButton
-            x:Name="ShutdownButton"
-            HorizontalAlignment="Left"
-            ButtonText="Shutdown Text Grab"
-            Click="ShutdownButton_Click" />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="App" />
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Reset Tray icon.
-        </TextBlock>
-        <controls:CollapsibleButton
-            x:Name="RetrySettingTrayButton"
-            HorizontalAlignment="Left"
-            ButtonSymbol="TrayItemAdd24"
-            ButtonText="Reset Tray Icon"
-            Click="RetrySettingTrayButton_Click" />
+        <controls:SettingsCard HeaderText="Shutdown Text Grab" Icon="{ui:SymbolIcon Power24}">
+            <controls:CollapsibleButton
+                x:Name="ShutdownButton"
+                AutomationProperties.AutomationId="Settings.Danger.ShutdownButton"
+                Margin="0"
+                ButtonSymbol="Power24"
+                ButtonText="Shutdown Text Grab"
+                Click="ShutdownButton_Click" />
+        </controls:SettingsCard>
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Generate bug report with app diagnostic information.
-        </TextBlock>
-        <controls:CollapsibleButton
-            x:Name="ExportBugReportButton"
-            HorizontalAlignment="Left"
-            ButtonSymbol="Bug24"
-            ButtonText="Export Bug Report"
-            Click="ExportBugReportButton_Click" />
+        <controls:SettingsCard HeaderText="Reset Tray icon" Icon="{ui:SymbolIcon ArrowClockwise24}">
+            <controls:CollapsibleButton
+                x:Name="RetrySettingTrayButton"
+                AutomationProperties.AutomationId="Settings.Danger.ResetTrayButton"
+                Margin="0"
+                ButtonSymbol="ArrowClockwise24"
+                ButtonText="Reset Tray Icon"
+                Click="RetrySettingTrayButton_Click" />
+        </controls:SettingsCard>
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Export all settings and optionally history to a portable ZIP file.
-        </TextBlock>
-        <CheckBox
-            x:Name="IncludeHistoryCheckBox"
-            Margin="5,8,0,0"
-            Content="Include history (images and text)"
-            IsChecked="True" />
-        <controls:CollapsibleButton
-            x:Name="ExportSettingsButton"
-            HorizontalAlignment="Left"
-            ButtonSymbol="FolderZip24"
-            ButtonText="Export Settings"
-            Click="ExportSettingsButton_Click" />
+        <controls:SettingsCard
+            Description="Generate bug report with app diagnostic information."
+            HeaderText="Export bug report"
+            Icon="{ui:SymbolIcon Bug24}">
+            <controls:CollapsibleButton
+                x:Name="ExportBugReportButton"
+                AutomationProperties.AutomationId="Settings.Danger.ExportBugReportButton"
+                Margin="0"
+                ButtonSymbol="Bug24"
+                ButtonText="Export Bug Report"
+                Click="ExportBugReportButton_Click" />
+        </controls:SettingsCard>
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Import settings and history from a previously exported ZIP file.
-        </TextBlock>
-        <controls:CollapsibleButton
-            x:Name="ImportSettingsButton"
-            HorizontalAlignment="Left"
-            ButtonSymbol="ArrowImport24"
-            ButtonText="Import Settings"
-            Click="ImportSettingsButton_Click" />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Backup and restore" />
+
+        <controls:SettingsExpander
+            Description="Export all settings and optionally history to a portable ZIP file."
+            HeaderText="Export settings"
+            Icon="{ui:SymbolIcon SaveArrowRight24}">
+            <controls:SettingsExpander.SettingsContent>
+                <controls:CollapsibleButton
+                    x:Name="ExportSettingsButton"
+                    AutomationProperties.AutomationId="Settings.Danger.ExportSettingsButton"
+                    Margin="0"
+                    ButtonSymbol="FolderZip24"
+                    ButtonText="Export Settings"
+                    Click="ExportSettingsButton_Click" />
+            </controls:SettingsExpander.SettingsContent>
+            <CheckBox
+                x:Name="IncludeHistoryCheckBox"
+                AutomationProperties.AutomationId="Settings.Danger.IncludeHistoryToggle"
+                Content="Include history (images and text)"
+                IsChecked="True" />
+        </controls:SettingsExpander>
+
+        <controls:SettingsCard
+            Description="Import settings and history from a previously exported ZIP file."
+            HeaderText="Import settings"
+            Icon="{ui:SymbolIcon ArrowImport24}">
+            <controls:CollapsibleButton
+                x:Name="ImportSettingsButton"
+                AutomationProperties.AutomationId="Settings.Danger.ImportSettingsButton"
+                Margin="0"
+                ButtonSymbol="ArrowImport24"
+                ButtonText="Import Settings"
+                Click="ImportSettingsButton_Click" />
+        </controls:SettingsCard>
+
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Experimental" />
 
         <Border
-            Margin="0,20,0,0"
             Padding="12"
             Background="#14FFA500"
             BorderBrush="DarkOrange"
@@ -93,6 +111,7 @@
                 </TextBlock>
                 <ui:ToggleSwitch
                     x:Name="EnableFileBackedManagedSettingsToggle"
+                    AutomationProperties.AutomationId="Settings.Danger.FileBackedStorageToggle"
                     Margin="0,10,0,0"
                     Checked="EnableFileBackedManagedSettingsToggle_Checked"
                     Unchecked="EnableFileBackedManagedSettingsToggle_Checked">
@@ -103,37 +122,48 @@
             </StackPanel>
         </Border>
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Check CPU Architecture before enabling Windows Local AI model features
-        </TextBlock>
-        <ui:ToggleSwitch
-            x:Name="OverrideArchCheckWinAI"
-            HorizontalAlignment="Left"
-            Click="OverrideArchCheckWinAI_Click"
-            OffContent="ARM CPU only"
-            OnContent="No CPU Arch is checked" />
+        <controls:SettingsCard
+            Margin="0,8,0,3"
+            Description="Windows Local AI model features normally require an ARM CPU. Override the check to allow any architecture."
+            HeaderText="Check CPU architecture before enabling Windows Local AI model features"
+            Icon="{ui:SymbolIcon BrainCircuit24}">
+            <ui:ToggleSwitch
+                x:Name="OverrideArchCheckWinAI"
+                AutomationProperties.AutomationId="Settings.Danger.OverrideWinAiArchitectureToggle"
+                Click="OverrideArchCheckWinAI_Click"
+                OffContent="ARM CPU only"
+                OnContent="No CPU Arch is checked" />
+        </controls:SettingsCard>
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Reset All settings to default settings.
-        </TextBlock>
-        <controls:CollapsibleButton
-            x:Name="ResetSettingsButton"
-            HorizontalAlignment="Left"
-            Background="DarkRed"
-            ButtonSymbol="ArrowCounterclockwise24"
-            ButtonText="Reset All Settings"
-            Click="ResetSettingsButton_Click" />
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Reset" />
 
-        <TextBlock Margin="0,12,0,0" Style="{StaticResource TextBodyNormal}">
-            Delete all history items.
-        </TextBlock>
+        <controls:SettingsCard
+            Description="Reset all settings to default settings."
+            HeaderText="Reset all settings"
+            Icon="{ui:SymbolIcon ArrowReset24}">
+            <controls:CollapsibleButton
+                x:Name="ResetSettingsButton"
+                AutomationProperties.AutomationId="Settings.Danger.ResetSettingsButton"
+                Margin="0"
+                Background="DarkRed"
+                ButtonSymbol="ArrowCounterclockwise24"
+                ButtonText="Reset All Settings"
+                Click="ResetSettingsButton_Click" />
+        </controls:SettingsCard>
+
         <!--  Add how many history items exist to be deleted  -->
-        <controls:CollapsibleButton
-            x:Name="ClearHistoryButton"
-            HorizontalAlignment="Left"
-            Background="DarkRed"
-            ButtonSymbol="Delete24"
-            ButtonText="Clear History"
-            Click="ClearHistoryButton_Click" />
+        <controls:SettingsCard
+            Description="Delete all history items."
+            HeaderText="Clear history"
+            Icon="{ui:SymbolIcon Delete24}">
+            <controls:CollapsibleButton
+                x:Name="ClearHistoryButton"
+                AutomationProperties.AutomationId="Settings.Danger.ClearHistoryButton"
+                Margin="0"
+                Background="DarkRed"
+                ButtonSymbol="Delete24"
+                ButtonText="Clear History"
+                Click="ClearHistoryButton_Click" />
+        </controls:SettingsCard>
     </StackPanel>
 </Page>

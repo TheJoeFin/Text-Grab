@@ -48,8 +48,10 @@ public static class DiagnosticsUtilities
         string bugReportJson = await GenerateBugReportAsync();
 
         string fileName = $"TextGrab_BugReport_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-        string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string filePath = Path.Combine(documentsPath, fileName);
+        string outputDirectory = AutomationProfile.Current?.OutputDirectory
+            ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        Directory.CreateDirectory(outputDirectory);
+        string filePath = Path.Combine(outputDirectory, fileName);
 
         await File.WriteAllTextAsync(filePath, bugReportJson);
 
@@ -299,7 +301,9 @@ public static class DiagnosticsUtilities
         try
         {
             HistoryService historyService = Singleton<HistoryService>.Instance;
-            List<HistoryInfo>? imageHistory = historyService.GetRecentGrabs();
+            List<HistoryInfo> imageHistory = historyService.GetRecentGrabs();
+            List<HistoryInfo> pdfHistory = historyService.GetRecentPdfDocuments();
+            List<HistoryInfo> visualHistory = [.. imageHistory, .. pdfHistory];
 
             string lastTextHistory = historyService.GetLastTextHistory();
             bool hasTextHistory = !string.IsNullOrEmpty(lastTextHistory);
@@ -307,10 +311,11 @@ public static class DiagnosticsUtilities
             return new HistoryInfoModel
             {
                 TextOnlyHistoryCount = hasTextHistory ? 1 : 0,
-                ImageHistoryCount = imageHistory?.Count ?? 0,
-                TotalHistoryCount = (hasTextHistory ? 1 : 0) + (imageHistory?.Count ?? 0),
-                OldestEntryDate = GetOldestHistoryDate(null, imageHistory),
-                NewestEntryDate = GetNewestHistoryDate(null, imageHistory),
+                ImageHistoryCount = imageHistory.Count,
+                PdfHistoryCount = pdfHistory.Count,
+                TotalHistoryCount = (hasTextHistory ? 1 : 0) + visualHistory.Count,
+                OldestEntryDate = GetOldestHistoryDate(null, visualHistory),
+                NewestEntryDate = GetNewestHistoryDate(null, visualHistory),
                 HasLastTextHistory = hasTextHistory,
                 LastTextHistoryLength = lastTextHistory?.Length ?? 0
             };
@@ -321,6 +326,7 @@ public static class DiagnosticsUtilities
             {
                 TextOnlyHistoryCount = -1,
                 ImageHistoryCount = -1,
+                PdfHistoryCount = -1,
                 TotalHistoryCount = -1,
                 ErrorMessage = $"Error accessing history: {ex.Message}"
             };
@@ -625,6 +631,7 @@ public class HistoryInfoModel
 {
     public int TextOnlyHistoryCount { get; set; }
     public int ImageHistoryCount { get; set; }
+    public int PdfHistoryCount { get; set; }
     public int TotalHistoryCount { get; set; }
     public DateTimeOffset? OldestEntryDate { get; set; }
     public DateTimeOffset? NewestEntryDate { get; set; }

@@ -21,7 +21,17 @@ public class PdfDocumentRendererTests
         (uint width, uint height) = PdfDocumentRenderer.GetRenderDimensions(5000, 2500);
 
         Assert.True(Math.Max(width, height) <= OcrEngine.MaxImageDimension);
+        Assert.True((ulong)width * height <= PdfDocumentRenderer.MaxRenderPixelCount);
         Assert.True(width > height);
+    }
+
+    [Fact]
+    public void GetRenderDimensions_ClampsTotalPixelCount()
+    {
+        (uint width, uint height) = PdfDocumentRenderer.GetRenderDimensions(10_000, 10_000);
+
+        Assert.True((ulong)width * height <= PdfDocumentRenderer.MaxRenderPixelCount);
+        Assert.Equal(width, height);
     }
 
     [Fact]

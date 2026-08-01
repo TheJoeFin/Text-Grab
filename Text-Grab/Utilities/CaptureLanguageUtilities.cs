@@ -20,6 +20,12 @@ internal static class CaptureLanguageUtilities
         if (WindowsAiUtilities.CanDeviceUseWinAI())
             languages.Add(new WindowsAiLang());
 
+        if (AppUtilities.TextGrabSettings.WindowsAiDescriptionEnabled
+            && WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
+        {
+            languages.Add(new WindowsAiDescriptionLang());
+        }
+
         if (includeTesseract
             && AppUtilities.TextGrabSettings.UseTesseract
             && TesseractHelper.CanLocateTesseractExe())
@@ -75,7 +81,7 @@ internal static class CaptureLanguageUtilities
     }
 
     public static bool SupportsTableOutput(ILanguage language)
-        => language is not TessLang && language is not UiAutomationLang;
+        => language is not TessLang && language is not UiAutomationLang && language is not WindowsAiDescriptionLang;
 
     public static bool IsStaticImageCompatible(ILanguage language)
         => language is not UiAutomationLang;

@@ -13,17 +13,20 @@ public class LanguageServiceTests : IDisposable
 {
     private readonly string _originalLastUsedLang;
     private readonly bool _originalUiAutomationEnabled;
+    private readonly bool _originalWindowsAiDescriptionEnabled;
 
     public LanguageServiceTests()
     {
         _originalLastUsedLang = Settings.Default.LastUsedLang;
         _originalUiAutomationEnabled = Settings.Default.UiAutomationEnabled;
+        _originalWindowsAiDescriptionEnabled = Settings.Default.WindowsAiDescriptionEnabled;
     }
 
     public void Dispose()
     {
         Settings.Default.LastUsedLang = _originalLastUsedLang;
         Settings.Default.UiAutomationEnabled = _originalUiAutomationEnabled;
+        Settings.Default.WindowsAiDescriptionEnabled = _originalWindowsAiDescriptionEnabled;
         Settings.Default.Save();
         LanguageUtilities.InvalidateAllCaches();
     }
@@ -46,6 +49,16 @@ public class LanguageServiceTests : IDisposable
         string tag = LanguageService.GetLanguageTag(windowsAiLang);
 
         Assert.Equal("WinAI", tag);
+    }
+
+    [Fact]
+    public void GetLanguageTag_WithWindowsAiDescriptionLang_ReturnsDescriptionTag()
+    {
+        WindowsAiDescriptionLang windowsAiDescriptionLang = new();
+
+        string tag = LanguageService.GetLanguageTag(windowsAiDescriptionLang);
+
+        Assert.Equal(WindowsAiDescriptionLang.Tag, tag);
     }
 
     [Fact]
@@ -96,6 +109,16 @@ public class LanguageServiceTests : IDisposable
         LanguageKind kind = LanguageService.GetLanguageKind(windowsAiLang);
 
         Assert.Equal(LanguageKind.WindowsAi, kind);
+    }
+
+    [Fact]
+    public void GetLanguageKind_WithWindowsAiDescriptionLang_ReturnsWindowsAiDescription()
+    {
+        WindowsAiDescriptionLang windowsAiDescriptionLang = new();
+
+        LanguageKind kind = LanguageService.GetLanguageKind(windowsAiDescriptionLang);
+
+        Assert.Equal(LanguageKind.WindowsAiDescription, kind);
     }
 
     [Fact]
@@ -163,6 +186,19 @@ public class LanguageServiceTests : IDisposable
     }
 
     [Fact]
+    public void GetOCRLanguage_WhenWindowsAiDescriptionWasLastUsedButFeatureIsDisabled_FallsBack()
+    {
+        Settings.Default.WindowsAiDescriptionEnabled = false;
+        Settings.Default.LastUsedLang = WindowsAiDescriptionLang.Tag;
+        Settings.Default.Save();
+        LanguageUtilities.InvalidateAllCaches();
+
+        ILanguage language = Singleton<LanguageService>.Instance.GetOCRLanguage();
+
+        Assert.IsNotType<WindowsAiDescriptionLang>(language);
+    }
+
+    [Fact]
     public void LanguageService_IsSingleton()
     {
         LanguageService instance1 = Singleton<LanguageService>.Instance;
@@ -192,5 +228,17 @@ public class LanguageServiceTests : IDisposable
         };
 
         Assert.IsNotType<UiAutomationLang>(historyInfo.OcrLanguage);
+    }
+
+    [Fact]
+    public void HistoryInfo_OcrLanguage_ReturnsWindowsAiDescriptionLanguage()
+    {
+        HistoryInfo historyInfo = new()
+        {
+            LanguageTag = WindowsAiDescriptionLang.Tag,
+            LanguageKind = LanguageKind.WindowsAiDescription,
+        };
+
+        Assert.IsType<WindowsAiDescriptionLang>(historyInfo.OcrLanguage);
     }
 }

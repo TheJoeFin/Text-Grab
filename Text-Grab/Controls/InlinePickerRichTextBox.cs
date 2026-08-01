@@ -10,6 +10,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using Text_Grab.Models;
+using Text_Grab.Utilities;
 
 namespace Text_Grab.Controls;
 
@@ -78,6 +79,13 @@ public class InlinePickerRichTextBox : RichTextBox
     /// <see cref="TemplatePatternMatch"/>, or null to cancel.
     /// </summary>
     public Func<InlinePickerItem, TemplatePatternMatch?>? PatternItemSelected { get; set; }
+
+    /// <summary>
+    /// Called when a recognizer-group item is selected. The handler should show the
+    /// match-mode dialog and return the configured <see cref="TemplateRecognizerMatch"/>,
+    /// or null to cancel.
+    /// </summary>
+    public Func<InlinePickerItem, TemplateRecognizerMatch?>? RecognizerItemSelected { get; set; }
 
     static InlinePickerRichTextBox()
     {
@@ -474,9 +482,12 @@ public class InlinePickerRichTextBox : RichTextBox
         // which fires OnLostKeyboardFocus and nulls _triggerStart)
         TextPointer savedTriggerStart = _triggerStart;
 
-        // For pattern items, invoke the dialog callback to configure match mode
-        bool isPatternItem = string.Equals(selectedItem.Group, "Patterns", StringComparison.OrdinalIgnoreCase);
+        // Pattern items carry a Kind that decides which dialog/placeholder to use.
+        // (Group is only a display label now — "Saved Patterns" vs "Smart Patterns".)
+        bool isPatternItem = selectedItem.Kind == PatternKind.SavedRegex;
         InlinePickerItem itemToInsert = selectedItem;
+
+        bool isRecognizerItem = selectedItem.Kind == PatternKind.Recognizer;
 
         if (isPatternItem && PatternItemSelected != null)
         {
@@ -492,6 +503,21 @@ public class InlinePickerRichTextBox : RichTextBox
             // Build the placeholder value from the dialog result
             string placeholderValue = BuildPatternPlaceholder(patternConfig);
             string displayLabel = $"{patternConfig.PatternName} ({patternConfig.MatchMode})";
+            itemToInsert = new InlinePickerItem(displayLabel, placeholderValue, selectedItem.Group);
+        }
+        else if (isRecognizerItem && RecognizerItemSelected != null)
+        {
+            HidePopup();
+
+            TemplateRecognizerMatch? recognizerConfig = RecognizerItemSelected(selectedItem);
+            if (recognizerConfig == null)
+            {
+                _triggerStart = null;
+                return; // user cancelled
+            }
+
+            string placeholderValue = BuildRecognizerPlaceholder(recognizerConfig);
+            string displayLabel = $"{recognizerConfig.RecognizerName} ({recognizerConfig.MatchMode})";
             itemToInsert = new InlinePickerItem(displayLabel, placeholderValue, selectedItem.Group);
         }
 
@@ -543,6 +569,29 @@ public class InlinePickerRichTextBox : RichTextBox
             return $"{{p:{config.PatternName}:{mode}:{config.Separator}}}";
 
         return $"{{p:{config.PatternName}:{mode}}}";
+    }
+
+    private static string BuildRecognizerPlaceholder(TemplateRecognizerMatch config)
+    {
+        string mode = config.MatchMode;
+
+        bool needsSeparator = (mode == "all" || (mode.Contains(',') && mode.Split(',').Length > 1))
+            && config.Separator != ", ";
+        bool isText = config.OutputKind == RecognizerOutputKind.MatchedText;
+
+        string result = $"{{r:{config.RecognizerName}:{mode}";
+
+        // Emit the output token when non-default, or when a separator follows it
+        // (so the separator is not misparsed as the output token).
+        if (isText)
+            result += ":text";
+        else if (needsSeparator)
+            result += ":value";
+
+        if (needsSeparator)
+            result += $":{config.Separator}";
+
+        return result + "}";
     }
 
     private void Chip_RemoveRequested(object? sender, EventArgs e)
