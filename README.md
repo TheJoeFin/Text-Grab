@@ -92,7 +92,7 @@ You can also click once to try to copy a single word. That works because the Win
 If you click or select an area with no text, the Text Grab window stays active so you can try again. To exit, press Escape, right-click and choose Cancel, or press Alt+F4.
 
 ### 2. Grab Frame Mode
-![Grab Frame](images/TGGF-Table-1080.mp4)
+![Grab Frame](images/TGGF-Table.webm)
 
 Use Grab Frame when you want a movable OCR window you can keep over part of your screen. Position the frame over the text you want, then grab text by searching for it, clicking a word border, or clicking the Grab button.
 
