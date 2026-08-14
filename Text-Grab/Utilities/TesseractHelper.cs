@@ -114,6 +114,7 @@ public static class TesseractHelper
         {
             Engine = OcrEngineKind.Tesseract,
             Kind = OcrOutputKind.Paragraph,
+            Language = language,
             SourceBitmap = bmp,
             RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language.RawTag)
         };
