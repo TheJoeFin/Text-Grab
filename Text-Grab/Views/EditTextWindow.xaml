@@ -625,6 +625,60 @@
                         Header="_Watch Clipboard For Changes"
                         IsCheckable="True"
                         IsChecked="False" />
+                    <MenuItem
+                        x:Name="CaptureTranscribeAudioMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.TranscribeAudio"
+                        Click="CaptureTranscribeAudioMenuItem_Click"
+                        Header="_Transcribe Audio"
+                        IsCheckable="True"
+                        Visibility="Collapsed" />
+                    <MenuItem
+                        x:Name="TranscriptionOptionsMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.TranscriptionOptions"
+                        Header="Transcription _Options"
+                        Visibility="Collapsed">
+                        <MenuItem
+                            x:Name="CaptureLiveSourceMicMenuItem"
+                            Click="LiveSourceMenuItem_Click"
+                            Header="From Microphone"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Microphone" />
+                        <MenuItem
+                            x:Name="CaptureLiveSourceSystemMenuItem"
+                            Click="LiveSourceMenuItem_Click"
+                            Header="From System Audio (what you hear)"
+                            IsCheckable="True"
+                            Tag="SystemAudio" />
+                        <Separator />
+                        <MenuItem Header="Transcription model">
+                            <MenuItem
+                                x:Name="CaptureModelTinyEnglishMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Fastest — English"
+                                IsCheckable="True"
+                                Tag="TinyEnglish" />
+                            <MenuItem
+                                x:Name="CaptureModelBaseEnglishMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Fast — English"
+                                IsCheckable="True"
+                                Tag="BaseEnglish" />
+                            <MenuItem
+                                x:Name="CaptureModelBaseMultilingualMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Balanced — multilingual"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Tag="BaseMultilingual" />
+                            <MenuItem
+                                x:Name="CaptureModelSmallMultilingualMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Most accurate — multilingual"
+                                IsCheckable="True"
+                                Tag="SmallMultilingual" />
+                        </MenuItem>
+                    </MenuItem>
                     <Separator />
                     <MenuItem
                         x:Name="ListFilesMenuItem"

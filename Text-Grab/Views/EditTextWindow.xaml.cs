@@ -438,6 +438,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else
             BottomBarText.Visibility = Visibility.Collapsed;
 
+        LiveTranscriptionToggleButton.Visibility =
+            DefaultSettings.EtwShowTranscribe && AudioTranscriptionUtilities.IsAudioTranscriptionSupported()
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
 
@@ -6121,7 +6126,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // on every supported device. The Whisper model is downloaded on first use.
         if (AudioTranscriptionUtilities.IsAudioTranscriptionSupported())
         {
-            LiveTranscriptionToggleButton.Visibility = Visibility.Visible;
+            CaptureTranscribeAudioMenuItem.Visibility = Visibility.Visible;
+            TranscriptionOptionsMenuItem.Visibility = Visibility.Visible;
             SyncTranscriptionModelMenu();
         }
 
@@ -6936,6 +6942,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SetLiveTranscriptionUi(false);
     }
 
+    private void CaptureTranscribeAudioMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool transcribe = CaptureTranscribeAudioMenuItem.IsChecked;
+        if (LiveTranscriptionToggleButton.IsChecked != transcribe)
+            LiveTranscriptionToggleButton.IsChecked = transcribe;
+    }
+
     private void LiveSourceMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem || menuItem.Tag is not string tag
@@ -6945,6 +6958,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _liveCaptureSource = selectedSource;
         LiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
         LiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
+        CaptureLiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
+        CaptureLiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
 
         // If a session is already running, restart it on the newly chosen source.
         if (LiveTranscriptionToggleButton.IsChecked is true)
@@ -6982,12 +6997,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         ModelTinyEnglishMenuItem.IsChecked = current == "TinyEnglish";
         ModelBaseEnglishMenuItem.IsChecked = current == "BaseEnglish";
         ModelSmallMultilingualMenuItem.IsChecked = current == "SmallMultilingual";
+        CaptureModelTinyEnglishMenuItem.IsChecked = ModelTinyEnglishMenuItem.IsChecked;
+        CaptureModelBaseEnglishMenuItem.IsChecked = ModelBaseEnglishMenuItem.IsChecked;
+        CaptureModelSmallMultilingualMenuItem.IsChecked = ModelSmallMultilingualMenuItem.IsChecked;
 
         // Anything else (including the default) falls back to balanced multilingual.
         ModelBaseMultilingualMenuItem.IsChecked =
             !ModelTinyEnglishMenuItem.IsChecked
             && !ModelBaseEnglishMenuItem.IsChecked
             && !ModelSmallMultilingualMenuItem.IsChecked;
+        CaptureModelBaseMultilingualMenuItem.IsChecked = ModelBaseMultilingualMenuItem.IsChecked;
     }
 
     private void LiveTranscriber_PhraseRecognized(object? sender, string recognizedText)
@@ -7009,6 +7028,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void SetLiveTranscriptionUi(bool active, string? label = null)
     {
         bool systemAudio = _liveCaptureSource == LiveCaptureSource.SystemAudio;
+        CaptureTranscribeAudioMenuItem.IsChecked = active;
 
         if (label is not null)
             LiveTranscriptionLabel.Text = label;
