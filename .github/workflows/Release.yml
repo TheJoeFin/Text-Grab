@@ -47,7 +47,7 @@ jobs:
         run: dotnet restore ${{ env.PROJECT_PATH }}
 
       - name: Run tests
-        run: dotnet test ${{ env.TEST_PATH }} -r win-x64
+        run: dotnet test --project ${{ env.TEST_PATH }} -r win-x64
 
       - name: Compute build version, archive paths, and release metadata
         id: compute
