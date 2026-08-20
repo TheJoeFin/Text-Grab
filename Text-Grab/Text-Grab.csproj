@@ -92,10 +92,6 @@
         <PackageReference Include="Whisper.net" Version="1.9.1" />
         <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
         <PackageReference Include="NAudio" Version="3.0.1" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.9" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.4.0" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.6" />
         <PackageReference Include="NCalcAsync" Version="7.1.0" />
         <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
              build tool. Exclude all its assets so nuget.exe never flows into the app output. -->
