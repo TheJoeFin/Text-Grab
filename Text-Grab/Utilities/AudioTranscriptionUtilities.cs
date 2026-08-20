@@ -370,7 +370,7 @@ public static class AudioTranscriptionUtilities
         List<float> samples = new(count / 4);
         byte[] buffer = new byte[16000 * 2]; // ~1 second of 16-bit mono
         int read;
-        while ((read = resampler.Read(buffer, 0, buffer.Length)) > 0)
+        while ((read = resampler.Read(buffer)) > 0)
         {
             for (int i = 0; i + 1 < read; i += 2)
             {
