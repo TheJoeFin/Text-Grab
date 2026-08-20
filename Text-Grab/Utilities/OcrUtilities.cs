@@ -50,7 +50,11 @@ public static partial class OcrUtilities
         return handle == IntPtr.Zero ? null : [handle];
     }
 
-    public static void GetTextFromOcrLine(this IOcrLine ocrLine, bool isSpaceJoiningOCRLang, StringBuilder text)
+    public static void GetTextFromOcrLine(
+        this IOcrLine ocrLine,
+        bool isSpaceJoiningOCRLang,
+        StringBuilder text,
+        bool shouldCorrectToLatin = true)
     {
         // (when OCR language is zh or ja)
         // matches words in a space-joining language, which contains:
@@ -98,7 +102,7 @@ public static partial class OcrUtilities
             }
         }
 
-        if (DefaultSettings.CorrectToLatin)
+        if (DefaultSettings.CorrectToLatin && shouldCorrectToLatin)
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
@@ -205,7 +209,10 @@ public static partial class OcrUtilities
         IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, compatibleLanguage);
 
         // New model-only flow
-        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, dpiScale);
+        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(
+            ocrResult,
+            dpiScale,
+            compatibleLanguage.IsLatinBased());
 
         Rectangle rectCanvasSize = new()
         {
@@ -250,7 +257,10 @@ public static partial class OcrUtilities
         IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, compatibleLanguage);
         DpiScale bitmapDpiScale = new(1.0, 1.0);
 
-        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, bitmapDpiScale);
+        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(
+            ocrResult,
+            bitmapDpiScale,
+            compatibleLanguage.IsLatinBased());
 
         Rectangle rectCanvasSize = new()
         {
@@ -626,7 +636,7 @@ public static partial class OcrUtilities
                 orderedLines = FilterFuriganaLines(orderedLines);
 
             foreach (IOcrLine ocrLine in orderedLines)
-                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text);
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text, language.IsLatinBased());
         }
 
         if (language.IsRightToLeft())

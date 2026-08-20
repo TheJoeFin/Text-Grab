@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using Text_Grab.Interfaces;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 using Windows.Graphics.Imaging;
@@ -13,7 +14,7 @@ public record OcrOutput
     public string CleanedOutput { get; set; } = string.Empty;
     public Bitmap? SourceBitmap { get; set; }
     public SoftwareBitmap? SourceSoftwareBitmap { get; set; }
-    public object? Language { get; set; }
+    public ILanguage? Language { get; set; }
 
     public void CleanOutput()
     {
@@ -23,7 +24,7 @@ public record OcrOutput
 
         string correctingString = RawOutput;
 
-        if (userSettings.CorrectToLatin)
+        if (userSettings.CorrectToLatin && Language?.IsLatinBased() == true)
             correctingString = correctingString.ReplaceGreekOrCyrillicWithLatin();
 
         if (userSettings.CorrectErrors)

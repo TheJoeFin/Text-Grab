@@ -436,7 +436,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         foreach (IOcrLine ocrLine in ocrResult.Lines)
         {
             StringBuilder textBuilder = new();
-            ocrLine.GetTextFromOcrLine(isSpaceJoiningLanguage, textBuilder);
+            ocrLine.GetTextFromOcrLine(isSpaceJoiningLanguage, textBuilder, language.IsLatinBased());
             textBuilder.RemoveTrailingNewlines();
 
             string lineText = textBuilder.ToString();

@@ -137,7 +137,10 @@ public class ResultTable
         return allBoundingRects;
     }
 
-    public static List<WordBorderInfo> ParseOcrResultIntoWordBorderInfos(IOcrLinesWords ocrResult, DpiScale dpi)
+    public static List<WordBorderInfo> ParseOcrResultIntoWordBorderInfos(
+        IOcrLinesWords ocrResult,
+        DpiScale dpi,
+        bool shouldCorrectToLatin = true)
     {
         List<WordBorderInfo> infos = [];
 
@@ -157,7 +160,7 @@ public class ResultTable
             };
 
             StringBuilder lineText = new();
-            ocrLine.GetTextFromOcrLine(true, lineText);
+            ocrLine.GetTextFromOcrLine(true, lineText, shouldCorrectToLatin);
 
             WordBorderInfo info = new()
             {

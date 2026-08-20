@@ -128,7 +128,7 @@ public class TessLang : ILanguage
 
     public string NativeName => cultureInfo.NativeName;
 
-    public string Script => string.Empty;
+    public string Script => new Windows.Globalization.Language(cultureInfo.IetfLanguageTag).Script;
 
     public string LanguageTag => RawTag;
 
