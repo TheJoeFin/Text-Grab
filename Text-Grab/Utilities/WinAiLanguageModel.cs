@@ -46,8 +46,8 @@ internal readonly record struct WinAiGenerationResult(string? Text, WinAiFailure
 /// Shared access to the Windows AI Foundry <see cref="LanguageModel"/> (Phi Silica), following the
 /// pattern used by microsoft/ai-dev-gallery's PhiSilicaClient.
 ///
-/// Everything in Text-Grab that prompts the language model — translation, regex extraction — goes
-/// through here so they all get the same three things:
+/// Everything in Text-Grab that prompts the language model — translation, meeting notes, regex
+/// extraction — goes through here so they all get the same three things:
 ///   1. The Limited Access Feature unlock, checked once and reported with a message a user can act
 ///      on rather than an "Access is denied" exception from deep inside the model call.
 ///   2. One <see cref="LanguageModel"/> created and reused across features; only the lightweight
@@ -347,6 +347,43 @@ internal static class WinAiLanguageModel
         return string.IsNullOrWhiteSpace(text)
             ? WinAiGenerationResult.Failed(WinAiFailure.ModelError, "The language model returned an empty response.")
             : WinAiGenerationResult.Ok(text);
+    }
+
+    /// <summary>
+    /// Light tidy-up of a model response. Deliberately conservative: an earlier translation
+    /// implementation tried to detect and strip "instruction echoes" and would silently hand back
+    /// the untranslated input whenever the guess misfired. Prompting the model directly removes the
+    /// echoes at the source, so all that is left is trimming stray fences and wrapping quotes.
+    /// </summary>
+    internal static string CleanResponse(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        string cleaned = text.Trim();
+
+        if (cleaned.StartsWith("```", StringComparison.Ordinal))
+        {
+            int firstNewline = cleaned.IndexOf('\n');
+            if (firstNewline > 0)
+                cleaned = cleaned[(firstNewline + 1)..];
+
+            if (cleaned.EndsWith("```", StringComparison.Ordinal))
+                cleaned = cleaned[..^3];
+
+            cleaned = cleaned.Trim();
+        }
+
+        // Models often wrap a short answer in quotes even when told not to.
+        if (cleaned.Length > 1 &&
+            ((cleaned[0] == '"' && cleaned[^1] == '"') ||
+             (cleaned[0] == '\'' && cleaned[^1] == '\'') ||
+             (cleaned[0] == '“' && cleaned[^1] == '”')))
+        {
+            cleaned = cleaned[1..^1].Trim();
+        }
+
+        return cleaned;
     }
 
     #endregion generation

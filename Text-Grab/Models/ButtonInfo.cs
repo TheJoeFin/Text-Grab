@@ -795,6 +795,14 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 8.15,
+            ButtonText = "Summarize as Meeting Notes",
+            ClickEvent = "MeetingNotesMenuItem_Click",
+            SymbolIcon = SymbolRegular.NotepadPerson20,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
             OrderNumber = 8.2,
             ButtonText = "Rewrite with Local AI",
             ClickEvent = "RewriteMenuItem_Click",

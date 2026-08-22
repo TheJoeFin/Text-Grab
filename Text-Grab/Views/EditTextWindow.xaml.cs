@@ -6695,6 +6695,53 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private async void MeetingNotesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SetToLoading("Writing meeting notes...");
+
+        // Captured from inside the transform so a failure can be reported after the loading state
+        // is cleared, rather than replacing the text with an error message.
+        WinAiGenerationResult? failure = null;
+
+        try
+        {
+            await ApplySelectedTextOrAllTextTransformAsync(async text =>
+            {
+                // A long transcript is summarized part by part, so say which part is being read.
+                void OnProgress(string stage) => Dispatcher.Invoke(() => SetToLoading(stage));
+
+                WinAiGenerationResult result = await WinAiMeetingNotes.SummarizeAsync(text, OnProgress);
+
+                if (result.Text is null)
+                {
+                    failure = result;
+                    return text;
+                }
+
+                return result.Text;
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Meeting notes exception: {ex.Message}");
+            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Meeting notes failed: {ex.Message}");
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+
+        if (failure is { } notesFailure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Meeting Notes Failed",
+                Content = notesFailure.Message ?? "The text could not be written up as meeting notes.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
     private void LearnAiMenuItem_Click(object sender, RoutedEventArgs e)
     {
         string url = "https://learn.microsoft.com/en-us/windows/ai/apis/phi-silica";

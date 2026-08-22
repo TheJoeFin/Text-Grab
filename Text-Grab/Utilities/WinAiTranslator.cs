@@ -494,39 +494,7 @@ internal static partial class WinAiTranslator
     #endregion batched text
 
     /// <summary>
-    /// Light tidy-up of a model response. Deliberately conservative: the previous implementation
-    /// tried to detect and strip "instruction echoes" and would silently hand back the untranslated
-    /// input whenever the guess misfired. Prompting the model directly removes the echoes at the
-    /// source, so all that is left is trimming stray fences and wrapping quotes.
+    /// Light tidy-up of a model response, shared with the other language model features.
     /// </summary>
-    internal static string CleanResult(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return string.Empty;
-
-        string cleaned = text.Trim();
-
-        if (cleaned.StartsWith("```", StringComparison.Ordinal))
-        {
-            int firstNewline = cleaned.IndexOf('\n');
-            if (firstNewline > 0)
-                cleaned = cleaned[(firstNewline + 1)..];
-
-            if (cleaned.EndsWith("```", StringComparison.Ordinal))
-                cleaned = cleaned[..^3];
-
-            cleaned = cleaned.Trim();
-        }
-
-        // Models often wrap a short answer in quotes even when told not to.
-        if (cleaned.Length > 1 &&
-            ((cleaned[0] == '"' && cleaned[^1] == '"') ||
-             (cleaned[0] == '\'' && cleaned[^1] == '\'') ||
-             (cleaned[0] == '“' && cleaned[^1] == '”')))
-        {
-            cleaned = cleaned[1..^1].Trim();
-        }
-
-        return cleaned;
-    }
+    internal static string CleanResult(string text) => WinAiLanguageModel.CleanResponse(text);
 }

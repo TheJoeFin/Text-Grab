@@ -444,6 +444,10 @@
                         Click="SummarizeMenuItem_Click"
                         Header="_Summarize Paragraph" />
                     <MenuItem
+                        x:Name="MeetingNotesMenuItem"
+                        Click="MeetingNotesMenuItem_Click"
+                        Header="Summarize as _Meeting Notes" />
+                    <MenuItem
                         x:Name="RewriteMenuItem"
                         Click="RewriteMenuItem_Click"
                         Header="_Rewrite" />

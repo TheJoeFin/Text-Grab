@@ -1,6 +1,6 @@
 # Configuring LAF environment variables
 
-Text-Grab's on-device text AI — translation, summarize, rewrite, text-to-table, extract RegEx —
+Text-Grab's on-device text AI — translation, summarize, meeting notes, rewrite, text-to-table, extract RegEx —
 runs on Phi Silica through `Microsoft.Windows.AI.Text.LanguageModel`. Microsoft ships that model as
 a **Limited Access Feature (LAF)**, so an app has to unlock it before any call will succeed:
 
