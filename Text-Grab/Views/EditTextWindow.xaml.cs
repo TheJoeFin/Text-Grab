@@ -6827,10 +6827,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoading("Extracting RegEx pattern...");
 
-        string regexPattern;
+        WinAiGenerationResult extraction;
         try
         {
-            regexPattern = await WindowsAiUtilities.ExtractRegex(textDescription);
+            extraction = await WindowsAiUtilities.ExtractRegex(textDescription);
         }
         catch (Exception ex)
         {
@@ -6847,12 +6847,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoaded();
 
-        if (string.IsNullOrWhiteSpace(regexPattern))
+        if (extraction.Text is not string regexPattern)
         {
+            // The shared language model reports why it could not answer, so show that instead of a
+            // guess about what went wrong.
             await new Wpf.Ui.Controls.MessageBox
             {
                 Title = "Extraction Failed",
-                Content = "Failed to extract a regex pattern. The AI service may not be available or could not generate a pattern.",
+                Content = extraction.Message ?? "Failed to extract a regex pattern.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
             return;

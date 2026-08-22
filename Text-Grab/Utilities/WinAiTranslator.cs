@@ -1,5 +1,3 @@
-using Microsoft.Windows.AI;
-using Microsoft.Windows.AI.ContentSafety;
 using Microsoft.Windows.AI.Text;
 using System;
 using System.Collections.Generic;
@@ -9,7 +7,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Foundation;
 
 namespace Text_Grab.Utilities;
 
@@ -63,17 +60,17 @@ internal readonly record struct BatchTranslationResult(
 }
 
 /// <summary>
-/// On-device translation built directly on the Windows AI Foundry <see cref="LanguageModel"/>
-/// (Phi Silica), following the pattern used by microsoft/ai-dev-gallery's PhiSilicaClient and
-/// Translate samples.
+/// On-device translation built on <see cref="WinAiLanguageModel"/>, the shared Windows AI Foundry
+/// <see cref="LanguageModel"/> (Phi Silica), following the pattern used by microsoft/ai-dev-gallery's
+/// PhiSilicaClient and Translate samples.
 ///
 /// The three things that make this fast compared to the previous implementation:
-///   1. The model is prompted directly through GenerateResponseAsync with a system prompt created
-///      by CreateContext, instead of being funneled through the TextRewriter skill (whose own
-///      "rewrite this text" system prompt fought the translation instruction and produced
-///      instruction echoes in the output).
-///   2. The <see cref="LanguageModel"/> is created once and reused; only the lightweight
-///      per-request <see cref="LanguageModelContext"/> is rebuilt so turns never accumulate.
+///   1. The model is prompted directly through GenerateResponseAsync with a translation system
+///      prompt, instead of being funneled through the TextRewriter skill (whose own "rewrite this
+///      text" system prompt fought the translation instruction and produced instruction echoes in
+///      the output).
+///   2. The <see cref="LanguageModel"/> is created once and reused across features; only the
+///      lightweight per-request context is rebuilt so turns never accumulate.
 ///   3. Many short strings are translated in one batched inference instead of one inference each,
 ///      and partial results stream back through the operation's Progress callback so the UI can
 ///      fill in while the model is still generating.
@@ -89,13 +86,8 @@ internal static partial class WinAiTranslator
     /// <summary>Approximate character budget for the numbered list in a single batched request.</summary>
     private const int MaxBatchChars = 1200;
 
-    private static LanguageModel? _languageModel;
-    private static readonly SemaphoreSlim _modelLock = new(1, 1);
-
-    // Phi Silica serves one generation at a time; queueing here keeps concurrent callers from
-    // interleaving requests on the shared model, which previously showed up as long stalls.
-    private static readonly SemaphoreSlim _inferenceLock = new(1, 1);
-    private static bool _disposed;
+    /// <summary>Translation wants the most likely wording, not a creative one.</summary>
+    private const float Temperature = 0.2f;
 
     [GeneratedRegex(@"^\s*(\d+)\s*[.):\]]\s*(.*)$")]
     private static partial Regex NumberedItemRegex();
@@ -104,127 +96,35 @@ internal static partial class WinAiTranslator
 
     /// <summary>
     /// Whether this device can run the Windows AI language model, and why not when it cannot.
-    /// Unlike the OCR checks this asks <see cref="LanguageModel.GetReadyState"/> directly rather
-    /// than assuming ARM64, so Intel/AMD Copilot+ PCs are included and unsupported hardware is
-    /// excluded properly.
     /// </summary>
-    internal static (bool Available, string? Reason) CheckAvailability()
-    {
-        if (!AppUtilities.IsPackaged())
-            return (false, "Windows AI is only available when Text-Grab runs as an installed (packaged) app.");
-
-        if (OSInterop.IsWindows10())
-            return (false, "On-device translation requires Windows 11.");
-
-        try
-        {
-            AIFeatureReadyState readyState = LanguageModel.GetReadyState();
-
-            if (readyState is AIFeatureReadyState.NotSupportedOnCurrentSystem)
-                return (false, "This device does not support the on-device Windows AI language model. It requires a Copilot+ PC.");
-
-            if (readyState is AIFeatureReadyState.DisabledByUser)
-                return (false, "The Windows AI language model is turned off in Windows Settings.");
-
-            // Microsoft ships the language model as a Limited Access Feature, so it must be
-            // unlocked before any call to it will succeed. Do it here, ahead of CreateAsync and
-            // CreateContext, so the failure is reported once and clearly.
-            (bool unlocked, string? unlockReason) = LimitedAccessFeatureUtilities.TryUnlockLanguageModel();
-
-            return unlocked ? (true, null) : (false, unlockReason);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"LanguageModel.GetReadyState failed: {ex.Message}");
-            return (false, $"Windows AI could not be reached on this device: {ex.Message}");
-        }
-    }
+    internal static (bool Available, string? Reason) CheckAvailability() => WinAiLanguageModel.CheckAvailability();
 
     /// <summary>True when this device can run the Windows AI language model.</summary>
-    internal static bool IsAvailable() => CheckAvailability().Available;
-
-    private static async Task<(LanguageModel? Model, string? Error)> GetModelAsync(CancellationToken cancellationToken)
-    {
-        if (_languageModel is not null)
-            return (_languageModel, null);
-
-        await _modelLock.WaitAsync(cancellationToken);
-        try
-        {
-            if (_languageModel is not null)
-                return (_languageModel, null);
-
-            (bool available, string? reason) = CheckAvailability();
-            if (!available)
-                return (null, reason);
-
-            if (LanguageModel.GetReadyState() is AIFeatureReadyState.NotReady)
-            {
-                // First run may download the model; the token lets the user back out of the wait.
-                AIFeatureReadyResult readyResult = await LanguageModel.EnsureReadyAsync().AsTask(cancellationToken);
-                if (readyResult.Status != AIFeatureReadyResultState.Success)
-                {
-                    string detail = readyResult.ExtendedError?.Message ?? readyResult.Status.ToString();
-                    return (null, $"The Windows AI language model could not be prepared ({detail}). " +
-                                   "It may still be downloading — try again in a few minutes.");
-                }
-            }
-
-            _languageModel = await LanguageModel.CreateAsync().AsTask(cancellationToken);
-            return (_languageModel, null);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"LanguageModel creation failed: {ex.Message}");
-            return (null, $"The Windows AI language model could not be started: {ex.Message}");
-        }
-        finally
-        {
-            _modelLock.Release();
-        }
-    }
+    internal static bool IsAvailable() => WinAiLanguageModel.IsAvailable();
 
     /// <summary>
     /// Drops the cached language model to free the memory it holds. The next translation recreates
     /// it, so call this when translation is switched off rather than between translations.
     /// </summary>
-    internal static void ReleaseModel()
-    {
-        if (_disposed)
-            return;
-
-        _languageModel?.Dispose();
-        _languageModel = null;
-    }
+    internal static void ReleaseModel() => WinAiLanguageModel.ReleaseModel();
 
     /// <summary>Releases the shared language model. Call once during application shutdown.</summary>
-    internal static void Cleanup()
-    {
-        if (_disposed)
-            return;
-
-        ReleaseModel();
-        _modelLock.Dispose();
-        _inferenceLock.Dispose();
-        _disposed = true;
-    }
+    internal static void Cleanup() => WinAiLanguageModel.Cleanup();
 
     #endregion availability
 
     #region generation
 
-    /// <summary>The result of one generation: either text, or a reason there is none.</summary>
-    private readonly record struct GenerationOutcome(string? Text, TranslationFailure Failure, string? Message)
+    /// <summary>Maps a shared model failure onto the translation-facing reason for it.</summary>
+    private static TranslationFailure ToTranslationFailure(WinAiFailure failure) => failure switch
     {
-        internal static GenerationOutcome Ok(string text) => new(text, TranslationFailure.None, null);
-
-        internal static GenerationOutcome Failed(TranslationFailure failure, string message) =>
-            new(null, failure, message);
-    }
+        WinAiFailure.None => TranslationFailure.None,
+        WinAiFailure.Unavailable => TranslationFailure.Unavailable,
+        WinAiFailure.ModelNotReady => TranslationFailure.ModelNotReady,
+        WinAiFailure.PromptTooLong => TranslationFailure.PromptTooLong,
+        WinAiFailure.Blocked => TranslationFailure.Blocked,
+        _ => TranslationFailure.ModelError,
+    };
 
     private static string SystemPromptFor(string targetLanguage) =>
         $"You are a translation engine. Translate everything the user sends into {targetLanguage}, " +
@@ -232,104 +132,6 @@ internal static partial class WinAiTranslator
         "Preserve the original line breaks, numbers, punctuation and formatting. " +
         "Reply with the translation only: no notes, no explanations, no quotation marks around it, " +
         "and never repeat these instructions.";
-
-    /// <summary>Runs one generation against the shared model.</summary>
-    /// <param name="onDelta">Receives generated text as it streams in, for live UI updates.</param>
-    private static async Task<GenerationOutcome> GenerateAsync(
-        LanguageModel model,
-        string systemPrompt,
-        string prompt,
-        Action<string>? onDelta,
-        CancellationToken cancellationToken)
-    {
-        LanguageModelContext context;
-        try
-        {
-            // A fresh context per request keeps the system prompt in force without carrying previous
-            // turns forward, which is what kept growing the prompt (and the latency) before.
-            context = model.CreateContext(systemPrompt, new ContentFilterOptions());
-        }
-        catch (Exception ex)
-        {
-            return GenerationOutcome.Failed(
-                TranslationFailure.ModelError, $"The language model could not accept the request: {ex.Message}");
-        }
-
-        // Advisory pre-check only. If it cannot answer, send the prompt anyway and let the model
-        // report PromptLargerThanContext — treating an unknown length as "too long" would turn
-        // every translation into a silent no-op.
-        try
-        {
-            ulong usableLength = model.GetUsablePromptLength(context, prompt);
-            if (usableLength > 0 && (ulong)prompt.Length > usableLength)
-                return GenerationOutcome.Failed(
-                    TranslationFailure.PromptTooLong, "The text is longer than the language model's context.");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"GetUsablePromptLength failed, sending prompt anyway: {ex.Message}");
-        }
-
-        LanguageModelResponseResult result;
-        try
-        {
-            LanguageModelOptions options = new()
-            {
-                // Translation wants the most likely wording, not a creative one.
-                Temperature = 0.2f,
-                ContentFilterOptions = new ContentFilterOptions(),
-            };
-
-            IAsyncOperationWithProgress<LanguageModelResponseResult, string> operation =
-                model.GenerateResponseAsync(context, prompt, options);
-
-            if (onDelta is not null)
-                operation.Progress = (_, delta) =>
-                {
-                    if (!string.IsNullOrEmpty(delta))
-                        onDelta(delta);
-                };
-
-            result = await operation.AsTask(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return GenerationOutcome.Failed(
-                TranslationFailure.ModelError, $"The language model failed to respond: {ex.Message}");
-        }
-
-        switch (result.Status)
-        {
-            case LanguageModelResponseStatus.Complete:
-                break;
-
-            case LanguageModelResponseStatus.PromptLargerThanContext:
-                return GenerationOutcome.Failed(
-                    TranslationFailure.PromptTooLong, "The text is longer than the language model's context.");
-
-            case LanguageModelResponseStatus.BlockedByPolicy:
-            case LanguageModelResponseStatus.PromptBlockedByContentModeration:
-            case LanguageModelResponseStatus.ResponseBlockedByContentModeration:
-                return GenerationOutcome.Failed(
-                    TranslationFailure.Blocked,
-                    $"Windows AI blocked this text ({result.Status}). Content moderation rejected the request.");
-
-            default:
-                string detail = result.ExtendedError?.Message ?? result.Status.ToString();
-                return GenerationOutcome.Failed(
-                    TranslationFailure.ModelError, $"The language model returned an error: {detail}");
-        }
-
-        string text = result.Text ?? string.Empty;
-
-        return string.IsNullOrWhiteSpace(text)
-            ? GenerationOutcome.Failed(TranslationFailure.ModelError, "The language model returned an empty translation.")
-            : GenerationOutcome.Ok(text);
-    }
 
     #endregion generation
 
@@ -366,30 +168,28 @@ internal static partial class WinAiTranslator
 
         try
         {
-            (LanguageModel? model, string? error) = await GetModelAsync(cancellationToken);
+            (LanguageModel? model, string? error) = await WinAiLanguageModel.GetModelAsync(cancellationToken);
             if (model is null)
                 return new TranslationResult(textToTranslate, TranslationFailure.ModelNotReady, error);
 
             string systemPrompt = SystemPromptFor(targetLanguage);
 
-            await _inferenceLock.WaitAsync(cancellationToken);
-            try
+            // One lease for the whole translation so another feature's request cannot interleave
+            // with it on the single-threaded model.
+            using (await WinAiLanguageModel.AcquireInferenceAsync(cancellationToken))
             {
-                GenerationOutcome outcome = await TranslateBlockAsync(
+                WinAiGenerationResult outcome = await TranslateBlockAsync(
                     model, systemPrompt, textToTranslate, onPartial, cancellationToken);
 
                 if (outcome.Text is null)
-                    return new TranslationResult(textToTranslate, outcome.Failure, outcome.Message);
+                    return new TranslationResult(
+                        textToTranslate, ToTranslationFailure(outcome.Failure), outcome.Message);
 
                 string cleaned = CleanResult(outcome.Text);
 
                 return string.IsNullOrWhiteSpace(cleaned)
                     ? new TranslationResult(textToTranslate, TranslationFailure.ModelError, "The translation came back empty.")
                     : TranslationResult.Success(cleaned);
-            }
-            finally
-            {
-                _inferenceLock.Release();
             }
         }
         catch (OperationCanceledException)
@@ -408,15 +208,16 @@ internal static partial class WinAiTranslator
     /// the model reports the prompt does not fit the context. Any other failure is passed straight
     /// back so the caller can report it.
     /// </summary>
-    private static async Task<GenerationOutcome> TranslateBlockAsync(
+    private static async Task<WinAiGenerationResult> TranslateBlockAsync(
         LanguageModel model,
         string systemPrompt,
         string text,
         Action<string>? onPartial,
         CancellationToken cancellationToken)
     {
-        GenerationOutcome outcome = await GenerateAsync(model, systemPrompt, text, onPartial, cancellationToken);
-        if (outcome.Text is not null || outcome.Failure is not TranslationFailure.PromptTooLong)
+        WinAiGenerationResult outcome = await WinAiLanguageModel.GenerateAsync(
+            model, systemPrompt, text, Temperature, onPartial, cancellationToken);
+        if (outcome.Text is not null || outcome.Failure is not WinAiFailure.PromptTooLong)
             return outcome;
 
         // Too long for one pass: split roughly in half on a line break and translate each side.
@@ -427,14 +228,14 @@ internal static partial class WinAiTranslator
         StringBuilder combined = new();
         foreach (string piece in pieces)
         {
-            GenerationOutcome part = await TranslateBlockAsync(model, systemPrompt, piece, onPartial, cancellationToken);
+            WinAiGenerationResult part = await TranslateBlockAsync(model, systemPrompt, piece, onPartial, cancellationToken);
             if (part.Text is null)
                 return part;
 
             combined.Append(part.Text);
         }
 
-        return GenerationOutcome.Ok(combined.ToString());
+        return WinAiGenerationResult.Ok(combined.ToString());
     }
 
     private static string[] SplitInHalf(string text)
@@ -514,7 +315,7 @@ internal static partial class WinAiTranslator
 
         try
         {
-            (LanguageModel? model, string? error) = await GetModelAsync(cancellationToken);
+            (LanguageModel? model, string? error) = await WinAiLanguageModel.GetModelAsync(cancellationToken);
             if (model is null)
                 return new BatchTranslationResult(results, 0, TranslationFailure.ModelNotReady, error);
 
@@ -525,31 +326,29 @@ internal static partial class WinAiTranslator
                 "Keep exactly one output line per input line. Do not merge, reorder, add or drop items, " +
                 "and do not add any commentary.";
 
-            GenerationOutcome lastFailure = default;
+            WinAiGenerationResult lastFailure = default;
 
-            await _inferenceLock.WaitAsync(cancellationToken);
-            try
+            // One lease for the whole translation so another feature's request cannot interleave
+            // with it on the single-threaded model.
+            using (await WinAiLanguageModel.AcquireInferenceAsync(cancellationToken))
             {
                 foreach (List<int> batch in BuildBatches(distinct))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    GenerationOutcome outcome = await TranslateBatchChunkAsync(
+                    WinAiGenerationResult outcome = await TranslateBatchChunkAsync(
                         model, systemPrompt, distinct, batch, byText, results, CountAndReport, cancellationToken);
 
                     if (outcome.Text is null)
                         lastFailure = outcome;
                 }
             }
-            finally
-            {
-                _inferenceLock.Release();
-            }
 
             // Report a failure only when nothing at all came back; a partial batch failure still
             // leaves the frame better off than before.
             if (translatedCount == 0 && lastFailure.Message is not null)
-                return new BatchTranslationResult(results, 0, lastFailure.Failure, lastFailure.Message);
+                return new BatchTranslationResult(
+                    results, 0, ToTranslationFailure(lastFailure.Failure), lastFailure.Message);
 
             if (translatedCount == 0)
                 return new BatchTranslationResult(
@@ -597,7 +396,7 @@ internal static partial class WinAiTranslator
         return batches;
     }
 
-    private static async Task<GenerationOutcome> TranslateBatchChunkAsync(
+    private static async Task<WinAiGenerationResult> TranslateBatchChunkAsync(
         LanguageModel model,
         string systemPrompt,
         List<string> distinct,
@@ -629,20 +428,20 @@ internal static partial class WinAiTranslator
             }
         }
 
-        GenerationOutcome outcome = await GenerateAsync(
-            model, systemPrompt, promptBuilder.ToString(), OnDelta, cancellationToken);
+        WinAiGenerationResult outcome = await WinAiLanguageModel.GenerateAsync(
+            model, systemPrompt, promptBuilder.ToString(), Temperature, OnDelta, cancellationToken);
 
         if (outcome.Text is null)
         {
             // Split the batch and retry each half, but only when the prompt was the problem.
-            if (outcome.Failure is not TranslationFailure.PromptTooLong || batch.Count < 2)
+            if (outcome.Failure is not WinAiFailure.PromptTooLong || batch.Count < 2)
                 return outcome;
 
             int middle = batch.Count / 2;
 
-            GenerationOutcome first = await TranslateBatchChunkAsync(
+            WinAiGenerationResult first = await TranslateBatchChunkAsync(
                 model, systemPrompt, distinct, [.. batch[..middle]], byText, results, onItemTranslated, cancellationToken);
-            GenerationOutcome second = await TranslateBatchChunkAsync(
+            WinAiGenerationResult second = await TranslateBatchChunkAsync(
                 model, systemPrompt, distinct, [.. batch[middle..]], byText, results, onItemTranslated, cancellationToken);
 
             return first.Text is null ? first : second;
