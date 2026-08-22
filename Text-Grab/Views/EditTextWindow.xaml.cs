@@ -6774,22 +6774,39 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading($"Translating to {targetLanguage}...");
 
+        // Captured from inside the transform so a failure can be reported after the text is applied
+        // instead of silently putting the original text back.
+        TranslationResult? failedResult = null;
+
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.TranslateText(text, targetLanguage));
+            await ApplySelectedTextOrAllTextTransformAsync(async text =>
+            {
+                TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
+
+                if (!result.Succeeded)
+                    failedResult ??= result;
+
+                return result.Text;
+            });
         }
         catch (Exception ex)
         {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Translation Error",
-                Content = $"Translation failed: {ex.Message}",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
+            failedResult = new TranslationResult(string.Empty, TranslationFailure.ModelError, $"Translation failed: {ex.Message}");
         }
         finally
         {
             SetToLoaded();
+        }
+
+        if (failedResult is { } failure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = failure.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                Content = failure.Message ?? "The text could not be translated.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 

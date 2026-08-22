@@ -28,6 +28,24 @@
         <NoWarn>$(NoWarn);WFO0003</NoWarn>
     </PropertyGroup>
 
+    <!--
+        The Windows AI language model (Phi Silica) is a Limited Access Feature. Text-Grab must call
+        LimitedAccessFeatures.TryUnlockFeature with a token issued by Microsoft for its publisher ID
+        before translate / summarize / rewrite / text-to-table will run; request one at
+        https://aka.ms/laffeatures.
+
+        Never commit a token. Pass it in at build time instead:
+            dotnet build -p:LafToken="..." -p:LafPublisherId="..."
+        or set the LAF_TOKEN / LAF_PUBLISHER_ID environment variables for local development.
+    -->
+    <ItemGroup Condition="'$(LafToken)' != ''">
+        <AssemblyMetadata Include="LAF_TOKEN" Value="$(LafToken)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(LafPublisherId)' != ''">
+        <AssemblyMetadata Include="LAF_PUBLISHER_ID" Value="$(LafPublisherId)" />
+    </ItemGroup>
+
     <ItemGroup>
         <None Remove="Images\CJKE-SampleText.png" />
         <None Remove="Images\ETW.png" />
