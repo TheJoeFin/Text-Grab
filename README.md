@@ -152,6 +152,13 @@ Quick Simple Lookup is not about OCR. Use it to retrieve frequently used text li
 3. When what you want is the first result, press Enter
 4. Paste the value into the application you are using
 
+### Bonus Mode: Browser Extension
+
+Text Grab isn't limited to screenshots. The [Text Grab Extension](https://github.com/TheJoeFin/Text-Grab-Extension) for Chrome and Edge lets you grab raw, selectable text straight from a web page and send it into Text Grab — no OCR needed since the text is already there. It's a fast way to pull text out of pages that block copy/paste or have awkward formatting, and get it into Text Grab for cleanup, spreadsheet mode, or your usual post-grab workflow.
+
+- [Chrome Web Store](https://chromewebstore.google.com/detail/text-grab-extension/edkbakekpnnghfmhojmckdagdjeldjmi)
+- [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/text-grab-extension/mhhheckbddpoehjgcapihkmbjbgcgcfj)
+
 ### From OCR to usable text
 
 Text Grab keeps working after OCR. After each grab, you can run one or more post-grab actions to clean or route the text before it lands in the next tool. That helps when you repeatedly grab invoice line items, SKU tables, IDs, or lists from screenshots and want them in a cleaner, more usable shape right away.
