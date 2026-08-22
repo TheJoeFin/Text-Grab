@@ -1723,7 +1723,7 @@ public partial class GrabFrame : Window
         if (language is not UiAutomationLang && DefaultSettings.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
 
-        if (language is not UiAutomationLang && DefaultSettings.CorrectToLatin)
+        if (language is not UiAutomationLang && DefaultSettings.CorrectToLatin && language.IsLatinBased())
             ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
 
         if (frameContentImageSource is BitmapImage bmpImg)
@@ -2177,7 +2177,7 @@ public partial class GrabFrame : Window
         if (DefaultSettings.CorrectErrors)
             wordText = wordText.TryFixNumberLetterErrors();
 
-        if (DefaultSettings.CorrectToLatin)
+        if (DefaultSettings.CorrectToLatin && CurrentLanguage?.IsLatinBased() == true)
             wordText = wordText.ReplaceGreekOrCyrillicWithLatin();
 
         return wordText;
@@ -2191,7 +2191,7 @@ public partial class GrabFrame : Window
     private string GetNormalizedOcrLineText(IOcrLine ocrLine)
     {
         StringBuilder lineText = new();
-        ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText);
+        ocrLine.GetTextFromOcrLine(isSpaceJoining, lineText, CurrentLanguage?.IsLatinBased() == true);
         lineText.RemoveTrailingNewlines();
 
         string ocrText = lineText.ToString();
@@ -2199,7 +2199,7 @@ public partial class GrabFrame : Window
         if (DefaultSettings.CorrectErrors)
             ocrText = ocrText.TryFixEveryWordLetterNumberErrors();
 
-        if (DefaultSettings.CorrectToLatin)
+        if (DefaultSettings.CorrectToLatin && CurrentLanguage?.IsLatinBased() == true)
             ocrText = ocrText.ReplaceGreekOrCyrillicWithLatin();
 
         if (CurrentLanguage!.IsRightToLeft())
@@ -2470,7 +2470,7 @@ public partial class GrabFrame : Window
                 if (DefaultSettings.CorrectErrors)
                     lineText = lineText.TryFixEveryWordLetterNumberErrors();
 
-                if (DefaultSettings.CorrectToLatin)
+                if (DefaultSettings.CorrectToLatin && CurrentLanguage!.IsLatinBased())
                     lineText = lineText.ReplaceGreekOrCyrillicWithLatin();
             }
 

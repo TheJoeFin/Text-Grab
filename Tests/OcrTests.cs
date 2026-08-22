@@ -33,6 +33,7 @@ Bookman-Demi
 ";
 
     private const string fontTestPath = @".\Images\FontTest.png";
+
     private const string fontTestResult = @"Arial
 Times New Roman
 Georgia
@@ -102,6 +103,37 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
 た
 によくないです。少しすつ食べましよう。
 """;
+
+    [Theory]
+    [InlineData("en-US", "H3llO")]
+    [InlineData("ru-RU", "HЭllΘ")]
+    public void CleanOutput_CorrectsOnlyLatinCaptureLanguages(string languageTag, string expected)
+    {
+        Settings settings = AppUtilities.TextGrabSettings;
+        bool originalCorrectToLatin = settings.CorrectToLatin;
+        bool originalCorrectErrors = settings.CorrectErrors;
+        settings.CorrectToLatin = true;
+        settings.CorrectErrors = false;
+
+        try
+        {
+            OcrOutput output = new()
+            {
+                Kind = OcrOutputKind.Paragraph,
+                Language = new GlobalLang(languageTag),
+                RawOutput = "HЭllΘ"
+            };
+
+            output.CleanOutput();
+
+            Assert.Equal(expected, output.CleanedOutput);
+        }
+        finally
+        {
+            settings.CorrectToLatin = originalCorrectToLatin;
+            settings.CorrectErrors = originalCorrectErrors;
+        }
+    }
 
     [WpfFact]
     public async Task OcrFontSampleImage()

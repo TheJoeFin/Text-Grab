@@ -33,6 +33,8 @@ public class LanguageTests
     [InlineData("it-IT")]
     [InlineData("ro-RO")]
     [InlineData("pt-BR")]
+    [InlineData("de-DE")]
+    [InlineData("nl-NL")]
     public void IsLatinBased_WithLatinLanguages_ReturnsTrue(string languageTag)
     {
         // Arrange
@@ -46,6 +48,16 @@ public class LanguageTests
         // Assert
         Assert.True(result);
         Assert.True(tessResult);
+    }
+
+    [Theory]
+    [InlineData("deu", true)]
+    [InlineData("nld", true)]
+    [InlineData("rus", false)]
+    [InlineData("ara", false)]
+    public void IsLatinBased_WithTesseractLanguages_UsesResolvedScript(string languageTag, bool expected)
+    {
+        Assert.Equal(expected, new TessLang(languageTag).IsLatinBased());
     }
 
     [Theory]

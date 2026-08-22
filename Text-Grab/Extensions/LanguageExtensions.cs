@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Windows.Markup;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -47,20 +45,7 @@ public static class LanguageExtensions
 
     public static bool IsLatinBased(this ILanguage selectedLanguage)
     {
-        // List of Latin-based languages
-        List<string> LatinLanguages =
-        [
-            "en",  // English
-            "es",  // Spanish
-            "fr",  // French
-            "it",  // Italian
-            "ro",  // Romanian
-            "pt"   // Portuguese
-        ];
-
-        string languageTag = selectedLanguage.LanguageTag;
-
-        return LatinLanguages.Any(lang => languageTag.StartsWith(lang, StringComparison.InvariantCultureIgnoreCase));
+        return string.Equals(selectedLanguage.Script, "Latn", StringComparison.OrdinalIgnoreCase);
     }
 
     public static Language? AsLanguage(this ILanguage iLanguage)
