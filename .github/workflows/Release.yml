@@ -31,6 +31,10 @@ env:
   ARTIFACT_SIGNING_ENDPOINT: 'https://eus.codesigning.azure.net/'
   ARTIFACT_SIGNING_ACCOUNT_NAME: 'JoeFinAppsSigningCerts'
   ARTIFACT_SIGNING_CERTIFICATE_PROFILE_NAME: 'JoeFinApps'
+  # Unlock token for the Windows AI language model (a Limited Access Feature). Absent secrets
+  # leave the properties empty, which just builds without on-device text AI rather than failing.
+  LAF_TOKEN: ${{ secrets.LAF_TOKEN }}
+  LAF_PUBLISHER_ID: ${{ secrets.LAF_PUBLISHER_ID }}
 
 jobs:
   build:
@@ -89,6 +93,8 @@ jobs:
           -p:PublishReadyToRun=false
           -p:PublishSingleFile=true
           -p:CopyOutputSymbolsToPublishDirectory=false
+          -p:LafToken=$env:LAF_TOKEN
+          -p:LafPublisherId=$env:LAF_PUBLISHER_ID
           --nologo
 
       - name: Build x64 self-contained
@@ -103,6 +109,8 @@ jobs:
           -p:PublishReadyToRun=true
           -p:PublishSingleFile=true
           -p:CopyOutputSymbolsToPublishDirectory=false
+          -p:LafToken=$env:LAF_TOKEN
+          -p:LafPublisherId=$env:LAF_PUBLISHER_ID
           --nologo
 
       - name: Build ARM64 framework-dependent
@@ -116,6 +124,8 @@ jobs:
           -p:PublishSingleFile=true
           -p:EnableMsixTooling=true
           -p:CopyOutputSymbolsToPublishDirectory=false
+          -p:LafToken=$env:LAF_TOKEN
+          -p:LafPublisherId=$env:LAF_PUBLISHER_ID
           --nologo
 
       - name: Build ARM64 self-contained
@@ -129,6 +139,8 @@ jobs:
           -p:PublishSingleFile=true
           -p:EnableMsixTooling=true
           -p:CopyOutputSymbolsToPublishDirectory=false
+          -p:LafToken=$env:LAF_TOKEN
+          -p:LafPublisherId=$env:LAF_PUBLISHER_ID
           --nologo
 
       - name: Rename ARM64 executables

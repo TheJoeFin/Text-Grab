@@ -36,8 +36,15 @@
 
         Never commit a token. Pass it in at build time instead:
             dotnet build -p:LafToken="..." -p:LafPublisherId="..."
-        or set the LAF_TOKEN / LAF_PUBLISHER_ID environment variables for local development.
+        or set the LAF_TOKEN / LAF_PUBLISHER_ID environment variables for local development, which
+        the properties below pick up so Visual Studio builds get the token too. See
+        docs/Configuring-LAF-Environment-Variables.md.
     -->
+    <PropertyGroup>
+        <LafToken Condition="'$(LafToken)' == ''">$(LAF_TOKEN)</LafToken>
+        <LafPublisherId Condition="'$(LafPublisherId)' == ''">$(LAF_PUBLISHER_ID)</LafPublisherId>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(LafToken)' != ''">
         <AssemblyMetadata Include="LAF_TOKEN" Value="$(LafToken)" />
     </ItemGroup>
