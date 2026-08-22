@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Reflection;
 using Windows.ApplicationModel;
 
@@ -29,13 +30,37 @@ internal static class LimitedAccessFeatureUtilities
     private const string PublisherIdKey = "LAF_PUBLISHER_ID";
 
     /// <summary>The unlock is process-wide and only needs to happen once.</summary>
-    private static readonly Lazy<(bool Unlocked, string? Reason)> _languageModelUnlock = new(UnlockLanguageModel);
+    private static (bool Unlocked, string? Reason)? _languageModelUnlock;
+
+    private static readonly Lock _unlockLock = new();
 
     /// <summary>
     /// Attempts to unlock the language model feature, returning why it is unavailable when it is.
-    /// The result is cached for the life of the process.
+    /// The result is cached until <see cref="ResetUnlockCache"/> forgets a failed one.
     /// </summary>
-    internal static (bool Unlocked, string? Reason) TryUnlockLanguageModel() => _languageModelUnlock.Value;
+    internal static (bool Unlocked, string? Reason) TryUnlockLanguageModel()
+    {
+        lock (_unlockLock)
+        {
+            _languageModelUnlock ??= UnlockLanguageModel();
+            return _languageModelUnlock.Value;
+        }
+    }
+
+    /// <summary>
+    /// Forgets a cached unlock *failure* so the next request asks Windows again. Called when the
+    /// Windows AI runtime is restarted after a dropped connection: TryUnlockFeature talks to that
+    /// runtime too, so a failure cached while it was away would keep the feature off for the life
+    /// of the process. A successful unlock is kept, since it never needs redoing.
+    /// </summary>
+    internal static void ResetUnlockCache()
+    {
+        lock (_unlockLock)
+        {
+            if (_languageModelUnlock is { Unlocked: false })
+                _languageModelUnlock = null;
+        }
+    }
 
     private static (bool Unlocked, string? Reason) UnlockLanguageModel()
     {

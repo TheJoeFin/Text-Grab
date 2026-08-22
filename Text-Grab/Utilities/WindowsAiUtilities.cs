@@ -221,14 +221,6 @@ public static class WindowsAiUtilities
 
     internal static async Task<string> SummarizeParagraph(string textToSummarize)
     {
-        (bool available, string? reason) = WinAiLanguageModel.CheckAvailability();
-        if (!available)
-            return $"ERROR: {reason}";
-
-        using LanguageModel languageModel = await LanguageModel.CreateAsync();
-
-        TextSummarizer textSummarizer = new(languageModel);
-
         bool wasTruncated = false;
 
         // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
@@ -238,83 +230,53 @@ public static class WindowsAiUtilities
         //     wasTruncated = true;
         // }
 
-        try
-        {
-            LanguageModelResponseResult result = await textSummarizer.SummarizeParagraphAsync(textToSummarize);
+        // Going through the shared model reuses the one LanguageModel the other AI features hold,
+        // and means a dropped connection to the Windows AI runtime ("The RPC server is unavailable")
+        // restarts the model and tries again instead of failing until Text-Grab is restarted.
+        (LanguageModelResponseResult? result, string? error) = await WinAiLanguageModel.RunWithModelAsync(
+            (model, token) => new TextSummarizer(model).SummarizeParagraphAsync(textToSummarize).AsTask(token));
 
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                if (wasTruncated)
-                    return $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}";
-                else
-                    return result.Text;
-            }
-            else
-                return $"ERROR: Unable to summarize text. {result.ExtendedError.Message}";
-        }
-        catch (Exception ex)
-        {
-            return $"ERROR: Unable to summarize text. {ex.Message}";
-        }
+        if (result is null)
+            return $"ERROR: Unable to summarize text. {error}";
+
+        if (result.Status != LanguageModelResponseStatus.Complete)
+            return $"ERROR: Unable to summarize text. {result.ExtendedError?.Message ?? result.Status.ToString()}";
+
+        return wasTruncated
+            ? $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}"
+            : result.Text;
     }
 
     internal static async Task<string> Rewrite(string textToRewrite)
     {
-        (bool available, string? reason) = WinAiLanguageModel.CheckAvailability();
-        if (!available)
-            return $"ERROR: {reason}";
+        // TODO: in WinAppSDK 1.8+ we can pass TextRewriteTone.Concise when the GitHub Actions runner passes
+        (LanguageModelResponseResult? result, string? error) = await WinAiLanguageModel.RunWithModelAsync(
+            (model, token) => new TextRewriter(model).RewriteAsync(textToRewrite).AsTask(token));
 
-        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+        if (result is null)
+            return $"ERROR: Failed to Rewrite: {error}";
 
-        TextRewriter textRewriter = new(languageModel);
-        try
-        {
-            // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
-            //LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite, TextRewriteTone.Concise);
-            LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite);
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                return result.Text;
-            }
-            else
-                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
-        }
-        catch (Exception ex)
-        {
-            return $"ERROR: Failed to Rewrite: {ex.Message}";
-        }
+        return result.Status == LanguageModelResponseStatus.Complete
+            ? result.Text
+            : $"ERROR: Unable to rewrite text. {result.ExtendedError?.Message ?? result.Status.ToString()}";
     }
 
     internal static async Task<string> TextToTable(string textToTable)
     {
-        (bool available, string? reason) = WinAiLanguageModel.CheckAvailability();
-        if (!available)
-            return $"ERROR: {reason}";
+        (TextToTableResponseResult? result, string? error) = await WinAiLanguageModel.RunWithModelAsync(
+            (model, token) => new TextToTableConverter(model).ConvertAsync(textToTable).AsTask(token));
 
-        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+        if (result is null)
+            return $"ERROR: Failed to convert the text to a table. {error}";
 
-        TextToTableConverter toTableConverter = new(languageModel);
-        try
-        {
-            TextToTableResponseResult result = await toTableConverter.ConvertAsync(textToTable);
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                TextToTableRow[] rows = result.GetRows();
-                StringBuilder sb = new();
-                foreach (TextToTableRow row in rows)
-                {
-                    string[] columns = row.GetColumns();
-                    sb.AppendLine(string.Join("\t", columns));
-                }
-                return sb.ToString();
-            }
-            else
-                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
-        }
-        catch (Exception ex)
-        {
-            return $"ERROR: Failed to Rewrite: {ex.Message}";
-        }
+        if (result.Status != LanguageModelResponseStatus.Complete)
+            return $"ERROR: Unable to convert the text to a table. {result.ExtendedError?.Message ?? result.Status.ToString()}";
+
+        StringBuilder sb = new();
+        foreach (TextToTableRow row in result.GetRows())
+            sb.AppendLine(string.Join("\t", row.GetColumns()));
+
+        return sb.ToString();
     }
 
     /// <summary>
@@ -322,6 +284,13 @@ public static class WindowsAiUtilities
     /// Should be called once during application shutdown.
     /// </summary>
     public static void Cleanup() => WinAiLanguageModel.Cleanup();
+
+    /// <summary>
+    /// Drops the language model this process is holding so the next AI request builds a fresh
+    /// connection to the Windows AI runtime. The AI features already do this by themselves when a
+    /// request finds the runtime gone; this is for offering the user a manual reconnect.
+    /// </summary>
+    public static Task RestartWindowsAiAsync() => WinAiLanguageModel.RestartModelAsync();
 
     /// <summary>
     /// Extracts a regular expression pattern from text using the shared Windows AI language model.

@@ -88,8 +88,8 @@ internal static class WinAiMeetingNotes
 
         try
         {
-            (LanguageModel? model, string? error) = await WinAiLanguageModel.GetModelAsync(cancellationToken);
-            if (model is null)
+            (bool ready, string? error) = await WinAiLanguageModel.EnsureModelAsync(cancellationToken);
+            if (!ready)
                 return WinAiGenerationResult.Failed(
                     WinAiFailure.ModelNotReady, error ?? "The Windows AI language model could not be started.");
 
@@ -103,7 +103,7 @@ internal static class WinAiMeetingNotes
                 if (parts.Count == 1)
                 {
                     WinAiGenerationResult single = await WinAiLanguageModel.GenerateAsync(
-                        model, NotesSystemPrompt, parts[0], Temperature, null, cancellationToken);
+                        NotesSystemPrompt, parts[0], Temperature, null, cancellationToken);
 
                     if (single.Text is not null)
                         return Finish(single.Text);
@@ -126,7 +126,7 @@ internal static class WinAiMeetingNotes
                     cancellationToken.ThrowIfCancellationRequested();
                     onProgress?.Invoke($"Reading part {index + 1} of {parts.Count}...");
 
-                    WinAiGenerationResult part = await SummarizePartAsync(model, parts[index], 0, cancellationToken);
+                    WinAiGenerationResult part = await SummarizePartAsync(parts[index], 0, cancellationToken);
 
                     if (part.Text is null)
                     {
@@ -146,7 +146,7 @@ internal static class WinAiMeetingNotes
 
                 onProgress?.Invoke("Writing up the notes...");
 
-                WinAiGenerationResult merged = await MergeAsync(model, [.. bullets], cancellationToken);
+                WinAiGenerationResult merged = await MergeAsync([.. bullets], cancellationToken);
 
                 return merged.Text is null ? merged : Finish(merged.Text);
             }
@@ -176,13 +176,12 @@ internal static class WinAiMeetingNotes
     /// model reports the prompt does not fit the context.
     /// </summary>
     private static async Task<WinAiGenerationResult> SummarizePartAsync(
-        LanguageModel model,
         string part,
         int depth,
         CancellationToken cancellationToken)
     {
         WinAiGenerationResult outcome = await WinAiLanguageModel.GenerateAsync(
-            model, PartSystemPrompt, part, Temperature, null, cancellationToken);
+            PartSystemPrompt, part, Temperature, null, cancellationToken);
 
         if (outcome.Text is not null || outcome.Failure is not WinAiFailure.PromptTooLong || depth >= MaxSplitDepth)
             return outcome;
@@ -194,7 +193,7 @@ internal static class WinAiMeetingNotes
         StringBuilder combined = new();
         foreach (string half in halves)
         {
-            WinAiGenerationResult piece = await SummarizePartAsync(model, half, depth + 1, cancellationToken);
+            WinAiGenerationResult piece = await SummarizePartAsync(half, depth + 1, cancellationToken);
             if (piece.Text is null)
                 return piece;
 
@@ -209,14 +208,13 @@ internal static class WinAiMeetingNotes
     /// half is written up separately and the two write-ups are merged.
     /// </summary>
     private static async Task<WinAiGenerationResult> MergeAsync(
-        LanguageModel model,
         string[] sections,
         CancellationToken cancellationToken)
     {
         string joined = string.Join("\n\n", sections);
 
         WinAiGenerationResult merged = await WinAiLanguageModel.GenerateAsync(
-            model, MergeSystemPrompt, joined, Temperature, null, cancellationToken);
+            MergeSystemPrompt, joined, Temperature, null, cancellationToken);
 
         if (merged.Text is not null || merged.Failure is not WinAiFailure.PromptTooLong)
             return merged;
@@ -228,15 +226,15 @@ internal static class WinAiMeetingNotes
 
         int middle = sections.Length / 2;
 
-        WinAiGenerationResult first = await MergeAsync(model, sections[..middle], cancellationToken);
+        WinAiGenerationResult first = await MergeAsync(sections[..middle], cancellationToken);
         if (first.Text is null)
             return first;
 
-        WinAiGenerationResult second = await MergeAsync(model, sections[middle..], cancellationToken);
+        WinAiGenerationResult second = await MergeAsync(sections[middle..], cancellationToken);
         if (second.Text is null)
             return second;
 
-        return await MergeAsync(model, [first.Text, second.Text], cancellationToken);
+        return await MergeAsync([first.Text, second.Text], cancellationToken);
     }
 
     /// <summary>

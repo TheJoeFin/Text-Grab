@@ -168,8 +168,8 @@ internal static partial class WinAiTranslator
 
         try
         {
-            (LanguageModel? model, string? error) = await WinAiLanguageModel.GetModelAsync(cancellationToken);
-            if (model is null)
+            (bool ready, string? error) = await WinAiLanguageModel.EnsureModelAsync(cancellationToken);
+            if (!ready)
                 return new TranslationResult(textToTranslate, TranslationFailure.ModelNotReady, error);
 
             string systemPrompt = SystemPromptFor(targetLanguage);
@@ -179,7 +179,7 @@ internal static partial class WinAiTranslator
             using (await WinAiLanguageModel.AcquireInferenceAsync(cancellationToken))
             {
                 WinAiGenerationResult outcome = await TranslateBlockAsync(
-                    model, systemPrompt, textToTranslate, onPartial, cancellationToken);
+                    systemPrompt, textToTranslate, onPartial, cancellationToken);
 
                 if (outcome.Text is null)
                     return new TranslationResult(
@@ -209,14 +209,13 @@ internal static partial class WinAiTranslator
     /// back so the caller can report it.
     /// </summary>
     private static async Task<WinAiGenerationResult> TranslateBlockAsync(
-        LanguageModel model,
         string systemPrompt,
         string text,
         Action<string>? onPartial,
         CancellationToken cancellationToken)
     {
         WinAiGenerationResult outcome = await WinAiLanguageModel.GenerateAsync(
-            model, systemPrompt, text, Temperature, onPartial, cancellationToken);
+            systemPrompt, text, Temperature, onPartial, cancellationToken);
         if (outcome.Text is not null || outcome.Failure is not WinAiFailure.PromptTooLong)
             return outcome;
 
@@ -228,7 +227,7 @@ internal static partial class WinAiTranslator
         StringBuilder combined = new();
         foreach (string piece in pieces)
         {
-            WinAiGenerationResult part = await TranslateBlockAsync(model, systemPrompt, piece, onPartial, cancellationToken);
+            WinAiGenerationResult part = await TranslateBlockAsync(systemPrompt, piece, onPartial, cancellationToken);
             if (part.Text is null)
                 return part;
 
@@ -315,8 +314,8 @@ internal static partial class WinAiTranslator
 
         try
         {
-            (LanguageModel? model, string? error) = await WinAiLanguageModel.GetModelAsync(cancellationToken);
-            if (model is null)
+            (bool ready, string? error) = await WinAiLanguageModel.EnsureModelAsync(cancellationToken);
+            if (!ready)
                 return new BatchTranslationResult(results, 0, TranslationFailure.ModelNotReady, error);
 
             string systemPrompt =
@@ -337,7 +336,7 @@ internal static partial class WinAiTranslator
                     cancellationToken.ThrowIfCancellationRequested();
 
                     WinAiGenerationResult outcome = await TranslateBatchChunkAsync(
-                        model, systemPrompt, distinct, batch, byText, results, CountAndReport, cancellationToken);
+                        systemPrompt, distinct, batch, byText, results, CountAndReport, cancellationToken);
 
                     if (outcome.Text is null)
                         lastFailure = outcome;
@@ -397,7 +396,6 @@ internal static partial class WinAiTranslator
     }
 
     private static async Task<WinAiGenerationResult> TranslateBatchChunkAsync(
-        LanguageModel model,
         string systemPrompt,
         List<string> distinct,
         List<int> batch,
@@ -429,7 +427,7 @@ internal static partial class WinAiTranslator
         }
 
         WinAiGenerationResult outcome = await WinAiLanguageModel.GenerateAsync(
-            model, systemPrompt, promptBuilder.ToString(), Temperature, OnDelta, cancellationToken);
+            systemPrompt, promptBuilder.ToString(), Temperature, OnDelta, cancellationToken);
 
         if (outcome.Text is null)
         {
@@ -440,9 +438,9 @@ internal static partial class WinAiTranslator
             int middle = batch.Count / 2;
 
             WinAiGenerationResult first = await TranslateBatchChunkAsync(
-                model, systemPrompt, distinct, [.. batch[..middle]], byText, results, onItemTranslated, cancellationToken);
+                systemPrompt, distinct, [.. batch[..middle]], byText, results, onItemTranslated, cancellationToken);
             WinAiGenerationResult second = await TranslateBatchChunkAsync(
-                model, systemPrompt, distinct, [.. batch[middle..]], byText, results, onItemTranslated, cancellationToken);
+                systemPrompt, distinct, [.. batch[middle..]], byText, results, onItemTranslated, cancellationToken);
 
             return first.Text is null ? first : second;
         }
