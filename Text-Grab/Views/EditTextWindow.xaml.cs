@@ -6894,7 +6894,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
         _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
 
-        SetLiveTranscriptionUi(true, _liveCaptureSource == LiveCaptureSource.SystemAudio ? "Starting (system)…" : "Starting…");
+        SetLiveTranscriptionUi(true, _liveCaptureSource switch
+        {
+            LiveCaptureSource.SystemAudio => "Starting (system)…",
+            LiveCaptureSource.MicrophoneAndSystemAudio => "Starting (mic + system)…",
+            _ => "Starting…",
+        });
 
         bool started;
         try
@@ -6916,9 +6921,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (LiveTranscriptionToggleButton.IsChecked is true)
                 LiveTranscriptionToggleButton.IsChecked = false;
 
-            string reason = _liveCaptureSource == LiveCaptureSource.SystemAudio
-                ? "Couldn't capture system audio. Make sure a playback device is active."
-                : "Couldn't start microphone capture. Make sure a microphone is connected and that Text Grab has microphone access in Windows privacy settings.";
+            string reason = _liveCaptureSource switch
+            {
+                LiveCaptureSource.SystemAudio => "Couldn't capture system audio. Make sure a playback device is active.",
+                LiveCaptureSource.MicrophoneAndSystemAudio => "Couldn't start microphone and system audio capture. Make sure a microphone is connected, Text Grab has microphone access in Windows privacy settings, and a playback device is active.",
+                _ => "Couldn't start microphone capture. Make sure a microphone is connected and that Text Grab has microphone access in Windows privacy settings.",
+            };
             await new Wpf.Ui.Controls.MessageBox
             {
                 Title = "Couldn't Start Transcription",
@@ -6958,8 +6966,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _liveCaptureSource = selectedSource;
         LiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
         LiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
+        LiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
         CaptureLiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
         CaptureLiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
+        CaptureLiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
 
         // If a session is already running, restart it on the newly chosen source.
         if (LiveTranscriptionToggleButton.IsChecked is true)
@@ -7028,18 +7038,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void SetLiveTranscriptionUi(bool active, string? label = null)
     {
         bool systemAudio = _liveCaptureSource == LiveCaptureSource.SystemAudio;
+        bool both = _liveCaptureSource == LiveCaptureSource.MicrophoneAndSystemAudio;
         CaptureTranscribeAudioMenuItem.IsChecked = active;
 
         if (label is not null)
             LiveTranscriptionLabel.Text = label;
         else if (active)
-            LiveTranscriptionLabel.Text = systemAudio ? "Listening (system)…" : "Listening…";
+            LiveTranscriptionLabel.Text = both ? "Listening (mic + system)…" : systemAudio ? "Listening (system)…" : "Listening…";
         else
-            LiveTranscriptionLabel.Text = systemAudio ? "Transcribe (system)" : "Transcribe";
+            LiveTranscriptionLabel.Text = both ? "Transcribe (mic + system)" : systemAudio ? "Transcribe (system)" : "Transcribe";
 
-        // Speaker icon for system audio, mic icon for microphone; pulse variant while active.
-        LiveTranscriptionIcon.Symbol = systemAudio
-            ? (active ? SymbolRegular.Speaker224 : SymbolRegular.Speaker224)
+        // Speaker icon for system audio, mic icon for microphone (and mic+system); pulse variant while active.
+        LiveTranscriptionIcon.Symbol = systemAudio && !both
+            ? SymbolRegular.Speaker224
             : (active ? SymbolRegular.MicPulse24 : SymbolRegular.Mic24);
 
         if (active)

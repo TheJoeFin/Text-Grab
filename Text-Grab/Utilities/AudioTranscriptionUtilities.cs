@@ -73,8 +73,13 @@ public static class AudioTranscriptionUtilities
     /// <summary>The transcription model currently selected in settings (defaults to multilingual base).</summary>
     public static WhisperModelChoice CurrentModelChoice => WhisperModelInfo.Parse(AppUtilities.TextGrabSettings.AudioTranscriptionModel);
 
-    private static string ModelPathFor(WhisperModelChoice choice) =>
-        Path.Combine(ModelDirectory, $"ggml-{WhisperModelInfo.GgmlTypeFor(choice).ToString().ToLowerInvariant()}.bin");
+    private static string ModelPathFor(WhisperModelChoice choice)
+    {
+        string typeName = WhisperModelInfo.GgmlTypeFor(choice).ToString().ToLowerInvariant();
+        QuantizationType quantization = WhisperModelInfo.QuantizationFor(choice);
+        string suffix = quantization == QuantizationType.NoQuantization ? string.Empty : $"-{quantization.ToString().ToLowerInvariant()}";
+        return Path.Combine(ModelDirectory, $"ggml-{typeName}{suffix}.bin");
+    }
 
     private static string VadModelPath => Path.Combine(ModelDirectory, "ggml-silero-vad-v5.bin");
 
@@ -111,13 +116,14 @@ public static class AudioTranscriptionUtilities
 
         Directory.CreateDirectory(ModelDirectory);
         GgmlType ggmlType = WhisperModelInfo.GgmlTypeFor(choice);
-        AudioDebugLog.Write($"EnsureModelDownloadedAsync: downloading Whisper '{ggmlType}' model to {modelPath}");
+        QuantizationType quantization = WhisperModelInfo.QuantizationFor(choice);
+        AudioDebugLog.Write($"EnsureModelDownloadedAsync: downloading Whisper '{ggmlType}' ({quantization}) model to {modelPath}");
         progress?.Report($"Downloading speech model ({WhisperModelInfo.DisplayName(choice)}, first run)…");
 
         string tempPath = modelPath + ".download";
         try
         {
-            using (Stream modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType).ConfigureAwait(false))
+            using (Stream modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType, quantization, cancellationToken).ConfigureAwait(false))
             using (FileStream fileWriter = File.Create(tempPath))
                 await modelStream.CopyToAsync(fileWriter, cancellationToken).ConfigureAwait(false);
 
@@ -424,6 +430,15 @@ internal static class WhisperModelInfo
         _ => "auto",
     };
 
+    // Q5_0 keeps the small English-only models fast and cheap to load with negligible WER impact.
+    // Multilingual models use the near-lossless Q8_0 instead, since quantization hurts accuracy more
+    // on the less-represented languages those models exist to cover.
+    public static QuantizationType QuantizationFor(WhisperModelChoice choice) => choice switch
+    {
+        WhisperModelChoice.TinyEnglish or WhisperModelChoice.BaseEnglish => QuantizationType.Q5_0,
+        _ => QuantizationType.Q8_0,
+    };
+
     public static string DisplayName(WhisperModelChoice choice) => choice switch
     {
         WhisperModelChoice.TinyEnglish => "Fastest — English",
@@ -441,32 +456,73 @@ public enum LiveCaptureSource
 
     /// <summary>System output ("what you hear") via WASAPI loopback on the default render device.</summary>
     SystemAudio,
+
+    /// <summary>Both the microphone and system output, mixed into a single stream before transcription.</summary>
+    MicrophoneAndSystemAudio,
 }
 
 /// <summary>
-/// Near-live transcription with Whisper from either the microphone or system output (WASAPI
-/// loopback), gated by Silero voice-activity detection. Instead of transcribing fixed time windows
-/// (which waste compute on silence and cut words mid-phrase), it buffers audio, runs cheap VAD on a
-/// short cadence to find speech regions, and only sends a region to Whisper once it's complete
-/// (trailing silence detected). Each completed utterance raises <see cref="PhraseRecognized"/>.
-/// Events fire on background threads; subscribers must marshal to their UI thread.
+/// Near-live transcription with Whisper from the microphone, system output (WASAPI loopback), or
+/// both at once (mixed into a single stream), gated by Silero voice-activity detection. Instead of
+/// transcribing fixed time windows (which waste compute on silence and cut words mid-phrase), it
+/// buffers audio, runs cheap VAD on a short cadence to find speech regions, and only sends a region
+/// to Whisper once it's complete (trailing silence detected). Each completed utterance raises
+/// <see cref="PhraseRecognized"/>. Events fire on background threads; subscribers must marshal to
+/// their UI thread.
 /// </summary>
 public sealed class LiveAudioTranscriber : IDisposable
 {
     private const int SampleRate = 16000;
-    private const int TimerIntervalMs = 500;
-    private const double MinAudioSeconds = 0.6;         // don't bother running VAD on less than this
-    private const double CompletionSilenceSeconds = 0.4; // trailing silence that marks an utterance done
+    private const int TimerIntervalMs = 200;
+    private const double MinAudioSeconds = 0.4;         // don't bother running VAD on less than this
+    private const double CompletionSilenceSeconds = 0.25; // trailing silence that marks an utterance done
     private const double MaxUtteranceSeconds = 20.0;     // hard cap so a long monologue still flushes
 
-    private IWaveIn? _capture;
-    private WaveFormat? _sourceFormat;
+    /// <summary>
+    /// A single capture device feeding this transcriber (microphone or system-audio loopback), with
+    /// its own raw-PCM buffer so concurrent sources never share captured bytes.
+    /// </summary>
+    private sealed class CaptureChannel
+    {
+        public IWaveIn Capture { get; }
+        public WaveFormat SourceFormat { get; }
+        public MemoryStream PcmBuffer { get; } = new();
+        public object BufferLock { get; } = new();
+        private readonly EventHandler<WaveInEventArgs> _dataAvailableHandler;
+
+        public CaptureChannel(IWaveIn capture)
+        {
+            Capture = capture;
+            SourceFormat = capture.WaveFormat;
+            _dataAvailableHandler = (_, e) =>
+            {
+                lock (BufferLock)
+                    PcmBuffer.Write(e.Buffer, 0, e.BytesRecorded);
+            };
+            Capture.DataAvailable += _dataAvailableHandler;
+        }
+
+        public void Dispose()
+        {
+            Capture.DataAvailable -= _dataAvailableHandler;
+            try { Capture.Dispose(); } catch { }
+        }
+    }
+
+    private readonly List<CaptureChannel> _channels = new();
     private WhisperFactory? _factory;
     private WhisperProcessor? _processor;
     private WhisperVadProcessor? _vadProcessor;
-    private readonly MemoryStream _pcmBuffer = new();
-    private readonly object _bufferLock = new();
     private readonly SemaphoreSlim _processingGate = new(1, 1);
+
+    // Serializes StartAsync/StopAsync so a restart (e.g. changing the model or capture source while a
+    // session is live) can never overlap a start with an in-flight stop. Without this, a caller that
+    // fires Stop() (fire-and-forget) and then immediately awaits StartAsync() — as the source/model
+    // menu handlers used to — could race: the new session's capture channels get added to the same
+    // list the old session's Cleanup() is disposing/clearing on a background thread, corrupting shared
+    // state and crashing the app. With the lock, StartAsync simply waits for the prior StopAsync to
+    // finish flushing and cleaning up before building the new session.
+    private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
     private System.Timers.Timer? _chunkTimer;
     private volatile bool _isRunning;
     private bool _disposed;
@@ -487,14 +543,21 @@ public sealed class LiveAudioTranscriber : IDisposable
     public async Task<bool> StartAsync(LiveCaptureSource source = LiveCaptureSource.Microphone)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_isRunning)
-            return true;
 
-        Source = source;
-
+        // Waits out any in-flight StopAsync (e.g. a restart triggered by a model/source change) so a
+        // new session never starts while the previous one is still flushing/cleaning up.
+        await _lifecycleLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (source == LiveCaptureSource.Microphone && WaveInEvent.DeviceCount <= 0)
+            if (_isRunning)
+                return true;
+
+            Source = source;
+
+            bool wantsMic = source is LiveCaptureSource.Microphone or LiveCaptureSource.MicrophoneAndSystemAudio;
+            bool wantsSystem = source is LiveCaptureSource.SystemAudio or LiveCaptureSource.MicrophoneAndSystemAudio;
+
+            if (wantsMic && WaveInEvent.DeviceCount <= 0)
             {
                 AudioDebugLog.Write("LiveAudioTranscriber: no microphone capture device found");
                 return false;
@@ -519,15 +582,18 @@ public sealed class LiveAudioTranscriber : IDisposable
 
             // Microphone can be forced to 16 kHz mono (WinMM converts); loopback yields the render
             // device's mix format (usually 32-bit float stereo) which we resample when processing.
-            _capture = source == LiveCaptureSource.SystemAudio
-                ? new WasapiLoopbackCapture()
-                : new WaveInEvent { WaveFormat = new WaveFormat(16000, 16, 1), BufferMilliseconds = 100 };
+            // Each source gets its own channel/buffer; when both are requested they're captured
+            // independently and mixed down to one stream per processing pass (see MixChannels).
+            if (wantsMic)
+                _channels.Add(new CaptureChannel(new WaveInEvent { WaveFormat = new WaveFormat(16000, 16, 1), BufferMilliseconds = 100 }));
+            if (wantsSystem)
+                _channels.Add(new CaptureChannel(new WasapiLoopbackCapture()));
 
-            _sourceFormat = _capture.WaveFormat;
-            AudioDebugLog.Write($"LiveAudioTranscriber: source={source} model={choice} format={_sourceFormat.Encoding} {_sourceFormat.SampleRate}Hz {_sourceFormat.Channels}ch {_sourceFormat.BitsPerSample}bit");
+            foreach (CaptureChannel channel in _channels)
+                AudioDebugLog.Write($"LiveAudioTranscriber: source={source} model={choice} format={channel.SourceFormat.Encoding} {channel.SourceFormat.SampleRate}Hz {channel.SourceFormat.Channels}ch {channel.SourceFormat.BitsPerSample}bit");
 
-            _capture.DataAvailable += Capture_DataAvailable;
-            _capture.StartRecording();
+            foreach (CaptureChannel channel in _channels)
+                channel.Capture.StartRecording();
 
             _chunkTimer = new System.Timers.Timer(TimerIntervalMs) { AutoReset = true };
             _chunkTimer.Elapsed += async (_, _) => await ProcessBufferedChunkAsync().ConfigureAwait(false);
@@ -543,36 +609,69 @@ public sealed class LiveAudioTranscriber : IDisposable
             Cleanup();
             return false;
         }
+        finally
+        {
+            _lifecycleLock.Release();
+        }
     }
 
     /// <summary>
     /// Stops capturing, flushes and transcribes any remaining buffered speech, then releases
-    /// resources. Awaitable so a restart (source/model change) can wait for a clean teardown.
+    /// resources. Awaitable so a restart (source/model change) can wait for a clean teardown. Holds
+    /// the same lifecycle lock as <see cref="StartAsync"/>, so a start already waiting on this stop
+    /// resumes only once the flush/cleanup below has fully finished.
     /// </summary>
     public async Task StopAsync()
     {
-        if (!_isRunning && _capture is null)
-            return;
+        await _lifecycleLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (!_isRunning && _channels.Count == 0)
+                return;
 
-        _isRunning = false;
-        _chunkTimer?.Stop();
+            _isRunning = false;
+            _chunkTimer?.Stop();
 
-        try { _capture?.StopRecording(); } catch { }
+            foreach (CaptureChannel channel in _channels)
+                try { channel.Capture.StopRecording(); } catch { }
 
-        // Flush whatever remains (this waits for any in-flight pass), then clean up.
-        try { await ProcessBufferedChunkAsync(flush: true).ConfigureAwait(false); } catch { }
+            // Flush whatever remains (this waits for any in-flight pass), then clean up.
+            try { await ProcessBufferedChunkAsync(flush: true).ConfigureAwait(false); } catch { }
 
-        Cleanup();
-        AudioDebugLog.Write("LiveAudioTranscriber: stopped");
+            Cleanup();
+            AudioDebugLog.Write("LiveAudioTranscriber: stopped");
+        }
+        finally
+        {
+            _lifecycleLock.Release();
+        }
     }
 
     /// <summary>Fire-and-forget stop for callers that can't await (see <see cref="StopAsync"/>).</summary>
     public void Stop() => _ = StopAsync();
 
-    private void Capture_DataAvailable(object? sender, WaveInEventArgs e)
+    /// <summary>
+    /// Sums same-length-padded per-channel samples into one stream, clamping to [-1, 1] so two loud
+    /// sources can't clip beyond Whisper's expected range. A single channel is returned unchanged.
+    /// </summary>
+    private static float[] MixChannels(List<float[]> perChannelSamples)
     {
-        lock (_bufferLock)
-            _pcmBuffer.Write(e.Buffer, 0, e.BytesRecorded);
+        if (perChannelSamples.Count == 1)
+            return perChannelSamples[0];
+
+        int length = 0;
+        foreach (float[] samples in perChannelSamples)
+            length = Math.Max(length, samples.Length);
+
+        float[] mixed = new float[length];
+        foreach (float[] samples in perChannelSamples)
+            for (int i = 0; i < samples.Length; i++)
+                mixed[i] += samples[i];
+
+        for (int i = 0; i < mixed.Length; i++)
+            mixed[i] = Math.Clamp(mixed[i], -1f, 1f);
+
+        return mixed;
     }
 
     /// <summary>
@@ -589,22 +688,33 @@ public sealed class LiveAudioTranscriber : IDisposable
 
         try
         {
-            WaveFormat? sourceFormat = _sourceFormat;
             WhisperProcessor? processor = _processor;
             WhisperVadProcessor? vad = _vadProcessor;
-            if (sourceFormat is null || processor is null || vad is null)
+            if (processor is null || vad is null || _channels.Count == 0)
                 return;
 
             // Snapshot without clearing — audio keeps arriving while we work; we trim precisely later.
-            byte[] raw;
-            lock (_bufferLock)
+            List<float[]> perChannelSamples = new(_channels.Count);
+            bool anyData = false;
+            foreach (CaptureChannel channel in _channels)
             {
-                if (_pcmBuffer.Length == 0)
-                    return;
-                raw = _pcmBuffer.ToArray();
+                byte[] raw;
+                lock (channel.BufferLock)
+                {
+                    if (channel.PcmBuffer.Length == 0)
+                    {
+                        perChannelSamples.Add(Array.Empty<float>());
+                        continue;
+                    }
+                    raw = channel.PcmBuffer.ToArray();
+                }
+                anyData = true;
+                perChannelSamples.Add(AudioTranscriptionUtilities.ConvertToSamples16kMono(raw, raw.Length, channel.SourceFormat));
             }
+            if (!anyData)
+                return;
 
-            float[] samples = AudioTranscriptionUtilities.ConvertToSamples16kMono(raw, raw.Length, sourceFormat);
+            float[] samples = MixChannels(perChannelSamples);
             double totalSeconds = samples.Length / (double)SampleRate;
             if (!flush && totalSeconds < MinAudioSeconds)
                 return;
@@ -613,7 +723,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             if (speech.Count == 0)
             {
                 // Only silence so far: keep just the tail so the buffer doesn't grow during quiet.
-                TrimBufferFront(totalSeconds - 0.5, sourceFormat);
+                TrimAllChannelsFront(totalSeconds - 0.5);
                 return;
             }
 
@@ -649,7 +759,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             }
 
             if (cutSeconds > 0)
-                TrimBufferFront(cutSeconds, sourceFormat);
+                TrimAllChannelsFront(cutSeconds);
 
             if (phrase.Length > 0)
                 PhraseRecognized?.Invoke(this, phrase.ToString());
@@ -665,28 +775,33 @@ public sealed class LiveAudioTranscriber : IDisposable
     }
 
     /// <summary>
-    /// Drops the first <paramref name="seconds"/> of buffered audio (rounded to a whole sample frame).
-    /// Only the consumed prefix is removed, so audio captured during processing is preserved.
+    /// Drops the first <paramref name="seconds"/> of buffered audio (rounded to a whole sample frame)
+    /// from every capture channel. Only the consumed prefix is removed, so audio captured during
+    /// processing is preserved. Each channel is trimmed using its own format, but by the same real-time
+    /// duration, so mixed channels stay in sync.
     /// </summary>
-    private void TrimBufferFront(double seconds, WaveFormat sourceFormat)
+    private void TrimAllChannelsFront(double seconds)
     {
         if (seconds <= 0)
             return;
 
-        int bytesToRemove = (int)(seconds * sourceFormat.AverageBytesPerSecond);
-        int blockAlign = sourceFormat.BlockAlign;
-        if (blockAlign > 0)
-            bytesToRemove -= bytesToRemove % blockAlign;
-        if (bytesToRemove <= 0)
-            return;
-
-        lock (_bufferLock)
+        foreach (CaptureChannel channel in _channels)
         {
-            byte[] current = _pcmBuffer.ToArray();
-            int remove = Math.Min(bytesToRemove, current.Length);
-            _pcmBuffer.SetLength(0);
-            if (current.Length > remove)
-                _pcmBuffer.Write(current, remove, current.Length - remove);
+            int bytesToRemove = (int)(seconds * channel.SourceFormat.AverageBytesPerSecond);
+            int blockAlign = channel.SourceFormat.BlockAlign;
+            if (blockAlign > 0)
+                bytesToRemove -= bytesToRemove % blockAlign;
+            if (bytesToRemove <= 0)
+                continue;
+
+            lock (channel.BufferLock)
+            {
+                byte[] current = channel.PcmBuffer.ToArray();
+                int remove = Math.Min(bytesToRemove, current.Length);
+                channel.PcmBuffer.SetLength(0);
+                if (current.Length > remove)
+                    channel.PcmBuffer.Write(current, remove, current.Length - remove);
+            }
         }
     }
 
@@ -699,14 +814,9 @@ public sealed class LiveAudioTranscriber : IDisposable
             _chunkTimer = null;
         }
 
-        if (_capture is not null)
-        {
-            _capture.DataAvailable -= Capture_DataAvailable;
-            try { _capture.Dispose(); } catch { }
-            _capture = null;
-        }
-
-        _sourceFormat = null;
+        foreach (CaptureChannel channel in _channels)
+            channel.Dispose();
+        _channels.Clear();
 
         if (_processor is not null)
         {
@@ -722,9 +832,6 @@ public sealed class LiveAudioTranscriber : IDisposable
 
         // _factory / VAD factory are shared and owned by AudioTranscriptionUtilities; drop references only.
         _factory = null;
-
-        lock (_bufferLock)
-            _pcmBuffer.SetLength(0);
     }
 
     public void Dispose()

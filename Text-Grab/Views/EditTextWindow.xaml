@@ -650,6 +650,12 @@
                             Header="From System Audio (what you hear)"
                             IsCheckable="True"
                             Tag="SystemAudio" />
+                        <MenuItem
+                            x:Name="CaptureLiveSourceBothMenuItem"
+                            Click="LiveSourceMenuItem_Click"
+                            Header="From Microphone and System Audio"
+                            IsCheckable="True"
+                            Tag="MicrophoneAndSystemAudio" />
                         <Separator />
                         <MenuItem Header="Transcription model">
                             <MenuItem
@@ -1269,6 +1275,12 @@
                                     Header="From System Audio (what you hear)"
                                     IsCheckable="True"
                                     Tag="SystemAudio" />
+                                <MenuItem
+                                    x:Name="LiveSourceBothMenuItem"
+                                    Click="LiveSourceMenuItem_Click"
+                                    Header="From Microphone and System Audio"
+                                    IsCheckable="True"
+                                    Tag="MicrophoneAndSystemAudio" />
                                 <Separator />
                                 <MenuItem Header="Transcription model">
                                     <MenuItem
