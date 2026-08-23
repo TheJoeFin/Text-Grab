@@ -33,12 +33,33 @@ public static class GrabTemplateManager
 
     private const string TemplatesFileName = "GrabTemplates.json";
 
+    // In-memory cache of the resolved template list. GetAllTemplates() used to hit disk
+    // (and potentially Settings.Save(), which is slow) on every call — including every time
+    // a menu that lists templates (e.g. the EditTextWindow "Capture" menu) was opened. Cached
+    // here instead and only refreshed by writes that go through this class.
+    private static List<GrabTemplate>? _cachedTemplates;
+
     // Allow tests to override the file path.
     // TODO: If more test seams are needed, consider consolidating these into a small
     // options/config object instead of individual static properties.
-    internal static string? TestFilePath { get; set; }
+    private static string? _testFilePath;
+    internal static string? TestFilePath
+    {
+        get => _testFilePath;
+        set { _testFilePath = value; InvalidateCache(); }
+    }
+
     internal static string? TestImagesFolderPath { get; set; }
-    internal static bool? TestPreferFileBackedMode { get; set; }
+
+    private static bool? _testPreferFileBackedMode;
+    internal static bool? TestPreferFileBackedMode
+    {
+        get => _testPreferFileBackedMode;
+        set { _testPreferFileBackedMode = value; InvalidateCache(); }
+    }
+
+    /// <summary>Drops the in-memory template cache so the next read re-resolves from disk/settings.</summary>
+    internal static void InvalidateCache() => _cachedTemplates = null;
 
     private static bool PreferFileBackedTemplates =>
         TestPreferFileBackedMode ?? AppUtilities.TextGrabSettingsService.IsFileBackedManagedSettingsEnabled;
@@ -131,8 +152,19 @@ public static class GrabTemplateManager
 
     // ── Read ──────────────────────────────────────────────────────────────────
 
-    /// <summary>Returns all saved templates, or an empty list if none exist.</summary>
+    /// <summary>
+    /// Returns all saved templates, or an empty list if none exist. Resolved once per process
+    /// (or since the last write/<see cref="InvalidateCache"/>) and cached; callers get a fresh
+    /// list instance each time so structural edits (add/remove) by one caller can't leak into
+    /// another caller's list before being persisted.
+    /// </summary>
     public static List<GrabTemplate> GetAllTemplates()
+    {
+        _cachedTemplates ??= LoadTemplatesFromStorage();
+        return [.. _cachedTemplates];
+    }
+
+    private static List<GrabTemplate> LoadTemplatesFromStorage()
     {
         try
         {
@@ -173,6 +205,7 @@ public static class GrabTemplateManager
     {
         string json = JsonSerializer.Serialize(templates, JsonOptions);
         SaveTemplatesJson(json);
+        _cachedTemplates = [.. templates];
     }
 
     internal static string GetTemplatesJsonForExport()
