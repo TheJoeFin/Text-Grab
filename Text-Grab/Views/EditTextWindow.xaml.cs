@@ -6691,7 +6691,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.SummarizeParagraph(text));
+            string sourceText = GetSelectedTextOrAllText();
+            string summarizedText = await WindowsAiUtilities.SummarizeParagraph(sourceText);
+            OpenTextInNewEditTextWindow(summarizedText);
         }
         finally
         {
@@ -6703,27 +6705,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading("Writing meeting notes...");
 
-        // Captured from inside the transform so a failure can be reported after the loading state
-        // is cleared, rather than replacing the text with an error message.
         WinAiGenerationResult? failure = null;
 
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(async text =>
-            {
-                // A long transcript is summarized part by part, so say which part is being read.
-                void OnProgress(string stage) => Dispatcher.Invoke(() => SetToLoading(stage));
+            string sourceText = GetSelectedTextOrAllText();
 
-                WinAiGenerationResult result = await WinAiMeetingNotes.SummarizeAsync(text, OnProgress);
+            // A long transcript is summarized part by part, so say which part is being read.
+            void OnProgress(string stage) => Dispatcher.Invoke(() => SetToLoading(stage));
 
-                if (result.Text is null)
-                {
-                    failure = result;
-                    return text;
-                }
+            WinAiGenerationResult result = await WinAiMeetingNotes.SummarizeAsync(sourceText, OnProgress);
 
-                return result.Text;
-            });
+            if (result.Text is null)
+                failure = result;
+            else
+                OpenTextInNewEditTextWindow(result.Text);
         }
         catch (Exception ex)
         {
@@ -6741,6 +6737,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 Title = "Meeting Notes Failed",
                 Content = notesFailure.Message ?? "The text could not be written up as meeting notes.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
+    // Summarize and meeting-notes results open in a new window, leaving the source text untouched.
+    private static void OpenTextInNewEditTextWindow(string text)
+    {
+        EditTextWindow resultWindow = new(text, isEncoded: false);
+
+        try
+        {
+            resultWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            _ = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = ex.Message,
+                Content = "An error occurred while trying to open a new window. Please try again.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
         }
