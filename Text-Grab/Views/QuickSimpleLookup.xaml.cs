@@ -59,6 +59,14 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     public bool IsEditingDataGrid { get; set; } = false;
     public bool IsFromETW { get; set; } = false;
+
+    /// <summary>
+    /// When set, a pick always writes straight into <see cref="DestinationTextBox"/> and closes the
+    /// window, regardless of <c>EditWindowToggleButton</c> — for callers (like the audio hot-words
+    /// picker) that want QSL purely as a value picker, not the ETW insert/clipboard flow.
+    /// </summary>
+    public bool IsPickerMode { get; set; } = false;
+
     public List<LookupItem> ItemsDictionary { get; set; } = [];
 
     #endregion Properties
@@ -569,7 +577,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (stringBuilder.Length > 3 && stringBuilder.ToString().EndsWith("\r\n"))
             stringBuilder.Remove(stringBuilder.Length - 2, 2);
 
-        if (DestinationTextBox is not null && EditWindowToggleButton.IsChecked is true)
+        if (DestinationTextBox is not null && (IsPickerMode || EditWindowToggleButton.IsChecked is true))
         {
             // Do it this way instead of append text because it inserts the text at the cursor
             // Then puts the cursor at the end of the newly added text
