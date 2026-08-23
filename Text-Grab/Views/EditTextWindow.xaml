@@ -775,7 +775,8 @@
                     <MenuItem
                         x:Name="NewWindowFromSelectionMenuItem"
                         Click="NewWindowWithText_Clicked"
-                        Header="New Window with Selected _Text" />
+                        Header="New Window with Selected _Text"
+                        InputGestureText="Ctrl + N" />
                     <MenuItem
                         x:Name="MakeCodeMenuItem"
                         Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
