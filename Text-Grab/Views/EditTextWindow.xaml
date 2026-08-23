@@ -1323,6 +1323,12 @@
                                         IsCheckable="True"
                                         Tag="SmallMultilingual" />
                                 </MenuItem>
+                                <Separator />
+                                <MenuItem
+                                    x:Name="TranscribeJustIconMenuItem"
+                                    Click="TranscribeJustIconMenuItem_Click"
+                                    Header="Just Icon"
+                                    IsCheckable="True" />
                             </ContextMenu>
                         </ToggleButton.ContextMenu>
                         <StackPanel Orientation="Horizontal">

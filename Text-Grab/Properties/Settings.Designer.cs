@@ -790,7 +790,19 @@ namespace Text_Grab.Properties {
                 this["EtwShowTranscribe"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool TranscribeButtonJustIcon {
+            get {
+                return ((bool)(this["TranscribeButtonJustIcon"]));
+            }
+            set {
+                this["TranscribeButtonJustIcon"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]

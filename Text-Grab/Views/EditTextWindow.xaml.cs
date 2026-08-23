@@ -6148,6 +6148,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             TranscriptionOptionsMenuItem.Visibility = Visibility.Visible;
             OpenAudioVideoMenuItem.Visibility = Visibility.Visible;
             SyncTranscriptionModelMenu();
+            TranscribeJustIconMenuItem.IsChecked = DefaultSettings.TranscribeButtonJustIcon;
+            LiveTranscriptionLabel.Visibility = DefaultSettings.TranscribeButtonJustIcon ? Visibility.Collapsed : Visibility.Visible;
         }
 
         // Initialize selectedILanguage with the last used OCR language from settings
@@ -7105,6 +7107,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
             LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new model
         }
+    }
+
+    private void TranscribeJustIconMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool justIcon = TranscribeJustIconMenuItem.IsChecked;
+        DefaultSettings.TranscribeButtonJustIcon = justIcon;
+        DefaultSettings.Save();
+        LiveTranscriptionLabel.Visibility = justIcon ? Visibility.Collapsed : Visibility.Visible;
     }
 
     /// <summary>Reflects the persisted transcription-model choice in the context-menu check marks.</summary>
