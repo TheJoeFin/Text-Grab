@@ -481,6 +481,18 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Color")]
+        public string TrayIconStyle {
+            get {
+                return ((string)(this["TrayIconStyle"]));
+            }
+            set {
+                this["TrayIconStyle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool FsgSendEtwToggle {
             get {
@@ -1186,7 +1198,7 @@ namespace Text_Grab.Properties {
                 this["HdrBorderlessGranted"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -1198,7 +1210,7 @@ namespace Text_Grab.Properties {
                 this["NotifyOnTranscriptionComplete"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
