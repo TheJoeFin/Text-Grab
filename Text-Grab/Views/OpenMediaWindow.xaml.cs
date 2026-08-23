@@ -14,6 +14,8 @@ public partial class OpenMediaWindow : FluentWindow
     {
         InitializeComponent();
         App.SetTheme();
+
+        NotifyOnCompleteToggle.IsChecked = AppUtilities.TextGrabSettings.NotifyOnTranscriptionComplete;
     }
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -71,6 +73,18 @@ public partial class OpenMediaWindow : FluentWindow
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void NotifyOnCompleteToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        AppUtilities.TextGrabSettings.NotifyOnTranscriptionComplete = true;
+        AppUtilities.TextGrabSettings.Save();
+    }
+
+    private void NotifyOnCompleteToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        AppUtilities.TextGrabSettings.NotifyOnTranscriptionComplete = false;
+        AppUtilities.TextGrabSettings.Save();
     }
 
     private async void StartTranscriptionButton_Click(object sender, RoutedEventArgs e)

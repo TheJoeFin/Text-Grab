@@ -134,6 +134,20 @@
                         <ui:SymbolIcon Symbol="List24" />
                     </Button>
                 </Grid>
+
+                <StackPanel
+                    Margin="0,20,0,0"
+                    Orientation="Horizontal">
+                    <ui:ToggleSwitch
+                        x:Name="NotifyOnCompleteToggle"
+                        AutomationProperties.AutomationId="OpenMedia.NotifyOnCompleteToggle"
+                        Checked="NotifyOnCompleteToggle_Checked"
+                        Unchecked="NotifyOnCompleteToggle_Unchecked" />
+                    <TextBlock
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        Text="Show a notification when transcription is done" />
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
 

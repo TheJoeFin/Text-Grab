@@ -1186,5 +1186,17 @@ namespace Text_Grab.Properties {
                 this["HdrBorderlessGranted"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NotifyOnTranscriptionComplete {
+            get {
+                return ((bool)(this["NotifyOnTranscriptionComplete"]));
+            }
+            set {
+                this["NotifyOnTranscriptionComplete"] = value;
+            }
+        }
     }
 }

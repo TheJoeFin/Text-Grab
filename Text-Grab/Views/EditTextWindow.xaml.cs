@@ -3031,6 +3031,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
         }
+        else if (!cancelled && DefaultSettings.NotifyOnTranscriptionComplete)
+        {
+            string fileDescription = multiple
+                ? $"{audioFiles.Count} files"
+                : Path.GetFileName(audioFiles[0]);
+            NotificationUtilities.ShowTranscriptionCompleteToast(fileDescription);
+        }
     }
 
     /// <summary>
