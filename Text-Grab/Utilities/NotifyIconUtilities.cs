@@ -232,6 +232,20 @@ public static class NotifyIconUtilities
         return notifyIconWindow;
     }
 
+    public static void RefreshTrayIconStyle()
+    {
+        // Windows theme changes are observed via a registry watcher that raises its event on a
+        // background thread, but NotifyIcon.Icon is a DependencyProperty owned by the UI thread.
+        System.Windows.Threading.Dispatcher dispatcher = Application.Current.Dispatcher;
+        if (!dispatcher.CheckAccess())
+        {
+            dispatcher.BeginInvoke(RefreshTrayIconStyle);
+            return;
+        }
+
+        GetExistingNotifyIconWindow()?.ApplyTrayIconStyle();
+    }
+
     private static NotifyIconWindow? GetExistingNotifyIconWindow()
     {
         return Application.Current.Windows.OfType<NotifyIconWindow>().FirstOrDefault();
