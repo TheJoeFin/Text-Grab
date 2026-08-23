@@ -2931,8 +2931,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// Transcribes one or more dropped audio files on-device, streaming each Whisper segment into the
     /// editor as it is recognized. The status bar stays non-blocking so the user can cancel; because
     /// every segment is inserted as it arrives, cancelling keeps all text transcribed so far.
+    /// <paramref name="hotWords"/> (if provided) biases Whisper toward names/jargon it might otherwise
+    /// mishear; it applies only to this call, nothing is persisted.
     /// </summary>
-    private async Task TranscribeAudioFilesAsync(IList<string> audioFiles)
+    internal async Task TranscribeAudioFilesAsync(IList<string> audioFiles, string? hotWords = null)
     {
         AudioDebugLog.Write($"TranscribeAudioFilesAsync: START with {audioFiles.Count} file(s). Log: {AudioDebugLog.LogPath}");
 
@@ -2987,7 +2989,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     AppendTranscriptionText($"# {Path.GetFileName(audioFile)}{Environment.NewLine}");
 
                 string transcription = await AudioTranscriptionUtilities.TranscribeAudioFileAsync(
-                    audioFile, statusProgress, segmentProgress, cancellationToken);
+                    audioFile, hotWords, statusProgress, segmentProgress, cancellationToken);
 
                 if (string.IsNullOrWhiteSpace(transcription))
                     AppendTranscriptionText("(no speech recognized)");
@@ -6132,6 +6134,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             CaptureTranscribeAudioMenuItem.Visibility = Visibility.Visible;
             TranscriptionOptionsMenuItem.Visibility = Visibility.Visible;
+            OpenAudioVideoMenuItem.Visibility = Visibility.Visible;
             SyncTranscriptionModelMenu();
         }
 
@@ -7041,6 +7044,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         bool transcribe = CaptureTranscribeAudioMenuItem.IsChecked;
         if (LiveTranscriptionToggleButton.IsChecked != transcribe)
             LiveTranscriptionToggleButton.IsChecked = transcribe;
+    }
+
+    private void OpenAudioVideoMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMediaWindow openMediaWindow = new() { Owner = this };
+        openMediaWindow.Show();
     }
 
     private void LiveSourceMenuItem_Click(object sender, RoutedEventArgs e)

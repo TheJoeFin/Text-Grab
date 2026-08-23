@@ -689,6 +689,12 @@
                                 Tag="SmallMultilingual" />
                         </MenuItem>
                     </MenuItem>
+                    <MenuItem
+                        x:Name="OpenAudioVideoMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.OpenAudioVideo"
+                        Click="OpenAudioVideoMenuItem_Click"
+                        Header="Open _Audio / Video..."
+                        Visibility="Collapsed" />
                     <Separator />
                     <MenuItem
                         x:Name="ListFilesMenuItem"

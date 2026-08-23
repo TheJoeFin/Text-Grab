@@ -1,0 +1,155 @@
+<ui:FluentWindow
+    x:Class="Text_Grab.Views.OpenMediaWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Open Audio / Video"
+    Width="560"
+    Height="660"
+    MinWidth="480"
+    MinHeight="560"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar
+            Title="Open Audio / Video"
+            Height="32"
+            Margin="2,2,2,0"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="16,12,16,8">
+
+                <!--  Only Audio is wired up today. Video is a placeholder for a future, unrelated  -->
+                <!--  feature (frame-based OCR of a video's frames), not audio transcription.  -->
+                <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
+                    <ToggleButton
+                        Padding="14,6"
+                        IsChecked="True"
+                        IsEnabled="False"
+                        Style="{StaticResource ToggleSymbolButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Margin="0,0,6,0" Symbol="MusicNote224" />
+                            <TextBlock Text="Audio" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton
+                        Margin="8,0,0,0"
+                        Padding="14,6"
+                        IsEnabled="False"
+                        Style="{StaticResource ToggleSymbolButton}"
+                        ToolTip="Coming soon">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Margin="0,0,6,0" Symbol="Video24" />
+                            <TextBlock Text="Video" />
+                        </StackPanel>
+                    </ToggleButton>
+                </StackPanel>
+
+                <TextBlock Style="{StaticResource TextHeader}" Text="Audio file" />
+                <StackPanel Margin="0,8,0,4" Orientation="Horizontal">
+                    <ui:TextBox
+                        x:Name="FilePathTextBox"
+                        Width="380"
+                        VerticalContentAlignment="Center"
+                        IsReadOnly="True"
+                        PlaceholderText="No file selected" />
+                    <ui:Button
+                        Margin="8,0,0,0"
+                        Click="BrowseButton_Click"
+                        Content="Browse..."
+                        Icon="{ui:SymbolIcon FolderOpen24}" />
+                </StackPanel>
+
+                <TextBlock
+                    x:Name="FileErrorText"
+                    Margin="0,4,0,0"
+                    TextWrapping="Wrap"
+                    Visibility="Collapsed" />
+
+                <Border
+                    x:Name="FileInfoPanel"
+                    Margin="0,12,0,0"
+                    Padding="12"
+                    Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
+                    CornerRadius="6"
+                    Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock x:Name="FileNameText" FontWeight="Medium" TextWrapping="Wrap" />
+                        <TextBlock x:Name="FileSizeText" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="FileDurationText" Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="FileModelText" Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            Margin="0,8,0,0"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="Longer files and more accurate models take longer to transcribe. Whisper works through the audio in short segments, so text starts appearing in the editor before the whole file is done."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Margin="0,20,0,0" Style="{StaticResource TextHeader}" Text="Hot words" />
+                <TextBlock
+                    Margin="0,4,0,8"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Add names or unusual words the transcription might miss, separated by commas, or pick a saved batch. This applies only to this transcription."
+                    TextWrapping="Wrap" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBox
+                        x:Name="HotWordsTextBox"
+                        Grid.Column="0"
+                        Height="72"
+                        AcceptsReturn="True"
+                        PlaceholderText="e.g. Xochitl, Kubernetes, Tā Moko"
+                        TextWrapping="Wrap"
+                        VerticalScrollBarVisibility="Auto" />
+                    <Button
+                        x:Name="HotWordsLookupButton"
+                        Grid.Column="1"
+                        Width="36"
+                        Height="36"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Top"
+                        AutomationProperties.AutomationId="OpenMedia.HotWordsLookupButton"
+                        Click="HotWordsLookupButton_Click"
+                        Style="{StaticResource SymbolButton}"
+                        ToolTip="Pick from Quick Simple Lookup">
+                        <ui:SymbolIcon Symbol="List24" />
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="16,0,16,16"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <ui:Button Margin="0,0,8,0" Click="CancelButton_Click" Content="Cancel" />
+            <ui:Button
+                x:Name="StartTranscriptionButton"
+                AutomationProperties.AutomationId="OpenMedia.StartTranscriptionButton"
+                Appearance="Primary"
+                Click="StartTranscriptionButton_Click"
+                Content="Start Transcription"
+                IsEnabled="False" />
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>
