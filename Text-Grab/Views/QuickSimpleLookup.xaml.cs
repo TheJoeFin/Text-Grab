@@ -96,9 +96,15 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (cells.FirstOrDefault() is string firstCell)
             newRow.ShortValue = firstCell;
 
+        // CSV rows are written as "ShortValue,LongValue" with no quoting/escaping (see
+        // LookupItem.ToCSVString), so a LongValue that itself contains commas splits into more than
+        // two cells here. Rejoin with the same delimiter to reconstitute the original value instead of
+        // losing the commas (space-joining is still correct for tab-split rows: typed/pasted multi-cell
+        // entries are meant to read as one space-separated phrase, not regain literal tab characters).
+        string joinSeparator = splitChar == ',' ? "," : " ";
         newRow.LongValue = "";
         if (cells.Count > 1 && cells[1] is not null)
-            newRow.LongValue = string.Join(" ", cells.Skip(1).ToArray());
+            newRow.LongValue = string.Join(joinSeparator, cells.Skip(1).ToArray());
 
         newRow.Kind = kind;
         return newRow;
