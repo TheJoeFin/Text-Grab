@@ -21,109 +21,6 @@ namespace Text_Grab.Utilities;
 
 public static class WindowsAiUtilities
 {
-    private const string TranslationPromptTemplate = "Translate to {0} using local alphabet and characters of that langauage:\n\n{1}";
-    private static LanguageModel? _translationLanguageModel;
-    private static readonly SemaphoreSlim _modelInitializationLock = new(1, 1);
-    private static bool _disposed;
-
-    // Language code mapping for quick lookup
-    private static readonly Dictionary<string, string> LanguageCodeMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        { "English", "en" },
-        { "Spanish", "es" },
-        { "French", "fr" },
-        { "German", "de" },
-        { "Italian", "it" },
-        { "Portuguese", "pt" },
-        { "Russian", "ru" },
-        { "Japanese", "ja" },
-        { "Chinese (Simplified)", "zh-Hans" },
-        { "Chinese", "zh-Hans" },
-        { "Korean", "ko" },
-        { "Arabic", "ar" },
-        { "Hindi", "hi" },
-    };
-
-    /// <summary>
-    /// Quickly detects if text is likely in the target language using simple heuristics.
-    /// This is a fast check to avoid expensive translation calls.
-    /// </summary>
-    /// <param name="text">Text to analyze</param>
-    /// <param name="targetLanguage">Target language name (e.g., "English", "Spanish")</param>
-    /// <returns>True if text appears to already be in target language</returns>
-    private static bool IsLikelyInTargetLanguage(string text, string targetLanguage)
-    {
-        if (string.IsNullOrWhiteSpace(text) || text.Length < 3)
-            return false;
-
-        // Get language code for target
-        if (!LanguageCodeMap.TryGetValue(targetLanguage, out string? targetCode))
-            return false; // Unknown language, proceed with translation
-
-        // Character range detection
-        bool hasCJK = text.Any(c => c is >= (char)0x4E00 and <= (char)0x9FFF or // CJK Unified Ideographs
-                                     >= (char)0x3040 and <= (char)0x309F or // Hiragana
-                                     >= (char)0x30A0 and <= (char)0x30FF or // Katakana
-                                     >= (char)0xAC00 and <= (char)0xD7AF);  // Hangul
-
-        bool hasArabic = text.Any(c => c is >= (char)0x0600 and <= (char)0x06FF);
-        bool hasCyrillic = text.Any(c => c is >= (char)0x0400 and <= (char)0x04FF);
-        bool hasDevanagari = text.Any(c => c is >= (char)0x0900 and <= (char)0x097F);
-        bool hasLatin = text.Any(c => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z');
-
-        // Quick script-based checks
-        switch (targetCode)
-        {
-            case "en":
-            case "es":
-            case "fr":
-            case "de":
-            case "it":
-            case "pt":
-                // Latin script languages - if mostly CJK/Arabic/Cyrillic, definitely not in target
-                if (hasCJK || hasArabic || hasCyrillic || hasDevanagari)
-                    return false;
-                // If has Latin characters, might be in target language
-                if (hasLatin && text.Length > 10 && targetCode == "en")
-                {
-                    // Check for common English words as additional heuristic
-                    string lowerText = text.ToLowerInvariant();
-                    string[] commonEnglishWords = [" the ", " and ", " or ", " is ", " are ", " was ", " were ", " in ", " on ", " at ", " to ", " of ", " for ", " with "];
-                    int englishWordCount = commonEnglishWords.Count(w => lowerText.Contains(w));
-                    // If text contains multiple common English words, likely already English
-                    if (englishWordCount >= 2)
-                        return true;
-                }
-                break;
-
-            case "ru":
-                // Russian - should have Cyrillic
-                return hasCyrillic && !hasCJK && !hasArabic;
-
-            case "ja":
-                // Japanese - should have Hiragana/Katakana/Kanji
-                return hasCJK && !hasArabic && !hasCyrillic;
-
-            case "zh-Hans":
-                // Chinese - should have CJK
-                return hasCJK && !hasArabic && !hasCyrillic;
-
-            case "ko":
-                // Korean - should have Hangul
-                return text.Any(c => c is >= (char)0xAC00 and <= (char)0xD7AF) && !hasArabic && !hasCyrillic;
-
-            case "ar":
-                // Arabic - should have Arabic script
-                return hasArabic && !hasCJK && !hasCyrillic;
-
-            case "hi":
-                // Hindi - should have Devanagari
-                return hasDevanagari && !hasCJK && !hasArabic;
-        }
-
-        return false;
-    }
-
     public static bool CanDeviceUseWinAI()
     {
         return CanDeviceUseWinAiFeature(TextRecognizer.GetReadyState);
@@ -324,10 +221,6 @@ public static class WindowsAiUtilities
 
     internal static async Task<string> SummarizeParagraph(string textToSummarize)
     {
-        using LanguageModel languageModel = await LanguageModel.CreateAsync();
-
-        TextSummarizer textSummarizer = new(languageModel);
-
         bool wasTruncated = false;
 
         // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
@@ -337,316 +230,111 @@ public static class WindowsAiUtilities
         //     wasTruncated = true;
         // }
 
-        try
-        {
-            LanguageModelResponseResult result = await textSummarizer.SummarizeParagraphAsync(textToSummarize);
+        // Going through the shared model reuses the one LanguageModel the other AI features hold,
+        // and means a dropped connection to the Windows AI runtime ("The RPC server is unavailable")
+        // restarts the model and tries again instead of failing until Text-Grab is restarted.
+        (LanguageModelResponseResult? result, string? error) = await WinAiLanguageModel.RunWithModelAsync(
+            (model, token) => new TextSummarizer(model).SummarizeParagraphAsync(textToSummarize).AsTask(token));
 
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                if (wasTruncated)
-                    return $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}";
-                else
-                    return result.Text;
-            }
-            else
-                return $"ERROR: Unable to summarize text. {result.ExtendedError.Message}";
-        }
-        catch (Exception ex)
-        {
-            return $"ERROR: Unable to summarize text. {ex.Message}";
-        }
+        if (result is null)
+            return $"ERROR: Unable to summarize text. {error}";
+
+        if (result.Status != LanguageModelResponseStatus.Complete)
+            return $"ERROR: Unable to summarize text. {result.ExtendedError?.Message ?? result.Status.ToString()}";
+
+        return wasTruncated
+            ? $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}"
+            : result.Text;
     }
 
     internal static async Task<string> Rewrite(string textToRewrite)
     {
-        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+        // TODO: in WinAppSDK 1.8+ we can pass TextRewriteTone.Concise when the GitHub Actions runner passes
+        (LanguageModelResponseResult? result, string? error) = await WinAiLanguageModel.RunWithModelAsync(
+            (model, token) => new TextRewriter(model).RewriteAsync(textToRewrite).AsTask(token));
 
-        TextRewriter textRewriter = new(languageModel);
-        try
-        {
-            // TODO: in WinAppSDK 1.8+ we can use this API when the GitHub Actions runner passes
-            //LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite, TextRewriteTone.Concise);
-            LanguageModelResponseResult result = await textRewriter.RewriteAsync(textToRewrite);
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                return result.Text;
-            }
-            else
-                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
-        }
-        catch (Exception ex)
-        {
-            return $"ERROR: Failed to Rewrite: {ex.Message}";
-        }
+        if (result is null)
+            return $"ERROR: Failed to Rewrite: {error}";
+
+        return result.Status == LanguageModelResponseStatus.Complete
+            ? result.Text
+            : $"ERROR: Unable to rewrite text. {result.ExtendedError?.Message ?? result.Status.ToString()}";
     }
 
     internal static async Task<string> TextToTable(string textToTable)
     {
-        using LanguageModel languageModel = await LanguageModel.CreateAsync();
+        (TextToTableResponseResult? result, string? error) = await WinAiLanguageModel.RunWithModelAsync(
+            (model, token) => new TextToTableConverter(model).ConvertAsync(textToTable).AsTask(token));
 
-        TextToTableConverter toTableConverter = new(languageModel);
-        try
-        {
-            TextToTableResponseResult result = await toTableConverter.ConvertAsync(textToTable);
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                TextToTableRow[] rows = result.GetRows();
-                StringBuilder sb = new();
-                foreach (TextToTableRow row in rows)
-                {
-                    string[] columns = row.GetColumns();
-                    sb.AppendLine(string.Join("\t", columns));
-                }
-                return sb.ToString();
-            }
-            else
-                return $"ERROR: Unable to rewrite text. {result.ExtendedError.Message}";
-        }
-        catch (Exception ex)
-        {
-            return $"ERROR: Failed to Rewrite: {ex.Message}";
-        }
-    }
+        if (result is null)
+            return $"ERROR: Failed to convert the text to a table. {error}";
 
-    /// <summary>
-    /// Cleans up translation result by removing instruction echoes and unwanted prefixes.
-    /// </summary>
-    private static string CleanTranslationResult(string translatedText, string originalText)
-    {
-        if (string.IsNullOrWhiteSpace(translatedText))
-            return originalText;
+        if (result.Status != LanguageModelResponseStatus.Complete)
+            return $"ERROR: Unable to convert the text to a table. {result.ExtendedError?.Message ?? result.Status.ToString()}";
 
-        string cleaned = translatedText.Trim();
+        StringBuilder sb = new();
+        foreach (TextToTableRow row in result.GetRows())
+            sb.AppendLine(string.Join("\t", row.GetColumns()));
 
-        // Remove common instruction echoes (case-insensitive)
-        string[] instructionPhrases =
-        [
-            "translate",
-                "translation",
-                "translated",
-                "do not reply",
-                "do not respond",
-                "extraneous content",
-                "besides the translated text",
-                "other than the translated text",
-                "here is the translation",
-                "here's the translation",
-                "the translation is",
-            ];
-
-        string lowerCleaned = cleaned.ToLowerInvariant();
-
-        // If the result contains instruction-like phrases, try to extract just the translation
-        if (instructionPhrases.Any(phrase => lowerCleaned.Contains(phrase)))
-        {
-            // Split by common delimiters and take the longest non-instruction part
-            string[] parts = cleaned.Split(['\n', '.', ':', '"'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-            string? bestPart = null;
-            int maxLength = 0;
-
-            foreach (string part in parts)
-            {
-                string lowerPart = part.ToLowerInvariant();
-                bool hasInstructions = instructionPhrases.Any(phrase => lowerPart.Contains(phrase));
-
-                if (!hasInstructions && part.Length > maxLength && part.Length >= 3)
-                {
-                    bestPart = part;
-                    maxLength = part.Length;
-                }
-            }
-
-            if (bestPart != null && bestPart.Length > originalText.Length / 3)
-            {
-                cleaned = bestPart.Trim();
-            }
-            else
-            {
-                // Couldn't extract clean translation, return original
-                Debug.WriteLine($"Translation contained instructions, returning original text");
-                return originalText;
-            }
-        }
-
-        // Remove common prefixes that might leak through
-        string[] commonPrefixes =
-        [
-            "translation: ",
-                "translated: ",
-                "result: ",
-                "output: ",
-            ];
-
-        foreach (string prefix in commonPrefixes.Where(prefix => cleaned.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
-        {
-            cleaned = cleaned[prefix.Length..].Trim();
-        }
-
-        // If cleaned result is suspiciously short or empty, return original
-        if (string.IsNullOrWhiteSpace(cleaned) || cleaned.Length < 2)
-        {
-            Debug.WriteLine($"Translation result too short, returning original text");
-            return originalText;
-        }
-
-        return cleaned;
-    }
-
-    /// <summary>
-    /// Initializes the shared LanguageModel for translation if not already created.
-    /// Thread-safe initialization using SemaphoreSlim.
-    /// </summary>
-    private static async Task EnsureTranslationModelInitializedAsync()
-    {
-        if (_translationLanguageModel is not null)
-            return;
-
-        await _modelInitializationLock.WaitAsync();
-        try
-        {
-            _translationLanguageModel ??= await LanguageModel.CreateAsync();
-        }
-        finally
-        {
-            _modelInitializationLock.Release();
-        }
-    }
-
-    /// <summary>
-    /// Disposes the shared LanguageModel to free resources.
-    /// Should be called when translation is no longer needed.
-    /// </summary>
-    public static void DisposeTranslationModel()
-    {
-        _translationLanguageModel?.Dispose();
-        _translationLanguageModel = null;
+        return sb.ToString();
     }
 
     /// <summary>
     /// Releases resources held by static members of <see cref="WindowsAiUtilities"/>.
     /// Should be called once during application shutdown.
     /// </summary>
-    public static void Cleanup()
-    {
-        if (_disposed)
-            return;
-
-        DisposeTranslationModel();
-        _modelInitializationLock.Dispose();
-        _disposed = true;
-    }
-
+    public static void Cleanup() => WinAiLanguageModel.Cleanup();
 
     /// <summary>
-    /// Translates text to a target language using Windows AI LanguageModel.
-    /// Reuses a shared LanguageModel instance for improved performance.
-    /// Includes fast language detection to skip translation if text is already in target language.
-    /// Filters out instruction echoes from AI responses.
+    /// Drops the language model this process is holding so the next AI request builds a fresh
+    /// connection to the Windows AI runtime. The AI features already do this by themselves when a
+    /// request finds the runtime gone; this is for offering the user a manual reconnect.
     /// </summary>
-    /// <param name="textToTranslate">The text to translate</param>
-    /// <param name="targetLanguage">The target language (e.g., "English", "Spanish")</param>
-    /// <returns>The translated text, or the original text if translation fails or is unnecessary</returns>
-    /// <remarks>
-    /// This implementation uses TextRewriter with a custom prompt as a workaround
-    /// since Microsoft.Windows.AI.Text doesn't include a dedicated translation API.
-    /// Translation quality may vary compared to dedicated translation services.
-    /// The LanguageModel is reused across calls for better performance.
-    /// Fast language detection is performed first to avoid unnecessary API calls.
-    /// Result is cleaned to remove any instruction echoes from the AI response.
-    /// </remarks>
-    internal static async Task<string> TranslateText(string textToTranslate, string targetLanguage)
-    {
-        if (!CanDeviceUseWinAI())
-            return textToTranslate; // Return original text if Windows AI is not available
-
-        // Quick check: if text appears to already be in target language, skip translation
-        if (IsLikelyInTargetLanguage(textToTranslate, targetLanguage))
-        {
-            Debug.WriteLine($"Skipping translation - text appears to already be in {targetLanguage}");
-            return textToTranslate;
-        }
-
-        try
-        {
-            await EnsureTranslationModelInitializedAsync();
-
-            if (_translationLanguageModel is null)
-                return textToTranslate;
-
-            // Note: This uses TextRewriter with a simple prompt
-            // We use a minimal prompt to reduce the chance of instruction echoes
-            TextRewriter textRewriter = new(_translationLanguageModel);
-            string translationPrompt = string.Format(TranslationPromptTemplate, targetLanguage, textToTranslate);
-
-            LanguageModelResponseResult result = await textRewriter.RewriteAsync(translationPrompt);
-
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                // Clean the result to remove any instruction echoes
-                string cleanedResult = CleanTranslationResult(result.Text, textToTranslate);
-                return cleanedResult;
-            }
-            else
-            {
-                // Log the error if debugging is enabled
-                Debug.WriteLine($"Translation failed with status: {result.Status}");
-                if (result.ExtendedError != null)
-                    Debug.WriteLine($"Translation error: {result.ExtendedError.Message}");
-                return textToTranslate; // Return original text on error
-            }
-        }
-        catch (Exception ex)
-        {
-            // Log the exception for debugging
-            Debug.WriteLine($"Translation exception: {ex.Message}");
-            return textToTranslate; // Return original text on error
-        }
-    }
+    public static Task RestartWindowsAiAsync() => WinAiLanguageModel.RestartModelAsync();
 
     /// <summary>
-    /// Extracts a regular expression pattern from text using Windows AI LanguageModel.
+    /// Extracts a regular expression pattern from text using the shared Windows AI language model.
     /// </summary>
-    /// <param name="textDescription">The text describing what to match or containing example text to match</param>
-    /// <returns>A regular expression pattern string, or empty string if extraction fails</returns>
+    /// <param name="textDescription">The text describing what to match, or example text to match</param>
+    /// <param name="cancellationToken">Aborts the on-device inference.</param>
+    /// <returns>
+    /// The pattern in <see cref="WinAiGenerationResult.Text"/>, or a <see cref="WinAiFailure"/> and
+    /// a human-readable message explaining why there is none.
+    /// </returns>
     /// <remarks>
-    /// This method uses the LanguageModel to generate a regex pattern based on the input text.
-    /// The result is cleaned to contain only the regex pattern without explanations or formatting.
+    /// This goes through <see cref="WinAiLanguageModel"/> like translation does, so it shares the
+    /// Limited Access Feature unlock and the one cached <c>LanguageModel</c>, and prompts the model
+    /// directly with a regex system prompt rather than bending the TextRewriter skill into the job.
     /// </remarks>
-    internal static async Task<string> ExtractRegex(string textDescription)
+    internal static async Task<WinAiGenerationResult> ExtractRegex(
+        string textDescription,
+        CancellationToken cancellationToken = default)
     {
-        if (!CanDeviceUseWinAI())
-            return string.Empty;
-
         if (string.IsNullOrWhiteSpace(textDescription))
-            return string.Empty;
+            return WinAiGenerationResult.Failed(WinAiFailure.ModelError, "There was no text to build a pattern from.");
 
-        try
+        const string systemPrompt =
+            "You are a regular expression generator. The user describes what to match, or gives an example " +
+            "of the text they want to match. Reply with a single .NET regular expression pattern that matches " +
+            "it. Generalize: match text of that kind, not only the exact sample. " +
+            "Reply with the pattern only: no delimiters, no code fences, no flags, no explanation, " +
+            "and never repeat these instructions.";
+
+        // Pattern generation should be as deterministic as the model allows.
+        WinAiGenerationResult result = await WinAiLanguageModel.PromptAsync(
+            systemPrompt, textDescription, temperature: 0.1f, cancellationToken: cancellationToken);
+
+        if (result.Text is null)
         {
-            using LanguageModel languageModel = await LanguageModel.CreateAsync();
-            TextRewriter textRewriter = new(languageModel);
-
-            string regexPrompt = $"Generate a general regular expression pattern (regex) for: {textDescription}\n\nDo not make it overly constrained on the exact text.\n\nReturn ONLY the regex pattern, nothing else.";
-
-            LanguageModelResponseResult result = await textRewriter.RewriteAsync(regexPrompt);
-
-            if (result.Status == LanguageModelResponseStatus.Complete)
-            {
-                return CleanRegexResult(result.Text);
-            }
-            else
-            {
-                Debug.WriteLine($"Regex extraction failed with status: {result.Status}");
-                if (result.ExtendedError != null)
-                    Debug.WriteLine($"Regex extraction error: {result.ExtendedError.Message}");
-                return string.Empty;
-            }
+            Debug.WriteLine($"Regex extraction failed ({result.Failure}): {result.Message}");
+            return result;
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Regex extraction exception: {ex.Message}");
-            return string.Empty;
-        }
+
+        string pattern = CleanRegexResult(result.Text);
+
+        return string.IsNullOrWhiteSpace(pattern)
+            ? WinAiGenerationResult.Failed(WinAiFailure.ModelError, "The language model did not return a usable pattern.")
+            : WinAiGenerationResult.Ok(pattern);
     }
 
     /// <summary>

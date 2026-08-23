@@ -220,11 +220,19 @@ public class PostGrabActionManager
                 break;
 
             case "Translate_Click":
-                if (WindowsAiUtilities.CanDeviceUseWinAI())
-                {
-                    string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
-                    result = await WindowsAiUtilities.TranslateText(text, systemLanguage);
-                }
+                string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
+                TranslationResult translation = await WinAiTranslator.TranslateAsync(text, systemLanguage);
+                result = translation.Text;
+
+                // The grab already happened, so a failure here must be reported or the user just
+                // sees untranslated text with no explanation.
+                if (!translation.Succeeded)
+                    await new Wpf.Ui.Controls.MessageBox
+                    {
+                        Title = translation.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                        Content = translation.Message ?? "The text could not be translated.",
+                        CloseButtonText = "OK"
+                    }.ShowDialogAsync();
                 break;
 
             case "ApplyTemplate_Click":

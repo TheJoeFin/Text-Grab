@@ -5331,6 +5331,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = findAndReplaceCommand.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(findAndReplaceCommand, FindAndReplaceMenuItem_Click));
 
+        RoutedCommand newWindowWithSelectionCommand = new();
+        _ = newWindowWithSelectionCommand.InputGestures.Add(new KeyGesture(Key.N, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(newWindowWithSelectionCommand, NewWindowWithText_Clicked));
+
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
@@ -6687,11 +6691,74 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.SummarizeParagraph(text));
+            string sourceText = GetSelectedTextOrAllText();
+            string summarizedText = await WindowsAiUtilities.SummarizeParagraph(sourceText);
+            OpenTextInNewEditTextWindow(summarizedText);
         }
         finally
         {
             SetToLoaded();
+        }
+    }
+
+    private async void MeetingNotesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SetToLoading("Writing meeting notes...");
+
+        WinAiGenerationResult? failure = null;
+
+        try
+        {
+            string sourceText = GetSelectedTextOrAllText();
+
+            // A long transcript is summarized part by part, so say which part is being read.
+            void OnProgress(string stage) => Dispatcher.Invoke(() => SetToLoading(stage));
+
+            WinAiGenerationResult result = await WinAiMeetingNotes.SummarizeAsync(sourceText, OnProgress);
+
+            if (result.Text is null)
+                failure = result;
+            else
+                OpenTextInNewEditTextWindow(result.Text);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Meeting notes exception: {ex.Message}");
+            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Meeting notes failed: {ex.Message}");
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+
+        if (failure is { } notesFailure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Meeting Notes Failed",
+                Content = notesFailure.Message ?? "The text could not be written up as meeting notes.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
+    // Summarize and meeting-notes results open in a new window, leaving the source text untouched.
+    private static void OpenTextInNewEditTextWindow(string text)
+    {
+        EditTextWindow resultWindow = new(text, isEncoded: false);
+
+        try
+        {
+            resultWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            _ = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = ex.Message,
+                Content = "An error occurred while trying to open a new window. Please try again.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 
@@ -6774,22 +6841,39 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading($"Translating to {targetLanguage}...");
 
+        // Captured from inside the transform so a failure can be reported after the text is applied
+        // instead of silently putting the original text back.
+        TranslationResult? failedResult = null;
+
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.TranslateText(text, targetLanguage));
+            await ApplySelectedTextOrAllTextTransformAsync(async text =>
+            {
+                TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
+
+                if (!result.Succeeded)
+                    failedResult ??= result;
+
+                return result.Text;
+            });
         }
         catch (Exception ex)
         {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Translation Error",
-                Content = $"Translation failed: {ex.Message}",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
+            failedResult = new TranslationResult(string.Empty, TranslationFailure.ModelError, $"Translation failed: {ex.Message}");
         }
         finally
         {
             SetToLoaded();
+        }
+
+        if (failedResult is { } failure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = failure.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                Content = failure.Message ?? "The text could not be translated.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 
@@ -6810,10 +6894,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoading("Extracting RegEx pattern...");
 
-        string regexPattern;
+        WinAiGenerationResult extraction;
         try
         {
-            regexPattern = await WindowsAiUtilities.ExtractRegex(textDescription);
+            extraction = await WindowsAiUtilities.ExtractRegex(textDescription);
         }
         catch (Exception ex)
         {
@@ -6830,12 +6914,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoaded();
 
-        if (string.IsNullOrWhiteSpace(regexPattern))
+        if (extraction.Text is not string regexPattern)
         {
+            // The shared language model reports why it could not answer, so show that instead of a
+            // guess about what went wrong.
             await new Wpf.Ui.Controls.MessageBox
             {
                 Title = "Extraction Failed",
-                Content = "Failed to extract a regex pattern. The AI service may not be available or could not generate a pattern.",
+                Content = extraction.Message ?? "Failed to extract a regex pattern.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
             return;
