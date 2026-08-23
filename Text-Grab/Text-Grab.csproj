@@ -59,6 +59,8 @@
         <None Remove="Images\FSG.png" />
         <None Remove="Images\GF.png" />
         <None Remove="Images\QSL.png" />
+        <None Remove="Images\Select-Black.ico" />
+        <None Remove="Images\Select-White.ico" />
         <None Remove="Images\TealSelect40.png" />
         <None Remove="Images\Text-Grab-Icon.png" />
         <None Remove="Images\Toast.png" />
@@ -147,6 +149,12 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="Images\QSL.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Images\Select-Black.ico">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Images\Select-White.ico">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="Images\TealSelect40.png">
