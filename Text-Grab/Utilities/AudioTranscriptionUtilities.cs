@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -92,6 +93,35 @@ public static class AudioTranscriptionUtilities
             return false;
 
         return AudioExtensions.Contains(Path.GetExtension(path));
+    }
+
+    /// <summary>An <see cref="Microsoft.Win32.OpenFileDialog"/>-compatible filter string for the supported audio/A-V extensions.</summary>
+    public static string GetAudioFileFilter()
+    {
+        string extensions = string.Join(";", AudioExtensions.Select(ext => $"*{ext}"));
+        return $"Audio/video files|{extensions}|All files (*.*)|*.*";
+    }
+
+    /// <summary>Basic file info (name, size, duration) for the "what to expect" panel — no decoding.</summary>
+    internal readonly record struct AudioFileInfo(string FileName, long FileSizeBytes, TimeSpan Duration);
+
+    /// <summary>
+    /// Reads the file size and duration of an audio/A-V file without decoding it, for upfront user
+    /// feedback before transcription starts. Throws if the file doesn't exist or can't be opened by
+    /// Media Foundation (e.g. an unsupported or corrupt format) — callers should show that inline.
+    /// </summary>
+    internal static AudioFileInfo GetAudioFileInfo(string audioFilePath)
+    {
+        if (!File.Exists(audioFilePath))
+            throw new FileNotFoundException("Audio file not found.", audioFilePath);
+
+        long fileSizeBytes = new FileInfo(audioFilePath).Length;
+
+        MediaFoundationApi.Startup();
+        using MediaFoundationReader reader = new(audioFilePath);
+        TimeSpan duration = reader.TotalTime;
+
+        return new AudioFileInfo(Path.GetFileName(audioFilePath), fileSizeBytes, duration);
     }
 
     /// <summary>
@@ -234,8 +264,10 @@ public static class AudioTranscriptionUtilities
     /// segment's text as it becomes available (giving "text as it comes in" for long files). The full
     /// transcript is still returned. Cancellation stops after the current segment; every segment
     /// already surfaced via <paramref name="segmentProgress"/> is preserved by the caller.
+    /// <paramref name="hotWords"/>, if given, is passed to Whisper as an initial prompt so it's biased
+    /// toward names/jargon it might otherwise mishear; it applies only to this call, nothing persists.
     /// </summary>
-    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, CancellationToken cancellationToken = default)
+    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, string? hotWords = null, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, CancellationToken cancellationToken = default)
     {
         AudioDebugLog.Write($"TranscribeAudioFileAsync: START path='{audioFilePath}'");
 
@@ -256,10 +288,16 @@ public static class AudioTranscriptionUtilities
             AudioDebugLog.Write($"TranscribeAudioFileAsync: decoded WAV bytes={wavStream.Length}");
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            await using WhisperProcessor processor = factory.CreateBuilder()
+            WhisperProcessorBuilder processorBuilder = factory.CreateBuilder()
                 .WithLanguage(WhisperModelInfo.LanguageFor(CurrentModelChoice))
-                .WithThreads(Math.Max(1, Environment.ProcessorCount - 1))
-                .Build();
+                .WithThreads(Math.Max(1, Environment.ProcessorCount - 1));
+
+            // CarryInitialPrompt re-applies the hot words to every decode window (not just the first),
+            // so the bias holds across long files instead of fading out after the first segment.
+            if (!string.IsNullOrWhiteSpace(hotWords))
+                processorBuilder = processorBuilder.WithPrompt(hotWords.Trim()).WithCarryInitialPrompt(true);
+
+            await using WhisperProcessor processor = processorBuilder.Build();
 
             StringBuilder builder = new();
             int segmentCount = 0;
