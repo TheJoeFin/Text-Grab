@@ -4,37 +4,33 @@ using System.Linq;
 using System.Threading.Tasks;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
-using Windows.Media.Ocr;
 
 namespace Text_Grab.Utilities;
 
 internal static class CaptureLanguageUtilities
 {
+    /// <summary>
+    /// Builds the language list for capture menus. The UI-automation / Windows AI / plain-OCR
+    /// portion comes from <see cref="LanguageUtilities.GetAllLanguages"/>, which caches those
+    /// checks (each of which can be a genuinely slow WinRT/WinAppSDK probe) instead of redoing
+    /// them on every call — this used to duplicate that work uncached, which is what made menus
+    /// like EditTextWindow's "Capture" menu slow to open, especially in new windows.
+    /// </summary>
     public static async Task<List<ILanguage>> GetCaptureLanguagesAsync(bool includeTesseract)
     {
-        List<ILanguage> languages = [];
-
-        if (AppUtilities.TextGrabSettings.UiAutomationEnabled)
-            languages.Add(new UiAutomationLang());
-
-        if (WindowsAiUtilities.CanDeviceUseWinAI())
-            languages.Add(new WindowsAiLang());
-
-        if (AppUtilities.TextGrabSettings.WindowsAiDescriptionEnabled
-            && WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
-        {
-            languages.Add(new WindowsAiDescriptionLang());
-        }
+        List<ILanguage> languages = [.. LanguageUtilities.GetAllLanguages()];
 
         if (includeTesseract
             && AppUtilities.TextGrabSettings.UseTesseract
             && TesseractHelper.CanLocateTesseractExe())
         {
-            languages.AddRange(await TesseractHelper.TesseractLanguages());
-        }
+            List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
 
-        foreach (Windows.Globalization.Language language in OcrEngine.AvailableRecognizerLanguages)
-            languages.Add(new GlobalLang(language));
+            // Insert before the plain OCR languages (GlobalLang), after the UiAutomation/WindowsAi
+            // pseudo-languages, to preserve the original ordering.
+            int insertIndex = languages.FindIndex(l => l is GlobalLang);
+            languages.InsertRange(insertIndex < 0 ? languages.Count : insertIndex, tesseractLanguages);
+        }
 
         return languages;
     }
