@@ -2685,6 +2685,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         LoadLanguageMenuItems(LanguageMenuItem);
+    }
+
+    private void GrabTemplateMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
         LoadGrabTemplateMenuItems(GrabTemplateMenuItem);
     }
 

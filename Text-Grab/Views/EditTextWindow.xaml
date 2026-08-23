@@ -706,7 +706,10 @@
                         Click="ReadFolderOfImages_Click"
                         Header="_Extract Text from Images in Folder..." />
                     <MenuItem x:Name="LanguageMenuItem" Header="OCR in Language..." />
-                    <MenuItem x:Name="GrabTemplateMenuItem" Header="Use Grab _Template..." />
+                    <MenuItem
+                        x:Name="GrabTemplateMenuItem"
+                        Header="Use Grab _Template..."
+                        SubmenuOpened="GrabTemplateMenuItem_SubmenuOpened" />
                     <MenuItem
                         x:Name="RecursiveFoldersCheck"
                         Header="Scan all folders recursively"
