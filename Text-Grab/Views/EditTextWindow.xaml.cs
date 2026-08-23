@@ -2989,7 +2989,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     AppendTranscriptionText($"# {Path.GetFileName(audioFile)}{Environment.NewLine}");
 
                 string transcription = await AudioTranscriptionUtilities.TranscribeAudioFileAsync(
-                    audioFile, hotWords, statusProgress, segmentProgress, cancellationToken);
+                    audioFile, hotWords, statusProgress, segmentProgress, cancellationToken,
+                    includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription);
 
                 if (string.IsNullOrWhiteSpace(transcription))
                     AppendTranscriptionText("(no speech recognized)");

@@ -266,8 +266,10 @@ public static class AudioTranscriptionUtilities
     /// already surfaced via <paramref name="segmentProgress"/> is preserved by the caller.
     /// <paramref name="hotWords"/>, if given, is passed to Whisper as an initial prompt so it's biased
     /// toward names/jargon it might otherwise mishear; it applies only to this call, nothing persists.
+    /// When <paramref name="includeTimecodes"/> is true, each segment is prefixed with its start time
+    /// (e.g. <c>[01:23]</c>) and placed on its own line.
     /// </summary>
-    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, string? hotWords = null, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, CancellationToken cancellationToken = default)
+    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, string? hotWords = null, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, CancellationToken cancellationToken = default, bool includeTimecodes = false)
     {
         AudioDebugLog.Write($"TranscribeAudioFileAsync: START path='{audioFilePath}'");
 
@@ -303,8 +305,12 @@ public static class AudioTranscriptionUtilities
             int segmentCount = 0;
             await foreach (SegmentData segment in processor.ProcessAsync(wavStream, cancellationToken).ConfigureAwait(false))
             {
-                builder.Append(segment.Text);
-                segmentProgress?.Report(segment.Text);
+                string segmentText = includeTimecodes
+                    ? $"[{FormatTimecode(segment.Start)}]{segment.Text}{Environment.NewLine}"
+                    : segment.Text;
+
+                builder.Append(segmentText);
+                segmentProgress?.Report(segmentText);
                 segmentCount++;
             }
 
@@ -314,6 +320,10 @@ public static class AudioTranscriptionUtilities
             return text;
         }, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Formats a segment's start time as <c>mm:ss</c>, or <c>h:mm:ss</c> once past an hour.</summary>
+    internal static string FormatTimecode(TimeSpan t) =>
+        t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : t.ToString(@"mm\:ss");
 
     /// <summary>Collapses whisper's leading spaces / stray whitespace into a tidy transcript.</summary>
     internal static string CleanTranscript(string raw)

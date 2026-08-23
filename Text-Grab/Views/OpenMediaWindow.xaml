@@ -148,6 +148,20 @@
                         VerticalAlignment="Center"
                         Text="Show a notification when transcription is done" />
                 </StackPanel>
+
+                <StackPanel
+                    Margin="0,8,0,0"
+                    Orientation="Horizontal">
+                    <ui:ToggleSwitch
+                        x:Name="IncludeTimecodesToggle"
+                        AutomationProperties.AutomationId="OpenMedia.IncludeTimecodesToggle"
+                        Checked="IncludeTimecodesToggle_Checked"
+                        Unchecked="IncludeTimecodesToggle_Unchecked" />
+                    <TextBlock
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        Text="Include timecodes in the output" />
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
 

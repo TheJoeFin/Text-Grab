@@ -16,6 +16,7 @@ public partial class OpenMediaWindow : FluentWindow
         App.SetTheme();
 
         NotifyOnCompleteToggle.IsChecked = AppUtilities.TextGrabSettings.NotifyOnTranscriptionComplete;
+        IncludeTimecodesToggle.IsChecked = AppUtilities.TextGrabSettings.IncludeTimecodesInTranscription;
     }
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -84,6 +85,18 @@ public partial class OpenMediaWindow : FluentWindow
     private void NotifyOnCompleteToggle_Unchecked(object sender, RoutedEventArgs e)
     {
         AppUtilities.TextGrabSettings.NotifyOnTranscriptionComplete = false;
+        AppUtilities.TextGrabSettings.Save();
+    }
+
+    private void IncludeTimecodesToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        AppUtilities.TextGrabSettings.IncludeTimecodesInTranscription = true;
+        AppUtilities.TextGrabSettings.Save();
+    }
+
+    private void IncludeTimecodesToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        AppUtilities.TextGrabSettings.IncludeTimecodesInTranscription = false;
         AppUtilities.TextGrabSettings.Save();
     }
 

@@ -1198,5 +1198,17 @@ namespace Text_Grab.Properties {
                 this["NotifyOnTranscriptionComplete"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IncludeTimecodesInTranscription {
+            get {
+                return ((bool)(this["IncludeTimecodesInTranscription"]));
+            }
+            set {
+                this["IncludeTimecodesInTranscription"] = value;
+            }
+        }
     }
 }
