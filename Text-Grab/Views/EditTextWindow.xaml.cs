@@ -2963,31 +2963,34 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         bool multiple = audioFiles.Count > 1;
-        _transcriptionCts = new CancellationTokenSource();
-        CancellationToken cancellationToken = _transcriptionCts.Token;
-
-        // Make the editor read-only (not disabled) so segments can stream in but the user can't type
-        // in the middle of the stream. AppendText still works while read-only.
         bool previousIsReadOnly = PassedTextControl.IsReadOnly;
-        PassedTextControl.IsReadOnly = true;
-        TranscriptionCancelButton.IsEnabled = true;
-        TranscriptionStatusText.Text = multiple ? "Transcribing audio files…" : "Transcribing audio…";
-        TranscriptionProgressBar.Visibility = Visibility.Collapsed;
-        TranscriptionProgressBar.Value = 0;
-        TranscriptionStatusBar.Visibility = Visibility.Visible;
-
-        // Status text (model download, "Transcribing…") updates the status bar; each recognized
-        // segment is appended straight into the editor as it arrives.
-        Progress<string> statusProgress = new(message => TranscriptionStatusText.Text = message);
-        Progress<string> segmentProgress = new(AppendTranscriptionText);
-
-        // Give the caret a clean starting line so streamed text doesn't run into existing content.
-        EnsureTranscriptionInsertionPoint();
-
         string? errorMessage = null;
         bool cancelled = false;
+
+        // Everything from here runs inside the try: the guard above keys off _transcriptionCts, so a
+        // throw during setup that left it assigned would block every later transcription in this window.
         try
         {
+            _transcriptionCts = new CancellationTokenSource();
+            CancellationToken cancellationToken = _transcriptionCts.Token;
+
+            // Make the editor read-only (not disabled) so segments can stream in but the user can't type
+            // in the middle of the stream. AppendText still works while read-only.
+            PassedTextControl.IsReadOnly = true;
+            TranscriptionCancelButton.IsEnabled = true;
+            TranscriptionStatusText.Text = multiple ? "Transcribing audio files…" : "Transcribing audio…";
+            TranscriptionProgressBar.Visibility = Visibility.Collapsed;
+            TranscriptionProgressBar.Value = 0;
+            TranscriptionStatusBar.Visibility = Visibility.Visible;
+
+            // Status text (model download, "Transcribing…") updates the status bar; each recognized
+            // segment is appended straight into the editor as it arrives.
+            Progress<string> statusProgress = new(message => TranscriptionStatusText.Text = message);
+            Progress<string> segmentProgress = new(AppendTranscriptionText);
+
+            // Give the caret a clean starting line so streamed text doesn't run into existing content.
+            EnsureTranscriptionInsertionPoint();
+
             for (int i = 0; i < audioFiles.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -3037,21 +3040,29 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             PassedTextControl.IsReadOnly = previousIsReadOnly;
             TranscriptionStatusBar.Visibility = Visibility.Collapsed;
-            _transcriptionCts.Dispose();
+            _transcriptionCts?.Dispose();
             _transcriptionCts = null;
-            SyncTextFromActiveEditor();
+
+            // The transcript was streamed into the raw text box, so the active editor is what needs
+            // updating. Syncing the other way (as this used to) pushed the markdown document / table
+            // back over PassedTextControl.Text, round-tripping the whole transcript through the
+            // serializer for nothing.
+            SyncActiveEditorFromText();
         }
 
         AudioDebugLog.Write($"TranscribeAudioFilesAsync: END (cancelled={cancelled}, error={errorMessage is not null})");
 
         if (errorMessage is not null)
         {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Audio Transcription Failed",
-                Content = errorMessage,
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
+            // A failure raised as the window closes has nowhere to show: the dialog would be owned by
+            // a torn-down window.
+            if (IsLoaded)
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "Audio Transcription Failed",
+                    Content = errorMessage,
+                    CloseButtonText = "OK"
+                }.ShowDialogAsync();
         }
         else if (!cancelled && DefaultSettings.NotifyOnTranscriptionComplete)
         {
@@ -3132,7 +3143,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         AddCopiedTextToTextBox(text);
-        SyncTextFromActiveEditor();
+
+        // Same as the file path: the phrase went into the raw text box, so the sync has to run in that
+        // direction. Pulling from the active editor instead round-tripped every phrase through the
+        // markdown/table serializer.
+        SyncActiveEditorFromText();
     }
 
     private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
@@ -4961,6 +4976,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             SyncSpreadsheetDocumentFromTable();
         else if (editorMode == EtwEditorMode.Markdown)
             SyncMarkdownTextFromDocument();
+    }
+
+    /// <summary>
+    /// The mirror of <see cref="SyncTextFromActiveEditor"/>: pushes <c>PassedTextControl.Text</c> out
+    /// to whichever editor is showing, the same way <see cref="PassedTextControl_TextChanged"/> does.
+    /// Used by anything that writes straight into the raw text box while another editor is active —
+    /// streamed audio transcription, most of all. A no-op in raw-text mode.
+    /// </summary>
+    private void SyncActiveEditorFromText()
+    {
+        if (editorMode == EtwEditorMode.Spreadsheet)
+            RefreshSpreadsheetFromText();
+        else if (editorMode == EtwEditorMode.Markdown)
+            RefreshMarkdownFromText();
     }
 
     private bool SaveCurrentDocument(bool saveAs = false)
