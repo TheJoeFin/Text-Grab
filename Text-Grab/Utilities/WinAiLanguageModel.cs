@@ -223,6 +223,27 @@ internal static class WinAiLanguageModel
         if (_disposed)
             return;
 
+        await ReleaseModelAsync(cancellationToken);
+
+        // A failure to unlock the Limited Access Feature is cached for the life of the process, so
+        // forget it too: a transient failure there would otherwise fail the retry before it starts.
+        LimitedAccessFeatureUtilities.ResetUnlockCache();
+    }
+
+    /// <summary>
+    /// Drops the cached language model to free the memory it holds. The next request recreates it,
+    /// so call this when a feature is switched off rather than between requests.
+    /// </summary>
+    /// <remarks>
+    /// Takes the same lock <see cref="GetModelAsync"/> creates the model under, so a release from one
+    /// window (the GrabFrame translate toggle, its cleanup) cannot dispose the model while another
+    /// window is still building it.
+    /// </remarks>
+    internal static async Task ReleaseModelAsync(CancellationToken cancellationToken = default)
+    {
+        if (_disposed)
+            return;
+
         await _modelLock.WaitAsync(cancellationToken);
         try
         {
@@ -238,24 +259,13 @@ internal static class WinAiLanguageModel
             _languageModel = null;
             _modelLock.Release();
         }
-
-        // A failure to unlock the Limited Access Feature is cached for the life of the process, so
-        // forget it too: a transient failure there would otherwise fail the retry before it starts.
-        LimitedAccessFeatureUtilities.ResetUnlockCache();
     }
 
     /// <summary>
-    /// Drops the cached language model to free the memory it holds. The next request recreates it,
-    /// so call this when a feature is switched off rather than between requests.
+    /// Fire-and-forget <see cref="ReleaseModelAsync"/> for callers that cannot await (window cleanup,
+    /// a toggle handler). The model is freed once any in-flight creation finishes.
     /// </summary>
-    internal static void ReleaseModel()
-    {
-        if (_disposed)
-            return;
-
-        _languageModel?.Dispose();
-        _languageModel = null;
-    }
+    internal static void ReleaseModel() => _ = ReleaseModelAsync();
 
     /// <summary>Releases the shared language model. Call once during application shutdown.</summary>
     internal static void Cleanup()
@@ -263,10 +273,23 @@ internal static class WinAiLanguageModel
         if (_disposed)
             return;
 
-        ReleaseModel();
-        _modelLock.Dispose();
-        _inferenceLock.Dispose();
         _disposed = true;
+
+        // The process is exiting, so dispose the model directly instead of waiting on the model lock.
+        try
+        {
+            _languageModel?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Disposing the language model failed: {ex.Message}");
+        }
+
+        _languageModel = null;
+
+        // The semaphores are deliberately left undisposed: they hold nothing worth reclaiming at
+        // exit, and disposing them throws ObjectDisposedException into any pending WaitAsync — after
+        // which InferenceLease.Dispose() skips its Release() and the queue is wedged for good.
     }
 
     #endregion availability
