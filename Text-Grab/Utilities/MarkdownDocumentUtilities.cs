@@ -104,6 +104,233 @@ public static partial class MarkdownDocumentUtilities
         return NormalizeDocumentText(new TextRange(document.ContentStart, document.ContentEnd).Text);
     }
 
+    /// <summary>
+    /// A source-markdown range and the range in <see cref="AnchorParagraph"/>'s own local rendered
+    /// text it corresponds to (e.g. the same span, minus stripped syntax like <c>**</c> or a
+    /// task-list checkbox glyph standing in for <c>[x]</c>). <see cref="RenderedStart"/>/
+    /// <see cref="RenderedEnd"/> are measured from <see cref="AnchorParagraph"/>'s own
+    /// <c>ContentStart</c> — never from the document's — because <see cref="TextRange.Text"/> does
+    /// not reliably count characters when a range crosses into a <see cref="Table"/> from outside
+    /// it (verified empirically: every position inside a table row measured that way collapses to
+    /// the same offset, the row's end). Keeping every measurement local to its own paragraph sidesteps
+    /// that entirely, table cell or not.
+    /// </summary>
+    public readonly record struct MarkdownOffsetMapping(int RawStart, int RawEnd, Paragraph AnchorParagraph, int RenderedStart, int RenderedEnd);
+
+    /// <summary>
+    /// Raw-to-rendered offset mapping for a document built by <see cref="CreateFlowDocument"/>, built
+    /// by <see cref="BuildOffsetMap"/> at two granularities, mirroring how tools like Markdown Editor's
+    /// preview sync (which anchors by source *line*, not by character) stay reliable: <see cref="Blocks"/>
+    /// is one entry per top-level paragraph/heading/code block/table cell, taken straight from Markdig's
+    /// own block boundaries — never guessed — so "which block is this raw offset in" can't land in the
+    /// wrong paragraph. <see cref="Runs"/> is the finer per-Run breakdown used only to refine a position
+    /// once the containing block is already known, so a bad interpolation there is bounded to that one
+    /// block instead of drifting across the whole document.
+    /// </summary>
+    public sealed record MarkdownOffsetMap(IReadOnlyList<MarkdownOffsetMapping> Blocks, IReadOnlyList<MarkdownOffsetMapping> Runs);
+
+    /// <summary>
+    /// Walks a document built by <see cref="CreateFlowDocument"/> and collects the raw-to-rendered
+    /// offset mapping recorded on each tagged Paragraph and Run during construction, in document order.
+    /// </summary>
+    public static MarkdownOffsetMap BuildOffsetMap(FlowDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        List<MarkdownOffsetMapping> blocks = [];
+        List<MarkdownOffsetMapping> runs = [];
+        foreach (WpfBlock block in document.Blocks)
+            CollectOffsetMappings(block, blocks, runs);
+
+        return new MarkdownOffsetMap(blocks, runs);
+    }
+
+    /// <summary>
+    /// Translates an offset in the raw markdown source (as produced by <see cref="SerializeToMarkdown"/>
+    /// and consumed by Find &amp; Replace) into a selectable position in the rendered document. First
+    /// finds the enclosing (or nearest) top-level block via <see cref="MarkdownOffsetMap.Blocks"/> —
+    /// using only Markdig's own raw block boundaries, never a cross-block guess — then refines within
+    /// that one block/paragraph using <see cref="MarkdownOffsetMap.Runs"/> and resolves the final
+    /// <see cref="TextPointer"/> with a walk scoped to that same paragraph (never <paramref name="document"/>
+    /// as a whole), so it stays correct even inside a table cell.
+    /// </summary>
+    public static TextPointer MapRawOffsetToPosition(FlowDocument document, MarkdownOffsetMap map, int rawOffset)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        IReadOnlyList<MarkdownOffsetMapping> blocks = map.Blocks;
+        if (blocks.Count == 0)
+            return document.ContentStart;
+
+        if (rawOffset <= blocks[0].RawStart)
+            return GetLocalTextPointer(blocks[0].AnchorParagraph, blocks[0].RenderedStart);
+
+        MarkdownOffsetMapping lastBlock = blocks[^1];
+        if (rawOffset >= lastBlock.RawEnd)
+            return GetLocalTextPointer(lastBlock.AnchorParagraph, lastBlock.RenderedEnd);
+
+        for (int i = 0; i < blocks.Count; i++)
+        {
+            MarkdownOffsetMapping block = blocks[i];
+
+            // Inclusive on RawEnd: a match's end offset (index + length) very commonly lands
+            // exactly on a block's exclusive end (e.g. a match that runs to the last character of
+            // a paragraph) — treat that as still belonging to this block rather than falling
+            // through to gap-snapping against the next, unrelated paragraph.
+            if (rawOffset >= block.RawStart && rawOffset <= block.RawEnd)
+                return MapWithinBlock(map.Runs, block, rawOffset);
+
+            if (i + 1 < blocks.Count)
+            {
+                MarkdownOffsetMapping next = blocks[i + 1];
+                if (rawOffset >= block.RawEnd && rawOffset < next.RawStart)
+                {
+                    // A gap between two blocks (a blank line, a list/quote marker outside any
+                    // tagged run) spans two different paragraphs, so there's no shared coordinate
+                    // space to interpolate across — snap to whichever side is raw-closer instead.
+                    int distanceToBlockEnd = rawOffset - block.RawEnd;
+                    int distanceToNextStart = next.RawStart - rawOffset;
+                    return distanceToBlockEnd <= distanceToNextStart
+                        ? GetLocalTextPointer(block.AnchorParagraph, block.RenderedEnd)
+                        : GetLocalTextPointer(next.AnchorParagraph, next.RenderedStart);
+                }
+            }
+        }
+
+        return GetLocalTextPointer(lastBlock.AnchorParagraph, lastBlock.RenderedEnd);
+    }
+
+    /// <summary>
+    /// Refines a raw offset already known to fall inside <paramref name="block"/> using whichever of
+    /// <paramref name="runs"/> belong to that same paragraph. Falls back to placing it proportionally
+    /// across the whole block (still correct at the paragraph level) when no run in this block covers
+    /// the offset — e.g. a fenced code block or thematic break, tagged as a single run spanning the block.
+    /// </summary>
+    private static TextPointer MapWithinBlock(IReadOnlyList<MarkdownOffsetMapping> runs, MarkdownOffsetMapping block, int rawOffset)
+    {
+        foreach (MarkdownOffsetMapping run in runs)
+        {
+            if (!ReferenceEquals(run.AnchorParagraph, block.AnchorParagraph))
+                continue;
+            if (run.RawStart < block.RawStart || run.RawEnd > block.RawEnd)
+                continue;
+
+            // Inclusive on RawEnd for the same reason as the block-level lookup above: a match's
+            // end offset routinely lands exactly on a run's exclusive end (matching that whole run,
+            // e.g. a bolded word matched in full), and should still resolve within this run rather
+            // than falling through to the coarser whole-block proportional placement.
+            if (rawOffset >= run.RawStart && rawOffset <= run.RawEnd)
+            {
+                double t = (rawOffset - run.RawStart) / (double)Math.Max(1, run.RawEnd - run.RawStart);
+                int local = run.RenderedStart + (int)Math.Round(t * (run.RenderedEnd - run.RenderedStart));
+                return GetLocalTextPointer(block.AnchorParagraph, local);
+            }
+        }
+
+        double blockT = (rawOffset - block.RawStart) / (double)Math.Max(1, block.RawEnd - block.RawStart);
+        int blockLocal = block.RenderedStart + (int)Math.Round(blockT * (block.RenderedEnd - block.RenderedStart));
+        return GetLocalTextPointer(block.AnchorParagraph, blockLocal);
+    }
+
+    /// <summary>
+    /// Resolves a plain-text offset local to <paramref name="paragraph"/> (i.e. measured from its own
+    /// <c>ContentStart</c>, never the document's) to an actual <see cref="TextPointer"/>, by walking
+    /// insertion positions scoped to that one paragraph. Bounded by the paragraph's own size rather
+    /// than the whole document, and — unlike a document-wide walk — correct even inside a table cell.
+    /// </summary>
+    /// <summary>
+    /// Resolves a plain-text offset local to <paramref name="paragraph"/> to an actual
+    /// <see cref="TextPointer"/> by walking insertion positions scoped to that one paragraph.
+    /// </summary>
+    /// <remarks>
+    /// A list item's non-navigable bullet/number marker is a known, narrow exception: WPF's
+    /// <see cref="TextRange.Text"/> counts it as part of the paragraph's rendered text (so the
+    /// paragraph's own tagged range accounts for it), but no reachable insertion position exists
+    /// that is "just past the marker" without also having consumed the first real character — so a
+    /// match that starts at the very first character of a list item's content may end up selecting
+    /// the marker glyph too. Every other position (mid-item, table cells, headings, code, etc.) is
+    /// unaffected and resolves exactly.
+    /// </remarks>
+    private static TextPointer GetLocalTextPointer(Paragraph paragraph, int localOffset)
+    {
+        TextPointer navigator = paragraph.ContentStart;
+        TextPointer lastInsertionPosition = navigator;
+
+        while (navigator is not null)
+        {
+            int currentOffset = new TextRange(paragraph.ContentStart, navigator).Text.Length;
+            if (currentOffset >= localOffset)
+                return navigator;
+
+            lastInsertionPosition = navigator;
+            TextPointer? next = navigator.GetNextInsertionPosition(LogicalDirection.Forward);
+            if (next is null || next.CompareTo(paragraph.ContentEnd) > 0)
+                break;
+
+            navigator = next;
+        }
+
+        return lastInsertionPosition;
+    }
+
+    private static void CollectOffsetMappings(WpfBlock block, List<MarkdownOffsetMapping> blocks, List<MarkdownOffsetMapping> runs)
+    {
+        switch (block)
+        {
+            case Paragraph paragraph:
+                int blockRawStart = GetRawSpanStart(paragraph);
+                if (blockRawStart >= 0)
+                {
+                    int blockRawEnd = GetRawSpanEnd(paragraph);
+                    int paragraphRenderedLength = new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text.Length;
+                    if (paragraphRenderedLength > 0)
+                        blocks.Add(new MarkdownOffsetMapping(blockRawStart, blockRawEnd, paragraph, 0, paragraphRenderedLength));
+                }
+
+                foreach (WpfInline inline in paragraph.Inlines)
+                    CollectOffsetMappings(inline, paragraph, runs);
+                break;
+
+            case WpfList list:
+                foreach (ListItem item in list.ListItems)
+                    foreach (WpfBlock child in item.Blocks)
+                        CollectOffsetMappings(child, blocks, runs);
+                break;
+
+            case WpfTable table:
+                foreach (TableRowGroup rowGroup in table.RowGroups)
+                    foreach (WpfTableRow row in rowGroup.Rows.Cast<WpfTableRow>())
+                        foreach (WpfTableCell cell in row.Cells.Cast<WpfTableCell>())
+                            foreach (WpfBlock child in cell.Blocks)
+                                CollectOffsetMappings(child, blocks, runs);
+                break;
+        }
+    }
+
+    private static void CollectOffsetMappings(WpfInline inline, Paragraph owningParagraph, List<MarkdownOffsetMapping> runs)
+    {
+        switch (inline)
+        {
+            case Run run:
+                int rawStart = GetRawSpanStart(run);
+                if (rawStart < 0)
+                    break;
+
+                int rawEnd = GetRawSpanEnd(run);
+                int renderedStart = new TextRange(owningParagraph.ContentStart, run.ContentStart).Text.Length;
+                int renderedEnd = new TextRange(owningParagraph.ContentStart, run.ContentEnd).Text.Length;
+                if (renderedEnd > renderedStart)
+                    runs.Add(new MarkdownOffsetMapping(rawStart, rawEnd, owningParagraph, renderedStart, renderedEnd));
+                break;
+
+            // Bold, Italic and Hyperlink all derive from Span, so this also covers them.
+            case Span span:
+                foreach (WpfInline child in span.Inlines)
+                    CollectOffsetMappings(child, owningParagraph, runs);
+                break;
+        }
+    }
+
     public static bool ShouldPromoteLiveBlock(string? lineTextBeforeSpace)
     {
         if (string.IsNullOrWhiteSpace(lineTextBeforeSpace))
@@ -155,6 +382,7 @@ public static partial class MarkdownDocumentUtilities
                 };
                 SetHeadingLevel(headingParagraph, Math.Clamp(headingBlock.Level, 1, 6));
                 SetQuoteDepth(headingParagraph, quoteDepth);
+                SetRawSpan(headingParagraph, headingBlock.Span.Start, headingBlock.Span.End + 1);
                 AppendInlineContainer(headingParagraph.Inlines, headingBlock.Inline, source);
                 blocks.Add(headingParagraph);
                 break;
@@ -165,6 +393,7 @@ public static partial class MarkdownDocumentUtilities
                     Margin = new Thickness(0, 4, 0, 4)
                 };
                 SetQuoteDepth(paragraph, quoteDepth);
+                SetRawSpan(paragraph, paragraphBlock.Span.Start, paragraphBlock.Span.End + 1);
                 AppendInlineContainer(paragraph.Inlines, paragraphBlock.Inline, source);
                 blocks.Add(paragraph);
                 break;
@@ -199,21 +428,24 @@ public static partial class MarkdownDocumentUtilities
                 break;
 
             case FencedCodeBlock fencedCodeBlock:
-                blocks.Add(CreateCodeParagraph(GetCodeBlockText(fencedCodeBlock), fencedCodeBlock.Info, quoteDepth));
+                blocks.Add(CreateCodeParagraph(GetCodeBlockText(fencedCodeBlock), fencedCodeBlock.Info, quoteDepth, fencedCodeBlock.Span.Start, fencedCodeBlock.Span.End + 1));
                 break;
 
             case CodeBlock codeBlock:
-                blocks.Add(CreateCodeParagraph(GetCodeBlockText(codeBlock), info: null, quoteDepth));
+                blocks.Add(CreateCodeParagraph(GetCodeBlockText(codeBlock), info: null, quoteDepth, codeBlock.Span.Start, codeBlock.Span.End + 1));
                 break;
 
-            case ThematicBreakBlock:
+            case ThematicBreakBlock thematicBreakBlock:
                 Paragraph breakParagraph = new()
                 {
                     Margin = new Thickness(0, 8, 0, 8)
                 };
                 SetBlockRole(breakParagraph, MarkdownBlockRole.ThematicBreak);
                 SetQuoteDepth(breakParagraph, quoteDepth);
-                breakParagraph.Inlines.Add(new Run("----------"));
+                SetRawSpan(breakParagraph, thematicBreakBlock.Span.Start, thematicBreakBlock.Span.End + 1);
+                Run breakRun = new("----------");
+                SetRawSpan(breakRun, thematicBreakBlock.Span.Start, thematicBreakBlock.Span.End + 1);
+                breakParagraph.Inlines.Add(breakRun);
                 blocks.Add(breakParagraph);
                 break;
 
@@ -222,12 +454,12 @@ public static partial class MarkdownDocumentUtilities
                 break;
 
             default:
-                blocks.Add(CreateLiteralParagraph(GetSourceSlice(source, block), quoteDepth));
+                blocks.Add(CreateLiteralParagraph(GetSourceSlice(source, block), quoteDepth, block.Span.Start, block.Span.End + 1));
                 break;
         }
     }
 
-    private static Paragraph CreateCodeParagraph(string codeText, string? info, int quoteDepth)
+    private static Paragraph CreateCodeParagraph(string codeText, string? info, int quoteDepth, int rawStart, int rawEnd)
     {
         Paragraph paragraph = new()
         {
@@ -237,11 +469,14 @@ public static partial class MarkdownDocumentUtilities
         SetBlockRole(paragraph, MarkdownBlockRole.CodeBlock);
         SetQuoteDepth(paragraph, quoteDepth);
         SetCodeFenceInfo(paragraph, info?.ToString() ?? string.Empty);
-        paragraph.Inlines.Add(new Run(codeText));
+        SetRawSpan(paragraph, rawStart, rawEnd);
+        Run codeTextRun = new(codeText);
+        SetRawSpan(codeTextRun, rawStart, rawEnd);
+        paragraph.Inlines.Add(codeTextRun);
         return paragraph;
     }
 
-    private static Paragraph CreateLiteralParagraph(string literalMarkdown, int quoteDepth)
+    private static Paragraph CreateLiteralParagraph(string literalMarkdown, int quoteDepth, int rawStart, int rawEnd)
     {
         Paragraph paragraph = new()
         {
@@ -249,8 +484,10 @@ public static partial class MarkdownDocumentUtilities
         };
 
         SetQuoteDepth(paragraph, quoteDepth);
+        SetRawSpan(paragraph, rawStart, rawEnd);
         Run literalRun = new(literalMarkdown);
         SetInlineRole(literalRun, MarkdownInlineRole.LiteralMarkdown);
+        SetRawSpan(literalRun, rawStart, rawEnd);
         paragraph.Inlines.Add(literalRun);
         return paragraph;
     }
@@ -312,7 +549,12 @@ public static partial class MarkdownDocumentUtilities
         switch (inline)
         {
             case LiteralInline literalInline:
-                inlines.Add(new Run(literalInline.Content.ToString()));
+                string literalContent = literalInline.Content.ToString();
+                Run contentRun = new(literalContent);
+                (int literalRawStart, int literalRawEnd) = ResolveContentSpan(
+                    source, literalContent, literalInline.Span.Start, literalInline.Span.End + 1);
+                SetRawSpan(contentRun, literalRawStart, literalRawEnd);
+                inlines.Add(contentRun);
                 break;
 
             case LineBreakInline:
@@ -325,6 +567,11 @@ public static partial class MarkdownDocumentUtilities
                     FontFamily = new FontFamily("Consolas")
                 };
                 SetInlineRole(codeRun, MarkdownInlineRole.CodeSpan);
+                // codeInline.Span covers the backtick fence too (e.g. "`dotnet build`"), but
+                // Content is just the inner text ("dotnet build") — tag the content's own raw
+                // range, not the fenced span, so this maps 1:1 instead of proportionally.
+                int codeContentRawStart = GetCodeSpanContentRawStart(codeInline);
+                SetRawSpan(codeRun, codeContentRawStart, codeContentRawStart + codeInline.Content.Length);
                 inlines.Add(codeRun);
                 break;
 
@@ -332,6 +579,7 @@ public static partial class MarkdownDocumentUtilities
                 Run taskListRun = new(taskList.Checked ? "\u2611" : "\u2610");
                 SetInlineRole(taskListRun, MarkdownInlineRole.TaskListMarker);
                 SetTaskListMarkerChecked(taskListRun, taskList.Checked);
+                SetRawSpan(taskListRun, taskList.Span.Start, taskList.Span.End + 1);
                 inlines.Add(taskListRun);
                 break;
 
@@ -358,7 +606,11 @@ public static partial class MarkdownDocumentUtilities
 
                 AppendInlineContainer(hyperlink.Inlines, linkInline, source);
                 if (hyperlink.Inlines.FirstInline is null)
-                    hyperlink.Inlines.Add(new Run(linkInline.Url ?? string.Empty));
+                {
+                    Run hyperlinkFallbackRun = new(linkInline.Url ?? string.Empty);
+                    SetRawSpan(hyperlinkFallbackRun, linkInline.Span.Start, linkInline.Span.End + 1);
+                    hyperlink.Inlines.Add(hyperlinkFallbackRun);
+                }
 
                 inlines.Add(hyperlink);
                 break;
@@ -366,12 +618,14 @@ public static partial class MarkdownDocumentUtilities
             case LinkInline linkInline:
                 Run literalImageRun = new(GetSourceSlice(source, linkInline));
                 SetInlineRole(literalImageRun, MarkdownInlineRole.LiteralMarkdown);
+                SetRawSpan(literalImageRun, linkInline.Span.Start, linkInline.Span.End + 1);
                 inlines.Add(literalImageRun);
                 break;
 
             case HtmlInline htmlInline:
                 Run htmlRun = new(htmlInline.Tag);
                 SetInlineRole(htmlRun, MarkdownInlineRole.LiteralMarkdown);
+                SetRawSpan(htmlRun, htmlInline.Span.Start, htmlInline.Span.End + 1);
                 inlines.Add(htmlRun);
                 break;
 
@@ -384,6 +638,7 @@ public static partial class MarkdownDocumentUtilities
             default:
                 Run literalRun = new(GetSourceSlice(source, inline));
                 SetInlineRole(literalRun, MarkdownInlineRole.LiteralMarkdown);
+                SetRawSpan(literalRun, inline.Span.Start, inline.Span.End + 1);
                 inlines.Add(literalRun);
                 break;
         }
@@ -793,6 +1048,41 @@ public static partial class MarkdownDocumentUtilities
 
     private static string NormalizeNewlines(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 
+    /// <summary>
+    /// A code span's <see cref="CodeInline.Span"/> covers the whole backtick-delimited run (e.g.
+    /// <c>`dotnet build`</c>), but <see cref="CodeInline.Content"/> is just the inner text. Assumes
+    /// a symmetric fence (equal backtick count on both sides), which covers the vast majority of
+    /// real-world code spans; degrades to the fenced span if that assumption doesn't hold.
+    /// </summary>
+    private static int GetCodeSpanContentRawStart(CodeInline codeInline)
+    {
+        int totalLength = codeInline.Span.End - codeInline.Span.Start + 1;
+        int contentLength = codeInline.Content.Length;
+        int fenceLength = Math.Max(0, (totalLength - contentLength) / 2);
+        return codeInline.Span.Start + fenceLength;
+    }
+
+    /// <summary>
+    /// A <see cref="LiteralInline"/>'s <c>Span</c> is not always tight to its own <c>Content</c> —
+    /// e.g. inside a pipe table cell, Markdig's reported span includes the cell's padding
+    /// whitespace (<c>"| Alpha |"</c>'s content is <c>"Alpha"</c> but the span covers <c>" Alpha "</c>),
+    /// while ordinary paragraph text elsewhere has no such padding and the span is already exact.
+    /// Searches the reported span's own window for the literal content and returns its tight bounds;
+    /// falls back to the untrimmed span if the content can't be found there (should not normally happen).
+    /// </summary>
+    private static (int Start, int End) ResolveContentSpan(string source, string content, int spanStart, int spanEndExclusive)
+    {
+        if (string.IsNullOrEmpty(content) || spanStart < 0 || spanEndExclusive > source.Length || spanEndExclusive <= spanStart)
+            return (spanStart, spanEndExclusive);
+
+        int windowLength = spanEndExclusive - spanStart;
+        if (content.Length > windowLength)
+            return (spanStart, spanEndExclusive);
+
+        int found = source.IndexOf(content, spanStart, windowLength, StringComparison.Ordinal);
+        return found < 0 ? (spanStart, spanEndExclusive) : (found, found + content.Length);
+    }
+
     private static string GetSourceSlice(string source, MarkdownObject markdownObject)
     {
         if (markdownObject.Span.Start < 0
@@ -823,6 +1113,29 @@ public static partial class MarkdownDocumentUtilities
 
     private static readonly DependencyProperty IsTableHeaderProperty =
         DependencyProperty.RegisterAttached("IsTableHeader", typeof(bool), typeof(MarkdownDocumentUtilities), new PropertyMetadata(false));
+
+    private static readonly DependencyProperty RawSpanStartProperty =
+        DependencyProperty.RegisterAttached("RawSpanStart", typeof(int), typeof(MarkdownDocumentUtilities), new PropertyMetadata(-1));
+
+    private static readonly DependencyProperty RawSpanEndProperty =
+        DependencyProperty.RegisterAttached("RawSpanEnd", typeof(int), typeof(MarkdownDocumentUtilities), new PropertyMetadata(-1));
+
+    /// <summary>
+    /// Records the [start, end) range in the raw markdown source that a Run's rendered text was
+    /// produced from, so <see cref="BuildOffsetMap"/> can later pair it with the Run's rendered
+    /// position. No-ops for an invalid/empty span (e.g. a synthesized fallback with no source range).
+    /// </summary>
+    private static void SetRawSpan(DependencyObject element, int start, int endExclusive)
+    {
+        if (start < 0 || endExclusive <= start)
+            return;
+
+        element.SetValue(RawSpanStartProperty, start);
+        element.SetValue(RawSpanEndProperty, endExclusive);
+    }
+
+    private static int GetRawSpanStart(DependencyObject element) => (int)element.GetValue(RawSpanStartProperty);
+    private static int GetRawSpanEnd(DependencyObject element) => (int)element.GetValue(RawSpanEndProperty);
 
     private static void SetQuoteDepth(DependencyObject element, int value) => element.SetValue(QuoteDepthProperty, value);
     private static int GetQuoteDepth(DependencyObject element) => (int)element.GetValue(QuoteDepthProperty);

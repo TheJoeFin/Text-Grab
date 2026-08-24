@@ -118,6 +118,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private bool isSyncingTextFromMarkdown = false;
     private bool isApplyingSpreadsheetLayout = false;
     private bool isApplyingMarkdownDocument = false;
+    private MarkdownDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
+    private string? markdownOffsetMapSourceText;
     private bool isLoadingOpenedFile = false;
     private bool hasPendingFileEdits = false;
     private bool isShowingPendingFileClosePrompt = false;
@@ -1001,6 +1003,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             markdownText,
             MarkdownEditorControl.FontFamily,
             MarkdownEditorControl.FontSize);
+        markdownOffsetMap = MarkdownDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
+        markdownOffsetMapSourceText = markdownText ?? string.Empty;
         ApplyMarkdownTheme();
         ApplyMarkdownWrapSetting();
         SetMargins(MarginsMenuItem.IsChecked is true);
@@ -3270,6 +3274,42 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     public bool IsSpreadsheetMode => editorMode == EtwEditorMode.Spreadsheet;
+
+    /// <summary>
+    /// Selects the given range of <see cref="PassedTextControl"/>'s raw text in whichever editor is
+    /// currently visible and scrolls it into view. Used by Find &amp; Replace to show the active match,
+    /// since selecting in <see cref="PassedTextControl"/> alone has no visible effect while it is
+    /// hidden behind <see cref="MarkdownEditorControl"/> in markdown mode.
+    /// </summary>
+    /// <remarks>
+    /// In markdown mode the rendered document's plain text is not the same string as the raw
+    /// markdown <paramref name="index"/>/<paramref name="length"/> are measured against — bold
+    /// markers, heading <c>#</c>s, list bullets, link brackets, etc. are stripped on render. The
+    /// index is translated through the offset map built alongside the rendered document
+    /// (<see cref="MarkdownDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
+    /// </remarks>
+    public void SelectInEditor(int index, int length)
+    {
+        if (editorMode == EtwEditorMode.Markdown)
+        {
+            SyncMarkdownTextFromDocument();
+            if (markdownOffsetMapSourceText != PassedTextControl.Text)
+                LoadMarkdownDocumentFromText(PassedTextControl.Text);
+
+            if (MarkdownEditorControl.Document is not null)
+            {
+                TextPointer start = MarkdownDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
+                TextPointer end = MarkdownDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
+                MarkdownEditorControl.Selection.Select(start, end);
+                MarkdownEditorControl.Focus();
+                start.Paragraph?.BringIntoView();
+            }
+            return;
+        }
+
+        PassedTextControl.Select(index, length);
+        PassedTextControl.Focus();
+    }
 
     public void CommitSpreadsheetAndSync()
     {
