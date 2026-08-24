@@ -106,10 +106,11 @@
         <PackageReference Include="Microsoft.Recognizers.Text.Sequence" Version="1.8.13" />
         <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
         <!-- Windows App SDK (stable) powers the existing on-device OCR / image-description / text AI features. -->
-        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.2.3" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.1.0" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.2.0" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.2.1" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.9" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.6" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.4.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.6" />
         <!--
             Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
             stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
@@ -125,7 +126,7 @@
         <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
           <IncludeAssets>none</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="PdfPig" Version="0.1.15" />
+        <PackageReference Include="PdfPig" Version="0.1.16" />
         <PackageReference Include="UnitsNet" Version="5.75.1" />
         <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
         <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
