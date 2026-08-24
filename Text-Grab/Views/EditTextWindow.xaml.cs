@@ -6755,15 +6755,38 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading("Summarizing...");
 
+        WinAiGenerationResult? failure = null;
+
         try
         {
             string sourceText = GetSelectedTextOrAllText();
-            string summarizedText = await WindowsAiUtilities.SummarizeParagraph(sourceText);
-            OpenTextInNewEditTextWindow(summarizedText);
+            WinAiGenerationResult result = await WindowsAiUtilities.SummarizeParagraph(sourceText);
+
+            // Only open a window on success: a failure message shown as document text reads like a
+            // real summary and can be saved as one.
+            if (result.Text is null)
+                failure = result;
+            else
+                OpenTextInNewEditTextWindow(result.Text);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Summarize exception: {ex.Message}");
+            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Summarizing failed: {ex.Message}");
         }
         finally
         {
             SetToLoaded();
+        }
+
+        if (failure is { } summaryFailure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Summarize Failed",
+                Content = summaryFailure.Message ?? "The text could not be summarized.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 

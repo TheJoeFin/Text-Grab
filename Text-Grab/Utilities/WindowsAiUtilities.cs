@@ -219,7 +219,15 @@ public static class WindowsAiUtilities
         return result;
     }
 
-    internal static async Task<string> SummarizeParagraph(string textToSummarize)
+    /// <summary>
+    /// Summarizes text with the shared Windows AI language model.
+    /// </summary>
+    /// <returns>
+    /// The summary in <see cref="WinAiGenerationResult.Text"/>, or a <see cref="WinAiFailure"/> and a
+    /// human-readable message. A failure must never be shown as if it were a summary, which is why
+    /// this reports one rather than returning an "ERROR: …" string.
+    /// </returns>
+    internal static async Task<WinAiGenerationResult> SummarizeParagraph(string textToSummarize)
     {
         bool wasTruncated = false;
 
@@ -237,14 +245,16 @@ public static class WindowsAiUtilities
             (model, token) => new TextSummarizer(model).SummarizeParagraphAsync(textToSummarize).AsTask(token));
 
         if (result is null)
-            return $"ERROR: Unable to summarize text. {error}";
+            return WinAiGenerationResult.Failed(WinAiFailure.ModelNotReady, $"Unable to summarize text. {error}");
 
         if (result.Status != LanguageModelResponseStatus.Complete)
-            return $"ERROR: Unable to summarize text. {result.ExtendedError?.Message ?? result.Status.ToString()}";
+            return WinAiGenerationResult.Failed(
+                WinAiFailure.ModelError,
+                $"Unable to summarize text. {result.ExtendedError?.Message ?? result.Status.ToString()}");
 
-        return wasTruncated
+        return WinAiGenerationResult.Ok(wasTruncated
             ? $"NOTE: The input text was too long and had to be truncated.\n\nSummary:\n{result.Text}"
-            : result.Text;
+            : result.Text);
     }
 
     internal static async Task<string> Rewrite(string textToRewrite)
