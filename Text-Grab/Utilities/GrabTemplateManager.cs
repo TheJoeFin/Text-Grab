@@ -17,9 +17,9 @@ namespace Text_Grab.Utilities;
 /// the transition release. Pattern follows <see cref="PostGrabActionManager"/>.
 /// </summary>
 /// <remarks>
-/// TODO: This class has no thread-safety guards. All current callers are UI-thread
-/// methods so this is safe today, but if templates are ever read/written from
-/// background threads a lock (like SettingsService._managedJsonLock) should be added.
+/// Only the in-memory cache is guarded (see <c>_cacheLock</c>). The underlying storage — the
+/// settings string and the JSON file — is not, so concurrent writes from background threads would
+/// still race; all current callers are UI-thread methods.
 /// </remarks>
 public static class GrabTemplateManager
 {
@@ -38,6 +38,10 @@ public static class GrabTemplateManager
     // a menu that lists templates (e.g. the EditTextWindow "Capture" menu) was opened. Cached
     // here instead and only refreshed by writes that go through this class.
     private static List<GrabTemplate>? _cachedTemplates;
+
+    // Guards _cachedTemplates: it is process-wide static state and `??=` is not atomic, so two
+    // threads could each load and publish a different list.
+    private static readonly object _cacheLock = new();
 
     // Allow tests to override the file path.
     // TODO: If more test seams are needed, consider consolidating these into a small
@@ -59,7 +63,11 @@ public static class GrabTemplateManager
     }
 
     /// <summary>Drops the in-memory template cache so the next read re-resolves from disk/settings.</summary>
-    internal static void InvalidateCache() => _cachedTemplates = null;
+    internal static void InvalidateCache()
+    {
+        lock (_cacheLock)
+            _cachedTemplates = null;
+    }
 
     private static bool PreferFileBackedTemplates =>
         TestPreferFileBackedMode ?? AppUtilities.TextGrabSettingsService.IsFileBackedManagedSettingsEnabled;
@@ -154,15 +162,23 @@ public static class GrabTemplateManager
 
     /// <summary>
     /// Returns all saved templates, or an empty list if none exist. Resolved once per process
-    /// (or since the last write/<see cref="InvalidateCache"/>) and cached; callers get a fresh
-    /// list instance each time so structural edits (add/remove) by one caller can't leak into
-    /// another caller's list before being persisted.
+    /// (or since the last write/<see cref="InvalidateCache"/>) and cached; callers get a fresh list
+    /// of fresh copies each time, so neither a structural edit (add/remove) nor an edit to a template
+    /// itself can leak into another caller's list — or into the cache — before being persisted.
     /// </summary>
     public static List<GrabTemplate> GetAllTemplates()
     {
-        _cachedTemplates ??= LoadTemplatesFromStorage();
-        return [.. _cachedTemplates];
+        lock (_cacheLock)
+        {
+            _cachedTemplates ??= LoadTemplatesFromStorage();
+            return [.. _cachedTemplates.Select(CloneTemplate)];
+        }
     }
+
+    /// <summary>Deep copy via the same JSON shape these are persisted in.</summary>
+    private static GrabTemplate CloneTemplate(GrabTemplate template) =>
+        JsonSerializer.Deserialize<GrabTemplate>(JsonSerializer.Serialize(template, JsonOptions), JsonOptions)
+        ?? template;
 
     private static List<GrabTemplate> LoadTemplatesFromStorage()
     {
@@ -205,7 +221,10 @@ public static class GrabTemplateManager
     {
         string json = JsonSerializer.Serialize(templates, JsonOptions);
         SaveTemplatesJson(json);
-        _cachedTemplates = [.. templates];
+
+        // Copies here too: the caller keeps its list and may go on editing it.
+        lock (_cacheLock)
+            _cachedTemplates = [.. templates.Select(CloneTemplate)];
     }
 
     internal static string GetTemplatesJsonForExport()
@@ -252,10 +271,7 @@ public static class GrabTemplateManager
         if (original is null)
             return null;
 
-        string json = JsonSerializer.Serialize(original, JsonOptions);
-        GrabTemplate? copy = JsonSerializer.Deserialize<GrabTemplate>(json, JsonOptions);
-        if (copy is null)
-            return null;
+        GrabTemplate copy = CloneTemplate(original);
 
         copy.Id = Guid.NewGuid().ToString();
         copy.Name = $"{original.Name} (copy)";
