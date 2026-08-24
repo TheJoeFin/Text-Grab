@@ -106,6 +106,7 @@ public partial class GrabFrame : Window
     private readonly Dictionary<WordBorder, string> originalTexts = [];
     private int totalWordsToTranslate = 0;
     private int translatedWordsCount = 0;
+    private bool isTranslating = false;
     private CancellationTokenSource? translationCancellationTokenSource;
     private readonly List<PdfTextLineOverlay> pdfTextLineOverlays = [];
     private CancellationTokenSource? _pdfPageNavCts;
@@ -6183,6 +6184,13 @@ public partial class GrabFrame : Window
         if (translationCancellationTokenSource == null || translationCancellationTokenSource.IsCancellationRequested)
             return;
 
+        // The timer restarts on every draw / resize / OCR refresh, so a second pass can be kicked off
+        // while this one is still awaiting the model. Two passes share the progress counters and the
+        // streamed callbacks index into their own bordersToTranslate list, so the first run's results
+        // would land on the second run's word borders. One at a time.
+        if (isTranslating)
+            return;
+
         ShowTranslationProgress();
 
         totalWordsToTranslate = wordBorders.Count;
@@ -6214,6 +6222,10 @@ public partial class GrabFrame : Window
         UpdateTranslationProgress();
 
         string? failureMessage = null;
+
+        // Set as late as possible — nothing above awaits, so no second pass can slip in before here,
+        // and a throw in the setup above can't leave the flag stuck on.
+        isTranslating = true;
 
         try
         {
@@ -6251,6 +6263,7 @@ public partial class GrabFrame : Window
         }
         finally
         {
+            isTranslating = false;
             HideTranslationProgress();
         }
 
