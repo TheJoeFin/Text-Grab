@@ -684,6 +684,9 @@ public partial class App : System.Windows.Application
         // Need to dispatch to UI thread if performing UI operations
         Dispatcher.BeginInvoke(() =>
         {
+            if (NotificationUtilities.TryActivateTranscriptionWindow(argsInvoked))
+                return;
+
             EditTextWindow mtw = new(argsInvoked);
             mtw.Show();
         });

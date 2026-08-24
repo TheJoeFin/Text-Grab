@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Windows;
+using Text_Grab.Utilities;
 
 namespace Text_Grab;
 
@@ -17,25 +17,8 @@ public class TextGrabNotificationActivator : NotificationActivator
             // Tapping on the top-level header launches with empty args
             if (invokedArgs.Length != 0)
             {
-                if (invokedArgs.StartsWith("windowId=", StringComparison.Ordinal)
-                    && Guid.TryParse(invokedArgs["windowId=".Length..], out Guid windowId))
-                {
-                    // A transcription-complete toast: re-activate the specific window that received
-                    // the transcript rather than opening a new one (see NotificationUtilities).
-                    foreach (Window window in System.Windows.Application.Current.Windows)
-                    {
-                        if (window is EditTextWindow etw && etw.WindowId == windowId)
-                        {
-                            if (etw.WindowState == WindowState.Minimized)
-                                etw.WindowState = WindowState.Normal;
-                            etw.Activate();
-                            return;
-                        }
-                    }
-
-                    // The window was already closed; nothing to re-activate.
+                if (NotificationUtilities.TryActivateTranscriptionWindow(invokedArgs))
                     return;
-                }
 
                 // Perform a normal launch
                 EditTextWindow mtw = new(invokedArgs);
