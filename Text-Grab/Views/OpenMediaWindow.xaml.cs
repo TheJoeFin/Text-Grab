@@ -47,7 +47,7 @@ public partial class OpenMediaWindow : FluentWindow
 
             FileNameText.Text = info.FileName;
             FileSizeText.Text = $"Size: {info.FileSizeBytes / (1024.0 * 1024.0):0.#} MB";
-            FileDurationText.Text = $"Duration: {info.Duration:mm\\:ss}";
+            FileDurationText.Text = $"Duration: {AudioTranscriptionUtilities.FormatTimecode(info.Duration)}";
             FileModelText.Text = $"Model: {WhisperModelInfo.DisplayName(AudioTranscriptionUtilities.CurrentModelChoice)}";
             FileInfoPanel.Visibility = Visibility.Visible;
 
