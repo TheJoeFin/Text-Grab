@@ -24,7 +24,7 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar
-            Title="Open Audio / Video"
+            Title="Open Audio / Video file to transcribe"
             Height="32"
             Margin="2,2,2,0"
             Padding="8,2"
@@ -32,32 +32,6 @@
 
         <ScrollViewer Grid.Row="1">
             <StackPanel Margin="16,12,16,8">
-
-                <!--  Only Audio is wired up today. Video is a placeholder for a future, unrelated  -->
-                <!--  feature (frame-based OCR of a video's frames), not audio transcription.  -->
-                <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
-                    <ToggleButton
-                        Padding="14,6"
-                        IsChecked="True"
-                        IsEnabled="False"
-                        Style="{StaticResource ToggleSymbolButton}">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Margin="0,0,6,0" Symbol="MusicNote224" />
-                            <TextBlock Text="Audio" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <ToggleButton
-                        Margin="8,0,0,0"
-                        Padding="14,6"
-                        IsEnabled="False"
-                        Style="{StaticResource ToggleSymbolButton}"
-                        ToolTip="Coming soon">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Margin="0,0,6,0" Symbol="Video24" />
-                            <TextBlock Text="Video" />
-                        </StackPanel>
-                    </ToggleButton>
-                </StackPanel>
 
                 <TextBlock Style="{StaticResource TextHeader}" Text="Audio file" />
                 <StackPanel Margin="0,8,0,4" Orientation="Horizontal">
@@ -89,10 +63,18 @@
                     CornerRadius="6"
                     Visibility="Collapsed">
                     <StackPanel>
-                        <TextBlock x:Name="FileNameText" FontWeight="Medium" TextWrapping="Wrap" />
-                        <TextBlock x:Name="FileSizeText" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock x:Name="FileDurationText" Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock x:Name="FileModelText" Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="FileNameText"
+                            FontWeight="Medium"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="FileSizeText"
+                            Margin="0,4,0,0"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="FileDurationText"
+                            Margin="0,2,0,0"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <TextBlock
                             Margin="0,8,0,0"
                             FontSize="12"
@@ -102,7 +84,51 @@
                     </StackPanel>
                 </Border>
 
-                <TextBlock Margin="0,20,0,0" Style="{StaticResource TextHeader}" Text="Hot words" />
+                <TextBlock
+                    Margin="0,20,0,0"
+                    Style="{StaticResource TextHeader}"
+                    Text="Transcription model" />
+                <ComboBox
+                    x:Name="ModelComboBox"
+                    Margin="0,8,0,0"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.AutomationId="OpenMedia.ModelComboBox"
+                    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+                    SelectionChanged="ModelComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Fastest — English" Tag="TinyEnglish" />
+                    <ComboBoxItem Content="Fast — English" Tag="BaseEnglish" />
+                    <ComboBoxItem Content="Balanced — multilingual" Tag="BaseMultilingual" />
+                    <ComboBoxItem Content="Most accurate — multilingual" Tag="SmallMultilingual" />
+                </ComboBox>
+
+                <Border
+                    Margin="0,8,0,0"
+                    Padding="12"
+                    Background="{ui:ThemeResource SolidBackgroundFillColorBaseAltBrush}"
+                    CornerRadius="6">
+                    <StackPanel>
+                        <TextBlock
+                            x:Name="ModelLanguageText"
+                            FontWeight="Medium"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="ModelDescriptionText"
+                            Margin="0,4,0,0"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="ModelDownloadStatusText"
+                            Margin="0,8,0,0"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock
+                    Margin="0,20,0,0"
+                    Style="{StaticResource TextHeader}"
+                    Text="Hot words" />
                 <TextBlock
                     Margin="0,4,0,8"
                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -136,9 +162,7 @@
                     </Button>
                 </Grid>
 
-                <StackPanel
-                    Margin="0,20,0,0"
-                    Orientation="Horizontal">
+                <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
                     <ui:ToggleSwitch
                         x:Name="NotifyOnCompleteToggle"
                         AutomationProperties.AutomationId="OpenMedia.NotifyOnCompleteToggle"
@@ -150,9 +174,7 @@
                         Text="Show a notification when transcription is done" />
                 </StackPanel>
 
-                <StackPanel
-                    Margin="0,8,0,0"
-                    Orientation="Horizontal">
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                     <ui:ToggleSwitch
                         x:Name="IncludeTimecodesToggle"
                         AutomationProperties.AutomationId="OpenMedia.IncludeTimecodesToggle"
@@ -201,8 +223,8 @@
                     Content="Cancel" />
                 <ui:Button
                     x:Name="StartTranscriptionButton"
-                    AutomationProperties.AutomationId="OpenMedia.StartTranscriptionButton"
                     Appearance="Primary"
+                    AutomationProperties.AutomationId="OpenMedia.StartTranscriptionButton"
                     Click="StartTranscriptionButton_Click"
                     Content="Start Transcription"
                     IsEnabled="False" />

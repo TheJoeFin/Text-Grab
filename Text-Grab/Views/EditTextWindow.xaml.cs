@@ -7277,7 +7277,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     /// <summary>Reflects the persisted transcription-model choice in the context-menu check marks.</summary>
-    private void SyncTranscriptionModelMenu()
+    internal void SyncTranscriptionModelMenu()
     {
         string current = DefaultSettings.AudioTranscriptionModel;
         ModelTinyEnglishMenuItem.IsChecked = current == "TinyEnglish";

@@ -237,7 +237,17 @@ public static class AudioTranscriptionUtilities
     public static bool IsAudioTranscriptionSupported() => true;
 
     /// <summary>True once the selected Whisper model has been downloaded and is available locally.</summary>
-    public static bool IsModelDownloaded() => File.Exists(ModelPathFor(CurrentModelChoice));
+    public static bool IsModelDownloaded() => IsModelDownloaded(CurrentModelChoice);
+
+    /// <summary>True once the given Whisper model has been downloaded and is available locally.</summary>
+    public static bool IsModelDownloaded(WhisperModelChoice choice) => File.Exists(ModelPathFor(choice));
+
+    /// <summary>The on-disk size of an already-downloaded model, or null if it hasn't been downloaded yet.</summary>
+    public static long? DownloadedModelSizeBytes(WhisperModelChoice choice)
+    {
+        string path = ModelPathFor(choice);
+        return File.Exists(path) ? new FileInfo(path).Length : null;
+    }
 
     /// <summary>
     /// Downloads a GGML model to LocalAppData if it isn't already present, returning its path. The
@@ -611,6 +621,25 @@ internal static class WhisperModelInfo
         WhisperModelChoice.SmallMultilingual => "Most accurate — multilingual",
         _ => "Balanced — multilingual",
     };
+
+    /// <summary>Longer description of the speed/accuracy/language tradeoff, shown once a model is picked.</summary>
+    public static string Description(WhisperModelChoice choice) => choice switch
+    {
+        WhisperModelChoice.TinyEnglish =>
+            "The smallest and fastest model here. English speech only, and the least accurate — best for quick drafts where speed matters more than getting every word right.",
+        WhisperModelChoice.BaseEnglish =>
+            "Still fast, with noticeably better accuracy than the tiny model. English speech only.",
+        WhisperModelChoice.SmallMultilingual =>
+            "The most accurate model here, but the slowest to process. Automatically detects the spoken language and covers dozens beyond English.",
+        _ =>
+            "A good default: balances speed and accuracy. Automatically detects the spoken language and covers dozens beyond English.",
+    };
+
+    /// <summary>Short label for the language coverage, shown alongside <see cref="Description"/>.</summary>
+    public static string LanguageSummary(WhisperModelChoice choice) =>
+        choice is WhisperModelChoice.TinyEnglish or WhisperModelChoice.BaseEnglish
+            ? "English only"
+            : "Multilingual — auto-detects language";
 }
 
 /// <summary>Where <see cref="LiveAudioTranscriber"/> pulls audio from.</summary>

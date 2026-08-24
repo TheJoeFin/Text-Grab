@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
 
@@ -18,6 +19,18 @@ public partial class OpenMediaWindow : FluentWindow
 
         NotifyOnCompleteToggle.IsChecked = AppUtilities.TextGrabSettings.NotifyOnTranscriptionComplete;
         IncludeTimecodesToggle.IsChecked = AppUtilities.TextGrabSettings.IncludeTimecodesInTranscription;
+
+        WhisperModelChoice currentChoice = AudioTranscriptionUtilities.CurrentModelChoice;
+        foreach (ComboBoxItem item in ModelComboBox.Items)
+        {
+            if (item.Tag is string tag && tag == currentChoice.ToString())
+            {
+                ModelComboBox.SelectedItem = item;
+                break;
+            }
+        }
+
+        UpdateModelDetails(currentChoice);
     }
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -48,7 +61,6 @@ public partial class OpenMediaWindow : FluentWindow
             FileNameText.Text = info.FileName;
             FileSizeText.Text = $"Size: {info.FileSizeBytes / (1024.0 * 1024.0):0.#} MB";
             FileDurationText.Text = $"Duration: {AudioTranscriptionUtilities.FormatTimecode(info.Duration)}";
-            FileModelText.Text = $"Model: {WhisperModelInfo.DisplayName(AudioTranscriptionUtilities.CurrentModelChoice)}";
             FileInfoPanel.Visibility = Visibility.Visible;
 
             selectedFilePath = path;
@@ -111,6 +123,35 @@ public partial class OpenMediaWindow : FluentWindow
         AppUtilities.TextGrabSettings.Save();
     }
 
+    private void ModelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ModelComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not string tag)
+            return;
+
+        WhisperModelChoice choice = WhisperModelInfo.Parse(tag);
+
+        AppUtilities.TextGrabSettings.AudioTranscriptionModel = tag;
+        AppUtilities.TextGrabSettings.Save();
+        UpdateModelDetails(choice);
+
+        // Keep the live-transcription context menu (on the owning editor window) in sync, so it
+        // doesn't show a stale check mark if opened after this window changes the model.
+        if (Owner is EditTextWindow owningEditWindow)
+            owningEditWindow.SyncTranscriptionModelMenu();
+    }
+
+    /// <summary>Fills in the language/accuracy/download-size details panel for the given model.</summary>
+    private void UpdateModelDetails(WhisperModelChoice choice)
+    {
+        ModelLanguageText.Text = WhisperModelInfo.LanguageSummary(choice);
+        ModelDescriptionText.Text = WhisperModelInfo.Description(choice);
+
+        long? downloadedBytes = AudioTranscriptionUtilities.DownloadedModelSizeBytes(choice);
+        ModelDownloadStatusText.Text = downloadedBytes is long bytes
+            ? $"Already downloaded — {bytes / (1024.0 * 1024.0):0.#} MB on disk."
+            : "Not downloaded yet — it will download automatically the first time you use it.";
+    }
+
     private async void StartTranscriptionButton_Click(object sender, RoutedEventArgs e)
     {
         if (Owner is EditTextWindow etw && selectedFilePath is not null)
@@ -139,6 +180,7 @@ public partial class OpenMediaWindow : FluentWindow
     private void SetTranscribingState(bool transcribing)
     {
         BrowseButton.IsEnabled = !transcribing;
+        ModelComboBox.IsEnabled = !transcribing;
         HotWordsTextBox.IsEnabled = !transcribing;
         HotWordsLookupButton.IsEnabled = !transcribing;
         NotifyOnCompleteToggle.IsEnabled = !transcribing;
