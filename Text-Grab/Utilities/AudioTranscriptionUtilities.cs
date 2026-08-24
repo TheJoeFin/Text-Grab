@@ -412,9 +412,17 @@ public static class AudioTranscriptionUtilities
             double clipTotalSeconds = Math.Max(0, wavStream.Length - 44) / 32000.0;
 
             Stopwatch stopwatch = Stopwatch.StartNew();
+            // Without this, whisper.cpp conditions each ~30s decode window on the text it just produced
+            // for the previous window. That's fine for continuity, but once a window decodes badly
+            // (applause, silence, cross-talk, a speaker handoff) the garbage becomes the prompt for the
+            // next window, and whisper.cpp is prone to spiraling into repeated garbage tokens once it's
+            // conditioned on its own bad output — corrupting the rest of a long file instead of just the
+            // one bad segment. WithNoContext() decodes each window independently so a bad patch stays
+            // contained to that patch. Matches the live path (see LiveAudioTranscriber.StartAsync).
             WhisperProcessorBuilder processorBuilder = factoryLease.Factory.CreateBuilder()
                 .WithLanguage(WhisperModelInfo.LanguageFor(CurrentModelChoice))
-                .WithThreads(Math.Max(1, Environment.ProcessorCount - 1));
+                .WithThreads(Math.Max(1, Environment.ProcessorCount - 1))
+                .WithNoContext();
 
             // CarryInitialPrompt re-applies the hot words to every decode window (not just the first),
             // so the bias holds across long files instead of fading out after the first segment.
