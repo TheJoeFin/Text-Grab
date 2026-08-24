@@ -5537,27 +5537,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void TrimEachLineMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        static string TrimEachLine(string workingString)
-        {
-            string[] stringSplit = workingString.Split(Environment.NewLine);
-            string finalString = "";
-
-            foreach (string line in stringSplit)
-            {
-                if (!string.IsNullOrWhiteSpace(line))
-                    finalString += line.Trim() + Environment.NewLine;
-            }
-
-            return finalString;
-        }
-
         if (editorMode == EtwEditorMode.Spreadsheet)
         {
-            TryApplySpreadsheetTextTransform(TrimEachLine);
+            TryApplySpreadsheetTextTransform(StringMethods.TrimEachLine);
             return;
         }
 
-        PassedTextControl.Text = TrimEachLine(PassedTextControl.Text);
+        PassedTextControl.Text = PassedTextControl.Text.TrimEachLine();
+    }
+
+    private void CleanUpText_Click(object sender, RoutedEventArgs e)
+    {
+        bool correctToLatin = AppUtilities.ShouldCorrectToLatin();
+        ApplySelectedTextOrAllTextTransform(text => text.CleanUpText(correctToLatin));
     }
 
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)

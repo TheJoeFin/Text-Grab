@@ -66,6 +66,15 @@ public class PostGrabActionManager
                 OrderNumber = 6.2
             },
             new ButtonInfo(
+                buttonText: "Clean up text",
+                clickEvent: "CleanUpText_Click",
+                symbolIcon: SymbolRegular.TextClearFormatting24,
+                defaultCheckState: DefaultCheckState.Off
+            )
+            {
+                OrderNumber = 6.25
+            },
+            new ButtonInfo(
                 buttonText: "Remove duplicate lines",
                 clickEvent: "RemoveDuplicateLines_Click",
                 symbolIcon: SymbolRegular.MultiselectLtr24,
@@ -187,15 +196,11 @@ public class PostGrabActionManager
                 break;
 
             case "TrimEachLine_Click":
-                string[] stringSplit = text.Split(Environment.NewLine);
-                string[] trimmedLines = stringSplit
-                    .Where(line => !string.IsNullOrWhiteSpace(line))
-                    .Select(line => line.Trim())
-                    .ToArray();
+                result = text.TrimEachLine();
+                break;
 
-                result = trimmedLines.Length == 0
-                    ? string.Empty
-                    : string.Join(Environment.NewLine, trimmedLines) + Environment.NewLine;
+            case "CleanUpText_Click":
+                result = text.CleanUpText(AppUtilities.ShouldCorrectToLatin());
                 break;
 
             case "RemoveDuplicateLines_Click":

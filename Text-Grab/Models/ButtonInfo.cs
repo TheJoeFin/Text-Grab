@@ -334,6 +334,14 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 3.15,
+            ButtonText = "Clean Up Text",
+            SymbolText = "",
+            ClickEvent = "CleanUpText_Click",
+            SymbolIcon = SymbolRegular.TextClearFormatting24
+        },
+        new()
+        {
             OrderNumber = 3.2,
             ButtonText = "Try to make Numbers",
             SymbolText = "",

@@ -13,7 +13,7 @@ public class PostGrabActionManagerTests
 
         // Assert
         Assert.NotNull(actions);
-        Assert.Equal(6, actions.Count);
+        Assert.Equal(7, actions.Count);
     }
 
     [Fact]
@@ -25,6 +25,7 @@ public class PostGrabActionManagerTests
         // Assert
         Assert.Contains(actions, a => a.ButtonText == "Fix GUIDs");
         Assert.Contains(actions, a => a.ButtonText == "Trim each line");
+        Assert.Contains(actions, a => a.ButtonText == "Clean up text");
         Assert.Contains(actions, a => a.ButtonText == "Remove duplicate lines");
         Assert.Contains(actions, a => a.ButtonText == "Web Search");
         Assert.Contains(actions, a => a.ButtonText == "Try to insert text");
@@ -102,6 +103,21 @@ public class PostGrabActionManagerTests
         string[] lines = result.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(3, lines.Length);
         Assert.Single(lines, l => l == "Line 1");
+    }
+
+    [Fact]
+    public async Task ExecutePostGrabAction_CleanUpText_NormalizesWhitespace()
+    {
+        // Arrange
+        ButtonInfo action = PostGrabActionManager.GetDefaultPostGrabActions()
+            .First(a => a.ClickEvent == "CleanUpText_Click");
+        string input = "  ragged   line \n\n\n\n\tsecond\tline  ";
+
+        // Act
+        string result = await PostGrabActionManager.ExecutePostGrabAction(action, input);
+
+        // Assert
+        Assert.Equal($"ragged line{Environment.NewLine}{Environment.NewLine}second line", result);
     }
 
     [Fact]

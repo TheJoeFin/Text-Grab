@@ -539,4 +539,94 @@ you are a bold one!", @"", 0, SpotInLine.End)]
     {
         Assert.Equal(expected, input.CorrectCommonGuidErrors());
     }
+
+    [Fact]
+    public void CleanUpText_CollapsesSpacesTabsAndTrimsEachLine()
+    {
+        string messyText = "\tHello    there  \n   general \t\t kenobi   ";
+        string expected = $"Hello there{Environment.NewLine}general kenobi";
+
+        Assert.Equal(expected, messyText.CleanUpText());
+    }
+
+    [Fact]
+    public void CleanUpText_ReducesBlankLineRunsToOneBlankLine()
+    {
+        string messyText = "First paragraph.\n\n\n\n   \n\nSecond paragraph.";
+        string expected = $"First paragraph.{Environment.NewLine}{Environment.NewLine}Second paragraph.";
+
+        Assert.Equal(expected, messyText.CleanUpText());
+    }
+
+    [Fact]
+    public void CleanUpText_KeepsSingleNewlinesBetweenLines()
+    {
+        string messyText = "one\ntwo\nthree";
+        string expected = $"one{Environment.NewLine}two{Environment.NewLine}three";
+
+        Assert.Equal(expected, messyText.CleanUpText());
+    }
+
+    [Fact]
+    public void CleanUpText_NormalizesMixedNewlineStyles()
+    {
+        string messyText = "one\r\ntwo\rthree\nfour";
+        string expected = string.Join(Environment.NewLine, "one", "two", "three", "four");
+
+        Assert.Equal(expected, messyText.CleanUpText());
+    }
+
+    [Fact]
+    public void CleanUpText_RemovesNonBreakingAndZeroWidthCharacters()
+    {
+        // A non-breaking space, a zero-width space, and a BOM, all common in text copied
+        // from a web page and all invisible to the user.
+        string messyText = "web\u00A0 page\u200Btext\uFEFF here";
+        string expected = "web pagetext here";
+
+        Assert.Equal(expected, messyText.CleanUpText());
+    }
+
+    [Fact]
+    public void CleanUpText_TrimsLeadingAndTrailingBlankLines()
+    {
+        string messyText = "\n\n  \nkeep me\n  \n\n";
+
+        Assert.Equal("keep me", messyText.CleanUpText());
+    }
+
+    [Fact]
+    public void CleanUpText_LeavesLatinLookalikesAloneByDefault()
+    {
+        string messyText = "Ωmega";
+
+        Assert.Equal("Ωmega", messyText.CleanUpText());
+        Assert.Equal("Omega", messyText.CleanUpText(correctToLatin: true));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("\n\n\n")]
+    public void CleanUpText_EmptyOrWhitespaceOnlyReturnsEmpty(string input)
+    {
+        Assert.Equal(string.Empty, input.CleanUpText());
+    }
+
+    [Fact]
+    public void TrimEachLine_TrimsLinesAndDropsBlankOnes()
+    {
+        string messyText = string.Join(Environment.NewLine, "  first  ", "   ", "", "second\t");
+        string expected = $"first{Environment.NewLine}second{Environment.NewLine}";
+
+        Assert.Equal(expected, messyText.TrimEachLine());
+    }
+
+    [Fact]
+    public void TrimEachLine_AllBlankReturnsEmpty()
+    {
+        string messyText = string.Join(Environment.NewLine, "   ", "", "\t");
+
+        Assert.Equal(string.Empty, messyText.TrimEachLine());
+    }
 }

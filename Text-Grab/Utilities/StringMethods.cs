@@ -283,6 +283,69 @@ public static partial class StringMethods
         return joinedString.Trim();
     }
 
+    /// <summary>
+    /// Normalizes text pasted in from another app so it is presentable in a new document.
+    /// Runs of spaces, tabs, and other unicode space characters collapse to a single space,
+    /// zero-width characters are dropped, every line is trimmed, and runs of blank lines are
+    /// reduced to a single blank line so paragraphs stay separated without stacked returns.
+    /// </summary>
+    /// <param name="correctToLatin">
+    /// When true, look-alike Greek and Cyrillic characters are also mapped to their Latin
+    /// equivalents. This is lossy for genuinely non-Latin text, so callers decide.
+    /// </param>
+    public static string CleanUpText(this string textToClean, bool correctToLatin = false)
+    {
+        ArgumentNullException.ThrowIfNull(textToClean);
+
+        if (textToClean.Length == 0)
+            return string.Empty;
+
+        // Work in bare '\n' so the line and blank-line passes only have one newline shape to
+        // consider, then put the platform newline back at the very end.
+        string workingText = NewlineRegex().Replace(textToClean, "\n");
+
+        // Zero-width characters are not matched by \s, so they have to go before the space
+        // collapse or they leave two "spaces" looking like one.
+        workingText = ZeroWidthCharacters().Replace(workingText, "");
+        workingText = HorizontalWhitespaceRuns().Replace(workingText, " ");
+
+        string[] lines = workingText.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+            lines[i] = lines[i].Trim();
+
+        // Trimming first turns whitespace-only lines into empty ones so they count toward a run.
+        workingText = string.Join('\n', lines);
+        workingText = BlankLineRuns().Replace(workingText, "\n\n");
+        workingText = workingText.Trim('\n');
+
+        if (correctToLatin)
+            workingText = workingText.ReplaceGreekOrCyrillicWithLatin();
+
+        return workingText.Replace("\n", Environment.NewLine);
+    }
+
+    /// <summary>
+    /// Trims each line and drops the lines which are empty or only whitespace.
+    /// The result ends with a trailing newline unless it is empty.
+    /// </summary>
+    public static string TrimEachLine(this string textToTrim)
+    {
+        ArgumentNullException.ThrowIfNull(textToTrim);
+
+        StringBuilder trimmedText = new();
+
+        foreach (string line in textToTrim.Split(Environment.NewLine))
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            trimmedText.Append(line.Trim());
+            trimmedText.Append(Environment.NewLine);
+        }
+
+        return trimmedText.ToString();
+    }
+
     public static string MakeStringSingleLine(this string textToEdit)
     {
         if (!textToEdit.Contains('\n')
@@ -974,6 +1037,19 @@ public static partial class StringMethods
 
     [GeneratedRegex(@"-+")]
     private static partial Regex MultiDashes();
+
+    // Zero-width space, non-joiner, joiner, word joiner, and BOM. Common in text copied
+    // from web pages and invisible to the user, but they break word matching downstream.
+    [GeneratedRegex(@"[\u200B-\u200D\u2060\uFEFF]")]
+    private static partial Regex ZeroWidthCharacters();
+
+    // Any whitespace except a newline, so tabs, non-breaking spaces, and the other unicode
+    // space separators all collapse along with ordinary spaces.
+    [GeneratedRegex(@"[^\S\n]+")]
+    private static partial Regex HorizontalWhitespaceRuns();
+
+    [GeneratedRegex(@"\n{3,}")]
+    private static partial Regex BlankLineRuns();
 
     public static string ExplainRegexPattern(this string pattern)
     {

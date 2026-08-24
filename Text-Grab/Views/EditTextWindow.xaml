@@ -289,6 +289,11 @@
                         Click="TrimEachLineMenuItem_Click"
                         Header="_Trim Each Line" />
                     <MenuItem
+                        x:Name="CleanUpTextMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.CleanUpText"
+                        Click="CleanUpText_Click"
+                        Header="Clean _Up Text" />
+                    <MenuItem
                         x:Name="TryToNumberMenuItem"
                         Click="TryToNumberMenuItem_Click"
                         Header="Try To Make _Numbers" />
