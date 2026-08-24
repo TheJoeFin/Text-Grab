@@ -224,12 +224,16 @@ public class PostGrabActionManager
                 TranslationResult translation = await WinAiTranslator.TranslateAsync(text, systemLanguage);
                 result = translation.Text;
 
-                // The grab already happened, so a failure here must be reported or the user just
-                // sees untranslated text with no explanation.
-                if (!translation.Succeeded)
+                // The grab already happened, so a real failure must be reported or the user just
+                // sees untranslated text with no explanation. NotNeeded (the text is already in the
+                // target language) and Unavailable (no Windows AI on this device) are the normal
+                // case for most users on every single grab, and the text is unchanged either way —
+                // a modal there would fire after every grab and tell the user nothing.
+                if (!translation.Succeeded
+                    && translation.Failure is not TranslationFailure.NotNeeded and not TranslationFailure.Unavailable)
                     await new Wpf.Ui.Controls.MessageBox
                     {
-                        Title = translation.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                        Title = "Translation Failed",
                         Content = translation.Message ?? "The text could not be translated.",
                         CloseButtonText = "OK"
                     }.ShowDialogAsync();
