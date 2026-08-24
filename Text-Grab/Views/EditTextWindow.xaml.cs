@@ -1509,6 +1509,34 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                         .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty))));
     }
 
+    internal static string BuildSpreadsheetSelectionHtml(
+        DataTable dataTable,
+        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
+    {
+        ArgumentNullException.ThrowIfNull(dataTable);
+        ArgumentNullException.ThrowIfNull(cellCoordinates);
+
+        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
+            .Distinct()
+            .Where(cell => cell.RowIndex >= 0
+                && cell.RowIndex < dataTable.Rows.Count
+                && cell.ColumnIndex >= 0
+                && cell.ColumnIndex < dataTable.Columns.Count)];
+
+        if (validCoordinates.Count == 0)
+            return string.Empty;
+
+        List<List<string>> rows = [.. validCoordinates
+            .GroupBy(cell => cell.RowIndex)
+            .OrderBy(group => group.Key)
+            .Select(group => group
+                .OrderBy(cell => cell.ColumnIndex)
+                .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty)
+                .ToList())];
+
+        return ClipboardUtilities.BuildCfHtmlTable(rows);
+    }
+
     internal static string BuildSpreadsheetSelectionMarkdown(
         DataTable dataTable,
         IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
@@ -2142,10 +2170,33 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private bool TrySetSpreadsheetClipboardSelection(string plainText, string htmlClipboardData)
+    {
+        if (string.IsNullOrEmpty(plainText))
+            return false;
+
+        try
+        {
+            System.Windows.DataObject dataObject = new();
+            dataObject.SetText(plainText);
+            if (!string.IsNullOrEmpty(htmlClipboardData))
+                dataObject.SetData(System.Windows.DataFormats.Html, htmlClipboardData);
+
+            System.Windows.Clipboard.SetDataObject(dataObject, true);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private bool TryCopySpreadsheetSelectionToClipboard(IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
     {
-        string selectionText = BuildSpreadsheetSelectionText(spreadsheetTable, cellCoordinates);
-        return !string.IsNullOrEmpty(selectionText) && TrySetClipboardText(selectionText);
+        List<(int RowIndex, int ColumnIndex)> coordinates = [.. cellCoordinates];
+        string selectionText = BuildSpreadsheetSelectionText(spreadsheetTable, coordinates);
+        string selectionHtml = BuildSpreadsheetSelectionHtml(spreadsheetTable, coordinates);
+        return TrySetSpreadsheetClipboardSelection(selectionText, selectionHtml);
     }
 
     private void ClearSpreadsheetCellValuesAndSync(IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
@@ -2172,7 +2223,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         CommitSpreadsheetEditsAndCapturePendingHistory();
         SpreadsheetUndoState? beforeChange = CreateCurrentSpreadsheetUndoState(syncFromTable: true);
 
-        if (!TryCutSpreadsheetCellValues(spreadsheetTable, selectedCellCoordinates, TrySetClipboardText))
+        string selectionHtml = BuildSpreadsheetSelectionHtml(spreadsheetTable, selectedCellCoordinates);
+        if (!TryCutSpreadsheetCellValues(
+                spreadsheetTable,
+                selectedCellCoordinates,
+                text => TrySetSpreadsheetClipboardSelection(text, selectionHtml)))
             return false;
 
         SyncSpreadsheetDocumentFromTable();

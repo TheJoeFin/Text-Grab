@@ -119,6 +119,49 @@ public class EditTextWindowSpreadsheetTests
     }
 
     [Fact]
+    public void BuildSpreadsheetSelectionHtml_IncludesOnlySelectedCellsAsTableRows()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Columns.Add("B", typeof(string));
+        dataTable.Columns.Add("C", typeof(string));
+        dataTable.Rows.Add("a1", "b1", "c1");
+        dataTable.Rows.Add("a2", "b2", "c2");
+
+        string html = EditTextWindow.BuildSpreadsheetSelectionHtml(
+            dataTable,
+            [
+                (0, 0),
+                (0, 2),
+                (1, 0),
+                (1, 2),
+                (-1, 0),
+                (5, 5)
+            ]);
+
+        string tabSeparated = Text_Grab.Utilities.ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+
+        Assert.Equal("a1\tc1" + Environment.NewLine + "a2\tc2", tabSeparated.Replace("\n", Environment.NewLine));
+    }
+
+    [Fact]
+    public void BuildSpreadsheetSelectionHtml_ReturnsEmptyWhenNoValidCells()
+    {
+        DataTable dataTable = new();
+        dataTable.Columns.Add("A", typeof(string));
+        dataTable.Rows.Add("a1");
+
+        string html = EditTextWindow.BuildSpreadsheetSelectionHtml(
+            dataTable,
+            [
+                (-1, 0),
+                (5, 5)
+            ]);
+
+        Assert.Equal(string.Empty, html);
+    }
+
+    [Fact]
     public void BuildSpreadsheetSelectionMarkdown_BuildsTableFromSelectedCells()
     {
         DataTable dataTable = new();

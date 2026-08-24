@@ -133,6 +133,55 @@ public class ClipboardUtilities
         return sb.ToString();
     }
 
+    public static string BuildCfHtmlTable(IReadOnlyList<IReadOnlyList<string>> rows)
+    {
+        if (rows is null || rows.Count == 0)
+            return string.Empty;
+
+        StringBuilder table = new();
+        table.Append("<table border=\"1\" style=\"border-collapse:collapse\">");
+
+        foreach (IReadOnlyList<string> row in rows)
+        {
+            table.Append("<tr>");
+            foreach (string cell in row)
+            {
+                table.Append("<td>");
+                table.Append(WebUtility.HtmlEncode(cell ?? string.Empty).Replace("\r\n", "<br>").Replace("\n", "<br>"));
+                table.Append("</td>");
+            }
+            table.Append("</tr>");
+        }
+
+        table.Append("</table>");
+
+        return WrapHtmlFragmentAsCfHtml(table.ToString());
+    }
+
+    internal static string WrapHtmlFragmentAsCfHtml(string htmlFragment)
+    {
+        const string htmlPrefix = "<html>\r\n<body>\r\n<!--StartFragment-->";
+        const string htmlSuffix = "<!--EndFragment-->\r\n</body>\r\n</html>\r\n";
+
+        // CF_HTML header fields are 10-digit, zero-padded byte offsets into the UTF-8
+        // encoded clipboard payload. See https://learn.microsoft.com/windows/win32/dataxchg/html-clipboard-format
+        static string BuildHeader(int startHtml, int endHtml, int startFragment, int endFragment) =>
+            "Version:0.9\r\n" +
+            $"StartHTML:{startHtml:D10}\r\n" +
+            $"EndHTML:{endHtml:D10}\r\n" +
+            $"StartFragment:{startFragment:D10}\r\n" +
+            $"EndFragment:{endFragment:D10}\r\n";
+
+        int headerByteLength = Encoding.UTF8.GetByteCount(BuildHeader(0, 0, 0, 0));
+        int startHtmlOffset = headerByteLength;
+        int startFragmentOffset = startHtmlOffset + Encoding.UTF8.GetByteCount(htmlPrefix);
+        int endFragmentOffset = startFragmentOffset + Encoding.UTF8.GetByteCount(htmlFragment);
+        int endHtmlOffset = endFragmentOffset + Encoding.UTF8.GetByteCount(htmlSuffix);
+
+        return BuildHeader(startHtmlOffset, endHtmlOffset, startFragmentOffset, endFragmentOffset)
+            + htmlPrefix + htmlFragment + htmlSuffix;
+    }
+
     public static bool TryGetHtmlTableAsTabSeparated(out string tabSeparated)
     {
         tabSeparated = string.Empty;
