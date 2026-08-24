@@ -62,9 +62,16 @@ internal static class NotificationUtilities
         toast.Show();
     }
 
-    internal static void ShowTranscriptionCompleteToast(string fileDescription)
+    /// <summary>
+    /// Shows a toast for a finished audio transcription. Tapping it re-activates <paramref name="windowId"/>'s
+    /// <see cref="EditTextWindow"/> — the one that actually received the transcript — via
+    /// <see cref="TextGrabNotificationActivator"/>, rather than opening a new window with the text
+    /// (which would also have to be truncated to fit the ~5000-byte toast payload limit).
+    /// </summary>
+    internal static void ShowTranscriptionCompleteToast(string fileDescription, Guid windowId)
     {
         new ToastContentBuilder()
+            .AddArgument("windowId", windowId.ToString())
             .AddText("Text Grab")
             .AddText($"Transcription complete: {fileDescription}")
             .Show();

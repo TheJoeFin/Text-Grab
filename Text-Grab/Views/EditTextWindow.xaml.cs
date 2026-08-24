@@ -74,6 +74,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand DefaultWebSearchCmd = new();
     public bool LaunchedFromNotification = false;
 
+    /// <summary>
+    /// Stable per-instance ID so a "transcription complete" toast can re-activate the exact window
+    /// that received the transcript, instead of opening a fresh one with (possibly truncated) text.
+    /// </summary>
+    internal readonly Guid WindowId = Guid.NewGuid();
+
     /// <summary>Live audio transcriber, created lazily when the bottom-bar toggle is turned on.</summary>
     private LiveAudioTranscriber? _liveTranscriber;
 
@@ -3128,7 +3134,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             string fileDescription = multiple
                 ? $"{audioFiles.Count} files"
                 : Path.GetFileName(audioFiles[0]);
-            NotificationUtilities.ShowTranscriptionCompleteToast(fileDescription);
+            NotificationUtilities.ShowTranscriptionCompleteToast(fileDescription, WindowId);
         }
     }
 
