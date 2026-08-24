@@ -75,6 +75,84 @@ public static class AudioDebugLog
 }
 
 /// <summary>
+/// One loaded <see cref="WhisperFactory"/> plus the number of leases still using it. Disposing a
+/// factory frees the native model, so a factory that is superseded (the user picks another model)
+/// while a transcription is still decoding against it is <see cref="Retire"/>d instead: it is
+/// disposed only once the last lease is returned.
+/// </summary>
+internal sealed class WhisperFactoryHandle
+{
+    private readonly object _lock = new();
+    private int _users;
+    private bool _retired;
+    private bool _disposed;
+
+    internal WhisperFactory Factory { get; }
+    internal WhisperModelChoice Choice { get; }
+
+    internal WhisperFactoryHandle(WhisperFactory factory, WhisperModelChoice choice)
+    {
+        Factory = factory;
+        Choice = choice;
+    }
+
+    internal WhisperFactoryLease Lease()
+    {
+        lock (_lock)
+            _users++;
+
+        return new WhisperFactoryLease(this);
+    }
+
+    /// <summary>Marks the factory superseded; it is disposed as soon as the last lease is returned.</summary>
+    internal void Retire()
+    {
+        lock (_lock)
+        {
+            _retired = true;
+            DisposeIfIdle();
+        }
+    }
+
+    internal void Return()
+    {
+        lock (_lock)
+        {
+            _users--;
+            DisposeIfIdle();
+        }
+    }
+
+    /// <summary>Caller must hold <see cref="_lock"/>.</summary>
+    private void DisposeIfIdle()
+    {
+        if (_disposed || !_retired || _users > 0)
+            return;
+
+        _disposed = true;
+        AudioDebugLog.Write($"WhisperFactoryHandle: disposing retired factory for {Choice}");
+        try { Factory.Dispose(); } catch { }
+    }
+}
+
+/// <summary>
+/// A borrowed reference to a shared <see cref="WhisperFactory"/>. The factory owns the native model
+/// that every <see cref="WhisperProcessor"/> built from it decodes against, so it must outlive them:
+/// hold the lease for as long as any such processor lives, and dispose it after the processor.
+/// </summary>
+internal sealed class WhisperFactoryLease : IDisposable
+{
+    private WhisperFactoryHandle? _handle;
+
+    internal WhisperFactoryLease(WhisperFactoryHandle handle) => _handle = handle;
+
+    internal WhisperFactory Factory =>
+        (_handle ?? throw new ObjectDisposedException(nameof(WhisperFactoryLease))).Factory;
+
+    public void Dispose() => Interlocked.Exchange(ref _handle, null)?.Return();
+}
+
+/// <summary>
 /// On-device audio transcription backed by local Whisper (whisper.cpp) models via Whisper.net.
 /// Runs entirely on the CPU, works packaged or unpackaged on x64 and arm64, and does not depend on
 /// any experimental OS runtime. Arbitrary audio is decoded/resampled to the 16 kHz mono WAV that
@@ -87,8 +165,7 @@ public static class AudioTranscriptionUtilities
         ".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg", ".oga", ".opus", ".wma", ".mp4", ".mov",
     };
 
-    private static WhisperFactory? _whisperFactory;
-    private static WhisperModelChoice _loadedModelChoice;
+    private static WhisperFactoryHandle? _factoryHandle;
     private static readonly SemaphoreSlim _factoryLock = new(1, 1);
 
     // Silero VAD (voice activity detection) lets live transcription skip silence and cut on natural
@@ -200,36 +277,34 @@ public static class AudioTranscriptionUtilities
     }
 
     /// <summary>
-    /// Returns the shared, cached <see cref="WhisperFactory"/> for the currently selected model,
+    /// Borrows the shared, cached <see cref="WhisperFactory"/> for the currently selected model,
     /// downloading the model if needed. The factory is expensive to create (it loads the model), so
-    /// it is created once and reused. If the model choice changes, the old factory is disposed and a
-    /// new one is loaded.
+    /// it is created once and reused. If the model choice changes, the old factory is retired and a
+    /// new one is loaded — see <see cref="WhisperFactoryLease"/> for why the caller must hold the
+    /// lease for as long as it uses processors built from the factory.
     /// </summary>
-    internal static async Task<WhisperFactory> GetFactoryAsync(IProgress<string>? progress, CancellationToken cancellationToken)
+    internal static async Task<WhisperFactoryLease> AcquireFactoryAsync(IProgress<string>? progress, CancellationToken cancellationToken)
     {
         WhisperModelChoice choice = CurrentModelChoice;
-        if (_whisperFactory is not null && _loadedModelChoice == choice)
-            return _whisperFactory;
 
         await _factoryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_whisperFactory is not null && _loadedModelChoice == choice)
-                return _whisperFactory;
+            if (_factoryHandle is not null && _factoryHandle.Choice == choice)
+                return _factoryHandle.Lease();
 
-            if (_whisperFactory is not null)
+            if (_factoryHandle is not null)
             {
-                AudioDebugLog.Write($"GetFactoryAsync: model changed {_loadedModelChoice} -> {choice}, reloading");
-                try { _whisperFactory.Dispose(); } catch { }
-                _whisperFactory = null;
+                AudioDebugLog.Write($"AcquireFactoryAsync: model changed {_factoryHandle.Choice} -> {choice}, reloading");
+                _factoryHandle.Retire();
+                _factoryHandle = null;
             }
 
             string modelPath = await EnsureModelDownloadedAsync(choice, progress, cancellationToken).ConfigureAwait(false);
-            AudioDebugLog.Write($"GetFactoryAsync: loading WhisperFactory for {choice} ({WhisperModelInfo.GgmlTypeFor(choice)})");
-            _whisperFactory = WhisperFactory.FromPath(modelPath);
-            _loadedModelChoice = choice;
-            AudioDebugLog.Write("GetFactoryAsync: WhisperFactory ready");
-            return _whisperFactory;
+            AudioDebugLog.Write($"AcquireFactoryAsync: loading WhisperFactory for {choice} ({WhisperModelInfo.GgmlTypeFor(choice)})");
+            _factoryHandle = new WhisperFactoryHandle(WhisperFactory.FromPath(modelPath), choice);
+            AudioDebugLog.Write("AcquireFactoryAsync: WhisperFactory ready");
+            return _factoryHandle.Lease();
         }
         finally
         {
@@ -314,7 +389,9 @@ public static class AudioTranscriptionUtilities
         // Whisper + audio decoding are CPU-bound; run off the UI thread.
         return await Task.Run(async () =>
         {
-            WhisperFactory factory = await GetFactoryAsync(statusProgress, cancellationToken).ConfigureAwait(false);
+            // The lease is held for the whole decode: a model change (or a live session starting) part
+            // way through must not free the native model this processor is still reading.
+            using WhisperFactoryLease factoryLease = await AcquireFactoryAsync(statusProgress, cancellationToken).ConfigureAwait(false);
 
             statusProgress?.Report("Transcribing audio…");
             AudioDebugLog.Write("TranscribeAudioFileAsync: decoding audio to 16 kHz mono WAV");
@@ -325,7 +402,7 @@ public static class AudioTranscriptionUtilities
             double clipTotalSeconds = Math.Max(0, wavStream.Length - 44) / 32000.0;
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            WhisperProcessorBuilder processorBuilder = factory.CreateBuilder()
+            WhisperProcessorBuilder processorBuilder = factoryLease.Factory.CreateBuilder()
                 .WithLanguage(WhisperModelInfo.LanguageFor(CurrentModelChoice))
                 .WithThreads(Math.Max(1, Environment.ProcessorCount - 1));
 
@@ -598,7 +675,7 @@ public sealed class LiveAudioTranscriber : IDisposable
     }
 
     private readonly List<CaptureChannel> _channels = new();
-    private WhisperFactory? _factory;
+    private WhisperFactoryLease? _factoryLease;
     private WhisperProcessor? _processor;
     private WhisperVadProcessor? _vadProcessor;
     private readonly SemaphoreSlim _processingGate = new(1, 1);
@@ -613,6 +690,11 @@ public sealed class LiveAudioTranscriber : IDisposable
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
     private System.Timers.Timer? _chunkTimer;
     private volatile bool _isRunning;
+
+    // Timer.Stop() does not cancel Elapsed callbacks already queued to the thread pool, so one can
+    // still take the processing gate after StopAsync's flush releases it and run against state
+    // Cleanup() is tearing down. Teardown sets this, and a timed pass that sees it bails out.
+    private volatile bool _stopping;
     private bool _disposed;
 
     /// <summary>Raised with recognized text for each completed (VAD-delimited) utterance.</summary>
@@ -640,6 +722,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             if (_isRunning)
                 return true;
 
+            _stopping = false;
             Source = source;
 
             bool wantsMic = source is LiveCaptureSource.Microphone or LiveCaptureSource.MicrophoneAndSystemAudio;
@@ -652,8 +735,11 @@ public sealed class LiveAudioTranscriber : IDisposable
             }
 
             WhisperModelChoice choice = AudioTranscriptionUtilities.CurrentModelChoice;
-            _factory = await AudioTranscriptionUtilities.GetFactoryAsync(null, CancellationToken.None).ConfigureAwait(false);
-            _processor = _factory.CreateBuilder()
+
+            // Held for the life of the session (released in Cleanup, after the processor): the shared
+            // factory owns the native model _processor decodes against.
+            _factoryLease = await AudioTranscriptionUtilities.AcquireFactoryAsync(null, CancellationToken.None).ConfigureAwait(false);
+            _processor = _factoryLease.Factory.CreateBuilder()
                 .WithLanguage(WhisperModelInfo.LanguageFor(choice))
                 .WithNoContext()   // each utterance stands alone: faster and avoids cross-phrase drift
                 .WithThreads(Math.Max(1, Environment.ProcessorCount - 1))
@@ -718,6 +804,7 @@ public sealed class LiveAudioTranscriber : IDisposable
                 return;
 
             _isRunning = false;
+            _stopping = true;
             _chunkTimer?.Stop();
 
             foreach (CaptureChannel channel in _channels)
@@ -726,7 +813,18 @@ public sealed class LiveAudioTranscriber : IDisposable
             // Flush whatever remains (this waits for any in-flight pass), then clean up.
             try { await ProcessBufferedChunkAsync(flush: true).ConfigureAwait(false); } catch { }
 
-            Cleanup();
+            // Tear down under the same gate the timed passes take, so a callback queued before
+            // Stop() can never be inside ProcessBufferedChunkAsync while state is being disposed.
+            await _processingGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                Cleanup();
+            }
+            finally
+            {
+                _processingGate.Release();
+            }
+
             AudioDebugLog.Write("LiveAudioTranscriber: stopped");
         }
         finally
@@ -776,6 +874,10 @@ public sealed class LiveAudioTranscriber : IDisposable
 
         try
         {
+            // A pass queued before Stop() must not start once teardown has begun.
+            if (_stopping && !flush)
+                return;
+
             WhisperProcessor? processor = _processor;
             WhisperVadProcessor? vad = _vadProcessor;
             if (processor is null || vad is null || _channels.Count == 0)
@@ -918,8 +1020,10 @@ public sealed class LiveAudioTranscriber : IDisposable
             _vadProcessor = null;
         }
 
-        // _factory / VAD factory are shared and owned by AudioTranscriptionUtilities; drop references only.
-        _factory = null;
+        // Return the factory only after the processor built from it is disposed. The VAD factory is
+        // shared and owned by AudioTranscriptionUtilities; nothing to release there.
+        _factoryLease?.Dispose();
+        _factoryLease = null;
     }
 
     public void Dispose()
