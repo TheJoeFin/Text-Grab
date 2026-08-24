@@ -2937,8 +2937,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// every segment is inserted as it arrives, cancelling keeps all text transcribed so far.
     /// <paramref name="hotWords"/> (if provided) biases Whisper toward names/jargon it might otherwise
     /// mishear; it applies only to this call, nothing is persisted.
+    /// <paramref name="overallProgress"/> (if provided) reports progress across all files combined
+    /// (0.0-1.0), so a caller such as <see cref="OpenMediaWindow"/> can drive its own progress bar.
     /// </summary>
-    internal async Task TranscribeAudioFilesAsync(IList<string> audioFiles, string? hotWords = null)
+    internal async Task TranscribeAudioFilesAsync(IList<string> audioFiles, string? hotWords = null, IProgress<double>? overallProgress = null)
     {
         AudioDebugLog.Write($"TranscribeAudioFilesAsync: START with {audioFiles.Count} file(s). Log: {AudioDebugLog.LogPath}");
 
@@ -2970,6 +2972,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.IsReadOnly = true;
         TranscriptionCancelButton.IsEnabled = true;
         TranscriptionStatusText.Text = multiple ? "Transcribing audio files…" : "Transcribing audio…";
+        TranscriptionProgressBar.Visibility = Visibility.Collapsed;
+        TranscriptionProgressBar.Value = 0;
         TranscriptionStatusBar.Visibility = Visibility.Visible;
 
         // Status text (model download, "Transcribing…") updates the status bar; each recognized
@@ -2992,9 +2996,22 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 if (multiple)
                     AppendTranscriptionText($"# {Path.GetFileName(audioFile)}{Environment.NewLine}");
 
+                int fileIndex = i;
+                Progress<double> clipProgress = new(fraction =>
+                {
+                    double overall = (fileIndex + fraction) / audioFiles.Count;
+                    TranscriptionProgressBar.Visibility = Visibility.Visible;
+                    TranscriptionProgressBar.Value = overall * 100;
+                    TranscriptionStatusText.Text = multiple
+                        ? $"Transcribing audio files… ({fileIndex + 1}/{audioFiles.Count}) {fraction:P0}"
+                        : $"Transcribing audio… {fraction:P0}";
+                    overallProgress?.Report(overall);
+                });
+
                 string transcription = await AudioTranscriptionUtilities.TranscribeAudioFileAsync(
                     audioFile, hotWords, statusProgress, segmentProgress, cancellationToken,
-                    includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription);
+                    includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription,
+                    clipProgress: clipProgress);
 
                 if (string.IsNullOrWhiteSpace(transcription))
                     AppendTranscriptionText("(no speech recognized)");
@@ -3045,11 +3062,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private void TranscriptionCancelButton_Click(object sender, RoutedEventArgs e) => CancelAudioTranscription();
+
     /// <summary>
     /// Requests cancellation of the running audio-file transcription. Text already streamed into the
-    /// editor is preserved.
+    /// editor is preserved. Called from the status bar's own Cancel button, and externally by
+    /// <see cref="OpenMediaWindow"/> so its Cancel button can stop a transcription it started.
     /// </summary>
-    private void TranscriptionCancelButton_Click(object sender, RoutedEventArgs e)
+    internal void CancelAudioTranscription()
     {
         if (_transcriptionCts is null)
             return;

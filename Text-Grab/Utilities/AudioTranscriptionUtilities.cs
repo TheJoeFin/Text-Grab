@@ -268,8 +268,11 @@ public static class AudioTranscriptionUtilities
     /// toward names/jargon it might otherwise mishear; it applies only to this call, nothing persists.
     /// When <paramref name="includeTimecodes"/> is true, each segment is prefixed with its start time
     /// (e.g. <c>[01:23]</c>) and placed on its own line.
+    /// <paramref name="clipProgress"/>, if given, reports how far playback has reached through the
+    /// clip (0.0-1.0) after each segment, based on that segment's end time versus the clip's total
+    /// duration — lets callers show a real progress bar instead of an indeterminate spinner.
     /// </summary>
-    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, string? hotWords = null, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, CancellationToken cancellationToken = default, bool includeTimecodes = false)
+    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, string? hotWords = null, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, CancellationToken cancellationToken = default, bool includeTimecodes = false, IProgress<double>? clipProgress = null)
     {
         AudioDebugLog.Write($"TranscribeAudioFileAsync: START path='{audioFilePath}'");
 
@@ -288,6 +291,9 @@ public static class AudioTranscriptionUtilities
             AudioDebugLog.Write("TranscribeAudioFileAsync: decoding audio to 16 kHz mono WAV");
             using MemoryStream wavStream = DecodeToWav16kMono(audioFilePath);
             AudioDebugLog.Write($"TranscribeAudioFileAsync: decoded WAV bytes={wavStream.Length}");
+
+            // 16 kHz mono 16-bit PCM, 44-byte WAV header: 32,000 bytes/second of audio.
+            double clipTotalSeconds = Math.Max(0, wavStream.Length - 44) / 32000.0;
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             WhisperProcessorBuilder processorBuilder = factory.CreateBuilder()
@@ -312,7 +318,12 @@ public static class AudioTranscriptionUtilities
                 builder.Append(segmentText);
                 segmentProgress?.Report(segmentText);
                 segmentCount++;
+
+                if (clipTotalSeconds > 0)
+                    clipProgress?.Report(Math.Clamp(segment.End.TotalSeconds / clipTotalSeconds, 0.0, 1.0));
             }
+
+            clipProgress?.Report(1.0);
 
             stopwatch.Stop();
             string text = CleanTranscript(builder.ToString());

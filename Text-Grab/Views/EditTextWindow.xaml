@@ -1510,11 +1510,21 @@
                     Width="18"
                     Height="18"
                     IsIndeterminate="True" />
-                <TextBlock
-                    x:Name="TranscriptionStatusText"
-                    Margin="10,0,12,0"
-                    VerticalAlignment="Center"
-                    Text="Transcribing…" />
+                <StackPanel Margin="10,0,12,0" MinWidth="140" VerticalAlignment="Center">
+                    <TextBlock
+                        x:Name="TranscriptionStatusText"
+                        VerticalAlignment="Center"
+                        Text="Transcribing…" />
+                    <!--  Determinate: how far through the current clip's duration transcription has reached.  -->
+                    <ProgressBar
+                        x:Name="TranscriptionProgressBar"
+                        Height="4"
+                        Margin="0,4,0,0"
+                        Maximum="100"
+                        Minimum="0"
+                        Value="0"
+                        Visibility="Collapsed" />
+                </StackPanel>
                 <Button
                     x:Name="TranscriptionCancelButton"
                     Padding="10,2"

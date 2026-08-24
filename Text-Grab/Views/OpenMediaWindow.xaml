@@ -68,6 +68,7 @@
                         IsReadOnly="True"
                         PlaceholderText="No file selected" />
                     <ui:Button
+                        x:Name="BrowseButton"
                         Margin="8,0,0,0"
                         Click="BrowseButton_Click"
                         Content="Browse..."
@@ -165,19 +166,47 @@
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel
-            Grid.Row="2"
-            Margin="16,0,16,16"
-            HorizontalAlignment="Right"
-            Orientation="Horizontal">
-            <ui:Button Margin="0,0,8,0" Click="CancelButton_Click" Content="Cancel" />
-            <ui:Button
-                x:Name="StartTranscriptionButton"
-                AutomationProperties.AutomationId="OpenMedia.StartTranscriptionButton"
-                Appearance="Primary"
-                Click="StartTranscriptionButton_Click"
-                Content="Start Transcription"
-                IsEnabled="False" />
-        </StackPanel>
+        <Grid Grid.Row="2" Margin="16,0,16,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Shown only while a transcription started from this window is running.  -->
+            <StackPanel
+                x:Name="TranscribingPanel"
+                Grid.Row="0"
+                Margin="0,0,0,10"
+                Visibility="Collapsed">
+                <TextBlock
+                    x:Name="TranscribingStatusText"
+                    Margin="0,0,0,4"
+                    Text="Transcribing…" />
+                <ProgressBar
+                    x:Name="TranscribingProgressBar"
+                    Height="6"
+                    Maximum="100"
+                    Minimum="0"
+                    Value="0" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="1"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                <ui:Button
+                    x:Name="CancelButton"
+                    Margin="0,0,8,0"
+                    Click="CancelButton_Click"
+                    Content="Cancel" />
+                <ui:Button
+                    x:Name="StartTranscriptionButton"
+                    AutomationProperties.AutomationId="OpenMedia.StartTranscriptionButton"
+                    Appearance="Primary"
+                    Click="StartTranscriptionButton_Click"
+                    Content="Start Transcription"
+                    IsEnabled="False" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </ui:FluentWindow>

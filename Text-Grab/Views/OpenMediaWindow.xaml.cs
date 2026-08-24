@@ -9,6 +9,7 @@ namespace Text_Grab.Views;
 public partial class OpenMediaWindow : FluentWindow
 {
     private string? selectedFilePath;
+    private EditTextWindow? transcribingOwner;
 
     public OpenMediaWindow()
     {
@@ -73,6 +74,16 @@ public partial class OpenMediaWindow : FluentWindow
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
+        if (transcribingOwner is not null)
+        {
+            // A transcription is running: stop it instead of just closing over it. The window
+            // closes itself once StartTranscriptionButton_Click's await returns.
+            transcribingOwner.CancelAudioTranscription();
+            CancelButton.IsEnabled = false;
+            TranscribingStatusText.Text = "Cancelling…";
+            return;
+        }
+
         Close();
     }
 
@@ -104,10 +115,39 @@ public partial class OpenMediaWindow : FluentWindow
     {
         if (Owner is EditTextWindow etw && selectedFilePath is not null)
         {
+            transcribingOwner = etw;
             etw.Activate();
-            await etw.TranscribeAudioFilesAsync([selectedFilePath], HotWordsTextBox.Text.Trim());
+            SetTranscribingState(true);
+
+            Progress<double> progress = new(fraction =>
+            {
+                TranscribingProgressBar.Value = fraction * 100;
+                TranscribingStatusText.Text = $"Transcribing… {fraction:P0}";
+            });
+
+            await etw.TranscribeAudioFilesAsync([selectedFilePath], HotWordsTextBox.Text.Trim(), progress);
         }
 
         Close();
+    }
+
+    /// <summary>
+    /// Toggles this window between "pick a file" and "transcription in progress": inputs and the
+    /// Start button are disabled/hidden, and the Cancel button switches to cancelling the running
+    /// transcription (owned by the main editor window) rather than just closing over it.
+    /// </summary>
+    private void SetTranscribingState(bool transcribing)
+    {
+        BrowseButton.IsEnabled = !transcribing;
+        HotWordsTextBox.IsEnabled = !transcribing;
+        HotWordsLookupButton.IsEnabled = !transcribing;
+        NotifyOnCompleteToggle.IsEnabled = !transcribing;
+        IncludeTimecodesToggle.IsEnabled = !transcribing;
+
+        StartTranscriptionButton.Visibility = transcribing ? Visibility.Collapsed : Visibility.Visible;
+        TranscribingPanel.Visibility = transcribing ? Visibility.Visible : Visibility.Collapsed;
+        TranscribingProgressBar.Value = 0;
+        TranscribingStatusText.Text = "Transcribing…";
+        CancelButton.IsEnabled = true;
     }
 }
