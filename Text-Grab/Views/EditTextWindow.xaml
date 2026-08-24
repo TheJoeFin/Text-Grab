@@ -8,12 +8,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Edit Text"
-    AutomationProperties.AutomationId="EditTextWindow"
     Width="800"
     Height="500"
     MinWidth="200"
     MinHeight="200"
     Activated="Window_Activated"
+    AutomationProperties.AutomationId="EditTextWindow"
     Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
     Closed="Window_Closed"
     Closing="Window_Closing"
@@ -192,11 +192,11 @@
         </Grid.RowDefinitions>
         <ui:TitleBar
             x:Name="UiTitleBar"
-            AutomationProperties.AutomationId="EditText.TitleBar"
             Title="Edit Text"
             Height="32"
             Margin="2,2,2,0"
             Padding="8,2"
+            AutomationProperties.AutomationId="EditText.TitleBar"
             Icon="{StaticResource TextGrabIcon}" />
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -826,11 +826,11 @@
                 Orientation="Horizontal">
                 <Button
                     x:Name="AddSpreadsheetRowButton"
-                    AutomationProperties.AutomationId="EditText.AddSpreadsheetRowButton"
                     Width="32"
                     Height="32"
                     Margin="0,0,4,0"
                     Padding="0"
+                    AutomationProperties.AutomationId="EditText.AddSpreadsheetRowButton"
                     Background="Transparent"
                     BorderThickness="0"
                     Click="AddSpreadsheetRowMenuItem_Click"
@@ -840,11 +840,11 @@
                 </Button>
                 <Button
                     x:Name="AddSpreadsheetColumnButton"
-                    AutomationProperties.AutomationId="EditText.AddSpreadsheetColumnButton"
                     Width="32"
                     Height="32"
                     Margin="0,0,4,0"
                     Padding="0"
+                    AutomationProperties.AutomationId="EditText.AddSpreadsheetColumnButton"
                     Background="Transparent"
                     BorderThickness="0"
                     Click="AddSpreadsheetColumnMenuItem_Click"
@@ -854,11 +854,11 @@
                 </Button>
                 <Button
                     x:Name="CalcToggleButton"
-                    AutomationProperties.AutomationId="EditText.CalculatorToggle"
-                    AutomationProperties.Name="Show calculator pane"
                     Width="32"
                     Height="32"
                     Padding="0"
+                    AutomationProperties.AutomationId="EditText.CalculatorToggle"
+                    AutomationProperties.Name="Show calculator pane"
                     Background="Transparent"
                     BorderThickness="0"
                     Click="CalcToggleButton_Click"
@@ -875,11 +875,11 @@
             <Grid Grid.Column="0">
                 <TextBox
                     x:Name="PassedTextControl"
-                    AutomationProperties.AutomationId="EditText.Editor"
                     AcceptsReturn="True"
                     AcceptsTab="True"
                     AllowDrop="True"
                     AutoWordSelection="True"
+                    AutomationProperties.AutomationId="EditText.Editor"
                     CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     ContextMenuOpening="PassedTextControl_ContextMenuOpening"
                     FontSize="16"
@@ -896,19 +896,15 @@
                     VerticalScrollBarVisibility="Auto" />
                 <RichTextBox
                     x:Name="MarkdownEditorControl"
-                    AutomationProperties.AutomationId="EditText.MarkdownEditor"
                     AllowDrop="True"
+                    AutomationProperties.AutomationId="EditText.MarkdownEditor"
                     Background="{DynamicResource ControlFillColorDefaultBrush}"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
                     ContextMenu="{StaticResource MarkdownContextMenu}"
-                    FontFamily="{Binding ElementName=PassedTextControl,
-                                         Path=FontFamily,
-                                         Mode=OneWay}"
-                    FontSize="{Binding ElementName=PassedTextControl,
-                                       Path=FontSize,
-                                       Mode=OneWay}"
+                    FontFamily="{Binding ElementName=PassedTextControl, Path=FontFamily, Mode=OneWay}"
+                    FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     HorizontalScrollBarVisibility="Auto"
                     IsDocumentEnabled="True"
@@ -924,9 +920,9 @@
                     Visibility="Collapsed" />
                 <DataGrid
                     x:Name="SpreadsheetDataGrid"
-                    AutomationProperties.AutomationId="EditText.SpreadsheetGrid"
                     AlternatingRowBackground="{DynamicResource ApplicationBackgroundBrush}"
                     AutoGenerateColumns="False"
+                    AutomationProperties.AutomationId="EditText.SpreadsheetGrid"
                     Background="Transparent"
                     BeginningEdit="SpreadsheetDataGrid_BeginningEdit"
                     CanUserAddRows="False"
@@ -959,16 +955,14 @@
             </Grid>
             <TextBox
                 x:Name="CalcResultsTextControl"
-                AutomationProperties.AutomationId="EditText.CalculatorResults"
                 Grid.Column="1"
                 MinWidth="150"
                 AcceptsReturn="True"
                 AcceptsTab="True"
+                AutomationProperties.AutomationId="EditText.CalculatorResults"
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                 ContextMenuOpening="CalcResultsTextControl_ContextMenuOpening"
-                FontSize="{Binding ElementName=PassedTextControl,
-                                   Path=FontSize,
-                                   Mode=OneWay}"
+                FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
                 HorizontalScrollBarVisibility="Auto"
                 IsInactiveSelectionHighlightEnabled="True"
                 IsReadOnly="True"
@@ -1015,12 +1009,12 @@
 
             <Border
                 x:Name="CalcAggregateStatusBorder"
-                AutomationProperties.AutomationId="EditText.CalculatorAggregateStatus"
                 Grid.Column="1"
                 Margin="8,0,0,8"
                 Padding="6,3"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
+                AutomationProperties.AutomationId="EditText.CalculatorAggregateStatus"
                 Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="1"
@@ -1087,12 +1081,12 @@
                 Orientation="Horizontal">
                 <Button
                     x:Name="CalcCopyAllButton"
-                    AutomationProperties.AutomationId="EditText.CalculatorCopyAllButton"
-                    AutomationProperties.Name="Copy all calculator results"
                     Width="24"
                     Height="24"
                     Margin="0,0,4,0"
                     Padding="0"
+                    AutomationProperties.AutomationId="EditText.CalculatorCopyAllButton"
+                    AutomationProperties.Name="Copy all calculator results"
                     Background="Transparent"
                     BorderThickness="0"
                     Click="CalcCopyAllButton_Click"
@@ -1101,11 +1095,11 @@
                 </Button>
                 <Button
                     x:Name="CalcInfoButton"
-                    AutomationProperties.AutomationId="EditText.CalculatorInfoButton"
-                    AutomationProperties.Name="Calculator information"
                     Width="24"
                     Height="24"
                     Padding="0"
+                    AutomationProperties.AutomationId="EditText.CalculatorInfoButton"
+                    AutomationProperties.Name="Calculator information"
                     Background="Transparent"
                     BorderThickness="0"
                     Click="CalcInfoButton_Click"
@@ -1251,8 +1245,8 @@
             VerticalScrollBarVisibility="Disabled">
             <Grid
                 x:Name="BottomBar"
-                AutomationProperties.AutomationId="EditText.StatusBar"
                 Grid.Row="2"
+                AutomationProperties.AutomationId="EditText.StatusBar"
                 Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
@@ -1353,9 +1347,9 @@
                     </ToggleButton>
                     <Button
                         x:Name="MatchCountButton"
-                        AutomationProperties.AutomationId="EditText.MatchCountButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
+                        AutomationProperties.AutomationId="EditText.MatchCountButton"
                         Background="Transparent"
                         BorderThickness="0"
                         Click="MatchCountButton_Click"
@@ -1369,9 +1363,9 @@
                     </Button>
                     <Button
                         x:Name="SimilarMatchesButton"
-                        AutomationProperties.AutomationId="EditText.SimilarMatchesButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
+                        AutomationProperties.AutomationId="EditText.SimilarMatchesButton"
                         Background="Transparent"
                         BorderThickness="0"
                         Click="SimilarMatchesButton_Click"
@@ -1399,9 +1393,9 @@
                     </Button>
                     <Button
                         x:Name="RegexPatternButton"
-                        AutomationProperties.AutomationId="EditText.RegexPatternButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
+                        AutomationProperties.AutomationId="EditText.RegexPatternButton"
                         Background="Transparent"
                         BorderThickness="0"
                         Click="RegexPatternButton_Click"
@@ -1429,9 +1423,9 @@
                     </Button>
                     <Button
                         x:Name="CharDetailsButton"
-                        AutomationProperties.AutomationId="EditText.CharacterDetailsButton"
                         Margin="0,0,8,0"
                         Padding="4,2"
+                        AutomationProperties.AutomationId="EditText.CharacterDetailsButton"
                         Background="Transparent"
                         BorderThickness="0"
                         Click="CharDetailsButton_Click"
@@ -1475,10 +1469,10 @@
         </ScrollViewer>
         <StackPanel
             x:Name="LoadingStack"
-            AutomationProperties.AutomationId="EditText.LoadingStatus"
             Grid.RowSpan="4"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
+            AutomationProperties.AutomationId="EditText.LoadingStatus"
             Orientation="Vertical"
             Visibility="Collapsed">
             <ui:ProgressRing
@@ -1488,8 +1482,8 @@
                 IsIndeterminate="True" />
             <TextBlock
                 x:Name="ProgressText"
-                AutomationProperties.AutomationId="EditText.ProgressText"
                 Margin="0,12,0,0"
+                AutomationProperties.AutomationId="EditText.ProgressText"
                 FontSize="16"
                 FontWeight="Bold"
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -1510,12 +1504,15 @@
             BorderThickness="1"
             CornerRadius="16"
             Visibility="Collapsed">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                 <ui:ProgressRing
                     Width="18"
                     Height="18"
                     IsIndeterminate="True" />
-                <StackPanel Margin="10,0,12,0" MinWidth="140" VerticalAlignment="Center">
+                <StackPanel
+                    MinWidth="140"
+                    Margin="10,0,12,0"
+                    VerticalAlignment="Center">
                     <TextBlock
                         x:Name="TranscriptionStatusText"
                         VerticalAlignment="Center"
@@ -1527,8 +1524,8 @@
                         Margin="0,4,0,0"
                         Maximum="100"
                         Minimum="0"
-                        Value="0"
-                        Visibility="Collapsed" />
+                        Visibility="Collapsed"
+                        Value="0" />
                 </StackPanel>
                 <Button
                     x:Name="TranscriptionCancelButton"
@@ -1539,9 +1536,9 @@
         </Border>
         <ui:ContentDialogHost
             x:Name="PendingFileCloseDialogHost"
-            AutomationProperties.AutomationId="EditText.PendingFileCloseDialog"
             Grid.RowSpan="4"
             Panel.ZIndex="999"
+            AutomationProperties.AutomationId="EditText.PendingFileCloseDialog"
             IsDisableSiblingsEnabled="True" />
     </Grid>
 </ui:FluentWindow>

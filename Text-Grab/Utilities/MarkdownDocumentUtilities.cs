@@ -1,4 +1,5 @@
 using Markdig;
+using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Extensions.TaskLists;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -31,7 +32,10 @@ public static partial class MarkdownDocumentUtilities
     private static readonly Regex MarkdownPatternRegex = MarkdownPattern();
 
     private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAutoIdentifiers(AutoIdentifierOptions.GitHub)  // Must be BEFORE UseAdvancedExtensions to override default
         .UseAdvancedExtensions()
+        .UseYamlFrontMatter()
+        .UseEmojiAndSmiley(enableSmileys: false)
         .Build();
 
     private enum MarkdownBlockRole
