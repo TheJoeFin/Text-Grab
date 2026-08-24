@@ -73,6 +73,20 @@ public partial class GeneralSettings : Page
                 break;
         }
 
+        TrayIconStyle trayIconStyle = Enum.TryParse(DefaultSettings.TrayIconStyle, true, out TrayIconStyle parsedTrayIconStyle)
+            ? parsedTrayIconStyle
+            : TrayIconStyle.Color;
+        switch (trayIconStyle)
+        {
+            case TrayIconStyle.Monochrome:
+                MonochromeTrayIconRdBtn.IsChecked = true;
+                break;
+            case TrayIconStyle.Color:
+            default:
+                ColorTrayIconRdBtn.IsChecked = true;
+                break;
+        }
+
         TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
         switch (defaultLaunchSetting)
         {
@@ -253,6 +267,26 @@ public partial class GeneralSettings : Page
 
         DefaultSettings.AppTheme = AppTheme.Dark.ToString();
         App.SetTheme();
+    }
+
+    private void ColorTrayIconRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.TrayIconStyle = TrayIconStyle.Color.ToString();
+        DefaultSettings.Save();
+        NotifyIconUtilities.RefreshTrayIconStyle();
+    }
+
+    private void MonochromeTrayIconRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.TrayIconStyle = TrayIconStyle.Monochrome.ToString();
+        DefaultSettings.Save();
+        NotifyIconUtilities.RefreshTrayIconStyle();
     }
 
     private void ReadBarcodesBarcode_Checked(object sender, RoutedEventArgs e)

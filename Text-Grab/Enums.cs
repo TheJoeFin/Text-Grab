@@ -13,6 +13,12 @@ public enum AppTheme
     Light = 2
 }
 
+public enum TrayIconStyle
+{
+    Color = 0,
+    Monochrome = 1,
+}
+
 public enum CurrentCase
 {
     Lower = 0,

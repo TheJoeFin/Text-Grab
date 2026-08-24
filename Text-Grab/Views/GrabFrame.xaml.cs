@@ -1,4 +1,4 @@
-using Dapplo.Windows.User32;
+﻿using Dapplo.Windows.User32;
 using Fasetto.Word;
 using System;
 using System.Collections.Generic;
@@ -104,9 +104,9 @@ public partial class GrabFrame : Window
     private string translationTargetLanguage = "English";
     private readonly DispatcherTimer translationTimer = new();
     private readonly Dictionary<WordBorder, string> originalTexts = [];
-    private readonly SemaphoreSlim translationSemaphore = new(3); // Limit to 3 concurrent translations
     private int totalWordsToTranslate = 0;
     private int translatedWordsCount = 0;
+    private bool isTranslating = false;
     private CancellationTokenSource? translationCancellationTokenSource;
     private readonly List<PdfTextLineOverlay> pdfTextLineOverlays = [];
     private CancellationTokenSource? _pdfPageNavCts;
@@ -1435,12 +1435,11 @@ public partial class GrabFrame : Window
 
         translationTimer.Stop();
         translationTimer.Tick -= TranslationTimer_Tick;
-        translationSemaphore.Dispose();
         translationCancellationTokenSource?.Cancel();
         translationCancellationTokenSource?.Dispose();
 
         // Dispose the shared translation model during cleanup to prevent resource leaks
-        WindowsAiUtilities.DisposeTranslationModel();
+        WinAiTranslator.ReleaseModel();
 
         MinimizeButton.Click -= OnMinimizeButtonClick;
         RestoreButton.Click -= OnRestoreButtonClick;
@@ -2427,7 +2426,7 @@ public partial class GrabFrame : Window
         reSearchTimer.Start();
 
         // Trigger translation if enabled
-        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
         {
             translationTimer.Stop();
             translationTimer.Start();
@@ -2492,7 +2491,7 @@ public partial class GrabFrame : Window
         isDrawing = false;
         reSearchTimer.Start();
 
-        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
         {
             translationTimer.Stop();
             translationTimer.Start();
@@ -2606,7 +2605,7 @@ public partial class GrabFrame : Window
 
         reSearchTimer.Start();
 
-        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
         {
             translationTimer.Stop();
             translationTimer.Start();
@@ -6076,12 +6075,13 @@ public partial class GrabFrame : Window
 
             if (isChecked)
             {
-                if (!WindowsAiUtilities.CanDeviceUseWinAI())
+                (bool available, string? reason) = WinAiTranslator.CheckAvailability();
+                if (!available)
                 {
                     await new Wpf.Ui.Controls.MessageBox
                     {
                         Title = "Translation Not Available",
-                        Content = "Windows AI is not available on this device. Translation requires Windows AI support.",
+                        Content = reason ?? "Windows AI is not available on this device.",
                         CloseButtonText = "OK"
                     }.ShowDialogAsync();
                     TranslateToggleButton.IsChecked = false;
@@ -6125,7 +6125,7 @@ public partial class GrabFrame : Window
                 originalTexts.Clear();
 
                 // Dispose the translation model to free resources when not in use
-                WindowsAiUtilities.DisposeTranslationModel();
+                WinAiTranslator.ReleaseModel();
             }
         }
     }
@@ -6173,7 +6173,7 @@ public partial class GrabFrame : Window
     {
         translationTimer.Stop();
 
-        if (!isTranslationEnabled || !WindowsAiUtilities.CanDeviceUseWinAI())
+        if (!isTranslationEnabled || !WinAiTranslator.IsAvailable())
             return;
 
         await PerformTranslationAsync();
@@ -6184,6 +6184,13 @@ public partial class GrabFrame : Window
         if (translationCancellationTokenSource == null || translationCancellationTokenSource.IsCancellationRequested)
             return;
 
+        // The timer restarts on every draw / resize / OCR refresh, so a second pass can be kicked off
+        // while this one is still awaiting the model. Two passes share the progress counters and the
+        // streamed callbacks index into their own bordersToTranslate list, so the first run's results
+        // would land on the second run's word borders. One at a time.
+        if (isTranslating)
+            return;
+
         ShowTranslationProgress();
 
         totalWordsToTranslate = wordBorders.Count;
@@ -6191,43 +6198,54 @@ public partial class GrabFrame : Window
 
         CancellationToken cancellationToken = translationCancellationTokenSource.Token;
 
-        // Translate all word borders with controlled concurrency (max 3 at a time)
-        List<Task> translationTasks = [];
+        // Every word box goes through the model together. Translating them one at a time meant one
+        // full on-device inference per word, which is why this used to take minutes on a busy frame
+        // and produced worse wording (each word was translated with no surrounding context).
+        List<WordBorder> bordersToTranslate = [];
+        List<string> textsToTranslate = [];
+
+        foreach (WordBorder wb in wordBorders)
+        {
+            // Store original text if not already stored
+            if (!originalTexts.ContainsKey(wb))
+                originalTexts[wb] = wb.Word;
+
+            string originalText = originalTexts[wb];
+            if (string.IsNullOrWhiteSpace(originalText))
+                continue;
+
+            bordersToTranslate.Add(wb);
+            textsToTranslate.Add(originalText);
+        }
+
+        totalWordsToTranslate = bordersToTranslate.Count;
+        UpdateTranslationProgress();
+
+        string? failureMessage = null;
+
+        // Set as late as possible — nothing above awaits, so no second pass can slip in before here,
+        // and a throw in the setup above can't leave the flag stuck on.
+        isTranslating = true;
 
         try
         {
-            foreach (WordBorder wb in wordBorders)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
-
-                // Store original text if not already stored
-                if (!originalTexts.ContainsKey(wb))
-                    originalTexts[wb] = wb.Word;
-
-                string originalText = originalTexts[wb];
-                if (!string.IsNullOrWhiteSpace(originalText))
+            // Results stream back as the model generates them, so boxes fill in progressively.
+            BatchTranslationResult result = await WinAiTranslator.TranslateBatchAsync(
+                textsToTranslate,
+                translationTargetLanguage,
+                (index, translated) => Dispatcher.InvokeAsync(() =>
                 {
-                    translationTasks.Add(TranslateWordBorderAsync(wb, originalText, cancellationToken));
-                }
-                else
-                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    bordersToTranslate[index].Word = translated;
                     translatedWordsCount++;
                     UpdateTranslationProgress();
-                }
-            }
+                }),
+                cancellationToken);
 
-            // Wait for all translations to complete or cancellation
-            // Use WhenAll with exception handling to gracefully handle cancellations
-            try
-            {
-                await Task.WhenAll(translationTasks);
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected when cancellation is requested
-                Debug.WriteLine("Translation tasks cancelled during WhenAll");
-            }
+            if (!result.Succeeded)
+                failureMessage = result.Message;
 
             if (!cancellationToken.IsCancellationRequested)
             {
@@ -6241,10 +6259,28 @@ public partial class GrabFrame : Window
         catch (Exception ex)
         {
             Debug.WriteLine($"Translation error: {ex.Message}");
+            failureMessage = $"Translation failed: {ex.Message}";
         }
         finally
         {
+            isTranslating = false;
             HideTranslationProgress();
+        }
+
+        // Turn translation back off on failure so the frame does not silently retry on every
+        // redraw, and tell the user what went wrong.
+        if (failureMessage is not null && !cancellationToken.IsCancellationRequested)
+        {
+            isTranslationEnabled = false;
+            TranslateToggleButton.IsChecked = false;
+            EnableTranslationMenuItem.IsChecked = false;
+
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Translation Failed",
+                Content = failureMessage,
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 
@@ -6266,52 +6302,9 @@ public partial class GrabFrame : Window
         if (totalWordsToTranslate == 0)
             return;
 
-        double progress = (double)translatedWordsCount / totalWordsToTranslate * 100;
-        TranslationProgressBar.Value = progress;
-        TranslationCountText.Text = $"{translatedWordsCount}/{totalWordsToTranslate}";
-    }
-
-    private async Task TranslateWordBorderAsync(WordBorder wordBorder, string originalText, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await translationSemaphore.WaitAsync(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // Semaphore wait was cancelled - exit gracefully
-            return;
-        }
-
-        try
-        {
-            // Ensure cancellation is honored immediately before starting translation
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
-
-            // If cancellation was requested during translation, abort before updating UI state
-            cancellationToken.ThrowIfCancellationRequested();
-
-            wordBorder.Word = translatedText;
-
-            translatedWordsCount++;
-            await Dispatcher.InvokeAsync(() => UpdateTranslationProgress());
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected during cancellation - don't propagate
-            Debug.WriteLine($"Translation cancelled for word: {originalText}");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Translation failed for '{originalText}': {ex.Message}");
-            // On error, keep original text (don't update word border)
-        }
-        finally
-        {
-            translationSemaphore.Release();
-        }
+        int completed = Math.Min(translatedWordsCount, totalWordsToTranslate);
+        TranslationProgressBar.Value = (double)completed / totalWordsToTranslate * 100;
+        TranslationCountText.Text = $"{completed}/{totalWordsToTranslate}";
     }
 
     private void GetGrabFrameTranslationSettings()
@@ -6320,7 +6313,7 @@ public partial class GrabFrame : Window
         translationTargetLanguage = DefaultSettings.GrabFrameTranslationLanguage;
 
         // Hide translation button if Windows AI is not available
-        bool canUseWinAI = WindowsAiUtilities.CanDeviceUseWinAI();
+        bool canUseWinAI = WinAiTranslator.IsAvailable();
         translateToolAvailable = canUseWinAI;
         SetToolButtonVisibility(TranslateToggleButton, "Translate", canUseWinAI);
         TranslationMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;

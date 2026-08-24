@@ -162,6 +162,8 @@ public partial class App : System.Windows.Application
         // for now this is best but... not ideal
         ApplicationAccentColorManager.ApplySystemAccent();
 
+        NotifyIconUtilities.RefreshTrayIconStyle();
+
         // TODO: try to apply the teal color again, maybe something in WPFUI is broken
         // Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
 

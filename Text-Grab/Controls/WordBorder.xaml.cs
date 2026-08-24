@@ -491,7 +491,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
                 translateSeparator = separator;
         }
 
-        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        if (WinAiTranslator.IsAvailable())
         {
             if (translateMenuItem != null)
             {
@@ -680,12 +680,13 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(Word))
             return;
 
-        if (!WindowsAiUtilities.CanDeviceUseWinAI())
+        (bool available, string? reason) = WinAiTranslator.CheckAvailability();
+        if (!available)
         {
             await new Wpf.Ui.Controls.MessageBox
             {
                 Title = "Translation Not Available",
-                Content = "Windows AI is not available on this device.",
+                Content = reason ?? "Windows AI is not available on this device.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
             return;
@@ -700,7 +701,20 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             string targetLanguage = GetSystemLanguageName();
 
             // Translate the word
-            string translatedText = await WindowsAiUtilities.TranslateText(originalWord, targetLanguage);
+            TranslationResult result = await WinAiTranslator.TranslateAsync(originalWord, targetLanguage);
+
+            if (!result.Succeeded)
+            {
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = result.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                    Content = result.Message ?? "The word could not be translated.",
+                    CloseButtonText = "OK"
+                }.ShowDialogAsync();
+                return;
+            }
+
+            string translatedText = result.Text;
 
             // Update the word with translation
             if (!string.IsNullOrWhiteSpace(translatedText) && translatedText != originalWord)

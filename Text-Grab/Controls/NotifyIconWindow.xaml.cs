@@ -67,6 +67,8 @@ public partial class NotifyIconWindow : Window
         HideFromAltTab();
         NotifyIcon.Visibility = Visibility.Visible;
 
+        ApplyTrayIconStyle();
+
         string toolTipText = "Text Grab";
         TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
 
@@ -89,6 +91,18 @@ public partial class NotifyIconWindow : Window
         }
 
         NotifyIcon.TooltipText = toolTipText;
+    }
+
+    public void ApplyTrayIconStyle()
+    {
+        bool isMonochrome = Enum.TryParse(DefaultSettings.TrayIconStyle, true, out TrayIconStyle style)
+            && style == TrayIconStyle.Monochrome;
+
+        string iconPath = isMonochrome
+            ? (SystemThemeUtility.IsLightTheme() ? "/Images/Select-Black.ico" : "/Images/Select-White.ico")
+            : "/Images/TealSelect40.png";
+
+        NotifyIcon.Icon = new BitmapImage(new Uri($"pack://application:,,,{iconPath}"));
     }
 
     private void EditWindowMenuItem_Click(object sender, RoutedEventArgs e)

@@ -73,6 +73,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand WebSearchCmd = new();
     public static RoutedCommand DefaultWebSearchCmd = new();
     public bool LaunchedFromNotification = false;
+
+    /// <summary>Live audio transcriber, created lazily when the bottom-bar toggle is turned on.</summary>
+    private LiveAudioTranscriber? _liveTranscriber;
+
+    /// <summary>Which source live transcription captures from (microphone or system loopback).</summary>
+    private LiveCaptureSource _liveCaptureSource = LiveCaptureSource.Microphone;
+
+    /// <summary>Cancels an in-progress audio-file transcription; non-null only while one is running.</summary>
+    private CancellationTokenSource? _transcriptionCts;
     private CancellationTokenSource? cancellationTokenForDirOCR;
     private readonly string historyId = string.Empty;
     private int numberOfContextMenuItems;
@@ -428,6 +437,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             BottomBarText.Visibility = Visibility.Visible;
         else
             BottomBarText.Visibility = Visibility.Collapsed;
+
+        LiveTranscriptionToggleButton.Visibility =
+            DefaultSettings.EtwShowTranscribe && AudioTranscriptionUtilities.IsAudioTranscriptionSupported()
+                ? Visibility.Visible
+                : Visibility.Collapsed;
 
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
@@ -2433,6 +2447,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     internal async void OpenPath(string pathOfFileToOpen, bool isMultipleFiles = false)
     {
+        // Audio files are transcribed on-device rather than opened as text. Routing this here means
+        // CLI arguments, File > Open, and drag/drop all reach the same transcription path.
+        if (AudioTranscriptionUtilities.IsAudioFile(pathOfFileToOpen))
+        {
+            AudioDebugLog.Write($"OpenPath: audio file detected, routing to transcription: {pathOfFileToOpen}");
+            await TranscribeAudioFilesAsync([pathOfFileToOpen]);
+            return;
+        }
+
         ResetSpreadsheetUndoHistory();
         (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
         bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
@@ -2662,6 +2685,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         LoadLanguageMenuItems(LanguageMenuItem);
+    }
+
+    private void GrabTemplateMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
         LoadGrabTemplateMenuItems(GrabTemplateMenuItem);
     }
 
@@ -2862,7 +2889,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         e.Handled = true;
     }
 
-    private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
+    private async void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
     {
         if (e.Data.GetDataPresent("Text"))
             return;
@@ -2871,26 +2898,256 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         e.Handled = true;
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
 
-        if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
+        try
         {
-            string[]? fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
-            // Check for a single file or folder.
-            if (fileNames?.Length is 1)
+            if (!e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
+                return;
+
+            if (e.Data.GetData(System.Windows.DataFormats.FileDrop, true) is not string[] fileNames)
+                return;
+
+            List<string> existingFiles = [.. fileNames.Where(File.Exists)];
+            if (existingFiles.Count == 0)
+                return;
+
+            // Audio files are transcribed on-device rather than opened as text.
+            List<string> audioFiles = [.. existingFiles.Where(AudioTranscriptionUtilities.IsAudioFile)];
+            List<string> otherFiles = [.. existingFiles.Where(path => !AudioTranscriptionUtilities.IsAudioFile(path))];
+
+            bool openAsMultiple = existingFiles.Count > 1;
+            foreach (string possibleFilePath in otherFiles)
+                OpenPath(possibleFilePath, openAsMultiple);
+
+            if (audioFiles.Count > 0)
             {
-                // Check for a file (a directory will return false).
-                if (File.Exists(fileNames[0]))
-                    OpenPath(fileNames[0], false);
-            }
-            else if (fileNames?.Length > 1)
-            {
-                foreach (string possibleFilePath in fileNames)
-                {
-                    if (File.Exists(possibleFilePath))
-                        OpenPath(possibleFilePath, true);
-                }
+                // Drop the wait cursor; TranscribeAudioFilesAsync shows the loading overlay instead.
+                Mouse.OverrideCursor = null;
+                await TranscribeAudioFilesAsync(audioFiles);
             }
         }
-        Mouse.OverrideCursor = null;
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    /// <summary>
+    /// Transcribes one or more dropped audio files on-device, streaming each Whisper segment into the
+    /// editor as it is recognized. The status bar stays non-blocking so the user can cancel; because
+    /// every segment is inserted as it arrives, cancelling keeps all text transcribed so far.
+    /// <paramref name="hotWords"/> (if provided) biases Whisper toward names/jargon it might otherwise
+    /// mishear; it applies only to this call, nothing is persisted.
+    /// <paramref name="overallProgress"/> (if provided) reports progress across all files combined
+    /// (0.0-1.0), so a caller such as <see cref="OpenMediaWindow"/> can drive its own progress bar.
+    /// </summary>
+    internal async Task TranscribeAudioFilesAsync(IList<string> audioFiles, string? hotWords = null, IProgress<double>? overallProgress = null)
+    {
+        AudioDebugLog.Write($"TranscribeAudioFilesAsync: START with {audioFiles.Count} file(s). Log: {AudioDebugLog.LogPath}");
+
+        if (!AudioTranscriptionUtilities.IsAudioTranscriptionSupported())
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Audio Transcription Unavailable",
+                Content = "Audio transcription isn't available on this device.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return;
+        }
+
+        // Guard against a second transcription starting while one is already running.
+        if (_transcriptionCts is not null)
+        {
+            AudioDebugLog.Write("TranscribeAudioFilesAsync: ignored — a transcription is already in progress");
+            return;
+        }
+
+        bool multiple = audioFiles.Count > 1;
+        bool previousIsReadOnly = PassedTextControl.IsReadOnly;
+        string? errorMessage = null;
+        bool cancelled = false;
+
+        // Everything from here runs inside the try: the guard above keys off _transcriptionCts, so a
+        // throw during setup that left it assigned would block every later transcription in this window.
+        try
+        {
+            _transcriptionCts = new CancellationTokenSource();
+            CancellationToken cancellationToken = _transcriptionCts.Token;
+
+            // Make the editor read-only (not disabled) so segments can stream in but the user can't type
+            // in the middle of the stream. AppendText still works while read-only.
+            PassedTextControl.IsReadOnly = true;
+            TranscriptionCancelButton.IsEnabled = true;
+            TranscriptionStatusText.Text = multiple ? "Transcribing audio files…" : "Transcribing audio…";
+            TranscriptionProgressBar.Visibility = Visibility.Collapsed;
+            TranscriptionProgressBar.Value = 0;
+            TranscriptionStatusBar.Visibility = Visibility.Visible;
+
+            // Status text (model download, "Transcribing…") updates the status bar; each recognized
+            // segment is appended straight into the editor as it arrives.
+            Progress<string> statusProgress = new(message => TranscriptionStatusText.Text = message);
+            Progress<string> segmentProgress = new(AppendTranscriptionText);
+
+            // Give the caret a clean starting line so streamed text doesn't run into existing content.
+            EnsureTranscriptionInsertionPoint();
+
+            for (int i = 0; i < audioFiles.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string audioFile = audioFiles[i];
+
+                if (multiple)
+                    AppendTranscriptionText($"# {Path.GetFileName(audioFile)}{Environment.NewLine}");
+
+                int fileIndex = i;
+                Progress<double> clipProgress = new(fraction =>
+                {
+                    double overall = (fileIndex + fraction) / audioFiles.Count;
+                    TranscriptionProgressBar.Visibility = Visibility.Visible;
+                    TranscriptionProgressBar.Value = overall * 100;
+                    TranscriptionStatusText.Text = multiple
+                        ? $"Transcribing audio files… ({fileIndex + 1}/{audioFiles.Count}) {fraction:P0}"
+                        : $"Transcribing audio… {fraction:P0}";
+                    overallProgress?.Report(overall);
+                });
+
+                string transcription = await AudioTranscriptionUtilities.TranscribeAudioFileAsync(
+                    audioFile, hotWords, statusProgress, segmentProgress, cancellationToken,
+                    includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription,
+                    clipProgress: clipProgress);
+
+                if (string.IsNullOrWhiteSpace(transcription))
+                    AppendTranscriptionText("(no speech recognized)");
+
+                // Blank line between files (and after the last, trimmed on sync).
+                AppendTranscriptionText(Environment.NewLine + Environment.NewLine);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // User cancelled: everything already streamed into the editor is kept — no error dialog.
+            cancelled = true;
+            AudioDebugLog.Write("TranscribeAudioFilesAsync: cancelled by user; keeping transcribed-so-far text");
+        }
+        catch (Exception ex)
+        {
+            // Surface the real reason (model not ready, unsupported format, etc.) instead of failing silently.
+            Debug.WriteLine($"Audio transcription error: {ex}");
+            AudioDebugLog.Write($"TranscribeAudioFilesAsync: ERROR {ex}");
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            PassedTextControl.IsReadOnly = previousIsReadOnly;
+            TranscriptionStatusBar.Visibility = Visibility.Collapsed;
+            _transcriptionCts?.Dispose();
+            _transcriptionCts = null;
+
+            // The transcript was streamed into the raw text box, so the active editor is what needs
+            // updating. Syncing the other way (as this used to) pushed the markdown document / table
+            // back over PassedTextControl.Text, round-tripping the whole transcript through the
+            // serializer for nothing.
+            SyncActiveEditorFromText();
+        }
+
+        AudioDebugLog.Write($"TranscribeAudioFilesAsync: END (cancelled={cancelled}, error={errorMessage is not null})");
+
+        if (errorMessage is not null)
+        {
+            // A failure raised as the window closes has nowhere to show: the dialog would be owned by
+            // a torn-down window.
+            if (IsLoaded)
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "Audio Transcription Failed",
+                    Content = errorMessage,
+                    CloseButtonText = "OK"
+                }.ShowDialogAsync();
+        }
+        else if (!cancelled && DefaultSettings.NotifyOnTranscriptionComplete)
+        {
+            string fileDescription = multiple
+                ? $"{audioFiles.Count} files"
+                : Path.GetFileName(audioFiles[0]);
+            NotificationUtilities.ShowTranscriptionCompleteToast(fileDescription);
+        }
+    }
+
+    private void TranscriptionCancelButton_Click(object sender, RoutedEventArgs e) => CancelAudioTranscription();
+
+    /// <summary>
+    /// Requests cancellation of the running audio-file transcription. Text already streamed into the
+    /// editor is preserved. Called from the status bar's own Cancel button, and externally by
+    /// <see cref="OpenMediaWindow"/> so its Cancel button can stop a transcription it started.
+    /// </summary>
+    internal void CancelAudioTranscription()
+    {
+        if (_transcriptionCts is null)
+            return;
+
+        TranscriptionCancelButton.IsEnabled = false;
+        TranscriptionStatusText.Text = "Cancelling…";
+        _transcriptionCts.Cancel();
+    }
+
+    /// <summary>
+    /// Ensures the caret sits on a fresh line at the end of the document before streaming begins, so
+    /// the first transcribed segment doesn't run into whatever text is already there.
+    /// </summary>
+    private void EnsureTranscriptionInsertionPoint()
+    {
+        string existingText = PassedTextControl.Text;
+        if (!string.IsNullOrEmpty(existingText) && existingText[^1] is not '\n' and not '\r')
+            PassedTextControl.AppendText(Environment.NewLine);
+
+        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
+        PassedTextControl.ScrollToEnd();
+    }
+
+    /// <summary>
+    /// Appends a streamed transcription fragment to the end of the editor. Works while the editor is
+    /// read-only (AppendText bypasses the read-only guard), keeping the caret and view at the end.
+    /// </summary>
+    private void AppendTranscriptionText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        PassedTextControl.AppendText(text);
+        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
+        PassedTextControl.ScrollToEnd();
+    }
+
+    /// <summary>
+    /// Inserts transcribed text into the raw-text editor at the caret, adding a leading separator
+    /// when appending to existing content.
+    /// </summary>
+    private void InsertTranscribedText(string text, bool separateWithSpace = false)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        string existingText = PassedTextControl.Text;
+        if (!string.IsNullOrEmpty(existingText) && PassedTextControl.SelectionStart == existingText.Length)
+        {
+            char lastChar = existingText[^1];
+            if (separateWithSpace)
+            {
+                if (!char.IsWhiteSpace(lastChar))
+                    text = " " + text;
+            }
+            else if (lastChar is not '\n' and not '\r')
+            {
+                text = Environment.NewLine + text;
+            }
+        }
+
+        AddCopiedTextToTextBox(text);
+
+        // Same as the file path: the phrase went into the raw text box, so the sync has to run in that
+        // direction. Pulling from the active editor instead round-tripped every phrase through the
+        // markdown/table serializer.
+        SyncActiveEditorFromText();
     }
 
     private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
@@ -4721,6 +4978,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             SyncMarkdownTextFromDocument();
     }
 
+    /// <summary>
+    /// The mirror of <see cref="SyncTextFromActiveEditor"/>: pushes <c>PassedTextControl.Text</c> out
+    /// to whichever editor is showing, the same way <see cref="PassedTextControl_TextChanged"/> does.
+    /// Used by anything that writes straight into the raw text box while another editor is active —
+    /// streamed audio transcription, most of all. A no-op in raw-text mode.
+    /// </summary>
+    private void SyncActiveEditorFromText()
+    {
+        if (editorMode == EtwEditorMode.Spreadsheet)
+            RefreshSpreadsheetFromText();
+        else if (editorMode == EtwEditorMode.Markdown)
+            RefreshMarkdownFromText();
+    }
+
     private bool SaveCurrentDocument(bool saveAs = false)
     {
         SyncTextFromActiveEditor();
@@ -5122,6 +5393,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RoutedCommand findAndReplaceCommand = new();
         _ = findAndReplaceCommand.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(findAndReplaceCommand, FindAndReplaceMenuItem_Click));
+
+        RoutedCommand newWindowWithSelectionCommand = new();
+        _ = newWindowWithSelectionCommand.InputGestures.Add(new KeyGesture(Key.N, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(newWindowWithSelectionCommand, NewWindowWithText_Clicked));
 
         List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
 
@@ -5750,6 +6025,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Closed(object sender, EventArgs e)
     {
+        // Stop any in-progress audio-file transcription so it doesn't touch a torn-down window.
+        _transcriptionCts?.Cancel();
+
+        if (_liveTranscriber is not null)
+        {
+            _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveTranscriber.Dispose();
+            _liveTranscriber = null;
+        }
+
         DetachSpreadsheetColumnWidthTracking();
         System.Windows.DataObject.RemovePastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
 
@@ -5902,6 +6187,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Set dynamic header text for TranslateToSystemLanguageMenuItem
             string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
             TranslateToSystemLanguageMenuItem.Header = $"Translate to {systemLanguage}";
+        }
+
+        // Audio transcription runs locally on the CPU via Whisper (whisper.cpp), so it's available
+        // on every supported device. The Whisper model is downloaded on first use.
+        if (AudioTranscriptionUtilities.IsAudioTranscriptionSupported())
+        {
+            CaptureTranscribeAudioMenuItem.Visibility = Visibility.Visible;
+            TranscriptionOptionsMenuItem.Visibility = Visibility.Visible;
+            OpenAudioVideoMenuItem.Visibility = Visibility.Visible;
+            SyncTranscriptionModelMenu();
+            TranscribeJustIconMenuItem.IsChecked = DefaultSettings.TranscribeButtonJustIcon;
+            LiveTranscriptionLabel.Visibility = DefaultSettings.TranscribeButtonJustIcon ? Visibility.Collapsed : Visibility.Visible;
         }
 
         // Initialize selectedILanguage with the last used OCR language from settings
@@ -6458,13 +6755,99 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading("Summarizing...");
 
+        WinAiGenerationResult? failure = null;
+
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.SummarizeParagraph(text));
+            string sourceText = GetSelectedTextOrAllText();
+            WinAiGenerationResult result = await WindowsAiUtilities.SummarizeParagraph(sourceText);
+
+            // Only open a window on success: a failure message shown as document text reads like a
+            // real summary and can be saved as one.
+            if (result.Text is null)
+                failure = result;
+            else
+                OpenTextInNewEditTextWindow(result.Text);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Summarize exception: {ex.Message}");
+            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Summarizing failed: {ex.Message}");
         }
         finally
         {
             SetToLoaded();
+        }
+
+        if (failure is { } summaryFailure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Summarize Failed",
+                Content = summaryFailure.Message ?? "The text could not be summarized.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
+    private async void MeetingNotesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SetToLoading("Writing meeting notes...");
+
+        WinAiGenerationResult? failure = null;
+
+        try
+        {
+            string sourceText = GetSelectedTextOrAllText();
+
+            // A long transcript is summarized part by part, so say which part is being read.
+            void OnProgress(string stage) => Dispatcher.Invoke(() => SetToLoading(stage));
+
+            WinAiGenerationResult result = await WinAiMeetingNotes.SummarizeAsync(sourceText, OnProgress);
+
+            if (result.Text is null)
+                failure = result;
+            else
+                OpenTextInNewEditTextWindow(result.Text);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Meeting notes exception: {ex.Message}");
+            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Meeting notes failed: {ex.Message}");
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+
+        if (failure is { } notesFailure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Meeting Notes Failed",
+                Content = notesFailure.Message ?? "The text could not be written up as meeting notes.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
+    // Summarize and meeting-notes results open in a new window, leaving the source text untouched.
+    private static void OpenTextInNewEditTextWindow(string text)
+    {
+        EditTextWindow resultWindow = new(text, isEncoded: false);
+
+        try
+        {
+            resultWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            _ = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = ex.Message,
+                Content = "An error occurred while trying to open a new window. Please try again.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 
@@ -6547,22 +6930,39 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading($"Translating to {targetLanguage}...");
 
+        // Captured from inside the transform so a failure can be reported after the text is applied
+        // instead of silently putting the original text back.
+        TranslationResult? failedResult = null;
+
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.TranslateText(text, targetLanguage));
+            await ApplySelectedTextOrAllTextTransformAsync(async text =>
+            {
+                TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
+
+                if (!result.Succeeded)
+                    failedResult ??= result;
+
+                return result.Text;
+            });
         }
         catch (Exception ex)
         {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Translation Error",
-                Content = $"Translation failed: {ex.Message}",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
+            failedResult = new TranslationResult(string.Empty, TranslationFailure.ModelError, $"Translation failed: {ex.Message}");
         }
         finally
         {
             SetToLoaded();
+        }
+
+        if (failedResult is { } failure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = failure.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                Content = failure.Message ?? "The text could not be translated.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 
@@ -6583,10 +6983,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoading("Extracting RegEx pattern...");
 
-        string regexPattern;
+        WinAiGenerationResult extraction;
         try
         {
-            regexPattern = await WindowsAiUtilities.ExtractRegex(textDescription);
+            extraction = await WindowsAiUtilities.ExtractRegex(textDescription);
         }
         catch (Exception ex)
         {
@@ -6603,12 +7003,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoaded();
 
-        if (string.IsNullOrWhiteSpace(regexPattern))
+        if (extraction.Text is not string regexPattern)
         {
+            // The shared language model reports why it could not answer, so show that instead of a
+            // guess about what went wrong.
             await new Wpf.Ui.Controls.MessageBox
             {
                 Title = "Extraction Failed",
-                Content = "Failed to extract a regex pattern. The AI service may not be available or could not generate a pattern.",
+                Content = extraction.Message ?? "Failed to extract a regex pattern.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
             return;
@@ -6659,6 +7061,191 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 }.ShowDialogAsync();
             }
         }
+    }
+
+    private async void LiveTranscriptionToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        _liveTranscriber ??= new LiveAudioTranscriber();
+        _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+        _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
+
+        SetLiveTranscriptionUi(true, _liveCaptureSource switch
+        {
+            LiveCaptureSource.SystemAudio => "Starting (system)…",
+            LiveCaptureSource.MicrophoneAndSystemAudio => "Starting (mic + system)…",
+            _ => "Starting…",
+        });
+
+        bool started;
+        try
+        {
+            started = await _liveTranscriber.StartAsync(_liveCaptureSource);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Live transcription failed to start: {ex.Message}");
+            started = false;
+        }
+
+        if (!started)
+        {
+            _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            SetLiveTranscriptionUi(false);
+
+            // Setting IsChecked=false re-enters Unchecked, which is a no-op safe path here.
+            if (LiveTranscriptionToggleButton.IsChecked is true)
+                LiveTranscriptionToggleButton.IsChecked = false;
+
+            string reason = _liveCaptureSource switch
+            {
+                LiveCaptureSource.SystemAudio => "Couldn't capture system audio. Make sure a playback device is active.",
+                LiveCaptureSource.MicrophoneAndSystemAudio => "Couldn't start microphone and system audio capture. Make sure a microphone is connected, Text Grab has microphone access in Windows privacy settings, and a playback device is active.",
+                _ => "Couldn't start microphone capture. Make sure a microphone is connected and that Text Grab has microphone access in Windows privacy settings.",
+            };
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Couldn't Start Transcription",
+                Content = reason,
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return;
+        }
+
+        SetLiveTranscriptionUi(true);
+    }
+
+    private void LiveTranscriptionToggleButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_liveTranscriber is not null)
+        {
+            _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveTranscriber.Stop();
+        }
+
+        SetLiveTranscriptionUi(false);
+    }
+
+    private void CaptureTranscribeAudioMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool transcribe = CaptureTranscribeAudioMenuItem.IsChecked;
+        if (LiveTranscriptionToggleButton.IsChecked != transcribe)
+            LiveTranscriptionToggleButton.IsChecked = transcribe;
+    }
+
+    private void OpenAudioVideoMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMediaWindow openMediaWindow = new() { Owner = this };
+        openMediaWindow.Show();
+    }
+
+    private void LiveSourceMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string tag
+            || !Enum.TryParse(tag, out LiveCaptureSource selectedSource))
+            return;
+
+        _liveCaptureSource = selectedSource;
+        LiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
+        LiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
+        LiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
+        CaptureLiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
+        CaptureLiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
+        CaptureLiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
+
+        // If a session is already running, restart it on the newly chosen source.
+        if (LiveTranscriptionToggleButton.IsChecked is true)
+        {
+            LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
+            LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new source
+        }
+        else
+        {
+            SetLiveTranscriptionUi(false);
+        }
+    }
+
+    private void TranscriptionModelMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string tag)
+            return;
+
+        DefaultSettings.AudioTranscriptionModel = tag;
+        DefaultSettings.Save();
+        SyncTranscriptionModelMenu();
+
+        // If a session is running, restart it so the newly selected model is loaded.
+        if (LiveTranscriptionToggleButton.IsChecked is true)
+        {
+            LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
+            LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new model
+        }
+    }
+
+    private void TranscribeJustIconMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool justIcon = TranscribeJustIconMenuItem.IsChecked;
+        DefaultSettings.TranscribeButtonJustIcon = justIcon;
+        DefaultSettings.Save();
+        LiveTranscriptionLabel.Visibility = justIcon ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Reflects the persisted transcription-model choice in the context-menu check marks.</summary>
+    private void SyncTranscriptionModelMenu()
+    {
+        string current = DefaultSettings.AudioTranscriptionModel;
+        ModelTinyEnglishMenuItem.IsChecked = current == "TinyEnglish";
+        ModelBaseEnglishMenuItem.IsChecked = current == "BaseEnglish";
+        ModelSmallMultilingualMenuItem.IsChecked = current == "SmallMultilingual";
+        CaptureModelTinyEnglishMenuItem.IsChecked = ModelTinyEnglishMenuItem.IsChecked;
+        CaptureModelBaseEnglishMenuItem.IsChecked = ModelBaseEnglishMenuItem.IsChecked;
+        CaptureModelSmallMultilingualMenuItem.IsChecked = ModelSmallMultilingualMenuItem.IsChecked;
+
+        // Anything else (including the default) falls back to balanced multilingual.
+        ModelBaseMultilingualMenuItem.IsChecked =
+            !ModelTinyEnglishMenuItem.IsChecked
+            && !ModelBaseEnglishMenuItem.IsChecked
+            && !ModelSmallMultilingualMenuItem.IsChecked;
+        CaptureModelBaseMultilingualMenuItem.IsChecked = ModelBaseMultilingualMenuItem.IsChecked;
+    }
+
+    private void LiveTranscriber_PhraseRecognized(object? sender, string recognizedText)
+    {
+        // Recognition events arrive on a background thread; marshal to the UI thread without
+        // blocking the recognizer (BeginInvoke, not Invoke).
+        Dispatcher.BeginInvoke(() =>
+        {
+            string phrase = recognizedText.Trim();
+            if (phrase.Length == 0)
+                return;
+
+            // Insert at the end of the document, separating phrases with a single space.
+            PassedTextControl.Select(PassedTextControl.Text.Length, 0);
+            InsertTranscribedText(phrase, separateWithSpace: true);
+        });
+    }
+
+    private void SetLiveTranscriptionUi(bool active, string? label = null)
+    {
+        bool systemAudio = _liveCaptureSource == LiveCaptureSource.SystemAudio;
+        bool both = _liveCaptureSource == LiveCaptureSource.MicrophoneAndSystemAudio;
+        CaptureTranscribeAudioMenuItem.IsChecked = active;
+
+        if (label is not null)
+            LiveTranscriptionLabel.Text = label;
+        else if (active)
+            LiveTranscriptionLabel.Text = both ? "Listening (mic + system)…" : systemAudio ? "Listening (system)…" : "Listening…";
+        else
+            LiveTranscriptionLabel.Text = both ? "Transcribe (mic + system)" : systemAudio ? "Transcribe (system)" : "Transcribe";
+
+        // Speaker icon for system audio, mic icon for microphone (and mic+system); pulse variant while active.
+        LiveTranscriptionIcon.Symbol = systemAudio && !both
+            ? SymbolRegular.Speaker224
+            : (active ? SymbolRegular.MicPulse24 : SymbolRegular.Mic24);
+
+        if (active)
+            LiveTranscriptionIcon.Foreground = System.Windows.Media.Brushes.OrangeRed;
+        else
+            LiveTranscriptionIcon.ClearValue(ForegroundProperty);
     }
 
     private void SetToLoading(string message = "")

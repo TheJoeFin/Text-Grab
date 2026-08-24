@@ -444,6 +444,10 @@
                         Click="SummarizeMenuItem_Click"
                         Header="_Summarize Paragraph" />
                     <MenuItem
+                        x:Name="MeetingNotesMenuItem"
+                        Click="MeetingNotesMenuItem_Click"
+                        Header="Summarize as _Meeting Notes" />
+                    <MenuItem
                         x:Name="RewriteMenuItem"
                         Click="RewriteMenuItem_Click"
                         Header="_Rewrite" />
@@ -625,6 +629,72 @@
                         Header="_Watch Clipboard For Changes"
                         IsCheckable="True"
                         IsChecked="False" />
+                    <MenuItem
+                        x:Name="CaptureTranscribeAudioMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.TranscribeAudio"
+                        Click="CaptureTranscribeAudioMenuItem_Click"
+                        Header="_Transcribe Audio"
+                        IsCheckable="True"
+                        Visibility="Collapsed" />
+                    <MenuItem
+                        x:Name="TranscriptionOptionsMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.TranscriptionOptions"
+                        Header="Transcription _Options"
+                        Visibility="Collapsed">
+                        <MenuItem
+                            x:Name="CaptureLiveSourceMicMenuItem"
+                            Click="LiveSourceMenuItem_Click"
+                            Header="From Microphone"
+                            IsCheckable="True"
+                            IsChecked="True"
+                            Tag="Microphone" />
+                        <MenuItem
+                            x:Name="CaptureLiveSourceSystemMenuItem"
+                            Click="LiveSourceMenuItem_Click"
+                            Header="From System Audio (what you hear)"
+                            IsCheckable="True"
+                            Tag="SystemAudio" />
+                        <MenuItem
+                            x:Name="CaptureLiveSourceBothMenuItem"
+                            Click="LiveSourceMenuItem_Click"
+                            Header="From Microphone and System Audio"
+                            IsCheckable="True"
+                            Tag="MicrophoneAndSystemAudio" />
+                        <Separator />
+                        <MenuItem Header="Transcription model">
+                            <MenuItem
+                                x:Name="CaptureModelTinyEnglishMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Fastest — English"
+                                IsCheckable="True"
+                                Tag="TinyEnglish" />
+                            <MenuItem
+                                x:Name="CaptureModelBaseEnglishMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Fast — English"
+                                IsCheckable="True"
+                                Tag="BaseEnglish" />
+                            <MenuItem
+                                x:Name="CaptureModelBaseMultilingualMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Balanced — multilingual"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Tag="BaseMultilingual" />
+                            <MenuItem
+                                x:Name="CaptureModelSmallMultilingualMenuItem"
+                                Click="TranscriptionModelMenuItem_Click"
+                                Header="Most accurate — multilingual"
+                                IsCheckable="True"
+                                Tag="SmallMultilingual" />
+                        </MenuItem>
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="OpenAudioVideoMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.OpenAudioVideo"
+                        Click="OpenAudioVideoMenuItem_Click"
+                        Header="Open _Audio / Video..."
+                        Visibility="Collapsed" />
                     <Separator />
                     <MenuItem
                         x:Name="ListFilesMenuItem"
@@ -636,7 +706,10 @@
                         Click="ReadFolderOfImages_Click"
                         Header="_Extract Text from Images in Folder..." />
                     <MenuItem x:Name="LanguageMenuItem" Header="OCR in Language..." />
-                    <MenuItem x:Name="GrabTemplateMenuItem" Header="Use Grab _Template..." />
+                    <MenuItem
+                        x:Name="GrabTemplateMenuItem"
+                        Header="Use Grab _Template..."
+                        SubmenuOpened="GrabTemplateMenuItem_SubmenuOpened" />
                     <MenuItem
                         x:Name="RecursiveFoldersCheck"
                         Header="Scan all folders recursively"
@@ -711,7 +784,8 @@
                     <MenuItem
                         x:Name="NewWindowFromSelectionMenuItem"
                         Click="NewWindowWithText_Clicked"
-                        Header="New Window with Selected _Text" />
+                        Header="New Window with Selected _Text"
+                        InputGestureText="Ctrl + N" />
                     <MenuItem
                         x:Name="MakeCodeMenuItem"
                         Command="{x:Static local:EditTextWindow.MakeQrCodeCmd}"
@@ -1189,6 +1263,89 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     Orientation="Horizontal">
+                    <ToggleButton
+                        x:Name="LiveTranscriptionToggleButton"
+                        Margin="0,0,8,0"
+                        Padding="6,2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Checked="LiveTranscriptionToggleButton_Checked"
+                        Cursor="Hand"
+                        ToolTip="Toggle live transcription. Right-click to choose microphone or system audio."
+                        Unchecked="LiveTranscriptionToggleButton_Unchecked"
+                        Visibility="Collapsed">
+                        <ToggleButton.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem
+                                    x:Name="LiveSourceMicMenuItem"
+                                    Click="LiveSourceMenuItem_Click"
+                                    Header="From Microphone"
+                                    IsCheckable="True"
+                                    IsChecked="True"
+                                    Tag="Microphone" />
+                                <MenuItem
+                                    x:Name="LiveSourceSystemMenuItem"
+                                    Click="LiveSourceMenuItem_Click"
+                                    Header="From System Audio (what you hear)"
+                                    IsCheckable="True"
+                                    Tag="SystemAudio" />
+                                <MenuItem
+                                    x:Name="LiveSourceBothMenuItem"
+                                    Click="LiveSourceMenuItem_Click"
+                                    Header="From Microphone and System Audio"
+                                    IsCheckable="True"
+                                    Tag="MicrophoneAndSystemAudio" />
+                                <Separator />
+                                <MenuItem Header="Transcription model">
+                                    <MenuItem
+                                        x:Name="ModelTinyEnglishMenuItem"
+                                        Click="TranscriptionModelMenuItem_Click"
+                                        Header="Fastest — English"
+                                        IsCheckable="True"
+                                        Tag="TinyEnglish" />
+                                    <MenuItem
+                                        x:Name="ModelBaseEnglishMenuItem"
+                                        Click="TranscriptionModelMenuItem_Click"
+                                        Header="Fast — English"
+                                        IsCheckable="True"
+                                        Tag="BaseEnglish" />
+                                    <MenuItem
+                                        x:Name="ModelBaseMultilingualMenuItem"
+                                        Click="TranscriptionModelMenuItem_Click"
+                                        Header="Balanced — multilingual"
+                                        IsCheckable="True"
+                                        IsChecked="True"
+                                        Tag="BaseMultilingual" />
+                                    <MenuItem
+                                        x:Name="ModelSmallMultilingualMenuItem"
+                                        Click="TranscriptionModelMenuItem_Click"
+                                        Header="Most accurate — multilingual"
+                                        IsCheckable="True"
+                                        Tag="SmallMultilingual" />
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem
+                                    x:Name="TranscribeJustIconMenuItem"
+                                    Click="TranscribeJustIconMenuItem_Click"
+                                    Header="Just Icon"
+                                    IsCheckable="True" />
+                            </ContextMenu>
+                        </ToggleButton.ContextMenu>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon
+                                x:Name="LiveTranscriptionIcon"
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                Symbol="Mic24" />
+                            <TextBlock
+                                x:Name="LiveTranscriptionLabel"
+                                Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                FontFamily="Cascadia Mono"
+                                FontSize="12"
+                                Text="Transcribe" />
+                        </StackPanel>
+                    </ToggleButton>
                     <Button
                         x:Name="MatchCountButton"
                         AutomationProperties.AutomationId="EditText.MatchCountButton"
@@ -1333,6 +1490,48 @@
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 Text="Working..." />
         </StackPanel>
+        <!--  Non-blocking, cancellable status shown while transcribing audio; text streams into the editor beneath it.  -->
+        <Border
+            x:Name="TranscriptionStatusBar"
+            Grid.Row="2"
+            Grid.ColumnSpan="2"
+            Margin="0,10,0,0"
+            Padding="12,6"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Panel.ZIndex="500"
+            Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="16"
+            Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:ProgressRing
+                    Width="18"
+                    Height="18"
+                    IsIndeterminate="True" />
+                <StackPanel Margin="10,0,12,0" MinWidth="140" VerticalAlignment="Center">
+                    <TextBlock
+                        x:Name="TranscriptionStatusText"
+                        VerticalAlignment="Center"
+                        Text="Transcribing…" />
+                    <!--  Determinate: how far through the current clip's duration transcription has reached.  -->
+                    <ProgressBar
+                        x:Name="TranscriptionProgressBar"
+                        Height="4"
+                        Margin="0,4,0,0"
+                        Maximum="100"
+                        Minimum="0"
+                        Value="0"
+                        Visibility="Collapsed" />
+                </StackPanel>
+                <Button
+                    x:Name="TranscriptionCancelButton"
+                    Padding="10,2"
+                    Click="TranscriptionCancelButton_Click"
+                    Content="Cancel" />
+            </StackPanel>
+        </Border>
         <ui:ContentDialogHost
             x:Name="PendingFileCloseDialogHost"
             AutomationProperties.AutomationId="EditText.PendingFileCloseDialog"

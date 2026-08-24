@@ -61,4 +61,12 @@ internal static class NotificationUtilities
 
         toast.Show();
     }
+
+    internal static void ShowTranscriptionCompleteToast(string fileDescription)
+    {
+        new ToastContentBuilder()
+            .AddText("Text Grab")
+            .AddText($"Transcription complete: {fileDescription}")
+            .Show();
+    }
 }

@@ -12,7 +12,7 @@ namespace Text_Grab.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.9.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.10.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -481,6 +481,18 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Color")]
+        public string TrayIconStyle {
+            get {
+                return ((string)(this["TrayIconStyle"]));
+            }
+            set {
+                this["TrayIconStyle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool FsgSendEtwToggle {
             get {
@@ -770,12 +782,48 @@ namespace Text_Grab.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwShowTranscribe {
+            get {
+                return ((bool)(this["EtwShowTranscribe"]));
+            }
+            set {
+                this["EtwShowTranscribe"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool TranscribeButtonJustIcon {
+            get {
+                return ((bool)(this["TranscribeButtonJustIcon"]));
+            }
+            set {
+                this["TranscribeButtonJustIcon"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool EtwNormalizeLineEndingsOnPaste {
             get {
                 return ((bool)(this["EtwNormalizeLineEndingsOnPaste"]));
             }
             set {
                 this["EtwNormalizeLineEndingsOnPaste"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("BaseMultilingual")]
+        public string AudioTranscriptionModel {
+            get {
+                return ((string)(this["AudioTranscriptionModel"]));
+            }
+            set {
+                this["AudioTranscriptionModel"] = value;
             }
         }
         
@@ -1160,6 +1208,30 @@ namespace Text_Grab.Properties {
             }
             set {
                 this["HdrBorderlessGranted"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NotifyOnTranscriptionComplete {
+            get {
+                return ((bool)(this["NotifyOnTranscriptionComplete"]));
+            }
+            set {
+                this["NotifyOnTranscriptionComplete"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IncludeTimecodesInTranscription {
+            get {
+                return ((bool)(this["IncludeTimecodesInTranscription"]));
+            }
+            set {
+                this["IncludeTimecodesInTranscription"] = value;
             }
         }
     }

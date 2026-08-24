@@ -116,6 +116,9 @@
     <Setting Name="AppTheme" Type="System.String" Scope="User">
       <Value Profile="(Default)">System</Value>
     </Setting>
+    <Setting Name="TrayIconStyle" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Color</Value>
+    </Setting>
     <Setting Name="FsgSendEtwToggle" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
@@ -188,8 +191,17 @@
     <Setting Name="EtwShowSimilarMatches" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="EtwShowTranscribe" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="TranscribeButtonJustIcon" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <Setting Name="EtwNormalizeLineEndingsOnPaste" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="AudioTranscriptionModel" Type="System.String" Scope="User">
+      <Value Profile="(Default)">BaseMultilingual</Value>
     </Setting>
     <Setting Name="EtwSpellCheckMode" Type="System.String" Scope="User">
       <Value Profile="(Default)">Auto</Value>
@@ -285,6 +297,12 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="HdrBorderlessGranted" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="NotifyOnTranscriptionComplete" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="IncludeTimecodesInTranscription" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>

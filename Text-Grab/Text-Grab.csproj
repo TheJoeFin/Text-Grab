@@ -28,12 +28,39 @@
         <NoWarn>$(NoWarn);WFO0003</NoWarn>
     </PropertyGroup>
 
+    <!--
+        The Windows AI language model (Phi Silica) is a Limited Access Feature. Text-Grab must call
+        LimitedAccessFeatures.TryUnlockFeature with a token issued by Microsoft for its publisher ID
+        before translate / summarize / rewrite / text-to-table will run; request one at
+        https://aka.ms/laffeatures.
+
+        Never commit a token. Pass it in at build time instead:
+            dotnet build -p:LafToken="..." -p:LafPublisherId="..."
+        or set the LAF_TOKEN / LAF_PUBLISHER_ID environment variables for local development, which
+        the properties below pick up so Visual Studio builds get the token too. See
+        docs/Configuring-LAF-Environment-Variables.md.
+    -->
+    <PropertyGroup>
+        <LafToken Condition="'$(LafToken)' == ''">$(LAF_TOKEN)</LafToken>
+        <LafPublisherId Condition="'$(LafPublisherId)' == ''">$(LAF_PUBLISHER_ID)</LafPublisherId>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(LafToken)' != ''">
+        <AssemblyMetadata Include="LAF_TOKEN" Value="$(LafToken)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(LafPublisherId)' != ''">
+        <AssemblyMetadata Include="LAF_PUBLISHER_ID" Value="$(LafPublisherId)" />
+    </ItemGroup>
+
     <ItemGroup>
         <None Remove="Images\CJKE-SampleText.png" />
         <None Remove="Images\ETW.png" />
         <None Remove="Images\FSG.png" />
         <None Remove="Images\GF.png" />
         <None Remove="Images\QSL.png" />
+        <None Remove="Images\Select-Black.ico" />
+        <None Remove="Images\Select-White.ico" />
         <None Remove="Images\TealSelect40.png" />
         <None Remove="Images\Text-Grab-Icon.png" />
         <None Remove="Images\Toast.png" />
@@ -65,7 +92,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CliWrap" Version="3.10.3" />
+        <PackageReference Include="CliWrap" Version="3.10.5" />
         <PackageReference Include="Dapplo.Windows.User32" Version="2.0.89" />
         <PackageReference Include="Humanizer.Core" Version="3.0.10" />
         <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.16.0" />
@@ -78,15 +105,28 @@
         <PackageReference Include="Microsoft.Recognizers.Text.NumberWithUnit" Version="1.8.13" />
         <PackageReference Include="Microsoft.Recognizers.Text.Sequence" Version="1.8.13" />
         <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.3.4" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.5" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.3.1" />
-        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.0" />
-        <PackageReference Include="NCalcAsync" Version="6.4.0" />
+        <!-- Windows App SDK (stable) powers the existing on-device OCR / image-description / text AI features. -->
+        <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.9" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.6" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.4.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.6" />
+        <!--
+            Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
+            stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
+            experimental Microsoft.Windows.AI.Speech APIs. NAudio decodes/resamples arbitrary audio
+            (mp3, m4a, wav, ...) to the 16 kHz mono WAV Whisper requires.
+        -->
+        <PackageReference Include="Whisper.net" Version="1.9.1" />
+        <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+        <PackageReference Include="NAudio" Version="3.0.1" />
+        <PackageReference Include="NCalcAsync" Version="7.1.0" />
         <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
              build tool. Exclude all its assets so nuget.exe never flows into the app output. -->
-        <PackageReference Include="NuGet.CommandLine" Version="7.6.0" ExcludeAssets="all" PrivateAssets="all" />
-        <PackageReference Include="PdfPig" Version="0.1.15" />
+        <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
+          <IncludeAssets>none</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="PdfPig" Version="0.1.16" />
         <PackageReference Include="UnitsNet" Version="5.75.1" />
         <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
         <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
@@ -110,6 +150,12 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="Images\QSL.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Images\Select-Black.ico">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Images\Select-White.ico">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="Images\TealSelect40.png">
