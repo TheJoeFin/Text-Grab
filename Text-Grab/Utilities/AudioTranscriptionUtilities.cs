@@ -24,22 +24,51 @@ public static class AudioDebugLog
 {
     private static readonly object _lock = new();
 
-    /// <summary>Fixed, non-virtualized log path so it's findable after a run.</summary>
-    public static string LogPath { get; } = Path.Combine(
-        Environment.GetEnvironmentVariable("USERPROFILE") ?? Path.GetTempPath(),
-        "TextGrab-audio-debug.log");
+    /// <summary>Rolled over into <c>audio-debug.prev.log</c> once the live file passes this size.</summary>
+    private const long MaxLogBytes = 1024 * 1024;
+
+    private static long _writtenBytes = -1;   // -1 until the size of an existing log is read once
+
+    private static string LogDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Text-Grab", "Logs");
+
+    /// <summary>Stable per-user log path so a run can be found and collected after the fact.</summary>
+    public static string LogPath { get; } = Path.Combine(LogDirectory, "audio-debug.log");
+
+    /// <summary>The previous log, kept so a rollover mid-run doesn't lose the start of the session.</summary>
+    private static string PreviousLogPath { get; } = Path.Combine(LogDirectory, "audio-debug.prev.log");
 
     public static void Write(string message)
     {
+        // Environment.WorkingSet, not a Process object: a cached Process reports whatever it last
+        // refreshed, and a fresh Process.GetCurrentProcess() per logged line is not free.
         long workingSetMb = 0;
-        try { workingSetMb = Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024); } catch { }
+        try { workingSetMb = Environment.WorkingSet / (1024 * 1024); } catch { }
 
         string line = $"{DateTime.Now:HH:mm:ss.fff} [WS {workingSetMb,6} MB] {message}";
         Debug.WriteLine("[AudioTranscription] " + line);
         try
         {
             lock (_lock)
-                File.AppendAllText(LogPath, line + Environment.NewLine);
+            {
+                if (_writtenBytes < 0)
+                {
+                    Directory.CreateDirectory(LogDirectory);
+                    _writtenBytes = File.Exists(LogPath) ? new FileInfo(LogPath).Length : 0;
+                }
+
+                // Roll over instead of growing without bound: this log is always on.
+                if (_writtenBytes > MaxLogBytes)
+                {
+                    File.Move(LogPath, PreviousLogPath, overwrite: true);
+                    _writtenBytes = 0;
+                }
+
+                string text = line + Environment.NewLine;
+                File.AppendAllText(LogPath, text);
+                _writtenBytes += Encoding.UTF8.GetByteCount(text);
+            }
         }
         catch { /* logging must never throw */ }
     }
