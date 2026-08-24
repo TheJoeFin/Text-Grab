@@ -649,28 +649,66 @@ public sealed class LiveAudioTranscriber : IDisposable
     /// </summary>
     private sealed class CaptureChannel
     {
-        public IWaveIn Capture { get; }
         public WaveFormat SourceFormat { get; }
         public MemoryStream PcmBuffer { get; } = new();
         public object BufferLock { get; } = new();
-        private readonly EventHandler<WaveInEventArgs> _dataAvailableHandler;
+        private readonly IWaveIn? _waveIn;
+        private readonly WasapiRecorder? _wasapiRecorder;
+        private readonly EventHandler<WaveInEventArgs>? _waveInDataAvailableHandler;
+        private readonly CaptureDataAvailableHandler? _wasapiDataAvailableHandler;
 
         public CaptureChannel(IWaveIn capture)
         {
-            Capture = capture;
+            _waveIn = capture;
             SourceFormat = capture.WaveFormat;
-            _dataAvailableHandler = (_, e) =>
+            _waveInDataAvailableHandler = (_, e) =>
             {
                 lock (BufferLock)
                     PcmBuffer.Write(e.Buffer, 0, e.BytesRecorded);
             };
-            Capture.DataAvailable += _dataAvailableHandler;
+            capture.DataAvailable += _waveInDataAvailableHandler;
+        }
+
+        public CaptureChannel(WasapiRecorder capture)
+        {
+            _wasapiRecorder = capture;
+            SourceFormat = capture.WaveFormat;
+            _wasapiDataAvailableHandler = (buffer, _, _, _) =>
+            {
+                lock (BufferLock)
+                    PcmBuffer.Write(buffer);
+            };
+            capture.DataAvailable += _wasapiDataAvailableHandler;
+        }
+
+        public void StartRecording()
+        {
+            if (_waveIn is not null)
+                _waveIn.StartRecording();
+            else
+                _wasapiRecorder!.StartRecording();
+        }
+
+        public void StopRecording()
+        {
+            if (_waveIn is not null)
+                _waveIn.StopRecording();
+            else
+                _wasapiRecorder!.StopRecording();
         }
 
         public void Dispose()
         {
-            Capture.DataAvailable -= _dataAvailableHandler;
-            try { Capture.Dispose(); } catch { }
+            if (_waveIn is not null)
+            {
+                _waveIn.DataAvailable -= _waveInDataAvailableHandler;
+                try { _waveIn.Dispose(); } catch { }
+            }
+            else if (_wasapiRecorder is not null)
+            {
+                _wasapiRecorder.DataAvailable -= _wasapiDataAvailableHandler;
+                try { _wasapiRecorder.Dispose(); } catch { }
+            }
         }
     }
 
@@ -728,7 +766,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             bool wantsMic = source is LiveCaptureSource.Microphone or LiveCaptureSource.MicrophoneAndSystemAudio;
             bool wantsSystem = source is LiveCaptureSource.SystemAudio or LiveCaptureSource.MicrophoneAndSystemAudio;
 
-            if (wantsMic && WaveInEvent.DeviceCount <= 0)
+            if (wantsMic && WaveIn.DeviceCount <= 0)
             {
                 AudioDebugLog.Write("LiveAudioTranscriber: no microphone capture device found");
                 return false;
@@ -759,15 +797,18 @@ public sealed class LiveAudioTranscriber : IDisposable
             // Each source gets its own channel/buffer; when both are requested they're captured
             // independently and mixed down to one stream per processing pass (see MixChannels).
             if (wantsMic)
-                _channels.Add(new CaptureChannel(new WaveInEvent { WaveFormat = new WaveFormat(16000, 16, 1), BufferMilliseconds = 100 }));
+                _channels.Add(new CaptureChannel(new WaveIn { WaveFormat = new WaveFormat(16000, 16, 1), BufferMilliseconds = 100 }));
             if (wantsSystem)
-                _channels.Add(new CaptureChannel(new WasapiLoopbackCapture()));
+                _channels.Add(new CaptureChannel(new WasapiRecorderBuilder()
+                    .WithLoopbackCapture()
+                    .WithBufferLength(100)
+                    .Build()));
 
             foreach (CaptureChannel channel in _channels)
                 AudioDebugLog.Write($"LiveAudioTranscriber: source={source} model={choice} format={channel.SourceFormat.Encoding} {channel.SourceFormat.SampleRate}Hz {channel.SourceFormat.Channels}ch {channel.SourceFormat.BitsPerSample}bit");
 
             foreach (CaptureChannel channel in _channels)
-                channel.Capture.StartRecording();
+                channel.StartRecording();
 
             _chunkTimer = new System.Timers.Timer(TimerIntervalMs) { AutoReset = true };
             _chunkTimer.Elapsed += async (_, _) => await ProcessBufferedChunkAsync().ConfigureAwait(false);
@@ -808,7 +849,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             _chunkTimer?.Stop();
 
             foreach (CaptureChannel channel in _channels)
-                try { channel.Capture.StopRecording(); } catch { }
+                try { channel.StopRecording(); } catch { }
 
             // Flush whatever remains (this waits for any in-flight pass), then clean up.
             try { await ProcessBufferedChunkAsync(flush: true).ConfigureAwait(false); } catch { }

@@ -469,7 +469,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         report.AppendLine(OcrUtilities.BuildTextFromOcrLines(japanese, ocrResult));
 
         string outPath = Path.Combine(Path.GetTempPath(), "ja-ocr-report.txt");
-        await File.WriteAllTextAsync(outPath, report.ToString(), new UTF8Encoding(true));
+        await File.WriteAllTextAsync(outPath, report.ToString(), new UTF8Encoding(true), TestContext.Current.CancellationToken);
         System.Diagnostics.Debug.WriteLine(report.ToString());
         System.Diagnostics.Debug.WriteLine($"Report written to {outPath}");
     }
@@ -537,7 +537,9 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         // Given
         string resultWordBorders = ComplexWordBorders;
         string expectedResult = ComplexTableResult;
-        string wordBordersJson = await File.ReadAllTextAsync(FileUtilities.GetPathToLocalFile(resultWordBorders));
+        string wordBordersJson = await File.ReadAllTextAsync(
+            FileUtilities.GetPathToLocalFile(resultWordBorders),
+            TestContext.Current.CancellationToken);
 
         List<WordBorderInfo> wbInfoList = JsonSerializer.Deserialize<List<WordBorderInfo>>(wordBordersJson ?? "[]")
             ?? throw new Exception("Failed to deserialize WordBorderInfo list");
