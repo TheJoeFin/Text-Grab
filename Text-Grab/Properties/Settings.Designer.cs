@@ -1234,5 +1234,29 @@ namespace Text_Grab.Properties {
                 this["IncludeTimecodesInTranscription"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NotifyOnLocalAiComplete {
+            get {
+                return ((bool)(this["NotifyOnLocalAiComplete"]));
+            }
+            set {
+                this["NotifyOnLocalAiComplete"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool SendLocalAiResultToNewWindow {
+            get {
+                return ((bool)(this["SendLocalAiResultToNewWindow"]));
+            }
+            set {
+                this["SendLocalAiResultToNewWindow"] = value;
+            }
+        }
     }
 }

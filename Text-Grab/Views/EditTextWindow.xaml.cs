@@ -6280,6 +6280,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Set dynamic header text for TranslateToSystemLanguageMenuItem
             string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
             TranslateToSystemLanguageMenuItem.Header = $"Translate to {systemLanguage}";
+
+            NotifyOnLocalAiCompleteMenuItem.IsChecked = DefaultSettings.NotifyOnLocalAiComplete;
+            SendLocalAiResultToNewWindowMenuItem.IsChecked = DefaultSettings.SendLocalAiResultToNewWindow;
         }
 
         // Audio transcription runs locally on the CPU via Whisper (whisper.cpp), so it's available
@@ -6855,12 +6858,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             string sourceText = GetSelectedTextOrAllText();
             WinAiGenerationResult result = await WindowsAiUtilities.SummarizeParagraph(sourceText);
 
-            // Only open a window on success: a failure message shown as document text reads like a
-            // real summary and can be saved as one.
             if (result.Text is null)
                 failure = result;
             else
-                OpenTextInNewEditTextWindow(result.Text);
+                await DeliverLocalAiResultAsync("Summarize", result.Text);
         }
         catch (Exception ex)
         {
@@ -6901,7 +6902,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (result.Text is null)
                 failure = result;
             else
-                OpenTextInNewEditTextWindow(result.Text);
+                await DeliverLocalAiResultAsync("Meeting notes", result.Text);
         }
         catch (Exception ex)
         {
@@ -6924,14 +6925,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    // Summarize and meeting-notes results open in a new window, leaving the source text untouched.
-    private static void OpenTextInNewEditTextWindow(string text)
+    // Returns the new window's WindowId so a completion notification can reactivate it specifically
+    // (rather than the source window, which never gets the result text) — null if it failed to open.
+    private static Guid? OpenTextInNewEditTextWindow(string text)
     {
         EditTextWindow resultWindow = new(text, isEncoded: false);
 
         try
         {
             resultWindow.Show();
+            return resultWindow.WindowId;
         }
         catch (Exception ex)
         {
@@ -6941,7 +6944,88 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 Content = "An error occurred while trying to open a new window. Please try again.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
+            return null;
         }
+    }
+
+    /// <summary>
+    /// Delivers a finished Local AI result (Summarize, Meeting Notes) per the
+    /// "Send Result to New Window" setting: either opened in a new window, leaving this window's text
+    /// untouched, or applied over the selected/all text in this window — then fires the completion
+    /// notification for whichever window actually ended up with the result.
+    /// </summary>
+    private async Task DeliverLocalAiResultAsync(string taskDescription, string resultText)
+    {
+        if (DefaultSettings.SendLocalAiResultToNewWindow)
+        {
+            if (OpenTextInNewEditTextWindow(resultText) is Guid resultWindowId)
+                NotifyLocalAiComplete(taskDescription, resultWindowId);
+        }
+        else
+        {
+            await ApplySelectedTextOrAllTextTransformAsync(_ => Task.FromResult(resultText));
+            NotifyLocalAiComplete(taskDescription, WindowId);
+        }
+    }
+
+    /// <summary>
+    /// Runs a Local AI text transform (Rewrite, Convert to Table) and delivers it per the "Send Result
+    /// to New Window" setting: either opened in a new window, leaving this window's text untouched, or
+    /// applied over the selected/all text in this window (via <see cref="ApplySelectedTextOrAllTextTransformAsync"/>,
+    /// which also handles spreadsheet mode) — then fires the completion notification for whichever
+    /// window actually ended up with the result.
+    /// </summary>
+    private async Task PerformLocalAiTransformAsync(string taskDescription, Func<string, Task<string>> transformAsync)
+    {
+        if (DefaultSettings.SendLocalAiResultToNewWindow)
+        {
+            string resultText = await transformAsync(GetSelectedTextOrAllText());
+            if (OpenTextInNewEditTextWindow(resultText) is Guid resultWindowId)
+                NotifyLocalAiComplete(taskDescription, resultWindowId);
+        }
+        else
+        {
+            await ApplySelectedTextOrAllTextTransformAsync(transformAsync);
+            NotifyLocalAiComplete(taskDescription, WindowId);
+        }
+    }
+
+    private void SendLocalAiResultToNewWindowMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.SendLocalAiResultToNewWindow = true;
+        DefaultSettings.Save();
+    }
+
+    private void SendLocalAiResultToNewWindowMenuItem_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.SendLocalAiResultToNewWindow = false;
+        DefaultSettings.Save();
+    }
+
+    private void NotifyOnLocalAiCompleteMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.NotifyOnLocalAiComplete = true;
+        DefaultSettings.Save();
+    }
+
+    private void NotifyOnLocalAiCompleteMenuItem_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.NotifyOnLocalAiComplete = false;
+        DefaultSettings.Save();
+    }
+
+    /// <summary>
+    /// Shows a completion toast for a Local AI task if the user opted in. These tasks run with the
+    /// window disabled (see <see cref="SetToLoading"/>), so a user who has switched away otherwise
+    /// has no signal that the result is ready, mirroring the transcription-complete notification.
+    /// <paramref name="windowId"/> is whichever window actually holds the result: this window for an
+    /// in-place edit (Rewrite, Convert to Table, Translate, Extract RegEx), or the new window for
+    /// Summarize/Meeting Notes, which open the result separately instead of replacing the source text.
+    /// </summary>
+    private void NotifyLocalAiComplete(string taskDescription, Guid windowId)
+    {
+        if (DefaultSettings.NotifyOnLocalAiComplete)
+            NotificationUtilities.ShowLocalAiCompleteToast(taskDescription, windowId);
     }
 
     private void LearnAiMenuItem_Click(object sender, RoutedEventArgs e)
@@ -6958,7 +7042,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SetToLoading("Rewriting...");
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.Rewrite(text));
+            await PerformLocalAiTransformAsync("Rewrite", text => WindowsAiUtilities.Rewrite(text));
         }
         finally
         {
@@ -6972,7 +7056,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.TextToTable(text));
+            await PerformLocalAiTransformAsync("Convert to Table", text => WindowsAiUtilities.TextToTable(text));
         }
         finally
         {
@@ -7027,17 +7111,36 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // instead of silently putting the original text back.
         TranslationResult? failedResult = null;
 
+        // Whichever window ends up with the translated text — this window for an in-place apply, or
+        // the newly opened one — so the completion notification (if any) points at the right one.
+        Guid? resultWindowId = null;
+
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(async text =>
+            if (DefaultSettings.SendLocalAiResultToNewWindow)
             {
-                TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
+                TranslationResult result = await WinAiTranslator.TranslateAsync(GetSelectedTextOrAllText(), targetLanguage);
 
                 if (!result.Succeeded)
-                    failedResult ??= result;
+                    failedResult = result;
+                else
+                    resultWindowId = OpenTextInNewEditTextWindow(result.Text);
+            }
+            else
+            {
+                await ApplySelectedTextOrAllTextTransformAsync(async text =>
+                {
+                    TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
 
-                return result.Text;
-            });
+                    if (!result.Succeeded)
+                        failedResult ??= result;
+
+                    return result.Text;
+                });
+
+                if (failedResult is null)
+                    resultWindowId = WindowId;
+            }
         }
         catch (Exception ex)
         {
@@ -7056,6 +7159,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 Content = failure.Message ?? "The text could not be translated.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
+        }
+        else if (resultWindowId is Guid windowId)
+        {
+            NotifyLocalAiComplete($"Translation to {targetLanguage}", windowId);
         }
     }
 
@@ -7108,6 +7215,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }.ShowDialogAsync();
             return;
         }
+
+        NotifyLocalAiComplete("Extract RegEx", WindowId);
 
         // Clean up any model artifacts like <\/PRED> tags
         regexPattern = regexPattern.Replace("<\\/PRED>", "").Replace("</PRED>", "").Trim();

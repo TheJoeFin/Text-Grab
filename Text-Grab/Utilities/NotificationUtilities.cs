@@ -78,6 +78,21 @@ internal static class NotificationUtilities
             .Show();
     }
 
+    /// <summary>
+    /// Shows a toast for a finished Local AI task (summarize, rewrite, translate, etc.). These run
+    /// with the owning <see cref="EditTextWindow"/> disabled for the duration, so a user who has
+    /// switched away benefits from the same "tap to come back" behavior as
+    /// <see cref="ShowTranscriptionCompleteToast"/>.
+    /// </summary>
+    internal static void ShowLocalAiCompleteToast(string taskDescription, Guid windowId)
+    {
+        new ToastContentBuilder()
+            .AddArgument("windowId", windowId.ToString())
+            .AddText("Text Grab")
+            .AddText($"{taskDescription} complete")
+            .Show();
+    }
+
     private const string WindowIdArgumentPrefix = "windowId=";
 
     /// <summary>

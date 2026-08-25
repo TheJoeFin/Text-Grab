@@ -518,6 +518,19 @@
                         x:Name="ExtractRegexMenuItem"
                         Click="ExtractRegexMenuItem_Click"
                         Header="E_xtract RegEx" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="SendLocalAiResultToNewWindowMenuItem"
+                        Checked="SendLocalAiResultToNewWindowMenuItem_Checked"
+                        Header="Send Result to _New Window"
+                        IsCheckable="True"
+                        Unchecked="SendLocalAiResultToNewWindowMenuItem_Unchecked" />
+                    <MenuItem
+                        x:Name="NotifyOnLocalAiCompleteMenuItem"
+                        Checked="NotifyOnLocalAiCompleteMenuItem_Checked"
+                        Header="_Notify When Done"
+                        IsCheckable="True"
+                        Unchecked="NotifyOnLocalAiCompleteMenuItem_Unchecked" />
                     <MenuItem
                         x:Name="LearnAiMenuItem"
                         Click="LearnAiMenuItem_Click"
