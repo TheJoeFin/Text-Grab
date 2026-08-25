@@ -203,6 +203,9 @@
     <Setting Name="AudioTranscriptionModel" Type="System.String" Scope="User">
       <Value Profile="(Default)">BaseMultilingual</Value>
     </Setting>
+    <Setting Name="AudioTranscriptionEngine" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Whisper</Value>
+    </Setting>
     <Setting Name="EtwSpellCheckMode" Type="System.String" Scope="User">
       <Value Profile="(Default)">Auto</Value>
     </Setting>

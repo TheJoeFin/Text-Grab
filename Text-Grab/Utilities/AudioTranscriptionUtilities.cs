@@ -393,6 +393,24 @@ public static class AudioTranscriptionUtilities
         if (!File.Exists(audioFilePath))
             throw new FileNotFoundException("Audio file not found.", audioFilePath);
 
+        // includeTimecodes needs Whisper's per-segment output; Windows AI Speech's RecognizeFromFile
+        // returns one flat string, so that request always goes straight to Whisper below.
+        if (!includeTimecodes && CurrentEngine == TranscriptionEngine.WindowsAiSpeech && await WindowsAiSpeechTranscriptionUtilities.RefreshSupportAsync().ConfigureAwait(false))
+        {
+            statusProgress?.Report("Transcribing audio (Windows AI Speech, NPU)…");
+            string? winAiResult = await WindowsAiSpeechTranscriptionUtilities.TranscribeAudioFileAsync(audioFilePath, cancellationToken).ConfigureAwait(false);
+            if (winAiResult is not null)
+            {
+                segmentProgress?.Report(winAiResult);
+                clipProgress?.Report(1.0);
+                AudioDebugLog.Write($"TranscribeAudioFileAsync: DONE via Windows AI Speech, result length={winAiResult.Length}");
+                return winAiResult;
+            }
+
+            AudioDebugLog.Write("TranscribeAudioFileAsync: Windows AI Speech unavailable/failed, falling back to Whisper");
+            statusProgress?.Report("Windows AI Speech unavailable - falling back to local Whisper…");
+        }
+
         long fileSizeKb = new FileInfo(audioFilePath).Length / 1024;
         AudioDebugLog.Write($"TranscribeAudioFileAsync: file exists, size={fileSizeKb} KB, ext={Path.GetExtension(audioFilePath)}");
 
@@ -569,6 +587,62 @@ public static class AudioTranscriptionUtilities
         }
         return samples.ToArray();
     }
+
+    /// <summary>
+    /// Sums same-length-padded per-channel samples into one stream, clamping to [-1, 1] so two loud
+    /// sources can't clip beyond either engine's expected range. A single channel is returned
+    /// unchanged. Shared by <see cref="LiveAudioTranscriber"/> (Whisper) and
+    /// <see cref="LiveWindowsAiSpeechTranscriber"/> (Windows AI Speech).
+    /// </summary>
+    internal static float[] MixChannels(List<float[]> perChannelSamples)
+    {
+        if (perChannelSamples.Count == 1)
+            return perChannelSamples[0];
+
+        int length = 0;
+        foreach (float[] samples in perChannelSamples)
+            length = Math.Max(length, samples.Length);
+
+        float[] mixed = new float[length];
+        foreach (float[] samples in perChannelSamples)
+            for (int i = 0; i < samples.Length; i++)
+                mixed[i] += samples[i];
+
+        for (int i = 0; i < mixed.Length; i++)
+            mixed[i] = Math.Clamp(mixed[i], -1f, 1f);
+
+        return mixed;
+    }
+
+    /// <summary>Converts normalized [-1, 1] float samples back to 16-bit mono PCM bytes (the inverse of the fast path in <see cref="ConvertToSamples16kMono"/>) — the shape <see cref="Microsoft.Windows.AI.Speech.SpeechAudioProvider.PushData"/> consumes.</summary>
+    internal static byte[] SamplesToPcm16(float[] samples)
+    {
+        byte[] pcm = new byte[samples.Length * 2];
+        for (int i = 0; i < samples.Length; i++)
+        {
+            short sample = (short)Math.Clamp(samples[i] * 32768f, short.MinValue, short.MaxValue);
+            pcm[i * 2] = (byte)(sample & 0xFF);
+            pcm[i * 2 + 1] = (byte)((sample >> 8) & 0xFF);
+        }
+        return pcm;
+    }
+
+    /// <summary>The transcription engine currently selected in settings (defaults to local Whisper).</summary>
+    public static TranscriptionEngine CurrentEngine => AppUtilities.TextGrabSettings.AudioTranscriptionEngine switch
+    {
+        "WindowsAiSpeech" => TranscriptionEngine.WindowsAiSpeech,
+        _ => TranscriptionEngine.Whisper,
+    };
+}
+
+/// <summary>The engine <see cref="LiveAudioTranscriber"/>/<see cref="LiveWindowsAiSpeechTranscriber"/> and file transcription run on.</summary>
+public enum TranscriptionEngine
+{
+    /// <summary>Local Whisper (whisper.cpp) via Whisper.net. CPU-based, always available.</summary>
+    Whisper,
+
+    /// <summary>The experimental Microsoft.Windows.AI.Speech engine, gated to Copilot+ PC / NPU-capable hardware. Falls back to Whisper whenever unavailable or it fails.</summary>
+    WindowsAiSpeech,
 }
 
 /// <summary>The Whisper model a user can pick, trading speed for accuracy / language coverage.</summary>
@@ -672,6 +746,77 @@ public enum LiveCaptureSource
 /// <see cref="PhraseRecognized"/>. Events fire on background threads; subscribers must marshal to
 /// their UI thread.
 /// </summary>
+/// <summary>
+/// A single capture device feeding a live transcriber (microphone or system-audio loopback), with its
+/// own raw-PCM buffer so concurrent sources never share captured bytes. Shared between
+/// <see cref="LiveAudioTranscriber"/> (Whisper) and <see cref="LiveWindowsAiSpeechTranscriber"/>
+/// (Windows AI Speech) so the mic/loopback capture and lifecycle handling exists in exactly one place.
+/// </summary>
+internal sealed class AudioCaptureChannel
+{
+    public WaveFormat SourceFormat { get; }
+    public MemoryStream PcmBuffer { get; } = new();
+    public object BufferLock { get; } = new();
+    private readonly IWaveIn? _waveIn;
+    private readonly WasapiRecorder? _wasapiRecorder;
+    private readonly EventHandler<WaveInEventArgs>? _waveInDataAvailableHandler;
+    private readonly CaptureDataAvailableHandler? _wasapiDataAvailableHandler;
+
+    public AudioCaptureChannel(IWaveIn capture)
+    {
+        _waveIn = capture;
+        SourceFormat = capture.WaveFormat;
+        _waveInDataAvailableHandler = (_, e) =>
+        {
+            lock (BufferLock)
+                PcmBuffer.Write(e.Buffer, 0, e.BytesRecorded);
+        };
+        capture.DataAvailable += _waveInDataAvailableHandler;
+    }
+
+    public AudioCaptureChannel(WasapiRecorder capture)
+    {
+        _wasapiRecorder = capture;
+        SourceFormat = capture.WaveFormat;
+        _wasapiDataAvailableHandler = (buffer, _, _, _) =>
+        {
+            lock (BufferLock)
+                PcmBuffer.Write(buffer);
+        };
+        capture.DataAvailable += _wasapiDataAvailableHandler;
+    }
+
+    public void StartRecording()
+    {
+        if (_waveIn is not null)
+            _waveIn.StartRecording();
+        else
+            _wasapiRecorder!.StartRecording();
+    }
+
+    public void StopRecording()
+    {
+        if (_waveIn is not null)
+            _waveIn.StopRecording();
+        else
+            _wasapiRecorder!.StopRecording();
+    }
+
+    public void Dispose()
+    {
+        if (_waveIn is not null)
+        {
+            _waveIn.DataAvailable -= _waveInDataAvailableHandler;
+            try { _waveIn.Dispose(); } catch { }
+        }
+        else if (_wasapiRecorder is not null)
+        {
+            _wasapiRecorder.DataAvailable -= _wasapiDataAvailableHandler;
+            try { _wasapiRecorder.Dispose(); } catch { }
+        }
+    }
+}
+
 public sealed class LiveAudioTranscriber : IDisposable
 {
     private const int SampleRate = 16000;
@@ -680,76 +825,7 @@ public sealed class LiveAudioTranscriber : IDisposable
     private const double CompletionSilenceSeconds = 0.25; // trailing silence that marks an utterance done
     private const double MaxUtteranceSeconds = 20.0;     // hard cap so a long monologue still flushes
 
-    /// <summary>
-    /// A single capture device feeding this transcriber (microphone or system-audio loopback), with
-    /// its own raw-PCM buffer so concurrent sources never share captured bytes.
-    /// </summary>
-    private sealed class CaptureChannel
-    {
-        public WaveFormat SourceFormat { get; }
-        public MemoryStream PcmBuffer { get; } = new();
-        public object BufferLock { get; } = new();
-        private readonly IWaveIn? _waveIn;
-        private readonly WasapiRecorder? _wasapiRecorder;
-        private readonly EventHandler<WaveInEventArgs>? _waveInDataAvailableHandler;
-        private readonly CaptureDataAvailableHandler? _wasapiDataAvailableHandler;
-
-        public CaptureChannel(IWaveIn capture)
-        {
-            _waveIn = capture;
-            SourceFormat = capture.WaveFormat;
-            _waveInDataAvailableHandler = (_, e) =>
-            {
-                lock (BufferLock)
-                    PcmBuffer.Write(e.Buffer, 0, e.BytesRecorded);
-            };
-            capture.DataAvailable += _waveInDataAvailableHandler;
-        }
-
-        public CaptureChannel(WasapiRecorder capture)
-        {
-            _wasapiRecorder = capture;
-            SourceFormat = capture.WaveFormat;
-            _wasapiDataAvailableHandler = (buffer, _, _, _) =>
-            {
-                lock (BufferLock)
-                    PcmBuffer.Write(buffer);
-            };
-            capture.DataAvailable += _wasapiDataAvailableHandler;
-        }
-
-        public void StartRecording()
-        {
-            if (_waveIn is not null)
-                _waveIn.StartRecording();
-            else
-                _wasapiRecorder!.StartRecording();
-        }
-
-        public void StopRecording()
-        {
-            if (_waveIn is not null)
-                _waveIn.StopRecording();
-            else
-                _wasapiRecorder!.StopRecording();
-        }
-
-        public void Dispose()
-        {
-            if (_waveIn is not null)
-            {
-                _waveIn.DataAvailable -= _waveInDataAvailableHandler;
-                try { _waveIn.Dispose(); } catch { }
-            }
-            else if (_wasapiRecorder is not null)
-            {
-                _wasapiRecorder.DataAvailable -= _wasapiDataAvailableHandler;
-                try { _wasapiRecorder.Dispose(); } catch { }
-            }
-        }
-    }
-
-    private readonly List<CaptureChannel> _channels = new();
+    private readonly List<AudioCaptureChannel> _channels = new();
     private WhisperFactoryLease? _factoryLease;
     private WhisperProcessor? _processor;
     private WhisperVadProcessor? _vadProcessor;
@@ -834,17 +910,17 @@ public sealed class LiveAudioTranscriber : IDisposable
             // Each source gets its own channel/buffer; when both are requested they're captured
             // independently and mixed down to one stream per processing pass (see MixChannels).
             if (wantsMic)
-                _channels.Add(new CaptureChannel(new WaveIn { WaveFormat = new WaveFormat(16000, 16, 1), BufferMilliseconds = 100 }));
+                _channels.Add(new AudioCaptureChannel(new WaveIn { WaveFormat = new WaveFormat(16000, 16, 1), BufferMilliseconds = 100 }));
             if (wantsSystem)
-                _channels.Add(new CaptureChannel(new WasapiRecorderBuilder()
+                _channels.Add(new AudioCaptureChannel(new WasapiRecorderBuilder()
                     .WithLoopbackCapture()
                     .WithBufferLength(100)
                     .Build()));
 
-            foreach (CaptureChannel channel in _channels)
+            foreach (AudioCaptureChannel channel in _channels)
                 AudioDebugLog.Write($"LiveAudioTranscriber: source={source} model={choice} format={channel.SourceFormat.Encoding} {channel.SourceFormat.SampleRate}Hz {channel.SourceFormat.Channels}ch {channel.SourceFormat.BitsPerSample}bit");
 
-            foreach (CaptureChannel channel in _channels)
+            foreach (AudioCaptureChannel channel in _channels)
                 channel.StartRecording();
 
             _chunkTimer = new System.Timers.Timer(TimerIntervalMs) { AutoReset = true };
@@ -885,7 +961,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             _stopping = true;
             _chunkTimer?.Stop();
 
-            foreach (CaptureChannel channel in _channels)
+            foreach (AudioCaptureChannel channel in _channels)
                 try { channel.StopRecording(); } catch { }
 
             // Flush whatever remains (this waits for any in-flight pass), then clean up.
@@ -915,30 +991,6 @@ public sealed class LiveAudioTranscriber : IDisposable
     public void Stop() => _ = StopAsync();
 
     /// <summary>
-    /// Sums same-length-padded per-channel samples into one stream, clamping to [-1, 1] so two loud
-    /// sources can't clip beyond Whisper's expected range. A single channel is returned unchanged.
-    /// </summary>
-    private static float[] MixChannels(List<float[]> perChannelSamples)
-    {
-        if (perChannelSamples.Count == 1)
-            return perChannelSamples[0];
-
-        int length = 0;
-        foreach (float[] samples in perChannelSamples)
-            length = Math.Max(length, samples.Length);
-
-        float[] mixed = new float[length];
-        foreach (float[] samples in perChannelSamples)
-            for (int i = 0; i < samples.Length; i++)
-                mixed[i] += samples[i];
-
-        for (int i = 0; i < mixed.Length; i++)
-            mixed[i] = Math.Clamp(mixed[i], -1f, 1f);
-
-        return mixed;
-    }
-
-    /// <summary>
     /// Runs VAD over the buffered audio and transcribes any completed speech regions. Normal (timed)
     /// passes skip if one is already running; a <paramref name="flush"/> pass waits its turn and
     /// forces transcription of whatever speech remains.
@@ -964,7 +1016,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             // Snapshot without clearing — audio keeps arriving while we work; we trim precisely later.
             List<float[]> perChannelSamples = new(_channels.Count);
             bool anyData = false;
-            foreach (CaptureChannel channel in _channels)
+            foreach (AudioCaptureChannel channel in _channels)
             {
                 byte[] raw;
                 lock (channel.BufferLock)
@@ -982,7 +1034,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             if (!anyData)
                 return;
 
-            float[] samples = MixChannels(perChannelSamples);
+            float[] samples = AudioTranscriptionUtilities.MixChannels(perChannelSamples);
             double totalSeconds = samples.Length / (double)SampleRate;
             if (!flush && totalSeconds < MinAudioSeconds)
                 return;
@@ -1053,7 +1105,7 @@ public sealed class LiveAudioTranscriber : IDisposable
         if (seconds <= 0)
             return;
 
-        foreach (CaptureChannel channel in _channels)
+        foreach (AudioCaptureChannel channel in _channels)
         {
             int bytesToRemove = (int)(seconds * channel.SourceFormat.AverageBytesPerSecond);
             int blockAlign = channel.SourceFormat.BlockAlign;
@@ -1082,7 +1134,7 @@ public sealed class LiveAudioTranscriber : IDisposable
             _chunkTimer = null;
         }
 
-        foreach (CaptureChannel channel in _channels)
+        foreach (AudioCaptureChannel channel in _channels)
             channel.Dispose();
         _channels.Clear();
 

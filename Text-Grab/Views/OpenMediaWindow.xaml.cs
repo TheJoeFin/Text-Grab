@@ -20,6 +20,23 @@ public partial class OpenMediaWindow : FluentWindow
         NotifyOnCompleteToggle.IsChecked = AppUtilities.TextGrabSettings.NotifyOnTranscriptionComplete;
         IncludeTimecodesToggle.IsChecked = AppUtilities.TextGrabSettings.IncludeTimecodesInTranscription;
 
+        bool winAiSupported = WindowsAiSpeechTranscriptionUtilities.IsSupported();
+        EngineWinAiComboBoxItem.IsEnabled = winAiSupported;
+        EngineWinAiComboBoxItem.ToolTip = winAiSupported
+            ? null
+            : "Not available on this device: requires a packaged build on a Copilot+ PC (ARM64) with Windows AI ready.";
+
+        TranscriptionEngine currentEngine = AudioTranscriptionUtilities.CurrentEngine;
+        foreach (ComboBoxItem item in EngineComboBox.Items)
+        {
+            if (item.Tag is string tag && tag == currentEngine.ToString())
+            {
+                EngineComboBox.SelectedItem = item;
+                break;
+            }
+        }
+        UpdateEngineDetails(currentEngine);
+
         WhisperModelChoice currentChoice = AudioTranscriptionUtilities.CurrentModelChoice;
         foreach (ComboBoxItem item in ModelComboBox.Items)
         {
@@ -123,6 +140,31 @@ public partial class OpenMediaWindow : FluentWindow
         AppUtilities.TextGrabSettings.Save();
     }
 
+    private void EngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (EngineComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not string tag)
+            return;
+
+        TranscriptionEngine engine = tag == "WindowsAiSpeech" ? TranscriptionEngine.WindowsAiSpeech : TranscriptionEngine.Whisper;
+
+        AppUtilities.TextGrabSettings.AudioTranscriptionEngine = tag;
+        AppUtilities.TextGrabSettings.Save();
+        UpdateEngineDetails(engine);
+
+        // Keep the live-transcription context menu (on the owning editor window) in sync, so it
+        // doesn't show a stale check mark if opened after this window changes the engine.
+        if (Owner is EditTextWindow owningEditWindow)
+            owningEditWindow.SyncTranscriptionEngineMenu();
+    }
+
+    /// <summary>Fills in the detail line under the engine picker, explaining the tradeoff/fallback.</summary>
+    private void UpdateEngineDetails(TranscriptionEngine engine)
+    {
+        EngineDetailsText.Text = engine == TranscriptionEngine.WindowsAiSpeech
+            ? "Experimental: runs on the on-device NPU. Automatically falls back to local Whisper (using the model selected below) if it's unavailable or fails."
+            : "Runs on the CPU, works on every supported device. The Whisper model below controls the speed/accuracy tradeoff.";
+    }
+
     private void ModelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (ModelComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not string tag)
@@ -180,6 +222,7 @@ public partial class OpenMediaWindow : FluentWindow
     private void SetTranscribingState(bool transcribing)
     {
         BrowseButton.IsEnabled = !transcribing;
+        EngineComboBox.IsEnabled = !transcribing;
         ModelComboBox.IsEnabled = !transcribing;
         HotWordsTextBox.IsEnabled = !transcribing;
         HotWordsLookupButton.IsEnabled = !transcribing;

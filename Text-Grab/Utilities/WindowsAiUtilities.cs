@@ -31,6 +31,7 @@ public static class WindowsAiUtilities
         return CanDeviceUseWinAiFeature(ImageDescriptionGenerator.GetReadyState);
     }
 
+
     private static bool CanDeviceUseWinAiFeature(Func<AIFeatureReadyState> getReadyState)
     {
         if (!MeetsWindowsAiPrerequisites())
@@ -50,7 +51,8 @@ public static class WindowsAiUtilities
         }
     }
 
-    private static bool MeetsWindowsAiPrerequisites()
+    /// <summary>Internal so <see cref="WindowsAiSpeechTranscriptionUtilities"/> can reuse this gate without going through <see cref="CanDeviceUseWinAiFeature"/>, which calls <c>GetReadyState()</c> synchronously - safe for OCR/image-description, but not for Speech (see that type's remarks).</summary>
+    internal static bool MeetsWindowsAiPrerequisites()
     {
         // Check if the app is packaged and if the AI feature is supported
         if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())

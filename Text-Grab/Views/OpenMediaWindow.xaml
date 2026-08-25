@@ -87,6 +87,30 @@
                 <TextBlock
                     Margin="0,20,0,0"
                     Style="{StaticResource TextHeader}"
+                    Text="Transcription engine" />
+                <ComboBox
+                    x:Name="EngineComboBox"
+                    Margin="0,8,0,0"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.AutomationId="OpenMedia.EngineComboBox"
+                    Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+                    SelectionChanged="EngineComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Local Whisper (CPU)" Tag="Whisper" />
+                    <ComboBoxItem
+                        x:Name="EngineWinAiComboBoxItem"
+                        Content="Windows AI Speech (NPU) — Copilot+ PC"
+                        Tag="WindowsAiSpeech" />
+                </ComboBox>
+                <TextBlock
+                    x:Name="EngineDetailsText"
+                    Margin="0,4,0,0"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    TextWrapping="Wrap" />
+
+                <TextBlock
+                    Margin="0,20,0,0"
+                    Style="{StaticResource TextHeader}"
                     Text="Transcription model" />
                 <ComboBox
                     x:Name="ModelComboBox"

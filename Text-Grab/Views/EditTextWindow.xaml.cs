@@ -80,8 +80,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// </summary>
     internal readonly Guid WindowId = Guid.NewGuid();
 
-    /// <summary>Live audio transcriber, created lazily when the bottom-bar toggle is turned on.</summary>
+    /// <summary>Live audio transcriber (Whisper), created lazily when the bottom-bar toggle is turned on.</summary>
     private LiveAudioTranscriber? _liveTranscriber;
+
+    /// <summary>Live audio transcriber (Windows AI Speech), created lazily when that engine is selected and available.</summary>
+    private LiveWindowsAiSpeechTranscriber? _liveWinAiTranscriber;
+
+    /// <summary>Whether the live session currently running is on <see cref="_liveWinAiTranscriber"/> rather than <see cref="_liveTranscriber"/>.</summary>
+    private bool _liveUsingWinAiSpeech;
 
     /// <summary>Which source live transcription captures from (microphone or system loopback).</summary>
     private LiveCaptureSource _liveCaptureSource = LiveCaptureSource.Microphone;
@@ -6128,6 +6134,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             _liveTranscriber = null;
         }
 
+        if (_liveWinAiTranscriber is not null)
+        {
+            _liveWinAiTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveWinAiTranscriber.Dispose();
+            _liveWinAiTranscriber = null;
+        }
+
+        WindowsAiSpeechTranscriptionUtilities.SupportChanged -= WindowsAiSpeech_SupportChanged;
+
         DetachSpreadsheetColumnWidthTracking();
         System.Windows.DataObject.RemovePastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
 
@@ -6289,6 +6304,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CaptureTranscribeAudioMenuItem.Visibility = Visibility.Visible;
             TranscriptionOptionsMenuItem.Visibility = Visibility.Visible;
             OpenAudioVideoMenuItem.Visibility = Visibility.Visible;
+
+            // The Windows AI Speech support check is asynchronous under the hood (see
+            // WindowsAiSpeechTranscriptionUtilities' remarks - even its synchronous-looking
+            // IsSupported() must never block this thread), so the menu may render with that engine
+            // showing unsupported and then flip once the background probe resolves.
+            WindowsAiSpeechTranscriptionUtilities.SupportChanged -= WindowsAiSpeech_SupportChanged;
+            WindowsAiSpeechTranscriptionUtilities.SupportChanged += WindowsAiSpeech_SupportChanged;
+            SyncTranscriptionEngineMenu();
             SyncTranscriptionModelMenu();
             TranscribeJustIconMenuItem.IsChecked = DefaultSettings.TranscribeButtonJustIcon;
             LiveTranscriptionLabel.Visibility = DefaultSettings.TranscribeButtonJustIcon ? Visibility.Collapsed : Visibility.Visible;
@@ -7158,10 +7181,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void LiveTranscriptionToggleButton_Checked(object sender, RoutedEventArgs e)
     {
-        _liveTranscriber ??= new LiveAudioTranscriber();
-        _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
-        _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
-
         SetLiveTranscriptionUi(true, _liveCaptureSource switch
         {
             LiveCaptureSource.SystemAudio => "Starting (system)…",
@@ -7169,20 +7188,66 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             _ => "Starting…",
         });
 
-        bool started;
-        try
+        bool wantsWinAi = AudioTranscriptionUtilities.CurrentEngine == TranscriptionEngine.WindowsAiSpeech
+            && await WindowsAiSpeechTranscriptionUtilities.RefreshSupportAsync();
+
+        bool started = false;
+        bool fellBackToWhisper = false;
+
+        if (wantsWinAi)
         {
-            started = await _liveTranscriber.StartAsync(_liveCaptureSource);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Live transcription failed to start: {ex.Message}");
-            started = false;
+            _liveWinAiTranscriber ??= new LiveWindowsAiSpeechTranscriber();
+            _liveWinAiTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveWinAiTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
+
+            try
+            {
+                started = await _liveWinAiTranscriber.StartAsync(_liveCaptureSource);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Live Windows AI Speech transcription failed to start: {ex.Message}");
+                started = false;
+            }
+
+            if (started)
+            {
+                _liveUsingWinAiSpeech = true;
+            }
+            else
+            {
+                // Never surface a Windows AI Speech failure as a hard error - Whisper is always the
+                // fallback so a hang/regression in the experimental engine can't take live
+                // transcription away entirely.
+                _liveWinAiTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+                fellBackToWhisper = true;
+            }
         }
 
         if (!started)
         {
+            _liveTranscriber ??= new LiveAudioTranscriber();
             _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
+
+            try
+            {
+                started = await _liveTranscriber.StartAsync(_liveCaptureSource);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Live transcription failed to start: {ex.Message}");
+                started = false;
+            }
+
+            _liveUsingWinAiSpeech = false;
+
+            if (!started)
+                _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+        }
+
+        if (!started)
+        {
             SetLiveTranscriptionUi(false);
 
             // Setting IsChecked=false re-enters Unchecked, which is a no-op safe path here.
@@ -7204,12 +7269,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        SetLiveTranscriptionUi(true);
+        SetLiveTranscriptionUi(true, fellBackToWhisper ? "Listening… (Whisper — NPU unavailable)" : null);
     }
 
     private void LiveTranscriptionToggleButton_Unchecked(object sender, RoutedEventArgs e)
     {
-        if (_liveTranscriber is not null)
+        if (_liveUsingWinAiSpeech && _liveWinAiTranscriber is not null)
+        {
+            _liveWinAiTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveWinAiTranscriber.Stop();
+        }
+        else if (_liveTranscriber is not null)
         {
             _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
             _liveTranscriber.Stop();
@@ -7255,6 +7325,51 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             SetLiveTranscriptionUi(false);
         }
+    }
+
+    /// <summary>Re-syncs the engine menu once the background Windows AI Speech support probe resolves (see <see cref="WindowsAiSpeechTranscriptionUtilities.SupportChanged"/>). Fires on a background thread.</summary>
+    private void WindowsAiSpeech_SupportChanged(object? sender, EventArgs e) =>
+        Dispatcher.BeginInvoke(SyncTranscriptionEngineMenu);
+
+    private void TranscriptionEngineMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string tag)
+            return;
+
+        DefaultSettings.AudioTranscriptionEngine = tag;
+        DefaultSettings.Save();
+        SyncTranscriptionEngineMenu();
+
+        // If a session is running, restart it so the newly selected engine takes effect.
+        if (LiveTranscriptionToggleButton.IsChecked is true)
+        {
+            LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
+            LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new engine
+        }
+    }
+
+    /// <summary>
+    /// Reflects the persisted transcription-engine choice in the context-menu check marks, and
+    /// disables the Windows AI Speech option (with an explanatory tooltip) whenever this device/build
+    /// can't use it, so the option stays discoverable rather than silently disappearing.
+    /// </summary>
+    internal void SyncTranscriptionEngineMenu()
+    {
+        bool winAiChecked = DefaultSettings.AudioTranscriptionEngine == "WindowsAiSpeech";
+        CaptureEngineWinAiMenuItem.IsChecked = winAiChecked;
+        EngineWinAiMenuItem.IsChecked = winAiChecked;
+        CaptureEngineWhisperMenuItem.IsChecked = !winAiChecked;
+        EngineWhisperMenuItem.IsChecked = !winAiChecked;
+
+        bool winAiSupported = WindowsAiSpeechTranscriptionUtilities.IsSupported();
+        CaptureEngineWinAiMenuItem.IsEnabled = winAiSupported;
+        EngineWinAiMenuItem.IsEnabled = winAiSupported;
+
+        string tooltip = winAiSupported
+            ? "Uses the on-device NPU via the experimental Windows AI Speech API. Falls back to Whisper automatically if it becomes unavailable."
+            : "Not available on this device: requires a packaged build on a Copilot+ PC (ARM64) with Windows AI ready.";
+        CaptureEngineWinAiMenuItem.ToolTip = tooltip;
+        EngineWinAiMenuItem.ToolTip = tooltip;
     }
 
     private void TranscriptionModelMenuItem_Click(object sender, RoutedEventArgs e)

@@ -666,6 +666,21 @@
                             IsCheckable="True"
                             Tag="MicrophoneAndSystemAudio" />
                         <Separator />
+                        <MenuItem Header="Transcription engine">
+                            <MenuItem
+                                x:Name="CaptureEngineWhisperMenuItem"
+                                Click="TranscriptionEngineMenuItem_Click"
+                                Header="Local Whisper (CPU)"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Tag="Whisper" />
+                            <MenuItem
+                                x:Name="CaptureEngineWinAiMenuItem"
+                                Click="TranscriptionEngineMenuItem_Click"
+                                Header="Windows AI Speech (NPU) — Copilot+ PC"
+                                IsCheckable="True"
+                                Tag="WindowsAiSpeech" />
+                        </MenuItem>
                         <MenuItem Header="Transcription model">
                             <MenuItem
                                 x:Name="CaptureModelTinyEnglishMenuItem"
@@ -1295,6 +1310,21 @@
                                     IsCheckable="True"
                                     Tag="MicrophoneAndSystemAudio" />
                                 <Separator />
+                                <MenuItem Header="Transcription engine">
+                                    <MenuItem
+                                        x:Name="EngineWhisperMenuItem"
+                                        Click="TranscriptionEngineMenuItem_Click"
+                                        Header="Local Whisper (CPU)"
+                                        IsCheckable="True"
+                                        IsChecked="True"
+                                        Tag="Whisper" />
+                                    <MenuItem
+                                        x:Name="EngineWinAiMenuItem"
+                                        Click="TranscriptionEngineMenuItem_Click"
+                                        Header="Windows AI Speech (NPU) — Copilot+ PC"
+                                        IsCheckable="True"
+                                        Tag="WindowsAiSpeech" />
+                                </MenuItem>
                                 <MenuItem Header="Transcription model">
                                     <MenuItem
                                         x:Name="ModelTinyEnglishMenuItem"

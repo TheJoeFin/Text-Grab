@@ -826,7 +826,19 @@ namespace Text_Grab.Properties {
                 this["AudioTranscriptionModel"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Whisper")]
+        public string AudioTranscriptionEngine {
+            get {
+                return ((string)(this["AudioTranscriptionEngine"]));
+            }
+            set {
+                this["AudioTranscriptionEngine"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
