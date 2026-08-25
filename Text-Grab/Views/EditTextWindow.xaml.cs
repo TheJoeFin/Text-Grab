@@ -6927,12 +6927,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     // Returns the new window's WindowId so a completion notification can reactivate it specifically
     // (rather than the source window, which never gets the result text) — null if it failed to open.
-    private static Guid? OpenTextInNewEditTextWindow(string text)
+    private static Guid? OpenTextInNewEditTextWindow(string text, EtwEditorMode resultMode = EtwEditorMode.Text)
     {
         EditTextWindow resultWindow = new(text, isEncoded: false);
 
         try
         {
+            // Set before Show(), matching CreateSelectionWindow — the mode-switch logic in
+            // SetEditorMode only touches XAML elements, which InitializeComponent() already wired up.
+            if (resultMode != EtwEditorMode.Text)
+                resultWindow.SetEditorMode(resultMode);
+
             resultWindow.Show();
             return resultWindow.WindowId;
         }
@@ -6973,19 +6978,25 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// to New Window" setting: either opened in a new window, leaving this window's text untouched, or
     /// applied over the selected/all text in this window (via <see cref="ApplySelectedTextOrAllTextTransformAsync"/>,
     /// which also handles spreadsheet mode) — then fires the completion notification for whichever
-    /// window actually ended up with the result.
+    /// window actually ended up with the result. <paramref name="resultMode"/> switches whichever
+    /// window gets the result into that editor mode (e.g. Convert to Table switches to Spreadsheet);
+    /// pass <see cref="EtwEditorMode.Text"/> to leave the mode alone.
     /// </summary>
-    private async Task PerformLocalAiTransformAsync(string taskDescription, Func<string, Task<string>> transformAsync)
+    private async Task PerformLocalAiTransformAsync(string taskDescription, Func<string, Task<string>> transformAsync, EtwEditorMode resultMode = EtwEditorMode.Text)
     {
         if (DefaultSettings.SendLocalAiResultToNewWindow)
         {
             string resultText = await transformAsync(GetSelectedTextOrAllText());
-            if (OpenTextInNewEditTextWindow(resultText) is Guid resultWindowId)
+            if (OpenTextInNewEditTextWindow(resultText, resultMode) is Guid resultWindowId)
                 NotifyLocalAiComplete(taskDescription, resultWindowId);
         }
         else
         {
             await ApplySelectedTextOrAllTextTransformAsync(transformAsync);
+
+            if (resultMode != EtwEditorMode.Text)
+                SetEditorMode(resultMode);
+
             NotifyLocalAiComplete(taskDescription, WindowId);
         }
     }
@@ -7056,7 +7067,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         try
         {
-            await PerformLocalAiTransformAsync("Convert to Table", text => WindowsAiUtilities.TextToTable(text));
+            await PerformLocalAiTransformAsync("Convert to Table", text => WindowsAiUtilities.TextToTable(text), EtwEditorMode.Spreadsheet);
         }
         finally
         {
