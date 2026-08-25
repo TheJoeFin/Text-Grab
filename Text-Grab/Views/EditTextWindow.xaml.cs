@@ -3633,6 +3633,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         CheckForGrabFrameOrLaunch();
     }
 
+    private async void CaptureFromCameraMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? capturedImagePath = await CameraCaptureUtilities.CaptureImageFromCameraAsync(this);
+
+        if (capturedImagePath is null)
+            return;
+
+        OpenPath(capturedImagePath);
+    }
+
     private void ManageGrabTemplates_Click(object sender, RoutedEventArgs e)
     {
         PostGrabActionEditor editor = new();

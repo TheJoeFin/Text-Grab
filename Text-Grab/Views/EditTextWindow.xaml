@@ -626,6 +626,11 @@
                         Header="New _Grab Frame"
                         InputGestureText="Ctrl + G" />
                     <MenuItem
+                        x:Name="CaptureFromCameraMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.CaptureFromCamera"
+                        Click="CaptureFromCameraMenuItem_Click"
+                        Header="Capture from _Camera..." />
+                    <MenuItem
                         x:Name="ManageGrabTemplatesMenuItem"
                         Click="ManageGrabTemplates_Click"
                         Header="Manage Grab _Templates..." />

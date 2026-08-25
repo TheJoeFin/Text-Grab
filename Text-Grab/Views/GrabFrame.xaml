@@ -246,6 +246,7 @@
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image or PDF..."
                             InputGestureText="Ctrl + O" />
+                        <MenuItem Click="CaptureFromCameraMenuItem_Click" Header="Capture from _Camera..." />
                         <MenuItem Click="OpenGrabFrameFileMenuItem_Click" Header="Open Grab Frame File..." />
                         <MenuItem
                             Click="SaveGrabFrameFileMenuItem_Click"
@@ -697,6 +698,7 @@
                                                 Click="OpenImageMenuItem_Click"
                                                 Header="Open Image or PDF..."
                                                 InputGestureText="Ctrl + O" />
+                                            <MenuItem Click="CaptureFromCameraMenuItem_Click" Header="Capture from _Camera..." />
                                             <Separator />
                                             <MenuItem
                                                 x:Name="CopyText"

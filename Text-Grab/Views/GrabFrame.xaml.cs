@@ -3573,6 +3573,18 @@ public partial class GrabFrame : Window
         reDrawTimer.Start();
     }
 
+    private async void CaptureFromCameraMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        string? capturedImagePath = await CameraCaptureUtilities.CaptureImageFromCameraAsync(this);
+
+        if (capturedImagePath is null)
+            return;
+
+        await TryLoadDocumentFromPath(capturedImagePath);
+
+        reDrawTimer.Start();
+    }
+
     private async void SaveGrabFrameFileMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         Microsoft.Win32.SaveFileDialog dlg = new()
