@@ -17,6 +17,32 @@
     <ProjectReference Include="..\Text-Grab.Core\Text-Grab.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    The Windows AI language model (Phi Silica) is a Limited Access Feature.
+    LimitedAccessFeatureUtilities.GetSetting reads the token/publisher ID back from this assembly's
+    own AssemblyMetadata, falling back to the LAF_TOKEN/LAF_PUBLISHER_ID environment variables.
+
+    Never commit a token. Pass it in at build time instead:
+        dotnet build -p:LafToken="..." -p:LafPublisherId="..."
+    or set the LAF_TOKEN / LAF_PUBLISHER_ID environment variables for local development, which the
+    properties below pick up so Visual Studio builds get the token too. Building Text-Grab.csproj (or
+    the wapproj) with these properties set flows them through its ProjectReference into this project's
+    build unchanged, since MSBuild passes the same global properties to referenced projects by default.
+    See docs/Configuring-LAF-Environment-Variables.md.
+  -->
+  <PropertyGroup>
+    <LafToken Condition="'$(LafToken)' == ''">$(LAF_TOKEN)</LafToken>
+    <LafPublisherId Condition="'$(LafPublisherId)' == ''">$(LAF_PUBLISHER_ID)</LafPublisherId>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(LafToken)' != ''">
+    <AssemblyMetadata Include="LAF_TOKEN" Value="$(LafToken)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(LafPublisherId)' != ''">
+    <AssemblyMetadata Include="LAF_PUBLISHER_ID" Value="$(LafPublisherId)" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Windows AI OCR (RecognizedText/RecognizedLine/RecognizedWord) for WinAiOcrLinesWords. -->
     <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />

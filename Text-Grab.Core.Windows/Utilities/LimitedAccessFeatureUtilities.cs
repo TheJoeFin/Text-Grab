@@ -17,7 +17,7 @@ namespace Text_Grab.Utilities;
 /// Tokens are requested from Microsoft at https://aka.ms/laffeatures and must not be committed to
 /// source control, so the token and publisher ID are read at runtime from (in order):
 ///   1. AssemblyMetadata baked in at build time — set the MSBuild properties
-///      <c>LafToken</c> and <c>LafPublisherId</c> (see Text-Grab.csproj).
+///      <c>LafToken</c> and <c>LafPublisherId</c> (see Text-Grab.Core.Windows.csproj).
 ///   2. The LAF_TOKEN and LAF_PUBLISHER_ID environment variables, for local development.
 ///
 /// This mirrors how microsoft/ai-dev-gallery handles the same feature.

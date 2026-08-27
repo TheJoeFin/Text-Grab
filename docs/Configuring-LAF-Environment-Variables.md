@@ -42,9 +42,11 @@ setx LAF_TOKEN "<token>"
 setx LAF_PUBLISHER_ID "<publisher-id>"
 ```
 
-`Text-Grab.csproj` defaults the `LafToken` / `LafPublisherId` MSBuild properties from these
-environment variables, so ordinary `dotnet build` and Visual Studio builds bake the token in without
-any extra flags.
+`Text-Grab.Core.Windows.csproj` defaults the `LafToken` / `LafPublisherId` MSBuild properties from
+these environment variables, so ordinary `dotnet build` and Visual Studio builds bake the token in
+without any extra flags. Building `Text-Grab.csproj` (or the wapproj) still works the same way: its
+`ProjectReference` to `Text-Grab.Core.Windows.csproj` carries the same global MSBuild properties
+into that project's build.
 
 ## Explicit build-time injection
 

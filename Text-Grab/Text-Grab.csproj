@@ -34,24 +34,13 @@
         before translate / summarize / rewrite / text-to-table will run; request one at
         https://aka.ms/laffeatures.
 
-        Never commit a token. Pass it in at build time instead:
-            dotnet build -p:LafToken="..." -p:LafPublisherId="..."
-        or set the LAF_TOKEN / LAF_PUBLISHER_ID environment variables for local development, which
-        the properties below pick up so Visual Studio builds get the token too. See
-        docs/Configuring-LAF-Environment-Variables.md.
+        LimitedAccessFeatureUtilities reads this back via its own assembly's AssemblyMetadata, and it
+        lives in Text-Grab.Core.Windows, so the LafToken/LafPublisherId wiring is defined there (see
+        Text-Grab.Core.Windows.csproj) rather than here. Global MSBuild properties passed to this
+        project's build (dotnet build/publish -p:LafToken=... -p:LafPublisherId=...) flow through the
+        ProjectReference below to that project's build unchanged, so nothing else has to change here.
+        See docs/Configuring-LAF-Environment-Variables.md.
     -->
-    <PropertyGroup>
-        <LafToken Condition="'$(LafToken)' == ''">$(LAF_TOKEN)</LafToken>
-        <LafPublisherId Condition="'$(LafPublisherId)' == ''">$(LAF_PUBLISHER_ID)</LafPublisherId>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(LafToken)' != ''">
-        <AssemblyMetadata Include="LAF_TOKEN" Value="$(LafToken)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(LafPublisherId)' != ''">
-        <AssemblyMetadata Include="LAF_PUBLISHER_ID" Value="$(LafPublisherId)" />
-    </ItemGroup>
 
     <ItemGroup>
         <None Remove="Images\CJKE-SampleText.png" />
