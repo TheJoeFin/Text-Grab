@@ -107,7 +107,7 @@ public class FilesIoTests
     [InlineData(@"C:\Temp\data.json", EtwEditorMode.Text)]
     public void GetEditorModeForPath_UsesFileExtension(string path, EtwEditorMode expectedMode)
     {
-        Assert.Equal(expectedMode, IoUtilities.GetEditorModeForPath(path));
+        Assert.Equal(expectedMode, FileOpenUtilities.GetEditorModeForPath(path));
     }
 
     [Theory]
@@ -116,7 +116,7 @@ public class FilesIoTests
     [InlineData(@"C:\Temp\notes.txt", OpenContentKind.TextFile)]
     public void GetOpenContentKindForPath_ClassifiesVisualDocumentsAndText(string path, OpenContentKind expectedKind)
     {
-        Assert.Equal(expectedKind, IoUtilities.GetOpenContentKindForPath(path));
+        Assert.Equal(expectedKind, FileOpenUtilities.GetOpenContentKindForPath(path));
     }
 
     [Theory]

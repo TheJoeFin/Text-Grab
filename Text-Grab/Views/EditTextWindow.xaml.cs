@@ -2522,14 +2522,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         ResetSpreadsheetUndoHistory();
-        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
+        (string TextContent, OpenContentKind KindOpened) = await FileOpenUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
         bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
 
         if (KindOpened == OpenContentKind.TextFile)
         {
             EtwEditorMode targetMode = isMultipleFiles
                 ? EtwEditorMode.Text
-                : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
+                : FileOpenUtilities.GetEditorModeForPath(pathOfFileToOpen);
 
             if (IsLoaded)
                 SetEditorMode(targetMode);

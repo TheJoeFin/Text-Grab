@@ -522,7 +522,7 @@ public partial class App : System.Windows.Application
 
         if (isQuiet)
         {
-            (string pathContent, _) = await IoUtilities.GetContentFromPath(possiblePath);
+            (string pathContent, _) = await FileOpenUtilities.GetContentFromPath(possiblePath);
             OutputUtilities.HandleTextFromOcr(
                 pathContent,
                 false,
