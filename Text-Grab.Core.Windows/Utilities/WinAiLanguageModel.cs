@@ -90,7 +90,7 @@ internal static class WinAiLanguageModel
     /// </summary>
     internal static (bool Available, string? Reason) CheckAvailability()
     {
-        if (!AppUtilities.IsPackaged())
+        if (!PackageIdentity.IsPackaged())
             return (false, "Windows AI is only available when Text-Grab runs as an installed (packaged) app.");
 
         if (OSInterop.IsWindows10())
