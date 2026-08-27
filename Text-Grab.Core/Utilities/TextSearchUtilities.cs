@@ -5,13 +5,13 @@ using System.Text.RegularExpressions;
 
 namespace Text_Grab.Utilities;
 
-internal static class TextSearchUtilities
+public static class TextSearchUtilities
 {
     private static readonly TimeSpan DefaultRegexTimeout = TimeSpan.FromSeconds(5);
 
-    internal static bool HasSearchText(string? searchText) => !string.IsNullOrEmpty(searchText);
+    public static bool HasSearchText(string? searchText) => !string.IsNullOrEmpty(searchText);
 
-    internal static string FormatMatchTextForDisplay(string matchText)
+    public static string FormatMatchTextForDisplay(string matchText)
     {
         if (!matchText.All(char.IsWhiteSpace))
             return matchText.MakeStringSingleLine();
@@ -40,7 +40,7 @@ internal static class TextSearchUtilities
         return displayText.ToString();
     }
 
-    internal static Regex CreateFindAndReplaceSearchRegex(string pattern, bool usePatternMode, bool exactMatch)
+    public static Regex CreateFindAndReplaceSearchRegex(string pattern, bool usePatternMode, bool exactMatch)
     {
         RegexOptions options = RegexOptions.Multiline;
 
@@ -50,13 +50,13 @@ internal static class TextSearchUtilities
         return new Regex(pattern, options, DefaultRegexTimeout);
     }
 
-    internal static Regex CreateReplacementRegex(string pattern, bool exactMatch)
+    public static Regex CreateReplacementRegex(string pattern, bool exactMatch)
     {
         RegexOptions options = exactMatch ? RegexOptions.None : RegexOptions.IgnoreCase;
         return new Regex(pattern, options, DefaultRegexTimeout);
     }
 
-    internal static Regex CreateGrabFrameSearchRegex(string pattern, bool exactMatch)
+    public static Regex CreateGrabFrameSearchRegex(string pattern, bool exactMatch)
     {
         RegexOptions options = exactMatch ? RegexOptions.Multiline : RegexOptions.Multiline | RegexOptions.IgnoreCase;
         return new Regex(pattern, options, DefaultRegexTimeout);
