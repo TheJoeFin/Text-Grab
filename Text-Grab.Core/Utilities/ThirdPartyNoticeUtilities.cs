@@ -1,11 +1,13 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 
+/// <summary>
+/// Pure package catalog. Resolving notice/license file paths against the running
+/// executable's location and opening them needs <c>FileUtilities.GetExePath()</c>, so those
+/// methods stay behind in <c>Text-Grab/Utilities/ThirdPartyNoticeLauncher.cs</c>.
+/// </summary>
 public static class ThirdPartyNoticeUtilities
 {
     public const string BuiltWithFileName = "BUILT-WITH.md";
@@ -44,47 +46,4 @@ public static class ThirdPartyNoticeUtilities
         new("Xunit.StaFact", "3.0.13", "Tests", "MS-PL", "https://github.com/AArnott/Xunit.StaFact", "https://github.com/AArnott/Xunit.StaFact/blob/main/LICENSE", false, "Test-only dependency."),
         new("xunit.v3", "3.2.2", "Tests", "Apache-2.0", "https://github.com/xunit/xunit", "https://github.com/xunit/xunit/blob/main/LICENSE", false, "Test-only dependency."),
     ];
-
-    public static string? GetBuiltWithFilePath()
-    {
-        string? executableDirectory = Path.GetDirectoryName(FileUtilities.GetExePath());
-        return string.IsNullOrWhiteSpace(executableDirectory)
-            ? null
-            : Path.Combine(executableDirectory, BuiltWithFileName);
-    }
-
-    public static string? GetNoticesDirectoryPath()
-    {
-        string? executableDirectory = Path.GetDirectoryName(FileUtilities.GetExePath());
-        return string.IsNullOrWhiteSpace(executableDirectory)
-            ? null
-            : Path.Combine(executableDirectory, NoticesDirectoryName);
-    }
-
-    public static string? GetNoticeTarget(ThirdPartyPackageInfo package)
-    {
-        if (!package.NoticeIsLocal)
-            return package.NoticeTarget;
-
-        string? executableDirectory = Path.GetDirectoryName(FileUtilities.GetExePath());
-        return string.IsNullOrWhiteSpace(executableDirectory)
-            ? null
-            : Path.Combine(executableDirectory, package.NoticeTarget);
-    }
-
-    public static void OpenBuiltWithFile() => OpenTarget(GetBuiltWithFilePath());
-
-    public static void OpenNoticesDirectory() => OpenTarget(GetNoticesDirectoryPath());
-
-    public static void OpenNoticeFile(ThirdPartyPackageInfo package) => OpenTarget(GetNoticeTarget(package));
-
-    public static void OpenProjectUrl(ThirdPartyPackageInfo package) => OpenTarget(package.ProjectUrl);
-
-    private static void OpenTarget(string? target)
-    {
-        if (string.IsNullOrWhiteSpace(target))
-            return;
-
-        Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
-    }
 }

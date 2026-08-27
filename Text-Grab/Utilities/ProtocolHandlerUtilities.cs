@@ -7,69 +7,15 @@ using System.IO;
 namespace Text_Grab.Utilities;
 
 /// <summary>
-/// Utility class for the text-grab:// protocol used by companion apps such as
-/// the Text Grab browser extension. The URI is only a command channel; any
-/// data payload (like a copied table) travels via the clipboard.
-/// Supported URIs:
-///   text-grab://paste-spreadsheet      Edit Text window in spreadsheet mode, paste clipboard
-///   text-grab://edit-text              Edit Text window with clipboard text
-///   text-grab://grab-frame[?path=...]  Grab Frame, optionally opening a local image/PDF
-///   text-grab://grab-text?path=...     OCR a local image/PDF straight to the clipboard (no window)
-///   text-grab://fullscreen             Fullscreen grab
-///   text-grab://quick-lookup           Quick Simple Lookup
-///   text-grab://settings               Settings window
+/// Impure half of the text-grab:// protocol handling that stayed split out of Core in batch 2c:
+/// validating a companion app's <c>path=</c> parameter against the filesystem/AutomationProfile,
+/// and registering the protocol with the OS. <see cref="ProtocolUtilities.IsProtocolUri"/> and
+/// <see cref="ProtocolUtilities.TryParseProtocolUri"/> (the pure URI parsing) live in
+/// Text-Grab.Core's <see cref="ProtocolUtilities"/> under the original name.
 /// </summary>
-internal static class ProtocolUtilities
+internal static class ProtocolHandlerUtilities
 {
-    internal const string Scheme = "text-grab";
-
-    private const string ProtocolKeyPath = @"Software\Classes\" + Scheme;
-
-    /// <summary>
-    /// Returns true when a startup argument looks like a text-grab:// URI.
-    /// </summary>
-    internal static bool IsProtocolUri(string? argument)
-    {
-        return argument is not null
-            && argument.StartsWith($"{Scheme}:", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Parses a text-grab:// URI into a lowercase command and its query parameters.
-    /// Accepts both text-grab://command?key=value and text-grab:command forms.
-    /// </summary>
-    internal static bool TryParseProtocolUri(
-        string uriString,
-        out string command,
-        out Dictionary<string, string> parameters)
-    {
-        command = string.Empty;
-        parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        if (!Uri.TryCreate(uriString, UriKind.Absolute, out Uri? uri)
-            || !string.Equals(uri.Scheme, Scheme, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        // text-grab://paste-spreadsheet puts the command in Host;
-        // text-grab:paste-spreadsheet puts it in AbsolutePath.
-        string rawCommand = !string.IsNullOrEmpty(uri.Host) ? uri.Host : uri.AbsolutePath;
-        command = rawCommand.Trim('/').ToLowerInvariant();
-        if (string.IsNullOrEmpty(command))
-            return false;
-
-        string query = uri.Query.TrimStart('?');
-        foreach (string pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
-        {
-            int separatorIndex = pair.IndexOf('=');
-            if (separatorIndex <= 0)
-                continue;
-            string key = Uri.UnescapeDataString(pair[..separatorIndex]);
-            string value = Uri.UnescapeDataString(pair[(separatorIndex + 1)..]);
-            parameters[key] = value;
-        }
-
-        return true;
-    }
+    private const string ProtocolKeyPath = @"Software\Classes\" + ProtocolUtilities.Scheme;
 
     /// <summary>
     /// Validates a <c>path=</c> parameter supplied via the text-grab:// protocol and,

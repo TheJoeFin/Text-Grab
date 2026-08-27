@@ -126,7 +126,7 @@ public class ProtocolUtilitiesTests
         File.WriteAllBytes(tempImage, [0]);
         try
         {
-            bool safe = ProtocolUtilities.TryGetSafeProtocolFilePath(tempImage, out string fullPath);
+            bool safe = ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(tempImage, out string fullPath);
 
             Assert.True(safe);
             Assert.Equal(Path.GetFullPath(tempImage), fullPath);
@@ -147,7 +147,7 @@ public class ProtocolUtilitiesTests
     [InlineData(@"\\.\PhysicalDrive0")]             // device namespace
     public void TryGetSafeProtocolFilePath_RejectsUncDeviceAndEmptyPaths(string? path)
     {
-        Assert.False(ProtocolUtilities.TryGetSafeProtocolFilePath(path, out _));
+        Assert.False(ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(path, out _));
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public class ProtocolUtilitiesTests
             Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             $"text-grab-{Guid.NewGuid():N}.png");
 
-        Assert.False(ProtocolUtilities.TryGetSafeProtocolFilePath(outside, out _));
+        Assert.False(ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(outside, out _));
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public class ProtocolUtilitiesTests
         // Starts inside Temp but climbs out to the Windows folder.
         string traversal = Path.Combine(Path.GetTempPath(), "..", "..", "..", "Windows", "image.png");
 
-        Assert.False(ProtocolUtilities.TryGetSafeProtocolFilePath(traversal, out _));
+        Assert.False(ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(traversal, out _));
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class ProtocolUtilitiesTests
         File.WriteAllText(tempText, "hello");
         try
         {
-            Assert.False(ProtocolUtilities.TryGetSafeProtocolFilePath(tempText, out _));
+            Assert.False(ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(tempText, out _));
         }
         finally
         {
@@ -191,6 +191,6 @@ public class ProtocolUtilitiesTests
     {
         string missing = Path.Combine(Path.GetTempPath(), $"text-grab-missing-{Guid.NewGuid():N}.png");
 
-        Assert.False(ProtocolUtilities.TryGetSafeProtocolFilePath(missing, out _));
+        Assert.False(ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(missing, out _));
     }
 }

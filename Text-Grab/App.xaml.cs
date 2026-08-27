@@ -413,7 +413,7 @@ public partial class App : System.Windows.Application
                     // open the file; an unsafe path falls back to an empty Grab Frame.
                     if (parameters.TryGetValue("path", out string? path))
                     {
-                        if (ProtocolUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
+                        if (ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
                         {
                             GrabFrame gfWithFile = new(safePath);
                             gfWithFile.Show();
@@ -434,7 +434,7 @@ public partial class App : System.Windows.Application
                     // OCR a local image/PDF straight to the clipboard, no window. The path is
                     // untrusted; only proceed for a validated, allowed local file.
                     if (parameters.TryGetValue("path", out string? path)
-                        && ProtocolUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
+                        && ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
                     {
                         _ = GrabTextFromFileAsync(safePath);
                         return true;
@@ -600,7 +600,7 @@ public partial class App : System.Windows.Application
         // (packaged installs register these via the MSIX manifest).
         if (_automationProfile is null || _automationProfile.AllowsPersistentRegistration)
         {
-            ProtocolUtilities.EnsureProtocolRegistration();
+            ProtocolHandlerUtilities.EnsureProtocolRegistration();
             FileAssociationUtilities.EnsureGrabFrameFileAssociation();
         }
 
