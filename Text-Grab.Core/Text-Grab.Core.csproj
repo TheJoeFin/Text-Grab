@@ -25,6 +25,13 @@
     <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
       <IncludeAssets>none</IncludeAssets>
     </PackageReference>
+    <!-- AutomationSettingsProvider/AutomationProfile need ApplicationSettingsBase and
+         LocalFileSettingsProvider. On the app's net10.0-windows TFM those types come from the
+         Microsoft.WindowsDesktop.App shared framework for free; plain net10.0 (this project) has
+         no such framework reference, so they need this package explicitly. Verified by a
+         standalone probe: both types resolve and run correctly on plain net10.0 with this
+         package referenced. -->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.11" />
     <PackageReference Include="UnitsNet" Version="5.75.1" />
   </ItemGroup>
 

@@ -164,20 +164,27 @@ internal sealed class AutomationProfile
         return Path.Combine(GetTemporaryDirectory(), $"{Guid.NewGuid():N}{normalizedExtension}");
     }
 
-    internal void ApplySeed(Properties.Settings settings)
+    // Widened from Properties.Settings (the app's concrete, internal ApplicationSettingsBase
+    // subclass) so this can move to Core, which cannot reference the app assembly. Every
+    // property below is written through the SettingsBase indexer instead of a generated typed
+    // property. This is behavior-preserving, not just type-erasure: each generated property in
+    // Settings.Designer.cs (e.g. `FirstRun`) is a thin wrapper whose setter is exactly
+    // `this["FirstRun"] = value;` - the indexer assignment below is the same call the typed
+    // property would have made.
+    internal void ApplySeed(ApplicationSettingsBase settings)
     {
-        settings.FirstRun = false;
-        settings.RunInTheBackground = false;
-        settings.StartupOnLogin = false;
-        settings.GlobalHotkeysEnabled = false;
-        settings.ShowToast = false;
-        settings.DefaultLaunch = TextGrabMode.EditText.ToString();
-        settings.LastUsedLang = "en-US";
-        settings.UseTesseract = false;
-        settings.UiAutomationEnabled = false;
-        settings.WindowsAiDescriptionEnabled = false;
-        settings.EnableFileBackedManagedSettings = true;
-        settings.LookupFileLocation = LookupFilePath;
+        settings["FirstRun"] = false;
+        settings["RunInTheBackground"] = false;
+        settings["StartupOnLogin"] = false;
+        settings["GlobalHotkeysEnabled"] = false;
+        settings["ShowToast"] = false;
+        settings["DefaultLaunch"] = TextGrabMode.EditText.ToString();
+        settings["LastUsedLang"] = "en-US";
+        settings["UseTesseract"] = false;
+        settings["UiAutomationEnabled"] = false;
+        settings["WindowsAiDescriptionEnabled"] = false;
+        settings["EnableFileBackedManagedSettings"] = true;
+        settings["LookupFileLocation"] = LookupFilePath;
 
         foreach ((string propertyName, JsonElement value) in _seedValues)
         {
