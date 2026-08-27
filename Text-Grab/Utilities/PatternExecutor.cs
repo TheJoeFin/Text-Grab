@@ -68,7 +68,7 @@ public static class PatternExecutor
             return string.Empty;
 
         List<string> values = [.. matches.Select(m => m.Text)];
-        return GrabTemplateExecutor.ExtractMatchesByMode(values, mode, separator);
+        return MatchModeSelector.ExtractMatchesByMode(values, mode, separator);
     }
 
     private static IReadOnlyList<RecognizerMatch> GetRegexMatches(string pattern, string text)

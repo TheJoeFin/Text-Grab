@@ -103,7 +103,7 @@ public static class RecognizerExecutor
         List<string> values = [.. matches.Select(m =>
             output == RecognizerOutputKind.MatchedText ? m.Text : m.ResolvedValue)];
 
-        return GrabTemplateExecutor.ExtractMatchesByMode(values, matchMode, separator);
+        return MatchModeSelector.ExtractMatchesByMode(values, matchMode, separator);
     }
 
     // ── Resolution formatting ───────────────────────────────────────────────────

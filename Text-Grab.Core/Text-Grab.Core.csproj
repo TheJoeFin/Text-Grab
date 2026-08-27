@@ -12,4 +12,17 @@
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Recognizers.Text.Choice" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.Number" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.NumberWithUnit" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.Sequence" Version="1.8.13" />
+    <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
+         build tool. Exclude all its assets so nuget.exe never flows into the output. -->
+    <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
+      <IncludeAssets>none</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>
