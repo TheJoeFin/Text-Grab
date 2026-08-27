@@ -120,14 +120,12 @@
         <PackageReference Include="Whisper.net" Version="1.9.1" />
         <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
         <PackageReference Include="NAudio" Version="3.0.1" />
-        <PackageReference Include="NCalcAsync" Version="7.1.0" />
         <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
              build tool. Exclude all its assets so nuget.exe never flows into the app output. -->
         <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
           <IncludeAssets>none</IncludeAssets>
         </PackageReference>
         <PackageReference Include="PdfPig" Version="0.1.16" />
-        <PackageReference Include="UnitsNet" Version="5.75.1" />
         <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
         <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
         <PackageReference Include="WPF-UI" Version="4.3.0" />

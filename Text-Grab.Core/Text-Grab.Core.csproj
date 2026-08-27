@@ -18,11 +18,13 @@
     <PackageReference Include="Microsoft.Recognizers.Text.Number" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.NumberWithUnit" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.Sequence" Version="1.8.13" />
+    <PackageReference Include="NCalcAsync" Version="7.1.0" />
     <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
          build tool. Exclude all its assets so nuget.exe never flows into the output. -->
     <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
       <IncludeAssets>none</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="UnitsNet" Version="5.75.1" />
   </ItemGroup>
 
 </Project>

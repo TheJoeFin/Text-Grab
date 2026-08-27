@@ -3,7 +3,7 @@ using NCalc.Exceptions;
 using System.Globalization;
 using Text_Grab.Services;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core;
 
 public class CalculatorTests
 {
