@@ -12,6 +12,8 @@ concurrency:
 env:
   PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
   TEST_PATH: "Tests/Tests.csproj"
+  TEST_CORE_PATH: "Tests.Core/Tests.Core.csproj"
+  TEST_CORE_WINDOWS_PATH: "Tests.Core.Windows/Tests.Core.Windows.csproj"
   # Unlock token for the Windows AI language model (a Limited Access Feature). Absent secrets
   # leave the properties empty, which just builds without on-device text AI rather than failing.
   LAF_TOKEN: ${{ secrets.LAF_TOKEN }}
@@ -30,6 +32,12 @@ jobs:
         run: dotnet restore ${{ env.PROJECT_PATH }}
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }} -p:EnableMsixTooling=true
+      # The pure tier runs first: it needs no display and finishes in about a second, so a
+      # logic regression fails the job before the slow WPF/STA suite starts.
+      - name: Test Core
+        run: dotnet test --project ${{ env.TEST_CORE_PATH }}
+      - name: Test Core.Windows
+        run: dotnet test --project ${{ env.TEST_CORE_WINDOWS_PATH }} -r win-x64
       - name: Test
         run: dotnet test --project ${{ env.TEST_PATH }} -r win-x64
 
