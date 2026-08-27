@@ -11,11 +11,15 @@ Text-Grab                net10.0-windows...  WPF app     Views, Controls, Pages,
 ```
 
 Test projects mirror the same tiers: `Tests.Core` (net10.0, fast), `Tests.Core.Windows`
-(to be created), `Tests` (net10.0-windows, WPF/STA, references the app).
+(net10.0-windows, headless), `Tests` (net10.0-windows, WPF/STA, references the app).
 
-Phase 0 (scaffolding) and the first six move commits are already done — see
+Phase 0 (scaffolding), the first six move commits, and Wave 0 (foundations) are done — see
 `git log --oneline` from `288f6d1` forward. This document is the plan for the rest and
 the standing contract for every agent that works on it.
+
+**Section 4's file lists were rebuilt from five parallel reconnaissance passes** that read every
+candidate file end-to-end. They supersede the original lists, which were derived from grepping
+`using` directives and were wrong in roughly a dozen places (§4.0).
 
 ---
 
@@ -38,6 +42,19 @@ the standing contract for every agent that works on it.
    Reconnaissance agents (read-only) may run in parallel; movers run serially.
 7. Commit messages follow the established style: what moved, what had to be fixed and why,
    what was deferred and its specific blocker. See `edefeaa` and `e677b54` for the pattern.
+8. **Never classify a file by its `using` directives.** Check which *types* it actually uses.
+   The original wave lists in this document were built by grepping usings and were wrong about
+   a dozen files in both directions — see §4.0. The four traps, all of which bit that pass:
+   - A file with no `System.Windows` using can still be WPF-bound: `using Text_Grab.Controls;`
+     reaches `WordBorder`, which *is* a WPF `Control`.
+   - A fully-qualified type never appears in a using at all
+     (`Wpf.Ui.Controls.SymbolRegular` in `LookupItem`).
+   - `System.Drawing` is two different things. Primitives (`RectangleF`, `PointF`, `SizeF`,
+     `Color`) are portable and fine in **Core**; GDI+ (`Bitmap`, `Graphics`, `Icon`) is
+     Windows-only and belongs in **Core.Windows**.
+   - `Rect` is two different things. `Windows.Foundation.Rect` is WinRT and fine in
+     Core.Windows; `System.Windows.Rect` is WindowsBase and is not. `edefeaa` already hit
+     this once.
 
 ## 2. Verification gates — exact commands
 
@@ -145,6 +162,25 @@ Movable code juggles four bitmap representations. The rule:
 
 `BitmapSource` never crosses out of the app. Core (pure) traffics in `byte[]`/`Stream`.
 
+Note that `Magick.NET` splits the same way its consumers do: `Magick.NET.SystemDrawing` is a
+plain net8.0 library and is Core.Windows-eligible, while `Magick.NET.SystemWindowsMedia` is
+WPF-only and must stay in the app.
+
+### B4 — UI Automation: the `FrameworkReference` loophole is closed
+
+`System.Windows.Automation` (`UIAutomationClient.dll`) lives in the WindowsDesktop shared
+framework. It can be resolved with `<FrameworkReference Include="Microsoft.WindowsDesktop.App" />`
+*without* setting `UseWPF=true`, which is a real gap in the wording of invariant 2.
+
+**Decision: do not take it.** That reference also drags in `WindowsBase`, which puts
+`System.Windows.Rect` back within reach of Core.Windows and quietly defeats B2. The one file this
+affects, `UIAutomationUtilities.cs`, stays in the app — its type surface is four never-move models
+deep, which is not worth weakening the tier boundary to move one file.
+
+`Tests.Core.Windows/TierBoundaryTests.cs` already enforces this: it checks referenced assembly
+*names*, and `WindowsBase` is on its list, so the loophole fails the build rather than passing
+review.
+
 ### Wave 0 batches — **done**
 
 | Batch | Work | Commit |
@@ -169,136 +205,322 @@ what was actually built:
 
 ## 4. Wave plan
 
-Each batch is one commit, gated on §2. File lists are starting points — an agent that finds a
-listed file blocked defers it per invariant 5.
+### 4.0 What reconnaissance changed
 
-### Wave 1 — pure leaves → Text-Grab.Core
+Five read-only passes read every candidate file end-to-end. The corrections that matter:
 
-**1a — Models (14 files).** `AsyncOcrFileResult`, `EditTextTableDocument`, `ExtractedPattern`,
-`FindResult`, `GrabFrameTableEditState`, `GrabFrameWordGroupingMode`, `GrabTemplate`,
-`LookupItem`, `NullAsyncResult`, `OcrDirectoryOptions`, `SpreadsheetUndoHistory`,
+**Moved *out* of the wave lists (now never-move):**
+
+| File | Why the original list was wrong |
+|---|---|
+| `UndoRedoOperations/UndoRedo.cs`, `ChangeWord.cs`, `ResizeWordBorder.cs` | Hold `WordBorder` fields and construct WPF operation classes. No `System.Windows` using — they reach WPF through `using Text_Grab.Controls;`. |
+| `Models/LookupItem.cs` | `Wpf.Ui.Controls.SymbolRegular UiSymbol`, fully qualified, so no using revealed it. |
+| `Utilities/ImplementAppOptions.cs` | Filed under Windows AI; is actually app-lifecycle plumbing that casts to the WPF `App` and calls the never-move `NotifyIconUtilities`. |
+| `Utilities/MagickHelpers.cs` | Every public signature is `ImageSource`→`ImageSource`; its `Magick.NET.SystemWindowsMedia` package is WPF-only. |
+| `Utilities/CameraCaptureUtilities.cs` | Both failure paths show `Wpf.Ui.Controls.MessageBox`; entry point needs a WPF `Window` for its `hwnd`. |
+| `Utilities/SettingsImportExportUtilities.cs` | Orchestration glue over three other services; reflects over the *entire* settings surface by design. |
+| `Utilities/DiagnosticsUtilities.cs` | Reads ~70 settings properties — 14× the façade threshold — and aggregates every deferred subsystem. |
+
+**Moved *into* the wave lists (the never-move list was written before B2 landed):**
+
+| File | Why it can move now |
+|---|---|
+| `Models/WordBorderInfo.cs` | Already the portable projection of the `WordBorder` control — flattening it to data is the class's whole job. Its only WPF tie is `Rect BorderRect` → `RectangleF`. The `WordBorderInfo(WordBorder)` constructor stays in the app as a factory. **This unblocks `ResultTable`'s clustering algorithm.** |
+| `Models/TemplateRegion.cs` | Same shape: WPF-bound only through `ToAbsoluteRect`/`FromAbsoluteRect` returning `System.Windows.Rect`. **This unblocks `GrabTemplate` and `OcrDirectoryOptions`.** |
+
+**Re-scoped:**
+- `Utilities/PdfDocumentRenderer.cs` moves from Wave 4 to Wave 5. Its blocker is the
+  `BitmapSource` currency (`RenderPageAsync` *returns* one) — identical to `ImageMethods`, not
+  OCR-specific.
+- `Utilities/AutomationProfile.cs` and `AutomationSettingsProvider.cs` go to **plain Core**, not
+  Core.Windows. Verified empirically: with a `System.Configuration.ConfigurationManager` package
+  reference, `ApplicationSettingsBase` / `LocalFileSettingsProvider` resolve *and run* on plain
+  net10.0. `AutomationProfile` needs one mechanical change — widen
+  `ApplySeed(Properties.Settings)` to `ApplySeed(ApplicationSettingsBase)`; every member it
+  touches is on the base class. `AutomationSettingsProvider` needs no changes at all.
+- `Utilities/Hdr/HdrToneMapper.cs` goes to **plain Core** — it uses nothing but `System`.
+
+**Diagnoses corrected:**
+- `ResultTable`'s `OcrResult` coupling is *dead code*, not a blocker. Its live path already
+  consumes the portable `IOcrLinesWords`. The real blocker was `WordBorderInfo` — now resolved.
+- `TesseractHelper`'s settings write-back needs no redesign. `ITextGrabSettings.Save()` already
+  covers it. Its actual blocker is `AutomationProfile`, via one method (`TempImagePath`).
+- `Utilities/Hdr/*` was recorded as "mostly clean already". It is not: `HdrScreenCapture.cs:472`
+  reaches `System.Windows.Application.Current?.Dispatcher` to pump a consent dialog.
+
+### 4.1 Wave 1 — shared leaves (do this first)
+
+**This batch did not exist in the original plan and is now the highest-leverage work in it.**
+Reconnaissance found the same handful of tiny files blocking Waves 3, 5 and 6 independently.
+Until they land, every later batch hits the same wall: Core.Windows cannot reach back into the
+app, so a leaf left behind blocks everything above it.
+
+**1a — shared leaves → Core** (all verified dependency-free):
+`Utilities/Singleton.cs`, `Utilities/StreamWrapper.cs` (class `WrappingStream`),
+`Models/NullAsyncResult.cs` (`StreamWrapper` constructs it — same commit),
+`Utilities/Json.cs` (namespace is `Text_Grab.Helpers`, not `.Utilities` — keep it),
+`Utilities/IoUtilities.cs` *(pure string-list half only; the class also has WinForms and
+Wpf.Ui `MessageBox` calls that stay behind)*.
+
+**1b — packaging identity → Core.Windows.** Extract `AppUtilities.IsPackaged()` and
+`GetAppVersion()` into `Text-Grab.Core.Windows/Utilities/PackageIdentity.cs`. Both need only
+`Windows.ApplicationModel.Package`. They are unreachable today purely because they share a class
+with `TextGrabSettings`/`TextGrabSettingsService`, which must stay in the app. Leave `AppUtilities`
+forwarding so the ~dozens of existing call sites need not all change at once.
+
+`StorageFileExtensions.cs` → Core.Windows also belongs here rather than in Wave 3 — it is
+dependency-free and `SoftwareBitmapExtensions` needs it.
+
+**Why this ordering matters:** 1a+1b unblocks, at minimum, `SettingsStorageExtensions` (3b),
+`SoftwareBitmapExtensions` (5), `FileAssociationUtilities` (3a), `WinAiLanguageModel` (3c),
+`FileUtilities` (5), and `CameraCaptureUtilities`'s `IsPackaged` call.
+
+### 4.2 Wave 2 — pure leaves → Core
+
+**2a — Enums.** Merge all 17 enums from `Text-Grab/Enums.cs` into `Text-Grab.Core/Enums.cs`.
+Verified: all 17 are plain int/short-backed with no attributes, and there are **zero** name
+collisions with Core's existing two. Do this early — it is a shared file every later batch may
+otherwise touch.
+
+**2b — Models (11 files, verified clean):** `AsyncOcrFileResult`, `EditTextTableDocument`,
+`ExtractedPattern`, `FindResult` (calls a static on `EditTextTableDocument` — same commit, that
+order), `GrabFrameTableEditState`, `GrabFrameWordGroupingMode`, `SpreadsheetUndoHistory`,
 `TemplatePatternMatch`, `TemplateRecognizerMatch`, `ThirdPartyPackageInfo`.
-All verified dependency-free. Expect a near-pure `git mv` batch.
 
-**1b — Utilities, Extensions, Interfaces (14 files).** `Utilities/PatternExecutor`,
-`ColumnSplitUtilities`, `NumericUtilities`, `LanguageHeuristics`, `ProtocolUtilities`,
-`Singleton`, `StreamWrapper`, `Json`, `ThirdPartyNoticeUtilities`;
-`Extensions/NumberExtensions`, `StringBuilderExtensions`; `Interfaces/ITtsEngine`;
-`UndoRedoOperations/UndoRedo`, `ChangeWord`, `ResizeWordBorder`.
-Note `Json.cs` is in namespace `Text_Grab.Helpers`, not `Text_Grab.Utilities` — keep it.
+**2c — Utilities / Extensions / Interfaces (9 files):** `PatternExecutor` then
+`ColumnSplitUtilities` (which calls it — same commit, that order); `NumericUtilities`,
+`LanguageHeuristics`, `Extensions/NumberExtensions`, `Extensions/StringBuilderExtensions`,
+`Interfaces/ITtsEngine`.
 
-**1c — Enums consolidation.** `Text-Grab/Enums.cs` (132 lines) vs `Text-Grab.Core/Enums.cs`
-(15 lines). Move every enum with no UI/Windows dependency into Core's file; leave WPF-typed
-ones behind. Verify no duplicate definitions across the two assemblies.
+Two files here need a **split**, not a move:
+- `ProtocolUtilities` — only `IsProtocolUri` and `TryParseProtocolUri` are pure. The rest needs
+  Registry + `AutomationProfile` + `FileUtilities`.
+- `ThirdPartyNoticeUtilities` — only `Packages` and the constants are pure. The `Get*Path`/`Open*`
+  methods need `FileUtilities.GetExePath()`. All three of its existing tests touch only
+  `Packages`, so the test moves with the pure half.
 
-### Wave 2 — calculation and text engine → Text-Grab.Core
+**2d — geometry conversions.** Convert `WordBorderInfo.BorderRect` and
+`TemplateRegion.ToAbsoluteRect`/`FromAbsoluteRect` to `RectangleF`, move both to Core, leave the
+`WordBorderInfo(WordBorder)` factory in the app. Then `GrabTemplate` and `OcrDirectoryOptions`
+follow. This is the batch that pays off B2.
 
-**2a — CalculationService (3 files, ~2000 lines).** `CalculationService.cs`,
-`.UnitMath.cs`, `.DateTimeMath.cs` are fully pure (NCalc + UnitsNet only). Move the
-`NCalcAsync` and `UnitsNet` `PackageReference` entries into `Text-Grab.Core.csproj`; they can
-stay in the app csproj too if app code still uses them directly — check before deleting.
-High-value batch: unlocks `CalculatorTests` and `UnitConversionTests` for `Tests.Core`.
+**2e — CalculationService.** All three files, ~2000 lines, fully pure (one call into
+`NumericUtilities`). **Move** the `NCalcAsync` and `UnitsNet` package references to
+`Text-Grab.Core.csproj` — verified they are used nowhere else in the app. Leave `Tests.csproj`'s
+own `NCalcAsync` reference alone. Move `CalculatorTests` and `UnitConversionTests` to `Tests.Core`
+in the same commit.
 
-**2b — Markdown split.** `MarkdownDocumentUtilities.cs` (1168 lines) mixes Markdig AST
-parsing (portable) with `FlowDocument`/`System.Windows.Documents` rendering (WPF). Split into
-`Text-Grab.Core/Utilities/MarkdownParsing.cs` and keep the FlowDocument half in the app.
-Move the `Markdig` package reference to Core.
+**2f — Markdown split.** ~150 pure lines out of 1168. Pure half (Markdig AST + regex + string):
+`LooksLikeMarkdown`, `ShouldPromoteLiveBlock`, `ShouldPromoteLiveMarkdown`, `NormalizeDocumentText`,
+`NormalizeNewlines`, `EscapeMarkdownText`, `EscapeLinkDestination`, `ApplyQuotePrefix`,
+`GetQuotePrefix`, `GetOrderedListStart`, `ResolveContentSpan`, `GetSourceSlice`,
+`GetCodeSpanContentRawStart`, `GetCodeBlockText`, the `MarkdownPipeline` field and the three
+`[GeneratedRegex]` methods. Everything touching `FlowDocument`/`System.Windows.Documents` stays.
+The shared string helpers must become `internal`/`public` for the app half to call them. **Markdig
+stays referenced by both halves** — the app side pattern-matches on Markdig types directly; verify
+transitivity before removing the app's reference. Extract the 6 pure test methods into
+`Tests.Core/MarkdownParsingTests.cs`.
 
-### Wave 3 — Windows leaves → Text-Grab.Core.Windows
+### 4.3 Wave 3 — Windows leaves → Core.Windows
 
-**3a — Registry and interop.** `Utilities/ContextMenuUtilities`, `FileAssociationUtilities`,
-`RegistryMonitor` (all `Microsoft.Win32.Registry`); `NativeMethods.cs`; `OSInterop.cs`
-(1292 lines, `System.Windows.Forms` reference — verify whether it is a real WinForms
-dependency or just a `using`; if real, this file stays in the app).
+**3a — eight files, zero blockers, one commit.** `NativeMethods.cs`, `RegistryMonitor.cs`
+(namespace is `RegistryUtils`, vendored — keep it), `OSInterop.cs`,
+`DesktopNotificationManagerCompat.cs`, `Models/GeneratedOcrLinesWords.cs` (uses
+`Windows.Foundation.Rect` — WinRT, not a B2 blocker), `Models/UiAutomationLang.cs`,
+`Models/WindowsAiLang.cs`, `Models/WindowsAiDescriptionLang.cs`.
 
-**3b — WinRT storage and language leaves.** `Extensions/StorageFileExtensions`,
-`SettingsStorageExtensions`, `SoftwareBitmapExtensions`; `Models/GeneratedOcrLinesWords`,
-`UiAutomationLang`, `WindowsAiLang`, `WindowsAiDescriptionLang`;
-`Extensions/LanguageExtensions` (tagged WPF — check whether that is load-bearing).
+> `OSInterop.cs` is 1292 lines and was recorded as probably app-bound. `System.Windows.Forms`
+> appears **once** in the whole file — in a `GetAsyncKeyState(Keys)` overload with zero callers.
+> The only live caller uses the `int` overload. **Delete the dead overload and the file moves.**
 
-**3c — Windows AI.** `Utilities/LimitedAccessFeatureUtilities`, `WinAiLanguageModel` (606),
-`WinAiTranslator` (498), `WinAiMeetingNotes`, `ImplementAppOptions`,
-`DesktopNotificationManagerCompat` (512). `WindowsAiUtilities` (408) is settings + GDI+
-coupled — attempt after B1 lands, defer if it drags in more.
+**3b — after Wave 1.** `Extensions/SettingsStorageExtensions.cs` (namespace is `Text_Grab.Helpers`
+— keep it; needs `Json.cs` from 1a). `Utilities/LimitedAccessFeatureUtilities.cs` (zero deps —
+move first in the WinAI chain).
 
-### Wave 4 — the OCR pipeline (the pivotal cut)
+**3c — Windows AI chain, in this order:** `WinAiLanguageModel.cs` (needs `PackageIdentity` from 1b,
+`OSInterop` from 3a, `LimitedAccessFeatureUtilities` from 3b), then `WinAiTranslator.cs` and
+`WinAiMeetingNotes.cs` (both need only `WinAiLanguageModel`).
 
-**4a — `OcrUtilities.cs` split (1061 lines). Opus owns this one.** It is the hinge of the
-whole reorganization: headless OCR orchestration tangled with WPF adapters, plus a hidden WPF
-dependency in `LoadBitmapFromFile`, plus `private static readonly Settings DefaultSettings =
-AppUtilities.TextGrabSettings` at class scope. Target shape:
-- `Text-Grab.Core.Windows/Ocr/OcrEngine.cs` — engine selection, language handling,
-  WinRT/Windows-AI/Tesseract dispatch, result assembly.
-- `Text-Grab/Utilities/OcrUiAdapters.cs` — everything returning or consuming `BitmapSource`,
-  `System.Windows.Rect`, `Text_Grab.Controls.*`.
-Do this as its own commit with nothing else in it.
+**3d — `Extensions/LanguageExtensions.cs` split.** `XmlLanguage` comes from `PresentationCore`
+and the path is reachable in production from `GrabFrame`, `EditTextWindow` and `OcrUtilities` —
+not a dead using. Move `IsSpaceJoining` (both overloads), `IsLatinBased`, `AsLanguage`,
+`AsILanguage`; leave `IsRightToLeft(this Language)` and the `GlobalLang` branch of the `ILanguage`
+overload in a thin app-side façade.
 
-**4b — OCR periphery.** `Models/OcrOutput` (blocks `BarcodeUtilities` — it reads settings
-directly inside `CleanOutput()`), `Utilities/BarcodeUtilities`, `PdfDocumentRenderer` (497),
-the remainder of `TesseractHelper` (401 — `GetTesseractPath` has a settings-write side effect
-that must be lifted out first).
+### 4.4 Wave 4 — OCR pipeline
 
-**4c — Language services and tables.** `Services/LanguageService` (392),
-`Utilities/CaptureLanguageUtilities`, `LanguageUtilities`, and `Models/ResultTable` (950 —
-needs B2 for `System.Windows.Rect` and decoupling from `Windows.Media.Ocr.OcrResult`; consider
-having it consume the existing `IOcrLinesWords` from
-`Text-Grab.Core.Windows/Models/OcrLinesWords.cs` instead).
+**4a — `OcrOutput` → `BarcodeUtilities`, a move-now pair.** `OcrOutput.CleanOutput()` needs a
+two-line swap to `SettingsAccess.Current` (`CorrectToLatin`, `CorrectErrors` — both already on the
+interface) and the `is not Settings userSettings` cast dropped. `BarcodeUtilities` follows
+immediately; add `ZXing.Net.Bindings.Windows.Compatibility` to Core.Windows.
 
-### Wave 5 — capture and imaging → Text-Grab.Core.Windows
+**4b — `TesseractHelper`.** Blocked on `AutomationProfile` (via `TempImagePath` only) — so this
+follows Wave 6a. Add `CliWrap` to Core.Windows. `TesseractGitHubFileDownloader` in the same file is
+fully portable and could go to plain Core.
 
-**5a.** `Utilities/ImageMethods` (WPF + WinRT + GDI+ + settings — expect a split, not a move),
-`ImageChangeDetector`, `MagickHelpers`, `FileUtilities` (400).
+**4c — the `OcrUtilities` split. Opus owns this; do it as its own commit.**
+`DefaultSettings` reads exactly six properties, all already on `ITextGrabSettings` — verified, no
+seventh. The hidden WPF dependency is `LoadBitmapFromFile` (lines 887–899), which builds a
+`BitmapImage` to apply EXIF rotation; decoupling it means a real rewrite against GDI+/WIC, so
+**defer that method and its two callers** (`OcrAbsoluteFilePathAsync`, `OcrFile`) rather than
+attempt it inside 4c.
 
-**5b.** `Utilities/Hdr/HdrToneMapper` (already pure — could go to plain Core),
-`Hdr/DisplayHdrInfo`, `Hdr/HdrScreenCapture` (504), `FreeformCaptureUtilities`,
-`CameraCaptureUtilities`, `ClipboardUtilities` (464, WinForms clipboard — likely stays),
-`Models/DragDataObject`.
+**Ordering constraint the original plan missed: 4c cannot precede Wave 3.** `OcrEngine.cs` will
+not compile in Core.Windows until `WindowsAiLang`, `WindowsAiDescriptionLang`, `UiAutomationLang`
+(3a), `WinAiLanguageModel` (3c) and `AutomationProfile` (6a) have landed. If those are not ready,
+move only the strictly portable subset — furigana filtering, paragraph-wrap heuristics,
+`BuildTextFromOcrLines`, `GetStringFromOcrOutputs`, `GetTextFromOcrLine` — and leave engine
+dispatch behind.
 
-### Wave 6 — services and settings
+`Tests/OcrTests.cs` is the heaviest consumer of the headless surface and becomes a
+`Tests.Core.Windows` candidate in Wave 7. It references the nested `PositionedOcrLine` /
+`GroupedOcrLines` types by name; both halves keep `Text_Grab.Utilities`, so it stays green.
 
-**6a.** `Services/SettingsService` (836), `Utilities/AutomationProfile`,
-`AutomationSettingsProvider`, `SettingsImportExportUtilities` (435). `AutomationSettingsProvider`
-derives from `LocalFileSettingsProvider` (System.Configuration) — that package works on
-net10.0, so plain Core is plausible; verify before assuming.
+**4d — `ResultTable`.** Unblocked by 2d. Delete the dead code first (see §9), then move the
+clustering algorithm.
 
-**6b.** `Services/HistoryService` (1004), `Utilities/GrabTemplateManager`,
-`GrabTemplateExecutor` (628), `PostGrabActionManager`, `CustomBottomBarUtilities`,
-`ShortcutKeysUtilities`.
+**4e — language chain, strictly ordered, and hard-blocked at the end.**
+`CaptureLanguageUtilities` → `LanguageUtilities` → `LanguageService`. The first two are pure
+forwarders and move for free once the third does. `LanguageService` has a genuine blocker:
+`System.Windows.Input.InputLanguageManager`, with no portable substitute. It also needs
+`UiAutomationEnabled` and `WindowsAiDescriptionEnabled` added to `ITextGrabSettings`. **Route to
+Opus** — the workable split is to extract the pure `switch`-expression helpers (`GetLanguageTag`,
+`GetLanguageKind`, `GetPersistedLanguageIdentity`, `NormalizePersistedLanguageIdentity`) and leave
+the input-language reader in the app.
 
-**6c.** `Services/TtsService`, `WindowsSpeechEngine`, `Utilities/AudioTranscriptionUtilities`
-(1115), `UIAutomationUtilities` (1362), `DiagnosticsUtilities` (670).
+### 4.5 Wave 5 — capture and imaging → Core.Windows
 
-### Wave 7 — tests and closeout
+**5a — move-now (after Wave 1):**
+- `Utilities/Hdr/HdrToneMapper.cs` → **plain Core** (nothing but `System`).
+- `Utilities/Hdr/DisplayHdrInfo.cs` → Core.Windows; add `Vortice.Direct3D11`, `Vortice.DXGI`.
+- `Extensions/ImageExtensions.cs` → Core.Windows (pure GDI+; `ExifRotate` is dead — see §9).
+- `Utilities/ImageChangeDetector.cs` → Core.Windows; add `Magick.NET-Q16-AnyCPU`,
+  `Magick.NET.SystemDrawing`.
+- `Models/DragDataObject.cs` → Core.Windows, after deleting its dead `BitmapSourceToBitmap` (§9).
+- `Extensions/SoftwareBitmapExtensions.cs` → Core.Windows (needs `StorageFileExtensions` and
+  `WrappingStream` from Wave 1).
 
-**7a — test migration.** Move to `Tests.Core`: `StringMethodTests`,
-`TextSearchUtilitiesTests`, `RecognizerExecutorTests`, `PatternExecutorTests`,
-`CalculatorTests`, `UnitConversionTests`, `ExtractedPatternTests`,
-`ColumnSplitUtilitiesTests`, `SpreadsheetUndoHistoryTests`, `EditTextTableDocumentTests`,
-`GrabFrameTableEditStateTests`, `ThirdPartyNoticeUtilitiesTests`, `ProtocolUtilitiesTests`,
-plus whatever else became pure. Move Windows-but-headless tests into `Tests.Core.Windows`.
-Delete `Tests.Core/ScaffoldingSmokeTests.cs` once real tests exist.
+**5b — `HdrScreenCapture.cs`.** The D3D11/DXGI/WinRT pipeline is clean. Two blockers: add
+`HdrBorderlessGranted` to `ITextGrabSettings`, and extract the `Application.Current.Dispatcher`
+hop at line 472 behind a settable hook the app wires up at startup — it exists to pump a one-time
+OS consent dialog and is load-bearing.
 
-**7b — closeout.** Remove dead app-side shims; update `.github/workflows/*.yml` to run all
-three test projects; confirm the MSIX package still builds in Visual Studio (the one thing the
-CLI gate cannot check); update `BUILT-WITH.md` / this document with the final layer map.
+**5c — `ImageMethods.cs` split.** Headless half (→ Core.Windows): `PadImage`,
+`CaptureScreenRegion`, `GetBitmapFromIRandomAccessStream`, `GetRotateFlipType(string)`. Everything
+touching `BitmapImage`/`BitmapSource`/`CachedBitmap`/`InteropBitmap`/`Window`/`ImageSource` stays.
+Add `HdrCaptureCorrection` to `ITextGrabSettings`. **`GetRegionOfScreenAsBitmap` stays behind for
+now** — it calls `Singleton<HistoryService>.Instance.CacheLastBitmap`, and inverting that call is a
+redesign (invariant 5). `GetWindowsBoundsBitmap` is permanently app-bound; it pattern-matches on
+the `GrabFrame` *View*.
 
-### Never moves
+**5d — `ClipboardUtilities.cs` split.** Larger than expected in the right direction: ~330 of 464
+lines are a pure CF_HTML table parser with no clipboard, WPF, WinRT or GDI+ dependency →
+**plain Core** as `Utilities/CfHtmlTableUtilities.cs`. The clipboard-touching methods stay.
+Separately, line 64's `System.Windows.Forms.DataFormats.Bitmap` is the file's only WinForms use
+and is the identical string constant to WPF's `System.Windows.DataFormats.Bitmap` — swap it in the
+same commit regardless of whether the split happens.
+
+**5e — `FreeformCaptureUtilities.cs`.** Only `CreateMaskedBitmap` moves, after changing its
+parameter from `IReadOnlyList<Point>` to `IReadOnlyList<PointF>`; the single call site in
+`FullscreenGrab.SelectionStyles.cs` converts via `AsPointF`. `GetBounds` and `BuildGeometry`
+return WPF rendering types (`PathGeometry`) and stay.
+
+**5f — `PdfDocumentRenderer.cs`** (re-scoped here from Wave 4). Blocked on the same `BitmapSource`
+currency as `ImageMethods`: `RenderPageAsync` returns one, and changing that is a public API shape
+change affecting multiple views. Its internal geometry and line-grouping logic is already portable
+(`Windows.Foundation.Rect`) if partial credit is wanted.
+
+### 4.6 Wave 6 — services and settings
+
+**6a — settings providers → plain Core.** `AutomationSettingsProvider.cs` (no changes) and
+`AutomationProfile.cs` (widen `ApplySeed` to `ApplicationSettingsBase`). Add
+`System.Configuration.ConfigurationManager` to `Text-Grab.Core.csproj`. Highest-confidence batch in
+the wave, and it unblocks `TesseractHelper` (4b), `ContextMenuUtilities` and
+`FileAssociationUtilities` (3a-deferred), and `FileUtilities` (5).
+
+**6b — speech.** `Services/WindowsSpeechEngine.cs` → Core.Windows. `Services/TtsService.cs` →
+plain Core, after resolving its `private ITtsEngine _engine = new WindowsSpeechEngine();` field
+initializer — the app should register the default engine at composition, same shape as
+`SettingsAccess`. Add `TtsSpeakWordLimit`, `TtsVoiceName`, `TtsSpeakingRate`.
+
+**6c — `AudioTranscriptionUtilities.cs` → Core.Windows, wholesale.** 1115 lines, fully headless
+(NAudio + Whisper.net, zero WPF, zero WinRT), with exactly **one** settings touchpoint:
+`AudioTranscriptionModel`. Move `NAudio`, `Whisper.net`, `Whisper.net.Runtime` to Core.Windows.
+(`IncludeTimecodesInTranscription` and `NotifyOnTranscriptionComplete` are consumed only in the
+views, not in this file.) The cleanest single file in the whole reorganization — use it as the
+anchor that proves Core.Windows can host NAudio/Whisper.
+
+**6d — `WebSearchUrlModel` split**, exactly `PatternItem`/`PatternItemCatalog`-shaped: pure record
+→ Core, static accessors stay in the app. No interface changes needed.
+
+**6e — `HistoryService.cs`. Opus owns this; it is a second `OcrUtilities`.** A genuinely headless
+JSON pipeline (`LoadHistoryAsync`, `LoadHistoryWithRecovery`, `WriteHistoryFiles`, the
+`Normalize*` methods, `HistoryLanguageKindJsonConverter`) is interleaved with WPF menu building,
+`GrabFrame`/`EditTextWindow` construction and a GDI+ `CachedBitmap`, sharing private state across
+both halves. Blocked on `HistoryInfo`'s own `System.Windows.Rect PositionRect` — which B2 and 2d
+now give a path to.
+
+### 4.7 Wave 7 — tests and closeout
+
+**7a — test migration.** To `Tests.Core`: `StringMethodTests`, `TextSearchUtilitiesTests`,
+`RecognizerExecutorTests`, `PatternExecutorTests`, `CalculatorTests`, `UnitConversionTests`,
+`ExtractedPatternTests`, `ColumnSplitUtilitiesTests`, `SpreadsheetUndoHistoryTests`,
+`EditTextTableDocumentTests`, `GrabFrameTableEditStateTests`, `ThirdPartyNoticeUtilitiesTests`,
+plus the pure halves of `ProtocolUtilitiesTests` and `MarkdownDocumentUtilitiesTests`. To
+`Tests.Core.Windows`: `OcrTests` and the other headless-Windows suites. Delete
+`Tests.Core/ScaffoldingSmokeTests.cs`.
+
+**7b — closeout.** Remove dead app-side shims; confirm the MSIX package still builds in Visual
+Studio (the one thing the CLI gate cannot check); re-derive the never-move list one final time
+against B2; update this document with the final layer map.
+
+### Never moves — verified
 
 `Views/`, `Controls/`, `Pages/`, `Styles/`, `Themes/`, `App.xaml.cs`, `AssemblyInfo.cs`,
-`WPFExtensionMethods.cs`, `Properties/Settings.Designer.cs`, `Extensions/ControlExtensions`,
-`DapploExtensions`, `KeyboardExtensions`, `ShapeExtensions`, `Utilities/ColorHelper`,
-`CursorClipper`, `GrabFrameViewScaleUtilities`, `NotificationUtilities`,
-`WindowSelectionUtilities`, `WindowResizer`, `WindowUtilities`, `HotKeyManager`,
+`WPFExtensionMethods.cs`, `Properties/Settings.Designer.cs`, `TextGrabNotificationActivator.cs`.
+
+**Extensions:** `ControlExtensions`, `DapploExtensions`, `KeyboardExtensions`, `ShapeExtensions`.
+
+**Utilities:** `ColorHelper`, `CursorClipper`, `WindowResizer`, `WindowUtilities`,
+`GrabFrameViewScaleUtilities`, `NotificationUtilities`, `WindowSelectionUtilities`, `HotKeyManager`,
 `AutomationDiagnostics`, `NotifyIconUtilities`, `OutputUtilities`, `ShareTargetUtilities`,
-and the WPF-typed `UndoRedoOperations` (`AddWordBorder`, `RemoveWordBorder`, `ChangedImage`,
-`Operation`) and Models (`FullscreenCaptureResult`, `PostGrabContext`, `ShortcutKeySet`,
-`TemplateRegion`, `UiAutomationOptions`, `UiAutomationOverlayItem`,
-`UiAutomationOverlaySnapshot`, `WindowSelectionCandidate`, `WordBorderInfo`, `ButtonInfo` —
-the last uses `Wpf.Ui.Controls`).
+`ImplementAppOptions`, `MagickHelpers`, `CameraCaptureUtilities`, `SettingsImportExportUtilities`,
+`DiagnosticsUtilities`, `PostGrabActionManager`, `CustomBottomBarUtilities`, `ShortcutKeysUtilities`,
+`UIAutomationUtilities` (see B4).
 
-Several of the Models above become movable once B2 lands. Revisit them in Wave 7 rather than
-guessing early.
+**Models:** `ButtonInfo` (~90 static entries each assigning `Wpf.Ui.Controls.SymbolRegular` —
+whole-class, not splittable), `ShortcutKeySet` (`System.Windows.Input.Key`), `PostGrabContext`,
+`FullscreenCaptureResult`, `UiAutomationOptions`, `UiAutomationOverlayItem`,
+`UiAutomationOverlaySnapshot`, `WindowSelectionCandidate`, `LookupItem`.
 
+**UndoRedoOperations:** all of them — `Operation`, `AddWordBorder`, `RemoveWordBorder`,
+`ChangedImage`, `UndoRedo`, `ChangeWord`, `ResizeWordBorder`. Every one is typed on `WordBorder`,
+`Canvas` or `ImageSource`.
+
+### Consolidated `ITextGrabSettings` additions
+
+Nine members across the whole plan, taking the interface from 10 to 19. Add each one only when its
+batch runs.
+
+| Property | Type | Needed by | Batch |
+|---|---|---|---|
+| `OverrideAiArchCheck` | `bool` | `WindowsAiUtilities` | 3 (deferred) |
+| `UiAutomationEnabled` | `bool` | `LanguageService` | 4e |
+| `WindowsAiDescriptionEnabled` | `bool` | `LanguageService` | 4e |
+| `HdrCaptureCorrection` | `bool` | `ImageMethods` | 5c |
+| `HdrBorderlessGranted` | `bool` | `HdrScreenCapture` | 5b |
+| `AudioTranscriptionModel` | `string` | `AudioTranscriptionUtilities` | 6c |
+| `TtsSpeakWordLimit` | `int` | `TtsService` | 6b |
+| `TtsVoiceName` | `string` | `WindowsSpeechEngine` | 6b |
+| `TtsSpeakingRate` | `double` | `WindowsSpeechEngine` | 6b |
+
+All nine already exist in `Settings.settings`, so each is a one-line interface addition with no
+`.settings` edit. Declined: the three `UiAutomation*` traversal properties, per B4.
+
+**The `Load*`/`Save*` families are not candidates.** `LoadStoredRegexes`, `LoadBottomBarButtons`,
+`LoadWebSearchUrls` and friends are `SettingsService` *methods*, not scalar properties. They do not
+fit this interface's shape, and the façade pattern (`PatternItemCatalog`) handles them with no
+interface change at all.
 ## 5. Sub-agent orchestration
 
 ### Roles
@@ -326,22 +548,23 @@ simultaneously while you do Wave 0, so every mover starts with an accurate file 
 ```
 You are executing batch <ID> of the Text-Grab Core split.
 
-Read D:\source\TheJoeFin\Text-Grab\docs\Core-Split-Plan.md first — sections 1, 2, and
-your batch in section 4 are binding. Then read the two most recent move commits
-(git show edefeaa, git show e677b54) to match the established style.
+Read D:\source\TheJoeFin\Text-Grab\docs\Core-Split-Plan.md first — sections 1 (especially
+invariant 8), 2, and your batch in section 4 are binding. Then read the two most recent
+move commits (git show edefeaa, git show e677b54) to match the established style.
 
 Your file list is exactly:
   <paths>
 Target project: <Text-Grab.Core | Text-Grab.Core.Windows>
 
 Procedure, per file:
- 1. Read it. Confirm its actual dependencies — do not trust `using` lines alone.
-    `System.Drawing` primitives (RectangleF/PointF/SizeF) are portable and fine in Core;
-    `System.Drawing` GDI+ (Bitmap/Graphics/Icon) is Core.Windows only.
+ 1. Read it in full. Confirm which TYPES it uses — invariant 8 lists the four traps, and
+    the original wave lists were wrong about a dozen files for exactly these reasons.
  2. If it moves cleanly: `git mv` it, keep the namespace, fix call sites the compiler flags.
  3. If it needs a split: pure part moves, the coupled façade stays in the app under a new
     name. See PatternItem/PatternItemCatalog in e677b54 for the shape.
  4. If it is blocked by something outside your list: LEAVE IT. Do not expand scope.
+ 5. If section 8 lists dead code in a file you are moving, re-verify it has no call sites
+    (beware target-typed `new()`), then delete it as part of the move.
 
 After each file, run:  dotnet build Tests/Tests.csproj -c Debug -p:Platform=x64
 Never run `dotnet build Text-Grab.sln` — the wapproj fails under the dotnet CLI by design.
@@ -380,6 +603,30 @@ Do not fire-and-forget the whole chain. Run **one wave at a time**, and between 
 prior six commits were all human-reviewed; that ratio should hold — a mover that silently
 "fixes" a call site incorrectly compiles fine and breaks at runtime.
 
+### What the reconnaissance pass actually bought
+
+Worth recording, because it justifies doing this again before Waves 5 and 6 execute. Five
+read-only agents ran in parallel against one working tree — safe because none of them could
+write. Between them they:
+
+- found `OSInterop.cs` (1292 lines) blocked by a single dead line;
+- found the `AppUtilities.IsPackaged()` shared blocker that no single wave owned, which is now
+  Wave 1;
+- **disproved four entries** on the original wave lists and **rescued two** from the never-move
+  list;
+- settled the `System.Configuration`-on-net10.0 question by building and running a probe rather
+  than reasoning about it;
+- surfaced the `FrameworkReference` loophole in invariant 2 (§B4).
+
+The cost was five agents reading ~60 files. The alternative was movers discovering each of these
+mid-batch, with a half-applied commit in the tree.
+
+**Verify before acting on a report.** Every load-bearing claim above was independently checked
+before it entered this document, and one was wrong in a way that mattered: an agent reported
+`GrabFrame` constructing a `ResultTable`, and a naive `grep "new ResultTable"` appeared to refute
+it — the call is target-typed `new()`. Trusting the grep over the agent would have deleted a live
+constructor.
+
 ## 6. Risk register
 
 | Risk | Mitigation |
@@ -390,21 +637,49 @@ prior six commits were all human-reviewed; that ratio should hold — a mover th
 | `RuntimeIdentifiers` dropped from a library csproj | Causes NETSDK1047 in the wapproj restore only — invisible to the CLI gate. Grep the csprojs at wave boundaries. |
 | Settings interface sprawls to all 104 properties | Add properties only when a move demands one; if a batch needs more than ~5 new ones, that file probably wants a façade split instead. |
 | `EditTextWindow.xaml.cs` / `GrabFrame.xaml.cs` churn | They are touched by most batches. Serial movers make this safe; parallel ones would not. |
+| A mover classifies by `using` lines and moves a WPF-bound file | Invariant 8. `TierBoundaryTests` catches it at the assembly level if it slips through. |
+| A batch stalls because a one-line leaf it needs is still app-side | Wave 1 exists precisely for this. Do not start Waves 3–6 before it lands. |
+| Deleting "dead" code that is actually reachable | §8 rows were each verified by full-repo grep. Re-verify before deleting; target-typed `new()` and same-named members on other types defeat a naive grep — that is how `GrabFrame`'s `ResultTable` construction was nearly missed. |
 
 ## 7. Deferred ledger
 
-Files attempted and left behind, with the specific blocker. **Movers append here.**
+Files with a real blocker, and the specific thing that clears it. **Movers append here.**
+Every row below was verified by reading the file, not inferred.
 
-| File | Blocker | Unblocked by |
+| File | Blocker (specific) | Unblocked by |
 |---|---|---|
-| `Utilities/OcrUtilities.cs` | 1061 lines mixing headless orchestration with WPF adapters; hidden WPF dep in `LoadBitmapFromFile`; class-level `AppUtilities.TextGrabSettings` field | Batch 4a (Opus) |
-| `Utilities/TesseractHelper.cs` (class) | `GetTesseractPath()` writes back to settings as a side effect | B1 + lifting the write out |
-| `Services/LanguageService.cs` | settings + WPF coupled; drags in several untouched types | B1, batch 4c |
-| `Utilities/WindowsAiUtilities.cs` | settings + WPF coupled; drags in several untouched types | B1, batch 3c |
-| `Utilities/BarcodeUtilities.cs` | `OcrOutput.CleanOutput()` reads settings directly | B1, batch 4b |
-| HDR / WGC capture (`Utilities/Hdr/*`) | separate area, mostly clean already | batch 5b |
+| `Utilities/OcrUtilities.cs` | `LoadBitmapFromFile` (887–899) builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite | 4c, and defer that one method |
+| `Utilities/TesseractHelper.cs` | `TempImagePath()` calls `AutomationProfile.GetTemporaryDirectory()`. The settings write-back is **not** a blocker — `ITextGrabSettings.Save()` already covers it | 6a |
+| `Services/LanguageService.cs` | `System.Windows.Input.InputLanguageManager` (line 376), no portable substitute; reachable in production, not vestigial | Opus split (4e) |
+| `Utilities/WindowsAiUtilities.cs` | `AutomationProfile.GetTemporaryFilePath()` (109, 189); `SoftwareBitmapExtensions` unmoved; reads `Settings.Default.OverrideAiArchCheck` directly (61) | 6a + 5a + one interface add |
+| `Utilities/ContextMenuUtilities.cs` | `AutomationProfile.Current`, `FileUtilities.GetExePath()`; `IoUtilities` mixes pure extension lists with WinForms/Wpf.Ui `MessageBox` calls | 1a (IoUtilities split), 5, 6a |
+| `Utilities/FileAssociationUtilities.cs` | `FileUtilities.GetExePath()` | Wave 5 |
+| `Utilities/FileUtilities.cs` | `AutomationProfile.Current` in 6 methods | 6a |
+| `Utilities/GrabFrameFileUtilities.cs` | Public signature bound to `HistoryInfo`, which needs B2 (`Rect PositionRect`), 2a (five enums) and 4e. A façade was considered and rejected as larger than the file it wraps | 2d + 4e, or `HistoryInfo` moving |
+| `Services/SettingsService.cs` | Clones `ButtonInfo` and `ShortcutKeySet` field-by-field (both never-move); `Windows.Storage.ApplicationDataContainer` caps it at Core.Windows regardless | needs a `ButtonInfo` redesign — likely never |
+| `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar | 2d, then a split |
+| `Utilities/GrabTemplateExecutor.cs` | Template models not in Core; `LoadStoredRegexes()` needs a non-scalar seam; OCR half blocked on 4c | 2d + 4c + a façade |
+| `Utilities/PdfDocumentRenderer.cs` | `RenderPageAsync` returns `BitmapSource` — a public API shape change affecting several views | 5f |
+| `Services/HistoryService.cs` | Headless JSON pipeline interleaved with WPF menu building and `GrabFrame`/`EditTextWindow` construction, sharing private state | Opus split (6e) |
 
-## 8. Definition of done
+## 8. Verified dead code — free, zero-risk prep
+
+Each of these was confirmed to have **zero call sites** across the repo. Deleting them is safe
+and independent of any wave; two of them unblock real moves.
+
+| Dead code | Why it matters |
+|---|---|
+| `OSInterop.GetAsyncKeyState(System.Windows.Forms.Keys)` (line 125) | The **only** `System.Windows.Forms` reference in all 1292 lines. Deleting it moves the whole file. |
+| `Models/DragDataObject.BitmapSourceToBitmap` (line 77) | The file's only WPF touchpoint, and a duplicate of `ImageMethods.BitmapSourceToBitmap`. Deleting it moves the file. |
+| `Models/ResultTable`: `OcrResult` property, `ParseOcrResultWordsIntoRects()`, the `ResultTable(ref List<WordBorderInfo>, DpiScale)` ctor, `CalculateResultRows`, `MergeTheseRowIDs` | Leftovers from a superseded grid-line algorithm. The `OcrResult` property is why `ResultTable` looked WinRT-coupled; the live path already uses `IOcrLinesWords`. |
+| `Utilities/OcrUtilities.GetBoundingRect(this OcrLine)` (line 983) | `edefeaa` left it saying "other app code may still use it". Nothing does. |
+| `Extensions/ImageExtensions.ExifRotate` (line 12) | Unused. |
+
+Not dead, but a one-line dependency removal in the same spirit:
+`ClipboardUtilities.cs:64` uses `System.Windows.Forms.DataFormats.Bitmap` — the identical string
+constant to WPF's `System.Windows.DataFormats.Bitmap`, and the file's only WinForms use.
+
+## 9. Definition of done
 
 - `Text-Grab.Core` holds the text, pattern, table, calculation, and template logic, with no
   `System.Windows`, no `Windows.*`, no P/Invoke.
