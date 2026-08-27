@@ -92,6 +92,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Text-Grab.Core\Text-Grab.Core.csproj" />
+        <ProjectReference Include="..\Text-Grab.Core.Windows\Text-Grab.Core.Windows.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="CliWrap" Version="3.10.5" />
         <PackageReference Include="Dapplo.Windows.User32" Version="2.0.89" />
         <PackageReference Include="Humanizer.Core" Version="3.0.10" />

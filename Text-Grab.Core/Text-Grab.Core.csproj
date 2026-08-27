@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Text_Grab</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- Text-Grab.csproj (the app) declares these RIDs for MSIX/self-contained publish;
+         the wapproj restores project references per-RID, so this library needs matching
+         RuntimeIdentifiers or that restore fails with NETSDK1047. -->
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+</Project>
