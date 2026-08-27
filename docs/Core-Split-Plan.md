@@ -372,6 +372,23 @@ move only the strictly portable subset — furigana filtering, paragraph-wrap he
 `BuildTextFromOcrLines`, `GetStringFromOcrOutputs`, `GetTextFromOcrLine` — and leave engine
 dispatch behind.
 
+**Blocker created by batch 3d — resolve before 4c.** `BuildTextFromOcrLines` is named above as
+part of the "strictly portable subset", but `OcrUtilities.cs:642` calls `language.IsRightToLeft()`,
+and 3d left both `IsRightToLeft` overloads in the app as `LanguageRtlExtensions` because
+`XmlLanguage` comes from PresentationCore. `ReverseWordsForRightToLeft` on the next line is fine —
+it is already in Core (`Extensions/StringBuilderExtensions.cs`).
+
+Only the `Language` overload actually needs `XmlLanguage`; the `ILanguage` overload needs it purely
+because its `GlobalLang` branch delegates to the other one. Three options, in order of preference:
+1. Give the `ILanguage` overload's `GlobalLang` branch a portable RTL check and move that overload
+   to Core.Windows, leaving the `Language`/`XmlLanguage` overload in the app. `XmlLanguage
+   .GetLanguage(tag).GetEquivalentCulture()` is close to `CultureInfo.GetCultureInfo(tag)` but not
+   identical — it walks up subtags and falls back to the invariant culture — so this is a real
+   behavior question, not a mechanical swap. Verify against RTL tags with subtags (`ar-EG`,
+   `he-IL`, `ur-PK`) before choosing it.
+2. Route RTL through a settable hook the app registers at startup, same shape as `SettingsAccess`.
+3. Leave `BuildTextFromOcrLines` in the app and shrink 4c's portable subset accordingly.
+
 `Tests/OcrTests.cs` is the heaviest consumer of the headless surface and becomes a
 `Tests.Core.Windows` candidate in Wave 7. It references the nested `PositionedOcrLine` /
 `GroupedOcrLines` types by name; both halves keep `Text_Grab.Utilities`, so it stays green.
