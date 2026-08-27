@@ -107,7 +107,7 @@ public class FilesIoTests
     [InlineData(@"C:\Temp\data.json", EtwEditorMode.Text)]
     public void GetEditorModeForPath_UsesFileExtension(string path, EtwEditorMode expectedMode)
     {
-        Assert.Equal(expectedMode, FileOpenUtilities.GetEditorModeForPath(path));
+        Assert.Equal(expectedMode, IoUtilities.GetEditorModeForPath(path));
     }
 
     [Theory]

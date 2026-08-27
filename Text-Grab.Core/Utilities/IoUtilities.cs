@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 
@@ -71,6 +72,19 @@ public class IoUtilities
             return false;
 
         return SpreadsheetExtensions.Contains(extension.ToLowerInvariant());
+    }
+
+    public static EtwEditorMode GetEditorModeForPath(string? path)
+    {
+        string extension = Path.GetExtension(path ?? string.Empty);
+
+        if (IsSpreadsheetFileExtension(extension))
+            return EtwEditorMode.Spreadsheet;
+
+        if (IsMarkdownFileExtension(extension))
+            return EtwEditorMode.Markdown;
+
+        return EtwEditorMode.Text;
     }
 
     public static OpenContentKind GetOpenContentKindForPath(string? path)

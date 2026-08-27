@@ -3,25 +3,11 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Text_Grab.Interfaces;
-using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 
 public class FileOpenUtilities
 {
-    public static EtwEditorMode GetEditorModeForPath(string? path)
-    {
-        string extension = Path.GetExtension(path ?? string.Empty);
-
-        if (IoUtilities.IsSpreadsheetFileExtension(extension))
-            return EtwEditorMode.Spreadsheet;
-
-        if (IoUtilities.IsMarkdownFileExtension(extension))
-            return EtwEditorMode.Markdown;
-
-        return EtwEditorMode.Text;
-    }
-
     public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, ILanguage? language = null)
     {
         StringBuilder stringBuilder = new();

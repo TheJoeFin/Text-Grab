@@ -2529,7 +2529,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             EtwEditorMode targetMode = isMultipleFiles
                 ? EtwEditorMode.Text
-                : FileOpenUtilities.GetEditorModeForPath(pathOfFileToOpen);
+                : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
 
             if (IsLoaded)
                 SetEditorMode(targetMode);
