@@ -1,5 +1,3 @@
-using Markdig;
-using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Extensions.TaskLists;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -7,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -25,19 +22,17 @@ using WpfTableRow = System.Windows.Documents.TableRow;
 
 namespace Text_Grab.Utilities;
 
-public static partial class MarkdownDocumentUtilities
+/// <summary>
+/// The FlowDocument-bound half of the markdown editor's document model. Split out of
+/// <see cref="MarkdownDocumentUtilities"/> (now in Text-Grab.Core) because everything here touches
+/// <see cref="FlowDocument"/>/<see cref="System.Windows.Documents"/> types, which cannot move to the
+/// portable tier. The pure AST-walking/regex/string helpers this class calls
+/// (<see cref="MarkdownDocumentUtilities.GetOrderedListStart"/>,
+/// <see cref="MarkdownDocumentUtilities.GetCodeBlockText"/>, etc.) stayed on the original type name
+/// and are exposed <c>internal</c> for this class to reach.
+/// </summary>
+public static class MarkdownFlowDocumentUtilities
 {
-    private static readonly Regex LiveBlockTriggerRegex = LiveBlockTrigger();
-    private static readonly Regex LiveInlinePromotionRegex = LiveInlinePromotion();
-    private static readonly Regex MarkdownPatternRegex = MarkdownPattern();
-
-    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
-        .UseAutoIdentifiers(AutoIdentifierOptions.GitHub)  // Must be BEFORE UseAdvancedExtensions to override default
-        .UseAdvancedExtensions()
-        .UseYamlFrontMatter()
-        .UseEmojiAndSmiley(enableSmileys: false)
-        .Build();
-
     private enum MarkdownBlockRole
     {
         None,
@@ -74,7 +69,7 @@ public static partial class MarkdownDocumentUtilities
             PagePadding = new Thickness(0)
         };
 
-        MarkdownDocument markdownDocument = Markdown.Parse(safeMarkdown, MarkdownPipeline);
+        MarkdownDocument markdownDocument = Markdig.Markdown.Parse(safeMarkdown, MarkdownDocumentUtilities.MarkdownPipeline);
         foreach (MarkdigBlock block in markdownDocument)
             AppendBlock(document.Blocks, block, safeMarkdown, quoteDepth: 0);
 
@@ -105,7 +100,7 @@ public static partial class MarkdownDocumentUtilities
     public static string GetDocumentPlainText(FlowDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        return NormalizeDocumentText(new TextRange(document.ContentStart, document.ContentEnd).Text);
+        return MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(document.ContentStart, document.ContentEnd).Text);
     }
 
     /// <summary>
@@ -242,10 +237,6 @@ public static partial class MarkdownDocumentUtilities
     /// insertion positions scoped to that one paragraph. Bounded by the paragraph's own size rather
     /// than the whole document, and — unlike a document-wide walk — correct even inside a table cell.
     /// </summary>
-    /// <summary>
-    /// Resolves a plain-text offset local to <paramref name="paragraph"/> to an actual
-    /// <see cref="TextPointer"/> by walking insertion positions scoped to that one paragraph.
-    /// </summary>
     /// <remarks>
     /// A list item's non-navigable bullet/number marker is a known, narrow exception: WPF's
     /// <see cref="TextRange.Text"/> counts it as part of the paragraph's rendered text (so the
@@ -335,30 +326,6 @@ public static partial class MarkdownDocumentUtilities
         }
     }
 
-    public static bool ShouldPromoteLiveBlock(string? lineTextBeforeSpace)
-    {
-        if (string.IsNullOrWhiteSpace(lineTextBeforeSpace))
-            return false;
-
-        return LiveBlockTriggerRegex.IsMatch(lineTextBeforeSpace);
-    }
-
-    public static bool LooksLikeMarkdown(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return false;
-
-        return MarkdownPatternRegex.IsMatch(text);
-    }
-
-    public static bool ShouldPromoteLiveMarkdown(string? paragraphText)
-    {
-        if (string.IsNullOrWhiteSpace(paragraphText))
-            return false;
-
-        return LiveInlinePromotionRegex.IsMatch(NormalizeDocumentText(paragraphText));
-    }
-
     public static void ApplyTheme(FlowDocument document, FrameworkElement resourceHost, bool isLightTheme)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -412,7 +379,7 @@ public static partial class MarkdownDocumentUtilities
                 {
                     MarkerStyle = listBlock.IsOrdered ? TextMarkerStyle.Decimal : TextMarkerStyle.Disc,
                     Margin = new Thickness(0, 4, 0, 4),
-                    StartIndex = GetOrderedListStart(listBlock),
+                    StartIndex = MarkdownDocumentUtilities.GetOrderedListStart(listBlock),
                 };
                 SetQuoteDepth(list, quoteDepth);
 
@@ -432,11 +399,11 @@ public static partial class MarkdownDocumentUtilities
                 break;
 
             case FencedCodeBlock fencedCodeBlock:
-                blocks.Add(CreateCodeParagraph(GetCodeBlockText(fencedCodeBlock), fencedCodeBlock.Info, quoteDepth, fencedCodeBlock.Span.Start, fencedCodeBlock.Span.End + 1));
+                blocks.Add(CreateCodeParagraph(MarkdownDocumentUtilities.GetCodeBlockText(fencedCodeBlock), fencedCodeBlock.Info, quoteDepth, fencedCodeBlock.Span.Start, fencedCodeBlock.Span.End + 1));
                 break;
 
             case CodeBlock codeBlock:
-                blocks.Add(CreateCodeParagraph(GetCodeBlockText(codeBlock), info: null, quoteDepth, codeBlock.Span.Start, codeBlock.Span.End + 1));
+                blocks.Add(CreateCodeParagraph(MarkdownDocumentUtilities.GetCodeBlockText(codeBlock), info: null, quoteDepth, codeBlock.Span.Start, codeBlock.Span.End + 1));
                 break;
 
             case ThematicBreakBlock thematicBreakBlock:
@@ -458,7 +425,7 @@ public static partial class MarkdownDocumentUtilities
                 break;
 
             default:
-                blocks.Add(CreateLiteralParagraph(GetSourceSlice(source, block), quoteDepth, block.Span.Start, block.Span.End + 1));
+                blocks.Add(CreateLiteralParagraph(MarkdownDocumentUtilities.GetSourceSlice(source, block), quoteDepth, block.Span.Start, block.Span.End + 1));
                 break;
         }
     }
@@ -555,7 +522,7 @@ public static partial class MarkdownDocumentUtilities
             case LiteralInline literalInline:
                 string literalContent = literalInline.Content.ToString();
                 Run contentRun = new(literalContent);
-                (int literalRawStart, int literalRawEnd) = ResolveContentSpan(
+                (int literalRawStart, int literalRawEnd) = MarkdownDocumentUtilities.ResolveContentSpan(
                     source, literalContent, literalInline.Span.Start, literalInline.Span.End + 1);
                 SetRawSpan(contentRun, literalRawStart, literalRawEnd);
                 inlines.Add(contentRun);
@@ -574,7 +541,7 @@ public static partial class MarkdownDocumentUtilities
                 // codeInline.Span covers the backtick fence too (e.g. "`dotnet build`"), but
                 // Content is just the inner text ("dotnet build") — tag the content's own raw
                 // range, not the fenced span, so this maps 1:1 instead of proportionally.
-                int codeContentRawStart = GetCodeSpanContentRawStart(codeInline);
+                int codeContentRawStart = MarkdownDocumentUtilities.GetCodeSpanContentRawStart(codeInline);
                 SetRawSpan(codeRun, codeContentRawStart, codeContentRawStart + codeInline.Content.Length);
                 inlines.Add(codeRun);
                 break;
@@ -620,7 +587,7 @@ public static partial class MarkdownDocumentUtilities
                 break;
 
             case LinkInline linkInline:
-                Run literalImageRun = new(GetSourceSlice(source, linkInline));
+                Run literalImageRun = new(MarkdownDocumentUtilities.GetSourceSlice(source, linkInline));
                 SetInlineRole(literalImageRun, MarkdownInlineRole.LiteralMarkdown);
                 SetRawSpan(literalImageRun, linkInline.Span.Start, linkInline.Span.End + 1);
                 inlines.Add(literalImageRun);
@@ -640,7 +607,7 @@ public static partial class MarkdownDocumentUtilities
                 break;
 
             default:
-                Run literalRun = new(GetSourceSlice(source, inline));
+                Run literalRun = new(MarkdownDocumentUtilities.GetSourceSlice(source, inline));
                 SetInlineRole(literalRun, MarkdownInlineRole.LiteralMarkdown);
                 SetRawSpan(literalRun, inline.Span.Start, inline.Span.End + 1);
                 inlines.Add(literalRun);
@@ -672,22 +639,22 @@ public static partial class MarkdownDocumentUtilities
 
     private static void WriteParagraph(StringBuilder builder, Paragraph paragraph, bool preserveLiteralMarkdown)
     {
-        string quotePrefix = GetQuotePrefix(GetQuoteDepth(paragraph));
+        string quotePrefix = MarkdownDocumentUtilities.GetQuotePrefix(GetQuoteDepth(paragraph));
 
         if (GetBlockRole(paragraph) == MarkdownBlockRole.ThematicBreak)
         {
-            builder.Append(ApplyQuotePrefix("---", quotePrefix));
+            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix("---", quotePrefix));
             return;
         }
 
         if (GetBlockRole(paragraph) == MarkdownBlockRole.CodeBlock)
         {
             string codeInfo = GetCodeFenceInfo(paragraph);
-            string codeText = NormalizeDocumentText(new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text);
+            string codeText = MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text);
             string fencedBlock = string.IsNullOrWhiteSpace(codeInfo)
                 ? $"```{Environment.NewLine}{codeText}{Environment.NewLine}```"
                 : $"```{codeInfo}{Environment.NewLine}{codeText}{Environment.NewLine}```";
-            builder.Append(ApplyQuotePrefix(fencedBlock, quotePrefix));
+            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix(fencedBlock, quotePrefix));
             return;
         }
 
@@ -696,12 +663,12 @@ public static partial class MarkdownDocumentUtilities
         if (headingLevel > 0)
             content = $"{new string('#', headingLevel)} {content}";
 
-        builder.Append(ApplyQuotePrefix(content, quotePrefix));
+        builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix(content, quotePrefix));
     }
 
     private static void WriteList(StringBuilder builder, WpfList list, int listDepth, bool preserveLiteralMarkdown)
     {
-        string quotePrefix = GetQuotePrefix(GetQuoteDepth(list));
+        string quotePrefix = MarkdownDocumentUtilities.GetQuotePrefix(GetQuoteDepth(list));
         bool isOrdered = list.MarkerStyle == TextMarkerStyle.Decimal;
         int itemIndex = isOrdered ? Math.Max(1, list.StartIndex) : 1;
         bool isFirstItem = true;
@@ -723,34 +690,25 @@ public static partial class MarkdownDocumentUtilities
                 wroteItemBlock = true;
             }
 
-            string[] itemLines = NormalizeNewlines(itemBuilder.ToString()).Split('\n');
+            string[] itemLines = MarkdownDocumentUtilities.NormalizeNewlines(itemBuilder.ToString()).Split('\n');
             string indent = new(' ', listDepth * 2);
             string marker = isOrdered ? $"{itemIndex}. " : "- ";
 
-            builder.Append(ApplyQuotePrefix($"{indent}{marker}{itemLines[0]}", quotePrefix));
+            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"{indent}{marker}{itemLines[0]}", quotePrefix));
             string continuationIndent = $"{indent}{new string(' ', marker.Length)}";
             for (int lineIndex = 1; lineIndex < itemLines.Length; lineIndex++)
             {
                 builder.AppendLine();
-                builder.Append(ApplyQuotePrefix($"{continuationIndent}{itemLines[lineIndex]}", quotePrefix));
+                builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"{continuationIndent}{itemLines[lineIndex]}", quotePrefix));
             }
 
             itemIndex++;
         }
     }
 
-    private static int GetOrderedListStart(ListBlock listBlock)
-    {
-        return listBlock.IsOrdered
-            && int.TryParse(listBlock.OrderedStart, out int startIndex)
-            && startIndex > 0
-                ? startIndex
-                : 1;
-    }
-
     private static void WriteTable(StringBuilder builder, WpfTable table)
     {
-        string quotePrefix = GetQuotePrefix(GetQuoteDepth(table));
+        string quotePrefix = MarkdownDocumentUtilities.GetQuotePrefix(GetQuoteDepth(table));
         TableRowGroup? firstGroup = table.RowGroups.FirstOrDefault();
         if (firstGroup is null || firstGroup.Rows.Count == 0)
             return;
@@ -758,9 +716,9 @@ public static partial class MarkdownDocumentUtilities
         List<WpfTableRow> rows = [.. firstGroup.Rows.Cast<WpfTableRow>()];
         List<string> headerCells = [.. rows[0].Cells.Cast<WpfTableCell>().Select(SerializeTableCell)];
 
-        builder.Append(ApplyQuotePrefix($"| {string.Join(" | ", headerCells)} |", quotePrefix));
+        builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"| {string.Join(" | ", headerCells)} |", quotePrefix));
         builder.AppendLine();
-        builder.Append(ApplyQuotePrefix($"| {string.Join(" | ", Enumerable.Repeat("---", Math.Max(1, headerCells.Count)))} |", quotePrefix));
+        builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"| {string.Join(" | ", Enumerable.Repeat("---", Math.Max(1, headerCells.Count)))} |", quotePrefix));
 
         IEnumerable<WpfTableRow> dataRows = rows.Count > 1 && rows[0].Cells.Cast<WpfTableCell>().Any(GetIsTableHeader)
             ? rows.Skip(1)
@@ -770,13 +728,13 @@ public static partial class MarkdownDocumentUtilities
         {
             builder.AppendLine();
             List<string> rowCells = [.. row.Cells.Cast<WpfTableCell>().Select(SerializeTableCell)];
-            builder.Append(ApplyQuotePrefix($"| {string.Join(" | ", rowCells)} |", quotePrefix));
+            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"| {string.Join(" | ", rowCells)} |", quotePrefix));
         }
     }
 
     private static string SerializeTableCell(WpfTableCell cell)
     {
-        string rawText = NormalizeDocumentText(new TextRange(cell.ContentStart, cell.ContentEnd).Text);
+        string rawText = MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(cell.ContentStart, cell.ContentEnd).Text);
         return rawText
             .Replace("|", "\\|", StringComparison.Ordinal)
             .Replace("\n", "<br />", StringComparison.Ordinal);
@@ -803,17 +761,17 @@ public static partial class MarkdownDocumentUtilities
                 builder.Append(GetInlineRole(run) switch
                 {
                     MarkdownInlineRole.TaskListMarker => GetTaskListMarkerChecked(run) ? "[x]" : "[ ]",
-                    MarkdownInlineRole.CodeSpan => $"`{NormalizeDocumentText(run.Text)}`",
+                    MarkdownInlineRole.CodeSpan => $"`{MarkdownDocumentUtilities.NormalizeDocumentText(run.Text)}`",
                     MarkdownInlineRole.LiteralMarkdown => run.Text,
                     _ when preserveLiteralMarkdown => run.Text,
-                    _ => EscapeMarkdownText(run.Text)
+                    _ => MarkdownDocumentUtilities.EscapeMarkdownText(run.Text)
                 });
                 break;
 
             case Hyperlink hyperlink:
                 string linkText = SerializeInlines(hyperlink.Inlines, preserveLiteralMarkdown);
                 string linkTarget = hyperlink.NavigateUri?.OriginalString ?? linkText;
-                builder.Append($"[{linkText}]({EscapeLinkDestination(linkTarget)})");
+                builder.Append($"[{linkText}]({MarkdownDocumentUtilities.EscapeLinkDestination(linkTarget)})");
                 break;
 
             case Bold bold:
@@ -830,7 +788,7 @@ public static partial class MarkdownDocumentUtilities
 
             case Span span when GetInlineRole(span) == MarkdownInlineRole.CodeSpan:
                 builder.Append('`');
-                builder.Append(NormalizeDocumentText(new TextRange(span.ContentStart, span.ContentEnd).Text));
+                builder.Append(MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(span.ContentStart, span.ContentEnd).Text));
                 builder.Append('`');
                 break;
 
@@ -981,148 +939,38 @@ public static partial class MarkdownDocumentUtilities
         };
     }
 
-    private static string GetCodeBlockText(LeafBlock block)
-    {
-        return NormalizeDocumentText(block.Lines.ToString());
-    }
-
     private static string SerializeLiteralText(TextElement element, bool preserveLiteralMarkdown)
     {
-        string text = NormalizeDocumentText(new TextRange(element.ContentStart, element.ContentEnd).Text);
-        return preserveLiteralMarkdown ? text : EscapeMarkdownText(text);
-    }
-
-    private static string EscapeMarkdownText(string? text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return string.Empty;
-
-        string escapedText = text
-            .Replace("\\", "\\\\", StringComparison.Ordinal)
-            .Replace("`", "\\`", StringComparison.Ordinal)
-            .Replace("*", "\\*", StringComparison.Ordinal)
-            .Replace("_", "\\_", StringComparison.Ordinal)
-            .Replace("[", "\\[", StringComparison.Ordinal)
-            .Replace("]", "\\]", StringComparison.Ordinal)
-            .Replace("|", "\\|", StringComparison.Ordinal);
-
-        escapedText = Regex.Replace(escapedText, @"^(#{1,6}\s)", @"\$1", RegexOptions.Multiline);
-        escapedText = Regex.Replace(escapedText, @"^(\s*>+)", @"\$1", RegexOptions.Multiline);
-        escapedText = Regex.Replace(escapedText, @"^(\s*[-+]\s)", @"\$1", RegexOptions.Multiline);
-        escapedText = Regex.Replace(escapedText, @"^(\s*\d+\.\s)", @"\$1", RegexOptions.Multiline);
-        return escapedText;
-    }
-
-    private static string EscapeLinkDestination(string destination)
-    {
-        return destination.Replace(")", "\\)", StringComparison.Ordinal);
-    }
-
-    private static string ApplyQuotePrefix(string text, string quotePrefix)
-    {
-        if (string.IsNullOrEmpty(quotePrefix))
-            return text;
-
-        return string.Join(
-            Environment.NewLine,
-            NormalizeNewlines(text).Split('\n').Select(line => string.IsNullOrEmpty(line)
-                ? quotePrefix.TrimEnd()
-                : $"{quotePrefix}{line}"));
-    }
-
-    private static string GetQuotePrefix(int quoteDepth)
-    {
-        if (quoteDepth <= 0)
-            return string.Empty;
-
-        StringBuilder builder = new();
-        for (int i = 0; i < quoteDepth; i++)
-            builder.Append("> ");
-
-        return builder.ToString();
-    }
-
-    private static string NormalizeDocumentText(string? text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return string.Empty;
-
-        return NormalizeNewlines(text).TrimEnd('\n');
-    }
-
-    private static string NormalizeNewlines(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-
-    /// <summary>
-    /// A code span's <see cref="CodeInline.Span"/> covers the whole backtick-delimited run (e.g.
-    /// <c>`dotnet build`</c>), but <see cref="CodeInline.Content"/> is just the inner text. Assumes
-    /// a symmetric fence (equal backtick count on both sides), which covers the vast majority of
-    /// real-world code spans; degrades to the fenced span if that assumption doesn't hold.
-    /// </summary>
-    private static int GetCodeSpanContentRawStart(CodeInline codeInline)
-    {
-        int totalLength = codeInline.Span.End - codeInline.Span.Start + 1;
-        int contentLength = codeInline.Content.Length;
-        int fenceLength = Math.Max(0, (totalLength - contentLength) / 2);
-        return codeInline.Span.Start + fenceLength;
-    }
-
-    /// <summary>
-    /// A <see cref="LiteralInline"/>'s <c>Span</c> is not always tight to its own <c>Content</c> —
-    /// e.g. inside a pipe table cell, Markdig's reported span includes the cell's padding
-    /// whitespace (<c>"| Alpha |"</c>'s content is <c>"Alpha"</c> but the span covers <c>" Alpha "</c>),
-    /// while ordinary paragraph text elsewhere has no such padding and the span is already exact.
-    /// Searches the reported span's own window for the literal content and returns its tight bounds;
-    /// falls back to the untrimmed span if the content can't be found there (should not normally happen).
-    /// </summary>
-    private static (int Start, int End) ResolveContentSpan(string source, string content, int spanStart, int spanEndExclusive)
-    {
-        if (string.IsNullOrEmpty(content) || spanStart < 0 || spanEndExclusive > source.Length || spanEndExclusive <= spanStart)
-            return (spanStart, spanEndExclusive);
-
-        int windowLength = spanEndExclusive - spanStart;
-        if (content.Length > windowLength)
-            return (spanStart, spanEndExclusive);
-
-        int found = source.IndexOf(content, spanStart, windowLength, StringComparison.Ordinal);
-        return found < 0 ? (spanStart, spanEndExclusive) : (found, found + content.Length);
-    }
-
-    private static string GetSourceSlice(string source, MarkdownObject markdownObject)
-    {
-        if (markdownObject.Span.Start < 0
-            || markdownObject.Span.End < markdownObject.Span.Start
-            || markdownObject.Span.End >= source.Length)
-            return string.Empty;
-
-        return source.Substring(markdownObject.Span.Start, markdownObject.Span.End - markdownObject.Span.Start + 1);
+        string text = MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(element.ContentStart, element.ContentEnd).Text);
+        return preserveLiteralMarkdown ? text : MarkdownDocumentUtilities.EscapeMarkdownText(text);
     }
 
     private static readonly DependencyProperty QuoteDepthProperty =
-        DependencyProperty.RegisterAttached("QuoteDepth", typeof(int), typeof(MarkdownDocumentUtilities), new PropertyMetadata(0));
+        DependencyProperty.RegisterAttached("QuoteDepth", typeof(int), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(0));
 
     private static readonly DependencyProperty HeadingLevelProperty =
-        DependencyProperty.RegisterAttached("HeadingLevel", typeof(int), typeof(MarkdownDocumentUtilities), new PropertyMetadata(0));
+        DependencyProperty.RegisterAttached("HeadingLevel", typeof(int), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(0));
 
     private static readonly DependencyProperty BlockRoleProperty =
-        DependencyProperty.RegisterAttached("BlockRole", typeof(MarkdownBlockRole), typeof(MarkdownDocumentUtilities), new PropertyMetadata(MarkdownBlockRole.None));
+        DependencyProperty.RegisterAttached("BlockRole", typeof(MarkdownBlockRole), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(MarkdownBlockRole.None));
 
     private static readonly DependencyProperty InlineRoleProperty =
-        DependencyProperty.RegisterAttached("InlineRole", typeof(MarkdownInlineRole), typeof(MarkdownDocumentUtilities), new PropertyMetadata(MarkdownInlineRole.None));
+        DependencyProperty.RegisterAttached("InlineRole", typeof(MarkdownInlineRole), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(MarkdownInlineRole.None));
 
     private static readonly DependencyProperty TaskListMarkerCheckedProperty =
-        DependencyProperty.RegisterAttached("TaskListMarkerChecked", typeof(bool), typeof(MarkdownDocumentUtilities), new PropertyMetadata(false));
+        DependencyProperty.RegisterAttached("TaskListMarkerChecked", typeof(bool), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(false));
 
     private static readonly DependencyProperty CodeFenceInfoProperty =
-        DependencyProperty.RegisterAttached("CodeFenceInfo", typeof(string), typeof(MarkdownDocumentUtilities), new PropertyMetadata(string.Empty));
+        DependencyProperty.RegisterAttached("CodeFenceInfo", typeof(string), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(string.Empty));
 
     private static readonly DependencyProperty IsTableHeaderProperty =
-        DependencyProperty.RegisterAttached("IsTableHeader", typeof(bool), typeof(MarkdownDocumentUtilities), new PropertyMetadata(false));
+        DependencyProperty.RegisterAttached("IsTableHeader", typeof(bool), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(false));
 
     private static readonly DependencyProperty RawSpanStartProperty =
-        DependencyProperty.RegisterAttached("RawSpanStart", typeof(int), typeof(MarkdownDocumentUtilities), new PropertyMetadata(-1));
+        DependencyProperty.RegisterAttached("RawSpanStart", typeof(int), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(-1));
 
     private static readonly DependencyProperty RawSpanEndProperty =
-        DependencyProperty.RegisterAttached("RawSpanEnd", typeof(int), typeof(MarkdownDocumentUtilities), new PropertyMetadata(-1));
+        DependencyProperty.RegisterAttached("RawSpanEnd", typeof(int), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(-1));
 
     /// <summary>
     /// Records the [start, end) range in the raw markdown source that a Run's rendered text was
@@ -1155,14 +1003,4 @@ public static partial class MarkdownDocumentUtilities
     private static string GetCodeFenceInfo(DependencyObject element) => (string)element.GetValue(CodeFenceInfoProperty);
     private static void SetIsTableHeader(DependencyObject element, bool value) => element.SetValue(IsTableHeaderProperty, value);
     private static bool GetIsTableHeader(DependencyObject element) => (bool)element.GetValue(IsTableHeaderProperty);
-
-
-    [GeneratedRegex(@"^\s{0,3}(#{1,6}|>+|[-+*]|\d+[.)])$", RegexOptions.Compiled)]
-    private static partial Regex LiveBlockTrigger();
-
-    [GeneratedRegex(@"(^|\s)\[( |x|X)\](\s|$)|(\*\*|__)(?=\S).+?\4|(?<!\*)\*(?=\S).+?(?<=\S)\*|(?<!_)_(?=\S).+?(?<=\S)_|`[^`\r\n]+`|\[[^\]\r\n]+\]\([^)]+\)", RegexOptions.Compiled)]
-    private static partial Regex LiveInlinePromotion();
-
-    [GeneratedRegex(@"(^|\n)\s{0,3}(#{1,6}\s|>+\s|[-+*]\s|\d+[.)]\s|```|~~~|---\s*$|___\s*$|\*\*\*\s*$)|\[[^\]]+\]\([^)]+\)|!\[[^\]]*\]\([^)]+\)|(^|\n)\|.+\|\s*$", RegexOptions.Multiline | RegexOptions.Compiled)]
-    private static partial Regex MarkdownPattern();
 }

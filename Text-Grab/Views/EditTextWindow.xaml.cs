@@ -124,7 +124,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private bool isSyncingTextFromMarkdown = false;
     private bool isApplyingSpreadsheetLayout = false;
     private bool isApplyingMarkdownDocument = false;
-    private MarkdownDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
+    private MarkdownFlowDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
     private string? markdownOffsetMapSourceText;
     private bool isLoadingOpenedFile = false;
     private bool hasPendingFileEdits = false;
@@ -1005,11 +1005,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void LoadMarkdownDocumentFromText(string? markdownText)
     {
         isApplyingMarkdownDocument = true;
-        MarkdownEditorControl.Document = MarkdownDocumentUtilities.CreateFlowDocument(
+        MarkdownEditorControl.Document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
             markdownText,
             MarkdownEditorControl.FontFamily,
             MarkdownEditorControl.FontSize);
-        markdownOffsetMap = MarkdownDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
+        markdownOffsetMap = MarkdownFlowDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
         markdownOffsetMapSourceText = markdownText ?? string.Empty;
         ApplyMarkdownTheme();
         ApplyMarkdownWrapSetting();
@@ -1023,7 +1023,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
 
         isSyncingTextFromMarkdown = true;
-        PassedTextControl.Text = MarkdownDocumentUtilities.SerializeToMarkdown(
+        PassedTextControl.Text = MarkdownFlowDocumentUtilities.SerializeToMarkdown(
             MarkdownEditorControl.Document,
             preserveLiteralMarkdown: true);
         isSyncingTextFromMarkdown = false;
@@ -1034,7 +1034,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (MarkdownEditorControl.Document is null)
             return;
 
-        MarkdownDocumentUtilities.ApplyTheme(
+        MarkdownFlowDocumentUtilities.ApplyTheme(
             MarkdownEditorControl.Document,
             this,
             SystemThemeUtility.IsLightTheme());
@@ -3292,7 +3292,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// markdown <paramref name="index"/>/<paramref name="length"/> are measured against — bold
     /// markers, heading <c>#</c>s, list bullets, link brackets, etc. are stripped on render. The
     /// index is translated through the offset map built alongside the rendered document
-    /// (<see cref="MarkdownDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
+    /// (<see cref="MarkdownFlowDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
     /// </remarks>
     public void SelectInEditor(int index, int length)
     {
@@ -3304,8 +3304,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             if (MarkdownEditorControl.Document is not null)
             {
-                TextPointer start = MarkdownDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
-                TextPointer end = MarkdownDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
+                TextPointer start = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
+                TextPointer end = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
                 MarkdownEditorControl.Selection.Select(start, end);
                 MarkdownEditorControl.Focus();
                 start.Paragraph?.BringIntoView();
@@ -4715,8 +4715,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         bool shouldParseAsMarkdown = MarkdownDocumentUtilities.LooksLikeMarkdown(pastedText);
         int selectionStartOffset = GetMarkdownPlainTextOffset(MarkdownEditorControl.Selection.Start);
         int renderedPasteLength = shouldParseAsMarkdown
-            ? MarkdownDocumentUtilities.GetDocumentPlainText(
-                MarkdownDocumentUtilities.CreateFlowDocument(
+            ? MarkdownFlowDocumentUtilities.GetDocumentPlainText(
+                MarkdownFlowDocumentUtilities.CreateFlowDocument(
                     pastedText,
                     MarkdownEditorControl.FontFamily,
                     MarkdownEditorControl.FontSize)).Length
@@ -5740,7 +5740,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             string plainText = MarkdownEditorControl.Document is null
                 ? string.Empty
-                : MarkdownDocumentUtilities.GetDocumentPlainText(MarkdownEditorControl.Document);
+                : MarkdownFlowDocumentUtilities.GetDocumentPlainText(MarkdownEditorControl.Document);
             string selectedText = MarkdownEditorControl.Selection.Text.TrimEnd('\r', '\n');
 
             BottomBarText.Text = string.IsNullOrEmpty(selectedText)
