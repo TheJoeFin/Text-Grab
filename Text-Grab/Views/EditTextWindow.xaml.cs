@@ -3493,7 +3493,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PopulateTemplateMenu(ApplyGrabTemplateMenuItem, textOnlyTemplates, ApplyGrabTemplateItem_Click);
         PopulateTemplateMenu(ApplyGrabTemplatePerLineMenuItem, textOnlyTemplates, ApplyGrabTemplatePerLineItem_Click);
 
-        List<PatternItem> patterns = [.. PatternItem.GetAll()];
+        List<PatternItem> patterns = [.. PatternItemCatalog.GetAll()];
         PopulatePatternMenu(
             ApplyPatternMenuItem,
             patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),

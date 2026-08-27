@@ -4775,7 +4775,7 @@ public partial class GrabFrame : Window
 
         // Pattern items — saved regexes and built-in recognizers as one "Patterns" concept,
         // split into "Saved Patterns" / "Smart Patterns" subsections.
-        items.AddRange(PatternItem.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
+        items.AddRange(PatternItemCatalog.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
 
         TemplateOutputBox.ItemsSource = items;
 

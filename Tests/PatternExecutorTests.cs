@@ -17,7 +17,7 @@ public class PatternExecutorTests
     [Fact]
     public void GetAll_ListsSavedRegexesBeforeRecognizers()
     {
-        IReadOnlyList<PatternItem> all = PatternItem.GetAll();
+        IReadOnlyList<PatternItem> all = PatternItemCatalog.GetAll();
 
         int firstRecognizer = -1;
         int lastSaved = -1;
@@ -36,7 +36,7 @@ public class PatternExecutorTests
     [Fact]
     public void GetAll_IncludesEveryRecognizerWithSmartGroup()
     {
-        List<PatternItem> recognizers = [.. PatternItem.GetAll().Where(p => p.Kind == PatternKind.Recognizer)];
+        List<PatternItem> recognizers = [.. PatternItemCatalog.GetAll().Where(p => p.Kind == PatternKind.Recognizer)];
 
         Assert.Equal(BuiltInRecognizer.GetAll().Count, recognizers.Count);
         Assert.All(recognizers, p => Assert.Equal(PatternItem.SmartGroup, p.GroupLabel));
@@ -45,7 +45,7 @@ public class PatternExecutorTests
     [Fact]
     public void GetByName_FindsRecognizer_CaseInsensitive()
     {
-        PatternItem? email = PatternItem.GetByName("EMAIL");
+        PatternItem? email = PatternItemCatalog.GetByName("EMAIL");
 
         Assert.NotNull(email);
         Assert.Equal(PatternKind.Recognizer, email!.Kind);
