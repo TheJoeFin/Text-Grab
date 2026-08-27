@@ -16,4 +16,9 @@
     <ProjectReference Include="..\Text-Grab.Core\Text-Grab.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Windows AI OCR (RecognizedText/RecognizedLine/RecognizedWord) for WinAiOcrLinesWords. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
+  </ItemGroup>
+
 </Project>

@@ -1,5 +1,4 @@
-﻿using Text_Grab.Utilities;
-using Windows.Foundation;
+﻿using Windows.Foundation;
 using Windows.Media.Ocr;
 
 namespace Text_Grab.Models;
@@ -41,9 +40,7 @@ public class WinRtOcrLine : IOcrLine
             Words[i] = new WinRtOcrWord(word);
         }
 
-        System.Windows.Rect bRect = ocrLine.GetBoundingRect();
-
-        BoundingBox = new Rect(bRect.Left, bRect.Top, bRect.Width, bRect.Height);
+        BoundingBox = GetBoundingRect(ocrLine);
     }
 
     public OcrLine OriginalLine { get; set; }
@@ -51,6 +48,16 @@ public class WinRtOcrLine : IOcrLine
     public string Text { get; set; }
     public IOcrWord[] Words { get; set; }
     public Rect BoundingBox { get; set; }
+
+    private static Rect GetBoundingRect(OcrLine ocrLine)
+    {
+        double top = ocrLine.Words.Select(w => w.BoundingRect.Top).Min();
+        double bottom = ocrLine.Words.Select(w => w.BoundingRect.Bottom).Max();
+        double left = ocrLine.Words.Select(w => w.BoundingRect.Left).Min();
+        double right = ocrLine.Words.Select(w => w.BoundingRect.Right).Max();
+
+        return new Rect(left, top, Math.Abs(right - left), Math.Abs(bottom - top));
+    }
 }
 
 public class WinRtOcrWord : IOcrWord
