@@ -116,7 +116,7 @@ public class FilesIoTests
     [InlineData(@"C:\Temp\notes.txt", OpenContentKind.TextFile)]
     public void GetOpenContentKindForPath_ClassifiesVisualDocumentsAndText(string path, OpenContentKind expectedKind)
     {
-        Assert.Equal(expectedKind, FileOpenUtilities.GetOpenContentKindForPath(path));
+        Assert.Equal(expectedKind, IoUtilities.GetOpenContentKindForPath(path));
     }
 
     [Theory]

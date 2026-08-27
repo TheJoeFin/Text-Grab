@@ -22,23 +22,10 @@ public class FileOpenUtilities
         return EtwEditorMode.Text;
     }
 
-    public static OpenContentKind GetOpenContentKindForPath(string? path)
-    {
-        string extension = Path.GetExtension(path ?? string.Empty);
-
-        if (IoUtilities.IsPdfFileExtension(extension))
-            return OpenContentKind.PdfDocument;
-
-        if (IoUtilities.IsImageFileExtension(extension))
-            return OpenContentKind.Image;
-
-        return OpenContentKind.TextFile;
-    }
-
     public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, ILanguage? language = null)
     {
         StringBuilder stringBuilder = new();
-        OpenContentKind openContentKind = GetOpenContentKindForPath(pathOfFileToOpen);
+        OpenContentKind openContentKind = IoUtilities.GetOpenContentKindForPath(pathOfFileToOpen);
 
         if (isMultipleFiles)
             stringBuilder.AppendLine(pathOfFileToOpen);

@@ -73,6 +73,19 @@ public class IoUtilities
         return SpreadsheetExtensions.Contains(extension.ToLowerInvariant());
     }
 
+    public static OpenContentKind GetOpenContentKindForPath(string? path)
+    {
+        string extension = Path.GetExtension(path ?? string.Empty);
+
+        if (IsPdfFileExtension(extension))
+            return OpenContentKind.PdfDocument;
+
+        if (IsImageFileExtension(extension))
+            return OpenContentKind.Image;
+
+        return OpenContentKind.TextFile;
+    }
+
     public static string ListFilesFoldersInDirectory(string chosenFolderPath)
     {
         IEnumerable<string> files = Directory.EnumerateFiles(chosenFolderPath);

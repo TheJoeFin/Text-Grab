@@ -13,3 +13,134 @@ public enum SpotInLine
     Beginning = 0,
     End = 1,
 }
+
+public enum AddRemove
+{
+    Add = 0,
+    Remove = 1,
+}
+
+public enum AppTheme
+{
+    System = 0,
+    Dark = 1,
+    Light = 2
+}
+
+public enum TrayIconStyle
+{
+    Color = 0,
+    Monochrome = 1,
+}
+
+public enum FileStorageKind
+{
+    Absolute = 0,
+    WithExe = 1,
+    WithHistory = 2,
+}
+
+public enum OpenContentKind
+{
+    Image = 0,
+    TextFile = 1,
+    Directory = 2,
+    PdfDocument = 3,
+}
+
+public enum OcrEngineKind
+{
+    Windows = 0,
+    Tesseract = 1,
+}
+
+public enum OcrOutputKind
+{
+    None = 0,
+    Line = 1,
+    Paragraph = 2,
+    Barcode = 3,
+}
+
+public enum Side
+{
+    None = 0,
+    Left = 1,
+    Right = 2,
+    Top = 3,
+    Bottom = 4
+}
+
+public enum TextGrabMode
+{
+    Fullscreen = 0,
+    GrabFrame = 1,
+    EditText = 2,
+    QuickLookup = 3
+}
+public enum VirtualKeyCodes : short
+{
+    LeftButton = 0x01,
+    RightButton = 0x02,
+    MiddleButton = 0x04
+}
+
+public enum ScrollBehavior
+{
+    None = 0,
+    Resize = 1,
+    Zoom = 2,
+    ZoomWhenFrozen = 3,
+}
+
+public enum GrabFrameBorderStyle
+{
+    // Follow the app light/dark theme (current behavior).
+    Theme = 0,
+    // Two-tone white+black border; one tone always contrasts with any background.
+    HighContrast = 1,
+    // A fixed user-picked color.
+    Color = 2,
+}
+
+public enum SpellCheckMode
+{
+    // Enable spell check unless the text looks like it would choke the checker
+    // (very long documents or several long unspaced tokens).
+    Auto = 0,
+    // Always show spell check, regardless of content.
+    AlwaysOn = 1,
+    // Never show spell check.
+    Off = 2,
+}
+
+public enum LanguageKind
+{
+    Global = 0,
+    Tesseract = 1,
+    WindowsAi = 2,
+    UiAutomation = 3,
+    WindowsAiDescription = 4,
+}
+
+public enum UiAutomationTraversalMode
+{
+    Fast = 0,
+    Balanced = 1,
+    Thorough = 2,
+}
+
+public enum FsgDefaultMode
+{
+    Default = 0,
+    SingleLine = 1,
+    Table = 2,
+}
+
+public enum FsgSelectionStyle
+{
+    Region = 0,
+    Window = 1,
+    Freeform = 2,
+    AdjustAfter = 3,
+}
