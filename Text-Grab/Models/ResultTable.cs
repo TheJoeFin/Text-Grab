@@ -164,7 +164,7 @@ public class ResultTable
 
             WordBorderInfo info = new()
             {
-                BorderRect = new Rect(lineRect.X, lineRect.Y, lineRect.Width, lineRect.Height),
+                BorderRect = lineRect.AsRectangleF(),
                 Word = lineText.ToString().Trim(),
                 ResultRowID = 0,
                 ResultColumnID = 0
@@ -206,11 +206,11 @@ public class ResultTable
                 wb.Word = s.Trim();
         }
 
-        double medianHeight = Median(wordBorders.Select(w => w.BorderRect.Height).Where(h => h > 0));
+        double medianHeight = Median(wordBorders.Select(w => (double)w.BorderRect.Height).Where(h => h > 0));
         if (double.IsNaN(medianHeight) || medianHeight <= 0) medianHeight = 20;
         double rowCenterThreshold = Math.Max(4, medianHeight * 0.75);
 
-        double medianWidth = Median(wordBorders.Select(w => w.BorderRect.Width).Where(w => w > 0));
+        double medianWidth = Median(wordBorders.Select(w => (double)w.BorderRect.Width).Where(w => w > 0));
         if (double.IsNaN(medianWidth) || medianWidth <= 0) medianWidth = 40;
         double columnCenterThreshold = Math.Max(24, medianWidth * 0.9);
 

@@ -2,7 +2,6 @@ using BenchmarkDotNet.Attributes;
 using System.Drawing;
 using System.Text;
 using Text_Grab.Models;
-using Rect = System.Windows.Rect;
 
 namespace Tests.Benchmarks;
 
@@ -50,7 +49,7 @@ public class ResultTableBenchmarks
                     WordBorderInfo w = new()
                     {
                         Word = token,
-                        BorderRect = new Rect(curLeft, top, Math.Max(12, token.Length * 7), rowH)
+                        BorderRect = new RectangleF((float)curLeft, (float)top, Math.Max(12, token.Length * 7), (float)rowH)
                     };
                     _syntheticBorders.Add(w);
                     curLeft += w.BorderRect.Width + gapX;

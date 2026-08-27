@@ -280,7 +280,7 @@ public partial class GrabFrame : Window
 
         foreach (TemplateRegion region in template.Regions.OrderBy(r => r.RegionNumber))
         {
-            Rect abs = region.ToAbsoluteRect(cw, ch);
+            Rect abs = region.ToAbsoluteRect(cw, ch).AsRect();
 
             WordBorder wb = new()
             {
@@ -481,12 +481,12 @@ public partial class GrabFrame : Window
 
         foreach (WordBorderInfo info in wbInfoList)
         {
-            Rect borderRect = info.BorderRect;
+            Rect borderRect = info.BorderRect.AsRect();
             info.BorderRect = new Rect(
                 borderRect.Left * scaleX,
                 borderRect.Top * scaleY,
                 borderRect.Width * scaleX,
-                borderRect.Height * scaleY);
+                borderRect.Height * scaleY).AsRectangleF();
 
             if (info.DisplayLineHeight > 0)
                 info.DisplayLineHeight *= scaleY;
@@ -1217,7 +1217,7 @@ public partial class GrabFrame : Window
         List<WordBorderInfo> wbInfoList = [];
 
         foreach (WordBorder wb in wordBorders)
-            wbInfoList.Add(new WordBorderInfo(wb));
+            wbInfoList.Add(WordBorderInfoFactory.Create(wb));
 
         string? wbInfoJson = null;
         if (wbInfoList.Count > 0)
@@ -1540,7 +1540,7 @@ public partial class GrabFrame : Window
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         // Build merged content via model-only ResultTable
-        List<WordBorderInfo> selInfos = [.. selectedWordBorders.Select(wb => new WordBorderInfo(wb))];
+        List<WordBorderInfo> selInfos = [.. selectedWordBorders.Select(wb => WordBorderInfoFactory.Create(wb))];
         ResultTable tmp = new();
         tmp.AnalyzeAsTable(selInfos, new System.Drawing.Rectangle(0, 0, (int)ActualWidth, (int)ActualHeight));
         StringBuilder sb = new();
@@ -4968,7 +4968,7 @@ public partial class GrabFrame : Window
     {
         RemoveTableLines();
 
-        List<WordBorderInfo> wbInfos = [.. wordBorders.Select(wb => new WordBorderInfo(wb))];
+        List<WordBorderInfo> wbInfos = [.. wordBorders.Select(wb => WordBorderInfoFactory.Create(wb))];
         if (wbInfos.Count == 0)
         {
             AnalyzedResultTable = null;

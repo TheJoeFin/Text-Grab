@@ -21,13 +21,13 @@ public class GrabFrameFileTests
             new()
             {
                 Word = "Hello",
-                BorderRect = new Rect(1, 2, 30, 12),
+                BorderRect = new RectangleF(1, 2, 30, 12),
                 LineNumber = 0,
             },
             new()
             {
                 Word = "World",
-                BorderRect = new Rect(35, 2, 32, 12),
+                BorderRect = new RectangleF(35, 2, 32, 12),
                 LineNumber = 0,
             },
         ];
@@ -91,7 +91,7 @@ public class GrabFrameFileTests
 
         string originalWordBordersJson = JsonSerializer.Serialize(new List<WordBorderInfo>
         {
-            new() { Word = "Hello", BorderRect = new Rect(1, 2, 30, 12), LineNumber = 0 },
+            new() { Word = "Hello", BorderRect = new RectangleF(1, 2, 30, 12), LineNumber = 0 },
         });
         Bitmap originalImage = new(64, 48);
 

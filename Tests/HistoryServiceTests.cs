@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -176,7 +177,7 @@ public class HistoryServiceTests
                 {
                     Word = "hello",
                     DisplayText = $"hello{Environment.NewLine}world",
-                    BorderRect = new Rect(1, 2, 30, 40),
+                    BorderRect = new RectangleF(1, 2, 30, 40),
                     DisplayLineHeight = 18,
                     KeepSingleLineOutput = true,
                     LineNumber = 1,

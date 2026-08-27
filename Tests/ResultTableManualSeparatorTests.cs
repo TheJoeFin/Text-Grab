@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Text;
-using System.Windows;
 using Text_Grab.Models;
 
 namespace Tests;
@@ -90,7 +89,7 @@ public class ResultTableManualSeparatorTests
         return new WordBorderInfo
         {
             Word = word,
-            BorderRect = new Rect(left, top, width, height)
+            BorderRect = new RectangleF((float)left, (float)top, (float)width, (float)height)
         };
     }
 }

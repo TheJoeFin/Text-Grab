@@ -657,8 +657,8 @@ Every row below was verified by reading the file, not inferred.
 | `Utilities/FileUtilities.cs` | `AutomationProfile.Current` in 6 methods | 6a |
 | `Utilities/GrabFrameFileUtilities.cs` | Public signature bound to `HistoryInfo`, which needs B2 (`Rect PositionRect`), 2a (five enums) and 4e. A façade was considered and rejected as larger than the file it wraps | 2d + 4e, or `HistoryInfo` moving |
 | `Services/SettingsService.cs` | Clones `ButtonInfo` and `ShortcutKeySet` field-by-field (both never-move); `Windows.Storage.ApplicationDataContainer` caps it at Core.Windows regardless | needs a `ButtonInfo` redesign — likely never |
-| `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar | 2d, then a split |
-| `Utilities/GrabTemplateExecutor.cs` | Template models not in Core; `LoadStoredRegexes()` needs a non-scalar seam; OCR half blocked on 4c | 2d + 4c + a façade |
+| `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so the remaining blocker is a plain split | a split |
+| `Utilities/GrabTemplateExecutor.cs` | `LoadStoredRegexes()` needs a non-scalar seam; OCR half blocked on 4c. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so that part of the original blocker is resolved | 4c + a façade |
 | `Utilities/PdfDocumentRenderer.cs` | `RenderPageAsync` returns `BitmapSource` — a public API shape change affecting several views | 5f |
 | `Services/HistoryService.cs` | Headless JSON pipeline interleaved with WPF menu building and `GrabFrame`/`EditTextWindow` construction, sharing private state | Opus split (6e) |
 

@@ -1,4 +1,4 @@
-using System.Windows;
+using System.Drawing;
 
 namespace Text_Grab.Models;
 
@@ -37,21 +37,21 @@ public class TemplateRegion
     public TemplateRegion() { }
 
     /// <summary>
-    /// Returns the absolute pixel Rect for this region given the canvas/image dimensions.
+    /// Returns the absolute pixel rect for this region given the canvas/image dimensions.
     /// </summary>
-    public Rect ToAbsoluteRect(double imageWidth, double imageHeight)
+    public RectangleF ToAbsoluteRect(double imageWidth, double imageHeight)
     {
-        return new Rect(
-            x: RatioLeft * imageWidth,
-            y: RatioTop * imageHeight,
-            width: RatioWidth * imageWidth,
-            height: RatioHeight * imageHeight);
+        return new RectangleF(
+            x: (float)(RatioLeft * imageWidth),
+            y: (float)(RatioTop * imageHeight),
+            width: (float)(RatioWidth * imageWidth),
+            height: (float)(RatioHeight * imageHeight));
     }
 
     /// <summary>
-    /// Sets ratio values from an absolute Rect and canvas dimensions.
+    /// Sets ratio values from an absolute rect and canvas dimensions.
     /// </summary>
-    public static TemplateRegion FromAbsoluteRect(Rect rect, double imageWidth, double imageHeight, int regionNumber, string label = "")
+    public static TemplateRegion FromAbsoluteRect(RectangleF rect, double imageWidth, double imageHeight, int regionNumber, string label = "")
     {
         return new TemplateRegion
         {
