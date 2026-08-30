@@ -3,12 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using Text_Grab.Utilities;
-using Windows.Media.Ocr;
-using Rect = System.Windows.Rect;
 
 namespace Text_Grab.Models;
 
@@ -18,9 +12,7 @@ public class ResultTable
 
     public List<ResultRow> Rows { get; set; } = [];
 
-    private OcrResult? OcrResult { get; set; }
-
-    public Rect BoundingRect { get; set; } = new();
+    public RectangleF BoundingRect { get; set; } = new();
 
     public List<double> ColumnLines { get; set; } = [];
 
@@ -30,39 +22,9 @@ public class ResultTable
 
     public List<double> RowLines { get; set; } = [];
 
-    public Canvas? TableLines { get; set; } = null;
-
     public ResultTable()
     {
 
-    }
-
-    // New: accept pure model objects
-    public ResultTable(ref List<WordBorderInfo> wordBorders, DpiScale dpiScale)
-    {
-        int borderBuffer = 3;
-
-        Rectangle bordersBorder = new();
-        if (wordBorders.Count > 0)
-        {
-            double leftsMin = wordBorders.Select(x => x.BorderRect.Left).Min();
-            double topsMin = wordBorders.Select(x => x.BorderRect.Top).Min();
-            double rightsMax = wordBorders.Select(x => x.BorderRect.Right).Max();
-            double bottomsMax = wordBorders.Select(x => x.BorderRect.Bottom).Max();
-
-            bordersBorder = new()
-            {
-                X = (int)leftsMin - borderBuffer,
-                Y = (int)topsMin - borderBuffer,
-                Width = (int)(rightsMax + borderBuffer),
-                Height = (int)(bottomsMax + borderBuffer)
-            };
-        }
-
-        bordersBorder.Width = (int)(bordersBorder.Width * dpiScale.DpiScaleX);
-        bordersBorder.Height = (int)(bordersBorder.Height * dpiScale.DpiScaleY);
-
-        AnalyzeAsTable(wordBorders, bordersBorder);
     }
 
     private void ParseRowAndColumnLines()
@@ -113,81 +75,17 @@ public class ResultTable
         }
     }
 
-    private List<Rect> ParseOcrResultWordsIntoRects()
-    {
-        List<Rect> allBoundingRects = [];
-
-        if (OcrResult is null)
-            return allBoundingRects;
-
-        foreach (OcrLine ocrLine in OcrResult.Lines)
-        {
-            foreach (OcrWord ocrWord in ocrLine.Words)
-            {
-                Rect ocrWordRect = new(
-                    ocrWord.BoundingRect.X,
-                    ocrWord.BoundingRect.Y,
-                    ocrWord.BoundingRect.Width,
-                    ocrWord.BoundingRect.Height);
-
-                allBoundingRects.Add(ocrWordRect);
-            }
-        }
-
-        return allBoundingRects;
-    }
-
-    public static List<WordBorderInfo> ParseOcrResultIntoWordBorderInfos(
-        IOcrLinesWords ocrResult,
-        DpiScale dpi,
-        bool shouldCorrectToLatin = true)
-    {
-        List<WordBorderInfo> infos = [];
-
-        foreach (IOcrLine ocrLine in ocrResult.Lines)
-        {
-            double top = ocrLine.Words.Select(x => x.BoundingBox.Top).Min();
-            double bottom = ocrLine.Words.Select(x => x.BoundingBox.Bottom).Max();
-            double left = ocrLine.Words.Select(x => x.BoundingBox.Left).Min();
-            double right = ocrLine.Words.Select(x => x.BoundingBox.Right).Max();
-
-            Rect lineRect = new()
-            {
-                X = left,
-                Y = top,
-                Width = Math.Abs(right - left),
-                Height = Math.Abs(bottom - top)
-            };
-
-            StringBuilder lineText = new();
-            ocrLine.GetTextFromOcrLine(true, lineText, shouldCorrectToLatin);
-
-            WordBorderInfo info = new()
-            {
-                BorderRect = lineRect.AsRectangleF(),
-                Word = lineText.ToString().Trim(),
-                ResultRowID = 0,
-                ResultColumnID = 0
-            };
-
-            infos.Add(info);
-        }
-
-        return infos;
-    }
-
     // New core analyzer that operates on WordBorderInfo (pure model)
-    public void AnalyzeAsTable(ICollection<WordBorderInfo> wordBorders, Rectangle rectCanvasSize, bool drawTable = true)
+    public void AnalyzeAsTable(ICollection<WordBorderInfo> wordBorders, Rectangle rectCanvasSize)
     {
-        AnalyzeAsTable(wordBorders, rectCanvasSize, null, null, drawTable);
+        AnalyzeAsTable(wordBorders, rectCanvasSize, null, null);
     }
 
     public void AnalyzeAsTable(
         ICollection<WordBorderInfo> wordBorders,
         Rectangle rectCanvasSize,
         IReadOnlyCollection<double>? manualRowSeparators,
-        IReadOnlyCollection<double>? manualColumnSeparators,
-        bool drawTable = true)
+        IReadOnlyCollection<double>? manualColumnSeparators)
     {
         if (wordBorders == null || wordBorders.Count == 0)
         {
@@ -224,8 +122,6 @@ public class ResultTable
         ParseRowAndColumnLines();
         ApplyManualSeparators(manualRowSeparators, manualColumnSeparators);
         AssignWordBordersToFinalGrid(wordBorders);
-        if (drawTable)
-            DrawTable();
     }
 
     private static List<ResultRow> BuildRowsByCenterClustering(ICollection<WordBorderInfo> wordBorders, double centerThreshold, double medianHeight)
@@ -401,95 +297,6 @@ public class ResultTable
         if (list.Count % 2 == 0)
             return (list[mid - 1] + list[mid]) / 2.0;
         return list[mid];
-    }
-
-    private static List<ResultRow> CalculateResultRows(int hitGridSpacing, List<int> rowAreas)
-    {
-        List<ResultRow> resultRows = [];
-        int rowTop = 0;
-        int rowCount = 0;
-        for (int i = 0; i < rowAreas.Count; i++)
-        {
-            int thisLine = rowAreas[i];
-
-            // check if should set this as top
-            if (i == 0)
-                rowTop = thisLine;
-            else
-            {
-                int prevRow = rowAreas[i - 1];
-                if (thisLine - prevRow != hitGridSpacing)
-                {
-                    rowTop = thisLine;
-                }
-            }
-
-            // check to see if at bottom of row
-            if (i == rowAreas.Count - 1)
-            {
-                resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
-                rowCount++;
-            }
-            else if (i + 1 < rowAreas.Count)
-            {
-                int nextRow = rowAreas[i + 1];
-                if (nextRow - thisLine != hitGridSpacing)
-                {
-                    resultRows.Add(new ResultRow { Top = rowTop, Bottom = thisLine, ID = rowCount });
-                    rowCount++;
-                }
-            }
-        }
-
-        return resultRows;
-    }
-
-    private void DrawTable()
-    {
-        // Draw the lines and bounds of the table
-        SolidColorBrush tableColor = new(System.Windows.Media.Color.FromArgb(255, 40, 118, 126));
-
-        TableLines = new Canvas()
-        {
-            Tag = "TableLines"
-        };
-
-        Border tableOutline = new()
-        {
-            Width = this.BoundingRect.Width,
-            Height = this.BoundingRect.Height,
-            BorderThickness = new Thickness(3),
-            BorderBrush = tableColor
-        };
-        TableLines.Children.Add(tableOutline);
-        Canvas.SetTop(tableOutline, this.BoundingRect.Y);
-        Canvas.SetLeft(tableOutline, this.BoundingRect.X);
-
-        foreach (double columnLine in this.ColumnLines)
-        {
-            Border vertLine = new()
-            {
-                Width = 2,
-                Height = this.BoundingRect.Height,
-                Background = tableColor
-            };
-            TableLines.Children.Add(vertLine);
-            Canvas.SetTop(vertLine, this.BoundingRect.Y);
-            Canvas.SetLeft(vertLine, columnLine);
-        }
-
-        foreach (double rowLine in this.RowLines)
-        {
-            Border horzLine = new()
-            {
-                Height = 2,
-                Width = this.BoundingRect.Width,
-                Background = tableColor
-            };
-            TableLines.Children.Add(horzLine);
-            Canvas.SetTop(horzLine, rowLine);
-            Canvas.SetLeft(horzLine, this.BoundingRect.X);
-        }
     }
 
     // Build text from model-only borders
@@ -760,70 +567,6 @@ public class ResultTable
         if (t.StartsWith('(') && t.EndsWith(')') && t.Length > 3 && t[1] == '-')
             t = t[2..^1]; // remove '(' and ')' and leading '-'
         return t.All(ch => char.IsDigit(ch));
-    }
-
-    private static void MergeTheseRowIDs(List<ResultRow> resultRows, List<int> outlierRowIDs)
-    {
-        // Merge sparse rows into adjacent rows to reduce fragmentation
-        for (int i = 0; i < outlierRowIDs.Count; i++)
-        {
-            for (int j = 0; j < resultRows.Count; j++)
-            {
-                ResultRow jthRow = resultRows[j];
-                if (jthRow.ID == outlierRowIDs[i])
-                {
-                    if (resultRows.Count == 1)
-                    {
-                        // nothing to merge
-                        continue;
-                    }
-
-                    if (j == 0)
-                    {
-                        // merge with next row if possible
-                        if (j + 1 < resultRows.Count)
-                        {
-                            ResultRow nextRow = resultRows[j + 1];
-                            nextRow.Top = Math.Min(nextRow.Top, jthRow.Top);
-                        }
-                    }
-                    else if (j == resultRows.Count - 1)
-                    {
-                        // merge with previous row
-                        if (j - 1 >= 0)
-                        {
-                            ResultRow prevRow = resultRows[j - 1];
-                            prevRow.Bottom = Math.Max(prevRow.Bottom, jthRow.Bottom);
-                        }
-                    }
-                    else
-                    {
-                        // merge with the closest neighbor by gap distance
-                        ResultRow prevRow = resultRows[j - 1];
-                        ResultRow nextRow = resultRows[j + 1];
-                        int distToPrev = (int)(jthRow.Top - prevRow.Bottom);
-                        int distToNext = (int)(nextRow.Top - jthRow.Bottom);
-
-                        if (distToNext < distToPrev)
-                        {
-                            // merge with next row
-                            nextRow.Top = Math.Min(nextRow.Top, jthRow.Top);
-                        }
-                        else
-                        {
-                            // merge with prev row
-                            prevRow.Bottom = Math.Max(prevRow.Bottom, jthRow.Bottom);
-                        }
-                    }
-
-                    resultRows.RemoveAt(j);
-                    // reindex remaining IDs to keep them sequential
-                    for (int k = 0; k < resultRows.Count; k++)
-                        resultRows[k].ID = k;
-                    break;
-                }
-            }
-        }
     }
 
     // Overload for WordBorderInfo

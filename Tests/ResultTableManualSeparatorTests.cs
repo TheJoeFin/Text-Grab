@@ -16,7 +16,7 @@ public class ResultTableManualSeparatorTests
         ];
 
         ResultTable automaticTable = new();
-        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200), drawTable: false);
+        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200));
 
         StringBuilder automaticText = new();
         ResultTable.GetTextFromTabledWordBorders(automaticText, automaticInfos, true);
@@ -33,8 +33,7 @@ public class ResultTableManualSeparatorTests
             manualInfos,
             new Rectangle(0, 0, 200, 200),
             manualRowSeparators: [18d],
-            manualColumnSeparators: null,
-            drawTable: false);
+            manualColumnSeparators: null);
 
         StringBuilder manualText = new();
         ResultTable.GetTextFromTabledWordBorders(manualText, manualInfos, true);
@@ -55,7 +54,7 @@ public class ResultTableManualSeparatorTests
         ];
 
         ResultTable automaticTable = new();
-        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200), drawTable: false);
+        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200));
 
         StringBuilder automaticText = new();
         ResultTable.GetTextFromTabledWordBorders(automaticText, automaticInfos, true);
@@ -74,8 +73,7 @@ public class ResultTableManualSeparatorTests
             manualInfos,
             new Rectangle(0, 0, 200, 200),
             manualRowSeparators: null,
-            manualColumnSeparators: [25d],
-            drawTable: false);
+            manualColumnSeparators: [25d]);
 
         StringBuilder manualText = new();
         ResultTable.GetTextFromTabledWordBorders(manualText, manualInfos, true);

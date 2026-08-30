@@ -177,7 +177,6 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         // When
         IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
-        DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
         {
             Width = 1132,
@@ -186,7 +185,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
             Y = 0
         };
 
-        List<WordBorderInfo> wordBorders = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, dpi);
+        List<WordBorderInfo> wordBorders = OcrUtilities.ParseOcrResultIntoWordBorderInfos(ocrResult);
 
         ResultTable resultTable = new();
         resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);
@@ -509,7 +508,6 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         // When
         IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
-        DpiScale dpi = new(1, 1);
         Rectangle rectCanvasSize = new()
         {
             Width = 1152,
@@ -518,7 +516,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
             Y = 0
         };
 
-        List<WordBorderInfo> wordBorders = ResultTable.ParseOcrResultIntoWordBorderInfos(ocrResult, dpi);
+        List<WordBorderInfo> wordBorders = OcrUtilities.ParseOcrResultIntoWordBorderInfos(ocrResult);
 
         ResultTable resultTable = new();
         resultTable.AnalyzeAsTable(wordBorders, rectCanvasSize);

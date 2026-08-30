@@ -740,7 +740,7 @@ public partial class GrabFrame : Window
         if (AnalyzedResultTable is null)
             _ = TryToPlaceTable();
 
-        tableBounds = AnalyzedResultTable?.BoundingRect ?? Rect.Empty;
+        tableBounds = AnalyzedResultTable?.BoundingRect.AsRect() ?? Rect.Empty;
         return tableBounds != Rect.Empty
             && tableBounds.Width > 0
             && tableBounds.Height > 0;
@@ -4997,8 +4997,7 @@ public partial class GrabFrame : Window
             tableEditState.SetManualSeparators(
                 AnalyzedResultTable.ManualRowSeparators,
                 AnalyzedResultTable.ManualColumnSeparators);
-            if (AnalyzedResultTable.TableLines is not null)
-                RectanglesCanvas.Children.Add(AnalyzedResultTable.TableLines);
+            RectanglesCanvas.Children.Add(ResultTableRenderer.BuildTableLines(AnalyzedResultTable));
         }
         catch (Exception ex)
         {

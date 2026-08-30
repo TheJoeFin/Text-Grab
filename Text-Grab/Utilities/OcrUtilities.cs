@@ -50,6 +50,45 @@ public static partial class OcrUtilities
         return handle == IntPtr.Zero ? null : [handle];
     }
 
+    // Moved from ResultTable when that class moved to Text-Grab.Core (batch 4d of the Core
+    // split): this stays app-side because it calls GetTextFromOcrLine below, an app-only
+    // extension method that reads settings and is itself blocked pending Wave 4c.
+    public static List<WordBorderInfo> ParseOcrResultIntoWordBorderInfos(
+        IOcrLinesWords ocrResult,
+        bool shouldCorrectToLatin = true)
+    {
+        List<WordBorderInfo> infos = [];
+
+        foreach (IOcrLine ocrLine in ocrResult.Lines)
+        {
+            double top = ocrLine.Words.Select(x => x.BoundingBox.Top).Min();
+            double bottom = ocrLine.Words.Select(x => x.BoundingBox.Bottom).Max();
+            double left = ocrLine.Words.Select(x => x.BoundingBox.Left).Min();
+            double right = ocrLine.Words.Select(x => x.BoundingBox.Right).Max();
+
+            RectangleF lineRect = new(
+                (float)left,
+                (float)top,
+                (float)Math.Abs(right - left),
+                (float)Math.Abs(bottom - top));
+
+            StringBuilder lineText = new();
+            ocrLine.GetTextFromOcrLine(true, lineText, shouldCorrectToLatin);
+
+            WordBorderInfo info = new()
+            {
+                BorderRect = lineRect,
+                Word = lineText.ToString().Trim(),
+                ResultRowID = 0,
+                ResultColumnID = 0
+            };
+
+            infos.Add(info);
+        }
+
+        return infos;
+    }
+
     public static void GetTextFromOcrLine(
         this IOcrLine ocrLine,
         bool isSpaceJoiningOCRLang,
@@ -205,13 +244,11 @@ public static partial class OcrUtilities
         using Bitmap bmp = ImageMethods.GetRegionOfScreenAsBitmap(correctedRegion);
         double scale = await GetIdealScaleFactorForOcrAsync(bmp, compatibleLanguage);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bmp, scale);
-        DpiScale dpiScale = VisualTreeHelper.GetDpi(passedWindow);
         IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, compatibleLanguage);
 
         // New model-only flow
-        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(
+        List<WordBorderInfo> wordBorderInfos = ParseOcrResultIntoWordBorderInfos(
             ocrResult,
-            dpiScale,
             compatibleLanguage.IsLatinBased());
 
         Rectangle rectCanvasSize = new()
@@ -255,11 +292,9 @@ public static partial class OcrUtilities
         double scale = await GetIdealScaleFactorForOcrAsync(bitmap, compatibleLanguage);
         using Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(bitmap, scale);
         IOcrLinesWords ocrResult = await GetOcrResultFromImageAsync(scaledBitmap, compatibleLanguage);
-        DpiScale bitmapDpiScale = new(1.0, 1.0);
 
-        List<WordBorderInfo> wordBorderInfos = ResultTable.ParseOcrResultIntoWordBorderInfos(
+        List<WordBorderInfo> wordBorderInfos = ParseOcrResultIntoWordBorderInfos(
             ocrResult,
-            bitmapDpiScale,
             compatibleLanguage.IsLatinBased());
 
         Rectangle rectCanvasSize = new()

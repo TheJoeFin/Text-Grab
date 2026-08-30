@@ -61,7 +61,7 @@ public class ResultTableBenchmarks
 
         // Warm-up analysis so we can benchmark text build in isolation too
         _resultTable = new ResultTable();
-        _resultTable.AnalyzeAsTable(_syntheticBorders, _canvas, drawTable: false);
+        _resultTable.AnalyzeAsTable(_syntheticBorders, _canvas);
     }
 
     [Benchmark]
@@ -79,7 +79,7 @@ public class ResultTableBenchmarks
         }
 
         ResultTable rt = new();
-        rt.AnalyzeAsTable(copy, _canvas, drawTable: false);
+        rt.AnalyzeAsTable(copy, _canvas);
         return rt.Rows.Count + rt.Columns.Count;
     }
 
