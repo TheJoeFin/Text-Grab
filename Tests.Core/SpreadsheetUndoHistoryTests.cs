@@ -1,6 +1,6 @@
 using Text_Grab.Models;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core;
 
 public class SpreadsheetUndoHistoryTests
 {

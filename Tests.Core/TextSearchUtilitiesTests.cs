@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Text_Grab.Utilities;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core;
 
 public class TextSearchUtilitiesTests
 {

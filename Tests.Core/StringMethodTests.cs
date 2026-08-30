@@ -4,7 +4,7 @@ using System.Text;
 using Text_Grab;
 using Text_Grab.Utilities;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core;
 
 public class StringMethodTests
 {

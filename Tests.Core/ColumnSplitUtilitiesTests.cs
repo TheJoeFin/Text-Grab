@@ -1,7 +1,7 @@
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core;
 
 public class ColumnSplitUtilitiesTests
 {
