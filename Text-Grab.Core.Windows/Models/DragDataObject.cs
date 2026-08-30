@@ -2,8 +2,6 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using DrawingImaging = System.Drawing.Imaging;
-using MediaImaging = System.Windows.Media.Imaging;
 
 namespace Text_Grab.Models;
 
@@ -71,22 +69,5 @@ public static class DragDataObject
         int InitializeFromBitmap(ref ShDragImage pShDrawImage, IDataObject pDataObject);
 
         // more methods available, but we don't need them
-    }
-
-    // https://stackoverflow.com/a/2897325
-    public static Bitmap? BitmapSourceToBitmap(MediaImaging.BitmapSource source)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        Bitmap bitmap = new(source.PixelWidth, source.PixelHeight, DrawingImaging.PixelFormat.Format32bppArgb);
-        DrawingImaging.BitmapData bitmapData = bitmap.LockBits(new Rectangle(Point.Empty, bitmap.Size), DrawingImaging.ImageLockMode.WriteOnly, DrawingImaging.PixelFormat.Format32bppArgb);
-
-        source.CopyPixels(System.Windows.Int32Rect.Empty, bitmapData.Scan0, bitmapData.Height * bitmapData.Stride, bitmapData.Stride);
-        bitmap.UnlockBits(bitmapData);
-
-        return bitmap;
     }
 }

@@ -9,16 +9,6 @@ internal static class ImageExtensions
 {
     private const int exifOrientationID = 0x112; //274
 
-    internal static void ExifRotate(this Image img)
-    {
-        RotateFlipType rot = img.GetRotateFlipType();
-        if (rot != RotateFlipType.RotateNoneFlipNone)
-        {
-            img.RotateFlip(rot);
-            img.RemovePropertyItem(exifOrientationID);
-        }
-    }
-
     internal static RotateFlipType GetRotateFlipType(this Image img)
     {
         if (!img.PropertyIdList.Contains(exifOrientationID)
