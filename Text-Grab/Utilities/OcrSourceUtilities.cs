@@ -277,14 +277,14 @@ public static class OcrSourceUtilities
         if (!await CanReplayPreviousFullscreenSelection(lastFsg))
             return;
 
-        Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+        Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor).AsRect();
         ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
 
         // Capture the region before showing the loading indicator so the overlay itself
         // isn't baked into the region's screenshot (issue #662).
         Bitmap preCapturedBitmap = ImageMethods.GetRegionOfScreenAsBitmap(scaledRect.AsRectangle());
 
-        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
+        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect.AsRect(), PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
         try
@@ -329,14 +329,14 @@ public static class OcrSourceUtilities
         if (!await CanReplayPreviousFullscreenSelection(lastFsg))
             return;
 
-        Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor);
+        Rect scaledRect = lastFsg.PositionRect.GetScaledUpByFraction(lastFsg.DpiScaleFactor).AsRect();
         ILanguage language = lastFsg.OcrLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
 
         // Capture the region before showing the loading indicator so the overlay itself
         // isn't baked into the region's screenshot (issue #662).
         Bitmap preCapturedBitmap = ImageMethods.GetRegionOfScreenAsBitmap(scaledRect.AsRectangle());
 
-        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect, PreviousGrabIndicator.Loading);
+        PreviousGrabWindow previousGrab = new(lastFsg.PositionRect.AsRect(), PreviousGrabIndicator.Loading);
         previousGrab.Show();
 
         try

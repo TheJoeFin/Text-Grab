@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
@@ -40,7 +40,7 @@ public class GrabFrameFileTests
             IsTable = true,
             LanguageTag = "en-US",
             LanguageKind = LanguageKind.Global,
-            PositionRect = new Rect(100, 120, 400, 300),
+            PositionRect = new RectangleF(100, 120, 400, 300),
             WordBorderInfoJson = JsonSerializer.Serialize(wordBorders),
             ImageContent = new Bitmap(64, 48),
         };
@@ -60,7 +60,7 @@ public class GrabFrameFileTests
             Assert.True(loaded.IsTable);
             Assert.Equal("en-US", loaded.LanguageTag);
             Assert.Equal(LanguageKind.Global, loaded.LanguageKind);
-            Assert.Equal(new Rect(100, 120, 400, 300), loaded.PositionRect);
+            Assert.Equal(new RectangleF(100, 120, 400, 300), loaded.PositionRect);
 
             Assert.NotNull(loaded.ImageContent);
             Assert.Equal(64, loaded.ImageContent!.Width);

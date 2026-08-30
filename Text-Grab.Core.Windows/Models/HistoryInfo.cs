@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Text.Json.Serialization;
-using System.Windows;
 using Text_Grab.Interfaces;
 using Text_Grab.Utilities;
 using Windows.Globalization;
@@ -11,6 +11,8 @@ namespace Text_Grab.Models;
 
 public class HistoryInfo : IEquatable<HistoryInfo>
 {
+    private static readonly NumberFormatInfo CommaDecimalFormat = new() { NumberDecimalSeparator = "," };
+
     #region Constructors
 
     public HistoryInfo()
@@ -91,21 +93,22 @@ public class HistoryInfo : IEquatable<HistoryInfo>
         }
     }
 
+    /// <summary>
+    /// A projection over the persisted <see cref="RectAsString"/>, not a stored field.
+    /// </summary>
+    /// <remarks>
+    /// The on-disk format is the one <c>System.Windows.Rect</c> wrote before B2 of the Core split
+    /// moved this model off WPF geometry: <c>"x,y,width,height"</c>, or the literal <c>"Empty"</c>.
+    /// It is written with the invariant culture so a history file stays readable on any machine,
+    /// and read back tolerating the <c>';'</c> separator and comma decimals that
+    /// <c>Rect.ToString()</c> produced under cultures whose decimal separator is <c>','</c> -
+    /// strings the old invariant-only <c>Rect.Parse</c> threw on.
+    /// </remarks>
     [JsonIgnore]
-    public Rect PositionRect
+    public RectangleF PositionRect
     {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(RectAsString))
-                return Rect.Empty;
-
-            return Rect.Parse(RectAsString);
-        }
-
-        set
-        {
-            RectAsString = value.ToString();
-        }
+        get => ParsePositionRect(RectAsString);
+        set => RectAsString = FormatPositionRect(value);
     }
 
     public TextGrabMode SourceMode { get; set; }
@@ -175,6 +178,41 @@ public class HistoryInfo : IEquatable<HistoryInfo>
     public override int GetHashCode()
     {
         return HashCode.Combine(ID);
+    }
+
+    private static RectangleF ParsePositionRect(string source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return RectangleF.Empty;
+
+        string trimmed = source.Trim();
+
+        if (trimmed.Equals("Empty", StringComparison.OrdinalIgnoreCase))
+            return RectangleF.Empty;
+
+        // A ';' separator means the writing culture used ',' as its decimal separator.
+        bool commaDecimals = trimmed.Contains(';');
+        string[] parts = trimmed.Split(commaDecimals ? ';' : ',');
+
+        if (parts.Length != 4)
+            return RectangleF.Empty;
+
+        IFormatProvider format = commaDecimals ? CommaDecimalFormat : CultureInfo.InvariantCulture;
+        float[] values = new float[4];
+
+        for (int i = 0; i < 4; i++)
+            if (!float.TryParse(parts[i].Trim(), NumberStyles.Float, format, out values[i]))
+                return RectangleF.Empty;
+
+        return new RectangleF(values[0], values[1], values[2], values[3]);
+    }
+
+    private static string FormatPositionRect(RectangleF rect)
+    {
+        if (rect == RectangleF.Empty)
+            return string.Empty;
+
+        return string.Create(CultureInfo.InvariantCulture, $"{rect.X},{rect.Y},{rect.Width},{rect.Height}");
     }
 
     #endregion Public Methods

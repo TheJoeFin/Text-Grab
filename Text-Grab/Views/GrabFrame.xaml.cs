@@ -370,7 +370,7 @@ public partial class GrabFrame : Window
         if (wbInfoList.Count < 1)
             NotifyIfUiAutomationNeedsLiveSource(currentLanguage);
 
-        if (history.PositionRect != Rect.Empty)
+        if (history.PositionRect != System.Drawing.RectangleF.Empty)
         {
             Left = history.PositionRect.Left;
             Top = history.PositionRect.Top;
@@ -507,8 +507,8 @@ public partial class GrabFrame : Window
             return new Size(imageContentBitmap.Width, imageContentBitmap.Height);
         }
 
-        Rect positionRect = history.PositionRect;
-        if (positionRect == Rect.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
+        System.Drawing.RectangleF positionRect = history.PositionRect;
+        if (positionRect == System.Drawing.RectangleF.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
             return new Size(0, 0);
 
         if (history.SourceMode == TextGrabMode.Fullscreen)
@@ -1262,7 +1262,7 @@ public partial class GrabFrame : Window
             WordBorderInfoJson = wbInfoJson,
             WordBorderInfoFileName = wbInfoJson is null ? null : historyItem?.WordBorderInfoFileName,
             ImageContent = bitmap,
-            PositionRect = sizePosRect,
+            PositionRect = sizePosRect.AsRectangleF(),
             IsTable = TableToggleButton.IsChecked!.Value,
             ManualTableColumnSeparators = tableEditState.ManualColumnSeparators.Count > 0 ? [.. tableEditState.ManualColumnSeparators] : null,
             ManualTableRowSeparators = tableEditState.ManualRowSeparators.Count > 0 ? [.. tableEditState.ManualRowSeparators] : null,

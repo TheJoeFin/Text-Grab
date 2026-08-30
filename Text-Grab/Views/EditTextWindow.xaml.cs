@@ -1,4 +1,4 @@
-using Humanizer;
+﻿using Humanizer;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -194,7 +194,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         historyId = historyInfo.ID;
 
-        if (historyInfo.PositionRect != Rect.Empty)
+        if (historyInfo.PositionRect != System.Drawing.RectangleF.Empty)
         {
             this.Left = historyInfo.PositionRect.X;
             this.Top = historyInfo.PositionRect.Y;

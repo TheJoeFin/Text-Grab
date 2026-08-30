@@ -1,4 +1,4 @@
-using Dapplo.Windows.User32;
+﻿using Dapplo.Windows.User32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1328,7 +1328,7 @@ public partial class FullscreenGrab
                 LanguageKind = languageKind,
                 UsedUiAutomation = usedUiAutomation,
                 CaptureDateTime = DateTimeOffset.Now,
-                PositionRect = GetHistoryPositionRect(selection),
+                PositionRect = GetHistoryPositionRect(selection).AsRectangleF(),
                 IsTable = TableToggleButton.IsChecked!.Value,
                 TextContent = TextFromOCR ?? string.Empty,
                 ImageContent = historyBitmap,
