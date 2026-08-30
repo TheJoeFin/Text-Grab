@@ -5,12 +5,14 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Text_Grab;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
-using UnitsNet;
 using Windows.Storage.Streams;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core.Windows;
 
+// Headless half of the original Tests/BarcodeUtilitiesTests.cs (batch 7a). ReadTestSingleQRCode
+// stayed behind as Tests/BarcodeUtilitiesImageTests.cs: it is [WpfFact]-tagged, and Xunit.StaFact
+// cannot be referenced here (it pulls in WindowsBase, which TierBoundaryTests bans). This half has
+// 3 methods against that one's 1, so it kept the original name.
 public class BarcodeUtilitiesTests
 {
     [Fact]
@@ -45,20 +47,6 @@ public class BarcodeUtilitiesTests
         Assert.All(results, r => Assert.Equal(OcrOutputKind.Barcode, r.Kind));
         Assert.Contains(results, r => r.RawOutput == "https://example.com");
         Assert.Contains(results, r => r.RawOutput == "https://example.org");
-    }
-
-    [WpfFact]
-    public void ReadTestSingleQRCode()
-    {
-        string expectedOutput = "This is a test of the QR Code system";
-        string testFilePath = FileUtilities.GetPathToLocalFile(@".\Images\QrCodeTestImage.png");
-
-        Bitmap testBmp = new(testFilePath);
-
-        List<OcrOutput> result = BarcodeUtilities.TryToReadBarcodes(testBmp);
-
-        Assert.Single(result);
-        Assert.Equal(expectedOutput, result[0].RawOutput);
     }
 
     [Fact]

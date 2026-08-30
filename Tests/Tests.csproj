@@ -61,10 +61,4 @@
       </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <None Update="TextFiles\Table-Complex-WordBorders.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
-
 </Project>

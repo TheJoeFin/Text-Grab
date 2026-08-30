@@ -2,8 +2,13 @@ using Microsoft.Recognizers.Text;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core;
 
+// Pure half of the original Tests/RecognizerExecutorTests.cs (batch 7a): RecognizerExecutor and
+// BuiltInRecognizer are Core-only. The GrabTemplateExecutor-backed tests (recognizer placeholders
+// and parsing) moved into the existing Tests/GrabTemplateExecutorTests.cs instead of a new class -
+// GrabTemplateExecutor needs System.Windows.Rect and stays app-side, and that file already covers
+// it comprehensively.
 public class RecognizerExecutorTests
 {
     private static BuiltInRecognizer Get(string id) =>
@@ -130,65 +135,6 @@ public class RecognizerExecutorTests
         Assert.Equal("$5", result);
     }
 
-    // ── GrabTemplateExecutor – recognizer placeholders ────────────────────────
-
-    [Fact]
-    public void ApplyRecognizerPlaceholders_AllMatches_Substitutes()
-    {
-        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders("Found {r:Number:all}", "1 2 3");
-        Assert.Equal("Found 1, 2, 3", result);
-    }
-
-    [Fact]
-    public void ApplyRecognizerPlaceholders_TextOutput_UsesMatchedText()
-    {
-        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders("{r:Currency:first:text}", "it costs $5");
-        Assert.Equal("$5", result);
-    }
-
-    [Fact]
-    public void ApplyRecognizerPlaceholders_UnknownRecognizer_LeavesPlaceholder()
-    {
-        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders("{r:Nope:first}", "anything 5");
-        Assert.Equal("{r:Nope:first}", result);
-    }
-
-    [Fact]
-    public void ApplyRecognizerPlaceholders_LeavesPatternPlaceholdersUntouched()
-    {
-        // Recognizer pass must only resolve {r:...}, never {p:...}
-        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders(
-            "{p:Email:first} {r:Number:first}", "value 5");
-        Assert.Equal("{p:Email:first} 5", result);
-    }
-
-    // ── GrabTemplateExecutor – parsing ────────────────────────────────────────
-
-    [Fact]
-    public void ParseRecognizerMatches_ExtractsModeAndOutputKind()
-    {
-        List<TemplateRecognizerMatch> matches =
-            GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate("{r:Number:all:text}");
-
-        TemplateRecognizerMatch match = Assert.Single(matches);
-        Assert.Equal("Number", match.RecognizerName);
-        Assert.Equal("all", match.MatchMode);
-        Assert.Equal(RecognizerOutputKind.MatchedText, match.OutputKind);
-        Assert.Equal(Get("number").Id, match.RecognizerId);
-    }
-
-    [Fact]
-    public void ParseRecognizerMatches_WithSeparator_ParsesValueOutputAndSeparator()
-    {
-        List<TemplateRecognizerMatch> matches =
-            GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate("{r:Number:all:value:; }");
-
-        TemplateRecognizerMatch match = Assert.Single(matches);
-        Assert.Equal("all", match.MatchMode);
-        Assert.Equal("; ", match.Separator);
-        Assert.Equal(RecognizerOutputKind.ResolvedValue, match.OutputKind);
-    }
-
     // ── FormatResolvedValue – resolution shapes (guards library coupling) ─────
 
     [Fact]
@@ -274,19 +220,5 @@ public class RecognizerExecutorTests
             RecognizerExecutor.GetMatches(Get("datetime"), "from 2026-01-01 to 2026-01-05")[0];
 
         Assert.Equal("2026-01-01 → 2026-01-05", match.ResolvedValue);
-    }
-
-    // ── ApplyTextOnlyTemplate – recognizer-only ───────────────────────────────
-
-    [Fact]
-    public void ApplyTextOnlyTemplate_RecognizerPlaceholder_Resolves()
-    {
-        GrabTemplate template = new("Numbers")
-        {
-            OutputTemplate = "Numbers: {r:Number:all}"
-        };
-
-        string result = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, "got 1 and 2");
-        Assert.Equal("Numbers: 1, 2", result);
     }
 }

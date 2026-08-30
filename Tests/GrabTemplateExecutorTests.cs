@@ -545,4 +545,76 @@ public class GrabTemplateExecutorTests
         Assert.NotEmpty(issues);
         Assert.Contains(issues, i => i.Contains("invalid_mode"));
     }
+
+    // ── Recognizer placeholders ────────────────────────────────────────────────
+    // Moved from Tests/RecognizerExecutorTests.cs in batch 7a: GrabTemplateExecutor needs
+    // System.Windows.Rect (Text-Grab/Utilities/GrabTemplateExecutor.cs), so it stays app-side and
+    // these tests could not follow the rest of RecognizerExecutorTests to Tests.Core.
+
+    [Fact]
+    public void ApplyRecognizerPlaceholders_AllMatches_Substitutes()
+    {
+        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders("Found {r:Number:all}", "1 2 3");
+        Assert.Equal("Found 1, 2, 3", result);
+    }
+
+    [Fact]
+    public void ApplyRecognizerPlaceholders_TextOutput_UsesMatchedText()
+    {
+        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders("{r:Currency:first:text}", "it costs $5");
+        Assert.Equal("$5", result);
+    }
+
+    [Fact]
+    public void ApplyRecognizerPlaceholders_UnknownRecognizer_LeavesPlaceholder()
+    {
+        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders("{r:Nope:first}", "anything 5");
+        Assert.Equal("{r:Nope:first}", result);
+    }
+
+    [Fact]
+    public void ApplyRecognizerPlaceholders_LeavesPatternPlaceholdersUntouched()
+    {
+        // Recognizer pass must only resolve {r:...}, never {p:...}
+        string result = GrabTemplateExecutor.ApplyRecognizerPlaceholders(
+            "{p:Email:first} {r:Number:first}", "value 5");
+        Assert.Equal("{p:Email:first} 5", result);
+    }
+
+    [Fact]
+    public void ParseRecognizerMatches_ExtractsModeAndOutputKind()
+    {
+        List<TemplateRecognizerMatch> matches =
+            GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate("{r:Number:all:text}");
+
+        TemplateRecognizerMatch match = Assert.Single(matches);
+        Assert.Equal("Number", match.RecognizerName);
+        Assert.Equal("all", match.MatchMode);
+        Assert.Equal(RecognizerOutputKind.MatchedText, match.OutputKind);
+        Assert.Equal(BuiltInRecognizer.GetById("number")!.Id, match.RecognizerId);
+    }
+
+    [Fact]
+    public void ParseRecognizerMatches_WithSeparator_ParsesValueOutputAndSeparator()
+    {
+        List<TemplateRecognizerMatch> matches =
+            GrabTemplateExecutor.ParseRecognizerMatchesFromOutputTemplate("{r:Number:all:value:; }");
+
+        TemplateRecognizerMatch match = Assert.Single(matches);
+        Assert.Equal("all", match.MatchMode);
+        Assert.Equal("; ", match.Separator);
+        Assert.Equal(RecognizerOutputKind.ResolvedValue, match.OutputKind);
+    }
+
+    [Fact]
+    public void ApplyTextOnlyTemplate_RecognizerPlaceholder_Resolves()
+    {
+        GrabTemplate template = new("Numbers")
+        {
+            OutputTemplate = "Numbers: {r:Number:all}"
+        };
+
+        string result = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, "got 1 and 2");
+        Assert.Equal("Numbers: 1, 2", result);
+    }
 }
