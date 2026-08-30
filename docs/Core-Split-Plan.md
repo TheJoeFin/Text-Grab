@@ -644,22 +644,55 @@ against B2; update this document with the final layer map.
 
 ### Never moves — verified
 
+Re-derived against B2 in 7b: every entry below was re-read against the current tree, not carried
+forward from whenever it was first listed. `HistoryInfo` moving to Core.Windows in `a8591aa` is
+exactly the kind of event that can quietly invalidate an old reason, so each file was checked for
+that specifically as well as for the B2 (`Rect`/`Point`/`Size`) currency question. Two Utilities
+entries and one Models entry did not survive the re-check and moved to §7 below;
+everything else here still has the blocker it was originally listed for.
+
 `Views/`, `Controls/`, `Pages/`, `Styles/`, `Themes/`, `App.xaml.cs`, `AssemblyInfo.cs`,
 `WPFExtensionMethods.cs`, `Properties/Settings.Designer.cs`, `TextGrabNotificationActivator.cs`.
 
 **Extensions:** `ControlExtensions`, `DapploExtensions`, `KeyboardExtensions`, `ShapeExtensions`.
 
-**Utilities:** `ColorHelper`, `CursorClipper`, `WindowResizer`, `WindowUtilities`,
-`GrabFrameViewScaleUtilities`, `NotificationUtilities`, `WindowSelectionUtilities`, `HotKeyManager`,
-`AutomationDiagnostics`, `NotifyIconUtilities`, `OutputUtilities`, `ShareTargetUtilities`,
-`ImplementAppOptions`, `MagickHelpers`, `CameraCaptureUtilities`, `SettingsImportExportUtilities`,
-`DiagnosticsUtilities`, `PostGrabActionManager`, `CustomBottomBarUtilities`, `ShortcutKeysUtilities`,
-`UIAutomationUtilities` (see B4).
+**Utilities:** `ColorHelper` (`System.Windows.Media.Color`/`SolidColorBrush`, not a B2 type),
+`CursorClipper` (`FrameworkElement`), `WindowResizer` (`Window`), `WindowUtilities` (`Window`,
+`Application.Current.Windows`), `NotificationUtilities` (`Application.Current.Windows`,
+`EditTextWindow`), `HotKeyManager` (`System.Windows.Forms.Keys` plus an `HwndSource`-style
+message loop), `AutomationDiagnostics` (`Window`, `FrameworkElement`, `EventManager`),
+`NotifyIconUtilities` (`Application`, `BitmapImage`, `Views`), `OutputUtilities` (`TextBox`,
+`Clipboard`), `ShareTargetUtilities` (`Views`, WinRT share-target activation),
+`ImplementAppOptions` (casts to the WPF `App`, calls `NotifyIconUtilities`), `MagickHelpers`
+(`ImageSource`-typed signatures via `Magick.NET.SystemWindowsMedia`), `CameraCaptureUtilities`
+(`Wpf.Ui.Controls.MessageBox`, needs a WPF `Window` for its `hwnd`), `SettingsImportExportUtilities`
+(reflects over the entire settings surface by design), `DiagnosticsUtilities` (reads ~70 settings
+properties, aggregates every deferred subsystem), `PostGrabActionManager` (`Wpf.Ui.Controls`,
+`Wpf.Ui.Controls.MessageBox`), `CustomBottomBarUtilities` (`Text_Grab.Controls.CollapsibleButton`),
+`ShortcutKeysUtilities` (`System.Windows.Input.Key`), `UIAutomationUtilities`
+(`System.Windows.Automation` / `UIAutomationClient.dll`, see B4).
+
+`GrabFrameViewScaleUtilities` and `WindowSelectionUtilities` came off this list in 7b — see §7.
+Both turned out to be pure `Rect`/`Point`/`Size` math with no other WPF coupling, which B2 already
+has a conversion path for; they were never independently blocked, they were just never audited.
 
 **Models:** `ButtonInfo` (~90 static entries each assigning `Wpf.Ui.Controls.SymbolRegular` —
 whole-class, not splittable), `ShortcutKeySet` (`System.Windows.Input.Key`), `PostGrabContext`,
-`FullscreenCaptureResult`, `UiAutomationOptions`, `UiAutomationOverlayItem`,
-`UiAutomationOverlaySnapshot`, `WindowSelectionCandidate`, `LookupItem`.
+`FullscreenCaptureResult` (both carry a `System.Windows.Media.Imaging.BitmapSource` — a B3
+blocker, independent of and unaffected by B2), `LookupItem` (`Wpf.Ui.Controls.SymbolRegular`,
+fully qualified, plus a `HistoryInfo` constructor parameter that is incidental to its real
+blocker).
+
+`UiAutomationOptions`, `UiAutomationOverlayItem`, `UiAutomationOverlaySnapshot` — re-checked
+against B2 in 7b and found to be pure `Rect`/`Point` data records, the same shape B2 already
+converted for `WordBorderInfo`/`TemplateRegion`. They stay here anyway: their only consumers are
+`UIAutomationUtilities` (blocked on `System.Windows.Automation`, B4 already declined to chase
+this) and the views (`FullscreenGrab.SelectionStyles.cs`, `GrabFrame.xaml.cs`) directly. Moving
+three data models would not free anything real, so B4's "not worth weakening the tier boundary
+to move one file" verdict extends to these models too - it was really always about them.
+`WindowSelectionCandidate` used to sit in this same bucket by association
+(`UiAutomationOverlaySnapshot.TargetWindow` is one), but 7b found it and its own consumer,
+`WindowSelectionUtilities`, have no B4-style second blocker between them - see §7.
 
 **UndoRedoOperations:** all of them — `Operation`, `AddWordBorder`, `RemoveWordBorder`,
 `ChangedImage`, `UndoRedo`, `ChangeWord`, `ResizeWordBorder`. Every one is typed on `WordBorder`,
@@ -812,17 +845,28 @@ constructor.
 ## 7. Deferred ledger
 
 Files with a real blocker, and the specific thing that clears it. **Movers append here.**
-Every row below was verified by reading the file, not inferred.
+Every row below was verified by reading the file, not inferred. 7b re-read every row against the
+current tree (see 7b's own commits for what that turned up) rather than trusting the wording
+inherited from whichever batch wrote it.
+
+**`FileAssociationUtilities.cs` and `GrabFrameFileUtilities.cs` resolved in `3f4b222`.** Both rows
+said "unblocked by `a8591aa`, never audited past that" — this batch did that audit and found no
+second blocker in either file. Both moved to Core.Windows unsplit; `FileAssociationUtilities.cs`
+needed one substitution (`AppUtilities.IsPackaged()` → `PackageIdentity.IsPackaged()`, the
+established 4e/6a pattern), `GrabFrameFileUtilities.cs` needed none. That move also retired
+`OpenDocumentFilterUtilities.cs`, the app-side façade that existed only because
+`GrabFrameFileUtilities` had to stay app-side — its one method folded back into
+`FileUtilities.GetOpenDocumentFilter()` in Core.Windows in the same commit.
 
 | File | Blocker (specific) | Unblocked by |
 |---|---|---|
 | `Utilities/OcrSourceUtilities.cs` | Post-4c remainder. `LoadBitmapFromFile` builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite, and it takes `OcrAbsoluteFilePathAsync` and `OcrFile` with it. Engine dispatch additionally needs `WindowsAiUtilities` (5a) and `LanguageUtilities` (4e); the rest is `Window`/`BitmapSource` capture and stays | a GDI+/WIC rewrite, then 5a + 4e |
-| `Utilities/FileAssociationUtilities.cs` | `GrabFrameExtensionKeyPath` is a `const` field initializer referencing `GrabFrameFileUtilities.GrabFrameFileExtension`, which requires the type at compile time. Still one level removed from the same root blocker, but that blocker is gone: it now follows `GrabFrameFileUtilities` whenever that moves | `GrabFrameFileUtilities` moving |
-| `Utilities/GrabFrameFileUtilities.cs` | **Unblocked by `a8591aa`** — `HistoryInfo` is in Core.Windows now, so the public signature no longer pins this file to the app. Re-derive what is left of it before moving; it was never audited past the `HistoryInfo` blocker | nothing known — ready to attempt |
 | `Services/SettingsService.cs` | Clones `ButtonInfo` and `ShortcutKeySet` field-by-field (both never-move); `Windows.Storage.ApplicationDataContainer` caps it at Core.Windows regardless | needs a `ButtonInfo` redesign — likely never |
 | `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so the remaining blocker is a plain split | a split |
 | `Utilities/GrabTemplateExecutor.cs` | `LoadStoredRegexes()` needs a non-scalar seam. `GrabTemplate`/`TemplateRegion` moved to Core in 2d and 4c has landed, so the remaining blocker is the settings façade plus its calls into `OcrSourceUtilities` | a façade + `OcrSourceUtilities` |
 | `Utilities/PdfDocumentRenderer.cs` | `RenderPageAsync` returns `BitmapSource` — a public API shape change affecting several views | 5f |
+| `Utilities/WindowSelectionUtilities.cs`, `Models/WindowSelectionCandidate.cs` | Found in 7b's never-move re-derivation, not by a mover: neither has any blocker beyond B2. `WindowSelectionUtilities` is `OSInterop` P/Invoke (Core.Windows-legal since 3a) plus `System.Windows.Rect`/`Point` math with no WPF UI type in sight; `WindowSelectionCandidate` is a `Rect`+`Point` data record, the same shape B2 already resolved for `WordBorderInfo`/`TemplateRegion`. Not attempted here — invariant 5, and the conversion surface (both fields on `FullscreenGrab.SelectionStyles.cs`, one field on `UiAutomationOverlaySnapshot`) is real work, not a leaf | `Rect`/`Point` → `RectangleF`/`PointF`, plus the view-side conversions at both call sites |
+| `Utilities/GrabFrameViewScaleUtilities.cs` | Same 7b discovery as the row above: pure `Rect`/`Size` math (`GetMinimumWindowRect`, `StepScale`, `CoerceScale`), already calling the app's `ShapeExtensions.IsGood(this Rect)` — Core already has the `RectangleF` equivalent (`RectangleFExtensions.IsGood`) from B2. One call site (`GrabFrame.xaml.cs:1151`) converts at the edge | `Rect`/`Size` → `RectangleF`/`SizeF` |
 
 ## 8. Verified dead code — free, zero-risk prep
 
