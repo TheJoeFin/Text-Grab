@@ -1,4 +1,4 @@
-﻿using Dapplo.Windows.User32;
+using Dapplo.Windows.User32;
 using System;
 using System.Collections.Generic;
 using System.Linq;

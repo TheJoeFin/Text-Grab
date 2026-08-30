@@ -123,7 +123,7 @@ public class HistoryServiceTests
         Assert.Same(newerPdf, Assert.Single(historyService.GetRecentPdfDocuments()));
         Assert.Equal(4, newerPdf.SourcePageIndex);
         Assert.True(historyService.HasAnyRecentGrabs());
-        Assert.Same(olderGrab, HistoryService.GetMostRecentGrab([olderGrab, newerPdf]));
+        Assert.Same(olderGrab, HistoryFileUtilities.GetMostRecentGrab([olderGrab, newerPdf]));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class HistoryServiceTests
             SourceContentKind = OpenContentKind.PdfDocument,
         };
 
-        Assert.Null(HistoryService.GetMostRecentGrab([pdf]));
+        Assert.Null(HistoryFileUtilities.GetMostRecentGrab([pdf]));
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class HistoryServiceTests
             });
         }
 
-        List<HistoryInfo> itemsToRemove = HistoryService.GetExcessVisualHistoryItems(historyItems);
+        List<HistoryInfo> itemsToRemove = HistoryFileUtilities.GetExcessVisualHistoryItems(historyItems);
 
         Assert.Equal(4, itemsToRemove.Count);
         Assert.Contains(itemsToRemove, history => history.ID == "grab-0");

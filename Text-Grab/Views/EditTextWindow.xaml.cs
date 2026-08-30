@@ -1,4 +1,4 @@
-﻿using Humanizer;
+using Humanizer;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

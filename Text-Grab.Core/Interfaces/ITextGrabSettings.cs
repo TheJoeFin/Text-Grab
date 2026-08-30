@@ -74,6 +74,9 @@ public interface ITextGrabSettings
     /// <summary>Which local Whisper model to use for on-device audio transcription.</summary>
     string AudioTranscriptionModel { get; set; }
 
+    /// <summary>Store managed settings and history word borders in files beside the app data.</summary>
+    bool EnableFileBackedManagedSettings { get; set; }
+
     /// <summary>Persist pending changes. Backed by ApplicationSettingsBase.Save().</summary>
     void Save();
 }
