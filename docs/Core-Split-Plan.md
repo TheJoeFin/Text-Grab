@@ -549,6 +549,21 @@ directly, so nothing there needed a change.
 **6d — `WebSearchUrlModel` split**, exactly `PatternItem`/`PatternItemCatalog`-shaped: pure record
 → Core, static accessors stay in the app. No interface changes needed.
 
+**6d as executed.** The impure half turned out to be larger than "static accessors": the settings
+coupling was on *instance* members (`DefaultSearcher`, `WebSearchers` and their private backing
+fields), used through `Singleton<WebSearchUrlModel>.Instance` at every call site, with the three
+static helpers (`GetWebSearchUrls`, `SaveWebSearchUrls`, `GetDefaultWebSearchUrls`) only ever
+called internally to back those properties - zero external call sites of their own. So the whole
+settings-touching unit, instance members and statics together, moved into a new app-side
+`Text-Grab/Models/WebSearchUrlCatalog.cs`, keeping every member and its behaviour unchanged.
+`WebSearchUrlModel` in Core kept only `Name`, `Url` and `ToString()`. Call-site census: 12
+references use `WebSearchUrlModel` purely as a data type (`List<WebSearchUrlModel>`, `foreach`,
+pattern matches, construction) and needed no edit since the namespace didn't change; 6 references
+were `Singleton<WebSearchUrlModel>.Instance.{DefaultSearcher,WebSearchers}` across
+`GeneralSettings.xaml.cs`, `PostGrabActionManager.cs` and `EditTextWindow.xaml.cs`, updated to
+`Singleton<WebSearchUrlCatalog>`. The data half's majority confirms the original name stayed with
+it, matching the `PatternItem`/`PatternItemCatalog` precedent.
+
 **6e — `HistoryService.cs`. Opus owns this; it is a second `OcrUtilities`.** A genuinely headless
 JSON pipeline (`LoadHistoryAsync`, `LoadHistoryWithRecovery`, `WriteHistoryFiles`, the
 `Normalize*` methods, `HistoryLanguageKindJsonConverter`) is interleaved with WPF menu building,

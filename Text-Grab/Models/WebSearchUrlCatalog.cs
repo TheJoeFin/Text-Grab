@@ -4,11 +4,17 @@ using Text_Grab.Utilities;
 
 namespace Text_Grab.Models;
 
-public record WebSearchUrlModel
+/// <summary>
+/// Settings-backed catalog of <see cref="WebSearchUrlModel"/> web-search endpoints, plus which
+/// one is the default. Split out from <see cref="WebSearchUrlModel"/> because it depends on
+/// <see cref="AppUtilities.TextGrabSettings"/>/<see cref="AppUtilities.TextGrabSettingsService"/>,
+/// which only exist in the app. Accessed through
+/// <c>Singleton&lt;WebSearchUrlCatalog&gt;.Instance</c> so the cached list and default selection
+/// persist across the call sites within a session, exactly as they did on the old
+/// <c>WebSearchUrlModel</c> singleton instance.
+/// </summary>
+public class WebSearchUrlCatalog
 {
-    public string Name { get; set; } = string.Empty;
-    public string Url { get; set; } = string.Empty;
-
     private WebSearchUrlModel? defaultSearcher;
 
     public WebSearchUrlModel DefaultSearcher
@@ -24,8 +30,6 @@ public record WebSearchUrlModel
             SaveDefaultSearcher(defaultSearcher);
         }
     }
-
-    public override string ToString() => Name;
 
     private List<WebSearchUrlModel> webSearchers = [];
 

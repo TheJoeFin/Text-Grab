@@ -3872,7 +3872,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string possibleSearch = PassedTextControl.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
 
-        WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+        WebSearchUrlModel searcher = Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher;
 
         Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
         _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
@@ -5509,7 +5509,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = newWindowWithSelectionCommand.InputGestures.Add(new KeyGesture(Key.N, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(newWindowWithSelectionCommand, NewWindowWithText_Clicked));
 
-        List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
+        List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlCatalog>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
         {
