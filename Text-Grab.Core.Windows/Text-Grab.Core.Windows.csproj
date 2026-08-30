@@ -46,6 +46,8 @@
   <ItemGroup>
     <!-- Windows AI OCR (RecognizedText/RecognizedLine/RecognizedWord) for WinAiOcrLinesWords. -->
     <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
+    <!-- GDI+ Bitmap barcode reading/writing (BarcodeReader/BarcodeWriter) for BarcodeUtilities. -->
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.14" />
   </ItemGroup>
 
 </Project>
