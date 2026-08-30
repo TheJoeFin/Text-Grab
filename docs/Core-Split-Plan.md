@@ -638,9 +638,47 @@ plus the pure halves of `ProtocolUtilitiesTests` and `MarkdownDocumentUtilitiesT
 `Tests.Core.Windows`: `OcrTests` and the other headless-Windows suites. Delete
 `Tests.Core/ScaffoldingSmokeTests.cs`.
 
+**7a as executed.** 12 suites moved unsplit and 6 more split across the boundary, landing in
+`a3643e6`, `873ea58`, `5585199`, `fe4fd59`. What it deliberately left in `Tests`, and why, is the
+standing record of test placement - re-verify against these reasons before moving any of them,
+rather than assuming they are just unfinished:
+
+| Suite | Stays in `Tests` because |
+|---|---|
+| `LanguageServiceTests`, `CaptureLanguageUtilitiesTests` | Direct `Settings.Default` reads plus `[Collection("Settings isolation")]` |
+| `HistoryServiceTests` | `HistoryService` is app-side by design after 6e |
+| `TtsServiceTests` | Would need both a `TtsEngineAccess` fake and a `SettingsAccess` fake; judged non-trivial |
+| `SettingsAccessTests` | `[Collection("Settings isolation")]` fixture |
+| `WordBorderTests`, `ImageMethodsTests`, `FreeformCaptureUtilitiesTests` | WPF types, or entirely `[WpfFact]` |
+| `PdfDocumentRendererTests` | The production file has not moved - blocked on 5f |
+| `FullscreenCaptureResultTests` | Exercises `FullscreenCaptureResult`, a genuine never-move type (`BitmapSource`, B3) |
+| `GrabFrameViewScaleUtilitiesTests`, `WindowSelectionUtilitiesTests` | Exercised types 7a judged never-move; 7b's re-derivation found neither production file has a real blocker beyond B2 currency (see §7) - moving the tests is still deferred pending that conversion, but the reason is no longer "never," it is "not yet" |
+
+7a also introduced `Tests.Core.Windows/FakeTextGrabSettings.cs`: a POCO `ITextGrabSettings`
+(all 20 members, `Save()` a no-op) seeded from `Settings.settings`'s shipped defaults
+(`RemoveFurigana = true` matters concretely - one OCR test's expected output depends on furigana
+actually being filtered) and registered by a `[ModuleInitializer]`, the same mechanism the app
+uses for `SettingsAccessInitializer`. It exists because `OcrUtilities.BuildTextFromOcrLines` reads
+`SettingsAccess.Current` unconditionally, and `Tests.Core.Windows` has no app assembly to supply a
+resolver the way `Tests` does. This is the template for any future Core-tier test suite that needs
+settings and cannot reach the app: a local `ITextGrabSettings` double plus a `[ModuleInitializer]`
+registration, not a dependency on the app assembly.
+
 **7b — closeout.** Remove dead app-side shims; confirm the MSIX package still builds in Visual
 Studio (the one thing the CLI gate cannot check); re-derive the never-move list one final time
 against B2; update this document with the final layer map.
+
+**7b as executed.** Shim removal: the dead `Table-Complex.png` content item and file (`6497dd3`,
+confirmed dead by 7a's own commit message, not just by absence of new references), and
+`GrabFrameFileUtilities.cs`/`FileAssociationUtilities.cs` moving to Core.Windows once audited and
+found to have no second blocker, which in turn retired the app-side `OpenDocumentFilterUtilities.cs`
+façade (`3f4b222`). The never-move re-derivation moved `WindowSelectionUtilities`,
+`WindowSelectionCandidate` and `GrabFrameViewScaleUtilities` into §7 - all three were carried on the
+list from an earlier wave without ever being checked against B2, and turned out to have no blocker
+beyond it. Everything else on the list was re-verified and kept its existing reason (some reasons
+were tightened with the actual type each file is blocked on, rather than left as a bare filename).
+The MSIX package build could not be verified from this environment - see the note at the end of
+§9. Final layer map: §10.
 
 ### Never moves — verified
 
@@ -888,11 +926,186 @@ constant to WPF's `System.Windows.DataFormats.Bitmap`, and the file's only WinFo
 ## 9. Definition of done
 
 - `Text-Grab.Core` holds the text, pattern, table, calculation, and template logic, with no
-  `System.Windows`, no `Windows.*`, no P/Invoke.
+  `System.Windows`, no `Windows.*`, no P/Invoke. **Done.**
 - `Text-Grab.Core.Windows` holds OCR engines, capture, imaging, Windows AI, and Win32 interop,
-  with `UseWPF=false` still set.
+  with `UseWPF=false` still set. **Done** - `TierBoundaryTests` enforces the flag and the
+  reference direction on every test run.
 - `Text-Grab` holds Views, Controls, Pages, app wiring, and thin adapters — nothing else.
+  **Mostly true, honestly assessed in §10's residue list** - a handful of files stay app-side for
+  reasons stronger than "not yet gotten to it" (settings orchestration, `ButtonInfo`/`Wpf.Ui`
+  coupling, `System.Windows.Automation`), and §7 lists three more that are B2-only and simply
+  never scheduled.
 - `Tests.Core` runs in ~2s with no display and covers the pure tier; `Tests` keeps only the
-  WPF/STA tests.
-- CI runs all three test projects; the MSIX package builds in Visual Studio.
-- Section 7 is empty, or every remaining row has a written reason it stays.
+  WPF/STA tests (plus the handful of suites in §4.7's 7a table that could not split further).
+  **Done.**
+- CI runs all three test projects. **Done for the three CLI-buildable projects.** The MSIX
+  package build is the one item this whole plan cannot verify from a CLI-only environment - see
+  the callout at the end of this section.
+- Section 7 is empty, or every remaining row has a written reason it stays. **True as of 7b** -
+  seven rows remain, each re-verified against the current tree rather than carried forward from
+  whichever batch first wrote it (see §7's own note).
+
+**The MSIX wapproj build remains unverified.** Every gate command in §2 targets a project that
+builds under the plain `dotnet` CLI; `Text-Grab-Package.wapproj` does not; and no agent that has
+worked on this plan, across any wave, has had access to a full Visual Studio install to build it.
+That means the packaging reference graph - three projects deep, each carrying its own
+`RuntimeIdentifiers` and `PackageReference` list - has been exercised only by the risk-register
+mitigation in §6 ("grep the csprojs at wave boundaries"), never by an actual wapproj build. Open
+the solution in Visual Studio and build the `Text-Grab-Package` project before shipping a release
+off this branch; that is the one remaining step this document cannot close out for you.
+
+## 10. Final layer map
+
+Written for whoever opens this repo next with no memory of any of the above. The short version:
+three library tiers, dependencies point one way, four small seams carry the app-only behavior
+that pure/headless code still needs to call, and a reflection-based test enforces the boundary so
+a future PR cannot quietly undo it.
+
+### The tiers
+
+```
+Text-Grab.Core            net10.0                        pure logic, no UI, no Windows
+   ^
+Text-Grab.Core.Windows    net10.0-windows10.0.22621.0    WinRT / GDI+ / P-Invoke, UseWPF=false
+   ^
+Text-Grab                 net10.0-windows...  WPF app     Views, Controls, Pages, app wiring
+```
+
+Dependencies point one way only: app -> Core.Windows -> Core. Core never references Core.Windows
+and neither library references the app - this is invariant 3, and it is the one a move is most
+likely to violate by accident (a call site left behind, a `using` that should not resolve). It is
+enforced mechanically, not just by convention: see "The tier guard" below.
+
+**`Text-Grab.Core`** (57 files) holds everything that needs nothing but the BCL: text and pattern
+matching (`PatternExecutor`, `ColumnSplitUtilities`, `RecognizerExecutor`, regex/number/markdown
+utilities), the table and calculation engines (`ResultTable`'s clustering algorithm,
+`CalculationService` and its ~2000 lines built on NCalcAsync/UnitsNet), the geometry currency
+(`RectangleFExtensions`), the settings-provider chain (`AutomationProfile`,
+`AutomationSettingsProvider`, riding on `System.Configuration.ConfigurationManager` - verified to
+resolve and run on plain net10.0 in Wave 0), the portable models (`WordBorderInfo`,
+`TemplateRegion`, `GrabTemplate`, the CF_HTML table parser), `Enums.cs` (all 17, merged in 2a),
+and the four delegate-resolver seams described below. Package references: `Markdig`, the
+`Microsoft.Recognizers.Text.*` family, `NCalcAsync`, `UnitsNet`,
+`System.Configuration.ConfigurationManager`.
+
+**`Text-Grab.Core.Windows`** (47 files) holds everything that needs Windows but not WPF: OCR
+(`OcrUtilities`, the Windows AI / language chain, `TesseractHelper`), capture and imaging
+(`HdrScreenCapture`, the headless half of `ImageMethods`, `SoftwareBitmapExtensions`,
+`ImageChangeDetector`), the file and history pipelines (`FileUtilities`,
+`GrabFrameFileUtilities`, `FileAssociationUtilities`, `HistoryFileUtilities`,
+`HistoryInfo`), the audio transcription chain (`AudioTranscriptionUtilities`, NAudio + Whisper.net,
+moved wholesale in 6c), text-to-speech (`WindowsSpeechEngine`), Win32/WinRT interop
+(`OSInterop`, `RegistryMonitor`, `NativeMethods`, `DesktopNotificationManagerCompat`), and the
+HDR/D3D11 pipeline. `UseWPF=false` is load-bearing here, not decorative - it is what keeps this
+tier usable from a headless host, and B4 declined a real `FrameworkReference` loophole
+specifically to protect it. Package references: `Microsoft.WindowsAppSDK.AI`,
+`ZXing.Net.Bindings.Windows.Compatibility`, `CliWrap`, `Vortice.Direct3D11`/`Vortice.DXGI`,
+`Magick.NET-Q16-AnyCPU`/`Magick.NET.SystemDrawing`, `NAudio`, `Whisper.net`/`Whisper.net.Runtime`.
+
+**`Text-Grab`** (115 files) holds Views, Controls, Pages, app wiring, and the residue described
+below - WPF-bound code, settings orchestration, and the handful of files that were never worth
+splitting for what they would free. See the residue list at the end of this section for the
+honest accounting of what is here and why, rather than a claim that it is all just "not done yet."
+
+### The four delegate-resolver seams
+
+Four places in `Text-Grab.Core/Services/` let portable code call something only the app can
+provide, without Core referencing the app. Same shape every time: a static class holding a
+delegate field, a `SetResolver`/`SetPoster` setter, and a getter that throws
+`InvalidOperationException` if nothing has registered yet. Each is registered from a
+`[ModuleInitializer]` in `Text-Grab/Utilities/`, not from `App.appStartup` - the `Tests` project
+loads the `Text-Grab` assembly and exercises its code without ever raising the WPF Startup event,
+so a module initializer is the only registration point that covers both the running app and the
+test host. `Tests.Core.Windows` has no app assembly at all, so tests that exercise a seam from
+there register their own fake (see `FakeTextGrabSettings` below).
+
+| Seam | Registered by | Points at |
+|---|---|---|
+| `SettingsAccess` (`Func<ITextGrabSettings>`) | `SettingsAccessInitializer` | `AppUtilities.TextGrabSettings` (which resolves `Singleton<SettingsService>.Instance.ClassicSettings` lazily) |
+| `UiThreadAccess` (a poster, not a resolver) | `UiThreadAccessInitializer` | `Application.Current?.Dispatcher.InvokeAsync(...)`, silently dropping the post if there is no dispatcher yet |
+| `InputLanguageAccess` (`Func<string?>`) | `InputLanguageAccessInitializer` | `InputLanguageManager.Current?.CurrentInputLanguage?.Name`, catching the `NullReferenceException` the manager can throw internally |
+| `TtsEngineAccess` (`Func<ITtsEngine>`, a factory not a stored instance) | `TtsEngineAccessInitializer` | `new WindowsSpeechEngine()` |
+
+They arrived in this order as each wave hit the blocker they solve: `SettingsAccess` in B1 (Wave
+0), `UiThreadAccess` in 5b (`HdrScreenCapture`'s one-time consent-dialog pump),
+`InputLanguageAccess` in 4e (`LanguageService`'s only non-WinRT read), `TtsEngineAccess` in 6b
+(`TtsService`'s engine field initializer). If a future move hits the same shape - portable code
+needs one small thing only the app can answer - this is the pattern to reach for before reaching
+for a bigger redesign.
+
+### `ITextGrabSettings`
+
+`Text-Grab.Core/Interfaces/ITextGrabSettings.cs` is the slice of the app's 104-property
+`Settings` class that portable/headless code is allowed to read - 19 properties plus `Save()`,
+20 members, up from the 10 (`CorrectErrors`/`CorrectToLatin`/... plus `Save()`) it started with in
+B1. The app implements it by declaring it on the existing hand-written `Settings` partial
+(`internal sealed partial class Settings : ITextGrabSettings`) - the generated properties already
+match on name and type, so there is no forwarding code on that side. Every addition after B1 came
+from a real move that needed it (tracked in the consolidated-additions table in §4.6) and every
+one already existed in `Settings.settings`, so none needed a `.settings` edit. The rule that kept
+it from sprawling: add a property only when a move demands one; a file needing more than a
+handful of new members wants a façade split instead (`PatternItemCatalog`,
+`WebSearchUrlCatalog`), not an interface that tries to cover it.
+
+A Core-tier or Core.Windows-tier test that needs settings and has no app assembly to fall back on
+cannot use `SettingsAccessInitializer` - `Tests.Core.Windows/FakeTextGrabSettings.cs` is the
+template for that case: a minimal `internal sealed class` implementing `ITextGrabSettings` with
+every default copied from `Settings.settings`'s shipped profile, registered by its own
+`[ModuleInitializer]`. It exists because `OcrUtilities.BuildTextFromOcrLines` reads
+`SettingsAccess.Current` unconditionally and a handful of moved `OcrTests` methods exercise that
+path headlessly.
+
+### The tier guard
+
+`Tests.Core.Windows/TierBoundaryTests.cs` enforces invariants 2 and 3 by reflection, not by
+convention: it loads the `Text-Grab.Core` and `Text-Grab.Core.Windows` assemblies and asserts
+`GetReferencedAssemblies()` contains none of `PresentationCore`, `PresentationFramework`,
+`WindowsBase`, `System.Xaml` (checked on both), plus `System.Windows.Forms`,
+`System.Drawing.Common`, and anything prefixed `Microsoft.Windows.`/`Microsoft.WindowsAppSDK`
+(checked on Core only, since Core.Windows legitimately needs Windows APIs - just not WPF ones);
+and that Core does not reference Core.Windows at all. This is what makes a `UseWPF` flip or a
+stray `WindowsBase` pull-in (the B4 `FrameworkReference` loophole) a test failure instead of
+something that only surfaces later as an unexplained csproj diff in review.
+
+### Test tiers
+
+`Tests.Core` (17 files, net10.0, no display, ~2s) mirrors `Text-Grab.Core`. `Tests.Core.Windows`
+(12 files, net10.0-windows, headless - no `Xunit.StaFact`, since that package pulls in
+`WindowsBase`, which the tier guard bans) mirrors `Text-Grab.Core.Windows`. `Tests` (54 files,
+WPF/STA, references the app) keeps what genuinely needs a WPF host, plus the suites listed in
+§4.7's 7a table that could not follow their production code for a specific, still-true reason.
+
+### The honest residue - what stayed in the app, and why
+
+Not everything left in `Text-Grab` is a WPF view. Grouping the real reasons, so the answer to
+"why is this still here" is always one of these, not a shrug:
+
+- **Actual WPF/WinForms UI types.** `Window`, `FrameworkElement`, `TextBox`, `Wpf.Ui.Controls.*`,
+  `System.Windows.Automation` (`UIAutomationClient.dll`, B4), `System.Windows.Forms.Keys`. This is
+  most of the never-move list in §4.0 and holds no surprises.
+- **Settings orchestration that is deliberately whole-surface.** `SettingsImportExportUtilities`
+  and `DiagnosticsUtilities` each touch dozens of settings properties by design (reflection over
+  the entire surface, or a diagnostics dump of most of it) - the kind of file
+  `ITextGrabSettings`'s "add one property per real need" rule is specifically meant to keep out of
+  Core.
+- **`BitmapSource` currency (B3).** `PostGrabContext`, `FullscreenCaptureResult`,
+  `PdfDocumentRenderer.RenderPageAsync`, and the WPF half of `ImageMethods`/`OcrSourceUtilities`
+  all carry `System.Windows.Media.Imaging.BitmapSource`, which B3 fixed as app-only currency;
+  `OcrSourceUtilities.LoadBitmapFromFile` specifically needs a GDI+/WIC rewrite to lose it, not
+  just a move.
+- **`ButtonInfo`/`ShortcutKeySet` coupling.** `SettingsService` clones both field-by-field;
+  `ButtonInfo` itself is ~90 static entries each assigning a `Wpf.Ui.Controls.SymbolRegular`, not
+  a splittable class. `GrabTemplateManager`'s `CreateButtonInfoForTemplate` inherits the same
+  blocker.
+- **B2-only, simply never scheduled.** Three files (`WindowSelectionUtilities`,
+  `WindowSelectionCandidate`, `GrabFrameViewScaleUtilities`) turned out in 7b to have no blocker
+  beyond the `Rect`/`Point`/`Size` currency B2 already solved for `WordBorderInfo`/`TemplateRegion`
+  - they were carried on the never-move list without ever being checked against it. They are the
+  most likely next wave if this plan is picked back up; see their §7 rows for the exact
+  conversion surface.
+- **A façade with no interface change.** `PatternItemCatalog`, `WebSearchUrlCatalog` - the
+  settings-touching half of a file whose pure half already moved, kept deliberately thin rather
+  than folded into `ITextGrabSettings`.
+- **Genuinely unresolved, per §7.** `GrabTemplateManager`/`GrabTemplateExecutor` (need a split
+  plus a non-scalar settings seam for `Load*`/`Save*`-shaped methods, which `ITextGrabSettings`
+  deliberately does not cover) and `SettingsService` itself (judged likely-never, see above).
