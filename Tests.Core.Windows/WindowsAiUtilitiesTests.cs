@@ -1,6 +1,6 @@
 ﻿using Text_Grab.Utilities;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core.Windows;
 
 /// <summary>
 /// Tests for the WindowsAiUtilities.CleanRegexResult method.

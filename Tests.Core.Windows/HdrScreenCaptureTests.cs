@@ -1,7 +1,7 @@
 using System.Drawing;
 using Text_Grab.Utilities.Hdr;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core.Windows;
 
 public class HdrScreenCaptureTests
 {

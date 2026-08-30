@@ -2,7 +2,7 @@
 using Text_Grab;
 using Text_Grab.Models;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core.Windows;
 
 public class LanguageTests
 {

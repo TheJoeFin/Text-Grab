@@ -1,7 +1,7 @@
 ﻿using Text_Grab.Utilities;
 using ZXing.QrCode.Internal;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core.Windows;
 
 public class QrCodeTests
 {
