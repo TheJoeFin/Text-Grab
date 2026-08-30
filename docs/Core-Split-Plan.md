@@ -592,6 +592,42 @@ JSON pipeline (`LoadHistoryAsync`, `LoadHistoryWithRecovery`, `WriteHistoryFiles
 both halves. Blocked on `HistoryInfo`'s own `System.Windows.Rect PositionRect` — which B2 and 2d
 now give a path to.
 
+**`HistoryInfo` first, in `a8591aa`.** `PositionRect` was never a stored field — it is a
+projection over the persisted `RectAsString`, and only `RectAsString` is serialized — so B2's
+currency change costs nothing on disk. It is now a `System.Drawing.RectangleF` with hand-rolled
+parse/format helpers that keep the `"x,y,width,height"` text `Rect.ToString()` wrote, plus the
+literal `"Empty"`. Writing is invariant-culture; reading additionally tolerates the `';'`
+separator and comma decimals `Rect.ToString()` emitted under cultures whose decimal separator is
+`','` — strings the old invariant-only `Rect.Parse` threw on rather than read. The eleven call
+sites convert at the edge through `ShapeExtensions`. `HistoryInfo.cs` then moved to
+`Text-Grab.Core.Windows/Models/` with no other edit, which also clears the root blocker under the
+`GrabFrameFileUtilities` and `FileAssociationUtilities` §7 rows.
+
+**6e as executed, in `212234a`.** `Text-Grab.Core.Windows/Utilities/HistoryFileUtilities.cs` takes
+the whole persistence pipeline: `LoadHistoryAsync` / `LoadHistoryBlocking` /
+`LoadHistoryWithRecovery` / `WriteHistoryFiles`, `HistoryLanguageKindJsonConverter` and the
+`AsyncLocal<bool>` rewrite flag it sets, `NormalizeHistoryIds` and both
+`NormalizeHistoryCompatibilityData` overloads, the word-border sidecar chain
+(`EnsureWordBorderSidecarFiles`, both `PersistWordBorderData` overloads,
+`GetWordBorderInfosAsync`), retention (`GetMostRecentGrab`, `GetExcessVisualHistoryItems`, the
+three `Max*` caps, `ClearTransientHistoryPayloads`) and artifact deletion. All static, no state
+past the serializer options.
+
+`HistoryService` kept its name — every call site is `Singleton<HistoryService>.Instance` — and
+kept what actually held it in the app: the two `List<HistoryInfo>` fields, the two
+`DispatcherTimer`s that debounce writes and release the idle cache, the cached fullscreen
+`Bitmap` and its HBITMAP, the recent-grabs `MenuItem` building, and the `SaveToHistory` overloads
+taking `GrabFrame` and `EditTextWindow`.
+
+Two behaviour-preserving details. `NormalizeHistoryIds` used to call `MarkHistoryDirty` itself; it
+returns a `bool` now so it can be static, and its four callers evaluate it and
+`NormalizeHistoryCompatibilityData` into locals before testing them — both normalizers mutate, so
+neither may be short-circuited away by the other, which the obvious `||` chain would have done.
+`GetWordBorderInfosAsync` stays on the service as a two-line wrapper, because the
+`TouchHistoryCache()` it opens with is cache bookkeeping, not file work.
+`PersistWordBorderData` reads `EnableFileBackedManagedSettings`, so that joined
+`ITextGrabSettings` (member 20).
+
 ### 4.7 Wave 7 — tests and closeout
 
 **7a — test migration.** To `Tests.Core`: `StringMethodTests`, `TextSearchUtilitiesTests`,
@@ -781,13 +817,12 @@ Every row below was verified by reading the file, not inferred.
 | File | Blocker (specific) | Unblocked by |
 |---|---|---|
 | `Utilities/OcrSourceUtilities.cs` | Post-4c remainder. `LoadBitmapFromFile` builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite, and it takes `OcrAbsoluteFilePathAsync` and `OcrFile` with it. Engine dispatch additionally needs `WindowsAiUtilities` (5a) and `LanguageUtilities` (4e); the rest is `Window`/`BitmapSource` capture and stays | a GDI+/WIC rewrite, then 5a + 4e |
-| `Utilities/FileAssociationUtilities.cs` | `GrabFrameExtensionKeyPath` is a `const` field initializer referencing `GrabFrameFileUtilities.GrabFrameFileExtension`, which requires the type at compile time. `GrabFrameFileUtilities` stays app-side (see its own row below), so this file does too - the same root blocker, one level removed | `GrabFrameFileUtilities` moving (`HistoryInfo`) |
-| `Utilities/GrabFrameFileUtilities.cs` | Public signature bound to `HistoryInfo`, which needs B2 (`Rect PositionRect`), 2a (five enums) and 4e. A façade was considered and rejected as larger than the file it wraps | 2d + 4e, or `HistoryInfo` moving |
+| `Utilities/FileAssociationUtilities.cs` | `GrabFrameExtensionKeyPath` is a `const` field initializer referencing `GrabFrameFileUtilities.GrabFrameFileExtension`, which requires the type at compile time. Still one level removed from the same root blocker, but that blocker is gone: it now follows `GrabFrameFileUtilities` whenever that moves | `GrabFrameFileUtilities` moving |
+| `Utilities/GrabFrameFileUtilities.cs` | **Unblocked by `a8591aa`** — `HistoryInfo` is in Core.Windows now, so the public signature no longer pins this file to the app. Re-derive what is left of it before moving; it was never audited past the `HistoryInfo` blocker | nothing known — ready to attempt |
 | `Services/SettingsService.cs` | Clones `ButtonInfo` and `ShortcutKeySet` field-by-field (both never-move); `Windows.Storage.ApplicationDataContainer` caps it at Core.Windows regardless | needs a `ButtonInfo` redesign — likely never |
 | `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so the remaining blocker is a plain split | a split |
 | `Utilities/GrabTemplateExecutor.cs` | `LoadStoredRegexes()` needs a non-scalar seam. `GrabTemplate`/`TemplateRegion` moved to Core in 2d and 4c has landed, so the remaining blocker is the settings façade plus its calls into `OcrSourceUtilities` | a façade + `OcrSourceUtilities` |
 | `Utilities/PdfDocumentRenderer.cs` | `RenderPageAsync` returns `BitmapSource` — a public API shape change affecting several views | 5f |
-| `Services/HistoryService.cs` | Headless JSON pipeline interleaved with WPF menu building and `GrabFrame`/`EditTextWindow` construction, sharing private state | Opus split (6e) |
 
 ## 8. Verified dead code — free, zero-risk prep
 
