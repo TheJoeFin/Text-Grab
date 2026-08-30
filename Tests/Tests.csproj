@@ -55,10 +55,5 @@
         </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Content Update="Images\Table-Complex.png">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
 
 </Project>
