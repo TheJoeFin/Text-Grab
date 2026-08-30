@@ -372,22 +372,34 @@ move only the strictly portable subset — furigana filtering, paragraph-wrap he
 `BuildTextFromOcrLines`, `GetStringFromOcrOutputs`, `GetTextFromOcrLine` — and leave engine
 dispatch behind.
 
-**Blocker created by batch 3d — resolve before 4c.** `BuildTextFromOcrLines` is named above as
-part of the "strictly portable subset", but `OcrUtilities.cs:642` calls `language.IsRightToLeft()`,
-and 3d left both `IsRightToLeft` overloads in the app as `LanguageRtlExtensions` because
-`XmlLanguage` comes from PresentationCore. `ReverseWordsForRightToLeft` on the next line is fine —
-it is already in Core (`Extensions/StringBuilderExtensions.cs`).
+**Blocker created by batch 3d - RESOLVED in 4c.** `BuildTextFromOcrLines` calls
+`language.IsRightToLeft()`, and 3d had left both `IsRightToLeft` overloads in the app as
+`LanguageRtlExtensions` because `XmlLanguage` comes from PresentationCore.
 
-Only the `Language` overload actually needs `XmlLanguage`; the `ILanguage` overload needs it purely
-because its `GlobalLang` branch delegates to the other one. Three options, in order of preference:
-1. Give the `ILanguage` overload's `GlobalLang` branch a portable RTL check and move that overload
-   to Core.Windows, leaving the `Language`/`XmlLanguage` overload in the app. `XmlLanguage
-   .GetLanguage(tag).GetEquivalentCulture()` is close to `CultureInfo.GetCultureInfo(tag)` but not
-   identical — it walks up subtags and falls back to the invariant culture — so this is a real
-   behavior question, not a mechanical swap. Verify against RTL tags with subtags (`ar-EG`,
-   `he-IL`, `ur-PK`) before choosing it.
-2. Route RTL through a settable hook the app registers at startup, same shape as `SettingsAccess`.
-3. Leave `BuildTextFromOcrLines` in the app and shrink 4c's portable subset accordingly.
+Option 1 was taken, after settling the behaviour question empirically rather than by reasoning: a
+throwaway WPF probe compared `XmlLanguage.GetLanguage(tag).GetEquivalentCulture().TextInfo
+.IsRightToLeft` against `CultureInfo.GetCultureInfo(tag).TextInfo.IsRightToLeft` across 24 tags -
+`ar`, `ar-EG`, `ar-SA`, `he`, `he-IL`, `ur`, `ur-PK`, `fa`, `fa-IR`, `ckb`, `ps-AF`, `sd-Arab-PK`,
+`yi`, `he-Hebr-IL`, `ar-XX`, `en`, `en-US`, `ja`, `zh-Hans`, `de-DE`, and the unresolvable `xx`,
+`xx-YY`, `und` and `""`. They agreed on every one, including the tags with subtags and the ones
+neither can resolve.
+
+So the `ILanguage` overload moved into Core.Windows `LanguageExtensions` with a `CultureInfo`
+lookup in its `GlobalLang` branch, guarded by a `CultureNotFoundException` catch returning false
+(XmlLanguage fell back to the invariant culture, which is LTR). That left the `Language` overload
+with **zero** call sites - all five live `IsRightToLeft` calls are on `ILanguage` - so
+`Extensions/LanguageRtlExtensions.cs` was deleted outright. 3d's facade is gone.
+
+**4c as executed.** The split went the direction the call-site census pointed: the portable text
+assembly - `GetTextFromOcrLine`, `FilterFurigana`, `FilterFuriganaLines`, `OrderLinesForReadingFlow`,
+`BuildTextFromOcrLines`, `ShouldUseParagraphDetection`, `GroupWrappedParagraphLines`, `IsWrappedLine`,
+`IsWrappedParagraph`, `GetStringFromOcrOutputs`, `ParseOcrResultIntoWordBorderInfos`, and the nested
+`PositionedOcrLine`/`GroupedOcrLines` - moved to Core.Windows **keeping the `OcrUtilities` name**,
+because `Tests/OcrTests.cs` alone held 43 of the file's ~80 references and every one of them is
+against that subset. The app-coupled half - capture, engine dispatch, file and `BitmapSource`
+sources - took the new name `OcrSourceUtilities`. `GetBoundingRect(this OcrLine)` was deleted as
+section 8 dead code. Engine dispatch stayed behind as the ordering note above predicted:
+`WindowsAiUtilities` and `LanguageUtilities` have not moved.
 
 `Tests/OcrTests.cs` is the heaviest consumer of the headless surface and becomes a
 `Tests.Core.Windows` candidate in Wave 7. It references the nested `PositionedOcrLine` /
@@ -404,6 +416,15 @@ forwarders and move for free once the third does. `LanguageService` has a genuin
 Opus** — the workable split is to extract the pure `switch`-expression helpers (`GetLanguageTag`,
 `GetLanguageKind`, `GetPersistedLanguageIdentity`, `NormalizePersistedLanguageIdentity`) and leave
 the input-language reader in the app.
+
+**Ordering constraint found while preparing 4c: 4e cannot precede 5a.** Reading `LanguageService`
+in full, `InputLanguageManager` appears in exactly one place - the private
+`GetCurrentInputLanguageTag()` - and everything else in the class is WinRT, which is legal in
+Core.Windows. That makes the better split the whole class moving under its own name with the
+input-language read behind a resolver the app registers (the `SettingsAccess` shape), defaulting
+to `CultureInfo.CurrentUICulture.Name` when none is registered. But `GetAllLanguages()` and
+`GetOCRLanguage()` both call `WindowsAiUtilities.CanDeviceUseWinAI()`, and `WindowsAiUtilities` is
+still app-side, deferred on `SoftwareBitmapExtensions` - which is 5a. Run 4e after wave 5.
 
 ### 4.5 Wave 5 — capture and imaging → Core.Windows
 
@@ -665,7 +686,7 @@ Every row below was verified by reading the file, not inferred.
 
 | File | Blocker (specific) | Unblocked by |
 |---|---|---|
-| `Utilities/OcrUtilities.cs` | `LoadBitmapFromFile` (887–899) builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite | 4c, and defer that one method |
+| `Utilities/OcrSourceUtilities.cs` | Post-4c remainder. `LoadBitmapFromFile` builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite, and it takes `OcrAbsoluteFilePathAsync` and `OcrFile` with it. Engine dispatch additionally needs `WindowsAiUtilities` (5a) and `LanguageUtilities` (4e); the rest is `Window`/`BitmapSource` capture and stays | a GDI+/WIC rewrite, then 5a + 4e |
 | `Utilities/TesseractHelper.cs` | `TempImagePath()` calls `AutomationProfile.GetTemporaryDirectory()`. The settings write-back is **not** a blocker — `ITextGrabSettings.Save()` already covers it | 6a |
 | `Services/LanguageService.cs` | `System.Windows.Input.InputLanguageManager` (line 376), no portable substitute; reachable in production, not vestigial | Opus split (4e) |
 | `Utilities/WindowsAiUtilities.cs` | `AutomationProfile.GetTemporaryFilePath()` (109, 189); `SoftwareBitmapExtensions` unmoved; reads `Settings.Default.OverrideAiArchCheck` directly (61) | 6a + 5a + one interface add |
@@ -675,7 +696,7 @@ Every row below was verified by reading the file, not inferred.
 | `Utilities/GrabFrameFileUtilities.cs` | Public signature bound to `HistoryInfo`, which needs B2 (`Rect PositionRect`), 2a (five enums) and 4e. A façade was considered and rejected as larger than the file it wraps | 2d + 4e, or `HistoryInfo` moving |
 | `Services/SettingsService.cs` | Clones `ButtonInfo` and `ShortcutKeySet` field-by-field (both never-move); `Windows.Storage.ApplicationDataContainer` caps it at Core.Windows regardless | needs a `ButtonInfo` redesign — likely never |
 | `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so the remaining blocker is a plain split | a split |
-| `Utilities/GrabTemplateExecutor.cs` | `LoadStoredRegexes()` needs a non-scalar seam; OCR half blocked on 4c. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so that part of the original blocker is resolved | 4c + a façade |
+| `Utilities/GrabTemplateExecutor.cs` | `LoadStoredRegexes()` needs a non-scalar seam. `GrabTemplate`/`TemplateRegion` moved to Core in 2d and 4c has landed, so the remaining blocker is the settings façade plus its calls into `OcrSourceUtilities` | a façade + `OcrSourceUtilities` |
 | `Utilities/PdfDocumentRenderer.cs` | `RenderPageAsync` returns `BitmapSource` — a public API shape change affecting several views | 5f |
 | `Services/HistoryService.cs` | Headless JSON pipeline interleaved with WPF menu building and `GrabFrame`/`EditTextWindow` construction, sharing private state | Opus split (6e) |
 
@@ -689,7 +710,7 @@ and independent of any wave; two of them unblock real moves.
 | `OSInterop.GetAsyncKeyState(System.Windows.Forms.Keys)` (line 125) | The **only** `System.Windows.Forms` reference in all 1292 lines. Deleting it moves the whole file. |
 | `Models/DragDataObject.BitmapSourceToBitmap` (line 77) | The file's only WPF touchpoint, and a duplicate of `ImageMethods.BitmapSourceToBitmap`. Deleting it moves the file. |
 | `Models/ResultTable`: `OcrResult` property, `ParseOcrResultWordsIntoRects()`, the `ResultTable(ref List<WordBorderInfo>, DpiScale)` ctor, `CalculateResultRows`, `MergeTheseRowIDs` | Leftovers from a superseded grid-line algorithm. The `OcrResult` property is why `ResultTable` looked WinRT-coupled; the live path already uses `IOcrLinesWords`. |
-| `Utilities/OcrUtilities.GetBoundingRect(this OcrLine)` (line 983) | `edefeaa` left it saying "other app code may still use it". Nothing does. |
+| ~~`Utilities/OcrUtilities.GetBoundingRect(this OcrLine)`~~ | Deleted in 4c. `edefeaa` had left it saying "other app code may still use it"; nothing did. |
 | `Extensions/ImageExtensions.ExifRotate` (line 12) | Unused. |
 
 Not dead, but a one-line dependency removal in the same spirit:

@@ -20,7 +20,7 @@ public class FileOpenUtilities
         {
             try
             {
-                stringBuilder.Append(await OcrUtilities.OcrAbsoluteFilePathAsync(pathOfFileToOpen, language));
+                stringBuilder.Append(await OcrSourceUtilities.OcrAbsoluteFilePathAsync(pathOfFileToOpen, language));
             }
             catch (Exception)
             {

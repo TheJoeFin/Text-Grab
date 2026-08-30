@@ -98,7 +98,7 @@ public static class GrabTemplateExecutor
         {
             try
             {
-                fullAreaText = await OcrUtilities.GetTextFromAbsoluteRectAsync(captureRegion, resolvedLanguage);
+                fullAreaText = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(captureRegion, resolvedLanguage);
             }
             catch (Exception)
             {
@@ -166,7 +166,7 @@ public static class GrabTemplateExecutor
                     using Bitmap regionBitmap = bitmap.Clone(
                         new Rectangle(x, y, width, height), bitmap.PixelFormat);
                     string regionText = OcrUtilities.GetStringFromOcrOutputs(
-                        await OcrUtilities.GetTextFromImageAsync(regionBitmap, resolvedLanguage));
+                        await OcrSourceUtilities.GetTextFromImageAsync(regionBitmap, resolvedLanguage));
                     regionResults[region.RegionNumber] = string.IsNullOrWhiteSpace(regionText)
                         ? region.DefaultValue
                         : regionText.Trim();
@@ -194,7 +194,7 @@ public static class GrabTemplateExecutor
             try
             {
                 fullAreaText = OcrUtilities.GetStringFromOcrOutputs(
-                    await OcrUtilities.GetTextFromImageAsync(bitmap, resolvedLanguage));
+                    await OcrSourceUtilities.GetTextFromImageAsync(bitmap, resolvedLanguage));
             }
             catch (Exception)
             {
@@ -540,7 +540,7 @@ public static class GrabTemplateExecutor
             try
             {
                 // GetTextFromAbsoluteRectAsync uses absolute screen coordinates
-                string regionText = await OcrUtilities.GetTextFromAbsoluteRectAsync(absoluteRegionRect, language);
+                string regionText = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(absoluteRegionRect, language);
                 // Use default value when OCR returns nothing
                 results[region.RegionNumber] = string.IsNullOrWhiteSpace(regionText)
                     ? region.DefaultValue

@@ -4404,7 +4404,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
+            ocrFile.OcrResult = await OcrSourceUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
             if (!options.WriteTxtFiles)
@@ -4867,7 +4867,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                 string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
@@ -4891,7 +4891,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                     string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
@@ -4913,7 +4913,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         HistoryService hs = Singleton<HistoryService>.Instance;
 
         if (hs.HasAnyFullscreenHistory())
-            await OcrUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
+            await OcrSourceUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
     }
 
     private async void RateAndReview_Click(object sender, RoutedEventArgs e)

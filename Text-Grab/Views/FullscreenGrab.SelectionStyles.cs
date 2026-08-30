@@ -1265,28 +1265,28 @@ public partial class FullscreenGrab
                     Math.Round(clickedPointForOcr.X),
                     Math.Round(clickedPointForOcr.Y));
 
-                TextFromOCR = await OcrUtilities.GetClickedWordAsync(this, clickedPointForOcr, selectedOcrLang);
+                TextFromOCR = await OcrSourceUtilities.GetClickedWordAsync(this, clickedPointForOcr, selectedOcrLang);
             }
             else if (selectedOcrLang is UiAutomationLang)
             {
-                TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
+                TextFromOCR = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
             }
             else if (selection.CapturedImage is not null)
             {
                 TextFromOCR = isTable
-                    ? await OcrUtilities.GetTextFromBitmapSourceAsTableAsync(selection.CapturedImage, selectedOcrLang)
-                    : await OcrUtilities.GetTextFromBitmapSourceAsync(selection.CapturedImage, selectedOcrLang);
+                    ? await OcrSourceUtilities.GetTextFromBitmapSourceAsTableAsync(selection.CapturedImage, selectedOcrLang)
+                    : await OcrSourceUtilities.GetTextFromBitmapSourceAsync(selection.CapturedImage, selectedOcrLang);
             }
             else if (isTable)
             {
                 // TODO: Look into why this happens and find a better way to dispose the bitmap
                 // DO NOT add a using statement to this selected bitmap, it crashes the app
                 Bitmap selectionBitmap = ImageMethods.GetRegionOfScreenAsBitmap(selection.CaptureRegion.AsRectangle());
-                TextFromOCR = await OcrUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
+                TextFromOCR = await OcrSourceUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
             }
             else
             {
-                TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
+                TextFromOCR = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
             }
         }
         catch (Exception ex)

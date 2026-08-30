@@ -469,7 +469,7 @@ public partial class App : System.Windows.Application
     {
         try
         {
-            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(
+            string ocrText = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(
                 path, LanguageUtilities.GetOCRLanguage());
             OutputUtilities.HandleTextFromOcr(ocrText, isSingleLine: false, isTable: false);
         }

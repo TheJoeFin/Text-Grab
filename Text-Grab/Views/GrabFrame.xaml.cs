@@ -1714,7 +1714,7 @@ public partial class GrabFrame : Window
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
         // Language language = CurrentLanguage.AsLanguage() ?? LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
         ILanguage language = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(
+        string ocrText = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(
             rect.GetScaleSizeByFraction(viewBoxZoomFactor),
             language,
             GetUiAutomationExcludedHandles());
@@ -2345,11 +2345,11 @@ public partial class GrabFrame : Window
             if (frameContentImageSource is BitmapSource frozenBmp)
             {
                 using System.Drawing.Bitmap bmpForOcr = ImageMethods.BitmapSourceToBitmap(frozenBmp);
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
+                (ocrResultOfWindow, windowFrameImageScale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
             }
             else
             {
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
+                (ocrResultOfWindow, windowFrameImageScale) = await OcrSourceUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
             }
         }
 

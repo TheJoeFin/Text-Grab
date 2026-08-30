@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Globalization;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Windows.Globalization;
@@ -52,5 +53,41 @@ public static class LanguageExtensions
         if (language is null)
             return null;
         return new GlobalLang(language);
+    }
+
+    /// <summary>
+    /// Whether text in this language reads right-to-left.
+    ///
+    /// The GlobalLang branch used to delegate to an overload taking
+    /// <c>Windows.Globalization.Language</c>, which resolved the tag through
+    /// <c>XmlLanguage.GetLanguage(tag).GetEquivalentCulture()</c>. XmlLanguage comes from
+    /// PresentationCore, which is why batch 3d had to leave both overloads in the app. Batch 4c
+    /// needed this one in Core.Windows for BuildTextFromOcrLines, so the tag is now resolved with
+    /// CultureInfo directly. The two were probed against 24 tags - ar, ar-EG, ar-SA, he, he-IL,
+    /// ur, ur-PK, fa, fa-IR, ckb, ps-AF, sd-Arab-PK, yi, he-Hebr-IL, ar-XX, en, en-US, ja,
+    /// zh-Hans, de-DE, and the unresolvable xx, xx-YY, und and "" - and agreed on every one.
+    /// </summary>
+    public static bool IsRightToLeft(this ILanguage selectedLanguage)
+    {
+        if (selectedLanguage is GlobalLang language)
+            return IsRightToLeftTag(language.OriginalLanguage.LanguageTag);
+
+        // For other language types, use the LayoutDirection property
+        return selectedLanguage.LayoutDirection == LanguageLayoutDirection.Rtl;
+    }
+
+    private static bool IsRightToLeftTag(string languageTag)
+    {
+        try
+        {
+            return CultureInfo.GetCultureInfo(languageTag).TextInfo.IsRightToLeft;
+        }
+        catch (CultureNotFoundException)
+        {
+            // XmlLanguage fell back to the invariant culture, which is left-to-right, for tags
+            // it could not resolve. Keep that behaviour rather than throwing at a call site that
+            // only wanted to know which way to order words.
+            return false;
+        }
     }
 }

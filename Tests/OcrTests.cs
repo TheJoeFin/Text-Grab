@@ -142,7 +142,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         string testImagePath = fontSamplePath;
 
         // When
-        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(fontSampleResult, ocrTextResult);
@@ -157,7 +157,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
 
         Uri uri = new(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -175,7 +175,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         GlobalLang globalLang = new(EnglishLanguage);
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
+        IOcrLinesWords ocrResult = await OcrSourceUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
         Rectangle rectCanvasSize = new()
         {
@@ -211,7 +211,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         try
         {
             // When
-            string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
+            string ocrTextResult = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
             // Then
             Assert.Equal(expectedResult, ocrTextResult);
@@ -382,7 +382,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         try
         {
             // When
-            string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(
+            string ocrTextResult = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(
                 FileUtilities.GetPathToLocalFile(jaTestPath), japanese);
 
             // Then furigana are kept, but every line is in natural reading order
@@ -411,7 +411,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         try
         {
             // When
-            string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(
+            string ocrTextResult = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(
                 FileUtilities.GetPathToLocalFile(jaTestPath), japanese);
 
             // Then the furigana ruby lines are dropped, leaving the main text.
@@ -435,9 +435,9 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
             return;
 
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(jaTestPath));
-        double scale = await OcrUtilities.GetIdealScaleFactorForOcrAsync(testBitmap, japanese);
+        double scale = await OcrSourceUtilities.GetIdealScaleFactorForOcrAsync(testBitmap, japanese);
         Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(testBitmap, scale);
-        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(scaledBitmap, japanese);
+        IOcrLinesWords ocrResult = await OcrSourceUtilities.GetOcrResultFromImageAsync(scaledBitmap, japanese);
 
         StringBuilder report = new();
         report.AppendLine($"scale factor: {scale:0.###}");
@@ -481,7 +481,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         string testImagePath = @".\Images\QrCodeTestImage.png";
         Uri uri = new(testImagePath, UriKind.Relative);
         // When
-        string ocrTextResult = await OcrUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
+        string ocrTextResult = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(FileUtilities.GetPathToLocalFile(testImagePath));
 
         // Then
         Assert.Equal(expectedResult, ocrTextResult);
@@ -506,7 +506,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         GlobalLang globalLang = new(EnglishLanguage);
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        IOcrLinesWords ocrResult = await OcrUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
+        IOcrLinesWords ocrResult = await OcrSourceUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
         Rectangle rectCanvasSize = new()
         {
@@ -587,7 +587,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
         ILanguage language = LanguageUtilities.GetOCRLanguage();
-        double idealScaleFactor = await OcrUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
+        double idealScaleFactor = await OcrSourceUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
@@ -616,7 +616,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
         ILanguage language = LanguageUtilities.GetOCRLanguage();
-        double idealScaleFactor = await OcrUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
+        double idealScaleFactor = await OcrSourceUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
