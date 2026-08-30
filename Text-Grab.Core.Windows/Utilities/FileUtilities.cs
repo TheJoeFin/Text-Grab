@@ -53,11 +53,38 @@ public class FileUtilities
         });
     }
 
-    // GetOpenDocumentFilter() is NOT here: it also needs GrabFrameFileUtilities.
-    // GrabFrameFileUtilities stays app-side (blocked on HistoryInfo - see its section 7 row), so
-    // that filter builder lives in the app as OpenDocumentFilterUtilities.GetOpenDocumentFilter(),
-    // which calls back into GetVisualDocumentFilterPattern() and GetExtensionsFilterPattern()
-    // below (internal, for exactly that caller).
+    /// <summary>
+    /// The FileDialog filter string for the app's general "Open" dialog: images, PDFs, Grab
+    /// Frame files, spreadsheets, markdown and plain text. Folded back in here once
+    /// <see cref="GrabFrameFileUtilities"/> followed <see cref="Models.HistoryInfo"/> to
+    /// Core.Windows - before that, this lived app-side as
+    /// <c>OpenDocumentFilterUtilities.GetOpenDocumentFilter()</c> for exactly that reason.
+    /// </summary>
+    public static string GetOpenDocumentFilter()
+    {
+        string spreadsheetExtensions = GetExtensionsFilterPattern(IoUtilities.SpreadsheetExtensions);
+        string markdownExtensions = GetExtensionsFilterPattern(IoUtilities.MarkdownExtensions);
+        string grabFrameExtension = $"*{GrabFrameFileUtilities.GrabFrameFileExtension}";
+        string supportedExtensions = string.Join(";", new[]
+        {
+            GetVisualDocumentFilterPattern(),
+            grabFrameExtension,
+            spreadsheetExtensions,
+            markdownExtensions,
+            "*.txt"
+        }.Where(pattern => !string.IsNullOrWhiteSpace(pattern)));
+
+        return string.Join("|", new[]
+        {
+            $"Supported documents|{supportedExtensions}",
+            GetVisualDocumentFilter(),
+            GrabFrameFileUtilities.GetGrabFrameFileFilter(),
+            $"Spreadsheet documents|{spreadsheetExtensions}",
+            $"Markdown documents|{markdownExtensions}",
+            "Text documents (*.txt)|*.txt",
+            "All files (*.*)|*.*"
+        });
+    }
 
     public static string GetPathToLocalFile(string imageRelativePath)
     {
@@ -136,15 +163,12 @@ public class FileUtilities
         return imageExtensions;
     }
 
-    // internal rather than private: OpenDocumentFilterUtilities (app-side, split out because it
-    // also needs GrabFrameFileUtilities) calls this to build its own filter pattern.
-    internal static string GetExtensionsFilterPattern(IEnumerable<string> extensions)
+    private static string GetExtensionsFilterPattern(IEnumerable<string> extensions)
     {
         return string.Join(";", extensions.Select(extension => $"*{extension}"));
     }
 
-    // internal for the same reason as GetExtensionsFilterPattern above.
-    internal static string GetVisualDocumentFilterPattern()
+    private static string GetVisualDocumentFilterPattern()
     {
         return string.Join(";", new[]
         {

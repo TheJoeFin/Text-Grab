@@ -9,9 +9,10 @@ namespace Tests;
 
 // App-coupled remainder of the original file (batch 7a). Its IoUtilities-only tests moved to
 // Tests.Core/IoUtilitiesTests.cs and its FileUtilities.GetVisualDocumentFilter test moved to
-// Tests.Core.Windows/FileUtilitiesTests.cs. What is left here is blocked on WPF ([WpfFact]/
-// [WpfTheory] needing Xunit.StaFact, which cannot be referenced outside Tests) or on the
-// app-side OpenDocumentFilterUtilities/App classes, so it kept the original FilesIoTests name.
+// Tests.Core.Windows/FileUtilitiesTests.cs. GetOpenDocumentFilter_IncludesVisualAndTextOptions
+// followed it there in 7b, once GrabFrameFileUtilities stopped needing the app to build that
+// filter. What is left here is blocked on WPF ([WpfFact]/[WpfTheory] needing Xunit.StaFact,
+// which cannot be referenced outside Tests) or on the app-side <see cref="App"/> members.
 public class FilesIoTests
 {
     private const string fontSamplePath = @"Images\font_sample.png";
@@ -100,19 +101,6 @@ public class FilesIoTests
         string fileName = "FileNotFound.json";
         Bitmap? emptyReturn = await FileUtilities.GetImageFileAsync(fileName, storageKind);
         Assert.Null(emptyReturn);
-    }
-
-    [Fact]
-    public void GetOpenDocumentFilter_IncludesVisualAndTextOptions()
-    {
-        string filter = OpenDocumentFilterUtilities.GetOpenDocumentFilter();
-
-        Assert.Contains("Supported documents|", filter);
-        Assert.Contains("Image and PDF files|", filter);
-        Assert.Contains("Spreadsheet documents|*.csv;*.tsv;*.tab", filter);
-        Assert.Contains("Markdown documents|*.md;*.markdown", filter);
-        Assert.Contains("Text documents (*.txt)|*.txt", filter);
-        Assert.Contains("All files (*.*)|*.*", filter);
     }
 
     [WpfFact]

@@ -17,4 +17,20 @@ public class FileUtilitiesTests
         Assert.Contains("PDF files|*.pdf", filter);
         Assert.Contains("Image files|", filter);
     }
+
+    // Joined FileUtilities in 7b once GrabFrameFileUtilities followed HistoryInfo to
+    // Core.Windows and GetOpenDocumentFilter() no longer needed the app-side
+    // OpenDocumentFilterUtilities split.
+    [Fact]
+    public void GetOpenDocumentFilter_IncludesVisualAndTextOptions()
+    {
+        string filter = FileUtilities.GetOpenDocumentFilter();
+
+        Assert.Contains("Supported documents|", filter);
+        Assert.Contains("Image and PDF files|", filter);
+        Assert.Contains("Spreadsheet documents|*.csv;*.tsv;*.tab", filter);
+        Assert.Contains("Markdown documents|*.md;*.markdown", filter);
+        Assert.Contains("Text documents (*.txt)|*.txt", filter);
+        Assert.Contains("All files (*.*)|*.*", filter);
+    }
 }

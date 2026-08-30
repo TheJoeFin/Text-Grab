@@ -2,13 +2,16 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
-using System.Windows;
 using Text_Grab;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 
-namespace Tests;
+namespace Text_Grab.Tests.Core.Windows;
 
+// Moved wholesale in 7b: GrabFrameFileUtilities followed HistoryInfo to Core.Windows once the
+// HistoryInfo blocker cleared (a8591aa), and every assertion here is against that headless pair
+// (GrabFrameFileUtilities, HistoryInfo/WordBorderInfo) with no WPF type in sight - the file had
+// an unused `using System.Windows;` from before that move, since dropped.
 public class GrabFrameFileTests
 {
     [Fact]

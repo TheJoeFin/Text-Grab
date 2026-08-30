@@ -24,7 +24,7 @@ internal static class FileAssociationUtilities
     /// </summary>
     internal static void EnsureGrabFrameFileAssociation()
     {
-        if (AppUtilities.IsPackaged())
+        if (PackageIdentity.IsPackaged())
             return;
 
         string executablePath = FileUtilities.GetExePath();
