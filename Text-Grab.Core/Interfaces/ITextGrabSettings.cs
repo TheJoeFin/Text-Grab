@@ -62,6 +62,15 @@ public interface ITextGrabSettings
     /// <summary>BCP-47 tag of the language used for the last capture.</summary>
     string LastUsedLang { get; set; }
 
+    /// <summary>Trim spoken text to this many words; zero or negative disables the limit.</summary>
+    int TtsSpeakWordLimit { get; set; }
+
+    /// <summary>Display name of the preferred text-to-speech voice; empty selects the default.</summary>
+    string TtsVoiceName { get; set; }
+
+    /// <summary>Speaking rate passed to the TTS engine; only values in [0.5, 6.0] are applied.</summary>
+    double TtsSpeakingRate { get; set; }
+
     /// <summary>Persist pending changes. Backed by ApplicationSettingsBase.Save().</summary>
     void Save();
 }

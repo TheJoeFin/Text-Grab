@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Text_Grab.Interfaces;
-using Text_Grab.Properties;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Media.SpeechSynthesis;
@@ -16,7 +15,7 @@ public class WindowsSpeechEngine : ITtsEngine
     {
         using SpeechSynthesizer synthesizer = new();
 
-        string voiceName = Settings.Default.TtsVoiceName;
+        string voiceName = SettingsAccess.Current.TtsVoiceName;
         if (!string.IsNullOrEmpty(voiceName))
         {
             VoiceInformation? voice = SpeechSynthesizer.AllVoices
@@ -25,7 +24,7 @@ public class WindowsSpeechEngine : ITtsEngine
                 synthesizer.Voice = voice;
         }
 
-        double speakingRate = Settings.Default.TtsSpeakingRate;
+        double speakingRate = SettingsAccess.Current.TtsSpeakingRate;
         if (speakingRate >= 0.5 && speakingRate <= 6.0)
             synthesizer.Options.SpeakingRate = speakingRate;
 

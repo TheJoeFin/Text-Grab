@@ -513,6 +513,20 @@ plain Core, after resolving its `private ITtsEngine _engine = new WindowsSpeechE
 initializer — the app should register the default engine at composition, same shape as
 `SettingsAccess`. Add `TtsSpeakWordLimit`, `TtsVoiceName`, `TtsSpeakingRate`.
 
+**6b as executed.** Both files moved unsplit, keeping their names. The field initializer became
+`Text-Grab.Core/Services/TtsEngineAccess.cs` — the fourth delegate-resolver, after
+`SettingsAccess`, `UiThreadAccess` and `InputLanguageAccess`. It holds a `Func<ITtsEngine>`
+factory rather than a stored instance, and `TtsService`'s constructor calls
+`TtsEngineAccess.CreateDefault()` as its first statement, so the engine is still built at the same
+moment it always was — when a `TtsService` is constructed, not lazily on first `Speak`. The app
+registers `static () => new WindowsSpeechEngine()` from `Text-Grab/Utilities/
+TtsEngineAccessInitializer.cs`, a `[ModuleInitializer]` covering the Tests host the same way
+`SettingsAccessInitializer` does. An unregistered resolver throws `InvalidOperationException`,
+matching `SettingsAccess` — in production the module initializer always covers it, so this is
+unreachable outside a Core-only host with no fake installed. `WindowsSpeechEngine`'s two settings
+reads (`TtsVoiceName`, `TtsSpeakingRate`) moved from `Properties.Settings.Default` to
+`SettingsAccess.Current`; `TtsService`'s `TtsSpeakWordLimit` read did the same.
+
 **6c — `AudioTranscriptionUtilities.cs` → Core.Windows, wholesale.** 1115 lines, fully headless
 (NAudio + Whisper.net, zero WPF, zero WinRT), with exactly **one** settings touchpoint:
 `AudioTranscriptionModel`. Move `NAudio`, `Whisper.net`, `Whisper.net.Runtime` to Core.Windows.

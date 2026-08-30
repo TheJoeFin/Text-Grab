@@ -3,13 +3,12 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Text_Grab.Interfaces;
-using Text_Grab.Properties;
 
 namespace Text_Grab.Services;
 
 public class TtsService
 {
-    private ITtsEngine _engine = new WindowsSpeechEngine();
+    private ITtsEngine _engine;
     private readonly Channel<string> _queue = Channel.CreateUnbounded<string>();
     private readonly CancellationTokenSource _cts = new();
     private CancellationTokenSource _speechCts = new();
@@ -37,6 +36,7 @@ public class TtsService
 
     public TtsService()
     {
+        _engine = TtsEngineAccess.CreateDefault();
         _ = Task.Run(DrainLoopAsync);
     }
 
@@ -110,7 +110,7 @@ public class TtsService
 
     private static string ApplyWordLimit(string text)
     {
-        int wordLimit = Settings.Default.TtsSpeakWordLimit;
+        int wordLimit = SettingsAccess.Current.TtsSpeakWordLimit;
         if (wordLimit <= 0)
             return text;
 
