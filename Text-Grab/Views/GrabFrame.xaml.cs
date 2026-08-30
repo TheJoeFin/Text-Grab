@@ -4870,7 +4870,7 @@ public partial class GrabFrame : Window
             droppedImage.BeginInit();
             droppedImage.UriSource = fileURI;
             droppedImage.CacheOption = BitmapCacheOption.OnLoad; // decode fully into memory and release the file handle
-            System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
+            System.Drawing.RotateFlipType rotateFlipType = BitmapUtilities.GetRotateFlipType(path);
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;

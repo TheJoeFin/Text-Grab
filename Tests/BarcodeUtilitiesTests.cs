@@ -73,7 +73,7 @@ public class BarcodeUtilitiesTests
         using InMemoryRandomAccessStream randomAccessStream = new();
         _ = await randomAccessStream.WriteAsync(memoryStream.ToArray().AsBuffer());
 
-        Bitmap clonedBitmap = ImageMethods.GetBitmapFromIRandomAccessStream(randomAccessStream);
+        Bitmap clonedBitmap = BitmapUtilities.GetBitmapFromIRandomAccessStream(randomAccessStream);
 
         Assert.Equal(8, clonedBitmap.Width);
         Assert.Equal(8, clonedBitmap.Height);

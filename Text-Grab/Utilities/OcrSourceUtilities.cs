@@ -373,7 +373,7 @@ public static class OcrSourceUtilities
 
     public static async Task<List<OcrOutput>> GetTextFromRandomAccessStream(IRandomAccessStream randomAccessStream, ILanguage language)
     {
-        Bitmap bitmap = ImageMethods.GetBitmapFromIRandomAccessStream(randomAccessStream);
+        Bitmap bitmap = BitmapUtilities.GetBitmapFromIRandomAccessStream(randomAccessStream);
         List<OcrOutput> outputs = await GetTextFromImageAsync(bitmap, language);
         return outputs;
     }
@@ -491,7 +491,7 @@ public static class OcrSourceUtilities
     private static Bitmap LoadBitmapFromFile(string absolutePath)
     {
         Uri fileURI = new(absolutePath, UriKind.Absolute);
-        RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(absolutePath);
+        RotateFlipType rotateFlipType = BitmapUtilities.GetRotateFlipType(absolutePath);
         BitmapImage droppedImage = new();
         droppedImage.BeginInit();
         droppedImage.UriSource = fileURI;

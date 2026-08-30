@@ -472,7 +472,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         await page.RenderToStreamAsync(renderedStream, renderOptions);
         renderedStream.Seek(0);
 
-        using Bitmap renderedBitmap = ImageMethods.GetBitmapFromIRandomAccessStream(renderedStream);
+        using Bitmap renderedBitmap = BitmapUtilities.GetBitmapFromIRandomAccessStream(renderedStream);
         return ImageMethods.BitmapToImageSource(renderedBitmap);
     }
 
