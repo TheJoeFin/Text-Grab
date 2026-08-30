@@ -48,13 +48,13 @@ public class FreeformCaptureUtilitiesTests
         using Graphics graphics = Graphics.FromImage(sourceBitmap);
         graphics.Clear(System.Drawing.Color.Black);
 
-        using Bitmap maskedBitmap = FreeformCaptureUtilities.CreateMaskedBitmap(
+        using Bitmap maskedBitmap = BitmapMaskUtilities.CreateMaskedBitmap(
             sourceBitmap,
             [
-                new Point(2, 2),
-                new Point(7, 2),
-                new Point(7, 7),
-                new Point(2, 7)
+                new PointF(2, 2),
+                new PointF(7, 2),
+                new PointF(7, 7),
+                new PointF(2, 7)
             ]);
 
         Assert.Equal(System.Drawing.Color.Gray.ToArgb(), maskedBitmap.GetPixel(0, 0).ToArgb());

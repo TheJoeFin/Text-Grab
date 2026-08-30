@@ -847,7 +847,8 @@ public partial class FullscreenGrab
         List<Point> relativePoints = [.. devicePoints.Select(point => new Point(point.X - deviceBounds.X, point.Y - deviceBounds.Y))];
 
         using Bitmap rawBitmap = ImageMethods.GetRegionOfScreenAsBitmap(absoluteCaptureRect.AsRectangle(), cacheResult: false);
-        Bitmap maskedBitmap = FreeformCaptureUtilities.CreateMaskedBitmap(rawBitmap, relativePoints);
+        List<System.Drawing.PointF> relativePointsF = [.. relativePoints.Select(point => point.AsPointF())];
+        Bitmap maskedBitmap = BitmapMaskUtilities.CreateMaskedBitmap(rawBitmap, relativePointsF);
         Singleton<HistoryService>.Instance.CacheLastBitmap(maskedBitmap);
 
         BitmapSource captureImage = ImageMethods.BitmapToImageSource(maskedBitmap);
