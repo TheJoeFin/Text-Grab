@@ -36,7 +36,7 @@ public class ClipboardUtilitiesTests
     [Fact]
     public void ConvertHtmlToTabSeparated_ParsesBasicTable()
     {
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(SampleCfHtml);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(SampleCfHtml);
 
         string[] lines = result.Split('\n');
         Assert.Equal(3, lines.Length);
@@ -54,7 +54,7 @@ public class ClipboardUtilitiesTests
             </table><!--EndFragment-->
             """;
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
 
         Assert.Equal("4 A\tSpring", result);
     }
@@ -63,7 +63,7 @@ public class ClipboardUtilitiesTests
     public void ConvertHtmlToTabSeparated_ReturnsEmptyWhenNoTable()
     {
         string html = "<!--StartFragment--><p>No table here</p><!--EndFragment-->";
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
         Assert.Empty(result);
     }
 
@@ -76,7 +76,7 @@ public class ClipboardUtilitiesTests
             </table><!--EndFragment-->
             """;
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
 
         Assert.Equal("A & B\t<tag>", result);
     }
@@ -91,7 +91,7 @@ public class ClipboardUtilitiesTests
             </table><!--EndFragment-->
             """;
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
 
         string[] lines = result.Split('\n');
         Assert.Equal(2, lines.Length);
@@ -109,7 +109,7 @@ public class ClipboardUtilitiesTests
             </table><!--EndFragment-->
             """;
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
 
         string[] lines = result.Split('\n');
         Assert.Equal(2, lines.Length);
@@ -127,7 +127,7 @@ public class ClipboardUtilitiesTests
             </table><!--EndFragment-->
             """;
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
 
         string[] lines = result.Split('\n');
         Assert.Equal(2, lines.Length);
@@ -145,7 +145,7 @@ public class ClipboardUtilitiesTests
             </table><!--EndFragment-->
             """;
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
 
         string[] lines = result.Split('\n');
         Assert.Equal(2, lines.Length);
@@ -173,7 +173,7 @@ public class ClipboardUtilitiesTests
     [Fact]
     public void ConvertHtmlToTabSeparated_ParsesBrowserExtensionRegionTable()
     {
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(ExtensionRegionTableCfHtml);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(ExtensionRegionTableCfHtml);
 
         string[] lines = result.Split('\n');
         Assert.Equal(3, lines.Length);
@@ -186,13 +186,13 @@ public class ClipboardUtilitiesTests
     [Fact]
     public void BuildCfHtmlTable_RoundTripsThroughConvertHtmlToTabSeparated()
     {
-        string cfHtml = ClipboardUtilities.BuildCfHtmlTable(
+        string cfHtml = CfHtmlTableUtilities.BuildCfHtmlTable(
             [
                 ["Month", "Int", "Season"],
                 ["January", "1", "Winter"],
             ]);
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(cfHtml);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(cfHtml);
 
         string[] lines = result.Split('\n');
         Assert.Equal(2, lines.Length);
@@ -203,7 +203,7 @@ public class ClipboardUtilitiesTests
     [Fact]
     public void BuildCfHtmlTable_HeaderOffsetsPointAtFragmentBoundaries()
     {
-        string cfHtml = ClipboardUtilities.BuildCfHtmlTable([["a", "b"]]);
+        string cfHtml = CfHtmlTableUtilities.BuildCfHtmlTable([["a", "b"]]);
 
         int startHtml = int.Parse(cfHtml.Substring(cfHtml.IndexOf("StartHTML:") + "StartHTML:".Length, 10));
         int endHtml = int.Parse(cfHtml.Substring(cfHtml.IndexOf("EndHTML:") + "EndHTML:".Length, 10));
@@ -224,9 +224,9 @@ public class ClipboardUtilitiesTests
     [Fact]
     public void BuildCfHtmlTable_EscapesHtmlAndConvertsNewlinesToBreaks()
     {
-        string cfHtml = ClipboardUtilities.BuildCfHtmlTable([["<b>A & B</b>", "line1\r\nline2"]]);
+        string cfHtml = CfHtmlTableUtilities.BuildCfHtmlTable([["<b>A & B</b>", "line1\r\nline2"]]);
 
-        string result = ClipboardUtilities.ConvertHtmlToTabSeparated(cfHtml);
+        string result = CfHtmlTableUtilities.ConvertHtmlToTabSeparated(cfHtml);
 
         Assert.Equal("<b>A & B</b>\tline1 line2", result);
     }
@@ -234,6 +234,6 @@ public class ClipboardUtilitiesTests
     [Fact]
     public void BuildCfHtmlTable_ReturnsEmptyForNoRows()
     {
-        Assert.Equal(string.Empty, ClipboardUtilities.BuildCfHtmlTable([]));
+        Assert.Equal(string.Empty, CfHtmlTableUtilities.BuildCfHtmlTable([]));
     }
 }

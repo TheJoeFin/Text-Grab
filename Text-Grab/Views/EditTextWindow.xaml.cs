@@ -1544,7 +1544,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty)
                 .ToList())];
 
-        return ClipboardUtilities.BuildCfHtmlTable(rows);
+        return CfHtmlTableUtilities.BuildCfHtmlTable(rows);
     }
 
     internal static string BuildSpreadsheetSelectionMarkdown(

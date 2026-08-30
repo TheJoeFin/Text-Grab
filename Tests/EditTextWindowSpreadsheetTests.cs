@@ -139,7 +139,7 @@ public class EditTextWindowSpreadsheetTests
                 (5, 5)
             ]);
 
-        string tabSeparated = Text_Grab.Utilities.ClipboardUtilities.ConvertHtmlToTabSeparated(html);
+        string tabSeparated = Text_Grab.Utilities.CfHtmlTableUtilities.ConvertHtmlToTabSeparated(html);
 
         Assert.Equal("a1\tc1" + Environment.NewLine + "a2\tc2", tabSeparated.Replace("\n", Environment.NewLine));
     }
