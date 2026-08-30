@@ -564,6 +564,27 @@ were `Singleton<WebSearchUrlModel>.Instance.{DefaultSearcher,WebSearchers}` acro
 `Singleton<WebSearchUrlCatalog>`. The data half's majority confirms the original name stayed with
 it, matching the `PatternItem`/`PatternItemCatalog` precedent.
 
+**Deferred-ledger sweep, run alongside 6b-6d.** Three §7 rows named blockers that had since
+landed: `Utilities/FileUtilities.cs` (blocked on `AutomationProfile.Current`, resolved in 6a),
+`Utilities/FileAssociationUtilities.cs` (blocked on `FileUtilities.GetExePath()`), and
+`Utilities/ContextMenuUtilities.cs` (blocked on `AutomationProfile.Current`,
+`FileUtilities.GetExePath()`, and the `IoUtilities` split, all resolved). Two moved cleanly:
+`ContextMenuUtilities.cs` moved unsplit. `FileUtilities.cs` needed one split: its
+`GetOpenDocumentFilter()` also calls `GrabFrameFileUtilities` (`.GrabFrameFileExtension`,
+`.GetGrabFrameFileFilter()`), which stays app-side - blocked on `HistoryInfo`, per its own §7 row,
+untouched here since `Services/HistoryService.cs` is out of scope for this sweep. Everything else
+in `FileUtilities` (12 other members, a dozen-plus call sites across the app) moved to
+Core.Windows keeping the name; `GetOpenDocumentFilter()` alone (3 call sites: `App.xaml.cs`,
+`EditTextWindow.xaml.cs`, one test) moved into a new app-side `OpenDocumentFilterUtilities.cs`,
+calling back into two of `FileUtilities`'s helpers (`GetVisualDocumentFilterPattern`,
+`GetExtensionsFilterPattern`) widened from `private` to `internal` for exactly that caller.
+`AppUtilities.IsPackaged()` calls in `FileUtilities` became `PackageIdentity.IsPackaged()` (the
+established 4e substitution - `AppUtilities.IsPackaged()` is a one-line forwarder to it).
+`FileAssociationUtilities.cs` did **not** move: its `GrabFrameExtensionKeyPath` constant
+references `GrabFrameFileUtilities.GrabFrameFileExtension` directly, the same `HistoryInfo`
+blocker one level removed - left in place with its §7 row rewritten. `Utilities/TesseractHelper.cs`
+was a stale §7 row - it moved in batch 4b and was simply never removed - deleted.
+
 **6e — `HistoryService.cs`. Opus owns this; it is a second `OcrUtilities`.** A genuinely headless
 JSON pipeline (`LoadHistoryAsync`, `LoadHistoryWithRecovery`, `WriteHistoryFiles`, the
 `Normalize*` methods, `HistoryLanguageKindJsonConverter`) is interleaved with WPF menu building,
@@ -760,10 +781,7 @@ Every row below was verified by reading the file, not inferred.
 | File | Blocker (specific) | Unblocked by |
 |---|---|---|
 | `Utilities/OcrSourceUtilities.cs` | Post-4c remainder. `LoadBitmapFromFile` builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite, and it takes `OcrAbsoluteFilePathAsync` and `OcrFile` with it. Engine dispatch additionally needs `WindowsAiUtilities` (5a) and `LanguageUtilities` (4e); the rest is `Window`/`BitmapSource` capture and stays | a GDI+/WIC rewrite, then 5a + 4e |
-| `Utilities/TesseractHelper.cs` | `TempImagePath()` calls `AutomationProfile.GetTemporaryDirectory()`. The settings write-back is **not** a blocker — `ITextGrabSettings.Save()` already covers it | 6a |
-| `Utilities/ContextMenuUtilities.cs` | `AutomationProfile.Current`, `FileUtilities.GetExePath()`; `IoUtilities` mixes pure extension lists with WinForms/Wpf.Ui `MessageBox` calls | 1a (IoUtilities split), 5, 6a |
-| `Utilities/FileAssociationUtilities.cs` | `FileUtilities.GetExePath()` | Wave 5 |
-| `Utilities/FileUtilities.cs` | `AutomationProfile.Current` in 6 methods | 6a |
+| `Utilities/FileAssociationUtilities.cs` | `GrabFrameExtensionKeyPath` is a `const` field initializer referencing `GrabFrameFileUtilities.GrabFrameFileExtension`, which requires the type at compile time. `GrabFrameFileUtilities` stays app-side (see its own row below), so this file does too - the same root blocker, one level removed | `GrabFrameFileUtilities` moving (`HistoryInfo`) |
 | `Utilities/GrabFrameFileUtilities.cs` | Public signature bound to `HistoryInfo`, which needs B2 (`Rect PositionRect`), 2a (five enums) and 4e. A façade was considered and rejected as larger than the file it wraps | 2d + 4e, or `HistoryInfo` moving |
 | `Services/SettingsService.cs` | Clones `ButtonInfo` and `ShortcutKeySet` field-by-field (both never-move); `Windows.Storage.ApplicationDataContainer` caps it at Core.Windows regardless | needs a `ButtonInfo` redesign — likely never |
 | `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so the remaining blocker is a plain split | a split |

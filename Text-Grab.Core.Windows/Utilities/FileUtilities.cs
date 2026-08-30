@@ -18,7 +18,7 @@ public class FileUtilities
         if (AutomationProfile.Current is not null)
             return GetImageFileUnpackaged(fileName, storageKind);
 
-        if (AppUtilities.IsPackaged() && AutomationProfile.Current is null)
+        if (PackageIdentity.IsPackaged() && AutomationProfile.Current is null)
             return GetImageFilePackaged(fileName, storageKind);
 
         return GetImageFileUnpackaged(fileName, storageKind);
@@ -53,31 +53,11 @@ public class FileUtilities
         });
     }
 
-    public static string GetOpenDocumentFilter()
-    {
-        string spreadsheetExtensions = GetExtensionsFilterPattern(IoUtilities.SpreadsheetExtensions);
-        string markdownExtensions = GetExtensionsFilterPattern(IoUtilities.MarkdownExtensions);
-        string grabFrameExtension = $"*{GrabFrameFileUtilities.GrabFrameFileExtension}";
-        string supportedExtensions = string.Join(";", new[]
-        {
-            GetVisualDocumentFilterPattern(),
-            grabFrameExtension,
-            spreadsheetExtensions,
-            markdownExtensions,
-            "*.txt"
-        }.Where(pattern => !string.IsNullOrWhiteSpace(pattern)));
-
-        return string.Join("|", new[]
-        {
-            $"Supported documents|{supportedExtensions}",
-            GetVisualDocumentFilter(),
-            GrabFrameFileUtilities.GetGrabFrameFileFilter(),
-            $"Spreadsheet documents|{spreadsheetExtensions}",
-            $"Markdown documents|{markdownExtensions}",
-            "Text documents (*.txt)|*.txt",
-            "All files (*.*)|*.*"
-        });
-    }
+    // GetOpenDocumentFilter() is NOT here: it also needs GrabFrameFileUtilities.
+    // GrabFrameFileUtilities stays app-side (blocked on HistoryInfo - see its section 7 row), so
+    // that filter builder lives in the app as OpenDocumentFilterUtilities.GetOpenDocumentFilter(),
+    // which calls back into GetVisualDocumentFilterPattern() and GetExtensionsFilterPattern()
+    // below (internal, for exactly that caller).
 
     public static string GetPathToLocalFile(string imageRelativePath)
     {
@@ -94,7 +74,7 @@ public class FileUtilities
         if (AutomationProfile.Current is AutomationProfile profile)
             return profile.HistoryDirectory;
 
-        if (AppUtilities.IsPackaged())
+        if (PackageIdentity.IsPackaged())
         {
             StorageFolder historyFolder = await GetStorageFolderPackaged("", FileStorageKind.WithHistory);
             return historyFolder.Path;
@@ -108,7 +88,7 @@ public class FileUtilities
         if (AutomationProfile.Current is not null)
             return GetTextFileUnpackaged(fileName, storageKind);
 
-        if (AppUtilities.IsPackaged())
+        if (PackageIdentity.IsPackaged())
             return GetTextFilePackaged(fileName, storageKind);
 
         return GetTextFileUnpackaged(fileName, storageKind);
@@ -119,7 +99,7 @@ public class FileUtilities
         if (AutomationProfile.Current is not null)
             return SaveImageFileUnpackaged(image, filename, storageKind);
 
-        if (AppUtilities.IsPackaged())
+        if (PackageIdentity.IsPackaged())
             return SaveImagePackaged(image, filename, storageKind);
 
         return SaveImageFileUnpackaged(image, filename, storageKind);
@@ -130,7 +110,7 @@ public class FileUtilities
         if (AutomationProfile.Current is not null)
             return SaveTextFileUnpackaged(textContent, filename, storageKind);
 
-        if (AppUtilities.IsPackaged())
+        if (PackageIdentity.IsPackaged())
             return SaveTextFilePackaged(textContent, filename, storageKind);
 
         return SaveTextFileUnpackaged(textContent, filename, storageKind);
@@ -156,12 +136,15 @@ public class FileUtilities
         return imageExtensions;
     }
 
-    private static string GetExtensionsFilterPattern(IEnumerable<string> extensions)
+    // internal rather than private: OpenDocumentFilterUtilities (app-side, split out because it
+    // also needs GrabFrameFileUtilities) calls this to build its own filter pattern.
+    internal static string GetExtensionsFilterPattern(IEnumerable<string> extensions)
     {
         return string.Join(";", extensions.Select(extension => $"*{extension}"));
     }
 
-    private static string GetVisualDocumentFilterPattern()
+    // internal for the same reason as GetExtensionsFilterPattern above.
+    internal static string GetVisualDocumentFilterPattern()
     {
         return string.Join(";", new[]
         {
@@ -369,7 +352,7 @@ public class FileUtilities
     public static async void TryDeleteHistoryDirectory()
     {
         FileStorageKind historyFolderKind = FileStorageKind.WithHistory;
-        if (AppUtilities.IsPackaged() && AutomationProfile.Current is null)
+        if (PackageIdentity.IsPackaged() && AutomationProfile.Current is null)
         {
             StorageFolder historyFolder = await GetStorageFolderPackaged("", historyFolderKind);
 

@@ -84,7 +84,7 @@ public partial class App : System.Windows.Application
     {
         OpenFileDialog openFileDialog = new()
         {
-            Filter = FileUtilities.GetOpenDocumentFilter(),
+            Filter = OpenDocumentFilterUtilities.GetOpenDocumentFilter(),
             Title = "Open File",
             CheckFileExists = true,
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)

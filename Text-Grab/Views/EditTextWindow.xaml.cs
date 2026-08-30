@@ -4426,7 +4426,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             // Set filter for file extension and default file extension 
             DefaultExt = ".txt",
-            Filter = FileUtilities.GetOpenDocumentFilter(),
+            Filter = OpenDocumentFilterUtilities.GetOpenDocumentFilter(),
             DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         };
 

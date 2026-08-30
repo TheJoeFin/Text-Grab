@@ -142,7 +142,7 @@ public class FilesIoTests
     [Fact]
     public void GetOpenDocumentFilter_IncludesVisualAndTextOptions()
     {
-        string filter = FileUtilities.GetOpenDocumentFilter();
+        string filter = OpenDocumentFilterUtilities.GetOpenDocumentFilter();
 
         Assert.Contains("Supported documents|", filter);
         Assert.Contains("Image and PDF files|", filter);
