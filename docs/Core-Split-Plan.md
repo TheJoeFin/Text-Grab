@@ -534,6 +534,18 @@ reads (`TtsVoiceName`, `TtsSpeakingRate`) moved from `Properties.Settings.Defaul
 views, not in this file.) The cleanest single file in the whole reorganization — use it as the
 anchor that proves Core.Windows can host NAudio/Whisper.
 
+**6c as executed.** Moved unsplit, keeping its name and its `Text_Grab.Utilities` namespace. The
+one settings touchpoint (`CurrentModelChoice`, reading `AudioTranscriptionModel`) switched from
+`AppUtilities.TextGrabSettings` to `SettingsAccess.Current`; `AudioTranscriptionModel` joined
+`ITextGrabSettings` and already existed in `Settings.settings`, so no `.settings` edit was needed.
+A repo-wide grep confirmed no other app file uses any NAudio or Whisper.net type directly (unlike
+the ZXing/CliWrap/Magick.NET precedent, where the app kept the package because app code still
+calls those types), so `NAudio`, `Whisper.net` and `Whisper.net.Runtime` moved to
+`Text-Grab.Core.Windows.csproj` outright rather than being duplicated in `Text-Grab.csproj`. The
+two consumers (`EditTextWindow.xaml.cs`, `OpenMediaWindow.xaml.cs`) only call
+`AudioTranscriptionUtilities`/`LiveAudioTranscriber` members, never NAudio/Whisper.net types
+directly, so nothing there needed a change.
+
 **6d — `WebSearchUrlModel` split**, exactly `PatternItem`/`PatternItemCatalog`-shaped: pure record
 → Core, static accessors stay in the app. No interface changes needed.
 

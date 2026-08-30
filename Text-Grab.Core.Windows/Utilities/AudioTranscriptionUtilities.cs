@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Text_Grab.Services;
 using Whisper.net;
 using Whisper.net.Ggml;
 
@@ -178,7 +179,7 @@ public static class AudioTranscriptionUtilities
         "Text-Grab", "WhisperModels");
 
     /// <summary>The transcription model currently selected in settings (defaults to multilingual base).</summary>
-    public static WhisperModelChoice CurrentModelChoice => WhisperModelInfo.Parse(AppUtilities.TextGrabSettings.AudioTranscriptionModel);
+    public static WhisperModelChoice CurrentModelChoice => WhisperModelInfo.Parse(SettingsAccess.Current.AudioTranscriptionModel);
 
     private static string ModelPathFor(WhisperModelChoice choice)
     {

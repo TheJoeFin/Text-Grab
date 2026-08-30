@@ -100,15 +100,6 @@
         <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.6" />
         <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.4.0" />
         <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.6" />
-        <!--
-            Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
-            stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
-            experimental Microsoft.Windows.AI.Speech APIs. NAudio decodes/resamples arbitrary audio
-            (mp3, m4a, wav, ...) to the 16 kHz mono WAV Whisper requires.
-        -->
-        <PackageReference Include="Whisper.net" Version="1.9.1" />
-        <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
-        <PackageReference Include="NAudio" Version="3.0.1" />
         <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
              build tool. Exclude all its assets so nuget.exe never flows into the app output. -->
         <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">

@@ -56,6 +56,15 @@
     <!-- Magick.NET Compare for ImageChangeDetector. -->
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.16.0" />
     <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.25" />
+    <!--
+        Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
+        stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
+        experimental Microsoft.Windows.AI.Speech APIs. NAudio decodes/resamples arbitrary audio
+        (mp3, m4a, wav, ...) to the 16 kHz mono WAV Whisper requires. For AudioTranscriptionUtilities.
+    -->
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+    <PackageReference Include="NAudio" Version="3.0.1" />
   </ItemGroup>
 
 </Project>

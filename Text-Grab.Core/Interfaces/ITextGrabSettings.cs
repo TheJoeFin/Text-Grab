@@ -71,6 +71,9 @@ public interface ITextGrabSettings
     /// <summary>Speaking rate passed to the TTS engine; only values in [0.5, 6.0] are applied.</summary>
     double TtsSpeakingRate { get; set; }
 
+    /// <summary>Which local Whisper model to use for on-device audio transcription.</summary>
+    string AudioTranscriptionModel { get; set; }
+
     /// <summary>Persist pending changes. Backed by ApplicationSettingsBase.Save().</summary>
     void Save();
 }
