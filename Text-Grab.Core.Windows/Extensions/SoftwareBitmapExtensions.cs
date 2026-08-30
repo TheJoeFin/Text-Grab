@@ -1,6 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Drawing.Imaging;
 using System.IO;
@@ -14,23 +13,6 @@ namespace Text_Grab.Extensions;
 
 public static class SoftwareBitmapExtensions
 {
-    public static async Task<SoftwareBitmapSource> ToSourceAsync(this SoftwareBitmap softwareBitmap)
-    {
-        SoftwareBitmapSource source = new();
-
-        if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 || softwareBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
-        {
-            SoftwareBitmap convertedBitmap = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
-            await source.SetBitmapAsync(convertedBitmap);
-        }
-        else
-        {
-            await source.SetBitmapAsync(softwareBitmap);
-        }
-
-        return source;
-    }
-
     public static async Task<SoftwareBitmap> FilePathToSoftwareBitmapAsync(this string filePath)
     {
         using IRandomAccessStream stream = await StorageFileExtensions.CreateStreamAsync(filePath);

@@ -46,8 +46,6 @@
   <ItemGroup>
     <!-- Windows AI OCR (RecognizedText/RecognizedLine/RecognizedWord) for WinAiOcrLinesWords. -->
     <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
-    <!-- Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource for SoftwareBitmapExtensions.ToSourceAsync. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.6" />
     <!-- GDI+ Bitmap barcode reading/writing (BarcodeReader/BarcodeWriter) for BarcodeUtilities. -->
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.14" />
     <!-- Tesseract.exe process invocation for TesseractHelper. -->
