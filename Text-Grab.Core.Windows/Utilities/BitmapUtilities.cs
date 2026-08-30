@@ -2,6 +2,8 @@ using System;
 using System.Drawing;
 using System.IO;
 using Text_Grab.Extensions;
+using Text_Grab.Services;
+using Text_Grab.Utilities.Hdr;
 using Windows.Storage.Streams;
 
 namespace Text_Grab;
@@ -41,5 +43,29 @@ public static class BitmapUtilities
         using Image img = Image.FromFile(path);
         RotateFlipType rotateFlipType = img.GetRotateFlipType();
         return rotateFlipType;
+    }
+
+    /// <summary>
+    /// Grabs a virtual-desktop region as a bitmap, preferring the HDR-aware capture path when the
+    /// user has enabled it. Internal rather than public: its only callers are ImageMethods'
+    /// GetRegionOfScreenAsBitmap and GetWindowsBoundsBitmap, both of which stay in the app -
+    /// GetRegionOfScreenAsBitmap because it writes to HistoryService, GetWindowsBoundsBitmap
+    /// because it pattern-matches on the GrabFrame view. It was private to ImageMethods before
+    /// batch 5b unblocked it by moving HdrScreenCapture into this assembly.
+    /// </summary>
+    internal static Bitmap CaptureScreenRegion(Rectangle region)
+    {
+        if (SettingsAccess.Current.HdrCaptureCorrection)
+        {
+            Bitmap? hdrBitmap = HdrScreenCapture.TryCaptureRegion(region);
+            if (hdrBitmap is not null)
+                return hdrBitmap;
+        }
+
+        Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using Graphics g = Graphics.FromImage(bmp);
+
+        g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        return bmp;
     }
 }

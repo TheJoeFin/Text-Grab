@@ -35,6 +35,12 @@ public interface ITextGrabSettings
     /// <summary>Scan captured images for barcodes and QR codes.</summary>
     bool TryToReadBarcodes { get; set; }
 
+    /// <summary>Use the HDR-aware capture path for screen regions.</summary>
+    bool HdrCaptureCorrection { get; set; }
+
+    /// <summary>Whether the user has already granted borderless screen-capture access.</summary>
+    bool HdrBorderlessGranted { get; set; }
+
     /// <summary>Fall back to OCR when UI Automation returns no text.</summary>
     bool UiAutomationFallbackToOcr { get; set; }
 

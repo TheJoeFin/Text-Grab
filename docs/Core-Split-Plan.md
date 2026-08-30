@@ -443,6 +443,20 @@ still app-side, deferred on `SoftwareBitmapExtensions` - which is 5a. Run 4e aft
 hop at line 472 behind a settable hook the app wires up at startup — it exists to pump a one-time
 OS consent dialog and is load-bearing.
 
+**5b as executed.** Both blockers cleared. `HdrBorderlessGranted` and `HdrCaptureCorrection` were
+added to `ITextGrabSettings`; both already existed in `Settings.settings`, so neither needed a
+`.settings` edit. The `Application.Current.Dispatcher` hop became
+`Text-Grab.Core/Services/UiThreadAccess.cs` - the same delegate-resolver shape as `SettingsAccess`,
+registered from an app-side `[ModuleInitializer]` so the Tests host is covered without an
+`App.appStartup` call. `TryPost` returning false is exactly the old `dispatcher is null` branch,
+and `_borderlessRequestStarted` is still set before the post either way, so a process with no UI
+thread does not re-request on every capture.
+
+With `HdrScreenCapture` in Core.Windows, 5c's deferred `CaptureScreenRegion` moved as well - into
+`BitmapUtilities` as `internal`, since its only two callers (`GetRegionOfScreenAsBitmap`,
+`GetWindowsBoundsBitmap`) stay in the app and Core.Windows already grants `InternalsVisibleTo`
+to it. That row is out of section 7.
+
 **5c — `ImageMethods.cs` split.** Headless half (→ Core.Windows): `PadImage`,
 `CaptureScreenRegion`, `GetBitmapFromIRandomAccessStream`, `GetRotateFlipType(string)`. Everything
 touching `BitmapImage`/`BitmapSource`/`CachedBitmap`/`InteropBitmap`/`Window`/`ImageSource` stays.
@@ -699,7 +713,6 @@ Every row below was verified by reading the file, not inferred.
 | `Utilities/GrabTemplateExecutor.cs` | `LoadStoredRegexes()` needs a non-scalar seam. `GrabTemplate`/`TemplateRegion` moved to Core in 2d and 4c has landed, so the remaining blocker is the settings façade plus its calls into `OcrSourceUtilities` | a façade + `OcrSourceUtilities` |
 | `Utilities/PdfDocumentRenderer.cs` | `RenderPageAsync` returns `BitmapSource` — a public API shape change affecting several views | 5f |
 | `Services/HistoryService.cs` | Headless JSON pipeline interleaved with WPF menu building and `GrabFrame`/`EditTextWindow` construction, sharing private state | Opus split (6e) |
-| `Utilities/ImageMethods.cs: CaptureScreenRegion` | Calls `HdrScreenCapture.TryCaptureRegion`, which stays in the app pending 5b's settable dispatcher hook. Core.Windows cannot reference the app, so this cannot move until `HdrScreenCapture.cs` does. `PadImage`, `GetBitmapFromIRandomAccessStream` and `GetRotateFlipType(string)` moved on their own to `Text-Grab.Core.Windows/Utilities/BitmapUtilities.cs`; `HdrCaptureCorrection` was **not** added to `ITextGrabSettings` because nothing that actually moved reads it - `CaptureScreenRegion` still reads it via `AppUtilities.TextGrabSettings` in the app | 5b |
 
 ## 8. Verified dead code — free, zero-risk prep
 

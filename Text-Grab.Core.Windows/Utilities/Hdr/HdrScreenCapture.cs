@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Text_Grab.Services;
 using System.Threading;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -463,17 +464,17 @@ public static class HdrScreenCapture
         // Only silently re-activate for users who already granted access in a past session, so a
         // consent prompt never appears unexpectedly during a grab. First-time consent is explicit,
         // via the "Check permissions" button in settings.
-        if (!AppUtilities.TextGrabSettings.HdrBorderlessGranted)
+        if (!SettingsAccess.Current.HdrBorderlessGranted)
             return;
 
         if (System.Threading.Interlocked.Exchange(ref _borderlessRequestStarted, 1) != 0)
             return;
 
-        System.Windows.Threading.Dispatcher? dispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (dispatcher is null)
-            return;
-
-        _ = dispatcher.InvokeAsync(async () => await RequestBorderlessAccessAsync());
+        // Was Application.Current?.Dispatcher.InvokeAsync before this file moved out of the app.
+        // TryPost returning false is the old "dispatcher is null" branch: nothing to post to, so
+        // nothing happens. The flag above is still set either way, exactly as before - a process
+        // with no UI thread does not retry the request on every capture.
+        _ = UiThreadAccess.TryPost(static () => _ = RequestBorderlessAccessAsync());
     }
 
     #region WinRT / D3D interop

@@ -79,25 +79,9 @@ public static class ImageMethods
     /// full precision and tone-map it back to SDR so the result isn't washed out (issue #111).
     /// Falls back to a plain GDI screen copy otherwise or if HDR capture fails.
     /// </summary>
-    private static Bitmap CaptureScreenRegion(Rectangle region)
-    {
-        if (AppUtilities.TextGrabSettings.HdrCaptureCorrection)
-        {
-            Bitmap? hdrBitmap = HdrScreenCapture.TryCaptureRegion(region);
-            if (hdrBitmap is not null)
-                return hdrBitmap;
-        }
-
-        Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics g = Graphics.FromImage(bmp);
-
-        g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-        return bmp;
-    }
-
     public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region, bool cacheResult = true)
     {
-        Bitmap bmp = CaptureScreenRegion(region);
+        Bitmap bmp = BitmapUtilities.CaptureScreenRegion(region);
         bmp = BitmapUtilities.PadImage(bmp);
 
         if (cacheResult)
@@ -144,7 +128,7 @@ public static class ImageMethods
         }
 
         Rectangle windowRegion = new(thisCorrectedLeft, thisCorrectedTop, windowWidth, windowHeight);
-        return CaptureScreenRegion(windowRegion);
+        return BitmapUtilities.CaptureScreenRegion(windowRegion);
     }
 
     public static ImageSource GetWindowBoundsImage(Window passedWindow)
