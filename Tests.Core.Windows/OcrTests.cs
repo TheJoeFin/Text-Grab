@@ -120,6 +120,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         Assert.Equal("First line", group.DisplayText);
         Assert.Equal("First line", group.SingleLineText);
     }
+
     [Fact]
     public async Task OcrComplexTableTestImage()
     {
@@ -152,6 +153,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
         // Then
         Assert.Equal(expectedResult, stringBuilder.ToString());
     }
+
     [Fact(Skip = "fails GitHub actions")]
     public async Task GetTessLanguages()
     {
@@ -166,6 +168,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
             Assert.Contains(tag, actualStrings);
         }
     }
+
     [Fact(Skip = "fails GitHub actions")]
     public async Task GetTesseractStrongLanguages()
     {
@@ -185,6 +188,7 @@ REVENUES OVERY(UNDER) EXPENDITURES	$9,749	$0	$9,749	N/A";
             Assert.Contains(tag.AbbreviatedName, actualList.Select(x => x.AbbreviatedName).ToList());
         }
     }
+
     [Fact(Skip = "fails GitHub actions")]
     public async Task GetTesseractGitHubLanguage()
     {
