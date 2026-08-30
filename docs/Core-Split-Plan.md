@@ -426,6 +426,24 @@ to `CultureInfo.CurrentUICulture.Name` when none is registered. But `GetAllLangu
 `GetOCRLanguage()` both call `WindowsAiUtilities.CanDeviceUseWinAI()`, and `WindowsAiUtilities` is
 still app-side, deferred on `SoftwareBitmapExtensions` - which is 5a. Run 4e after wave 5.
 
+**4e as executed, after wave 5.** `WindowsAiUtilities` moved first - its three blockers were all
+gone (`AutomationProfile` in 6a, `SoftwareBitmapExtensions` in 5a, and `OverrideAiArchCheck` added
+to `ITextGrabSettings` here). Its one remaining app call, `AppUtilities.IsPackaged()`, is a plain
+forwarder to `PackageIdentity.IsPackaged()`, which has been in Core.Windows since 1b.
+
+That cleared the way for the whole language chain to move to Core.Windows **unsplit** -
+`LanguageService`, `LanguageUtilities`, `CaptureLanguageUtilities`, all keeping their names, so
+none of their 155 call sites needed an edit. `UiAutomationEnabled` and `WindowsAiDescriptionEnabled`
+joined `ITextGrabSettings` as the table predicted. `Singleton<T>` was already in Core.
+
+The `InputLanguageManager` blocker became `Text-Grab.Core/Services/InputLanguageAccess.cs`, the
+third instance of the delegate-resolver shape after `SettingsAccess` and `UiThreadAccess`. The
+`NullReferenceException` catch that guarded the read stayed on the app side of the seam, inside the
+registered resolver, since that is the only side that knows InputLanguageManager exists. A null tag
+- no resolver, or no input language - still falls through to `CultureInfo.CurrentUICulture` and then
+to en-US, exactly as before. Extracting the switch helpers, which the paragraph above proposed,
+turned out to be unnecessary.
+
 ### 4.5 Wave 5 — capture and imaging → Core.Windows
 
 **5a — move-now (after Wave 1):**
@@ -702,8 +720,6 @@ Every row below was verified by reading the file, not inferred.
 |---|---|---|
 | `Utilities/OcrSourceUtilities.cs` | Post-4c remainder. `LoadBitmapFromFile` builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite, and it takes `OcrAbsoluteFilePathAsync` and `OcrFile` with it. Engine dispatch additionally needs `WindowsAiUtilities` (5a) and `LanguageUtilities` (4e); the rest is `Window`/`BitmapSource` capture and stays | a GDI+/WIC rewrite, then 5a + 4e |
 | `Utilities/TesseractHelper.cs` | `TempImagePath()` calls `AutomationProfile.GetTemporaryDirectory()`. The settings write-back is **not** a blocker — `ITextGrabSettings.Save()` already covers it | 6a |
-| `Services/LanguageService.cs` | `System.Windows.Input.InputLanguageManager` (line 376), no portable substitute; reachable in production, not vestigial | Opus split (4e) |
-| `Utilities/WindowsAiUtilities.cs` | `AutomationProfile.GetTemporaryFilePath()` (109, 189); `SoftwareBitmapExtensions` unmoved; reads `Settings.Default.OverrideAiArchCheck` directly (61) | 6a + 5a + one interface add |
 | `Utilities/ContextMenuUtilities.cs` | `AutomationProfile.Current`, `FileUtilities.GetExePath()`; `IoUtilities` mixes pure extension lists with WinForms/Wpf.Ui `MessageBox` calls | 1a (IoUtilities split), 5, 6a |
 | `Utilities/FileAssociationUtilities.cs` | `FileUtilities.GetExePath()` | Wave 5 |
 | `Utilities/FileUtilities.cs` | `AutomationProfile.Current` in 6 methods | 6a |

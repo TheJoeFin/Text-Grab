@@ -26,6 +26,9 @@ public interface ITextGrabSettings
     /// <summary>Map look-alike Greek and Cyrillic characters to Latin.</summary>
     bool CorrectToLatin { get; set; }
 
+    /// <summary>Bypass the arm64 gate on the Windows AI feature checks.</summary>
+    bool OverrideAiArchCheck { get; set; }
+
     /// <summary>Join OCR lines into paragraphs instead of preserving line breaks.</summary>
     bool ParagraphDetection { get; set; }
 
@@ -40,6 +43,12 @@ public interface ITextGrabSettings
 
     /// <summary>Whether the user has already granted borderless screen-capture access.</summary>
     bool HdrBorderlessGranted { get; set; }
+
+    /// <summary>Offer UI Automation as a text source alongside the OCR engines.</summary>
+    bool UiAutomationEnabled { get; set; }
+
+    /// <summary>Offer the Windows AI image-description pseudo-language.</summary>
+    bool WindowsAiDescriptionEnabled { get; set; }
 
     /// <summary>Fall back to OCR when UI Automation returns no text.</summary>
     bool UiAutomationFallbackToOcr { get; set; }

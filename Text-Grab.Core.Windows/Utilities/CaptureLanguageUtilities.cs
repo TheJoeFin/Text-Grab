@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
+using Text_Grab.Services;
 
 namespace Text_Grab.Utilities;
 
@@ -21,7 +22,7 @@ internal static class CaptureLanguageUtilities
         List<ILanguage> languages = [.. LanguageUtilities.GetAllLanguages()];
 
         if (includeTesseract
-            && AppUtilities.TextGrabSettings.UseTesseract
+            && SettingsAccess.Current.UseTesseract
             && TesseractHelper.CanLocateTesseractExe())
         {
             List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
@@ -64,8 +65,8 @@ internal static class CaptureLanguageUtilities
 
     public static void PersistSelectedLanguage(ILanguage language)
     {
-        AppUtilities.TextGrabSettings.LastUsedLang = language.LanguageTag;
-        AppUtilities.TextGrabSettings.Save();
+        SettingsAccess.Current.LastUsedLang = language.LanguageTag;
+        SettingsAccess.Current.Save();
         LanguageUtilities.InvalidateOcrLanguageCache();
     }
 

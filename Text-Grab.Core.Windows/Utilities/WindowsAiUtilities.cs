@@ -14,7 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Text_Grab.Models;
-using Text_Grab.Properties;
+using Text_Grab.Services;
 using Windows.Graphics.Imaging;
 
 namespace Text_Grab.Utilities;
@@ -53,12 +53,12 @@ public static class WindowsAiUtilities
     private static bool MeetsWindowsAiPrerequisites()
     {
         // Check if the app is packaged and if the AI feature is supported
-        if (!AppUtilities.IsPackaged() || OSInterop.IsWindows10())
+        if (!PackageIdentity.IsPackaged() || OSInterop.IsWindows10())
             return false;
 
         // Today, Windows AI features are only supported on ARM64 unless overridden for debugging.
         Architecture arch = RuntimeInformation.ProcessArchitecture;
-        if (arch != Architecture.Arm64 && !Settings.Default.OverrideAiArchCheck)
+        if (arch != Architecture.Arm64 && !SettingsAccess.Current.OverrideAiArchCheck)
             return false;
 
         return true;

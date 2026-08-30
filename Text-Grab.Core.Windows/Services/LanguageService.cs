@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Windows.Input;
 using Text_Grab.Interfaces;
+using Text_Grab.Services;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Windows.Globalization;
@@ -76,7 +76,7 @@ public class LanguageService
 
             List<ILanguage> languages = [];
 
-            if (AppUtilities.TextGrabSettings.UiAutomationEnabled)
+            if (SettingsAccess.Current.UiAutomationEnabled)
                 languages.Add(_uiAutomationLangInstance);
 
             if (WindowsAiUtilities.CanDeviceUseWinAI())
@@ -85,7 +85,7 @@ public class LanguageService
                 languages.Add(_windowsAiLangInstance);
             }
 
-            if (AppUtilities.TextGrabSettings.WindowsAiDescriptionEnabled
+            if (SettingsAccess.Current.WindowsAiDescriptionEnabled
                 && WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
             {
                 languages.Add(_windowsAiDescriptionLangInstance);
@@ -167,7 +167,7 @@ public class LanguageService
     /// </summary>
     public ILanguage GetOCRLanguage()
     {
-        string lastUsedLang = AppUtilities.TextGrabSettings.LastUsedLang;
+        string lastUsedLang = SettingsAccess.Current.LastUsedLang;
 
         lock (_cacheLock)
         {
@@ -194,7 +194,7 @@ public class LanguageService
                 }
                 else if (lastUsedLang == _windowsAiDescriptionLangTag)
                 {
-                    if (AppUtilities.TextGrabSettings.WindowsAiDescriptionEnabled
+                    if (SettingsAccess.Current.WindowsAiDescriptionEnabled
                         && WindowsAiUtilities.CanDeviceDescribeImagesWithWinAI())
                     {
                         _cachedOcrLanguage = _windowsAiDescriptionLangInstance;
@@ -203,7 +203,7 @@ public class LanguageService
 
                     selectedLanguage = GetCurrentInputLanguage();
                 }
-                else if (lastUsedLang == _uiAutomationLangTag && AppUtilities.TextGrabSettings.UiAutomationEnabled)
+                else if (lastUsedLang == _uiAutomationLangTag && SettingsAccess.Current.UiAutomationEnabled)
                 {
                     _cachedOcrLanguage = _uiAutomationLangInstance;
                     return _cachedOcrLanguage;
@@ -370,15 +370,10 @@ public class LanguageService
 
     private static string GetCurrentInputLanguageTag()
     {
-        string? currentInputLangTag = null;
-        try
-        {
-            currentInputLangTag = InputLanguageManager.Current?.CurrentInputLanguage?.Name;
-        }
-        catch (NullReferenceException)
-        {
-            currentInputLangTag = null;
-        }
+        // Was InputLanguageManager.Current?.CurrentInputLanguage?.Name before this file moved out
+        // of the app. InputLanguageManager is PresentationCore; the app registers the read (and
+        // owns the NullReferenceException its internals can throw) via InputLanguageAccess.
+        string? currentInputLangTag = InputLanguageAccess.CurrentTag;
 
         if (!string.IsNullOrWhiteSpace(currentInputLangTag))
             return currentInputLangTag;
