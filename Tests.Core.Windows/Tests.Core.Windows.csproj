@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Text_Grab.Tests.Core.Windows</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- Text-Grab.Core.Windows pulls in Microsoft.WindowsAppSDK.AI, whose targets fail with
+         "WindowsAppSDKSelfContained requires a supported Windows architecture" unless the
+         consuming project names one. Same set as Tests.csproj; build with -p:Platform=x64. -->
+    <Platforms>x64;x86;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <!-- Matches Text-Grab.Core.Windows: these tests cover the headless Windows tier, so WPF
+         must stay off here too or a test could pass against a reference the library cannot use. -->
+    <UseWPF>false</UseWPF>
+    <UseWindowsForms>false</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Text-Grab.Core.Windows\Text-Grab.Core.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exclusively used by OcrTests.OcrComplexTableTestImage (batch 7a), so it moved here
+         wholesale instead of being linked back to Tests. -->
+    <None Update="TextFiles\Table-Complex-WordBorders.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ImageChangeDetectorTests (batch 7a) needs these, but they stay physically in
+         Tests\Images because Tests\ImageMethodsTests.cs, Tests\OcrSourceTests.cs and
+         Tests\FilesIoTests.cs (font_sample.png only) also read them and did not move. -->
+    <Content Include="..\Tests\Images\FontTest.png" Link="Images\FontTest.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Tests\Images\font_sample.png" Link="Images\font_sample.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

@@ -124,7 +124,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private bool isSyncingTextFromMarkdown = false;
     private bool isApplyingSpreadsheetLayout = false;
     private bool isApplyingMarkdownDocument = false;
-    private MarkdownDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
+    private MarkdownFlowDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
     private string? markdownOffsetMapSourceText;
     private bool isLoadingOpenedFile = false;
     private bool hasPendingFileEdits = false;
@@ -194,7 +194,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         historyId = historyInfo.ID;
 
-        if (historyInfo.PositionRect != Rect.Empty)
+        if (historyInfo.PositionRect != System.Drawing.RectangleF.Empty)
         {
             this.Left = historyInfo.PositionRect.X;
             this.Top = historyInfo.PositionRect.Y;
@@ -1005,11 +1005,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void LoadMarkdownDocumentFromText(string? markdownText)
     {
         isApplyingMarkdownDocument = true;
-        MarkdownEditorControl.Document = MarkdownDocumentUtilities.CreateFlowDocument(
+        MarkdownEditorControl.Document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
             markdownText,
             MarkdownEditorControl.FontFamily,
             MarkdownEditorControl.FontSize);
-        markdownOffsetMap = MarkdownDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
+        markdownOffsetMap = MarkdownFlowDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
         markdownOffsetMapSourceText = markdownText ?? string.Empty;
         ApplyMarkdownTheme();
         ApplyMarkdownWrapSetting();
@@ -1023,7 +1023,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
 
         isSyncingTextFromMarkdown = true;
-        PassedTextControl.Text = MarkdownDocumentUtilities.SerializeToMarkdown(
+        PassedTextControl.Text = MarkdownFlowDocumentUtilities.SerializeToMarkdown(
             MarkdownEditorControl.Document,
             preserveLiteralMarkdown: true);
         isSyncingTextFromMarkdown = false;
@@ -1034,7 +1034,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (MarkdownEditorControl.Document is null)
             return;
 
-        MarkdownDocumentUtilities.ApplyTheme(
+        MarkdownFlowDocumentUtilities.ApplyTheme(
             MarkdownEditorControl.Document,
             this,
             SystemThemeUtility.IsLightTheme());
@@ -1544,7 +1544,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty)
                 .ToList())];
 
-        return ClipboardUtilities.BuildCfHtmlTable(rows);
+        return CfHtmlTableUtilities.BuildCfHtmlTable(rows);
     }
 
     internal static string BuildSpreadsheetSelectionMarkdown(
@@ -2522,7 +2522,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         ResetSpreadsheetUndoHistory();
-        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
+        (string TextContent, OpenContentKind KindOpened) = await FileOpenUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
         bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
 
         if (KindOpened == OpenContentKind.TextFile)
@@ -3292,7 +3292,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// markdown <paramref name="index"/>/<paramref name="length"/> are measured against — bold
     /// markers, heading <c>#</c>s, list bullets, link brackets, etc. are stripped on render. The
     /// index is translated through the offset map built alongside the rendered document
-    /// (<see cref="MarkdownDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
+    /// (<see cref="MarkdownFlowDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
     /// </remarks>
     public void SelectInEditor(int index, int length)
     {
@@ -3304,8 +3304,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             if (MarkdownEditorControl.Document is not null)
             {
-                TextPointer start = MarkdownDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
-                TextPointer end = MarkdownDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
+                TextPointer start = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
+                TextPointer end = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
                 MarkdownEditorControl.Selection.Select(start, end);
                 MarkdownEditorControl.Focus();
                 start.Paragraph?.BringIntoView();
@@ -3493,7 +3493,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PopulateTemplateMenu(ApplyGrabTemplateMenuItem, textOnlyTemplates, ApplyGrabTemplateItem_Click);
         PopulateTemplateMenu(ApplyGrabTemplatePerLineMenuItem, textOnlyTemplates, ApplyGrabTemplatePerLineItem_Click);
 
-        List<PatternItem> patterns = [.. PatternItem.GetAll()];
+        List<PatternItem> patterns = [.. PatternItemCatalog.GetAll()];
         PopulatePatternMenu(
             ApplyPatternMenuItem,
             patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
@@ -3872,7 +3872,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string possibleSearch = PassedTextControl.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
 
-        WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+        WebSearchUrlModel searcher = Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher;
 
         Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
         _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
@@ -4404,7 +4404,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
+            ocrFile.OcrResult = await OcrSourceUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
             if (!options.WriteTxtFiles)
@@ -4715,8 +4715,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         bool shouldParseAsMarkdown = MarkdownDocumentUtilities.LooksLikeMarkdown(pastedText);
         int selectionStartOffset = GetMarkdownPlainTextOffset(MarkdownEditorControl.Selection.Start);
         int renderedPasteLength = shouldParseAsMarkdown
-            ? MarkdownDocumentUtilities.GetDocumentPlainText(
-                MarkdownDocumentUtilities.CreateFlowDocument(
+            ? MarkdownFlowDocumentUtilities.GetDocumentPlainText(
+                MarkdownFlowDocumentUtilities.CreateFlowDocument(
                     pastedText,
                     MarkdownEditorControl.FontFamily,
                     MarkdownEditorControl.FontSize)).Length
@@ -4867,7 +4867,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                 string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
@@ -4891,7 +4891,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                     string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
@@ -4913,7 +4913,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         HistoryService hs = Singleton<HistoryService>.Instance;
 
         if (hs.HasAnyFullscreenHistory())
-            await OcrUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
+            await OcrSourceUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
     }
 
     private async void RateAndReview_Click(object sender, RoutedEventArgs e)
@@ -5509,7 +5509,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = newWindowWithSelectionCommand.InputGestures.Add(new KeyGesture(Key.N, ModifierKeys.Control));
         _ = CommandBindings.Add(new CommandBinding(newWindowWithSelectionCommand, NewWindowWithText_Clicked));
 
-        List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
+        List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlCatalog>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
         {
@@ -5740,7 +5740,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             string plainText = MarkdownEditorControl.Document is null
                 ? string.Empty
-                : MarkdownDocumentUtilities.GetDocumentPlainText(MarkdownEditorControl.Document);
+                : MarkdownFlowDocumentUtilities.GetDocumentPlainText(MarkdownEditorControl.Document);
             string selectedText = MarkdownEditorControl.Selection.Text.TrimEnd('\r', '\n');
 
             BottomBarText.Text = string.IsNullOrEmpty(selectedText)

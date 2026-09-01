@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Text;
-using System.Windows;
 using Text_Grab.Models;
 
 namespace Tests;
@@ -17,7 +16,7 @@ public class ResultTableManualSeparatorTests
         ];
 
         ResultTable automaticTable = new();
-        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200), drawTable: false);
+        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200));
 
         StringBuilder automaticText = new();
         ResultTable.GetTextFromTabledWordBorders(automaticText, automaticInfos, true);
@@ -34,8 +33,7 @@ public class ResultTableManualSeparatorTests
             manualInfos,
             new Rectangle(0, 0, 200, 200),
             manualRowSeparators: [18d],
-            manualColumnSeparators: null,
-            drawTable: false);
+            manualColumnSeparators: null);
 
         StringBuilder manualText = new();
         ResultTable.GetTextFromTabledWordBorders(manualText, manualInfos, true);
@@ -56,7 +54,7 @@ public class ResultTableManualSeparatorTests
         ];
 
         ResultTable automaticTable = new();
-        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200), drawTable: false);
+        automaticTable.AnalyzeAsTable(automaticInfos, new Rectangle(0, 0, 200, 200));
 
         StringBuilder automaticText = new();
         ResultTable.GetTextFromTabledWordBorders(automaticText, automaticInfos, true);
@@ -75,8 +73,7 @@ public class ResultTableManualSeparatorTests
             manualInfos,
             new Rectangle(0, 0, 200, 200),
             manualRowSeparators: null,
-            manualColumnSeparators: [25d],
-            drawTable: false);
+            manualColumnSeparators: [25d]);
 
         StringBuilder manualText = new();
         ResultTable.GetTextFromTabledWordBorders(manualText, manualInfos, true);
@@ -90,7 +87,7 @@ public class ResultTableManualSeparatorTests
         return new WordBorderInfo
         {
             Word = word,
-            BorderRect = new Rect(left, top, width, height)
+            BorderRect = new RectangleF((float)left, (float)top, (float)width, (float)height)
         };
     }
 }

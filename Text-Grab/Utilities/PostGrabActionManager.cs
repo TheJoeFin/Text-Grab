@@ -209,7 +209,7 @@ public class PostGrabActionManager
 
             case "WebSearch_Click":
                 string searchStringUrlSafe = WebUtility.UrlEncode(text);
-                WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+                WebSearchUrlModel searcher = Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher;
                 Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
                 _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
                 // Don't modify the text for web search

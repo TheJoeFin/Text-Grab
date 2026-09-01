@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <WindowsSdkPackageVersion>10.0.22621.48</WindowsSdkPackageVersion>
+    <RootNamespace>Text_Grab</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseWPF>false</UseWPF>
+    <UseWindowsForms>false</UseWindowsForms>
+    <IsPackable>false</IsPackable>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Text-Grab.Core\Text-Grab.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    The Windows AI language model (Phi Silica) is a Limited Access Feature.
+    LimitedAccessFeatureUtilities.GetSetting reads the token/publisher ID back from this assembly's
+    own AssemblyMetadata, falling back to the LAF_TOKEN/LAF_PUBLISHER_ID environment variables.
+
+    Never commit a token. Pass it in at build time instead:
+        dotnet build -p:LafToken="..." -p:LafPublisherId="..."
+    or set the LAF_TOKEN / LAF_PUBLISHER_ID environment variables for local development, which the
+    properties below pick up so Visual Studio builds get the token too. Building Text-Grab.csproj (or
+    the wapproj) with these properties set flows them through its ProjectReference into this project's
+    build unchanged, since MSBuild passes the same global properties to referenced projects by default.
+    See docs/Configuring-LAF-Environment-Variables.md.
+  -->
+  <PropertyGroup>
+    <LafToken Condition="'$(LafToken)' == ''">$(LAF_TOKEN)</LafToken>
+    <LafPublisherId Condition="'$(LafPublisherId)' == ''">$(LAF_PUBLISHER_ID)</LafPublisherId>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(LafToken)' != ''">
+    <AssemblyMetadata Include="LAF_TOKEN" Value="$(LafToken)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(LafPublisherId)' != ''">
+    <AssemblyMetadata Include="LAF_PUBLISHER_ID" Value="$(LafPublisherId)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Windows AI OCR (RecognizedText/RecognizedLine/RecognizedWord) for WinAiOcrLinesWords. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
+    <!-- GDI+ Bitmap barcode reading/writing (BarcodeReader/BarcodeWriter) for BarcodeUtilities. -->
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.14" />
+    <!-- Tesseract.exe process invocation for TesseractHelper. -->
+    <PackageReference Include="CliWrap" Version="3.10.5" />
+    <!-- IDXGIOutput6/DXGI enumeration for DisplayHdrInfo. -->
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <!-- Magick.NET Compare for ImageChangeDetector. -->
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.16.0" />
+    <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.25" />
+    <!--
+        Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
+        stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
+        experimental Microsoft.Windows.AI.Speech APIs. NAudio decodes/resamples arbitrary audio
+        (mp3, m4a, wav, ...) to the 16 kHz mono WAV Whisper requires. For AudioTranscriptionUtilities.
+    -->
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+    <PackageReference Include="NAudio" Version="3.0.1" />
+  </ItemGroup>
+
+</Project>

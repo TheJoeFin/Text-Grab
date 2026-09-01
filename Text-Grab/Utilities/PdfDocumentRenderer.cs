@@ -417,7 +417,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         Func<Windows.Foundation.Rect, bool>? sourceRectPredicate = null)
     {
         using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(renderedPage);
-        (IOcrLinesWords? ocrResult, double scale) = await OcrUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
+        (IOcrLinesWords? ocrResult, double scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
         if (ocrResult is null || ocrResult.Lines.Length == 0)
             return [];
 
@@ -472,7 +472,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         await page.RenderToStreamAsync(renderedStream, renderOptions);
         renderedStream.Seek(0);
 
-        using Bitmap renderedBitmap = ImageMethods.GetBitmapFromIRandomAccessStream(renderedStream);
+        using Bitmap renderedBitmap = BitmapUtilities.GetBitmapFromIRandomAccessStream(renderedStream);
         return ImageMethods.BitmapToImageSource(renderedBitmap);
     }
 

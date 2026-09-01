@@ -1,13 +1,9 @@
 ﻿using Humanizer;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,27 +17,23 @@ using SymbolRegular = Wpf.Ui.Controls.SymbolRegular;
 
 namespace Text_Grab.Services;
 
+/// <summary>
+/// The live, app-bound half of the grab history: the in-memory lists, the DispatcherTimer that
+/// debounces writes and the one that releases the cache when it goes idle, the cached fullscreen
+/// bitmap, the recent-grabs menu, and opening a history entry back into a GrabFrame.
+///
+/// Everything that only touches the disk - loading, writing, normalization, the word-border
+/// sidecar files and the retention rules - moved to
+/// <see cref="Text_Grab.Utilities.HistoryFileUtilities"/> in batch 6e of the Core split. What
+/// holds the rest here is state plus WPF: DispatcherTimer and MenuItem are WindowsBase and
+/// PresentationFramework, and SaveToHistory takes a GrabFrame and an EditTextWindow.
+/// </summary>
 public partial class HistoryService : IDisposable
 {
     #region Fields
 
-    private static readonly int maxHistoryTextOnly = 100;
-    private static readonly int maxHistoryWithImages = 10;
-    private static readonly int maxHistoryPdfDocuments = 10;
-    private const string WordBorderInfoFileSuffix = ".wordborders.json";
     private static readonly TimeSpan historyCacheCheckInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan historyCacheIdleLifetime = TimeSpan.FromMinutes(2);
-    private static readonly AsyncLocal<bool> HistoryLanguageKindFallbackUsed = new();
-    private static readonly JsonSerializerOptions HistoryJsonOptions = new()
-    {
-        AllowTrailingCommas = true,
-        WriteIndented = true,
-        Converters =
-        {
-            new HistoryLanguageKindJsonConverter(),
-            new JsonStringEnumConverter()
-        }
-    };
     private List<HistoryInfo> HistoryTextOnly = [];
     private List<HistoryInfo> HistoryWithImage = [];
     private readonly DispatcherTimer saveTimer = new();
@@ -123,7 +115,7 @@ public partial class HistoryService : IDisposable
     {
         EnsureImageHistoryLoaded();
         TouchHistoryCache();
-        HistoryInfo? lastHistoryItem = GetMostRecentGrab(HistoryWithImage);
+        HistoryInfo? lastHistoryItem = HistoryFileUtilities.GetMostRecentGrab(HistoryWithImage);
 
         if (lastHistoryItem is not HistoryInfo historyInfo)
             return false;
@@ -133,13 +125,6 @@ public partial class HistoryService : IDisposable
         try { grabFrame.Show(); }
         catch { return false; }
         return true;
-    }
-
-    internal static HistoryInfo? GetMostRecentGrab(IEnumerable<HistoryInfo> historyItems)
-    {
-        return historyItems
-            .Where(history => !history.IsPdfDocument)
-            .MaxBy(history => history.CaptureDateTime);
     }
 
     public string GetLastTextHistory()
@@ -182,19 +167,27 @@ public partial class HistoryService : IDisposable
         _hasPendingWrite = false;
         ReleaseLoadedHistoriesCore();
 
-        (HistoryTextOnly, bool textHistoryNeedsRewrite) = await LoadHistoryAsync(nameof(HistoryTextOnly));
+        (HistoryTextOnly, bool textHistoryNeedsRewrite) =
+            await HistoryFileUtilities.LoadHistoryAsync(nameof(HistoryTextOnly));
         _textHistoryLoaded = true;
-        NormalizeHistoryIds(HistoryTextOnly);
-        if (textHistoryNeedsRewrite || NormalizeHistoryCompatibilityData(HistoryTextOnly))
+        // Both normalizers mutate, so neither may be short-circuited away by the other.
+        bool normalizedTextIds = HistoryFileUtilities.NormalizeHistoryIds(HistoryTextOnly);
+        bool normalizedTextCompatibilityData = HistoryFileUtilities.NormalizeHistoryCompatibilityData(HistoryTextOnly);
+
+        if (normalizedTextIds || textHistoryNeedsRewrite || normalizedTextCompatibilityData)
             MarkHistoryDirty();
 
-        (HistoryWithImage, bool imageHistoryNeedsRewrite) = await LoadHistoryAsync(nameof(HistoryWithImage));
+        (HistoryWithImage, bool imageHistoryNeedsRewrite) =
+            await HistoryFileUtilities.LoadHistoryAsync(nameof(HistoryWithImage));
         _imageHistoryLoaded = true;
-        NormalizeHistoryIds(HistoryWithImage);
-        if (imageHistoryNeedsRewrite || NormalizeHistoryCompatibilityData(HistoryWithImage))
+        // Both normalizers mutate, so neither may be short-circuited away by the other.
+        bool normalizedImageIds = HistoryFileUtilities.NormalizeHistoryIds(HistoryWithImage);
+        bool normalizedImageCompatibilityData = HistoryFileUtilities.NormalizeHistoryCompatibilityData(HistoryWithImage);
+
+        if (normalizedImageIds || imageHistoryNeedsRewrite || normalizedImageCompatibilityData)
             MarkHistoryDirty();
 
-        if (EnsureWordBorderSidecarFiles(HistoryWithImage))
+        if (HistoryFileUtilities.EnsureWordBorderSidecarFiles(HistoryWithImage))
             MarkHistoryDirty();
 
         TouchHistoryCache();
@@ -319,8 +312,8 @@ public partial class HistoryService : IDisposable
         if (string.IsNullOrEmpty(historyInfo.ID))
             historyInfo.ID = Guid.NewGuid().ToString();
 
-        NormalizeHistoryCompatibilityData(historyInfo);
-        PersistWordBorderData(historyInfo);
+        HistoryFileUtilities.NormalizeHistoryCompatibilityData(historyInfo);
+        HistoryFileUtilities.PersistWordBorderData(historyInfo);
 
         if (historyInfo.ImageContent is not null && !string.IsNullOrWhiteSpace(historyInfo.ImagePath))
             FileUtilities.SaveImageFile(historyInfo.ImageContent, historyInfo.ImagePath, FileStorageKind.WithHistory);
@@ -348,8 +341,8 @@ public partial class HistoryService : IDisposable
 
         infoFromFullscreenGrab.ImagePath = $"{imgRandomName}.bmp";
 
-        NormalizeHistoryCompatibilityData(infoFromFullscreenGrab);
-        PersistWordBorderData(infoFromFullscreenGrab);
+        HistoryFileUtilities.NormalizeHistoryCompatibilityData(infoFromFullscreenGrab);
+        HistoryFileUtilities.PersistWordBorderData(infoFromFullscreenGrab);
         infoFromFullscreenGrab.ClearTransientImage();
         HistoryWithImage.Add(infoFromFullscreenGrab);
 
@@ -366,7 +359,7 @@ public partial class HistoryService : IDisposable
         EnsureTextHistoryLoaded();
         TouchHistoryCache();
         HistoryInfo historyInfo = etwToSave.AsHistoryItem();
-        NormalizeHistoryCompatibilityData(historyInfo);
+        HistoryFileUtilities.NormalizeHistoryCompatibilityData(historyInfo);
 
         foreach (HistoryInfo inHistoryItem in HistoryTextOnly)
         {
@@ -393,20 +386,23 @@ public partial class HistoryService : IDisposable
 
         if (_textHistoryLoaded)
         {
-            NormalizeHistoryCompatibilityData(HistoryTextOnly);
-            WriteHistoryFiles(HistoryTextOnly, nameof(HistoryTextOnly), maxHistoryTextOnly);
+            HistoryFileUtilities.NormalizeHistoryCompatibilityData(HistoryTextOnly);
+            HistoryFileUtilities.WriteHistoryFiles(
+                HistoryTextOnly,
+                nameof(HistoryTextOnly),
+                HistoryFileUtilities.MaxHistoryTextOnly);
         }
 
         if (_imageHistoryLoaded)
         {
             ClearOldImages();
-            NormalizeHistoryCompatibilityData(HistoryWithImage);
-            PersistWordBorderData(HistoryWithImage);
-            WriteHistoryFiles(
+            HistoryFileUtilities.NormalizeHistoryCompatibilityData(HistoryWithImage);
+            HistoryFileUtilities.PersistWordBorderData(HistoryWithImage);
+            HistoryFileUtilities.WriteHistoryFiles(
                 HistoryWithImage,
                 nameof(HistoryWithImage),
-                maxHistoryWithImages + maxHistoryPdfDocuments);
-            DeleteUnusedWordBorderFiles(HistoryWithImage);
+                HistoryFileUtilities.MaxHistoryWithImages + HistoryFileUtilities.MaxHistoryPdfDocuments);
+            HistoryFileUtilities.DeleteUnusedWordBorderFiles(HistoryWithImage);
         }
 
         _hasPendingWrite = false;
@@ -428,7 +424,7 @@ public partial class HistoryService : IDisposable
         HistoryWithImage.Remove(historyItem);
         historyItem.ClearTransientImage();
         historyItem.ClearTransientWordBorderData();
-        DeleteHistoryArtifacts(historyItem);
+        HistoryFileUtilities.DeleteHistoryArtifacts(historyItem);
 
         MarkHistoryDirty();
     }
@@ -453,59 +449,10 @@ public partial class HistoryService : IDisposable
         return HistoryTextOnly.FirstOrDefault(history => history.ID == historyId);
     }
 
-    public async Task<List<WordBorderInfo>> GetWordBorderInfosAsync(HistoryInfo history)
+    public Task<List<WordBorderInfo>> GetWordBorderInfosAsync(HistoryInfo history)
     {
         TouchHistoryCache();
-
-        if (!string.IsNullOrWhiteSpace(history.WordBorderInfoFileName))
-        {
-            // Sanitize the persisted file name to prevent path traversal outside the history directory
-            string sanitizedFileName = Path.GetFileName(history.WordBorderInfoFileName);
-
-            if (!string.IsNullOrWhiteSpace(sanitizedFileName)
-                && string.Equals(Path.GetExtension(sanitizedFileName), ".json", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    string historyBasePath = await FileUtilities.GetPathToHistory();
-                    string wordBorderInfoPath = Path.Combine(historyBasePath, sanitizedFileName);
-
-                    if (File.Exists(wordBorderInfoPath))
-                    {
-                        await using FileStream wordBorderInfoStream = File.OpenRead(wordBorderInfoPath);
-                        List<WordBorderInfo>? wordBorderInfos =
-                            await JsonSerializer.DeserializeAsync<List<WordBorderInfo>>(wordBorderInfoStream, HistoryJsonOptions);
-
-                        if (wordBorderInfos is not null)
-                            return wordBorderInfos;
-                    }
-                }
-                catch (IOException ex)
-                {
-                    Debug.WriteLine($"Failed to read word border info file for history item '{history.ID}': {ex}");
-                }
-                catch (JsonException ex)
-                {
-                    Debug.WriteLine($"Failed to deserialize word border info file for history item '{history.ID}': {ex}");
-                }
-            }
-        }
-
-        if (string.IsNullOrWhiteSpace(history.WordBorderInfoJson))
-            return [];
-
-        try
-        {
-            List<WordBorderInfo>? inlineWordBorderInfos =
-                JsonSerializer.Deserialize<List<WordBorderInfo>>(history.WordBorderInfoJson, HistoryJsonOptions);
-
-            return inlineWordBorderInfos ?? [];
-        }
-        catch (JsonException ex)
-        {
-            Debug.WriteLine($"Failed to deserialize inline word border info for history item '{history.ID}': {ex}");
-            return [];
-        }
+        return HistoryFileUtilities.GetWordBorderInfosAsync(history);
     }
 
     public void ReleaseLoadedHistories()
@@ -542,101 +489,9 @@ public partial class HistoryService : IDisposable
 
     #region Private Methods
 
-    private static async Task<(List<HistoryInfo> HistoryItems, bool NeedsRewrite)> LoadHistoryAsync(string fileName)
-    {
-        string rawText = await FileUtilities.GetTextFileAsync($"{fileName}.json", FileStorageKind.WithHistory);
-
-        if (string.IsNullOrWhiteSpace(rawText))
-            return ([], false);
-
-        try
-        {
-            HistoryLanguageKindFallbackUsed.Value = false;
-            List<HistoryInfo>? tempHistory = JsonSerializer.Deserialize<List<HistoryInfo>>(rawText, HistoryJsonOptions);
-
-            if (tempHistory is List<HistoryInfo> jsonList && jsonList.Count > 0)
-                return (tempHistory, HistoryLanguageKindFallbackUsed.Value);
-        }
-        catch (JsonException ex)
-        {
-            Debug.WriteLine($"Failed to deserialize history file '{fileName}.json' as a list. Attempting item-by-item recovery. {ex}");
-            return LoadHistoryWithRecovery(rawText, fileName);
-        }
-        finally
-        {
-            HistoryLanguageKindFallbackUsed.Value = false;
-        }
-
-        return ([], false);
-    }
-
-    private static (List<HistoryInfo> HistoryItems, bool NeedsRewrite) LoadHistoryWithRecovery(string rawText, string fileName)
-    {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(rawText);
-
-            if (document.RootElement.ValueKind != JsonValueKind.Array)
-                return ([], true);
-
-            List<HistoryInfo> recoveredHistory = [];
-            bool needsRewrite = true;
-            int index = 0;
-
-            foreach (JsonElement element in document.RootElement.EnumerateArray())
-            {
-                try
-                {
-                    HistoryLanguageKindFallbackUsed.Value = false;
-                    HistoryInfo? historyItem = element.Deserialize<HistoryInfo>(HistoryJsonOptions);
-                    if (historyItem is not null)
-                    {
-                        recoveredHistory.Add(historyItem);
-                        if (HistoryLanguageKindFallbackUsed.Value)
-                            needsRewrite = true;
-                    }
-                }
-                catch (JsonException ex)
-                {
-                    Debug.WriteLine($"Skipped invalid history item at index {index} from '{fileName}.json'. {ex}");
-                }
-                finally
-                {
-                    HistoryLanguageKindFallbackUsed.Value = false;
-                }
-
-                index++;
-            }
-
-            return (recoveredHistory, needsRewrite);
-        }
-        catch (JsonException ex)
-        {
-            Debug.WriteLine($"Failed to parse history file '{fileName}.json' during recovery. {ex}");
-            return ([], true);
-        }
-    }
-
-    private static void WriteHistoryFiles(List<HistoryInfo> history, string fileName, int maxNumberToSave)
-    {
-        string historyAsJson = JsonSerializer
-            .Serialize(history
-                .OrderBy(x => x.CaptureDateTime)
-                .TakeLast(maxNumberToSave),
-            HistoryJsonOptions);
-
-        try
-        {
-            SaveHistoryTextFileBlocking(historyAsJson, $"{fileName}.json");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to save history json file. {ex.Message}");
-        }
-    }
     private void ClearOldImages()
     {
-        List<HistoryInfo> imagesToRemove = GetExcessVisualHistoryItems(HistoryWithImage);
+        List<HistoryInfo> imagesToRemove = HistoryFileUtilities.GetExcessVisualHistoryItems(HistoryWithImage);
 
         if (imagesToRemove.Count == 0)
             return;
@@ -645,24 +500,9 @@ public partial class HistoryService : IDisposable
             HistoryWithImage.Remove(historyItem);
 
         foreach (HistoryInfo infoItem in imagesToRemove)
-            DeleteHistoryArtifacts(infoItem);
+            HistoryFileUtilities.DeleteHistoryArtifacts(infoItem);
 
-        ClearTransientHistoryPayloads(imagesToRemove);
-    }
-
-    internal static List<HistoryInfo> GetExcessVisualHistoryItems(IEnumerable<HistoryInfo> historyItems)
-    {
-        return
-        [
-            .. historyItems
-                .Where(history => !history.IsPdfDocument)
-                .OrderBy(history => history.CaptureDateTime)
-                .SkipLast(maxHistoryWithImages),
-            .. historyItems
-                .Where(history => history.IsPdfDocument)
-                .OrderBy(history => history.CaptureDateTime)
-                .SkipLast(maxHistoryPdfDocuments),
-        ];
+        HistoryFileUtilities.ClearTransientHistoryPayloads(imagesToRemove);
     }
 
     private void DisposeCachedBitmap()
@@ -677,27 +517,22 @@ public partial class HistoryService : IDisposable
         CachedBitmap = null;
     }
 
-    private static void ClearTransientHistoryPayloads(IEnumerable<HistoryInfo> historyItems)
-    {
-        foreach (HistoryInfo historyItem in historyItems)
-        {
-            historyItem.ClearTransientImage();
-            historyItem.ClearTransientWordBorderData();
-        }
-    }
-
     private void EnsureImageHistoryLoaded()
     {
         if (_imageHistoryLoaded)
             return;
 
-        (HistoryWithImage, bool imageHistoryNeedsRewrite) = LoadHistoryBlocking(nameof(HistoryWithImage));
+        (HistoryWithImage, bool imageHistoryNeedsRewrite) =
+            HistoryFileUtilities.LoadHistoryBlocking(nameof(HistoryWithImage));
         _imageHistoryLoaded = true;
-        NormalizeHistoryIds(HistoryWithImage);
-        if (imageHistoryNeedsRewrite || NormalizeHistoryCompatibilityData(HistoryWithImage))
+        // Both normalizers mutate, so neither may be short-circuited away by the other.
+        bool normalizedIds = HistoryFileUtilities.NormalizeHistoryIds(HistoryWithImage);
+        bool normalizedCompatibilityData = HistoryFileUtilities.NormalizeHistoryCompatibilityData(HistoryWithImage);
+
+        if (normalizedIds || imageHistoryNeedsRewrite || normalizedCompatibilityData)
             MarkHistoryDirty();
 
-        if (EnsureWordBorderSidecarFiles(HistoryWithImage))
+        if (HistoryFileUtilities.EnsureWordBorderSidecarFiles(HistoryWithImage))
             MarkHistoryDirty();
     }
 
@@ -706,10 +541,14 @@ public partial class HistoryService : IDisposable
         if (_textHistoryLoaded)
             return;
 
-        (HistoryTextOnly, bool textHistoryNeedsRewrite) = LoadHistoryBlocking(nameof(HistoryTextOnly));
+        (HistoryTextOnly, bool textHistoryNeedsRewrite) =
+            HistoryFileUtilities.LoadHistoryBlocking(nameof(HistoryTextOnly));
         _textHistoryLoaded = true;
-        NormalizeHistoryIds(HistoryTextOnly);
-        if (textHistoryNeedsRewrite || NormalizeHistoryCompatibilityData(HistoryTextOnly))
+        // Both normalizers mutate, so neither may be short-circuited away by the other.
+        bool normalizedIds = HistoryFileUtilities.NormalizeHistoryIds(HistoryTextOnly);
+        bool normalizedCompatibilityData = HistoryFileUtilities.NormalizeHistoryCompatibilityData(HistoryTextOnly);
+
+        if (normalizedIds || textHistoryNeedsRewrite || normalizedCompatibilityData)
             MarkHistoryDirty();
     }
 
@@ -727,95 +566,6 @@ public partial class HistoryService : IDisposable
         ReleaseLoadedHistoriesCore();
     }
 
-    private static (List<HistoryInfo> HistoryItems, bool NeedsRewrite) LoadHistoryBlocking(string fileName)
-    {
-        return Task.Run(() => LoadHistoryAsync(fileName)).GetAwaiter().GetResult();
-    }
-
-    private static string GetHistoryPathBlocking()
-    {
-        return Task.Run(async () => await FileUtilities.GetPathToHistory()).GetAwaiter().GetResult();
-    }
-
-    private static string GetWordBorderInfoFileName(string historyId)
-    {
-        return $"{historyId}{WordBorderInfoFileSuffix}";
-    }
-
-    private static bool SaveHistoryTextFileBlocking(string textContent, string fileName)
-    {
-        return Task.Run(async () => await FileUtilities.SaveTextFile(textContent, fileName, FileStorageKind.WithHistory))
-            .GetAwaiter()
-            .GetResult();
-    }
-
-    private void DeleteHistoryArtifacts(HistoryInfo historyItem)
-    {
-        DeleteHistoryFile(historyItem.ImagePath);
-        DeleteHistoryFile(historyItem.WordBorderInfoFileName);
-    }
-
-    private static void DeleteHistoryFile(string? historyFileName)
-    {
-        if (string.IsNullOrWhiteSpace(historyFileName))
-            return;
-
-        string historyBasePath = GetHistoryPathBlocking();
-        string filePath = Path.Combine(historyBasePath, Path.GetFileName(historyFileName));
-
-        if (!File.Exists(filePath))
-            return;
-
-        try
-        {
-            File.Delete(filePath);
-        }
-        catch (IOException ex)
-        {
-            Debug.WriteLine($"Failed to delete history file '{filePath}': {ex}");
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Debug.WriteLine($"Access denied when deleting history file '{filePath}': {ex}");
-        }
-    }
-
-    private void DeleteUnusedWordBorderFiles(IEnumerable<HistoryInfo> historyItems)
-    {
-        string historyBasePath = GetHistoryPathBlocking();
-
-        if (!Directory.Exists(historyBasePath))
-            return;
-
-        HashSet<string> expectedFileNames = [.. historyItems
-            .Select(historyItem => historyItem.WordBorderInfoFileName)
-            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
-            .Select(fileName => Path.GetFileName(fileName!))];
-
-        string[] wordBorderInfoFiles = Directory.GetFiles(historyBasePath, $"*{WordBorderInfoFileSuffix}");
-
-        foreach (string wordBorderInfoFile in wordBorderInfoFiles)
-        {
-            string fileName = Path.GetFileName(wordBorderInfoFile);
-
-            if (!expectedFileNames.Contains(fileName))
-            {
-                try
-                {
-                    File.Delete(wordBorderInfoFile);
-                }
-                catch (IOException ex)
-                {
-                    Debug.WriteLine($"Failed to delete word border info file '{wordBorderInfoFile}': {ex}");
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    Debug.WriteLine($"Access denied when deleting word border info file '{wordBorderInfoFile}': {ex}");
-                }
-            }
-        }
-    }
-
     private void MarkHistoryDirty()
     {
         _hasPendingWrite = true;
@@ -824,114 +574,9 @@ public partial class HistoryService : IDisposable
         saveTimer.Start();
     }
 
-    private bool EnsureWordBorderSidecarFiles(IEnumerable<HistoryInfo> historyItems)
-    {
-        bool migratedAnyWordBorderData = false;
-
-        foreach (HistoryInfo historyItem in historyItems)
-        {
-            if (PersistWordBorderData(historyItem))
-                migratedAnyWordBorderData = true;
-        }
-
-        return migratedAnyWordBorderData;
-    }
-
-    private static bool NormalizeHistoryCompatibilityData(IEnumerable<HistoryInfo> historyItems)
-    {
-        bool normalizedAnyHistoryItems = false;
-
-        foreach (HistoryInfo historyItem in historyItems)
-        {
-            if (NormalizeHistoryCompatibilityData(historyItem))
-                normalizedAnyHistoryItems = true;
-        }
-
-        return normalizedAnyHistoryItems;
-    }
-
-    private static bool NormalizeHistoryCompatibilityData(HistoryInfo historyItem)
-    {
-        (string normalizedLanguageTag, LanguageKind normalizedLanguageKind, bool usedUiAutomation) =
-            LanguageUtilities.NormalizePersistedLanguageIdentity(
-                historyItem.LanguageKind,
-                historyItem.LanguageTag,
-                historyItem.UsedUiAutomation);
-
-        if (string.Equals(historyItem.LanguageTag, normalizedLanguageTag, StringComparison.Ordinal)
-            && historyItem.LanguageKind == normalizedLanguageKind
-            && historyItem.UsedUiAutomation == usedUiAutomation)
-        {
-            return false;
-        }
-
-        historyItem.LanguageTag = normalizedLanguageTag;
-        historyItem.LanguageKind = normalizedLanguageKind;
-        historyItem.UsedUiAutomation = usedUiAutomation;
-        return true;
-    }
-
-    private void PersistWordBorderData(IEnumerable<HistoryInfo> historyItems)
-    {
-        foreach (HistoryInfo historyItem in historyItems)
-            PersistWordBorderData(historyItem);
-    }
-
-    private bool PersistWordBorderData(HistoryInfo historyItem)
-    {
-        if (string.IsNullOrWhiteSpace(historyItem.WordBorderInfoJson))
-            return false;
-
-        if (string.IsNullOrWhiteSpace(historyItem.ID))
-            historyItem.ID = Guid.NewGuid().ToString();
-
-        string wordBorderInfoFileName = GetWordBorderInfoFileName(historyItem.ID);
-        bool couldSaveWordBorderInfo = SaveHistoryTextFileBlocking(historyItem.WordBorderInfoJson, wordBorderInfoFileName);
-
-        if (!couldSaveWordBorderInfo)
-        {
-            historyItem.WordBorderInfoFileName = null;
-            return false;
-        }
-
-        historyItem.WordBorderInfoFileName = wordBorderInfoFileName;
-
-        // When file-backed settings are enabled, the sidecar file is the authority
-        // for word border data, so drop the inline JSON to reduce memory/disk usage.
-        if (DefaultSettings.EnableFileBackedManagedSettings)
-            historyItem.ClearTransientWordBorderData();
-
-        return true;
-    }
-
-    private void NormalizeHistoryIds(List<HistoryInfo> historyItems)
-    {
-        HashSet<string> seenIds = [];
-        bool updatedAnyIds = false;
-
-        foreach (HistoryInfo historyItem in historyItems)
-        {
-            if (!string.IsNullOrWhiteSpace(historyItem.ID) && seenIds.Add(historyItem.ID))
-                continue;
-
-            string nextId;
-            do
-            {
-                nextId = Guid.NewGuid().ToString();
-            }
-            while (!seenIds.Add(nextId));
-
-            historyItem.ID = nextId;
-            updatedAnyIds = true;
-        }
-
-        if (updatedAnyIds)
-            MarkHistoryDirty();
-    }
-
     private void ReleaseLoadedHistoriesCore()
     {
-        ClearTransientHistoryPayloads(HistoryWithImage);
+        HistoryFileUtilities.ClearTransientHistoryPayloads(HistoryWithImage);
         HistoryWithImage.Clear();
         HistoryTextOnly.Clear();
         _imageHistoryLoaded = false;
@@ -953,51 +598,6 @@ public partial class HistoryService : IDisposable
 
         if (_textHistoryLoaded || _imageHistoryLoaded)
             historyCacheReleaseTimer.Start();
-    }
-
-    private sealed class HistoryLanguageKindJsonConverter : JsonConverter<LanguageKind>
-    {
-        public override LanguageKind Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType == JsonTokenType.String)
-            {
-                string? value = reader.GetString();
-
-                if (!string.IsNullOrWhiteSpace(value)
-                    && Enum.TryParse(value, true, out LanguageKind parsedValue)
-                    && Enum.IsDefined(typeof(LanguageKind), parsedValue))
-                {
-                    return parsedValue;
-                }
-
-                HistoryLanguageKindFallbackUsed.Value = true;
-                Debug.WriteLine($"Unknown history LanguageKind '{value}'. Falling back to {LanguageKind.Global}.");
-                return LanguageKind.Global;
-            }
-
-            if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out int numericValue))
-            {
-                if (Enum.IsDefined(typeof(LanguageKind), numericValue))
-                    return (LanguageKind)numericValue;
-
-                HistoryLanguageKindFallbackUsed.Value = true;
-                Debug.WriteLine($"Unknown history LanguageKind numeric value '{numericValue}'. Falling back to {LanguageKind.Global}.");
-                return LanguageKind.Global;
-            }
-
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                HistoryLanguageKindFallbackUsed.Value = true;
-                return LanguageKind.Global;
-            }
-
-            HistoryLanguageKindFallbackUsed.Value = true;
-            Debug.WriteLine($"Unexpected token '{reader.TokenType}' for history LanguageKind. Falling back to {LanguageKind.Global}.");
-            return LanguageKind.Global;
-        }
-
-        public override void Write(Utf8JsonWriter writer, LanguageKind value, JsonSerializerOptions options)
-            => writer.WriteStringValue(value.ToString());
     }
 
     #endregion Private Methods

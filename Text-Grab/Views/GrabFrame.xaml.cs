@@ -280,7 +280,7 @@ public partial class GrabFrame : Window
 
         foreach (TemplateRegion region in template.Regions.OrderBy(r => r.RegionNumber))
         {
-            Rect abs = region.ToAbsoluteRect(cw, ch);
+            Rect abs = region.ToAbsoluteRect(cw, ch).AsRect();
 
             WordBorder wb = new()
             {
@@ -370,7 +370,7 @@ public partial class GrabFrame : Window
         if (wbInfoList.Count < 1)
             NotifyIfUiAutomationNeedsLiveSource(currentLanguage);
 
-        if (history.PositionRect != Rect.Empty)
+        if (history.PositionRect != System.Drawing.RectangleF.Empty)
         {
             Left = history.PositionRect.Left;
             Top = history.PositionRect.Top;
@@ -481,12 +481,12 @@ public partial class GrabFrame : Window
 
         foreach (WordBorderInfo info in wbInfoList)
         {
-            Rect borderRect = info.BorderRect;
+            Rect borderRect = info.BorderRect.AsRect();
             info.BorderRect = new Rect(
                 borderRect.Left * scaleX,
                 borderRect.Top * scaleY,
                 borderRect.Width * scaleX,
-                borderRect.Height * scaleY);
+                borderRect.Height * scaleY).AsRectangleF();
 
             if (info.DisplayLineHeight > 0)
                 info.DisplayLineHeight *= scaleY;
@@ -507,8 +507,8 @@ public partial class GrabFrame : Window
             return new Size(imageContentBitmap.Width, imageContentBitmap.Height);
         }
 
-        Rect positionRect = history.PositionRect;
-        if (positionRect == Rect.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
+        System.Drawing.RectangleF positionRect = history.PositionRect;
+        if (positionRect == System.Drawing.RectangleF.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
             return new Size(0, 0);
 
         if (history.SourceMode == TextGrabMode.Fullscreen)
@@ -740,7 +740,7 @@ public partial class GrabFrame : Window
         if (AnalyzedResultTable is null)
             _ = TryToPlaceTable();
 
-        tableBounds = AnalyzedResultTable?.BoundingRect ?? Rect.Empty;
+        tableBounds = AnalyzedResultTable?.BoundingRect.AsRect() ?? Rect.Empty;
         return tableBounds != Rect.Empty
             && tableBounds.Width > 0
             && tableBounds.Height > 0;
@@ -1217,7 +1217,7 @@ public partial class GrabFrame : Window
         List<WordBorderInfo> wbInfoList = [];
 
         foreach (WordBorder wb in wordBorders)
-            wbInfoList.Add(new WordBorderInfo(wb));
+            wbInfoList.Add(WordBorderInfoFactory.Create(wb));
 
         string? wbInfoJson = null;
         if (wbInfoList.Count > 0)
@@ -1262,7 +1262,7 @@ public partial class GrabFrame : Window
             WordBorderInfoJson = wbInfoJson,
             WordBorderInfoFileName = wbInfoJson is null ? null : historyItem?.WordBorderInfoFileName,
             ImageContent = bitmap,
-            PositionRect = sizePosRect,
+            PositionRect = sizePosRect.AsRectangleF(),
             IsTable = TableToggleButton.IsChecked!.Value,
             ManualTableColumnSeparators = tableEditState.ManualColumnSeparators.Count > 0 ? [.. tableEditState.ManualColumnSeparators] : null,
             ManualTableRowSeparators = tableEditState.ManualRowSeparators.Count > 0 ? [.. tableEditState.ManualRowSeparators] : null,
@@ -1540,7 +1540,7 @@ public partial class GrabFrame : Window
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         // Build merged content via model-only ResultTable
-        List<WordBorderInfo> selInfos = [.. selectedWordBorders.Select(wb => new WordBorderInfo(wb))];
+        List<WordBorderInfo> selInfos = [.. selectedWordBorders.Select(wb => WordBorderInfoFactory.Create(wb))];
         ResultTable tmp = new();
         tmp.AnalyzeAsTable(selInfos, new System.Drawing.Rectangle(0, 0, (int)ActualWidth, (int)ActualHeight));
         StringBuilder sb = new();
@@ -1714,7 +1714,7 @@ public partial class GrabFrame : Window
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
         // Language language = CurrentLanguage.AsLanguage() ?? LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
         ILanguage language = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(
+        string ocrText = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(
             rect.GetScaleSizeByFraction(viewBoxZoomFactor),
             language,
             GetUiAutomationExcludedHandles());
@@ -2345,11 +2345,11 @@ public partial class GrabFrame : Window
             if (frameContentImageSource is BitmapSource frozenBmp)
             {
                 using System.Drawing.Bitmap bmpForOcr = ImageMethods.BitmapSourceToBitmap(frozenBmp);
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
+                (ocrResultOfWindow, windowFrameImageScale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
             }
             else
             {
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
+                (ocrResultOfWindow, windowFrameImageScale) = await OcrSourceUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
             }
         }
 
@@ -4775,7 +4775,7 @@ public partial class GrabFrame : Window
 
         // Pattern items — saved regexes and built-in recognizers as one "Patterns" concept,
         // split into "Saved Patterns" / "Smart Patterns" subsections.
-        items.AddRange(PatternItem.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
+        items.AddRange(PatternItemCatalog.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
 
         TemplateOutputBox.ItemsSource = items;
 
@@ -4870,7 +4870,7 @@ public partial class GrabFrame : Window
             droppedImage.BeginInit();
             droppedImage.UriSource = fileURI;
             droppedImage.CacheOption = BitmapCacheOption.OnLoad; // decode fully into memory and release the file handle
-            System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
+            System.Drawing.RotateFlipType rotateFlipType = BitmapUtilities.GetRotateFlipType(path);
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
@@ -4968,7 +4968,7 @@ public partial class GrabFrame : Window
     {
         RemoveTableLines();
 
-        List<WordBorderInfo> wbInfos = [.. wordBorders.Select(wb => new WordBorderInfo(wb))];
+        List<WordBorderInfo> wbInfos = [.. wordBorders.Select(wb => WordBorderInfoFactory.Create(wb))];
         if (wbInfos.Count == 0)
         {
             AnalyzedResultTable = null;
@@ -4997,8 +4997,7 @@ public partial class GrabFrame : Window
             tableEditState.SetManualSeparators(
                 AnalyzedResultTable.ManualRowSeparators,
                 AnalyzedResultTable.ManualColumnSeparators);
-            if (AnalyzedResultTable.TableLines is not null)
-                RectanglesCanvas.Children.Add(AnalyzedResultTable.TableLines);
+            RectanglesCanvas.Children.Add(ResultTableRenderer.BuildTableLines(AnalyzedResultTable));
         }
         catch (Exception ex)
         {

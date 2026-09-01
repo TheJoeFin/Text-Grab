@@ -46,7 +46,7 @@ public partial class TextOnlyTemplateDialog : FluentWindow
     {
         OutputTemplateBox.ItemsSource =
         [
-            .. PatternItem.GetAll().Select(InlinePickerItemFor),
+            .. PatternItemCatalog.GetAll().Select(InlinePickerItemFor),
         ];
     }
 

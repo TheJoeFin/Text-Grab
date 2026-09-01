@@ -24,6 +24,8 @@ env:
   PROJECT: 'Text-Grab'
   PROJECT_PATH: 'Text-Grab/Text-Grab.csproj'
   TEST_PATH: 'Tests/Tests.csproj'
+  TEST_CORE_PATH: 'Tests.Core/Tests.Core.csproj'
+  TEST_CORE_WINDOWS_PATH: 'Tests.Core.Windows/Tests.Core.Windows.csproj'
   BUILD_X64: 'bld/x64'
   BUILD_X64_SC: 'bld/x64/Text-Grab-Self-Contained'
   BUILD_ARM64: 'bld/arm64'
@@ -49,6 +51,14 @@ jobs:
 
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      # The pure tier runs first: it needs no display and finishes in about a second, so a
+      # logic regression fails the job before the slow WPF/STA suite starts.
+      - name: Run Core tests
+        run: dotnet test --project ${{ env.TEST_CORE_PATH }}
+
+      - name: Run Core.Windows tests
+        run: dotnet test --project ${{ env.TEST_CORE_WINDOWS_PATH }} -r win-x64
 
       - name: Run tests
         run: dotnet test --project ${{ env.TEST_PATH }} -r win-x64

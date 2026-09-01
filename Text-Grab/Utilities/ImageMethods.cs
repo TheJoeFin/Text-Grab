@@ -19,24 +19,6 @@ namespace Text_Grab;
 
 public static class ImageMethods
 {
-    public static Bitmap PadImage(Bitmap image, int minW = 64, int minH = 64)
-    {
-        if (image.Height >= minH && image.Width >= minW)
-            return image;
-
-        int width = Math.Max(image.Width + 16, minW + 16);
-        int height = Math.Max(image.Height + 16, minH + 16);
-
-        // Create a compatible bitmap
-        Bitmap destination = new(width, height, image.PixelFormat);
-        using Graphics gd = Graphics.FromImage(destination);
-
-        gd.Clear(image.GetPixel(0, 0));
-        gd.DrawImageUnscaled(image, 8, 8);
-
-        return destination;
-    }
-
     public static Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)
     {
         using MemoryStream outStream = new();
@@ -97,26 +79,10 @@ public static class ImageMethods
     /// full precision and tone-map it back to SDR so the result isn't washed out (issue #111).
     /// Falls back to a plain GDI screen copy otherwise or if HDR capture fails.
     /// </summary>
-    private static Bitmap CaptureScreenRegion(Rectangle region)
-    {
-        if (AppUtilities.TextGrabSettings.HdrCaptureCorrection)
-        {
-            Bitmap? hdrBitmap = HdrScreenCapture.TryCaptureRegion(region);
-            if (hdrBitmap is not null)
-                return hdrBitmap;
-        }
-
-        Bitmap bmp = new(region.Width, region.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics g = Graphics.FromImage(bmp);
-
-        g.CopyFromScreen(region.Left, region.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-        return bmp;
-    }
-
     public static Bitmap GetRegionOfScreenAsBitmap(Rectangle region, bool cacheResult = true)
     {
-        Bitmap bmp = CaptureScreenRegion(region);
-        bmp = PadImage(bmp);
+        Bitmap bmp = BitmapUtilities.CaptureScreenRegion(region);
+        bmp = BitmapUtilities.PadImage(bmp);
 
         if (cacheResult)
             Singleton<HistoryService>.Instance.CacheLastBitmap(bmp);
@@ -162,7 +128,7 @@ public static class ImageMethods
         }
 
         Rectangle windowRegion = new(thisCorrectedLeft, thisCorrectedTop, windowWidth, windowHeight);
-        return CaptureScreenRegion(windowRegion);
+        return BitmapUtilities.CaptureScreenRegion(windowRegion);
     }
 
     public static ImageSource GetWindowBoundsImage(Window passedWindow)
@@ -246,16 +212,6 @@ public static class ImageMethods
         };
     }
 
-    public static Bitmap GetBitmapFromIRandomAccessStream(IRandomAccessStream stream)
-    {
-        Stream managedStream = stream.AsStream();
-        if (managedStream.CanSeek)
-            managedStream.Position = 0;
-
-        using Bitmap bitmap = new(managedStream);
-        return new Bitmap(bitmap);
-    }
-
     public static BitmapImage GetBitmapImageFromIRandomAccessStream(IRandomAccessStream stream)
     {
         BitmapImage bmp = new();
@@ -268,13 +224,6 @@ public static class ImageMethods
         bmp.EndInit();
         bmp.Freeze();
         return bmp;
-    }
-
-    internal static RotateFlipType GetRotateFlipType(string path)
-    {
-        using Image img = Image.FromFile(path);
-        RotateFlipType rotateFlipType = img.GetRotateFlipType();
-        return rotateFlipType;
     }
 
     internal static void RotateImage(BitmapImage droppedImage, RotateFlipType rotateFlipType)

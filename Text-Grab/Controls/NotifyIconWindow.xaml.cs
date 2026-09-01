@@ -131,7 +131,7 @@ public partial class NotifyIconWindow : Window
 
     private async void PreviousRegionMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        await OcrUtilities.GetTextFromPreviousFullscreenRegion();
+        await OcrSourceUtilities.GetTextFromPreviousFullscreenRegion();
     }
 
     private void LookupMenuItem_Click(object sender, RoutedEventArgs e)

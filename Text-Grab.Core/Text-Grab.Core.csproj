@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Text_Grab</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- Text-Grab.csproj (the app) declares these RIDs for MSIX/self-contained publish;
+         the wapproj restores project references per-RID, so this library needs matching
+         RuntimeIdentifiers or that restore fails with NETSDK1047. -->
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="1.3.2" />
+    <PackageReference Include="Microsoft.Recognizers.Text.Choice" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.Number" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.NumberWithUnit" Version="1.8.13" />
+    <PackageReference Include="Microsoft.Recognizers.Text.Sequence" Version="1.8.13" />
+    <PackageReference Include="NCalcAsync" Version="7.1.0" />
+    <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
+         build tool. Exclude all its assets so nuget.exe never flows into the output. -->
+    <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
+      <IncludeAssets>none</IncludeAssets>
+    </PackageReference>
+    <!-- AutomationSettingsProvider/AutomationProfile need ApplicationSettingsBase and
+         LocalFileSettingsProvider. On the app's net10.0-windows TFM those types come from the
+         Microsoft.WindowsDesktop.App shared framework for free; plain net10.0 (this project) has
+         no such framework reference, so they need this package explicitly. Verified by a
+         standalone probe: both types resolve and run correctly on plain net10.0 with this
+         package referenced. -->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.11" />
+    <PackageReference Include="UnitsNet" Version="5.75.1" />
+  </ItemGroup>
+
+</Project>

@@ -132,7 +132,7 @@ public static class NotifyIconUtilities
             case ShortcutKeyActions.PreviousRegionGrab:
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
                 {
-                    OcrUtilities.GetCopyTextFromPreviousRegion();
+                    OcrSourceUtilities.GetCopyTextFromPreviousRegion();
                 }));
                 break;
             case ShortcutKeyActions.PreviousEditWindow:

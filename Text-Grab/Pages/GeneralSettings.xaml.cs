@@ -135,13 +135,13 @@ public partial class GeneralSettings : Page
             StartupOnLoginCheckBox.IsChecked = DefaultSettings.StartupOnLogin;
         }
 
-        List<WebSearchUrlModel> searcherSettings = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
+        List<WebSearchUrlModel> searcherSettings = Singleton<WebSearchUrlCatalog>.Instance.WebSearchers;
 
         WebSearchersComboBox.Items.Clear();
         foreach (WebSearchUrlModel searcher in searcherSettings)
             WebSearchersComboBox.Items.Add(searcher);
 
-        WebSearchersComboBox.SelectedItem = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+        WebSearchersComboBox.SelectedItem = Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher;
 
         ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
 
@@ -490,7 +490,7 @@ public partial class GeneralSettings : Page
             || comboBox.SelectedItem is not WebSearchUrlModel newDefault)
             return;
 
-        Singleton<WebSearchUrlModel>.Instance.DefaultSearcher = newDefault;
+        Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher = newDefault;
     }
 
     private async void AddToContextMenuCheckBox_Checked(object sender, RoutedEventArgs e)
