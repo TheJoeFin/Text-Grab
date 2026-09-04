@@ -7049,6 +7049,30 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             NotificationUtilities.ShowLocalAiCompleteToast(taskDescription, windowId);
     }
 
+    private async void RestartLocalLlmMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        RestartLocalLlmMenuItem.IsEnabled = false;
+
+        try
+        {
+            await WindowsAiUtilities.RestartWindowsAiAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Restarting the Local LLM failed: {ex.Message}");
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Restart Local LLM Failed",
+                Content = $"The Local LLM could not be restarted: {ex.Message}",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+        finally
+        {
+            RestartLocalLlmMenuItem.IsEnabled = true;
+        }
+    }
+
     private void LearnAiMenuItem_Click(object sender, RoutedEventArgs e)
     {
         string url = "https://learn.microsoft.com/en-us/windows/ai/apis/phi-silica";

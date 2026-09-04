@@ -1,10 +1,7 @@
 using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.ContentSafety;
 using Microsoft.Windows.AI.Text;
-using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using Windows.Foundation;
 
 namespace Text_Grab.Utilities;
@@ -485,80 +482,90 @@ internal static class WinAiLanguageModel
                 Classify(ex), $"The language model could not accept the request: {ex.Message}");
         }
 
-        // Advisory pre-check only. If it cannot answer, send the prompt anyway and let the model
-        // report PromptLargerThanContext — treating an unknown length as "too long" would turn
-        // every request into a silent no-op.
+        // The context holds native resources for the life of one request; every return path below
+        // must go through this finally or each call leaks it (surfaced as ever-growing native
+        // memory even though the managed heap stays flat).
         try
         {
-            ulong usableLength = model.GetUsablePromptLength(context, prompt);
-            if (usableLength > 0 && (ulong)prompt.Length > usableLength)
-                return WinAiGenerationResult.Failed(
-                    WinAiFailure.PromptTooLong, "The text is longer than the language model's context.");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"GetUsablePromptLength failed, sending prompt anyway: {ex.Message}");
-        }
-
-        LanguageModelResponseResult result;
-        try
-        {
-            LanguageModelOptions options = new()
+            // Advisory pre-check only. If it cannot answer, send the prompt anyway and let the model
+            // report PromptLargerThanContext — treating an unknown length as "too long" would turn
+            // every request into a silent no-op.
+            try
             {
-                Temperature = temperature,
-                ContentFilterOptions = new ContentFilterOptions(),
-            };
+                ulong usableLength = model.GetUsablePromptLength(context, prompt);
+                if (usableLength > 0 && (ulong)prompt.Length > usableLength)
+                    return WinAiGenerationResult.Failed(
+                        WinAiFailure.PromptTooLong, "The text is longer than the language model's context.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"GetUsablePromptLength failed, sending prompt anyway: {ex.Message}");
+            }
 
-            IAsyncOperationWithProgress<LanguageModelResponseResult, string> operation =
-                model.GenerateResponseAsync(context, prompt, options);
-
-            if (onDelta is not null)
-                operation.Progress = (_, delta) =>
+            LanguageModelResponseResult result;
+            try
+            {
+                LanguageModelOptions options = new()
                 {
-                    if (!string.IsNullOrEmpty(delta))
-                        onDelta(delta);
+                    Temperature = temperature,
+                    ContentFilterOptions = new ContentFilterOptions(),
                 };
 
-            result = await operation.AsTask(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return WinAiGenerationResult.Failed(
-                Classify(ex), $"The language model failed to respond: {ex.Message}");
-        }
+                IAsyncOperationWithProgress<LanguageModelResponseResult, string> operation =
+                    model.GenerateResponseAsync(context, prompt, options);
 
-        switch (result.Status)
-        {
-            case LanguageModelResponseStatus.Complete:
-                break;
+                if (onDelta is not null)
+                    operation.Progress = (_, delta) =>
+                    {
+                        if (!string.IsNullOrEmpty(delta))
+                            onDelta(delta);
+                    };
 
-            case LanguageModelResponseStatus.PromptLargerThanContext:
+                result = await operation.AsTask(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
                 return WinAiGenerationResult.Failed(
-                    WinAiFailure.PromptTooLong, "The text is longer than the language model's context.");
+                    Classify(ex), $"The language model failed to respond: {ex.Message}");
+            }
 
-            case LanguageModelResponseStatus.BlockedByPolicy:
-            case LanguageModelResponseStatus.PromptBlockedByContentModeration:
-            case LanguageModelResponseStatus.ResponseBlockedByContentModeration:
-                return WinAiGenerationResult.Failed(
-                    WinAiFailure.Blocked,
-                    $"Windows AI blocked this text ({result.Status}). Content moderation rejected the request.");
+            switch (result.Status)
+            {
+                case LanguageModelResponseStatus.Complete:
+                    break;
 
-            default:
-                Exception? extendedError = result.ExtendedError;
-                string detail = extendedError?.Message ?? result.Status.ToString();
-                return WinAiGenerationResult.Failed(
-                    Classify(extendedError), $"The language model returned an error: {detail}");
+                case LanguageModelResponseStatus.PromptLargerThanContext:
+                    return WinAiGenerationResult.Failed(
+                        WinAiFailure.PromptTooLong, "The text is longer than the language model's context.");
+
+                case LanguageModelResponseStatus.BlockedByPolicy:
+                case LanguageModelResponseStatus.PromptBlockedByContentModeration:
+                case LanguageModelResponseStatus.ResponseBlockedByContentModeration:
+                    return WinAiGenerationResult.Failed(
+                        WinAiFailure.Blocked,
+                        $"Windows AI blocked this text ({result.Status}). Content moderation rejected the request.");
+
+                default:
+                    Exception? extendedError = result.ExtendedError;
+                    string detail = extendedError?.Message ?? result.Status.ToString();
+                    return WinAiGenerationResult.Failed(
+                        Classify(extendedError), $"The language model returned an error: {detail}");
+            }
+
+            string text = result.Text ?? string.Empty;
+
+            return string.IsNullOrWhiteSpace(text)
+                ? WinAiGenerationResult.Failed(WinAiFailure.ModelError, "The language model returned an empty response.")
+                : WinAiGenerationResult.Ok(text);
         }
-
-        string text = result.Text ?? string.Empty;
-
-        return string.IsNullOrWhiteSpace(text)
-            ? WinAiGenerationResult.Failed(WinAiFailure.ModelError, "The language model returned an empty response.")
-            : WinAiGenerationResult.Ok(text);
+        finally
+        {
+            context.Dispose();
+        }
     }
 
     /// <summary>A lost connection is worth retrying after a restart; anything else is not.</summary>

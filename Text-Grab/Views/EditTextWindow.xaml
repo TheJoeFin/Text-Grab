@@ -531,6 +531,11 @@
                         Header="_Notify When Done"
                         IsCheckable="True"
                         Unchecked="NotifyOnLocalAiCompleteMenuItem_Unchecked" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="RestartLocalLlmMenuItem"
+                        Click="RestartLocalLlmMenuItem_Click"
+                        Header="_Restart Local LLM" />
                     <MenuItem
                         x:Name="LearnAiMenuItem"
                         Click="LearnAiMenuItem_Click"

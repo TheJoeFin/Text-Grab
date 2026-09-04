@@ -3,15 +3,10 @@ using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.ContentSafety;
 using Microsoft.Windows.AI.Imaging;
 using Microsoft.Windows.AI.Text;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Text_Grab.Extensions;
 using Text_Grab.Models;
 using Text_Grab.Services;
@@ -77,7 +72,7 @@ public static class WindowsAiUtilities
 
         using TextRecognizer textRecognizer = await TextRecognizer.CreateAsync();
 
-        SoftwareBitmap bitmap = await imagePath.FilePathToSoftwareBitmapAsync();
+        using SoftwareBitmap bitmap = await imagePath.FilePathToSoftwareBitmapAsync();
         using ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(bitmap);
 
         RecognizedText? result = textRecognizer?
@@ -188,7 +183,7 @@ public static class WindowsAiUtilities
     {
         string tempFilePath = AutomationProfile.GetTemporaryFilePath(".png");
         bmp.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
-        SoftwareBitmap softwareBitmap = await tempFilePath.FilePathToSoftwareBitmapAsync();
+        using SoftwareBitmap softwareBitmap = await tempFilePath.FilePathToSoftwareBitmapAsync();
 
         // for some reason "await bmp.CreateSoftwareBitmap()" does not work, so we use the file path method instead
         RecognizedText? recognizedText = await GetOcrResultAsync(softwareBitmap);
@@ -211,7 +206,7 @@ public static class WindowsAiUtilities
         }
 
         using TextRecognizer textRecognizer = await TextRecognizer.CreateAsync();
-        ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(softwareBitmap);
+        using ImageBuffer imageBuffer = ImageBuffer.CreateForSoftwareBitmap(softwareBitmap);
 
         RecognizedText? result = textRecognizer?
             .RecognizeTextFromImage(imageBuffer);
