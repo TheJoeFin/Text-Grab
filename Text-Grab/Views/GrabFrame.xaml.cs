@@ -5302,7 +5302,11 @@ public partial class GrabFrame : Window
                 IsParagraphDetectionActive()
                 && previousLine.AllowParagraphJoin
                 && currentLine.AllowParagraphJoin
-                && OcrUtilities.IsWrappedParagraph(previousLine.Top, previousLine.Height, currentLine.Top, currentLine.Height);
+                && PdfDocumentRenderer.IsWrappedPdfLine(
+                    previousLine.Top,
+                    previousLine.Height,
+                    currentLine.Top,
+                    currentLine.Height);
 
             if (shouldJoinParagraph)
                 stringBuilder.Append(' ');

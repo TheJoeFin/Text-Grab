@@ -53,6 +53,9 @@
         <Content Include="Images\Ja-Lang-Image.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Content Include="TextFiles\Text-Grab-Test-PDF.pdf">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 
