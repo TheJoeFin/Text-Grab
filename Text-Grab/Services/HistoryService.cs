@@ -205,7 +205,7 @@ public partial class HistoryService : IDisposable
 
     private async Task PopulateMenuItemWithImageHistory(MenuItem historyMenuItem, List<HistoryInfo> historyItems)
     {
-        historyItems = [.. historyItems.OrderByDescending(x => x.CaptureDateTime)];
+        historyItems = [.. historyItems.OrderByDescending(x => x.CaptureDateTime).Take(10)];
 
         ClearRecentGrabsMenuItems(historyMenuItem);
 

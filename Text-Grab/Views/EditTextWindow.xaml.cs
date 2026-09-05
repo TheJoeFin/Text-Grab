@@ -4129,7 +4129,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void LoadRecentTextHistory()
     {
         List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
-        grabsHistories = [.. grabsHistories.OrderByDescending(x => x.CaptureDateTime)];
+        grabsHistories = [.. grabsHistories.OrderByDescending(x => x.CaptureDateTime).Take(10)];
 
         ClearRecentTextMenuItems();
 
