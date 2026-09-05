@@ -82,6 +82,28 @@ public class ResultTableManualSeparatorTests
         Assert.Equal([25d], manualTable.ManualColumnSeparators);
     }
 
+    [WpfFact]
+    public void GetTextFromTabledWordBorders_SingleRowWithDistinctColumns_StillTabSeparates()
+    {
+        // Regression: capturing just one row of a table (e.g. grabbing rows one at a time into
+        // a spreadsheet) must not lose column structure just because that single grab only ever
+        // sees one row — previously a same-row, different-column pair got glued together with
+        // no separator at all ("NameAge") since tabs required 2+ rows to be detected first.
+        List<WordBorderInfo> infos =
+        [
+            CreateWord("Name", left: 10, top: 10, width: 40, height: 10),
+            CreateWord("Age", left: 200, top: 10, width: 30, height: 10)
+        ];
+
+        ResultTable table = new();
+        table.AnalyzeAsTable(infos, new Rectangle(0, 0, 400, 200));
+
+        StringBuilder text = new();
+        ResultTable.GetTextFromTabledWordBorders(text, infos, true);
+
+        Assert.Equal("Name\tAge", text.ToString());
+    }
+
     private static WordBorderInfo CreateWord(string word, double left, double top, double width, double height)
     {
         return new WordBorderInfo

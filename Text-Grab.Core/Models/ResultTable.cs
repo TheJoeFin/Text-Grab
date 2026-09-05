@@ -326,15 +326,6 @@ public class ResultTable
             return a.BorderRect.Top.CompareTo(b.BorderRect.Top);
         });
 
-        // Precompute number of distinct rows without LINQ
-        int numberOfDistinctRows;
-        {
-            HashSet<int> rowSet = [];
-            for (int i = 0; i < selectedBorders.Count; i++)
-                rowSet.Add(selectedBorders[i].ResultRowID);
-            numberOfDistinctRows = rowSet.Count;
-        }
-
         // Precompute rows that contain footnote tokens like (1)
         HashSet<int> rowsWithFootnote = [];
         for (int i = 0; i < selectedBorders.Count; i++)
@@ -411,7 +402,7 @@ public class ResultTable
                 prevBorderOnLine = null;
             }
 
-            if (border.ResultColumnID != lastColumnNum && numberOfDistinctRows > 1)
+            if (border.ResultColumnID != lastColumnNum)
             {
                 int numberOfOffColumns = border.ResultColumnID - lastColumnNum;
                 if (numberOfOffColumns < 0)
