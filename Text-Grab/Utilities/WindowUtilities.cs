@@ -301,6 +301,19 @@ public static partial class WindowUtilities
         return isTableModeSelected && !hasExistingEditTextWindow;
     }
 
+    /// <summary>
+    /// When a new grab (Grab Frame or Full Screen Grab) is launched from an Edit Text Window
+    /// that is already in Spreadsheet mode, Table mode should be preselected so the OCR
+    /// result comes back column-aware instead of being stuffed into a single cell.
+    /// </summary>
+    internal static bool ShouldForceTableModeForNewGrab(
+        bool hasDestinationTextBox,
+        bool isDestinationSpreadsheetMode,
+        bool isTableModeAvailable)
+    {
+        return hasDestinationTextBox && isDestinationSpreadsheetMode && isTableModeAvailable;
+    }
+
     internal static EditTextWindow OpenOrActivateEditTextWindow(bool isTableModeSelected = false)
     {
         WindowCollection allWindows = Application.Current.Windows;

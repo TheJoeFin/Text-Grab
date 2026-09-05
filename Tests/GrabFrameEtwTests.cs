@@ -49,4 +49,24 @@ public class GrabFrameEtwTests
 
         Assert.Equal(expected, shouldUpdate);
     }
+
+    [Theory]
+    [InlineData(true, true, true, true)]
+    [InlineData(true, true, false, false)]
+    [InlineData(true, false, true, false)]
+    [InlineData(false, true, true, false)]
+    [InlineData(false, false, false, false)]
+    public void ShouldForceTableModeForNewGrab_OnlyWhenLinkedToSpreadsheetModeEtwAndTableModeAvailable(
+        bool hasDestinationTextBox,
+        bool isDestinationSpreadsheetMode,
+        bool isTableModeAvailable,
+        bool expected)
+    {
+        bool actual = WindowUtilities.ShouldForceTableModeForNewGrab(
+            hasDestinationTextBox,
+            isDestinationSpreadsheetMode,
+            isTableModeAvailable);
+
+        Assert.Equal(expected, actual);
+    }
 }

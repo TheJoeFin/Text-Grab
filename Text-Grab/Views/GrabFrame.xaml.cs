@@ -969,7 +969,15 @@ public partial class GrabFrame : Window
         {
             destinationTextBox = value;
             if (destinationTextBox is not null)
+            {
                 EditTextToggleButton.IsChecked = true;
+
+                if (WindowUtilities.ShouldForceTableModeForNewGrab(
+                    hasDestinationTextBox: true,
+                    IsLinkedEditTextWindowInSpreadsheetMode(),
+                    isTableModeAvailable: true))
+                    TableToggleButton.IsChecked = true;
+            }
             else
                 EditTextToggleButton.IsChecked = false;
         }

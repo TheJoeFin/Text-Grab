@@ -1127,6 +1127,21 @@ public partial class FullscreenGrab : Window
             }
         }
 
+        // A new grab launched from an Edit Text Window already in Spreadsheet mode should
+        // override the default mode above and come back column-aware instead of the OCR
+        // result being stuffed into a single spreadsheet cell.
+        bool isDestinationSpreadsheetMode = destinationTextBox is not null
+            && Window.GetWindow(destinationTextBox) is EditTextWindow { IsSpreadsheetMode: true };
+
+        if (WindowUtilities.ShouldForceTableModeForNewGrab(
+            destinationTextBox is not null,
+            isDestinationSpreadsheetMode,
+            TableToggleButton.Visibility == Visibility.Visible))
+        {
+            TableToggleButton.IsChecked = true;
+            SelectSingleToggleButton(TableToggleButton);
+        }
+
         if (IsMouseOver)
             TopButtonsStackPanel.Visibility = Visibility.Visible;
 
