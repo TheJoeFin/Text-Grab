@@ -75,6 +75,13 @@ public partial class GrabFrame : Window
     private int _currentPdfPageIndex = -1;
     private int _initialPdfPageIndex;
     private bool hasLoadedImageSource = false;
+    /// <summary>
+    /// True once the user has made a change to the recognized words (edited/added/removed/moved
+    /// a word border, or placed a manual table divider) that a soft/automatic refresh — like a
+    /// middle-mouse window move — would otherwise silently discard. Cleared whenever the frame's
+    /// word borders are actually cleared, e.g. by <see cref="ResetGrabFrame"/>.
+    /// </summary>
+    private bool hasUnsavedWordEdits = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
     private bool isAutoOcrRedrawPass = false;
@@ -733,6 +740,11 @@ public partial class GrabFrame : Window
             return true;
         }
 
+        // A manually placed divider is a real edit worth protecting: freeze the frame so
+        // the reDrawTimer/content-change watcher stop resetting it out from under the user.
+        FreezeFrameForWordEditing();
+        hasUnsavedWordEdits = true;
+
         string placementLabel = tableEditState.PlacementMode == GrabFrameTablePlacementMode.AddRow
             ? "row"
             : "column";
@@ -1309,6 +1321,7 @@ public partial class GrabFrame : Window
 
         const double widthScaleAdjustFactor = 1.5;
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
 
         double top = wordBorder.Top;
         double left = wordBorder.Left;
@@ -1363,6 +1376,7 @@ public partial class GrabFrame : Window
     public void DeleteThisWordBorder(WordBorder wordBorder, bool startEndTransaction = true)
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         wordBorders.Remove(wordBorder);
         RectanglesCanvas.Children.Remove(wordBorder);
 
@@ -1530,6 +1544,7 @@ public partial class GrabFrame : Window
     public void MergeSelectedWordBorders()
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         RectanglesCanvas.ContextMenu.IsOpen = false;
         if (!IsFreezeMode)
             FreezeGrabFrame();
@@ -1651,6 +1666,7 @@ public partial class GrabFrame : Window
     public void UndoableWordChange(WordBorder wordBorder, string oldWord, bool isSingleTransaction)
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         if (isSingleTransaction)
             UndoRedo.StartTransaction();
 
@@ -1726,6 +1742,7 @@ public partial class GrabFrame : Window
             FreezeGrabFrame();
 
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
@@ -1997,6 +2014,7 @@ public partial class GrabFrame : Window
     private void DeleteWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         UndoRedo.StartTransaction();
         List<WordBorder> deletedWordBorders = DeleteSelectedWordBorders();
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
@@ -2905,6 +2923,9 @@ public partial class GrabFrame : Window
                 return;
             }
 
+            if (!await ConfirmDiscardWordEditsAsync())
+                return;
+
             FreezeToggleButton.IsChecked = false;
             // Diff the frozen snapshot against the live screen before clearing so
             // unchanged content keeps its (possibly edited) word borders.
@@ -2922,14 +2943,28 @@ public partial class GrabFrame : Window
         reDrawTimer.Start();
     }
 
-    private void FreezeToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
+    private async void FreezeToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode)
+        {
             FreezeGrabFrame();
-        else if (IsPdfDocumentLoaded)
+            return;
+        }
+
+        if (IsPdfDocumentLoaded)
+        {
             FreezeToggleButton.IsChecked = true;
-        else
-            UnfreezeGrabFrameWithDiff();
+            return;
+        }
+
+        if (!await ConfirmDiscardWordEditsAsync())
+        {
+            // Declined: stay frozen so the edited word borders are not put at risk.
+            FreezeToggleButton.IsChecked = true;
+            return;
+        }
+
+        UnfreezeGrabFrameWithDiff();
     }
 
     private static SolidColorBrush GetBackgroundBrushFromOcrBitmap(double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
@@ -3854,10 +3889,7 @@ public partial class GrabFrame : Window
 
             isMiddleDown = true;
             if (!IsPdfDocumentLoaded)
-            {
-                ResetGrabFrame();
-                UnfreezeGrabFrame();
-            }
+                BeginMiddleMouseFrameResetAsync();
             return;
         }
 
@@ -3873,6 +3905,25 @@ public partial class GrabFrame : Window
         _ = RectanglesCanvas.Children.Add(selectBorder);
         Canvas.SetLeft(selectBorder, clickedPoint.X);
         Canvas.SetTop(selectBorder, clickedPoint.Y);
+    }
+
+    /// <summary>
+    /// Starting a middle-mouse drag moves the frame window, which invalidates the current word
+    /// borders since they're mapped to the screen area under the old window position. When the
+    /// user has tweaked those borders, confirm before discarding them instead of wiping silently.
+    /// </summary>
+    private async void BeginMiddleMouseFrameResetAsync()
+    {
+        if (!await ConfirmDiscardWordEditsAsync())
+        {
+            isMiddleDown = false;
+            isSelecting = false;
+            Mouse.Captured?.ReleaseMouseCapture();
+            return;
+        }
+
+        ResetGrabFrameWithUndo();
+        UnfreezeGrabFrame();
     }
 
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
@@ -3977,6 +4028,7 @@ public partial class GrabFrame : Window
 
         if (movingWordBordersDictionary.Count > 0)
         {
+            hasUnsavedWordEdits = true;
             UndoRedo.StartTransaction();
 
             foreach (WordBorder movedWb in movingWordBordersDictionary.Keys)
@@ -4140,8 +4192,12 @@ public partial class GrabFrame : Window
             return;
         }
 
+        if (!await ConfirmDiscardWordEditsAsync())
+            return;
+
         HideFrameMessage();
         reDrawTimer.Stop();
+        hasUnsavedWordEdits = false;
 
         UndoRedo.StartTransaction();
 
@@ -4447,6 +4503,7 @@ public partial class GrabFrame : Window
 
     private void ResetGrabFrame()
     {
+        hasUnsavedWordEdits = false;
         CancelTablePlacement();
         RemoveTableLines();
         AnalyzedResultTable = null;
@@ -4475,6 +4532,51 @@ public partial class GrabFrame : Window
         ClearRenderedWordBorders();
         MatchesTXTBLK.Text = "- Matches";
         UpdateFrameText();
+    }
+
+    /// <summary>
+    /// Same as <see cref="ResetGrabFrame"/>, but first records the current word borders as an
+    /// undoable removal so a reset (confirmed or automatic) can be undone with Ctrl+Z.
+    /// </summary>
+    private void ResetGrabFrameWithUndo()
+    {
+        if (wordBorders.Count == 0)
+        {
+            ResetGrabFrame();
+            return;
+        }
+
+        UndoRedo.StartTransaction();
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = [.. wordBorders],
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+        ResetGrabFrame();
+        UndoRedo.EndTransaction();
+    }
+
+    /// <summary>
+    /// Gate for soft/automatic refresh paths (middle-mouse window move, etc.) that would
+    /// otherwise silently discard word borders the user has tweaked. Returns true immediately,
+    /// with no prompt, when there is nothing unsaved to lose.
+    /// </summary>
+    private async Task<bool> ConfirmDiscardWordEditsAsync()
+    {
+        if (!hasUnsavedWordEdits)
+            return true;
+
+        Wpf.Ui.Controls.MessageBoxResult result = await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Text Grab",
+            Content = "This Grab Frame has edits that haven't been saved. Continuing will discard them and re-run OCR.\n\nContinue anyway?",
+            PrimaryButtonText = "Discard Edits",
+            CloseButtonText = "Cancel"
+        }.ShowDialogAsync();
+
+        return result == Wpf.Ui.Controls.MessageBoxResult.Primary;
     }
 
     private void SearchBar_SearchChanged(object? sender, EventArgs e)
@@ -5131,7 +5233,7 @@ public partial class GrabFrame : Window
 
     private void TableBoundsHandle_DragStarted(object sender, DragStartedEventArgs e)
     {
-        tableBoundsLiveRect = tableBoundsOverride ?? AnalyzedResultTable?.BoundingRect ?? default(System.Drawing.RectangleF);
+        tableBoundsLiveRect = tableBoundsOverride ?? AnalyzedResultTable?.BoundingRect ?? default;
     }
 
     private void TableBoundsHandle_DragDelta(object sender, DragDeltaEventArgs e)
@@ -5180,6 +5282,8 @@ public partial class GrabFrame : Window
     private void TableBoundsHandle_DragCompleted(object sender, DragCompletedEventArgs e)
     {
         tableBoundsOverride = tableBoundsLiveRect;
+        FreezeFrameForWordEditing();
+        hasUnsavedWordEdits = true;
         UpdateFrameText();
     }
 
