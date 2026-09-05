@@ -494,4 +494,100 @@ public class EditTextWindowSpreadsheetTests
     {
         Assert.Equal(expectedHeight, EditTextWindow.GetSpreadsheetPersistedRowHeight(rowHeight));
     }
+
+    [Fact]
+    public void WriteGridIntoSpreadsheetDocument_WritesEachCellIntoItsOwnRowAndColumn()
+    {
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(string.Empty);
+        List<string[]> grid = [["Name", "Age"], ["Joe", "42"]];
+
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, grid, startRow: 0, startCol: 0);
+
+        Assert.Equal("Name", document.Rows[0][0]);
+        Assert.Equal("Age", document.Rows[0][1]);
+        Assert.Equal("Joe", document.Rows[1][0]);
+        Assert.Equal("42", document.Rows[1][1]);
+    }
+
+    [Fact]
+    public void WriteGridIntoSpreadsheetDocument_AppendsAtRequestedBottomRow_WithoutDisturbingExistingRows()
+    {
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText("Existing\tRow");
+        int appendRow = document.GetFirstFullyEmptyRowIndex();
+        List<string[]> grid = [["Name", "Age"], ["Joe", "42"]];
+
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, grid, startRow: appendRow, startCol: 0);
+
+        Assert.Equal("Existing", document.Rows[0][0]);
+        Assert.Equal("Row", document.Rows[0][1]);
+        Assert.Equal("Name", document.Rows[appendRow][0]);
+        Assert.Equal("Age", document.Rows[appendRow][1]);
+        Assert.Equal("Joe", document.Rows[appendRow + 1][0]);
+        Assert.Equal("42", document.Rows[appendRow + 1][1]);
+    }
+
+    [Fact]
+    public void WriteGridIntoSpreadsheetDocument_ExpandsColumnsForRaggedRows_WithoutSquishingIntoOneColumn()
+    {
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(string.Empty);
+        List<string[]> grid = [["A", "B", "C"], ["1", "2"]];
+
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, grid, startRow: 0, startCol: 0);
+
+        Assert.True(document.ColumnCount >= 3);
+        Assert.Equal("A", document.Rows[0][0]);
+        Assert.Equal("B", document.Rows[0][1]);
+        Assert.Equal("C", document.Rows[0][2]);
+        Assert.Equal("1", document.Rows[1][0]);
+        Assert.Equal("2", document.Rows[1][1]);
+        Assert.Equal(string.Empty, document.Rows[1][2]);
+    }
+
+    [Fact]
+    public void WriteGridIntoSpreadsheetDocument_SequentialBottomAppends_LandOnSeparateRows()
+    {
+        // Regression for repeated table-mode FSG grabs sent to the same Spreadsheet-mode ETW:
+        // each grab must land on its own row instead of clobbering the previous one.
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(string.Empty);
+
+        int firstAppendRow = document.GetFirstFullyEmptyRowIndex();
+        Assert.Equal(0, firstAppendRow);
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, [["Name", "Age"]], firstAppendRow, 0);
+
+        int secondAppendRow = document.GetFirstFullyEmptyRowIndex();
+        Assert.Equal(1, secondAppendRow);
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, [["Joe", "42"]], secondAppendRow, 0);
+
+        int thirdAppendRow = document.GetFirstFullyEmptyRowIndex();
+        Assert.Equal(2, thirdAppendRow);
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, [["Jane", "30"]], thirdAppendRow, 0);
+
+        Assert.Equal("Name", document.Rows[0][0]);
+        Assert.Equal("Age", document.Rows[0][1]);
+        Assert.Equal("Joe", document.Rows[1][0]);
+        Assert.Equal("42", document.Rows[1][1]);
+        Assert.Equal("Jane", document.Rows[2][0]);
+        Assert.Equal("30", document.Rows[2][1]);
+    }
+
+    [Fact]
+    public void WriteGridIntoSpreadsheetDocument_SingleCellAtExplicitCurrentCell_DoesNotDisturbOtherRows()
+    {
+        // A single-cell grab result should land at the currently selected spreadsheet cell,
+        // not get spliced into whatever the underlying (hidden) text box's cursor last was.
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(string.Empty);
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, [["Name", "Age"]], 0, 0);
+
+        List<string[]> singleCellGrid = EditTextTableDocument.ParseTabSeparatedRows("Joe");
+        Assert.True(EditTextTableDocument.IsSingleCellGrid(singleCellGrid));
+
+        int currentCellRow = 1;
+        int currentCellColumn = 0;
+        EditTextWindow.WriteGridIntoSpreadsheetDocument(document, singleCellGrid, currentCellRow, currentCellColumn);
+
+        Assert.Equal("Name", document.Rows[0][0]);
+        Assert.Equal("Age", document.Rows[0][1]);
+        Assert.Equal("Joe", document.Rows[1][0]);
+        Assert.Equal(string.Empty, document.Rows[1][1]);
+    }
 }

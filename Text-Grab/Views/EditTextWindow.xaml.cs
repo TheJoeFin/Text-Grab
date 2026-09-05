@@ -1451,44 +1451,79 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int startRow = Math.Max(0, SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem));
         int startCol = Math.Max(0, SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0);
 
-        // Parse clipboard text into a 2D array of cell values
-        string[] lines = clipboardText.Split('\n');
-        List<string[]> pastedRows = [];
-        foreach (string line in lines)
-            pastedRows.Add(line.TrimEnd('\r').Split('\t'));
-
-        // Remove trailing empty row artifact produced by a final newline in copied table text
-        while (pastedRows.Count > 1 && pastedRows[^1].Length == 1 && pastedRows[^1][0].Length == 0)
-            pastedRows.RemoveAt(pastedRows.Count - 1);
-
+        List<string[]> pastedRows = EditTextTableDocument.ParseTabSeparatedRows(clipboardText);
         if (pastedRows.Count == 0)
             return;
 
-        int maxPastedCols = pastedRows.Max(row => row.Length);
+        ApplySpreadsheetDocumentChange(
+            document => WriteGridIntoSpreadsheetDocument(document, pastedRows, startRow, startCol),
+            startRow,
+            startCol);
+    }
+
+    internal static void WriteGridIntoSpreadsheetDocument(
+        EditTextTableDocument document,
+        List<string[]> gridRows,
+        int startRow,
+        int startCol)
+    {
+        int maxGridCols = gridRows.Max(row => row.Length);
+
+        // Expand the document to fit the incoming data if necessary
+        int requiredRows = startRow + gridRows.Count;
+        int requiredCols = startCol + maxGridCols;
+        document.RowCount = Math.Max(document.RowCount, requiredRows);
+        document.ColumnCount = Math.Max(document.ColumnCount, requiredCols);
+        document.MinimumRowCount = Math.Max(document.MinimumRowCount, requiredRows);
+        document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, requiredCols);
+        document.EnsureMinimumSize();
+
+        // Write values into the target cells
+        for (int r = 0; r < gridRows.Count; r++)
+        {
+            int targetRow = startRow + r;
+            for (int c = 0; c < gridRows[r].Length; c++)
+            {
+                int targetCol = startCol + c;
+                if (targetRow < document.Rows.Count && targetCol < document.Rows[targetRow].Count)
+                    document.Rows[targetRow][targetCol] = gridRows[r][c];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Inserts an OCR grab result into this Spreadsheet-mode window through the structured
+    /// table model rather than splicing raw text into the (hidden, while in this mode)
+    /// underlying text box — that box's selection/cursor doesn't track the DataGrid's current
+    /// cell, so splicing into it corrupts whatever row happens to sit at that stale position.
+    /// A single cell (no row/column structure) replaces the currently selected spreadsheet
+    /// cell; a real multi-cell table is appended as new rows at the bottom instead, landing
+    /// column-aware. Returns true when it handled the insert itself.
+    /// </summary>
+    internal bool TryInsertGrabbedTextIntoSpreadsheet(string grabbedText)
+    {
+        if (editorMode != EtwEditorMode.Spreadsheet)
+            return false;
+
+        List<string[]> parsedRows = EditTextTableDocument.ParseTabSeparatedRows(grabbedText);
+        if (parsedRows.Count == 0)
+            return false;
+
+        if (EditTextTableDocument.IsSingleCellGrid(parsedRows))
+        {
+            int targetRow = Math.Max(0, GetSpreadsheetCurrentRowIndex() ?? 0);
+            int targetColumn = Math.Max(0, GetSpreadsheetCurrentColumnIndex() ?? 0);
+
+            ApplySpreadsheetDocumentChange(document =>
+                WriteGridIntoSpreadsheetDocument(document, parsedRows, targetRow, targetColumn));
+
+            return true;
+        }
 
         ApplySpreadsheetDocumentChange(document =>
-        {
-            // Expand the document to fit the pasted data if necessary
-            int requiredRows = startRow + pastedRows.Count;
-            int requiredCols = startCol + maxPastedCols;
-            document.RowCount = Math.Max(document.RowCount, requiredRows);
-            document.ColumnCount = Math.Max(document.ColumnCount, requiredCols);
-            document.MinimumRowCount = Math.Max(document.MinimumRowCount, requiredRows);
-            document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, requiredCols);
-            document.EnsureMinimumSize();
+            WriteGridIntoSpreadsheetDocument(document, parsedRows, document.GetFirstFullyEmptyRowIndex(), 0));
 
-            // Write values into the target cells
-            for (int r = 0; r < pastedRows.Count; r++)
-            {
-                int targetRow = startRow + r;
-                for (int c = 0; c < pastedRows[r].Length; c++)
-                {
-                    int targetCol = startCol + c;
-                    if (targetRow < document.Rows.Count && targetCol < document.Rows[targetRow].Count)
-                        document.Rows[targetRow][targetCol] = pastedRows[r][c];
-                }
-            }
-        }, startRow, startCol);
+        return true;
     }
 
     internal static string BuildSpreadsheetSelectionText(

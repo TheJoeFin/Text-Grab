@@ -195,4 +195,73 @@ public class EditTextTableDocumentTests
         document.DeleteColumn(0);
         Assert.False(document.WrappedCells.Any());
     }
+
+    [Theory]
+    [InlineData("Alpha", 1, 1)]
+    [InlineData("Alpha\tBeta", 1, 2)]
+    [InlineData("Alpha\tBeta\r\n1\t2", 2, 2)]
+    [InlineData("Alpha\r\nBeta", 2, 1)]
+    public void ParseTabSeparatedRows_SplitsRowsAndColumns(string input, int expectedRowCount, int expectedColumnCount)
+    {
+        List<string[]> rows = EditTextTableDocument.ParseTabSeparatedRows(input);
+
+        Assert.Equal(expectedRowCount, rows.Count);
+        Assert.All(rows, row => Assert.Equal(expectedColumnCount, row.Length));
+    }
+
+    [Fact]
+    public void ParseTabSeparatedRows_TrimsTrailingNewlineArtifact()
+    {
+        List<string[]> rows = EditTextTableDocument.ParseTabSeparatedRows("A\tB\r\n1\t2\r\n");
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(["1", "2"], rows[1]);
+    }
+
+    [Fact]
+    public void ParseTabSeparatedRows_EmptyInput_ReturnsNoRows()
+    {
+        Assert.Empty(EditTextTableDocument.ParseTabSeparatedRows(string.Empty));
+        Assert.Empty(EditTextTableDocument.ParseTabSeparatedRows(null));
+    }
+
+    [Theory]
+    [InlineData("Alpha", true)]
+    [InlineData("Alpha\tBeta", false)]
+    [InlineData("Alpha\r\nBeta", false)]
+    [InlineData("Alpha\tBeta\r\n1\t2", false)]
+    public void IsSingleCellGrid_OnlyTrueForOneRowOneColumn(string input, bool expected)
+    {
+        List<string[]> rows = EditTextTableDocument.ParseTabSeparatedRows(input);
+
+        Assert.Equal(expected, EditTextTableDocument.IsSingleCellGrid(rows));
+    }
+
+    [Fact]
+    public void GetFirstFullyEmptyRowIndex_ReturnsIndexAfterLastPopulatedRow()
+    {
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText("A\tB\r\nC\tD");
+
+        Assert.Equal(2, document.GetFirstFullyEmptyRowIndex());
+    }
+
+    [Fact]
+    public void GetFirstFullyEmptyRowIndex_AllRowsEmpty_ReturnsZero()
+    {
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(string.Empty);
+
+        Assert.Equal(0, document.GetFirstFullyEmptyRowIndex());
+    }
+
+    [Fact]
+    public void GetFirstFullyEmptyRowIndex_IgnoresBlankRowsBelowPopulatedData()
+    {
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(
+            "A\tB",
+            minimumRowCount: 10,
+            minimumColumnCount: 2);
+        document.Rows[5][0] = "populated";
+
+        Assert.Equal(6, document.GetFirstFullyEmptyRowIndex());
+    }
 }

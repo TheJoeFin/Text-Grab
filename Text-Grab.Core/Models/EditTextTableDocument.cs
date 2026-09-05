@@ -105,6 +105,51 @@ public sealed class EditTextTableDocument
         return JsonSerializer.Serialize(this);
     }
 
+    /// <summary>
+    /// Splits tab/newline delimited text (e.g. clipboard or OCR table output) into a grid of
+    /// cell values, one string array per row. Trims the trailing empty row artifact produced by
+    /// a final newline.
+    /// </summary>
+    public static List<string[]> ParseTabSeparatedRows(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return [];
+
+        string[] lines = text.Split('\n');
+        List<string[]> rows = [];
+        foreach (string line in lines)
+            rows.Add(line.TrimEnd('\r').Split('\t'));
+
+        while (rows.Count > 1 && rows[^1].Length == 1 && rows[^1][0].Length == 0)
+            rows.RemoveAt(rows.Count - 1);
+
+        return rows;
+    }
+
+    /// <summary>
+    /// True when a parsed grid (see <see cref="ParseTabSeparatedRows"/>) amounts to a single
+    /// value with no row or column structure.
+    /// </summary>
+    public static bool IsSingleCellGrid(IReadOnlyList<string[]> rows)
+    {
+        return rows.Count <= 1 && rows.All(row => row.Length <= 1);
+    }
+
+    /// <summary>
+    /// The first row index, scanning from the end of <see cref="Rows"/>, that has no non-empty
+    /// cells in it or below it — i.e. where new rows can be appended without overwriting data.
+    /// </summary>
+    public int GetFirstFullyEmptyRowIndex()
+    {
+        for (int rowIndex = Rows.Count - 1; rowIndex >= 0; rowIndex--)
+        {
+            if (Rows[rowIndex].Any(cell => !string.IsNullOrEmpty(cell)))
+                return rowIndex + 1;
+        }
+
+        return 0;
+    }
+
     public string SerializeToText()
     {
         EnsureMinimumSize();
