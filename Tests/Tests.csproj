@@ -15,8 +15,8 @@
 
     <ItemGroup>
         <PackageReference Include="NCalcAsync" Version="7.1.0" />
-        <PackageReference Include="Xunit.StaFact" Version="3.0.13" />
-        <PackageReference Include="xunit.v3" Version="3.2.2" />
+        <PackageReference Include="Xunit.StaFact" Version="4.0.23" />
+        <PackageReference Include="xunit.v3" Version="4.0.0" />
         <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
         <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.7.37220.1" />
     </ItemGroup>
