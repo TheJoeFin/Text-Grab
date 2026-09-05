@@ -28,11 +28,13 @@ internal sealed class PdfPageContent
         int pageIndex,
         BitmapSource renderedPage,
         IReadOnlyList<PdfPageTextLine> nativeLines,
+        IReadOnlyList<PdfPageTextLine> nativeWords,
         IReadOnlyList<Windows.Foundation.Rect> imageRegions)
     {
         PageIndex = pageIndex;
         RenderedPage = renderedPage;
         NativeLines = nativeLines;
+        NativeWords = nativeWords;
         ImageRegions = imageRegions;
     }
 
@@ -41,6 +43,12 @@ internal sealed class PdfPageContent
     public IReadOnlyList<Windows.Foundation.Rect> ImageRegions { get; }
 
     public IReadOnlyList<PdfPageTextLine> NativeLines { get; }
+
+    /// <summary>
+    /// Individual native words (not grouped into lines), positioned in rendered-page
+    /// pixel space. Used for table detection, which needs per-word gaps to find columns.
+    /// </summary>
+    public IReadOnlyList<PdfPageTextLine> NativeWords { get; }
 
     public int PageIndex { get; }
 
@@ -147,10 +155,12 @@ internal sealed class PdfDocumentRenderer : IDisposable
             BitmapImage renderedPage = await RenderPageBitmapAsync(renderPage);
             Page textPage = textDocument.GetPage(pageIndex + 1);
 
-            List<PdfPageTextLine> nativeLines = ExtractNativeLines(textPage, renderedPage.PixelWidth, renderedPage.PixelHeight);
+            List<(Windows.Foundation.Rect SourceRect, string Text)> rawWords = ExtractRawWords(textPage, renderedPage.PixelWidth, renderedPage.PixelHeight);
+            List<PdfPageTextLine> nativeLines = [.. GroupWordsIntoLines(rawWords)];
+            List<PdfPageTextLine> nativeWords = [.. rawWords.Select(word => new PdfPageTextLine(word.SourceRect, word.Text, isNativeText: true))];
             List<Windows.Foundation.Rect> imageRegions = ExtractImageRegions(textPage, renderedPage.PixelWidth, renderedPage.PixelHeight);
 
-            PdfPageContent pageContent = new(pageIndex, renderedPage, nativeLines, imageRegions);
+            PdfPageContent pageContent = new(pageIndex, renderedPage, nativeLines, nativeWords, imageRegions);
             long pageSizeBytes = EstimateBitmapBytes(renderedPage);
 
             while (cacheOrder.First is not null
@@ -190,6 +200,17 @@ internal sealed class PdfDocumentRenderer : IDisposable
 
         combinedLines.AddRange(imageOcrLines);
         return SortLines(combinedLines);
+    }
+
+    /// <summary>
+    /// Returns individual native words (not grouped into lines) for table detection.
+    /// Empty when the page has no native text (e.g. a scanned page), since callers on
+    /// that path already fall back to word-level OCR of the rendered page.
+    /// </summary>
+    public async Task<IReadOnlyList<PdfPageTextLine>> GetSelectableWordsAsync(int pageIndex)
+    {
+        PdfPageContent pageContent = await GetPageContentAsync(pageIndex);
+        return pageContent.NativeWords;
     }
 
     public async Task<BitmapSource> RenderPageAsync(int pageIndex)
@@ -441,17 +462,15 @@ internal sealed class PdfDocumentRenderer : IDisposable
             .Where(rect => rect.Width > 0 && rect.Height > 0)];
     }
 
-    private static List<PdfPageTextLine> ExtractNativeLines(Page textPage, int renderedWidth, int renderedHeight)
+    private static List<(Windows.Foundation.Rect SourceRect, string Text)> ExtractRawWords(Page textPage, int renderedWidth, int renderedHeight)
     {
-        List<(Windows.Foundation.Rect SourceRect, string Text)> words = [.. textPage
+        return [.. textPage
             .GetWords(DefaultWordExtractor.Instance)
             .Where(word => !string.IsNullOrWhiteSpace(word.Text))
             .Select(word => (
                 SourceRect: ConvertPdfRectToImageRect(word.BoundingBox, (double)textPage.Width, (double)textPage.Height, renderedWidth, renderedHeight),
                 Text: word.Text.Trim()))
             .Where(word => word.SourceRect.Width > 0 && word.SourceRect.Height > 0)];
-
-        return [.. GroupWordsIntoLines(words)];
     }
 
     private static Windows.Foundation.Rect GetBounds(IEnumerable<Windows.Foundation.Rect> rects)

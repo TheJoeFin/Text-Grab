@@ -126,6 +126,21 @@ public class PdfDocumentRendererTests
             text);
     }
 
+    [WpfFact]
+    public async Task GetSelectableWordsAsync_ReturnsMoreWordsThanLines()
+    {
+        string pdfPath = FileUtilities.GetPathToLocalFile(@"TextFiles\Text-Grab-Test-PDF.pdf");
+
+        using PdfDocumentRenderer pdfDocument = await PdfDocumentRenderer.LoadAsync(pdfPath);
+        PdfPageContent pageContent = await pdfDocument.GetPageContentAsync(pageIndex: 0);
+        IReadOnlyList<PdfPageTextLine> words = await pdfDocument.GetSelectableWordsAsync(pageIndex: 0);
+
+        Assert.True(pageContent.HasNativeText);
+        Assert.True(words.Count > pageContent.NativeLines.Count);
+        Assert.All(words, word => Assert.True(word.IsNativeText));
+        Assert.Contains(words, word => word.Text == "Milwaukee,");
+    }
+
     [Fact]
     public void ShouldIncludeOcrLine_OnlyReturnsTrueWhenImageOverlapIsMeaningful()
     {

@@ -2327,7 +2327,10 @@ public partial class GrabFrame : Window
 
         if (_currentPdfPageContent?.HasNativeText is true)
         {
-            await DrawPdfRectanglesAsync(searchWord);
+            if (TableToggleButton.IsChecked is true)
+                await DrawPdfWordRectanglesAsync(searchWord);
+            else
+                await DrawPdfRectanglesAsync(searchWord);
             return;
         }
 
@@ -2491,6 +2494,72 @@ public partial class GrabFrame : Window
 
             PdfTextLineOverlay overlay = CreatePdfTextLineOverlay(pageLine.SourceRect, 1, lineText, dpi);
             AddRenderedPdfTextLine(overlay);
+        }
+
+        if (DefaultSettings.TryToReadBarcodes)
+            TryToReadBarcodes(dpi);
+
+        isDrawing = false;
+        reSearchTimer.Start();
+
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
+        {
+            translationTimer.Stop();
+            translationTimer.Start();
+        }
+    }
+
+    /// <summary>
+    /// Renders a native-text PDF page as per-word borders instead of per-line overlays,
+    /// so Table mode has the individual word gaps it needs to detect columns and rows.
+    /// </summary>
+    private async Task DrawPdfWordRectanglesAsync(string searchWord = "")
+    {
+        if (isDrawing || IsDragOver || _loadedPdfDocument is null || _currentPdfPageContent is null || _currentPdfPageIndex < 0)
+            return;
+
+        isDrawing = true;
+        IsOcrValid = true;
+        windowFrameImageScale = 1;
+        ocrResultOfWindow = null;
+
+        if (string.IsNullOrWhiteSpace(searchWord))
+            searchWord = SearchBar.SearchText;
+
+        ClearRenderedWordBorders();
+
+        if (frameContentImageSource is not BitmapSource bmpImg)
+        {
+            isDrawing = false;
+            reDrawTimer.Start();
+            return;
+        }
+
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        SyncRectanglesCanvasSizeToImage();
+        isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
+
+        IReadOnlyList<PdfPageTextLine> pageWords = await _loadedPdfDocument.GetSelectableWordsAsync(_currentPdfPageIndex);
+
+        using System.Drawing.Bitmap bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+
+        foreach (PdfPageTextLine pageWord in pageWords)
+        {
+            Windows.Foundation.Rect wordRect = pageWord.SourceRect;
+            SolidColorBrush backgroundBrush = GetBackgroundBrushFromOcrBitmap(1, bmp, ref wordRect);
+
+            WordBorder wordBorderBox = CreateWordBorderFromSourceRect(
+                wordRect,
+                1,
+                pageWord.Text,
+                lineNumber: 0,
+                backgroundBrush,
+                dpi,
+                1.0,
+                0.0,
+                0.0);
+
+            AddRenderedWordBorder(wordBorderBox);
         }
 
         if (DefaultSettings.TryToReadBarcodes)
@@ -4843,7 +4912,12 @@ public partial class GrabFrame : Window
         CancelTablePlacement();
         RemoveTableLines();
 
-        if (ShouldRefreshOcrBordersForTableModeActivation())
+        // A native-text PDF page switches between line overlays (best for reading/copying)
+        // and per-word borders (needed for table detection) depending on this toggle, so it
+        // always needs a redraw here, regardless of the paragraph-merge-only conditions below.
+        bool isNativePdfTextPage = _currentPdfPageContent?.HasNativeText is true;
+
+        if (isNativePdfTextPage || ShouldRefreshOcrBordersForTableModeActivation())
         {
             await DrawRectanglesAroundWords(SearchBar.SearchText);
             UpdateFrameText();
