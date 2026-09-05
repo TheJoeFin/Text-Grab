@@ -1681,8 +1681,17 @@ public partial class GrabFrame : Window
             UndoRedo.EndTransaction();
     }
 
+    /// <summary>
+    /// Bubbled up from a word border's debounced TextChanged (see
+    /// <see cref="WordBorder.EditWordTextBox_TextChanged"/>/DebounceTimer_Tick) while the user
+    /// is actively typing a correction. Flags the frame dirty immediately, ahead of the
+    /// LostFocus commit in <see cref="UndoableWordChange"/>, so a soft-refresh path that
+    /// interrupts typing without a focus change still sees the edit as unsaved.
+    /// </summary>
     public void WordChanged()
     {
+        ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
