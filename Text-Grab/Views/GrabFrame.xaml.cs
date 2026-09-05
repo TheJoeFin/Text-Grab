@@ -52,6 +52,16 @@ public partial class GrabFrame : Window
     public static RoutedCommand GrabTrimCommand = new();
     private readonly GrabFrameTableEditState tableEditState = new();
     private ResultTable? AnalyzedResultTable;
+
+    /// <summary>
+    /// User-repositioned table boundary (dragged via the corner handles on the table outline).
+    /// When set, only word borders whose center falls inside this rect are handed to the table
+    /// algorithm; when null, every word border in the frame is used, as before.
+    /// </summary>
+    private System.Drawing.RectangleF? tableBoundsOverride;
+    private System.Drawing.RectangleF tableBoundsLiveRect;
+    private Border? tableBoundsOutlineVisual;
+    private Thumb[]? tableBoundsHandleVisuals;
     private Point clickedPoint;
     private ILanguage? currentLanguage;
     private TextBox? destinationTextBox;
@@ -657,7 +667,10 @@ public partial class GrabFrame : Window
     private void CancelTablePlacement(bool clearManualSeparators = false)
     {
         if (clearManualSeparators)
+        {
             tableEditState.ClearAll();
+            tableBoundsOverride = null;
+        }
         else
             tableEditState.CancelPlacement();
 
@@ -4437,6 +4450,9 @@ public partial class GrabFrame : Window
         CancelTablePlacement();
         RemoveTableLines();
         AnalyzedResultTable = null;
+        tableBoundsOverride = null;
+        tableBoundsOutlineVisual = null;
+        tableBoundsHandleVisuals = null;
         SetRefreshOrOcrFrameBtnVis();
 
         MainZoomBorder.Reset();
@@ -5058,6 +5074,15 @@ public partial class GrabFrame : Window
             return wbInfos;
         }
 
+        if (tableBoundsOverride is System.Drawing.RectangleF bounds)
+        {
+            List<WordBorderInfo> filteredInfos = ResultTable.FilterWordBordersWithinBounds(wbInfos, bounds);
+            if (filteredInfos.Count > 0)
+                wbInfos = filteredInfos;
+            else
+                tableBoundsOverride = null; // dragged bounds excluded every word border; fall back to auto-detected bounds
+        }
+
         Point windowPosition = this.GetAbsolutePosition();
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         System.Drawing.Rectangle rectCanvasSize = new()
@@ -5079,7 +5104,9 @@ public partial class GrabFrame : Window
             tableEditState.SetManualSeparators(
                 AnalyzedResultTable.ManualRowSeparators,
                 AnalyzedResultTable.ManualColumnSeparators);
-            RectanglesCanvas.Children.Add(ResultTableRenderer.BuildTableLines(AnalyzedResultTable));
+            Canvas tableLinesCanvas = ResultTableRenderer.BuildTableLines(AnalyzedResultTable, includeBoundsHandles: true);
+            RectanglesCanvas.Children.Add(tableLinesCanvas);
+            WireUpTableBoundsHandles(tableLinesCanvas);
         }
         catch (Exception ex)
         {
@@ -5087,6 +5114,105 @@ public partial class GrabFrame : Window
         }
 
         return wbInfos;
+    }
+
+    private void WireUpTableBoundsHandles(Canvas tableLinesCanvas)
+    {
+        tableBoundsOutlineVisual = tableLinesCanvas.Children.OfType<Border>().FirstOrDefault();
+        tableBoundsHandleVisuals = [.. tableLinesCanvas.Children.OfType<Thumb>()];
+
+        foreach (Thumb handle in tableBoundsHandleVisuals)
+        {
+            handle.DragStarted += TableBoundsHandle_DragStarted;
+            handle.DragDelta += TableBoundsHandle_DragDelta;
+            handle.DragCompleted += TableBoundsHandle_DragCompleted;
+        }
+    }
+
+    private void TableBoundsHandle_DragStarted(object sender, DragStartedEventArgs e)
+    {
+        tableBoundsLiveRect = tableBoundsOverride ?? AnalyzedResultTable?.BoundingRect ?? default(System.Drawing.RectangleF);
+    }
+
+    private void TableBoundsHandle_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (sender is not Thumb { Tag: TableBoundsCorner corner })
+            return;
+
+        const double minimumSize = GrabFrameTableEditState.MinimumSeparatorGap * 2;
+
+        double minX = 0;
+        double minY = 0;
+        double maxX = RectanglesCanvas.ActualWidth > 0 ? RectanglesCanvas.ActualWidth : double.MaxValue;
+        double maxY = RectanglesCanvas.ActualHeight > 0 ? RectanglesCanvas.ActualHeight : double.MaxValue;
+
+        float left = tableBoundsLiveRect.Left;
+        float top = tableBoundsLiveRect.Top;
+        float right = tableBoundsLiveRect.Right;
+        float bottom = tableBoundsLiveRect.Bottom;
+
+        switch (corner)
+        {
+            case TableBoundsCorner.TopLeft:
+                left = (float)SafeClamp(left + e.HorizontalChange, minX, right - minimumSize);
+                top = (float)SafeClamp(top + e.VerticalChange, minY, bottom - minimumSize);
+                break;
+            case TableBoundsCorner.TopRight:
+                right = (float)SafeClamp(right + e.HorizontalChange, left + minimumSize, maxX);
+                top = (float)SafeClamp(top + e.VerticalChange, minY, bottom - minimumSize);
+                break;
+            case TableBoundsCorner.BottomLeft:
+                left = (float)SafeClamp(left + e.HorizontalChange, minX, right - minimumSize);
+                bottom = (float)SafeClamp(bottom + e.VerticalChange, top + minimumSize, maxY);
+                break;
+            case TableBoundsCorner.BottomRight:
+                right = (float)SafeClamp(right + e.HorizontalChange, left + minimumSize, maxX);
+                bottom = (float)SafeClamp(bottom + e.VerticalChange, top + minimumSize, maxY);
+                break;
+        }
+
+        tableBoundsLiveRect = System.Drawing.RectangleF.FromLTRB(left, top, right, bottom);
+        RenderTableBoundsPreview(tableBoundsLiveRect);
+
+        static double SafeClamp(double value, double min, double max) => min <= max ? Math.Clamp(value, min, max) : min;
+    }
+
+    private void TableBoundsHandle_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        tableBoundsOverride = tableBoundsLiveRect;
+        UpdateFrameText();
+    }
+
+    private void RenderTableBoundsPreview(System.Drawing.RectangleF bounds)
+    {
+        if (tableBoundsOutlineVisual is Border outline)
+        {
+            Canvas.SetLeft(outline, bounds.Left);
+            Canvas.SetTop(outline, bounds.Top);
+            outline.Width = Math.Max(0, bounds.Width);
+            outline.Height = Math.Max(0, bounds.Height);
+        }
+
+        if (tableBoundsHandleVisuals is not { Length: > 0 })
+            return;
+
+        foreach (Thumb handle in tableBoundsHandleVisuals)
+        {
+            if (handle.Tag is not TableBoundsCorner corner)
+                continue;
+
+            (double x, double y) = corner switch
+            {
+                TableBoundsCorner.TopLeft => (bounds.Left, bounds.Top),
+                TableBoundsCorner.TopRight => (bounds.Right, bounds.Top),
+                TableBoundsCorner.BottomLeft => (bounds.Left, bounds.Bottom),
+                TableBoundsCorner.BottomRight => (bounds.Right, bounds.Bottom),
+                _ => (bounds.Left, bounds.Top)
+            };
+
+            Canvas.SetLeft(handle, x - (handle.Width / 2));
+            Canvas.SetTop(handle, y - (handle.Height / 2));
+        }
     }
 
     private void TryToReadBarcodes(DpiScale dpi)

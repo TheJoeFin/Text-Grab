@@ -81,6 +81,29 @@ public class ResultTable
         AnalyzeAsTable(wordBorders, rectCanvasSize, null, null);
     }
 
+    /// <summary>
+    /// Restricts a set of word borders to those whose center point falls within
+    /// <paramref name="bounds"/>, so the table algorithm only considers words inside a
+    /// user-repositioned table boundary rather than every word border in the frame.
+    /// </summary>
+    public static List<WordBorderInfo> FilterWordBordersWithinBounds(
+        IEnumerable<WordBorderInfo> wordBorders,
+        RectangleF bounds)
+    {
+        List<WordBorderInfo> filtered = [];
+
+        foreach (WordBorderInfo wordBorder in wordBorders)
+        {
+            float centerX = wordBorder.BorderRect.X + (wordBorder.BorderRect.Width / 2f);
+            float centerY = wordBorder.BorderRect.Y + (wordBorder.BorderRect.Height / 2f);
+
+            if (bounds.Contains(centerX, centerY))
+                filtered.Add(wordBorder);
+        }
+
+        return filtered;
+    }
+
     public void AnalyzeAsTable(
         ICollection<WordBorderInfo> wordBorders,
         Rectangle rectCanvasSize,

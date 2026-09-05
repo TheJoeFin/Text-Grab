@@ -1,10 +1,23 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Extensions;
 using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
+
+/// <summary>
+/// Which corner of the table's bounding rectangle a <see cref="Thumb"/> drag handle controls.
+/// </summary>
+public enum TableBoundsCorner
+{
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
 
 /// <summary>
 /// Draws the visual grid lines for a <see cref="ResultTable"/> onto a WPF <see cref="Canvas"/>.
@@ -15,7 +28,9 @@ namespace Text_Grab.Utilities;
 /// </summary>
 public static class ResultTableRenderer
 {
-    public static Canvas BuildTableLines(ResultTable table)
+    private const double HandleSize = 10;
+
+    public static Canvas BuildTableLines(ResultTable table, bool includeBoundsHandles = false)
     {
         Rect boundingRect = table.BoundingRect.AsRect();
 
@@ -64,6 +79,47 @@ public static class ResultTableRenderer
             Canvas.SetLeft(horzLine, boundingRect.X);
         }
 
+        if (includeBoundsHandles)
+        {
+            tableLines.Children.Add(BuildBoundsHandle(boundingRect.Left, boundingRect.Top, TableBoundsCorner.TopLeft, tableColor));
+            tableLines.Children.Add(BuildBoundsHandle(boundingRect.Right, boundingRect.Top, TableBoundsCorner.TopRight, tableColor));
+            tableLines.Children.Add(BuildBoundsHandle(boundingRect.Left, boundingRect.Bottom, TableBoundsCorner.BottomLeft, tableColor));
+            tableLines.Children.Add(BuildBoundsHandle(boundingRect.Right, boundingRect.Bottom, TableBoundsCorner.BottomRight, tableColor));
+        }
+
         return tableLines;
+    }
+
+    private static Thumb BuildBoundsHandle(double centerX, double centerY, TableBoundsCorner corner, Brush fillBrush)
+    {
+        Thumb handle = new()
+        {
+            Width = HandleSize,
+            Height = HandleSize,
+            Tag = corner,
+            Cursor = corner is TableBoundsCorner.TopLeft or TableBoundsCorner.BottomRight
+                ? Cursors.SizeNWSE
+                : Cursors.SizeNESW,
+            Template = BuildHandleTemplate(fillBrush)
+        };
+
+        Canvas.SetLeft(handle, centerX - (HandleSize / 2));
+        Canvas.SetTop(handle, centerY - (HandleSize / 2));
+
+        return handle;
+    }
+
+    private static ControlTemplate BuildHandleTemplate(Brush fillBrush)
+    {
+        FrameworkElementFactory borderFactory = new(typeof(Border));
+        borderFactory.SetValue(Border.BackgroundProperty, fillBrush);
+        borderFactory.SetValue(Border.BorderBrushProperty, Brushes.White);
+        borderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(1.5));
+        borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(2));
+
+        return new ControlTemplate(typeof(Thumb))
+        {
+            VisualTree = borderFactory
+        };
     }
 }
