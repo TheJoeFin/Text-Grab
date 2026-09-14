@@ -878,11 +878,25 @@ public partial class GrabFrame : Window
         if (sender is not ContextMenu menu)
             return;
 
-        // Only a loaded multi-page PDF has pages to walk. (The menu item can't be named:
-        // it lives inside the CollapsibleButton's name scope.)
+        // Only a loaded multi-page PDF has pages to walk. (The menu items can't be named:
+        // they live inside the CollapsibleButton's name scope, so they are found by Tag.)
         bool canGrabMultiplePages = _loadedPdfDocument is { PageCount: > 1 } && !isGrabbingMultiplePages;
         foreach (MenuItem item in menu.Items.OfType<MenuItem>())
+        {
             item.IsEnabled = canGrabMultiplePages;
+
+            if (item.Tag is "IgnoreRepeatedHeadersFooters")
+                item.IsChecked = DefaultSettings.GrabFrameIgnoreRepeatedHeadersFooters;
+        }
+    }
+
+    private void IgnoreRepeatedHeadersFootersMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem item)
+            return;
+
+        DefaultSettings.GrabFrameIgnoreRepeatedHeadersFooters = item.IsChecked;
+        DefaultSettings.Save();
     }
 
     private async void GrabMultiplePagesMenuItem_Click(object sender, RoutedEventArgs e)
@@ -917,6 +931,8 @@ public partial class GrabFrame : Window
     /// Runs the normal single-page grab pipeline (page render, word borders, table analysis
     /// with the persisted <see cref="tableBoundsOverride"/>, active template) over each page in
     /// <paramref name="pageIndices"/> and opens the joined text in a new Edit Text Window.
+    /// With "Ignore repeated headers and footers" on, a first pass reads every page so the
+    /// running headers/footers can be found across pages before the grab pass drops them.
     /// Leaves the frame on the last page.
     /// </summary>
     private async Task GrabPageRangeAsync(IReadOnlyList<int> pageIndices, bool insertBlankLineBetweenPages)
@@ -931,16 +947,39 @@ public partial class GrabFrame : Window
 
         isGrabbingMultiplePages = true;
         StringBuilder combinedText = new();
+        Dictionary<int, (IOcrLinesWords Result, double Scale)> ocrResultsByPage = [];
 
         try
         {
-            int lastPageNumber = pagesToGrab[^1] + 1;
-            foreach (int pageIndex in pagesToGrab)
+            List<HashSet<int>>? ignoredElementsPerPage = null;
+
+            if (DefaultSettings.GrabFrameIgnoreRepeatedHeadersFooters && pagesToGrab.Count > 1)
             {
+                List<PageTextSnapshot> snapshots = [];
+                foreach (int pageIndex in pagesToGrab)
+                {
+                    ShowFrameMessage($"Checking page {pageIndex + 1} for repeated headers and footers...");
+
+                    if (!await PrepareCurrentPdfPageForGrabAsync(pageIndex, ocrResultsByPage))
+                        return;
+
+                    snapshots.Add(SnapshotCurrentPageTextElements());
+                }
+
+                ignoredElementsPerPage = RepeatedPageElementDetector.FindRepeatedHeaderFooterElements(snapshots);
+            }
+
+            int lastPageNumber = pagesToGrab[^1] + 1;
+            for (int position = 0; position < pagesToGrab.Count; position++)
+            {
+                int pageIndex = pagesToGrab[position];
                 ShowFrameMessage($"Grabbing page {pageIndex + 1} of {lastPageNumber}...");
 
-                if (!await PrepareCurrentPdfPageForGrabAsync(pageIndex))
+                if (!await PrepareCurrentPdfPageForGrabAsync(pageIndex, ocrResultsByPage))
                     return;
+
+                if (ignoredElementsPerPage is not null)
+                    RemoveIgnoredPageTextElements(ignoredElementsPerPage[position]);
 
                 UpdateFrameText();
                 string pageText = await ResolveGrabOutputTextAsync();
@@ -984,10 +1023,13 @@ public partial class GrabFrame : Window
     /// <summary>
     /// Shows <paramref name="pageIndex"/> and synchronously drives what the redraw timer would
     /// eventually do for it, so the word borders / text lines are on the canvas when this
-    /// returns. Returns false when the frame was closed, the document replaced, or the
-    /// navigation superseded meanwhile.
+    /// returns. OCR results are cached in <paramref name="ocrResultsByPage"/> so a page visited
+    /// twice (header/footer analysis, then the grab) is only OCR'd once. Returns false when the
+    /// frame was closed, the document replaced, or the navigation superseded meanwhile.
     /// </summary>
-    private async Task<bool> PrepareCurrentPdfPageForGrabAsync(int pageIndex)
+    private async Task<bool> PrepareCurrentPdfPageForGrabAsync(
+        int pageIndex,
+        Dictionary<int, (IOcrLinesWords Result, double Scale)> ocrResultsByPage)
     {
         await ShowPdfPageAsync(pageIndex);
 
@@ -1001,6 +1043,9 @@ public partial class GrabFrame : Window
         for (int waited = 0; isDrawing && waited < 100; waited++)
             await Task.Delay(50);
 
+        if (ocrResultsByPage.TryGetValue(pageIndex, out (IOcrLinesWords Result, double Scale) cached))
+            (ocrResultOfWindow, windowFrameImageScale) = cached;
+
         isAutoOcrRedrawPass = true;
         try
         {
@@ -1011,7 +1056,65 @@ public partial class GrabFrame : Window
             isAutoOcrRedrawPass = false;
         }
 
+        if (ocrResultOfWindow is not null && !ocrResultsByPage.ContainsKey(pageIndex))
+            ocrResultsByPage[pageIndex] = (ocrResultOfWindow, windowFrameImageScale);
+
         return _loadedPdfDocument is not null && _currentPdfPageIndex == pageIndex;
+    }
+
+    /// <summary>
+    /// Every piece of text currently on the canvas (word borders first, then native-PDF text
+    /// lines) with its position, for cross-page header/footer detection. The order is what
+    /// <see cref="RemoveIgnoredPageTextElements"/> indexes into after the page is redrawn.
+    /// </summary>
+    private PageTextSnapshot SnapshotCurrentPageTextElements()
+    {
+        List<PageTextElement> elements =
+            [.. wordBorders.Select(wb => new PageTextElement(wb.Word, new System.Drawing.RectangleF((float)wb.Left, (float)wb.Top, (float)wb.Width, (float)wb.Height))),
+             .. pdfTextLineOverlays.Select(line => new PageTextElement(line.Text, new System.Drawing.RectangleF((float)line.Left, (float)line.Top, (float)line.Width, (float)line.Height)))];
+
+        double canvasWidth = RectanglesCanvas.Width > 0 ? RectanglesCanvas.Width : RectanglesCanvas.ActualWidth;
+        double canvasHeight = RectanglesCanvas.Height > 0 ? RectanglesCanvas.Height : RectanglesCanvas.ActualHeight;
+
+        return new PageTextSnapshot(elements, new System.Drawing.SizeF((float)canvasWidth, (float)canvasHeight));
+    }
+
+    /// <summary>
+    /// Drops the word borders / text lines at the given snapshot indices from the canvas so the
+    /// text assembled by <see cref="UpdateFrameText"/> leaves them out. The page was redrawn from
+    /// the same source since the snapshot, so the element order is the same.
+    /// </summary>
+    private void RemoveIgnoredPageTextElements(HashSet<int> ignoredIndices)
+    {
+        if (ignoredIndices.Count == 0)
+            return;
+
+        List<WordBorder> wordBordersToRemove = [];
+        for (int index = 0; index < wordBorders.Count; index++)
+        {
+            if (ignoredIndices.Contains(index))
+                wordBordersToRemove.Add(wordBorders[index]);
+        }
+
+        List<PdfTextLineOverlay> linesToRemove = [];
+        int wordBorderCount = wordBorders.Count;
+        for (int index = 0; index < pdfTextLineOverlays.Count; index++)
+        {
+            if (ignoredIndices.Contains(wordBorderCount + index))
+                linesToRemove.Add(pdfTextLineOverlays[index]);
+        }
+
+        foreach (WordBorder wordBorder in wordBordersToRemove)
+        {
+            RectanglesCanvas.Children.Remove(wordBorder);
+            wordBorders.Remove(wordBorder);
+        }
+
+        foreach (PdfTextLineOverlay line in linesToRemove)
+        {
+            PdfTextCanvas.Children.Remove(line);
+            pdfTextLineOverlays.Remove(line);
+        }
     }
 
     private async Task ShowPdfPageAsync(int pageIndex)

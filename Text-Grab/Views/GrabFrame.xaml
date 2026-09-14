@@ -1347,6 +1347,13 @@
                                     Header="Grab multiple pages..."
                                     Tag="GrabMultiplePages"
                                     ToolTip="Apply the current region and table settings to a range of pages of the open PDF" />
+                                <MenuItem
+                                    AutomationProperties.AutomationId="GrabFrame.IgnoreRepeatedHeadersFootersMenuItem"
+                                    Click="IgnoreRepeatedHeadersFootersMenuItem_Click"
+                                    Header="Ignore repeated headers and footers"
+                                    IsCheckable="True"
+                                    Tag="IgnoreRepeatedHeadersFooters"
+                                    ToolTip="When grabbing multiple pages, drop text that sits in the same place on page after page with the same (or numbered) text, like running headers and page numbers" />
                             </ContextMenu>
                         </controls:CollapsibleButton.ContextMenu>
                     </controls:CollapsibleButton>

@@ -1258,5 +1258,17 @@ namespace Text_Grab.Properties {
                 this["SendLocalAiResultToNewWindow"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool GrabFrameIgnoreRepeatedHeadersFooters {
+            get {
+                return ((bool)(this["GrabFrameIgnoreRepeatedHeadersFooters"]));
+            }
+            set {
+                this["GrabFrameIgnoreRepeatedHeadersFooters"] = value;
+            }
+        }
     }
 }
