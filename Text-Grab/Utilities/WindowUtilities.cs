@@ -348,6 +348,36 @@ public static partial class WindowUtilities
         return newWindow;
     }
 
+    /// <summary>
+    /// Always opens a fresh Edit Text Window holding <paramref name="text"/>, optionally already
+    /// in spreadsheet mode, regardless of whether other Edit Text Windows are open.
+    /// </summary>
+    internal static EditTextWindow? OpenTextInNewEditTextWindow(string text, bool enterSpreadsheetMode = false)
+    {
+        EditTextWindow newWindow = new(text, isEncoded: false);
+
+        try
+        {
+            // Switch modes before Show(): the mode switch only touches XAML elements that
+            // InitializeComponent() already wired up, and the text is parsed into cells on entry.
+            if (enterSpreadsheetMode)
+                newWindow.EnterSpreadsheetMode();
+
+            newWindow.Show();
+            return newWindow;
+        }
+        catch (Exception ex)
+        {
+            _ = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = ex.Message,
+                Content = "An error occurred while trying to open a new window. Please try again.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return null;
+        }
+    }
+
     internal static T OpenOrActivateWindow<T>() where T : Window, new()
     {
         WindowCollection allWindows = Application.Current.Windows;

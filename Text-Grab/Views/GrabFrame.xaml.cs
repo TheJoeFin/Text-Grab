@@ -131,6 +131,8 @@ public partial class GrabFrame : Window
     private CancellationTokenSource? translationCancellationTokenSource;
     private readonly List<PdfTextLineOverlay> pdfTextLineOverlays = [];
     private CancellationTokenSource? _pdfPageNavCts;
+    /// <summary>True while "Grab multiple pages" is walking a page range; guards re-entry.</summary>
+    private bool isGrabbingMultiplePages;
     private bool isLoadedVisualDocument = false;
     private double frozenFrameContentScale = 1;
     private const string TargetLanguageMenuHeader = "Target Language";
@@ -869,6 +871,147 @@ public partial class GrabFrame : Window
             return;
 
         await ShowPdfPageAsync(targetPageIndex);
+    }
+
+    private void GrabButtonContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ContextMenu menu)
+            return;
+
+        // Only a loaded multi-page PDF has pages to walk. (The menu item can't be named:
+        // it lives inside the CollapsibleButton's name scope.)
+        bool canGrabMultiplePages = _loadedPdfDocument is { PageCount: > 1 } && !isGrabbingMultiplePages;
+        foreach (MenuItem item in menu.Items.OfType<MenuItem>())
+            item.IsEnabled = canGrabMultiplePages;
+    }
+
+    private async void GrabMultiplePagesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_loadedPdfDocument is null)
+        {
+            ShowFrameMessage("Open a PDF in the Grab Frame to grab multiple pages.");
+            return;
+        }
+
+        if (isGrabbingMultiplePages)
+            return;
+
+        // Every page in the range is re-rendered and re-read, including the current one, so
+        // any hand edits to the current page's words would be lost.
+        if (!await ConfirmDiscardWordEditsAsync())
+            return;
+
+        GrabPageRangeDialog dialog = new(_currentPdfPageIndex, _loadedPdfDocument.PageCount, TableToggleButton.IsChecked is true)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        List<int> pageIndices = GrabPageRangeDialog.BuildPageIndices(dialog.FirstPageIndex, dialog.LastPageIndex, dialog.PageParity);
+        await GrabPageRangeAsync(pageIndices, dialog.InsertBlankLineBetweenPages);
+    }
+
+    /// <summary>
+    /// Runs the normal single-page grab pipeline (page render, word borders, table analysis
+    /// with the persisted <see cref="tableBoundsOverride"/>, active template) over each page in
+    /// <paramref name="pageIndices"/> and opens the joined text in a new Edit Text Window.
+    /// Leaves the frame on the last page.
+    /// </summary>
+    private async Task GrabPageRangeAsync(IReadOnlyList<int> pageIndices, bool insertBlankLineBetweenPages)
+    {
+        if (_loadedPdfDocument is null || isGrabbingMultiplePages)
+            return;
+
+        int pageCount = _loadedPdfDocument.PageCount;
+        List<int> pagesToGrab = [.. pageIndices.Where(index => index >= 0 && index < pageCount)];
+        if (pagesToGrab.Count == 0)
+            return;
+
+        isGrabbingMultiplePages = true;
+        StringBuilder combinedText = new();
+
+        try
+        {
+            int lastPageNumber = pagesToGrab[^1] + 1;
+            foreach (int pageIndex in pagesToGrab)
+            {
+                ShowFrameMessage($"Grabbing page {pageIndex + 1} of {lastPageNumber}...");
+
+                if (!await PrepareCurrentPdfPageForGrabAsync(pageIndex))
+                    return;
+
+                UpdateFrameText();
+                string pageText = await ResolveGrabOutputTextAsync();
+                if (string.IsNullOrWhiteSpace(pageText))
+                    continue;
+
+                if (combinedText.Length > 0 && insertBlankLineBetweenPages)
+                    combinedText.AppendLine();
+
+                combinedText.AppendLine(pageText.TrimEnd());
+            }
+        }
+        finally
+        {
+            isGrabbingMultiplePages = false;
+        }
+
+        HideFrameMessage();
+
+        string outputText = combinedText.ToString().TrimEnd();
+        if (string.IsNullOrWhiteSpace(outputText))
+        {
+            ShowFrameMessage("No text was found on the selected pages.");
+            return;
+        }
+
+        // A multi-page grab is a document of its own, so it always lands in a fresh Edit Text
+        // Window (never appended to a linked one), in spreadsheet mode when it was grabbed as a
+        // table so the rows from every page line up as one sheet.
+        EditTextWindow? resultWindow = WindowUtilities.OpenTextInNewEditTextWindow(
+            outputText,
+            enterSpreadsheetMode: TableToggleButton.IsChecked is true);
+
+        if (resultWindow is null)
+            return;
+
+        if (CloseOnGrabMenuItem.IsChecked)
+            Close();
+    }
+
+    /// <summary>
+    /// Shows <paramref name="pageIndex"/> and synchronously drives what the redraw timer would
+    /// eventually do for it, so the word borders / text lines are on the canvas when this
+    /// returns. Returns false when the frame was closed, the document replaced, or the
+    /// navigation superseded meanwhile.
+    /// </summary>
+    private async Task<bool> PrepareCurrentPdfPageForGrabAsync(int pageIndex)
+    {
+        await ShowPdfPageAsync(pageIndex);
+
+        if (_loadedPdfDocument is null || _currentPdfPageIndex != pageIndex)
+            return false;
+
+        reDrawTimer.Stop();
+
+        // A redraw kicked off before this loop took over may still be in flight; the draw
+        // methods bail out silently while one is running, which would yield an empty page.
+        for (int waited = 0; isDrawing && waited < 100; waited++)
+            await Task.Delay(50);
+
+        isAutoOcrRedrawPass = true;
+        try
+        {
+            await DrawRectanglesAroundWords(SearchBar.SearchText);
+        }
+        finally
+        {
+            isAutoOcrRedrawPass = false;
+        }
+
+        return _loadedPdfDocument is not null && _currentPdfPageIndex == pageIndex;
     }
 
     private async Task ShowPdfPageAsync(int pageIndex)
@@ -6027,34 +6170,56 @@ public partial class GrabFrame : Window
 
     private async void GrabExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string outputText = FrameText;
-
-        if (_activeGrabTemplate is not null)
-        {
-            if (isStaticImageSource && frameContentImageSource is BitmapSource bmpSrc)
-            {
-                using System.Drawing.Bitmap bmp = ImageMethods.BitmapSourceToBitmap(bmpSrc);
-                outputText = await GrabTemplateExecutor.ExecuteTemplateOnBitmapAsync(
-                    _activeGrabTemplate, bmp, CurrentLanguage);
-            }
-            else
-            {
-                System.Drawing.Rectangle screenRect = GetContentAreaScreenRect();
-                Rect captureRect = new(screenRect.X, screenRect.Y, screenRect.Width, screenRect.Height);
-                outputText = await GrabTemplateExecutor.ExecuteTemplateAsync(
-                    _activeGrabTemplate, captureRect, CurrentLanguage);
-            }
-
-            if (!string.IsNullOrWhiteSpace(outputText))
-                GrabTemplateManager.RecordUsage(_activeGrabTemplate.Id);
-        }
+        string outputText = await ResolveGrabOutputTextAsync();
 
         if (string.IsNullOrWhiteSpace(outputText))
             return;
 
+        // When the ETW is being updated live it already holds FrameText, so a plain grab only
+        // needs to commit the caret; template output is never mirrored live and must be inserted.
+        bool replaceDestinationSelection = _activeGrabTemplate is not null || AlwaysUpdateEtwCheckBox.IsChecked is false;
+        DeliverGrabbedText(outputText, replaceDestinationSelection);
+    }
+
+    /// <summary>
+    /// The text a grab of the frame's current content produces: the active Grab Template's
+    /// output when one is selected, otherwise <see cref="FrameText"/>.
+    /// </summary>
+    private async Task<string> ResolveGrabOutputTextAsync()
+    {
+        if (_activeGrabTemplate is null)
+            return FrameText;
+
+        string outputText;
+        if (isStaticImageSource && frameContentImageSource is BitmapSource bmpSrc)
+        {
+            using System.Drawing.Bitmap bmp = ImageMethods.BitmapSourceToBitmap(bmpSrc);
+            outputText = await GrabTemplateExecutor.ExecuteTemplateOnBitmapAsync(
+                _activeGrabTemplate, bmp, CurrentLanguage);
+        }
+        else
+        {
+            System.Drawing.Rectangle screenRect = GetContentAreaScreenRect();
+            Rect captureRect = new(screenRect.X, screenRect.Y, screenRect.Width, screenRect.Height);
+            outputText = await GrabTemplateExecutor.ExecuteTemplateAsync(
+                _activeGrabTemplate, captureRect, CurrentLanguage);
+        }
+
+        if (!string.IsNullOrWhiteSpace(outputText))
+            GrabTemplateManager.RecordUsage(_activeGrabTemplate.Id);
+
+        return outputText;
+    }
+
+    /// <summary>
+    /// Sends grabbed text where a grab normally goes: the destination Edit Text Window when
+    /// there is one, otherwise the clipboard (plus toast), then closes the frame if configured.
+    /// </summary>
+    private void DeliverGrabbedText(string outputText, bool replaceDestinationSelection)
+    {
         if (destinationTextBox is not null)
         {
-            if (_activeGrabTemplate is not null || AlwaysUpdateEtwCheckBox.IsChecked is false)
+            if (replaceDestinationSelection)
                 destinationTextBox.SelectedText = outputText;
 
             destinationTextBox.Select(destinationTextBox.SelectionStart + destinationTextBox.SelectionLength, 0);

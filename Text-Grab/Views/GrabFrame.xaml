@@ -1338,7 +1338,18 @@
                         ButtonSymbol="Copy24"
                         ButtonText="Grab"
                         Command="{x:Static local:GrabFrame.GrabCommand}"
-                        ToolTip="Grab text in the Grab Frame" />
+                        ToolTip="Grab text in the Grab Frame">
+                        <controls:CollapsibleButton.ContextMenu>
+                            <ContextMenu Opened="GrabButtonContextMenu_Opened">
+                                <MenuItem
+                                    AutomationProperties.AutomationId="GrabFrame.GrabMultiplePagesMenuItem"
+                                    Click="GrabMultiplePagesMenuItem_Click"
+                                    Header="Grab multiple pages..."
+                                    Tag="GrabMultiplePages"
+                                    ToolTip="Apply the current region and table settings to a range of pages of the open PDF" />
+                            </ContextMenu>
+                        </controls:CollapsibleButton.ContextMenu>
+                    </controls:CollapsibleButton>
                 </Grid>
             </Border>
         </Grid>
