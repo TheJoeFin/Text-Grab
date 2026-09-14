@@ -1067,8 +1067,8 @@ public partial class GrabFrame : Window
 
     private void ScaleFrozenOverlayElements(double widthScale, double heightScale)
     {
-        if ((!double.IsFinite(widthScale) || widthScale <= 0)
-            || (!double.IsFinite(heightScale) || heightScale <= 0))
+        if (!double.IsFinite(widthScale) || widthScale <= 0
+            || !double.IsFinite(heightScale) || heightScale <= 0)
         {
             return;
         }
@@ -1778,9 +1778,9 @@ public partial class GrabFrame : Window
         Windows.Foundation.Rect lineRect = new()
         {
             X = ((Canvas.GetLeft(selectBorder) * windowFrameImageScale) - 10) * dpi.DpiScaleX,
-            Y = (Canvas.GetTop(selectBorder) * windowFrameImageScale) * dpi.DpiScaleY,
-            Width = (selectBorder.Width * windowFrameImageScale) * dpi.DpiScaleX,
-            Height = (selectBorder.Height * windowFrameImageScale) * dpi.DpiScaleY,
+            Y = Canvas.GetTop(selectBorder) * windowFrameImageScale * dpi.DpiScaleY,
+            Width = selectBorder.Width * windowFrameImageScale * dpi.DpiScaleX,
+            Height = selectBorder.Height * windowFrameImageScale * dpi.DpiScaleY,
         };
 
         if (bmp is not null)
@@ -2279,11 +2279,11 @@ public partial class GrabFrame : Window
         WordBorder wordBorder = new()
         {
             DisplayLineHeight = displayLineHeight * contentScale,
-            Width = (((sourceRect.Width / (dpi.DpiScaleX * sourceScale)) + 2) / viewBoxZoomFactor) * contentScale,
-            Height = (((sourceRect.Height / (dpi.DpiScaleY * sourceScale)) + 2) / viewBoxZoomFactor) * contentScale,
+            Width = ((sourceRect.Width / (dpi.DpiScaleX * sourceScale)) + 2) / viewBoxZoomFactor * contentScale,
+            Height = ((sourceRect.Height / (dpi.DpiScaleY * sourceScale)) + 2) / viewBoxZoomFactor * contentScale,
             KeepSingleLineOutput = keepSingleLineOutput,
-            Top = (((sourceRect.Y / (dpi.DpiScaleY * sourceScale) - 1) + borderToCanvasY) / viewBoxZoomFactor) * contentScale,
-            Left = (((sourceRect.X / (dpi.DpiScaleX * sourceScale) - 1) + borderToCanvasX) / viewBoxZoomFactor) * contentScale,
+            Top = ((sourceRect.Y / (dpi.DpiScaleY * sourceScale)) - 1 + borderToCanvasY) / viewBoxZoomFactor * contentScale,
+            Left = ((sourceRect.X / (dpi.DpiScaleX * sourceScale)) - 1 + borderToCanvasX) / viewBoxZoomFactor * contentScale,
             OwnerGrabFrame = this,
             LineNumber = lineNumber,
             IsFromEditWindow = IsFromEditWindow,
@@ -2322,10 +2322,10 @@ public partial class GrabFrame : Window
     {
         double contentScale = IsFreezeMode ? frozenFrameContentScale : 1;
         Rect displayRect = new(
-            (sourceRect.X / (dpi.DpiScaleX * sourceScale)) * contentScale,
-            (sourceRect.Y / (dpi.DpiScaleY * sourceScale)) * contentScale,
-            (sourceRect.Width / (dpi.DpiScaleX * sourceScale)) * contentScale,
-            (sourceRect.Height / (dpi.DpiScaleY * sourceScale)) * contentScale);
+            sourceRect.X / (dpi.DpiScaleX * sourceScale) * contentScale,
+            sourceRect.Y / (dpi.DpiScaleY * sourceScale) * contentScale,
+            sourceRect.Width / (dpi.DpiScaleX * sourceScale) * contentScale,
+            sourceRect.Height / (dpi.DpiScaleY * sourceScale) * contentScale);
 
         PdfTextLineOverlay overlay = new(text);
         overlay.ApplyLayout(displayRect);
@@ -3027,7 +3027,7 @@ public partial class GrabFrame : Window
     private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
     {
         SolidColorBrush backgroundBrush = new(Colors.Black);
-        double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
+        double pxToRectanglesFactor = RectanglesCanvas.ActualWidth / bmp.Width * dpi.DpiScaleX;
         double boxLeft = lineRect.Left / (dpi.DpiScaleX * scale);
         double boxTop = lineRect.Top / (dpi.DpiScaleY * scale);
         double boxRight = lineRect.Right / (dpi.DpiScaleX * scale);
@@ -3464,8 +3464,8 @@ public partial class GrabFrame : Window
 
             if (!KeyboardExtensions.IsShiftDown())
             {
-                Height += (widthDelta) * aspectRatio;
-                Top -= (offsetDelta) * aspectRatio;
+                Height += widthDelta * aspectRatio;
+                Top -= offsetDelta * aspectRatio;
             }
         }
         else if (e.Delta < 0)
@@ -3477,8 +3477,8 @@ public partial class GrabFrame : Window
 
                 if (!KeyboardExtensions.IsShiftDown())
                 {
-                    Height -= (widthDelta) * aspectRatio;
-                    Top += (offsetDelta) * aspectRatio;
+                    Height -= widthDelta * aspectRatio;
+                    Top += offsetDelta * aspectRatio;
                 }
             }
         }
@@ -3618,8 +3618,8 @@ public partial class GrabFrame : Window
 
     private void MoveResizeWordBorder(Point movingPoint, WordBorder movingWordBorder, Rect prevSize)
     {
-        double xShiftDelta = (movingPoint.X - clickedPoint.X);
-        double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+        double xShiftDelta = movingPoint.X - clickedPoint.X;
+        double yShiftDelta = movingPoint.Y - clickedPoint.Y;
         Canvas.SetZIndex(movingWordBorder, wordBorders.Count + 1);
 
         switch (resizingSide)
@@ -3661,8 +3661,8 @@ public partial class GrabFrame : Window
 
     private void MoveWindowWithMiddleMouse(Point movingPoint)
     {
-        double xShiftDelta = (movingPoint.X - clickedPoint.X);
-        double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+        double xShiftDelta = movingPoint.X - clickedPoint.X;
+        double yShiftDelta = movingPoint.Y - clickedPoint.Y;
 
         Top += yShiftDelta;
         Left += xShiftDelta;
@@ -3940,7 +3940,7 @@ public partial class GrabFrame : Window
         FrameworkElement interactionSurface = GetInteractionSurface(sender) ?? RectanglesCanvas;
         bool isPdfTextInteraction = IsPdfTextInteraction(sender);
         bool shouldPanInsteadOfSelect = MainZoomBorder.CanPan
-            && ((IsPdfDocumentLoaded || !isPdfTextInteraction) && IsZoomPanGestureActive);
+            && (IsPdfDocumentLoaded || !isPdfTextInteraction) && IsZoomPanGestureActive;
 
         if (tableEditState.IsPlacementActive)
         {
@@ -5414,10 +5414,10 @@ public partial class GrabFrame : Window
             WordBorder wb = new()
             {
                 Word = result.Text,
-                Width = diffs.X / dpi.DpiScaleX + 12,
-                Height = diffs.Y / dpi.DpiScaleY + 12,
-                Left = minPoint.X / (dpi.DpiScaleX) - 6,
-                Top = minPoint.Y / (dpi.DpiScaleY) - 6,
+                Width = (diffs.X / dpi.DpiScaleX) + 12,
+                Height = (diffs.Y / dpi.DpiScaleY) + 12,
+                Left = (minPoint.X / dpi.DpiScaleX) - 6,
+                Top = (minPoint.Y / dpi.DpiScaleY) - 6,
                 OwnerGrabFrame = this
             };
             Debug.WriteLine($"TryToReadBarcodes: WordBorder Left={wb.Left:F1}, Top={wb.Top:F1}, Width={wb.Width:F1}, Height={wb.Height:F1}");
