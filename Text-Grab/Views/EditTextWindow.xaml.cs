@@ -6897,6 +6897,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SetToLoading("Summarizing...");
 
         WinAiGenerationResult? failure = null;
+        bool resultUnchanged = false;
 
         try
         {
@@ -6906,7 +6907,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (result.Text is null)
                 failure = result;
             else
-                await DeliverLocalAiResultAsync("Summarize", result.Text);
+                resultUnchanged = !await DeliverLocalAiResultAsync("Summarize", sourceText, result.Text);
         }
         catch (Exception ex)
         {
@@ -6927,6 +6928,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
         }
+        else if (resultUnchanged)
+        {
+            await ShowLocalAiResultUnchangedAsync("Summarize");
+        }
     }
 
     private async void MeetingNotesMenuItem_Click(object sender, RoutedEventArgs e)
@@ -6934,6 +6939,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SetToLoading("Writing meeting notes...");
 
         WinAiGenerationResult? failure = null;
+        bool resultUnchanged = false;
 
         try
         {
@@ -6947,7 +6953,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (result.Text is null)
                 failure = result;
             else
-                await DeliverLocalAiResultAsync("Meeting notes", result.Text);
+                resultUnchanged = !await DeliverLocalAiResultAsync("Meeting notes", sourceText, result.Text);
         }
         catch (Exception ex)
         {
@@ -6967,6 +6973,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 Content = notesFailure.Message ?? "The text could not be written up as meeting notes.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
+        }
+        else if (resultUnchanged)
+        {
+            await ShowLocalAiResultUnchangedAsync("Meeting notes");
         }
     }
 
@@ -7002,10 +7012,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// Delivers a finished Local AI result (Summarize, Meeting Notes) per the
     /// "Send Result to New Window" setting: either opened in a new window, leaving this window's text
     /// untouched, or applied over the selected/all text in this window — then fires the completion
-    /// notification for whichever window actually ended up with the result.
+    /// notification for whichever window actually ended up with the result. Returns false without
+    /// doing any of that when the result is the same as <paramref name="sourceText"/>: a new window
+    /// holding a copy of the input (or an in-place "edit" that changes nothing) would only look like
+    /// the task did something. The caller should tell the user instead, once the window is
+    /// re-enabled (see <see cref="ShowLocalAiResultUnchangedAsync"/>).
     /// </summary>
-    private async Task DeliverLocalAiResultAsync(string taskDescription, string resultText)
+    private async Task<bool> DeliverLocalAiResultAsync(string taskDescription, string sourceText, string resultText)
     {
+        if (LocalAiResultUtilities.IsUnchanged(sourceText, resultText))
+            return false;
+
         if (DefaultSettings.SendLocalAiResultToNewWindow)
         {
             if (OpenTextInNewEditTextWindow(resultText) is Guid resultWindowId)
@@ -7016,6 +7033,23 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             await ApplySelectedTextOrAllTextTransformAsync(_ => Task.FromResult(resultText));
             NotifyLocalAiComplete(taskDescription, WindowId);
         }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Tells the user a Local AI task finished but produced the same text it started with, so
+    /// nothing was opened or replaced. Show this after <see cref="SetToLoaded"/> — the window is
+    /// disabled while the task runs.
+    /// </summary>
+    private static async Task ShowLocalAiResultUnchangedAsync(string taskDescription)
+    {
+        await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "No Changes",
+            Content = $"{taskDescription} finished, but the result is the same as the original text, so nothing was changed.",
+            CloseButtonText = "OK"
+        }.ShowDialogAsync();
     }
 
     /// <summary>
@@ -7025,25 +7059,47 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// which also handles spreadsheet mode) — then fires the completion notification for whichever
     /// window actually ended up with the result. <paramref name="resultMode"/> switches whichever
     /// window gets the result into that editor mode (e.g. Convert to Table switches to Spreadsheet);
-    /// pass <see cref="EtwEditorMode.Text"/> to leave the mode alone.
+    /// pass <see cref="EtwEditorMode.Text"/> to leave the mode alone. Returns false, having opened
+    /// nothing and notified no one, when the model handed back the same text it was given (every
+    /// cell, in spreadsheet mode) — the caller should tell the user via
+    /// <see cref="ShowLocalAiResultUnchangedAsync"/> once the window is re-enabled.
     /// </summary>
-    private async Task PerformLocalAiTransformAsync(string taskDescription, Func<string, Task<string>> transformAsync, EtwEditorMode resultMode = EtwEditorMode.Text)
+    private async Task<bool> PerformLocalAiTransformAsync(string taskDescription, Func<string, Task<string>> transformAsync, EtwEditorMode resultMode = EtwEditorMode.Text)
     {
         if (DefaultSettings.SendLocalAiResultToNewWindow)
         {
-            string resultText = await transformAsync(GetSelectedTextOrAllText());
+            string sourceText = GetSelectedTextOrAllText();
+            string resultText = await transformAsync(sourceText);
+
+            if (LocalAiResultUtilities.IsUnchanged(sourceText, resultText))
+                return false;
+
             if (OpenTextInNewEditTextWindow(resultText, resultMode) is Guid resultWindowId)
                 NotifyLocalAiComplete(taskDescription, resultWindowId);
         }
         else
         {
-            await ApplySelectedTextOrAllTextTransformAsync(transformAsync);
+            // In spreadsheet mode the transform runs once per cell, so "unchanged" means no cell
+            // came back different, not just the last one.
+            bool anyChanged = false;
+
+            await ApplySelectedTextOrAllTextTransformAsync(async text =>
+            {
+                string resultText = await transformAsync(text);
+                anyChanged |= !LocalAiResultUtilities.IsUnchanged(text, resultText);
+                return resultText;
+            });
+
+            if (!anyChanged)
+                return false;
 
             if (resultMode != EtwEditorMode.Text)
                 SetEditorMode(resultMode);
 
             NotifyLocalAiComplete(taskDescription, WindowId);
         }
+
+        return true;
     }
 
     private void SendLocalAiResultToNewWindowMenuItem_Checked(object sender, RoutedEventArgs e)
@@ -7120,28 +7176,37 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private async void RewriteMenuItem_Click(object sender, RoutedEventArgs e)
     {
         SetToLoading("Rewriting...");
+
+        bool resultChanged;
         try
         {
-            await PerformLocalAiTransformAsync("Rewrite", text => WindowsAiUtilities.Rewrite(text));
+            resultChanged = await PerformLocalAiTransformAsync("Rewrite", text => WindowsAiUtilities.Rewrite(text));
         }
         finally
         {
             SetToLoaded();
         }
+
+        if (!resultChanged)
+            await ShowLocalAiResultUnchangedAsync("Rewrite");
     }
 
     private async void ConvertTableMenuItem_Click(object sender, RoutedEventArgs e)
     {
         SetToLoading("Converting...");
 
+        bool resultChanged;
         try
         {
-            await PerformLocalAiTransformAsync("Convert to Table", text => WindowsAiUtilities.TextToTable(text), EtwEditorMode.Spreadsheet);
+            resultChanged = await PerformLocalAiTransformAsync("Convert to Table", text => WindowsAiUtilities.TextToTable(text), EtwEditorMode.Spreadsheet);
         }
         finally
         {
             SetToLoaded();
         }
+
+        if (!resultChanged)
+            await ShowLocalAiResultUnchangedAsync("Convert to Table");
     }
 
     private async void TranslateMenuItem_Click(object sender, RoutedEventArgs e)
@@ -7195,31 +7260,48 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // the newly opened one — so the completion notification (if any) points at the right one.
         Guid? resultWindowId = null;
 
+        // Set when the model handed back the text it was given, so no window is opened and the
+        // user is told nothing changed instead of getting a completion notification.
+        bool resultUnchanged = false;
+
         try
         {
             if (DefaultSettings.SendLocalAiResultToNewWindow)
             {
-                TranslationResult result = await WinAiTranslator.TranslateAsync(GetSelectedTextOrAllText(), targetLanguage);
+                string sourceText = GetSelectedTextOrAllText();
+                TranslationResult result = await WinAiTranslator.TranslateAsync(sourceText, targetLanguage);
 
                 if (!result.Succeeded)
                     failedResult = result;
+                else if (LocalAiResultUtilities.IsUnchanged(sourceText, result.Text))
+                    resultUnchanged = true;
                 else
                     resultWindowId = OpenTextInNewEditTextWindow(result.Text);
             }
             else
             {
+                // Runs per cell in spreadsheet mode, so "unchanged" means no cell came back different.
+                bool anyChanged = false;
+
                 await ApplySelectedTextOrAllTextTransformAsync(async text =>
                 {
                     TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
 
                     if (!result.Succeeded)
                         failedResult ??= result;
+                    else
+                        anyChanged |= !LocalAiResultUtilities.IsUnchanged(text, result.Text);
 
                     return result.Text;
                 });
 
                 if (failedResult is null)
-                    resultWindowId = WindowId;
+                {
+                    if (anyChanged)
+                        resultWindowId = WindowId;
+                    else
+                        resultUnchanged = true;
+                }
             }
         }
         catch (Exception ex)
@@ -7239,6 +7321,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 Content = failure.Message ?? "The text could not be translated.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
+        }
+        else if (resultUnchanged)
+        {
+            await ShowLocalAiResultUnchangedAsync($"Translation to {targetLanguage}");
         }
         else if (resultWindowId is Guid windowId)
         {
