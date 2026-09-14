@@ -57,6 +57,10 @@ public partial class GrabFrame : Window
     /// User-repositioned table boundary (dragged via the corner handles on the table outline).
     /// When set, only word borders whose center falls inside this rect are handed to the table
     /// algorithm; when null, every word border in the frame is used, as before.
+    /// Deliberately survives <see cref="ResetGrabFrame"/> and PDF page changes so a table that
+    /// repeats at the same spot on every page can be grabbed page after page without re-dragging
+    /// the handles; it is only dropped when the user clears table edits (Escape) or loads
+    /// different content.
     /// </summary>
     private System.Drawing.RectangleF? tableBoundsOverride;
     private System.Drawing.RectangleF tableBoundsLiveRect;
@@ -671,12 +675,17 @@ public partial class GrabFrame : Window
         UpdateTableEditingUiState();
     }
 
-    private void CancelTablePlacement(bool clearManualSeparators = false)
+    /// <param name="keepTableBounds">
+    /// Preserve the user-dragged table boundary even while clearing manual separators, so the
+    /// same region is reused on the next page of the same document.
+    /// </param>
+    private void CancelTablePlacement(bool clearManualSeparators = false, bool keepTableBounds = false)
     {
         if (clearManualSeparators)
         {
             tableEditState.ClearAll();
-            tableBoundsOverride = null;
+            if (!keepTableBounds)
+                tableBoundsOverride = null;
         }
         else
             tableEditState.CancelPlacement();
@@ -876,7 +885,9 @@ public partial class GrabFrame : Window
         try
         {
             reDrawTimer.Stop();
-            CancelTablePlacement(clearManualSeparators: true);
+            // Keep the dragged table boundary across pages: tables that repeat on every page
+            // of a document sit in the same place, so the region should carry over.
+            CancelTablePlacement(clearManualSeparators: true, keepTableBounds: true);
             ResetGrabFrame();
             await Task.Delay(300, ct);
 
@@ -1106,6 +1117,16 @@ public partial class GrabFrame : Window
         }
 
         tableEditState.ScaleSeparators(heightScale, widthScale);
+
+        if (tableBoundsOverride is System.Drawing.RectangleF bounds)
+        {
+            tableBoundsOverride = new System.Drawing.RectangleF(
+                (float)(bounds.X * widthScale),
+                (float)(bounds.Y * heightScale),
+                (float)(bounds.Width * widthScale),
+                (float)(bounds.Height * heightScale));
+        }
+
         ClearTablePlacementPreview();
     }
 
@@ -4516,7 +4537,8 @@ public partial class GrabFrame : Window
         CancelTablePlacement();
         RemoveTableLines();
         AnalyzedResultTable = null;
-        tableBoundsOverride = null;
+        // tableBoundsOverride is intentionally kept: a refresh (auto, manual, or a new page)
+        // re-applies the dragged region so repeated tables can be grabbed page after page.
         tableBoundsOutlineVisual = null;
         tableBoundsHandleVisuals = null;
         SetRefreshOrOcrFrameBtnVis();
@@ -5185,13 +5207,17 @@ public partial class GrabFrame : Window
             return wbInfos;
         }
 
+        bool isBoundsOverrideApplied = false;
         if (tableBoundsOverride is System.Drawing.RectangleF bounds)
         {
             List<WordBorderInfo> filteredInfos = ResultTable.FilterWordBordersWithinBounds(wbInfos, bounds);
             if (filteredInfos.Count > 0)
+            {
                 wbInfos = filteredInfos;
-            else
-                tableBoundsOverride = null; // dragged bounds excluded every word border; fall back to auto-detected bounds
+                isBoundsOverrideApplied = true;
+            }
+            // Otherwise the dragged bounds excluded every word border on this page; analyze the
+            // whole page this time but keep the override so it still applies on the next page.
         }
 
         Point windowPosition = this.GetAbsolutePosition();
@@ -5215,6 +5241,13 @@ public partial class GrabFrame : Window
             tableEditState.SetManualSeparators(
                 AnalyzedResultTable.ManualRowSeparators,
                 AnalyzedResultTable.ManualColumnSeparators);
+
+            // Draw the outline where the user put it (not the tight bounds of the words found
+            // inside) so the persisted region is visible on every page and the handles start
+            // their drag from where they are drawn.
+            if (isBoundsOverrideApplied && tableBoundsOverride is System.Drawing.RectangleF appliedBounds)
+                AnalyzedResultTable.BoundingRect = appliedBounds;
+
             Canvas tableLinesCanvas = ResultTableRenderer.BuildTableLines(AnalyzedResultTable, includeBoundsHandles: true);
             RectanglesCanvas.Children.Add(tableLinesCanvas);
             WireUpTableBoundsHandles(tableLinesCanvas);
@@ -5242,7 +5275,10 @@ public partial class GrabFrame : Window
 
     private void TableBoundsHandle_DragStarted(object sender, DragStartedEventArgs e)
     {
-        tableBoundsLiveRect = tableBoundsOverride ?? AnalyzedResultTable?.BoundingRect ?? default;
+        // The analyzed table's BoundingRect is what the outline and handles were drawn from
+        // (it already equals the override when the override was applied), so start there to
+        // avoid the outline jumping on the first drag delta.
+        tableBoundsLiveRect = AnalyzedResultTable?.BoundingRect ?? tableBoundsOverride ?? default;
     }
 
     private void TableBoundsHandle_DragDelta(object sender, DragDeltaEventArgs e)
@@ -5292,7 +5328,8 @@ public partial class GrabFrame : Window
     {
         tableBoundsOverride = tableBoundsLiveRect;
         FreezeFrameForWordEditing();
-        hasUnsavedWordEdits = true;
+        // Not flagged as an unsaved edit: the dragged bounds survive a refresh, so there is
+        // nothing for the discard-edits prompt to protect.
         UpdateFrameText();
     }
 
