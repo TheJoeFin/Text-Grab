@@ -24,7 +24,7 @@ public sealed class WinAiLanguageModelLifetimeTests
         finally
         {
             lease.Dispose();
-            await release.WaitAsync(TestTimeout);
+            await release.WaitAsync(TestTimeout, TestContext.Current.CancellationToken);
         }
 
         using IDisposable nextLease = await WinAiLanguageModel.AcquireInferenceAsync(timeout.Token);
@@ -50,7 +50,7 @@ public sealed class WinAiLanguageModelLifetimeTests
         }
 
         lease.Dispose();
-        await release.WaitAsync(TestTimeout);
+        await release.WaitAsync(TestTimeout, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, context.PostCount);
     }
@@ -82,7 +82,7 @@ public sealed class WinAiLanguageModelLifetimeTests
             cancellation.Cancel();
         }
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation.WaitAsync(TestTimeout));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation.WaitAsync(TestTimeout, TestContext.Current.CancellationToken));
 
         Task<IDisposable> next = WinAiLanguageModel.AcquireInferenceAsync(timeout.Token);
         try
@@ -92,7 +92,7 @@ public sealed class WinAiLanguageModelLifetimeTests
         finally
         {
             lease.Dispose();
-            using IDisposable nextLease = await next.WaitAsync(TestTimeout);
+            using IDisposable nextLease = await next.WaitAsync(TestTimeout, TestContext.Current.CancellationToken);
         }
     }
 
@@ -103,7 +103,7 @@ public sealed class WinAiLanguageModelLifetimeTests
         using IDisposable lease = await WinAiLanguageModel.AcquireInferenceAsync(timeout.Token);
 
         Action<CancellationToken> restart = GetRecoveryMethod();
-        await Task.Run(() => restart(timeout.Token), timeout.Token).WaitAsync(TestTimeout);
+        await Task.Run(() => restart(timeout.Token), timeout.Token).WaitAsync(TestTimeout, TestContext.Current.CancellationToken);
 
         Task release = WinAiLanguageModel.ReleaseModelAsync(timeout.Token);
         try
@@ -113,7 +113,7 @@ public sealed class WinAiLanguageModelLifetimeTests
         finally
         {
             lease.Dispose();
-            await release.WaitAsync(TestTimeout);
+            await release.WaitAsync(TestTimeout, TestContext.Current.CancellationToken);
         }
     }
 
@@ -146,7 +146,7 @@ public sealed class WinAiLanguageModelLifetimeTests
             WinAiLanguageModel.Cleanup();
             lease.Dispose();
 
-            await WinAiLanguageModel.ReleaseModelAsync(timeout.Token).WaitAsync(TestTimeout);
+            await WinAiLanguageModel.ReleaseModelAsync(timeout.Token).WaitAsync(TestTimeout, TestContext.Current.CancellationToken);
             (bool ready, string? error) = await WinAiLanguageModel.EnsureModelAsync(timeout.Token);
 
             Assert.False(ready);
