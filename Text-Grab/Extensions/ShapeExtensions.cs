@@ -16,6 +16,40 @@ public static class ShapeExtensions
         return new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
     }
 
+    // Conversions across the Core boundary. Text-Grab.Core and Text-Grab.Core.Windows cannot use
+    // System.Windows.Rect (WindowsBase, WPF-only), so they speak RectangleF/PointF/SizeF from
+    // System.Drawing.Primitives instead. View code converts here, at the edge.
+
+    public static Rect AsRect(this RectangleF rectangle)
+    {
+        return new Rect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+    }
+
+    public static RectangleF AsRectangleF(this Rect rect)
+    {
+        return new RectangleF((float)rect.X, (float)rect.Y, (float)rect.Width, (float)rect.Height);
+    }
+
+    public static System.Windows.Point AsPoint(this PointF point)
+    {
+        return new System.Windows.Point(point.X, point.Y);
+    }
+
+    public static PointF AsPointF(this System.Windows.Point point)
+    {
+        return new PointF((float)point.X, (float)point.Y);
+    }
+
+    public static System.Windows.Size AsSize(this SizeF size)
+    {
+        return new System.Windows.Size(size.Width, size.Height);
+    }
+
+    public static SizeF AsSizeF(this System.Windows.Size size)
+    {
+        return new SizeF((float)size.Width, (float)size.Height);
+    }
+
     public static Rect GetScaledDownByDpi(this Rect rect, DpiScale dpi)
     {
         return new Rect(rect.X / dpi.DpiScaleX,

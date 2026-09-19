@@ -46,25 +46,4 @@ public static class FreeformCaptureUtilities
         geometry.Freeze();
         return geometry;
     }
-
-    public static Bitmap CreateMaskedBitmap(Bitmap sourceBitmap, IReadOnlyList<Point> pointsRelativeToBounds)
-    {
-        ArgumentNullException.ThrowIfNull(sourceBitmap);
-
-        if (pointsRelativeToBounds is null || pointsRelativeToBounds.Count < 3)
-            return new Bitmap(sourceBitmap);
-
-        Bitmap maskedBitmap = new(sourceBitmap.Width, sourceBitmap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-        using Graphics graphics = Graphics.FromImage(maskedBitmap);
-        using GraphicsPath graphicsPath = new();
-
-        graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        graphics.Clear(System.Drawing.Color.Gray);
-
-        graphicsPath.AddPolygon([.. pointsRelativeToBounds.Select(static point => new PointF((float)point.X, (float)point.Y))]);
-        graphics.SetClip(graphicsPath);
-        graphics.DrawImage(sourceBitmap, new Rectangle(0, 0, sourceBitmap.Width, sourceBitmap.Height));
-
-        return maskedBitmap;
-    }
 }

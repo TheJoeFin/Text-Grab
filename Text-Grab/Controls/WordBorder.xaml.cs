@@ -2,10 +2,10 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -54,6 +54,14 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private SolidColorBrush contrastingForeground = new(Colors.White);
     private readonly DispatcherTimer debounceTimer = new();
     private bool isSyncingTextProperties;
+    /// <summary>
+    /// Snapshot of <see cref="Word"/> taken when the edit textbox gains focus, so
+    /// <see cref="EditWordTextBox_LostFocus"/> can tell whether the user actually changed
+    /// anything and, if so, record it as an undoable edit. The live TwoWay binding on the
+    /// textbox updates <see cref="Word"/>/<see cref="DisplayText"/> on every keystroke with no
+    /// other commit point, so without this the GrabFrame never learns an edit happened.
+    /// </summary>
+    private string? textEditStartValue;
     private double left = 0;
     private SolidColorBrush matchingBackground = new(Colors.Black);
     private double top = 0;
@@ -491,7 +499,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
                 translateSeparator = separator;
         }
 
-        if (WindowsAiUtilities.CanDeviceUseWinAI())
+        if (WinAiTranslator.IsAvailable())
         {
             if (translateMenuItem != null)
             {
@@ -532,10 +540,27 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
     private void EditWordTextBox_GotFocus(object sender, RoutedEventArgs e)
     {
         Select();
+        textEditStartValue = Word;
 
         // The user focusing a word's edit box is a strong signal they are about to correct
         // recognized text, so freeze the frame to keep it from resetting while they edit.
         OwnerGrabFrame?.FreezeFrameForWordEditing();
+    }
+
+    private void EditWordTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        // The textbox binds Text to DisplayText/Word live (UpdateSourceTrigger=PropertyChanged),
+        // so typing alone never tells the GrabFrame an edit happened. Losing focus is the only
+        // commit point, so diff against the value captured on focus and record it here.
+        if (textEditStartValue is not string oldWord)
+            return;
+
+        textEditStartValue = null;
+
+        if (oldWord == Word)
+            return;
+
+        OwnerGrabFrame?.UndoableWordChange(this, oldWord, true);
     }
 
     private void EditWordTextBox_MouseDown(object sender, MouseButtonEventArgs e)
@@ -680,12 +705,13 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(Word))
             return;
 
-        if (!WindowsAiUtilities.CanDeviceUseWinAI())
+        (bool available, string? reason) = WinAiTranslator.CheckAvailability();
+        if (!available)
         {
             await new Wpf.Ui.Controls.MessageBox
             {
                 Title = "Translation Not Available",
-                Content = "Windows AI is not available on this device.",
+                Content = reason ?? "Windows AI is not available on this device.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
             return;
@@ -700,7 +726,20 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             string targetLanguage = GetSystemLanguageName();
 
             // Translate the word
-            string translatedText = await WindowsAiUtilities.TranslateText(originalWord, targetLanguage);
+            TranslationResult result = await WinAiTranslator.TranslateAsync(originalWord, targetLanguage);
+
+            if (!result.Succeeded)
+            {
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = result.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                    Content = result.Message ?? "The word could not be translated.",
+                    CloseButtonText = "OK"
+                }.ShowDialogAsync();
+                return;
+            }
+
+            string translatedText = result.Text;
 
             // Update the word with translation
             if (!string.IsNullOrWhiteSpace(translatedText) && translatedText != originalWord)

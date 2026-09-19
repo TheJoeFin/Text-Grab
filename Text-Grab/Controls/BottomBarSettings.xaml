@@ -224,6 +224,14 @@
                     </TextBlock>
                 </ui:ToggleSwitch>
                 <ui:ToggleSwitch
+                    x:Name="ShowTranscribeToggle"
+                    Margin="0,12,0,0"
+                    VerticalContentAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource TextBodyNormal}">
+                        Show Transcribe
+                    </TextBlock>
+                </ui:ToggleSwitch>
+                <ui:ToggleSwitch
                     x:Name="ShowScrollbarCheckBox"
                     Margin="0,12,0,0"
                     VerticalContentAlignment="Center">

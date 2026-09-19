@@ -334,6 +334,14 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 3.15,
+            ButtonText = "Clean Up Text",
+            SymbolText = "",
+            ClickEvent = "CleanUpText_Click",
+            SymbolIcon = SymbolRegular.TextClearFormatting24
+        },
+        new()
+        {
             OrderNumber = 3.2,
             ButtonText = "Try to make Numbers",
             SymbolText = "",
@@ -791,6 +799,14 @@ public class ButtonInfo
             ButtonText = "Summarize Paragraph",
             ClickEvent = "SummarizeMenuItem_Click",
             SymbolIcon = SymbolRegular.BotSparkle24,
+            RequiresCopilotPlus = true
+        },
+        new()
+        {
+            OrderNumber = 8.15,
+            ButtonText = "Summarize as Meeting Notes",
+            ClickEvent = "MeetingNotesMenuItem_Click",
+            SymbolIcon = SymbolRegular.NotepadPerson20,
             RequiresCopilotPlus = true
         },
         new()

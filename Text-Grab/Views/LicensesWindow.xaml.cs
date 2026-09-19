@@ -19,23 +19,23 @@ public partial class LicensesWindow : FluentWindow
 
     private void BuiltWithButton_Click(object sender, RoutedEventArgs e)
     {
-        ThirdPartyNoticeUtilities.OpenBuiltWithFile();
+        ThirdPartyNoticeLauncher.OpenBuiltWithFile();
     }
 
     private void NoticesFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        ThirdPartyNoticeUtilities.OpenNoticesDirectory();
+        ThirdPartyNoticeLauncher.OpenNoticesDirectory();
     }
 
     private void NoticeButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: ThirdPartyPackageInfo package })
-            ThirdPartyNoticeUtilities.OpenNoticeFile(package);
+            ThirdPartyNoticeLauncher.OpenNoticeFile(package);
     }
 
     private void ProjectButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: ThirdPartyPackageInfo package })
-            ThirdPartyNoticeUtilities.OpenProjectUrl(package);
+            ThirdPartyNoticeLauncher.OpenProjectUrl(package);
     }
 }

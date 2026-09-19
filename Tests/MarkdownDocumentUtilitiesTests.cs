@@ -24,9 +24,9 @@ Console.WriteLine("hi");
 ```
 """;
 
-        FlowDocument document = MarkdownDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
 
-        string serialized = MarkdownDocumentUtilities.SerializeToMarkdown(document);
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
 
         Assert.Contains("# Heading", serialized);
         Assert.Contains("**bold**", serialized);
@@ -47,9 +47,9 @@ Console.WriteLine("hi");
 | Beta | 99 |
 """;
 
-        FlowDocument document = MarkdownDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
 
-        string serialized = MarkdownDocumentUtilities.SerializeToMarkdown(document);
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
 
         Assert.Contains("| Name | Value |", serialized);
         Assert.Contains("| Alpha | 42 |", serialized);
@@ -64,9 +64,9 @@ Console.WriteLine("hi");
         - [x] done item
         """;
 
-        FlowDocument document = MarkdownDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
 
-        string serialized = MarkdownDocumentUtilities.SerializeToMarkdown(document);
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
 
         Assert.Contains("- [ ] open item", serialized);
         Assert.Contains("- [x] done item", serialized);
@@ -80,14 +80,14 @@ Console.WriteLine("hi");
             6. sixth
             """;
 
-        FlowDocument document = MarkdownDocumentUtilities.CreateFlowDocument(
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
             markdown,
             new FontFamily("Segoe UI"),
             16);
 
         System.Windows.Documents.List list =
             Assert.IsType<System.Windows.Documents.List>(Assert.Single(document.Blocks));
-        string serialized = MarkdownDocumentUtilities.SerializeToMarkdown(document);
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
 
         Assert.Equal(5, list.StartIndex);
         Assert.Equal($"5. fifth{Environment.NewLine}6. sixth", serialized);
@@ -99,7 +99,7 @@ Console.WriteLine("hi");
         FlowDocument document = new();
         document.Blocks.Add(new Paragraph(new Run("*literal* [value]")));
 
-        string serialized = MarkdownDocumentUtilities.SerializeToMarkdown(document);
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
 
         Assert.Equal(@"\*literal\* \[value\]", serialized);
     }
@@ -110,71 +110,164 @@ Console.WriteLine("hi");
         FlowDocument document = new();
         document.Blocks.Add(new Paragraph(new Run("**bold** [link](https://example.com)")));
 
-        string serialized = MarkdownDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true);
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true);
 
         Assert.Equal("**bold** [link](https://example.com)", serialized);
     }
 
-    [Theory]
-    [InlineData("#")]
-    [InlineData("##")]
-    [InlineData(">")]
-    [InlineData("  >")]
-    [InlineData("-")]
-    [InlineData("1.")]
-    public void LiveBlockTriggerMarkers_AreRecognized(string marker)
+    /// <summary>
+    /// Mirrors exactly what EditTextWindow.SelectInEditor does with a Find &amp; Replace match:
+    /// map the raw start and raw start+length offsets to positions independently, then read the
+    /// rendered text between them.
+    /// </summary>
+    private static string MapAndSlice(FlowDocument document, MarkdownFlowDocumentUtilities.MarkdownOffsetMap map, int rawStart, int length)
     {
-        Assert.True(MarkdownDocumentUtilities.ShouldPromoteLiveBlock(marker));
+        TextPointer start = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(document, map, rawStart);
+        TextPointer end = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(document, map, rawStart + length);
+        return new TextRange(start, end).Text;
     }
 
-    [Theory]
-    [InlineData("text")]
-    [InlineData("hello # world")]
-    [InlineData("1.2")]
-    public void NonTriggerText_DoesNotPromoteLiveBlock(string text)
+    [WpfFact]
+    public void MapRawOffsetToPosition_SkipsStrippedBoldMarkers()
     {
-        Assert.False(MarkdownDocumentUtilities.ShouldPromoteLiveBlock(text));
+        const string markdown = "Plain **bold** text with a [link](https://example.com).";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("bold", StringComparison.Ordinal);
+
+        Assert.Equal("bold", MapAndSlice(document, map, rawIndex, 4));
     }
 
-    [Theory]
-    [InlineData("**bold**")]
-    [InlineData("`code`")]
-    [InlineData("[link](https://example.com)")]
-    [InlineData("[ ] task")]
-    [InlineData("[x] done")]
-    public void CompletedMarkdownSyntax_PromotesLiveParsing(string text)
+    [WpfFact]
+    public void MapRawOffsetToPosition_SkipsLinkBracketsAndUrl()
     {
-        Assert.True(MarkdownDocumentUtilities.ShouldPromoteLiveMarkdown(text));
+        const string markdown = "Plain **bold** text with a [link](https://example.com).";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("link", StringComparison.Ordinal);
+
+        Assert.Equal("link", MapAndSlice(document, map, rawIndex, 4));
     }
 
-    [Theory]
-    [InlineData("*")]
-    [InlineData("[link]")]
-    [InlineData("plain text")]
-    [InlineData("2026.04 release notes")]
-    public void IncompleteMarkdownSyntax_DoesNotPromoteLiveParsing(string text)
+    [WpfFact]
+    public void MapRawOffsetToPosition_SkipsHeadingHashPrefix()
     {
-        Assert.False(MarkdownDocumentUtilities.ShouldPromoteLiveMarkdown(text));
+        const string markdown = "# My Heading Title";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("Heading", StringComparison.Ordinal);
+
+        Assert.Equal("Heading", MapAndSlice(document, map, rawIndex, 7));
     }
 
-    [Theory]
-    [InlineData("# Heading")]
-    [InlineData("> quote")]
-    [InlineData("- item")]
-    [InlineData("1. item")]
-    [InlineData("[link](https://example.com)")]
-    [InlineData("```csharp\nConsole.WriteLine(\"hi\");\n```")]
-    public void MarkdownLikeText_IsDetectedForPasteParsing(string text)
+    [WpfFact]
+    public void MapRawOffsetToPosition_SkipsListMarkers()
     {
-        Assert.True(MarkdownDocumentUtilities.LooksLikeMarkdown(text));
+        const string markdown = "- first item\n- second item\n- third item";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("third", StringComparison.Ordinal);
+
+        // A list item's bullet marker is a documented, narrow exception (see GetLocalTextPointer's
+        // remarks): no WPF insertion position exists that sits "just past the marker" without also
+        // having consumed the item's first real character, so a match starting at the very first
+        // character of a list item's content ends up selecting the marker glyph too. The word itself
+        // still resolves exactly — this is the one place a couple of extra, harmless characters
+        // (the bullet + tab) get selected alongside it.
+        Assert.EndsWith("third", MapAndSlice(document, map, rawIndex, 5));
     }
 
-    [Theory]
-    [InlineData("Just a normal sentence.")]
-    [InlineData("2026.04 release notes")]
-    [InlineData("email me at joe@example.com")]
-    public void PlainText_IsNotDetectedAsMarkdown(string text)
+    [WpfFact]
+    public void MapRawOffsetToPosition_DoesNotDriftIntoWrongParagraph()
     {
-        Assert.False(MarkdownDocumentUtilities.LooksLikeMarkdown(text));
+        const string markdown = """
+            First paragraph has some words in it.
+
+            Second paragraph also has some words in it.
+
+            Third paragraph has the target word right here.
+            """;
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("target", StringComparison.Ordinal);
+
+        Assert.Equal("target", MapAndSlice(document, map, rawIndex, 6));
+    }
+
+    [WpfFact]
+    public void MapRawOffsetToPosition_HandlesCodeSpanBackticks()
+    {
+        const string markdown = "Run `dotnet build` to compile the project.";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("dotnet", StringComparison.Ordinal);
+
+        Assert.Equal("dotnet", MapAndSlice(document, map, rawIndex, 6));
+    }
+
+    [WpfFact]
+    public void MapRawOffsetToPosition_HandlesBoldNestedInsideLinkText()
+    {
+        const string markdown = "See the [**important** notes](https://example.com) page.";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("important", StringComparison.Ordinal);
+
+        Assert.Equal("important", MapAndSlice(document, map, rawIndex, 9));
+    }
+
+    [WpfFact]
+    public void MapRawOffsetToPosition_HandlesTextInsideTableCell()
+    {
+        // Regression test: TextRange.Text does not reliably count characters when a range starts
+        // outside a Table and ends inside one of its cells — every position inside a given table
+        // row measured that way collapsed to the same offset (the row's end). Offsets here must be
+        // resolved relative to the containing cell's own paragraph, never the document.
+        const string markdown = """
+            | Name | Value |
+            | --- | --- |
+            | Alpha | fortytwo |
+            """;
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("fortytwo", StringComparison.Ordinal);
+
+        Assert.Equal("fortytwo", MapAndSlice(document, map, rawIndex, 8));
+    }
+
+    [WpfFact]
+    public void MapRawOffsetToPosition_HandlesTextInEarlierTableCellOnSameRow()
+    {
+        const string markdown = """
+            | Name | Value |
+            | --- | --- |
+            | Alpha | fortytwo |
+            """;
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("Alpha", StringComparison.Ordinal);
+
+        Assert.Equal("Alpha", MapAndSlice(document, map, rawIndex, 5));
+    }
+
+    [WpfFact]
+    public void MapRawOffsetToPosition_MapsBothEndsOfAMatchToTheExactRenderedSubstring()
+    {
+        const string markdown = "Plain text with a target word right here.";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        int rawIndex = markdown.IndexOf("target word", StringComparison.Ordinal);
+
+        Assert.Equal("target word", MapAndSlice(document, map, rawIndex, 11));
     }
 }

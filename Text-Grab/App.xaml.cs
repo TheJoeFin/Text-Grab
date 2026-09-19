@@ -162,6 +162,8 @@ public partial class App : System.Windows.Application
         // for now this is best but... not ideal
         ApplicationAccentColorManager.ApplySystemAccent();
 
+        NotifyIconUtilities.RefreshTrayIconStyle();
+
         // TODO: try to apply the teal color again, maybe something in WPFUI is broken
         // Color teal = (Color)ColorConverter.ConvertFromString("#308E98");
 
@@ -411,7 +413,7 @@ public partial class App : System.Windows.Application
                     // open the file; an unsafe path falls back to an empty Grab Frame.
                     if (parameters.TryGetValue("path", out string? path))
                     {
-                        if (ProtocolUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
+                        if (ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
                         {
                             GrabFrame gfWithFile = new(safePath);
                             gfWithFile.Show();
@@ -432,7 +434,7 @@ public partial class App : System.Windows.Application
                     // OCR a local image/PDF straight to the clipboard, no window. The path is
                     // untrusted; only proceed for a validated, allowed local file.
                     if (parameters.TryGetValue("path", out string? path)
-                        && ProtocolUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
+                        && ProtocolHandlerUtilities.TryGetSafeProtocolFilePath(path, out string safePath))
                     {
                         _ = GrabTextFromFileAsync(safePath);
                         return true;
@@ -467,7 +469,7 @@ public partial class App : System.Windows.Application
     {
         try
         {
-            string ocrText = await OcrUtilities.OcrAbsoluteFilePathAsync(
+            string ocrText = await OcrSourceUtilities.OcrAbsoluteFilePathAsync(
                 path, LanguageUtilities.GetOCRLanguage());
             OutputUtilities.HandleTextFromOcr(ocrText, isSingleLine: false, isTable: false);
         }
@@ -520,7 +522,7 @@ public partial class App : System.Windows.Application
 
         if (isQuiet)
         {
-            (string pathContent, _) = await IoUtilities.GetContentFromPath(possiblePath);
+            (string pathContent, _) = await FileOpenUtilities.GetContentFromPath(possiblePath);
             OutputUtilities.HandleTextFromOcr(
                 pathContent,
                 false,
@@ -598,7 +600,7 @@ public partial class App : System.Windows.Application
         // (packaged installs register these via the MSIX manifest).
         if (_automationProfile is null || _automationProfile.AllowsPersistentRegistration)
         {
-            ProtocolUtilities.EnsureProtocolRegistration();
+            ProtocolHandlerUtilities.EnsureProtocolRegistration();
             FileAssociationUtilities.EnsureGrabFrameFileAssociation();
         }
 
@@ -682,6 +684,9 @@ public partial class App : System.Windows.Application
         // Need to dispatch to UI thread if performing UI operations
         Dispatcher.BeginInvoke(() =>
         {
+            if (NotificationUtilities.TryActivateTranscriptionWindow(argsInvoked))
+                return;
+
             EditTextWindow mtw = new(argsInvoked);
             mtw.Show();
         });

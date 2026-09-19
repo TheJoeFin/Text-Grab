@@ -73,6 +73,20 @@ public partial class GeneralSettings : Page
                 break;
         }
 
+        TrayIconStyle trayIconStyle = Enum.TryParse(DefaultSettings.TrayIconStyle, true, out TrayIconStyle parsedTrayIconStyle)
+            ? parsedTrayIconStyle
+            : TrayIconStyle.Color;
+        switch (trayIconStyle)
+        {
+            case TrayIconStyle.Monochrome:
+                MonochromeTrayIconRdBtn.IsChecked = true;
+                break;
+            case TrayIconStyle.Color:
+            default:
+                ColorTrayIconRdBtn.IsChecked = true;
+                break;
+        }
+
         TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
         switch (defaultLaunchSetting)
         {
@@ -121,13 +135,13 @@ public partial class GeneralSettings : Page
             StartupOnLoginCheckBox.IsChecked = DefaultSettings.StartupOnLogin;
         }
 
-        List<WebSearchUrlModel> searcherSettings = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
+        List<WebSearchUrlModel> searcherSettings = Singleton<WebSearchUrlCatalog>.Instance.WebSearchers;
 
         WebSearchersComboBox.Items.Clear();
         foreach (WebSearchUrlModel searcher in searcherSettings)
             WebSearchersComboBox.Items.Add(searcher);
 
-        WebSearchersComboBox.SelectedItem = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+        WebSearchersComboBox.SelectedItem = Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher;
 
         ShowToastCheckBox.IsChecked = DefaultSettings.ShowToast;
 
@@ -253,6 +267,26 @@ public partial class GeneralSettings : Page
 
         DefaultSettings.AppTheme = AppTheme.Dark.ToString();
         App.SetTheme();
+    }
+
+    private void ColorTrayIconRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.TrayIconStyle = TrayIconStyle.Color.ToString();
+        DefaultSettings.Save();
+        NotifyIconUtilities.RefreshTrayIconStyle();
+    }
+
+    private void MonochromeTrayIconRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.TrayIconStyle = TrayIconStyle.Monochrome.ToString();
+        DefaultSettings.Save();
+        NotifyIconUtilities.RefreshTrayIconStyle();
     }
 
     private void ReadBarcodesBarcode_Checked(object sender, RoutedEventArgs e)
@@ -456,7 +490,7 @@ public partial class GeneralSettings : Page
             || comboBox.SelectedItem is not WebSearchUrlModel newDefault)
             return;
 
-        Singleton<WebSearchUrlModel>.Instance.DefaultSearcher = newDefault;
+        Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher = newDefault;
     }
 
     private async void AddToContextMenuCheckBox_Checked(object sender, RoutedEventArgs e)

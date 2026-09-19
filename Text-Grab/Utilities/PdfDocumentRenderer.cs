@@ -10,7 +10,7 @@ using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
+using UglyToad.PdfPig.Util;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -28,11 +28,13 @@ internal sealed class PdfPageContent
         int pageIndex,
         BitmapSource renderedPage,
         IReadOnlyList<PdfPageTextLine> nativeLines,
+        IReadOnlyList<PdfPageTextLine> nativeWords,
         IReadOnlyList<Windows.Foundation.Rect> imageRegions)
     {
         PageIndex = pageIndex;
         RenderedPage = renderedPage;
         NativeLines = nativeLines;
+        NativeWords = nativeWords;
         ImageRegions = imageRegions;
     }
 
@@ -41,6 +43,12 @@ internal sealed class PdfPageContent
     public IReadOnlyList<Windows.Foundation.Rect> ImageRegions { get; }
 
     public IReadOnlyList<PdfPageTextLine> NativeLines { get; }
+
+    /// <summary>
+    /// Individual native words (not grouped into lines), positioned in rendered-page
+    /// pixel space. Used for table detection, which needs per-word gaps to find columns.
+    /// </summary>
+    public IReadOnlyList<PdfPageTextLine> NativeWords { get; }
 
     public int PageIndex { get; }
 
@@ -113,7 +121,9 @@ internal sealed class PdfDocumentRenderer : IDisposable
             else
             {
                 IReadOnlyList<PdfPageTextLine> lines = await GetSelectableLinesAsync(pageIndex, resolvedLanguage);
-                pageText = string.Join(Environment.NewLine, lines.Select(line => line.Text));
+                pageText = BuildTextFromLines(
+                    lines,
+                    OcrUtilities.ShouldUseParagraphDetection(resolvedLanguage.IsSpaceJoining()));
             }
 
             if (string.IsNullOrWhiteSpace(pageText))
@@ -145,10 +155,12 @@ internal sealed class PdfDocumentRenderer : IDisposable
             BitmapImage renderedPage = await RenderPageBitmapAsync(renderPage);
             Page textPage = textDocument.GetPage(pageIndex + 1);
 
-            List<PdfPageTextLine> nativeLines = ExtractNativeLines(textPage, renderedPage.PixelWidth, renderedPage.PixelHeight);
+            List<(Windows.Foundation.Rect SourceRect, string Text)> rawWords = ExtractRawWords(textPage, renderedPage.PixelWidth, renderedPage.PixelHeight);
+            List<PdfPageTextLine> nativeLines = [.. GroupWordsIntoLines(rawWords)];
+            List<PdfPageTextLine> nativeWords = [.. rawWords.Select(word => new PdfPageTextLine(word.SourceRect, word.Text, isNativeText: true))];
             List<Windows.Foundation.Rect> imageRegions = ExtractImageRegions(textPage, renderedPage.PixelWidth, renderedPage.PixelHeight);
 
-            PdfPageContent pageContent = new(pageIndex, renderedPage, nativeLines, imageRegions);
+            PdfPageContent pageContent = new(pageIndex, renderedPage, nativeLines, nativeWords, imageRegions);
             long pageSizeBytes = EstimateBitmapBytes(renderedPage);
 
             while (cacheOrder.First is not null
@@ -188,6 +200,26 @@ internal sealed class PdfDocumentRenderer : IDisposable
 
         combinedLines.AddRange(imageOcrLines);
         return SortLines(combinedLines);
+    }
+
+    /// <summary>
+    /// Returns individual native words and OCR words from embedded images for table detection.
+    /// Bounds are in rendered-page pixel coordinates, independent of the OCR scale.
+    /// Empty when the page has no native text (e.g. a scanned page), since callers on
+    /// that path already fall back to word-level OCR of the rendered page.
+    /// </summary>
+    public async Task<IReadOnlyList<PdfPageTextLine>> GetSelectableWordsAsync(int pageIndex, ILanguage? language = null)
+    {
+        PdfPageContent pageContent = await GetPageContentAsync(pageIndex);
+        if (!pageContent.HasNativeText || pageContent.ImageRegions.Count == 0)
+            return pageContent.NativeWords;
+
+        ILanguage resolvedLanguage = language ?? LanguageUtilities.GetCurrentInputLanguage();
+        using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(pageContent.RenderedPage);
+        // Recognize the page once so overlapping image regions do not duplicate words
+        // and all OCR bounds share the rendered page's origin.
+        (IOcrLinesWords? ocrResult, double scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, resolvedLanguage);
+        return CombineNativeAndOcrWords(pageContent.NativeWords, pageContent.ImageRegions, ocrResult, scale);
     }
 
     public async Task<BitmapSource> RenderPageAsync(int pageIndex)
@@ -246,6 +278,71 @@ internal sealed class PdfDocumentRenderer : IDisposable
         return new Windows.Foundation.Rect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
     }
 
+    internal static string BuildTextFromLines(
+        IEnumerable<PdfPageTextLine> lines,
+        bool useParagraphDetection)
+    {
+        List<PdfPageTextLine> orderedLines = SortLines(lines)
+            .Where(line => !string.IsNullOrWhiteSpace(line.Text))
+            .ToList();
+
+        if (orderedLines.Count == 0)
+            return string.Empty;
+
+        StringBuilder text = new(orderedLines[0].Text);
+
+        for (int i = 1; i < orderedLines.Count; i++)
+        {
+            PdfPageTextLine previousLine = orderedLines[i - 1];
+            PdfPageTextLine currentLine = orderedLines[i];
+
+            if (useParagraphDetection && IsWrappedPdfLine(previousLine, currentLine))
+            {
+                text.Append(' ');
+            }
+            else
+            {
+                text.AppendLine();
+            }
+
+            text.Append(currentLine.Text);
+        }
+
+        return text.ToString();
+    }
+
+    private static bool IsWrappedPdfLine(PdfPageTextLine previousLine, PdfPageTextLine currentLine)
+    {
+        return IsWrappedPdfLine(
+            previousLine.SourceRect.Top,
+            previousLine.SourceRect.Height,
+            currentLine.SourceRect.Top,
+            currentLine.SourceRect.Height);
+    }
+
+    internal static bool IsWrappedPdfLine(
+        double previousTop,
+        double previousHeight,
+        double currentTop,
+        double currentHeight)
+    {
+        if (previousHeight <= 0 || currentHeight <= 0)
+            return false;
+
+        double minHeight = Math.Min(previousHeight, currentHeight);
+        double maxHeight = Math.Max(previousHeight, currentHeight);
+        if (maxHeight / minHeight > 1.5)
+            return false;
+
+        double verticalAdvance = currentTop - previousTop;
+        if (verticalAdvance < minHeight * 0.5)
+            return false;
+
+        double gap = verticalAdvance - previousHeight;
+        double averageLineHeight = (previousHeight + currentHeight) / 2;
+        return gap < averageLineHeight * 1.2;
+    }
+
     internal static IReadOnlyList<PdfPageTextLine> GroupWordsIntoLines(IEnumerable<(Windows.Foundation.Rect SourceRect, string Text)> words)
     {
         List<(Windows.Foundation.Rect SourceRect, string Text)> orderedWords = [.. words
@@ -256,37 +353,33 @@ internal sealed class PdfDocumentRenderer : IDisposable
         if (orderedWords.Count == 0)
             return [];
 
-        List<List<(Windows.Foundation.Rect SourceRect, string Text)>> groups = [];
+        List<List<(Windows.Foundation.Rect SourceRect, string Text)>> rows = [];
 
         foreach ((Windows.Foundation.Rect SourceRect, string Text) word in orderedWords)
         {
-            if (groups.Count == 0)
+            List<(Windows.Foundation.Rect SourceRect, string Text)>? row = rows.FirstOrDefault(candidate =>
             {
-                groups.Add([word]);
+                Windows.Foundation.Rect rowBounds = GetBounds(candidate.Select(item => item.SourceRect));
+                double overlap = Math.Min(rowBounds.Bottom, word.SourceRect.Bottom) - Math.Max(rowBounds.Top, word.SourceRect.Top);
+                double minHeight = Math.Min(rowBounds.Height, word.SourceRect.Height);
+                return minHeight > 0 && overlap >= minHeight * 0.5;
+            });
+
+            if (row is null)
+            {
+                rows.Add([word]);
                 continue;
             }
 
-            List<(Windows.Foundation.Rect SourceRect, string Text)> currentGroup = groups[^1];
-            Windows.Foundation.Rect currentBounds = GetBounds(currentGroup.Select(item => item.SourceRect));
-            double currentCenterY = currentBounds.Y + (currentBounds.Height / 2);
-            double wordCenterY = word.SourceRect.Y + (word.SourceRect.Height / 2);
-            double lineHeight = Math.Max(currentBounds.Height, word.SourceRect.Height);
-            double maxGap = lineHeight * 6;
-            double horizontalGap = Math.Max(0, word.SourceRect.X - currentBounds.Right);
-            bool sameBaseline = Math.Abs(wordCenterY - currentCenterY) <= lineHeight * 0.6;
-
-            if (sameBaseline && horizontalGap <= maxGap)
-                currentGroup.Add(word);
-            else
-                groups.Add([word]);
+            row.Add(word);
         }
 
         List<PdfPageTextLine> lines = [];
-        foreach (List<(Windows.Foundation.Rect SourceRect, string Text)> group in groups)
+        foreach (List<(Windows.Foundation.Rect SourceRect, string Text)> row in rows)
         {
-            List<(Windows.Foundation.Rect SourceRect, string Text)> orderedGroup = [.. group.OrderBy(item => item.SourceRect.X)];
-            Windows.Foundation.Rect lineBounds = GetBounds(orderedGroup.Select(item => item.SourceRect));
-            string text = string.Join(" ", orderedGroup.Select(item => item.Text.Trim()));
+            List<(Windows.Foundation.Rect SourceRect, string Text)> orderedRow = [.. row.OrderBy(item => item.SourceRect.X)];
+            Windows.Foundation.Rect lineBounds = GetBounds(orderedRow.Select(item => item.SourceRect));
+            string text = string.Join(" ", orderedRow.Select(item => item.Text.Trim()));
             lines.Add(new PdfPageTextLine(lineBounds, text, isNativeText: true));
         }
 
@@ -357,6 +450,41 @@ internal sealed class PdfDocumentRenderer : IDisposable
         return false;
     }
 
+    internal static IReadOnlyList<PdfPageTextLine> CombineNativeAndOcrWords(
+        IReadOnlyList<PdfPageTextLine> nativeWords,
+        IReadOnlyList<Windows.Foundation.Rect> imageRegions,
+        IOcrLinesWords? ocrResult,
+        double scale)
+    {
+        if (ocrResult is null || ocrResult.Lines.Length == 0 || imageRegions.Count == 0)
+            return nativeWords;
+
+        List<PdfPageTextLine> combinedWords = [.. nativeWords];
+        // Native line bounds span column gaps that can contain image-only table cells.
+        IReadOnlyList<Windows.Foundation.Rect> nativeRects = [.. nativeWords.Select(word => word.SourceRect)];
+
+        foreach (IOcrWord ocrWord in ocrResult.Lines.SelectMany(line => line.Words))
+        {
+            if (string.IsNullOrWhiteSpace(ocrWord.Text))
+                continue;
+
+            Windows.Foundation.Rect scaledRect = ocrWord.BoundingBox;
+            Windows.Foundation.Rect sourceRect = new(
+                scaledRect.X / scale,
+                scaledRect.Y / scale,
+                scaledRect.Width / scale,
+                scaledRect.Height / scale);
+
+            if (!ShouldIncludeOcrLine(sourceRect, imageRegions)
+                || ShouldIncludeOcrLine(sourceRect, nativeRects))
+                continue;
+
+            combinedWords.Add(new PdfPageTextLine(sourceRect, ocrWord.Text.Trim(), isNativeText: false));
+        }
+
+        return SortLines(combinedWords);
+    }
+
     private static PdfPageRenderOptions CreateRenderOptions(WinPdfPage page)
     {
         (uint width, uint height) = GetRenderDimensions(page.Size.Width, page.Size.Height);
@@ -378,17 +506,15 @@ internal sealed class PdfDocumentRenderer : IDisposable
             .Where(rect => rect.Width > 0 && rect.Height > 0)];
     }
 
-    private static List<PdfPageTextLine> ExtractNativeLines(Page textPage, int renderedWidth, int renderedHeight)
+    private static List<(Windows.Foundation.Rect SourceRect, string Text)> ExtractRawWords(Page textPage, int renderedWidth, int renderedHeight)
     {
-        List<(Windows.Foundation.Rect SourceRect, string Text)> words = [.. textPage
-            .GetWords(NearestNeighbourWordExtractor.Instance)
+        return [.. textPage
+            .GetWords(DefaultWordExtractor.Instance)
             .Where(word => !string.IsNullOrWhiteSpace(word.Text))
             .Select(word => (
                 SourceRect: ConvertPdfRectToImageRect(word.BoundingBox, (double)textPage.Width, (double)textPage.Height, renderedWidth, renderedHeight),
                 Text: word.Text.Trim()))
             .Where(word => word.SourceRect.Width > 0 && word.SourceRect.Height > 0)];
-
-        return [.. GroupWordsIntoLines(words)];
     }
 
     private static Windows.Foundation.Rect GetBounds(IEnumerable<Windows.Foundation.Rect> rects)
@@ -417,7 +543,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         Func<Windows.Foundation.Rect, bool>? sourceRectPredicate = null)
     {
         using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(renderedPage);
-        (IOcrLinesWords? ocrResult, double scale) = await OcrUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
+        (IOcrLinesWords? ocrResult, double scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
         if (ocrResult is null || ocrResult.Lines.Length == 0)
             return [];
 
@@ -472,7 +598,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         await page.RenderToStreamAsync(renderedStream, renderOptions);
         renderedStream.Seek(0);
 
-        using Bitmap renderedBitmap = ImageMethods.GetBitmapFromIRandomAccessStream(renderedStream);
+        using Bitmap renderedBitmap = BitmapUtilities.GetBitmapFromIRandomAccessStream(renderedStream);
         return ImageMethods.BitmapToImageSource(renderedBitmap);
     }
 

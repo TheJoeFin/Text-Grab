@@ -73,6 +73,25 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public static RoutedCommand WebSearchCmd = new();
     public static RoutedCommand DefaultWebSearchCmd = new();
     public bool LaunchedFromNotification = false;
+
+    /// <summary>
+    /// Stable per-instance ID so a "transcription complete" toast can re-activate the exact window
+    /// that received the transcript, instead of opening a fresh one with (possibly truncated) text.
+    /// </summary>
+    internal readonly Guid WindowId = Guid.NewGuid();
+
+    /// <summary>Live audio transcriber, created lazily when the bottom-bar toggle is turned on.</summary>
+    private LiveAudioTranscriber? _liveTranscriber;
+    private readonly SemaphoreSlim _liveTranscriptionGate = new(1, 1);
+    private int _liveTranscriptionRequest;
+    private bool _isStoppingLiveTranscriptionForClose;
+    private bool _isClosed;
+
+    /// <summary>Which source live transcription captures from (microphone or system loopback).</summary>
+    private LiveCaptureSource _liveCaptureSource = LiveCaptureSource.Microphone;
+
+    /// <summary>Cancels an in-progress audio-file transcription; non-null only while one is running.</summary>
+    private CancellationTokenSource? _transcriptionCts;
     private CancellationTokenSource? cancellationTokenForDirOCR;
     private readonly string historyId = string.Empty;
     private int numberOfContextMenuItems;
@@ -109,6 +128,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private bool isSyncingTextFromMarkdown = false;
     private bool isApplyingSpreadsheetLayout = false;
     private bool isApplyingMarkdownDocument = false;
+    private MarkdownFlowDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
+    private string? markdownOffsetMapSourceText;
     private bool isLoadingOpenedFile = false;
     private bool hasPendingFileEdits = false;
     private bool isShowingPendingFileClosePrompt = false;
@@ -177,7 +198,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         historyId = historyInfo.ID;
 
-        if (historyInfo.PositionRect != Rect.Empty)
+        if (historyInfo.PositionRect != System.Drawing.RectangleF.Empty)
         {
             this.Left = historyInfo.PositionRect.X;
             this.Top = historyInfo.PositionRect.Y;
@@ -428,6 +449,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             BottomBarText.Visibility = Visibility.Visible;
         else
             BottomBarText.Visibility = Visibility.Collapsed;
+
+        LiveTranscriptionToggleButton.Visibility =
+            DefaultSettings.EtwShowTranscribe && AudioTranscriptionUtilities.IsAudioTranscriptionSupported()
+                ? Visibility.Visible
+                : Visibility.Collapsed;
 
         foreach (CollapsibleButton collapsibleButton in buttons)
             BottomBarButtons.Children.Add(collapsibleButton);
@@ -983,10 +1009,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void LoadMarkdownDocumentFromText(string? markdownText)
     {
         isApplyingMarkdownDocument = true;
-        MarkdownEditorControl.Document = MarkdownDocumentUtilities.CreateFlowDocument(
+        MarkdownEditorControl.Document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
             markdownText,
             MarkdownEditorControl.FontFamily,
             MarkdownEditorControl.FontSize);
+        markdownOffsetMap = MarkdownFlowDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
+        markdownOffsetMapSourceText = markdownText ?? string.Empty;
         ApplyMarkdownTheme();
         ApplyMarkdownWrapSetting();
         SetMargins(MarginsMenuItem.IsChecked is true);
@@ -999,7 +1027,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
 
         isSyncingTextFromMarkdown = true;
-        PassedTextControl.Text = MarkdownDocumentUtilities.SerializeToMarkdown(
+        PassedTextControl.Text = MarkdownFlowDocumentUtilities.SerializeToMarkdown(
             MarkdownEditorControl.Document,
             preserveLiteralMarkdown: true);
         isSyncingTextFromMarkdown = false;
@@ -1010,7 +1038,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (MarkdownEditorControl.Document is null)
             return;
 
-        MarkdownDocumentUtilities.ApplyTheme(
+        MarkdownFlowDocumentUtilities.ApplyTheme(
             MarkdownEditorControl.Document,
             this,
             SystemThemeUtility.IsLightTheme());
@@ -1427,44 +1455,90 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         int startRow = Math.Max(0, SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem));
         int startCol = Math.Max(0, SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0);
 
-        // Parse clipboard text into a 2D array of cell values
-        string[] lines = clipboardText.Split('\n');
-        List<string[]> pastedRows = [];
-        foreach (string line in lines)
-            pastedRows.Add(line.TrimEnd('\r').Split('\t'));
-
-        // Remove trailing empty row artifact produced by a final newline in copied table text
-        while (pastedRows.Count > 1 && pastedRows[^1].Length == 1 && pastedRows[^1][0].Length == 0)
-            pastedRows.RemoveAt(pastedRows.Count - 1);
-
+        List<string[]> pastedRows = EditTextTableDocument.ParseTabSeparatedRows(clipboardText);
         if (pastedRows.Count == 0)
             return;
 
-        int maxPastedCols = pastedRows.Max(row => row.Length);
+        ApplySpreadsheetDocumentChange(
+            document => WriteGridIntoSpreadsheetDocument(document, pastedRows, startRow, startCol),
+            startRow,
+            startCol);
+    }
+
+    internal static void WriteGridIntoSpreadsheetDocument(
+        EditTextTableDocument document,
+        List<string[]> gridRows,
+        int startRow,
+        int startCol)
+    {
+        int maxGridCols = gridRows.Max(row => row.Length);
+
+        // Expand the document to fit the incoming data if necessary
+        int requiredRows = startRow + gridRows.Count;
+        int requiredCols = startCol + maxGridCols;
+        document.RowCount = Math.Max(document.RowCount, requiredRows);
+        document.ColumnCount = Math.Max(document.ColumnCount, requiredCols);
+        document.MinimumRowCount = Math.Max(document.MinimumRowCount, requiredRows);
+        document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, requiredCols);
+        document.EnsureMinimumSize();
+
+        // Write values into the target cells
+        for (int r = 0; r < gridRows.Count; r++)
+        {
+            int targetRow = startRow + r;
+            for (int c = 0; c < gridRows[r].Length; c++)
+            {
+                int targetCol = startCol + c;
+                if (targetRow < document.Rows.Count && targetCol < document.Rows[targetRow].Count)
+                    document.Rows[targetRow][targetCol] = gridRows[r][c];
+            }
+        }
+    }
+
+    internal static void WriteAggregateResultIntoSpreadsheetDocument(
+        EditTextTableDocument document,
+        string resultText,
+        int targetRow,
+        int targetColumn)
+    {
+        // An aggregate is one result, not a per-cell transform or a pasted table. Keep even
+        // multiline/tabbed output in the anchor cell, leaving every other cell untouched.
+        WriteGridIntoSpreadsheetDocument(document, [[resultText]], targetRow, targetColumn);
+    }
+
+    /// <summary>
+    /// Inserts an OCR grab result into this Spreadsheet-mode window through the structured
+    /// table model rather than splicing raw text into the (hidden, while in this mode)
+    /// underlying text box — that box's selection/cursor doesn't track the DataGrid's current
+    /// cell, so splicing into it corrupts whatever row happens to sit at that stale position.
+    /// A single cell (no row/column structure) replaces the currently selected spreadsheet
+    /// cell; a real multi-cell table is appended as new rows at the bottom instead, landing
+    /// column-aware. Returns true when it handled the insert itself.
+    /// </summary>
+    internal bool TryInsertGrabbedTextIntoSpreadsheet(string grabbedText)
+    {
+        if (editorMode != EtwEditorMode.Spreadsheet)
+            return false;
+
+        List<string[]> parsedRows = EditTextTableDocument.ParseTabSeparatedRows(grabbedText);
+        if (parsedRows.Count == 0)
+            return false;
+
+        if (EditTextTableDocument.IsSingleCellGrid(parsedRows))
+        {
+            int targetRow = Math.Max(0, GetSpreadsheetCurrentRowIndex() ?? 0);
+            int targetColumn = Math.Max(0, GetSpreadsheetCurrentColumnIndex() ?? 0);
+
+            ApplySpreadsheetDocumentChange(document =>
+                WriteGridIntoSpreadsheetDocument(document, parsedRows, targetRow, targetColumn));
+
+            return true;
+        }
 
         ApplySpreadsheetDocumentChange(document =>
-        {
-            // Expand the document to fit the pasted data if necessary
-            int requiredRows = startRow + pastedRows.Count;
-            int requiredCols = startCol + maxPastedCols;
-            document.RowCount = Math.Max(document.RowCount, requiredRows);
-            document.ColumnCount = Math.Max(document.ColumnCount, requiredCols);
-            document.MinimumRowCount = Math.Max(document.MinimumRowCount, requiredRows);
-            document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, requiredCols);
-            document.EnsureMinimumSize();
+            WriteGridIntoSpreadsheetDocument(document, parsedRows, document.GetFirstFullyEmptyRowIndex(), 0));
 
-            // Write values into the target cells
-            for (int r = 0; r < pastedRows.Count; r++)
-            {
-                int targetRow = startRow + r;
-                for (int c = 0; c < pastedRows[r].Length; c++)
-                {
-                    int targetCol = startCol + c;
-                    if (targetRow < document.Rows.Count && targetCol < document.Rows[targetRow].Count)
-                        document.Rows[targetRow][targetCol] = pastedRows[r][c];
-                }
-            }
-        }, startRow, startCol);
+        return true;
     }
 
     internal static string BuildSpreadsheetSelectionText(
@@ -1493,6 +1567,34 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     "\t",
                     group.OrderBy(cell => cell.ColumnIndex)
                         .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty))));
+    }
+
+    internal static string BuildSpreadsheetSelectionHtml(
+        DataTable dataTable,
+        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
+    {
+        ArgumentNullException.ThrowIfNull(dataTable);
+        ArgumentNullException.ThrowIfNull(cellCoordinates);
+
+        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
+            .Distinct()
+            .Where(cell => cell.RowIndex >= 0
+                && cell.RowIndex < dataTable.Rows.Count
+                && cell.ColumnIndex >= 0
+                && cell.ColumnIndex < dataTable.Columns.Count)];
+
+        if (validCoordinates.Count == 0)
+            return string.Empty;
+
+        List<List<string>> rows = [.. validCoordinates
+            .GroupBy(cell => cell.RowIndex)
+            .OrderBy(group => group.Key)
+            .Select(group => group
+                .OrderBy(cell => cell.ColumnIndex)
+                .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty)
+                .ToList())];
+
+        return CfHtmlTableUtilities.BuildCfHtmlTable(rows);
     }
 
     internal static string BuildSpreadsheetSelectionMarkdown(
@@ -2128,10 +2230,33 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    private bool TrySetSpreadsheetClipboardSelection(string plainText, string htmlClipboardData)
+    {
+        if (string.IsNullOrEmpty(plainText))
+            return false;
+
+        try
+        {
+            System.Windows.DataObject dataObject = new();
+            dataObject.SetText(plainText);
+            if (!string.IsNullOrEmpty(htmlClipboardData))
+                dataObject.SetData(System.Windows.DataFormats.Html, htmlClipboardData);
+
+            System.Windows.Clipboard.SetDataObject(dataObject, true);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private bool TryCopySpreadsheetSelectionToClipboard(IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
     {
-        string selectionText = BuildSpreadsheetSelectionText(spreadsheetTable, cellCoordinates);
-        return !string.IsNullOrEmpty(selectionText) && TrySetClipboardText(selectionText);
+        List<(int RowIndex, int ColumnIndex)> coordinates = [.. cellCoordinates];
+        string selectionText = BuildSpreadsheetSelectionText(spreadsheetTable, coordinates);
+        string selectionHtml = BuildSpreadsheetSelectionHtml(spreadsheetTable, coordinates);
+        return TrySetSpreadsheetClipboardSelection(selectionText, selectionHtml);
     }
 
     private void ClearSpreadsheetCellValuesAndSync(IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
@@ -2158,7 +2283,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         CommitSpreadsheetEditsAndCapturePendingHistory();
         SpreadsheetUndoState? beforeChange = CreateCurrentSpreadsheetUndoState(syncFromTable: true);
 
-        if (!TryCutSpreadsheetCellValues(spreadsheetTable, selectedCellCoordinates, TrySetClipboardText))
+        string selectionHtml = BuildSpreadsheetSelectionHtml(spreadsheetTable, selectedCellCoordinates);
+        if (!TryCutSpreadsheetCellValues(
+                spreadsheetTable,
+                selectedCellCoordinates,
+                text => TrySetSpreadsheetClipboardSelection(text, selectionHtml)))
             return false;
 
         SyncSpreadsheetDocumentFromTable();
@@ -2433,8 +2562,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     internal async void OpenPath(string pathOfFileToOpen, bool isMultipleFiles = false)
     {
+        // Audio files are transcribed on-device rather than opened as text. Routing this here means
+        // CLI arguments, File > Open, and drag/drop all reach the same transcription path.
+        if (AudioTranscriptionUtilities.IsAudioFile(pathOfFileToOpen))
+        {
+            AudioDebugLog.Write($"OpenPath: audio file detected, routing to transcription: {pathOfFileToOpen}");
+            await TranscribeAudioFilesAsync([pathOfFileToOpen]);
+            return;
+        }
+
         ResetSpreadsheetUndoHistory();
-        (string TextContent, OpenContentKind KindOpened) = await IoUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
+        (string TextContent, OpenContentKind KindOpened) = await FileOpenUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
         bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
 
         if (KindOpened == OpenContentKind.TextFile)
@@ -2662,6 +2800,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         LoadLanguageMenuItems(LanguageMenuItem);
+    }
+
+    private void GrabTemplateMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
         LoadGrabTemplateMenuItems(GrabTemplateMenuItem);
     }
 
@@ -2862,7 +3004,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         e.Handled = true;
     }
 
-    private void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
+    private async void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
     {
         if (e.Data.GetDataPresent("Text"))
             return;
@@ -2871,26 +3013,256 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         e.Handled = true;
         Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
 
-        if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
+        try
         {
-            string[]? fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop, true) as string[];
-            // Check for a single file or folder.
-            if (fileNames?.Length is 1)
+            if (!e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
+                return;
+
+            if (e.Data.GetData(System.Windows.DataFormats.FileDrop, true) is not string[] fileNames)
+                return;
+
+            List<string> existingFiles = [.. fileNames.Where(File.Exists)];
+            if (existingFiles.Count == 0)
+                return;
+
+            // Audio files are transcribed on-device rather than opened as text.
+            List<string> audioFiles = [.. existingFiles.Where(AudioTranscriptionUtilities.IsAudioFile)];
+            List<string> otherFiles = [.. existingFiles.Where(path => !AudioTranscriptionUtilities.IsAudioFile(path))];
+
+            bool openAsMultiple = existingFiles.Count > 1;
+            foreach (string possibleFilePath in otherFiles)
+                OpenPath(possibleFilePath, openAsMultiple);
+
+            if (audioFiles.Count > 0)
             {
-                // Check for a file (a directory will return false).
-                if (File.Exists(fileNames[0]))
-                    OpenPath(fileNames[0], false);
-            }
-            else if (fileNames?.Length > 1)
-            {
-                foreach (string possibleFilePath in fileNames)
-                {
-                    if (File.Exists(possibleFilePath))
-                        OpenPath(possibleFilePath, true);
-                }
+                // Drop the wait cursor; TranscribeAudioFilesAsync shows the loading overlay instead.
+                Mouse.OverrideCursor = null;
+                await TranscribeAudioFilesAsync(audioFiles);
             }
         }
-        Mouse.OverrideCursor = null;
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    /// <summary>
+    /// Transcribes one or more dropped audio files on-device, streaming each Whisper segment into the
+    /// editor as it is recognized. The status bar stays non-blocking so the user can cancel; because
+    /// every segment is inserted as it arrives, cancelling keeps all text transcribed so far.
+    /// <paramref name="hotWords"/> (if provided) biases Whisper toward names/jargon it might otherwise
+    /// mishear; it applies only to this call, nothing is persisted.
+    /// <paramref name="overallProgress"/> (if provided) reports progress across all files combined
+    /// (0.0-1.0), so a caller such as <see cref="OpenMediaWindow"/> can drive its own progress bar.
+    /// </summary>
+    internal async Task TranscribeAudioFilesAsync(IList<string> audioFiles, string? hotWords = null, IProgress<double>? overallProgress = null)
+    {
+        AudioDebugLog.Write($"TranscribeAudioFilesAsync: START with {audioFiles.Count} file(s). Log: {AudioDebugLog.LogPath}");
+
+        if (!AudioTranscriptionUtilities.IsAudioTranscriptionSupported())
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Audio Transcription Unavailable",
+                Content = "Audio transcription isn't available on this device.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return;
+        }
+
+        // Guard against a second transcription starting while one is already running.
+        if (_transcriptionCts is not null)
+        {
+            AudioDebugLog.Write("TranscribeAudioFilesAsync: ignored — a transcription is already in progress");
+            return;
+        }
+
+        bool multiple = audioFiles.Count > 1;
+        bool previousIsReadOnly = PassedTextControl.IsReadOnly;
+        string? errorMessage = null;
+        bool cancelled = false;
+
+        // Everything from here runs inside the try: the guard above keys off _transcriptionCts, so a
+        // throw during setup that left it assigned would block every later transcription in this window.
+        try
+        {
+            _transcriptionCts = new CancellationTokenSource();
+            CancellationToken cancellationToken = _transcriptionCts.Token;
+
+            // Make the editor read-only (not disabled) so segments can stream in but the user can't type
+            // in the middle of the stream. AppendText still works while read-only.
+            PassedTextControl.IsReadOnly = true;
+            TranscriptionCancelButton.IsEnabled = true;
+            TranscriptionStatusText.Text = multiple ? "Transcribing audio files…" : "Transcribing audio…";
+            TranscriptionProgressBar.Visibility = Visibility.Collapsed;
+            TranscriptionProgressBar.Value = 0;
+            TranscriptionStatusBar.Visibility = Visibility.Visible;
+
+            // Status text (model download, "Transcribing…") updates the status bar; each recognized
+            // segment is appended straight into the editor as it arrives.
+            Progress<string> statusProgress = new(message => TranscriptionStatusText.Text = message);
+            Progress<string> segmentProgress = new(AppendTranscriptionText);
+
+            // Give the caret a clean starting line so streamed text doesn't run into existing content.
+            EnsureTranscriptionInsertionPoint();
+
+            for (int i = 0; i < audioFiles.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string audioFile = audioFiles[i];
+
+                if (multiple)
+                    AppendTranscriptionText($"# {Path.GetFileName(audioFile)}{Environment.NewLine}");
+
+                int fileIndex = i;
+                Progress<double> clipProgress = new(fraction =>
+                {
+                    double overall = (fileIndex + fraction) / audioFiles.Count;
+                    TranscriptionProgressBar.Visibility = Visibility.Visible;
+                    TranscriptionProgressBar.Value = overall * 100;
+                    TranscriptionStatusText.Text = multiple
+                        ? $"Transcribing audio files… ({fileIndex + 1}/{audioFiles.Count}) {fraction:P0}"
+                        : $"Transcribing audio… {fraction:P0}";
+                    overallProgress?.Report(overall);
+                });
+
+                string transcription = await AudioTranscriptionUtilities.TranscribeAudioFileAsync(
+                    audioFile, hotWords, statusProgress, segmentProgress, cancellationToken,
+                    includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription,
+                    clipProgress: clipProgress);
+
+                if (string.IsNullOrWhiteSpace(transcription))
+                    AppendTranscriptionText("(no speech recognized)");
+
+                // Blank line between files (and after the last, trimmed on sync).
+                AppendTranscriptionText(Environment.NewLine + Environment.NewLine);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // User cancelled: everything already streamed into the editor is kept — no error dialog.
+            cancelled = true;
+            AudioDebugLog.Write("TranscribeAudioFilesAsync: cancelled by user; keeping transcribed-so-far text");
+        }
+        catch (Exception ex)
+        {
+            // Surface the real reason (model not ready, unsupported format, etc.) instead of failing silently.
+            Debug.WriteLine($"Audio transcription error: {ex}");
+            AudioDebugLog.Write($"TranscribeAudioFilesAsync: ERROR {ex}");
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            PassedTextControl.IsReadOnly = previousIsReadOnly;
+            TranscriptionStatusBar.Visibility = Visibility.Collapsed;
+            _transcriptionCts?.Dispose();
+            _transcriptionCts = null;
+
+            // The transcript was streamed into the raw text box, so the active editor is what needs
+            // updating. Syncing the other way (as this used to) pushed the markdown document / table
+            // back over PassedTextControl.Text, round-tripping the whole transcript through the
+            // serializer for nothing.
+            SyncActiveEditorFromText();
+        }
+
+        AudioDebugLog.Write($"TranscribeAudioFilesAsync: END (cancelled={cancelled}, error={errorMessage is not null})");
+
+        if (errorMessage is not null)
+        {
+            // A failure raised as the window closes has nowhere to show: the dialog would be owned by
+            // a torn-down window.
+            if (IsLoaded)
+                await new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "Audio Transcription Failed",
+                    Content = errorMessage,
+                    CloseButtonText = "OK"
+                }.ShowDialogAsync();
+        }
+        else if (!cancelled && DefaultSettings.NotifyOnTranscriptionComplete)
+        {
+            string fileDescription = multiple
+                ? $"{audioFiles.Count} files"
+                : Path.GetFileName(audioFiles[0]);
+            NotificationUtilities.ShowTranscriptionCompleteToast(fileDescription, WindowId);
+        }
+    }
+
+    private void TranscriptionCancelButton_Click(object sender, RoutedEventArgs e) => CancelAudioTranscription();
+
+    /// <summary>
+    /// Requests cancellation of the running audio-file transcription. Text already streamed into the
+    /// editor is preserved. Called from the status bar's own Cancel button, and externally by
+    /// <see cref="OpenMediaWindow"/> so its Cancel button can stop a transcription it started.
+    /// </summary>
+    internal void CancelAudioTranscription()
+    {
+        if (_transcriptionCts is null)
+            return;
+
+        TranscriptionCancelButton.IsEnabled = false;
+        TranscriptionStatusText.Text = "Cancelling…";
+        _transcriptionCts.Cancel();
+    }
+
+    /// <summary>
+    /// Ensures the caret sits on a fresh line at the end of the document before streaming begins, so
+    /// the first transcribed segment doesn't run into whatever text is already there.
+    /// </summary>
+    private void EnsureTranscriptionInsertionPoint()
+    {
+        string existingText = PassedTextControl.Text;
+        if (!string.IsNullOrEmpty(existingText) && existingText[^1] is not '\n' and not '\r')
+            PassedTextControl.AppendText(Environment.NewLine);
+
+        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
+        PassedTextControl.ScrollToEnd();
+    }
+
+    /// <summary>
+    /// Appends a streamed transcription fragment to the end of the editor. Works while the editor is
+    /// read-only (AppendText bypasses the read-only guard), keeping the caret and view at the end.
+    /// </summary>
+    private void AppendTranscriptionText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        PassedTextControl.AppendText(text);
+        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
+        PassedTextControl.ScrollToEnd();
+    }
+
+    /// <summary>
+    /// Inserts transcribed text into the raw-text editor at the caret, adding a leading separator
+    /// when appending to existing content.
+    /// </summary>
+    private void InsertTranscribedText(string text, bool separateWithSpace = false)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        string existingText = PassedTextControl.Text;
+        if (!string.IsNullOrEmpty(existingText) && PassedTextControl.SelectionStart == existingText.Length)
+        {
+            char lastChar = existingText[^1];
+            if (separateWithSpace)
+            {
+                if (!char.IsWhiteSpace(lastChar))
+                    text = " " + text;
+            }
+            else if (lastChar is not '\n' and not '\r')
+            {
+                text = Environment.NewLine + text;
+            }
+        }
+
+        AddCopiedTextToTextBox(text);
+
+        // Same as the file path: the phrase went into the raw text box, so the sync has to run in that
+        // direction. Pulling from the active editor instead round-tripped every phrase through the
+        // markdown/table serializer.
+        SyncActiveEditorFromText();
     }
 
     private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
@@ -2958,6 +3330,42 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     public bool IsSpreadsheetMode => editorMode == EtwEditorMode.Spreadsheet;
+
+    /// <summary>
+    /// Selects the given range of <see cref="PassedTextControl"/>'s raw text in whichever editor is
+    /// currently visible and scrolls it into view. Used by Find &amp; Replace to show the active match,
+    /// since selecting in <see cref="PassedTextControl"/> alone has no visible effect while it is
+    /// hidden behind <see cref="MarkdownEditorControl"/> in markdown mode.
+    /// </summary>
+    /// <remarks>
+    /// In markdown mode the rendered document's plain text is not the same string as the raw
+    /// markdown <paramref name="index"/>/<paramref name="length"/> are measured against — bold
+    /// markers, heading <c>#</c>s, list bullets, link brackets, etc. are stripped on render. The
+    /// index is translated through the offset map built alongside the rendered document
+    /// (<see cref="MarkdownFlowDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
+    /// </remarks>
+    public void SelectInEditor(int index, int length)
+    {
+        if (editorMode == EtwEditorMode.Markdown)
+        {
+            SyncMarkdownTextFromDocument();
+            if (markdownOffsetMapSourceText != PassedTextControl.Text)
+                LoadMarkdownDocumentFromText(PassedTextControl.Text);
+
+            if (MarkdownEditorControl.Document is not null)
+            {
+                TextPointer start = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
+                TextPointer end = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
+                MarkdownEditorControl.Selection.Select(start, end);
+                MarkdownEditorControl.Focus();
+                start.Paragraph?.BringIntoView();
+            }
+            return;
+        }
+
+        PassedTextControl.Select(index, length);
+        PassedTextControl.Focus();
+    }
 
     public void CommitSpreadsheetAndSync()
     {
@@ -3135,7 +3543,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PopulateTemplateMenu(ApplyGrabTemplateMenuItem, textOnlyTemplates, ApplyGrabTemplateItem_Click);
         PopulateTemplateMenu(ApplyGrabTemplatePerLineMenuItem, textOnlyTemplates, ApplyGrabTemplatePerLineItem_Click);
 
-        List<PatternItem> patterns = [.. PatternItem.GetAll()];
+        List<PatternItem> patterns = [.. PatternItemCatalog.GetAll()];
         PopulatePatternMenu(
             ApplyPatternMenuItem,
             patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
@@ -3273,6 +3681,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
     {
         CheckForGrabFrameOrLaunch();
+    }
+
+    private async void CaptureFromCameraMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? capturedImagePath = await CameraCaptureUtilities.CaptureImageFromCameraAsync(this);
+
+        if (capturedImagePath is null)
+            return;
+
+        OpenPath(capturedImagePath);
     }
 
     private void ManageGrabTemplates_Click(object sender, RoutedEventArgs e)
@@ -3504,7 +3922,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         string possibleSearch = PassedTextControl.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
 
-        WebSearchUrlModel searcher = Singleton<WebSearchUrlModel>.Instance.DefaultSearcher;
+        WebSearchUrlModel searcher = Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher;
 
         Uri searchUri = new($"{searcher.Url}{searchStringUrlSafe}");
         _ = await Windows.System.Launcher.LaunchUriAsync(searchUri);
@@ -3726,7 +4144,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void LoadRecentTextHistory()
     {
         List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
-        grabsHistories = [.. grabsHistories.OrderByDescending(x => x.CaptureDateTime)];
+        grabsHistories = [.. grabsHistories.OrderByDescending(x => x.CaptureDateTime).Take(10)];
 
         ClearRecentTextMenuItems();
 
@@ -4036,7 +4454,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             ct.ThrowIfCancellationRequested();
 
-            ocrFile.OcrResult = await OcrUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
+            ocrFile.OcrResult = await OcrSourceUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
 
             // to get the TextBox to update whenever OCR Finishes:
             if (!options.WriteTxtFiles)
@@ -4347,8 +4765,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         bool shouldParseAsMarkdown = MarkdownDocumentUtilities.LooksLikeMarkdown(pastedText);
         int selectionStartOffset = GetMarkdownPlainTextOffset(MarkdownEditorControl.Selection.Start);
         int renderedPasteLength = shouldParseAsMarkdown
-            ? MarkdownDocumentUtilities.GetDocumentPlainText(
-                MarkdownDocumentUtilities.CreateFlowDocument(
+            ? MarkdownFlowDocumentUtilities.GetDocumentPlainText(
+                MarkdownFlowDocumentUtilities.CreateFlowDocument(
                     pastedText,
                     MarkdownEditorControl.FontFamily,
                     MarkdownEditorControl.FontSize)).Length
@@ -4499,7 +4917,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                 string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
@@ -4523,7 +4941,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    List<OcrOutput> outputs = await OcrUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                     string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
@@ -4545,7 +4963,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         HistoryService hs = Singleton<HistoryService>.Instance;
 
         if (hs.HasAnyFullscreenHistory())
-            await OcrUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
+            await OcrSourceUtilities.GetTextFromPreviousFullscreenRegion(PassedTextControl);
     }
 
     private async void RateAndReview_Click(object sender, RoutedEventArgs e)
@@ -4719,6 +5137,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             SyncSpreadsheetDocumentFromTable();
         else if (editorMode == EtwEditorMode.Markdown)
             SyncMarkdownTextFromDocument();
+    }
+
+    /// <summary>
+    /// The mirror of <see cref="SyncTextFromActiveEditor"/>: pushes <c>PassedTextControl.Text</c> out
+    /// to whichever editor is showing, the same way <see cref="PassedTextControl_TextChanged"/> does.
+    /// Used by anything that writes straight into the raw text box while another editor is active —
+    /// streamed audio transcription, most of all. A no-op in raw-text mode.
+    /// </summary>
+    private void SyncActiveEditorFromText()
+    {
+        if (editorMode == EtwEditorMode.Spreadsheet)
+            RefreshSpreadsheetFromText();
+        else if (editorMode == EtwEditorMode.Markdown)
+            RefreshMarkdownFromText();
     }
 
     private bool SaveCurrentDocument(bool saveAs = false)
@@ -5123,7 +5555,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         _ = findAndReplaceCommand.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
         _ = CommandBindings.Add(new CommandBinding(findAndReplaceCommand, FindAndReplaceMenuItem_Click));
 
-        List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlModel>.Instance.WebSearchers;
+        RoutedCommand newWindowWithSelectionCommand = new();
+        _ = newWindowWithSelectionCommand.InputGestures.Add(new KeyGesture(Key.N, ModifierKeys.Control));
+        _ = CommandBindings.Add(new CommandBinding(newWindowWithSelectionCommand, NewWindowWithText_Clicked));
+
+        List<WebSearchUrlModel> searchers = Singleton<WebSearchUrlCatalog>.Instance.WebSearchers;
 
         foreach (WebSearchUrlModel searcher in searchers)
         {
@@ -5262,27 +5698,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void TrimEachLineMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        static string TrimEachLine(string workingString)
-        {
-            string[] stringSplit = workingString.Split(Environment.NewLine);
-            string finalString = "";
-
-            foreach (string line in stringSplit)
-            {
-                if (!string.IsNullOrWhiteSpace(line))
-                    finalString += line.Trim() + Environment.NewLine;
-            }
-
-            return finalString;
-        }
-
         if (editorMode == EtwEditorMode.Spreadsheet)
         {
-            TryApplySpreadsheetTextTransform(TrimEachLine);
+            TryApplySpreadsheetTextTransform(StringMethods.TrimEachLine);
             return;
         }
 
-        PassedTextControl.Text = TrimEachLine(PassedTextControl.Text);
+        PassedTextControl.Text = PassedTextControl.Text.TrimEachLine();
+    }
+
+    private void CleanUpText_Click(object sender, RoutedEventArgs e)
+    {
+        bool correctToLatin = AppUtilities.ShouldCorrectToLatin();
+        ApplySelectedTextOrAllTextTransform(text => text.CleanUpText(correctToLatin));
     }
 
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)
@@ -5362,7 +5790,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             string plainText = MarkdownEditorControl.Document is null
                 ? string.Empty
-                : MarkdownDocumentUtilities.GetDocumentPlainText(MarkdownEditorControl.Document);
+                : MarkdownFlowDocumentUtilities.GetDocumentPlainText(MarkdownEditorControl.Document);
             string selectedText = MarkdownEditorControl.Selection.Text.TrimEnd('\r', '\n');
 
             BottomBarText.Text = string.IsNullOrEmpty(selectedText)
@@ -5750,6 +6178,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Closed(object sender, EventArgs e)
     {
+        _isClosed = true;
+        ++_liveTranscriptionRequest;
+
+        // Stop any in-progress audio-file transcription so it doesn't touch a torn-down window.
+        _transcriptionCts?.Cancel();
+
+        // Forced shutdown can bypass the deferred close. Dispose queues cleanup behind the
+        // transcriber's current operation; stale starts and dispatcher deliveries are ignored.
+        if (_liveTranscriber is not null)
+        {
+            _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveTranscriber.Dispose();
+            _liveTranscriber = null;
+        }
+
         DetachSpreadsheetColumnWidthTracking();
         System.Windows.DataObject.RemovePastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
 
@@ -5802,8 +6245,22 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         WindowUtilities.ShouldShutDown();
     }
 
-    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (_isStoppingLiveTranscriptionForClose)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        if (_liveTranscriber is not null)
+        {
+            e.Cancel = true;
+            _isStoppingLiveTranscriptionForClose = true;
+            await StopLiveTranscriptionAndCloseAsync();
+            return;
+        }
+
         SyncTextFromActiveEditor();
         UpdatePendingFileEditState();
 
@@ -5830,6 +6287,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         isShowingPendingFileClosePrompt = true;
         _ = HandlePendingFileClosePromptAsync();
     }
+
+    private async Task StopLiveTranscriptionAndCloseAsync()
+    {
+        try
+        {
+            // Invalidate a pending start before awaiting it, then flush before either the
+            // pending-file prompt or history snapshots read the document.
+            ++_liveTranscriptionRequest;
+            LiveTranscriptionToggleButton.IsChecked = false;
+            await StopLiveTranscriptionAsync(dispose: true);
+        }
+        finally
+        {
+            _isStoppingLiveTranscriptionForClose = false;
+        }
+
+        if (!_isClosed)
+            Close();
+    }
+
     private void Window_Initialized(object sender, EventArgs e)
     {
         PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
@@ -5902,6 +6379,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Set dynamic header text for TranslateToSystemLanguageMenuItem
             string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
             TranslateToSystemLanguageMenuItem.Header = $"Translate to {systemLanguage}";
+
+            NotifyOnLocalAiCompleteMenuItem.IsChecked = DefaultSettings.NotifyOnLocalAiComplete;
+            SendLocalAiResultToNewWindowMenuItem.IsChecked = DefaultSettings.SendLocalAiResultToNewWindow;
+        }
+
+        // Audio transcription runs locally on the CPU via Whisper (whisper.cpp), so it's available
+        // on every supported device. The Whisper model is downloaded on first use.
+        if (AudioTranscriptionUtilities.IsAudioTranscriptionSupported())
+        {
+            CaptureTranscribeAudioMenuItem.Visibility = Visibility.Visible;
+            TranscriptionOptionsMenuItem.Visibility = Visibility.Visible;
+            OpenAudioVideoMenuItem.Visibility = Visibility.Visible;
+            SyncTranscriptionModelMenu();
+            TranscribeJustIconMenuItem.IsChecked = DefaultSettings.TranscribeButtonJustIcon;
+            LiveTranscriptionLabel.Visibility = DefaultSettings.TranscribeButtonJustIcon ? Visibility.Collapsed : Visibility.Visible;
         }
 
         // Initialize selectedILanguage with the last used OCR language from settings
@@ -6458,13 +6950,286 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading("Summarizing...");
 
+        WinAiGenerationResult? failure = null;
+        bool resultUnchanged = false;
+
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.SummarizeParagraph(text));
+            string sourceText = GetSelectedTextOrAllText();
+            WinAiGenerationResult result = await WindowsAiUtilities.SummarizeParagraph(sourceText);
+
+            if (result.Text is null)
+                failure = result;
+            else
+                resultUnchanged = !DeliverLocalAiResult("Summarize", sourceText, result.Text);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Summarize exception: {ex.Message}");
+            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Summarizing failed: {ex.Message}");
         }
         finally
         {
             SetToLoaded();
+        }
+
+        if (failure is { } summaryFailure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Summarize Failed",
+                Content = summaryFailure.Message ?? "The text could not be summarized.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+        else if (resultUnchanged)
+        {
+            await ShowLocalAiResultUnchangedAsync("Summarize");
+        }
+    }
+
+    private async void MeetingNotesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SetToLoading("Writing meeting notes...");
+
+        WinAiGenerationResult? failure = null;
+        bool resultUnchanged = false;
+
+        try
+        {
+            string sourceText = GetSelectedTextOrAllText();
+
+            // A long transcript is summarized part by part, so say which part is being read.
+            void OnProgress(string stage) => Dispatcher.Invoke(() => SetToLoading(stage));
+
+            WinAiGenerationResult result = await WinAiMeetingNotes.SummarizeAsync(sourceText, OnProgress);
+
+            if (result.Text is null)
+                failure = result;
+            else
+                resultUnchanged = !DeliverLocalAiResult("Meeting notes", sourceText, result.Text);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Meeting notes exception: {ex.Message}");
+            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Meeting notes failed: {ex.Message}");
+        }
+        finally
+        {
+            SetToLoaded();
+        }
+
+        if (failure is { } notesFailure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Meeting Notes Failed",
+                Content = notesFailure.Message ?? "The text could not be written up as meeting notes.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+        else if (resultUnchanged)
+        {
+            await ShowLocalAiResultUnchangedAsync("Meeting notes");
+        }
+    }
+
+    // Returns the new window's WindowId so a completion notification can reactivate it specifically
+    // (rather than the source window, which never gets the result text) — null if it failed to open.
+    private static Guid? OpenTextInNewEditTextWindow(string text, EtwEditorMode resultMode = EtwEditorMode.Text)
+    {
+        EditTextWindow resultWindow = new(text, isEncoded: false);
+
+        try
+        {
+            // Set before Show(), matching CreateSelectionWindow — the mode-switch logic in
+            // SetEditorMode only touches XAML elements, which InitializeComponent() already wired up.
+            if (resultMode != EtwEditorMode.Text)
+                resultWindow.SetEditorMode(resultMode);
+
+            resultWindow.Show();
+            return resultWindow.WindowId;
+        }
+        catch (Exception ex)
+        {
+            _ = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = ex.Message,
+                Content = "An error occurred while trying to open a new window. Please try again.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Delivers a finished Local AI result (Summarize, Meeting Notes) per the
+    /// "Send Result to New Window" setting: either opened in a new window, leaving this window's text
+    /// untouched, or applied over the selected/all text in this window (one anchor cell in
+    /// spreadsheet mode, preserving the other cells) — then fires the completion
+    /// notification for whichever window actually ended up with the result. Returns false without
+    /// doing any of that when the result is the same as <paramref name="sourceText"/>: a new window
+    /// holding a copy of the input (or an in-place "edit" that changes nothing) would only look like
+    /// the task did something. The caller should tell the user instead, once the window is
+    /// re-enabled (see <see cref="ShowLocalAiResultUnchangedAsync"/>).
+    /// </summary>
+    private bool DeliverLocalAiResult(string taskDescription, string sourceText, string resultText)
+    {
+        if (LocalAiResultUtilities.IsUnchanged(sourceText, resultText))
+            return false;
+
+        if (DefaultSettings.SendLocalAiResultToNewWindow)
+        {
+            if (OpenTextInNewEditTextWindow(resultText) is Guid resultWindowId)
+                NotifyLocalAiComplete(taskDescription, resultWindowId);
+        }
+        else
+        {
+            if (editorMode == EtwEditorMode.Spreadsheet)
+            {
+                int targetRow = Math.Max(0, GetSpreadsheetCurrentRowIndex() ?? 0);
+                int targetColumn = Math.Max(0, GetSpreadsheetCurrentColumnIndex() ?? 0);
+                ApplySpreadsheetDocumentChange(
+                    document => WriteAggregateResultIntoSpreadsheetDocument(document, resultText, targetRow, targetColumn),
+                    targetRow,
+                    targetColumn,
+                    beginEdit: false);
+            }
+            else
+            {
+                ReplaceSelectedTextOrAllText(resultText);
+            }
+
+            NotifyLocalAiComplete(taskDescription, WindowId);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Tells the user a Local AI task finished but produced the same text it started with, so
+    /// nothing was opened or replaced. Show this after <see cref="SetToLoaded"/> — the window is
+    /// disabled while the task runs.
+    /// </summary>
+    private static async Task ShowLocalAiResultUnchangedAsync(string taskDescription)
+    {
+        await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "No Changes",
+            Content = $"{taskDescription} finished, but the result is the same as the original text, so nothing was changed.",
+            CloseButtonText = "OK"
+        }.ShowDialogAsync();
+    }
+
+    /// <summary>
+    /// Runs a Local AI text transform (Rewrite, Convert to Table) and delivers it per the "Send Result
+    /// to New Window" setting: either opened in a new window, leaving this window's text untouched, or
+    /// applied over the selected/all text in this window (via <see cref="ApplySelectedTextOrAllTextTransformAsync"/>,
+    /// which also handles spreadsheet mode) — then fires the completion notification for whichever
+    /// window actually ended up with the result. <paramref name="resultMode"/> switches whichever
+    /// window gets the result into that editor mode (e.g. Convert to Table switches to Spreadsheet);
+    /// pass <see cref="EtwEditorMode.Text"/> to leave the mode alone. Returns false, having opened
+    /// nothing and notified no one, when the model handed back the same text it was given (every
+    /// cell, in spreadsheet mode) — the caller should tell the user via
+    /// <see cref="ShowLocalAiResultUnchangedAsync"/> once the window is re-enabled.
+    /// </summary>
+    private async Task<bool> PerformLocalAiTransformAsync(string taskDescription, Func<string, Task<string>> transformAsync, EtwEditorMode resultMode = EtwEditorMode.Text)
+    {
+        if (DefaultSettings.SendLocalAiResultToNewWindow)
+        {
+            string sourceText = GetSelectedTextOrAllText();
+            string resultText = await transformAsync(sourceText);
+
+            if (LocalAiResultUtilities.IsUnchanged(sourceText, resultText))
+                return false;
+
+            if (OpenTextInNewEditTextWindow(resultText, resultMode) is Guid resultWindowId)
+                NotifyLocalAiComplete(taskDescription, resultWindowId);
+        }
+        else
+        {
+            // In spreadsheet mode the transform runs once per cell, so "unchanged" means no cell
+            // came back different, not just the last one.
+            bool anyChanged = false;
+
+            await ApplySelectedTextOrAllTextTransformAsync(async text =>
+            {
+                string resultText = await transformAsync(text);
+                anyChanged |= !LocalAiResultUtilities.IsUnchanged(text, resultText);
+                return resultText;
+            });
+
+            if (!anyChanged)
+                return false;
+
+            if (resultMode != EtwEditorMode.Text)
+                SetEditorMode(resultMode);
+
+            NotifyLocalAiComplete(taskDescription, WindowId);
+        }
+
+        return true;
+    }
+
+    private void SendLocalAiResultToNewWindowMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.SendLocalAiResultToNewWindow = true;
+        DefaultSettings.Save();
+    }
+
+    private void SendLocalAiResultToNewWindowMenuItem_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.SendLocalAiResultToNewWindow = false;
+        DefaultSettings.Save();
+    }
+
+    private void NotifyOnLocalAiCompleteMenuItem_Checked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.NotifyOnLocalAiComplete = true;
+        DefaultSettings.Save();
+    }
+
+    private void NotifyOnLocalAiCompleteMenuItem_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.NotifyOnLocalAiComplete = false;
+        DefaultSettings.Save();
+    }
+
+    /// <summary>
+    /// Shows a completion toast for a Local AI task if the user opted in. These tasks run with the
+    /// window disabled (see <see cref="SetToLoading"/>), so a user who has switched away otherwise
+    /// has no signal that the result is ready, mirroring the transcription-complete notification.
+    /// <paramref name="windowId"/> is whichever window actually holds the result: this window for an
+    /// in-place edit (Rewrite, Convert to Table, Translate, Extract RegEx), or the new window for
+    /// Summarize/Meeting Notes, which open the result separately instead of replacing the source text.
+    /// </summary>
+    private void NotifyLocalAiComplete(string taskDescription, Guid windowId)
+    {
+        if (DefaultSettings.NotifyOnLocalAiComplete)
+            NotificationUtilities.ShowLocalAiCompleteToast(taskDescription, windowId);
+    }
+
+    private async void RestartLocalLlmMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        RestartLocalLlmMenuItem.IsEnabled = false;
+
+        try
+        {
+            await WindowsAiUtilities.RestartWindowsAiAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Restarting the Local LLM failed: {ex.Message}");
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Restart Local LLM Failed",
+                Content = $"The Local LLM could not be restarted: {ex.Message}",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+        finally
+        {
+            RestartLocalLlmMenuItem.IsEnabled = true;
         }
     }
 
@@ -6480,28 +7245,37 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private async void RewriteMenuItem_Click(object sender, RoutedEventArgs e)
     {
         SetToLoading("Rewriting...");
+
+        bool resultChanged;
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.Rewrite(text));
+            resultChanged = await PerformLocalAiTransformAsync("Rewrite", text => WindowsAiUtilities.Rewrite(text));
         }
         finally
         {
             SetToLoaded();
         }
+
+        if (!resultChanged)
+            await ShowLocalAiResultUnchangedAsync("Rewrite");
     }
 
     private async void ConvertTableMenuItem_Click(object sender, RoutedEventArgs e)
     {
         SetToLoading("Converting...");
 
+        bool resultChanged;
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.TextToTable(text));
+            resultChanged = await PerformLocalAiTransformAsync("Convert to Table", text => WindowsAiUtilities.TextToTable(text), EtwEditorMode.Spreadsheet);
         }
         finally
         {
             SetToLoaded();
         }
+
+        if (!resultChanged)
+            await ShowLocalAiResultUnchangedAsync("Convert to Table");
     }
 
     private async void TranslateMenuItem_Click(object sender, RoutedEventArgs e)
@@ -6547,22 +7321,83 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SetToLoading($"Translating to {targetLanguage}...");
 
+        // Captured from inside the transform so a failure can be reported after the text is applied
+        // instead of silently putting the original text back.
+        TranslationResult? failedResult = null;
+
+        // Whichever window ends up with the translated text — this window for an in-place apply, or
+        // the newly opened one — so the completion notification (if any) points at the right one.
+        Guid? resultWindowId = null;
+
+        // Set when the model handed back the text it was given, so no window is opened and the
+        // user is told nothing changed instead of getting a completion notification.
+        bool resultUnchanged = false;
+
         try
         {
-            await ApplySelectedTextOrAllTextTransformAsync(text => WindowsAiUtilities.TranslateText(text, targetLanguage));
+            if (DefaultSettings.SendLocalAiResultToNewWindow)
+            {
+                string sourceText = GetSelectedTextOrAllText();
+                TranslationResult result = await WinAiTranslator.TranslateAsync(sourceText, targetLanguage);
+
+                if (!result.Succeeded)
+                    failedResult = result;
+                else if (LocalAiResultUtilities.IsUnchanged(sourceText, result.Text))
+                    resultUnchanged = true;
+                else
+                    resultWindowId = OpenTextInNewEditTextWindow(result.Text);
+            }
+            else
+            {
+                // Runs per cell in spreadsheet mode, so "unchanged" means no cell came back different.
+                bool anyChanged = false;
+
+                await ApplySelectedTextOrAllTextTransformAsync(async text =>
+                {
+                    TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
+
+                    if (!result.Succeeded)
+                        failedResult ??= result;
+                    else
+                        anyChanged |= !LocalAiResultUtilities.IsUnchanged(text, result.Text);
+
+                    return result.Text;
+                });
+
+                if (failedResult is null)
+                {
+                    if (anyChanged)
+                        resultWindowId = WindowId;
+                    else
+                        resultUnchanged = true;
+                }
+            }
         }
         catch (Exception ex)
         {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Translation Error",
-                Content = $"Translation failed: {ex.Message}",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
+            failedResult = new TranslationResult(string.Empty, TranslationFailure.ModelError, $"Translation failed: {ex.Message}");
         }
         finally
         {
             SetToLoaded();
+        }
+
+        if (failedResult is { } failure)
+        {
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = failure.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
+                Content = failure.Message ?? "The text could not be translated.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+        else if (resultUnchanged)
+        {
+            await ShowLocalAiResultUnchangedAsync($"Translation to {targetLanguage}");
+        }
+        else if (resultWindowId is Guid windowId)
+        {
+            NotifyLocalAiComplete($"Translation to {targetLanguage}", windowId);
         }
     }
 
@@ -6583,10 +7418,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoading("Extracting RegEx pattern...");
 
-        string regexPattern;
+        WinAiGenerationResult extraction;
         try
         {
-            regexPattern = await WindowsAiUtilities.ExtractRegex(textDescription);
+            extraction = await WindowsAiUtilities.ExtractRegex(textDescription);
         }
         catch (Exception ex)
         {
@@ -6603,16 +7438,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         SetToLoaded();
 
-        if (string.IsNullOrWhiteSpace(regexPattern))
+        if (extraction.Text is not string regexPattern)
         {
+            // The shared language model reports why it could not answer, so show that instead of a
+            // guess about what went wrong.
             await new Wpf.Ui.Controls.MessageBox
             {
                 Title = "Extraction Failed",
-                Content = "Failed to extract a regex pattern. The AI service may not be available or could not generate a pattern.",
+                Content = extraction.Message ?? "Failed to extract a regex pattern.",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
             return;
         }
+
+        NotifyLocalAiComplete("Extract RegEx", WindowId);
 
         // Clean up any model artifacts like <\/PRED> tags
         regexPattern = regexPattern.Replace("<\\/PRED>", "").Replace("</PRED>", "").Trim();
@@ -6659,6 +7498,261 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 }.ShowDialogAsync();
             }
         }
+    }
+
+    private async void LiveTranscriptionToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        int request = ++_liveTranscriptionRequest;
+        LiveCaptureSource source = _liveCaptureSource;
+        bool showStartFailure = false;
+        await _liveTranscriptionGate.WaitAsync();
+        try
+        {
+            if (request != _liveTranscriptionRequest || _isStoppingLiveTranscriptionForClose || _isClosed)
+                return;
+
+            _liveTranscriber ??= new LiveAudioTranscriber();
+            _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
+            _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
+
+            SetLiveTranscriptionUi(true, source switch
+            {
+                LiveCaptureSource.SystemAudio => "Starting (system)…",
+                LiveCaptureSource.MicrophoneAndSystemAudio => "Starting (mic + system)…",
+                _ => "Starting…",
+            });
+
+            bool started;
+            try
+            {
+                started = await _liveTranscriber.StartAsync(source);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Live transcription failed to start: {ex}");
+                started = false;
+            }
+
+            // A newer toggle or close owns the next transition. In particular, don't detach
+            // here: its stop still needs to receive the final phrase from this session.
+            if (request != _liveTranscriptionRequest || _isStoppingLiveTranscriptionForClose || _isClosed)
+                return;
+
+            if (started)
+            {
+                SetLiveTranscriptionUi(true);
+            }
+            else
+            {
+                SetLiveTranscriptionUi(false);
+                LiveTranscriptionToggleButton.IsChecked = false;
+                showStartFailure = true;
+            }
+        }
+        finally
+        {
+            _liveTranscriptionGate.Release();
+        }
+
+        if (showStartFailure && !_isStoppingLiveTranscriptionForClose && !_isClosed)
+        {
+            string reason = source switch
+            {
+                LiveCaptureSource.SystemAudio => "Couldn't capture system audio. Make sure a playback device is active.",
+                LiveCaptureSource.MicrophoneAndSystemAudio => "Couldn't start microphone and system audio capture. Make sure a microphone is connected, Text Grab has microphone access in Windows privacy settings, and a playback device is active.",
+                _ => "Couldn't start microphone capture. Make sure a microphone is connected and that Text Grab has microphone access in Windows privacy settings.",
+            };
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Couldn't Start Transcription",
+                Content = reason,
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
+    private async void LiveTranscriptionToggleButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        ++_liveTranscriptionRequest;
+        SetLiveTranscriptionUi(false);
+        await StopLiveTranscriptionAsync();
+    }
+
+    private async Task StopLiveTranscriptionAsync(bool dispose = false)
+    {
+        await _liveTranscriptionGate.WaitAsync();
+        try
+        {
+            LiveAudioTranscriber? transcriber = _liveTranscriber;
+            if (transcriber is null)
+                return;
+
+            await StopAndDrainLiveTranscriptionAsync(transcriber, LiveTranscriber_PhraseRecognized, Dispatcher);
+
+            if (dispose)
+            {
+                transcriber.Dispose();
+                _liveTranscriber = null;
+            }
+        }
+        finally
+        {
+            _liveTranscriptionGate.Release();
+        }
+    }
+
+    internal static async Task StopAndDrainLiveTranscriptionAsync(
+        LiveAudioTranscriber transcriber,
+        EventHandler<string> phraseHandler,
+        Dispatcher dispatcher)
+    {
+        try
+        {
+            await transcriber.StopAsync().ConfigureAwait(false);
+            // StopAsync waits for recognition, not its BeginInvoke deliveries. Queue a barrier
+            // behind those Normal-priority callbacks before detaching or allowing another start.
+            if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+            {
+                try
+                {
+                    await dispatcher.InvokeAsync(() => { }, DispatcherPriority.Normal).Task.ConfigureAwait(false);
+                }
+                catch (TaskCanceledException) when (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                {
+                    // Shutdown can abort the barrier; there is no live editor left to drain.
+                }
+            }
+        }
+        finally
+        {
+            transcriber.PhraseRecognized -= phraseHandler;
+        }
+    }
+
+    private void CaptureTranscribeAudioMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool transcribe = CaptureTranscribeAudioMenuItem.IsChecked;
+        if (LiveTranscriptionToggleButton.IsChecked != transcribe)
+            LiveTranscriptionToggleButton.IsChecked = transcribe;
+    }
+
+    private void OpenAudioVideoMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMediaWindow openMediaWindow = new() { Owner = this };
+        openMediaWindow.Show();
+    }
+
+    private void LiveSourceMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string tag
+            || !Enum.TryParse(tag, out LiveCaptureSource selectedSource))
+            return;
+
+        _liveCaptureSource = selectedSource;
+        LiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
+        LiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
+        LiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
+        CaptureLiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
+        CaptureLiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
+        CaptureLiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
+
+        // If a session is already running, restart it on the newly chosen source.
+        if (LiveTranscriptionToggleButton.IsChecked is true)
+        {
+            LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
+            LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new source
+        }
+        else
+        {
+            SetLiveTranscriptionUi(false);
+        }
+    }
+
+    private void TranscriptionModelMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string tag)
+            return;
+
+        DefaultSettings.AudioTranscriptionModel = tag;
+        DefaultSettings.Save();
+        SyncTranscriptionModelMenu();
+
+        // If a session is running, restart it so the newly selected model is loaded.
+        if (LiveTranscriptionToggleButton.IsChecked is true)
+        {
+            LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
+            LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new model
+        }
+    }
+
+    private void TranscribeJustIconMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool justIcon = TranscribeJustIconMenuItem.IsChecked;
+        DefaultSettings.TranscribeButtonJustIcon = justIcon;
+        DefaultSettings.Save();
+        LiveTranscriptionLabel.Visibility = justIcon ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Reflects the persisted transcription-model choice in the context-menu check marks.</summary>
+    internal void SyncTranscriptionModelMenu()
+    {
+        string current = DefaultSettings.AudioTranscriptionModel;
+        ModelTinyEnglishMenuItem.IsChecked = current == "TinyEnglish";
+        ModelBaseEnglishMenuItem.IsChecked = current == "BaseEnglish";
+        ModelSmallMultilingualMenuItem.IsChecked = current == "SmallMultilingual";
+        CaptureModelTinyEnglishMenuItem.IsChecked = ModelTinyEnglishMenuItem.IsChecked;
+        CaptureModelBaseEnglishMenuItem.IsChecked = ModelBaseEnglishMenuItem.IsChecked;
+        CaptureModelSmallMultilingualMenuItem.IsChecked = ModelSmallMultilingualMenuItem.IsChecked;
+
+        // Anything else (including the default) falls back to balanced multilingual.
+        ModelBaseMultilingualMenuItem.IsChecked =
+            !ModelTinyEnglishMenuItem.IsChecked
+            && !ModelBaseEnglishMenuItem.IsChecked
+            && !ModelSmallMultilingualMenuItem.IsChecked;
+        CaptureModelBaseMultilingualMenuItem.IsChecked = ModelBaseMultilingualMenuItem.IsChecked;
+    }
+
+    private void LiveTranscriber_PhraseRecognized(object? sender, string recognizedText)
+    {
+        // Recognition events arrive on a background thread; marshal to the UI thread without
+        // blocking the recognizer (BeginInvoke, not Invoke).
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_isClosed)
+                return;
+
+            string phrase = recognizedText.Trim();
+            if (phrase.Length == 0)
+                return;
+
+            // Insert at the end of the document, separating phrases with a single space.
+            PassedTextControl.Select(PassedTextControl.Text.Length, 0);
+            InsertTranscribedText(phrase, separateWithSpace: true);
+        });
+    }
+
+    private void SetLiveTranscriptionUi(bool active, string? label = null)
+    {
+        bool systemAudio = _liveCaptureSource == LiveCaptureSource.SystemAudio;
+        bool both = _liveCaptureSource == LiveCaptureSource.MicrophoneAndSystemAudio;
+        CaptureTranscribeAudioMenuItem.IsChecked = active;
+
+        if (label is not null)
+            LiveTranscriptionLabel.Text = label;
+        else if (active)
+            LiveTranscriptionLabel.Text = both ? "Listening (mic + system)…" : systemAudio ? "Listening (system)…" : "Listening…";
+        else
+            LiveTranscriptionLabel.Text = both ? "Transcribe (mic + system)" : systemAudio ? "Transcribe (system)" : "Transcribe";
+
+        // Speaker icon for system audio, mic icon for microphone (and mic+system); pulse variant while active.
+        LiveTranscriptionIcon.Symbol = systemAudio && !both
+            ? SymbolRegular.Speaker224
+            : (active ? SymbolRegular.MicPulse24 : SymbolRegular.Mic24);
+
+        if (active)
+            LiveTranscriptionIcon.Foreground = System.Windows.Media.Brushes.OrangeRed;
+        else
+            LiveTranscriptionIcon.ClearValue(ForegroundProperty);
     }
 
     private void SetToLoading(string message = "")
