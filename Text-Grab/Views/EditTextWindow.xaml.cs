@@ -82,6 +82,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     /// <summary>Live audio transcriber, created lazily when the bottom-bar toggle is turned on.</summary>
     private LiveAudioTranscriber? _liveTranscriber;
+    private readonly SemaphoreSlim _liveTranscriptionGate = new(1, 1);
+    private int _liveTranscriptionRequest;
+    private bool _isStoppingLiveTranscriptionForClose;
+    private bool _isClosed;
 
     /// <summary>Which source live transcription captures from (microphone or system loopback).</summary>
     private LiveCaptureSource _liveCaptureSource = LiveCaptureSource.Microphone;
@@ -6163,9 +6167,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Closed(object sender, EventArgs e)
     {
+        _isClosed = true;
+        ++_liveTranscriptionRequest;
+
         // Stop any in-progress audio-file transcription so it doesn't touch a torn-down window.
         _transcriptionCts?.Cancel();
 
+        // Forced shutdown can bypass the deferred close. Dispose queues cleanup behind the
+        // transcriber's current operation; stale starts and dispatcher deliveries are ignored.
         if (_liveTranscriber is not null)
         {
             _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
@@ -6225,8 +6234,22 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         WindowUtilities.ShouldShutDown();
     }
 
-    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (_isStoppingLiveTranscriptionForClose)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        if (_liveTranscriber is not null)
+        {
+            e.Cancel = true;
+            _isStoppingLiveTranscriptionForClose = true;
+            await StopLiveTranscriptionAndCloseAsync();
+            return;
+        }
+
         SyncTextFromActiveEditor();
         UpdatePendingFileEditState();
 
@@ -6253,6 +6276,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         isShowingPendingFileClosePrompt = true;
         _ = HandlePendingFileClosePromptAsync();
     }
+
+    private async Task StopLiveTranscriptionAndCloseAsync()
+    {
+        try
+        {
+            // Invalidate a pending start before awaiting it, then flush before either the
+            // pending-file prompt or history snapshots read the document.
+            ++_liveTranscriptionRequest;
+            LiveTranscriptionToggleButton.IsChecked = false;
+            await StopLiveTranscriptionAsync(dispose: true);
+        }
+        finally
+        {
+            _isStoppingLiveTranscriptionForClose = false;
+        }
+
+        if (!_isClosed)
+            Close();
+    }
+
     private void Window_Initialized(object sender, EventArgs e)
     {
         PassedTextControl.PreviewMouseWheel += HandlePreviewMouseWheel;
@@ -7433,38 +7476,61 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void LiveTranscriptionToggleButton_Checked(object sender, RoutedEventArgs e)
     {
-        _liveTranscriber ??= new LiveAudioTranscriber();
-        _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
-        _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
-
-        SetLiveTranscriptionUi(true, _liveCaptureSource switch
-        {
-            LiveCaptureSource.SystemAudio => "Starting (system)…",
-            LiveCaptureSource.MicrophoneAndSystemAudio => "Starting (mic + system)…",
-            _ => "Starting…",
-        });
-
-        bool started;
+        int request = ++_liveTranscriptionRequest;
+        LiveCaptureSource source = _liveCaptureSource;
+        bool showStartFailure = false;
+        await _liveTranscriptionGate.WaitAsync();
         try
         {
-            started = await _liveTranscriber.StartAsync(_liveCaptureSource);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Live transcription failed to start: {ex.Message}");
-            started = false;
-        }
+            if (request != _liveTranscriptionRequest || _isStoppingLiveTranscriptionForClose || _isClosed)
+                return;
 
-        if (!started)
-        {
+            _liveTranscriber ??= new LiveAudioTranscriber();
             _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
-            SetLiveTranscriptionUi(false);
+            _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
 
-            // Setting IsChecked=false re-enters Unchecked, which is a no-op safe path here.
-            if (LiveTranscriptionToggleButton.IsChecked is true)
+            SetLiveTranscriptionUi(true, source switch
+            {
+                LiveCaptureSource.SystemAudio => "Starting (system)…",
+                LiveCaptureSource.MicrophoneAndSystemAudio => "Starting (mic + system)…",
+                _ => "Starting…",
+            });
+
+            bool started;
+            try
+            {
+                started = await _liveTranscriber.StartAsync(source);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Live transcription failed to start: {ex}");
+                started = false;
+            }
+
+            // A newer toggle or close owns the next transition. In particular, don't detach
+            // here: its stop still needs to receive the final phrase from this session.
+            if (request != _liveTranscriptionRequest || _isStoppingLiveTranscriptionForClose || _isClosed)
+                return;
+
+            if (started)
+            {
+                SetLiveTranscriptionUi(true);
+            }
+            else
+            {
+                SetLiveTranscriptionUi(false);
                 LiveTranscriptionToggleButton.IsChecked = false;
+                showStartFailure = true;
+            }
+        }
+        finally
+        {
+            _liveTranscriptionGate.Release();
+        }
 
-            string reason = _liveCaptureSource switch
+        if (showStartFailure && !_isStoppingLiveTranscriptionForClose && !_isClosed)
+        {
+            string reason = source switch
             {
                 LiveCaptureSource.SystemAudio => "Couldn't capture system audio. Make sure a playback device is active.",
                 LiveCaptureSource.MicrophoneAndSystemAudio => "Couldn't start microphone and system audio capture. Make sure a microphone is connected, Text Grab has microphone access in Windows privacy settings, and a playback device is active.",
@@ -7476,21 +7542,65 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 Content = reason,
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
-            return;
         }
-
-        SetLiveTranscriptionUi(true);
     }
 
-    private void LiveTranscriptionToggleButton_Unchecked(object sender, RoutedEventArgs e)
+    private async void LiveTranscriptionToggleButton_Unchecked(object sender, RoutedEventArgs e)
     {
-        if (_liveTranscriber is not null)
-        {
-            _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
-            _liveTranscriber.Stop();
-        }
-
+        ++_liveTranscriptionRequest;
         SetLiveTranscriptionUi(false);
+        await StopLiveTranscriptionAsync();
+    }
+
+    private async Task StopLiveTranscriptionAsync(bool dispose = false)
+    {
+        await _liveTranscriptionGate.WaitAsync();
+        try
+        {
+            LiveAudioTranscriber? transcriber = _liveTranscriber;
+            if (transcriber is null)
+                return;
+
+            await StopAndDrainLiveTranscriptionAsync(transcriber, LiveTranscriber_PhraseRecognized, Dispatcher);
+
+            if (dispose)
+            {
+                transcriber.Dispose();
+                _liveTranscriber = null;
+            }
+        }
+        finally
+        {
+            _liveTranscriptionGate.Release();
+        }
+    }
+
+    internal static async Task StopAndDrainLiveTranscriptionAsync(
+        LiveAudioTranscriber transcriber,
+        EventHandler<string> phraseHandler,
+        Dispatcher dispatcher)
+    {
+        try
+        {
+            await transcriber.StopAsync().ConfigureAwait(false);
+            // StopAsync waits for recognition, not its BeginInvoke deliveries. Queue a barrier
+            // behind those Normal-priority callbacks before detaching or allowing another start.
+            if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+            {
+                try
+                {
+                    await dispatcher.InvokeAsync(() => { }, DispatcherPriority.Normal).Task.ConfigureAwait(false);
+                }
+                catch (TaskCanceledException) when (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                {
+                    // Shutdown can abort the barrier; there is no live editor left to drain.
+                }
+            }
+        }
+        finally
+        {
+            transcriber.PhraseRecognized -= phraseHandler;
+        }
     }
 
     private void CaptureTranscribeAudioMenuItem_Click(object sender, RoutedEventArgs e)
@@ -7582,6 +7692,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // blocking the recognizer (BeginInvoke, not Invoke).
         Dispatcher.BeginInvoke(() =>
         {
+            if (_isClosed)
+                return;
+
             string phrase = recognizedText.Trim();
             if (phrase.Length == 0)
                 return;
