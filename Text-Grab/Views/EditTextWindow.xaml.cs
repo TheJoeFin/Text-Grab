@@ -1495,6 +1495,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
+    internal static void WriteAggregateResultIntoSpreadsheetDocument(
+        EditTextTableDocument document,
+        string resultText,
+        int targetRow,
+        int targetColumn)
+    {
+        // An aggregate is one result, not a per-cell transform or a pasted table. Keep even
+        // multiline/tabbed output in the anchor cell, leaving every other cell untouched.
+        WriteGridIntoSpreadsheetDocument(document, [[resultText]], targetRow, targetColumn);
+    }
+
     /// <summary>
     /// Inserts an OCR grab result into this Spreadsheet-mode window through the structured
     /// table model rather than splicing raw text into the (hidden, while in this mode)
@@ -6950,7 +6961,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (result.Text is null)
                 failure = result;
             else
-                resultUnchanged = !await DeliverLocalAiResultAsync("Summarize", sourceText, result.Text);
+                resultUnchanged = !DeliverLocalAiResult("Summarize", sourceText, result.Text);
         }
         catch (Exception ex)
         {
@@ -6996,7 +7007,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (result.Text is null)
                 failure = result;
             else
-                resultUnchanged = !await DeliverLocalAiResultAsync("Meeting notes", sourceText, result.Text);
+                resultUnchanged = !DeliverLocalAiResult("Meeting notes", sourceText, result.Text);
         }
         catch (Exception ex)
         {
@@ -7054,14 +7065,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// <summary>
     /// Delivers a finished Local AI result (Summarize, Meeting Notes) per the
     /// "Send Result to New Window" setting: either opened in a new window, leaving this window's text
-    /// untouched, or applied over the selected/all text in this window — then fires the completion
+    /// untouched, or applied over the selected/all text in this window (one anchor cell in
+    /// spreadsheet mode, preserving the other cells) — then fires the completion
     /// notification for whichever window actually ended up with the result. Returns false without
     /// doing any of that when the result is the same as <paramref name="sourceText"/>: a new window
     /// holding a copy of the input (or an in-place "edit" that changes nothing) would only look like
     /// the task did something. The caller should tell the user instead, once the window is
     /// re-enabled (see <see cref="ShowLocalAiResultUnchangedAsync"/>).
     /// </summary>
-    private async Task<bool> DeliverLocalAiResultAsync(string taskDescription, string sourceText, string resultText)
+    private bool DeliverLocalAiResult(string taskDescription, string sourceText, string resultText)
     {
         if (LocalAiResultUtilities.IsUnchanged(sourceText, resultText))
             return false;
@@ -7073,7 +7085,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
         else
         {
-            await ApplySelectedTextOrAllTextTransformAsync(_ => Task.FromResult(resultText));
+            if (editorMode == EtwEditorMode.Spreadsheet)
+            {
+                int targetRow = Math.Max(0, GetSpreadsheetCurrentRowIndex() ?? 0);
+                int targetColumn = Math.Max(0, GetSpreadsheetCurrentColumnIndex() ?? 0);
+                ApplySpreadsheetDocumentChange(
+                    document => WriteAggregateResultIntoSpreadsheetDocument(document, resultText, targetRow, targetColumn),
+                    targetRow,
+                    targetColumn,
+                    beginEdit: false);
+            }
+            else
+            {
+                ReplaceSelectedTextOrAllText(resultText);
+            }
+
             NotifyLocalAiComplete(taskDescription, WindowId);
         }
 
