@@ -88,6 +88,8 @@ public partial class GrabFrame : Window
     private bool hasUnsavedWordEdits = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
+    private readonly RedrawCoordinator redrawCoordinator = new();
+    private int activeRedrawVersion;
     private bool isAutoOcrRedrawPass = false;
     private bool isLanguageBoxLoaded = false;
     private bool isMiddleDown = false;
@@ -163,6 +165,35 @@ public partial class GrabFrame : Window
         PdfTextLineOverlay? PdfTextLine,
         double Top,
         double Left);
+
+    internal sealed class RedrawCoordinator
+    {
+        private readonly SemaphoreSlim drawLock = new(1, 1);
+        private int version;
+
+        public void Invalidate()
+        {
+            version++;
+        }
+
+        public bool IsCurrent(int requestVersion) => requestVersion == version;
+
+        public async Task RunAsync(Func<int, Task> redraw)
+        {
+            int requestVersion = ++version;
+            await drawLock.WaitAsync();
+            try
+            {
+                // Coalesce requests made during OCR; only the latest view needs drawing.
+                if (IsCurrent(requestVersion))
+                    await redraw(requestVersion);
+            }
+            finally
+            {
+                drawLock.Release();
+            }
+        }
+    }
 
     #region Constructors
 
@@ -1038,23 +1069,10 @@ public partial class GrabFrame : Window
 
         reDrawTimer.Stop();
 
-        // A redraw kicked off before this loop took over may still be in flight; the draw
-        // methods bail out silently while one is running, which would yield an empty page.
-        for (int waited = 0; isDrawing && waited < 100; waited++)
-            await Task.Delay(50);
-
         if (ocrResultsByPage.TryGetValue(pageIndex, out (IOcrLinesWords Result, double Scale) cached))
             (ocrResultOfWindow, windowFrameImageScale) = cached;
 
-        isAutoOcrRedrawPass = true;
-        try
-        {
-            await DrawRectanglesAroundWords(SearchBar.SearchText);
-        }
-        finally
-        {
-            isAutoOcrRedrawPass = false;
-        }
+        await DrawRectanglesAroundWords(SearchBar.SearchText, isAutomaticRedraw: true);
 
         if (ocrResultOfWindow is not null && !ocrResultsByPage.ContainsKey(pageIndex))
             ocrResultsByPage[pageIndex] = (ocrResultOfWindow, windowFrameImageScale);
@@ -1140,7 +1158,12 @@ public partial class GrabFrame : Window
             if (_loadedPdfDocument is null || ct.IsCancellationRequested)
                 return;
 
-            _currentPdfPageContent = await _loadedPdfDocument.GetPageContentAsync(pageIndex);
+            PdfDocumentRenderer pdfDocument = _loadedPdfDocument;
+            PdfPageContent pageContent = await pdfDocument.GetPageContentAsync(pageIndex);
+            if (ct.IsCancellationRequested || _isCleanedUp || !ReferenceEquals(pdfDocument, _loadedPdfDocument))
+                return;
+
+            _currentPdfPageContent = pageContent;
             frameContentImageSource = _currentPdfPageContent.RenderedPage;
             hasLoadedImageSource = true;
             isStaticImageSource = true;
@@ -1704,6 +1727,7 @@ public partial class GrabFrame : Window
         if (_isCleanedUp)
             return;
         _isCleanedUp = true;
+        redrawCoordinator.Invalidate();
         _freezeTransitionVersion++;
 
         MainZoomBorder.ResetRequested -= MainZoomBorder_ResetRequested;
@@ -2486,8 +2510,11 @@ public partial class GrabFrame : Window
 
     private string GetNormalizedOcrWordText(IOcrWord word)
     {
-        string wordText = word.Text;
+        return GetNormalizedOcrWordText(word.Text);
+    }
 
+    private string GetNormalizedOcrWordText(string wordText)
+    {
         if (DefaultSettings.CorrectErrors)
             wordText = wordText.TryFixNumberLetterErrors();
 
@@ -2567,7 +2594,7 @@ public partial class GrabFrame : Window
 
     private void AddRenderedWordBorder(WordBorder wordBorderBox)
     {
-        if (!IsOcrValid)
+        if (!IsCurrentRedraw)
             return;
 
         wordBorders.Add(wordBorderBox);
@@ -2601,30 +2628,48 @@ public partial class GrabFrame : Window
 
     private void AddRenderedPdfTextLine(PdfTextLineOverlay overlay)
     {
-        if (!IsOcrValid)
+        if (!IsCurrentRedraw)
             return;
 
         pdfTextLineOverlays.Add(overlay);
         _ = PdfTextCanvas.Children.Add(overlay);
     }
 
-    private async Task DrawRectanglesAroundWords(string searchWord = "")
+    private bool IsCurrentRedraw => IsOcrValid
+        && !_isCleanedUp
+        && redrawCoordinator.IsCurrent(activeRedrawVersion);
+
+    private Task DrawRectanglesAroundWords(string searchWord = "", bool isAutomaticRedraw = false)
     {
-        if (CurrentLanguage is UiAutomationLang)
-            await DrawUiAutomationRectanglesAsync(searchWord);
-        else
-            await DrawOcrRectanglesAsync(searchWord);
+        return redrawCoordinator.RunAsync(async version =>
+        {
+            if (_isCleanedUp)
+                return;
 
-        // The overlay just changed; rebase the change detector so the newly
-        // drawn word borders become part of the baseline instead of being
-        // judged as screen-content changes that re-trigger a refresh.
-        contentChangeDetector.Reset();
+            activeRedrawVersion = version;
+            isAutoOcrRedrawPass = isAutomaticRedraw;
+            try
+            {
+                if (CurrentLanguage is UiAutomationLang)
+                    await DrawUiAutomationRectanglesAsync(searchWord);
+                else
+                    await DrawOcrRectanglesAsync(searchWord);
 
-        // Only a fresh grab (or re-OCR) should trigger auto-speak. Selection,
-        // edits, moves and other overlay mutations also rebuild FrameText, so
-        // arm the speak-on-next-update flag here rather than speaking on every
-        // UpdateFrameText call.
-        _speakOnNextFrameTextUpdate = true;
+                if (!IsCurrentRedraw)
+                    return;
+
+                // The overlay just changed; rebase the change detector so the newly
+                // drawn word borders do not trigger another refresh.
+                contentChangeDetector.Reset();
+                // Only a successful fresh capture arms auto-speak, not selection/edit updates.
+                _speakOnNextFrameTextUpdate = true;
+            }
+            finally
+            {
+                isDrawing = false;
+                isAutoOcrRedrawPass = false;
+            }
+        });
     }
 
     private async Task DrawOcrRectanglesAsync(string searchWord = "")
@@ -2660,15 +2705,21 @@ public partial class GrabFrame : Window
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Length == 0)
         {
+            (IOcrLinesWords? Result, double Scale) recognition;
             if (frameContentImageSource is BitmapSource frozenBmp)
             {
                 using System.Drawing.Bitmap bmpForOcr = ImageMethods.BitmapSourceToBitmap(frozenBmp);
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
+                recognition = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
             }
             else
             {
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrSourceUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
+                recognition = await OcrSourceUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
             }
+
+            if (!IsCurrentRedraw)
+                return;
+
+            (ocrResultOfWindow, windowFrameImageScale) = recognition;
         }
 
         if (ocrResultOfWindow is null)
@@ -2778,6 +2829,8 @@ public partial class GrabFrame : Window
         isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
         IReadOnlyList<PdfPageTextLine> pageLines = await _loadedPdfDocument.GetSelectableLinesAsync(_currentPdfPageIndex, CurrentLanguage);
+        if (!IsCurrentRedraw)
+            return;
 
         foreach (PdfPageTextLine pageLine in pageLines)
         {
@@ -2846,19 +2899,22 @@ public partial class GrabFrame : Window
         SyncRectanglesCanvasSizeToImage();
         isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
-        IReadOnlyList<PdfPageTextLine> pageWords = await _loadedPdfDocument.GetSelectableWordsAsync(_currentPdfPageIndex);
+        IReadOnlyList<PdfPageTextLine> pageWords = await _loadedPdfDocument.GetSelectableWordsAsync(_currentPdfPageIndex, CurrentLanguage);
+        if (!IsCurrentRedraw)
+            return;
 
         using System.Drawing.Bitmap bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
 
         foreach (PdfPageTextLine pageWord in pageWords)
         {
+            string wordText = pageWord.IsNativeText ? pageWord.Text : GetNormalizedOcrWordText(pageWord.Text);
             Windows.Foundation.Rect wordRect = pageWord.SourceRect;
             SolidColorBrush backgroundBrush = GetBackgroundBrushFromOcrBitmap(1, bmp, ref wordRect);
 
             WordBorder wordBorderBox = CreateWordBorderFromSourceRect(
                 wordRect,
                 1,
-                pageWord.Text,
+                wordText,
                 lineNumber: 0,
                 backgroundBrush,
                 dpi,
@@ -2911,10 +2967,13 @@ public partial class GrabFrame : Window
         }
         else
         {
-            liveUiAutomationSnapshot = await UIAutomationUtilities.GetOverlaySnapshotFromRegionAsync(
+            overlaySnapshot = await UIAutomationUtilities.GetOverlaySnapshotFromRegionAsync(
                 new Rect(rectCanvasSize.X, rectCanvasSize.Y, rectCanvasSize.Width, rectCanvasSize.Height),
                 GetUiAutomationExcludedHandles());
-            overlaySnapshot = liveUiAutomationSnapshot;
+            if (!IsCurrentRedraw)
+                return;
+
+            liveUiAutomationSnapshot = overlaySnapshot;
         }
 
         if (overlaySnapshot is null || overlaySnapshot.Items.Count == 0)
@@ -4371,15 +4430,7 @@ public partial class GrabFrame : Window
             // Timer-driven redraws are not user actions, so the word borders
             // they render must not be recorded in the undo stack; recording
             // them pinned every rendered border for the life of the frame.
-            isAutoOcrRedrawPass = true;
-            try
-            {
-                await DrawRectanglesAroundWords(searchText);
-            }
-            finally
-            {
-                isAutoOcrRedrawPass = false;
-            }
+            await DrawRectanglesAroundWords(searchText, isAutomaticRedraw: true);
         }
     }
 
@@ -4492,6 +4543,7 @@ public partial class GrabFrame : Window
             // calculates word border positions assuming no zoom transform.
             MainZoomBorder.Reset();
             RectanglesCanvas.RenderTransform = Transform.Identity;
+            redrawCoordinator.Invalidate();
             IsOcrValid = false;
             ocrResultOfWindow = null;
             ClearRenderedWordBorders();
@@ -4799,6 +4851,7 @@ public partial class GrabFrame : Window
         TemplateRegionOverlayCanvas.ClearValue(HeightProperty);
         GrabFrameImage.ClearValue(WidthProperty);
         GrabFrameImage.ClearValue(HeightProperty);
+        redrawCoordinator.Invalidate();
         IsOcrValid = false;
         ocrResultOfWindow = null;
         liveUiAutomationSnapshot = null;

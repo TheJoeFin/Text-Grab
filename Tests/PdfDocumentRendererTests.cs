@@ -1,3 +1,4 @@
+using Text_Grab.Models;
 using Text_Grab.Utilities;
 using UglyToad.PdfPig.Core;
 using Windows.Media.Ocr;
@@ -137,8 +138,178 @@ public class PdfDocumentRendererTests
 
         Assert.True(pageContent.HasNativeText);
         Assert.True(words.Count > pageContent.NativeLines.Count);
-        Assert.All(words, word => Assert.True(word.IsNativeText));
+        Assert.All(pageContent.NativeWords, word => Assert.Contains(word, words));
         Assert.Contains(words, word => word.Text == "Milwaukee,");
+    }
+
+    [Fact]
+    public void CombineNativeAndOcrWords_PreservesScannedTableWithNativePageNumber()
+    {
+        PdfPageTextLine pageNumber = new(new Windows.Foundation.Rect(150, 280, 10, 10), "1", isNativeText: true);
+        GeneratedOcrLinesWords ocrResult = new()
+        {
+            Lines =
+            [
+                new GeneratedOcrLine
+                {
+                    Words =
+                    [
+                        new GeneratedOcrWord { Text = "Quantity", BoundingBox = new(200, 40, 60, 12) },
+                        new GeneratedOcrWord { Text = "Item", BoundingBox = new(40, 40, 40, 12) }
+                    ]
+                },
+                new GeneratedOcrLine
+                {
+                    Words =
+                    [
+                        new GeneratedOcrWord { Text = "Apple", BoundingBox = new(40, 80, 40, 12) },
+                        new GeneratedOcrWord { Text = "2", BoundingBox = new(200, 80, 10, 12) }
+                    ]
+                },
+                GeneratedOcrLine.FromText("1", pageNumber.SourceRect)
+            ]
+        };
+
+        IReadOnlyList<PdfPageTextLine> words = PdfDocumentRenderer.CombineNativeAndOcrWords(
+            [pageNumber], [new(0, 0, 300, 300)], ocrResult, scale: 1);
+
+        Assert.Equal(["Item", "Quantity", "Apple", "2", "1"], words.Select(word => word.Text).ToArray());
+        Assert.All(words.Take(4), word => Assert.False(word.IsNativeText));
+        Assert.Same(pageNumber, words[^1]);
+        Assert.Equal(160, words[1].SourceRect.Left - words[0].SourceRect.Left);
+    }
+
+    [Theory]
+    [InlineData(0.5)]
+    [InlineData(1)]
+    [InlineData(2.5)]
+    public void CombineNativeAndOcrWords_MapsScaledOcrToPageBeforeFiltering(double scale)
+    {
+        Windows.Foundation.Rect imageRegion = PdfDocumentRenderer.ConvertPdfRectToImageRect(
+            new PdfRectangle(40, 90, 160, 170), 200, 200, 400, 400);
+        Windows.Foundation.Rect imageWordRect = new(110, 90, 40, 12);
+        PdfPageTextLine nativeWord = new(new Windows.Foundation.Rect(180, 90, 50, 12), "Native", isNativeText: true);
+        GeneratedOcrLinesWords ocrResult = new()
+        {
+            Lines =
+            [
+                GeneratedOcrLine.FromText("Image", new(
+                    imageWordRect.X * scale, imageWordRect.Y * scale,
+                    imageWordRect.Width * scale, imageWordRect.Height * scale)),
+                GeneratedOcrLine.FromText("Duplicate", new(180 * scale, 90 * scale, 50 * scale, 12 * scale)),
+                GeneratedOcrLine.FromText("Outside image", new(10 * scale, 10 * scale, 40 * scale, 12 * scale))
+            ]
+        };
+
+        IReadOnlyList<PdfPageTextLine> words = PdfDocumentRenderer.CombineNativeAndOcrWords(
+            [nativeWord], [imageRegion], ocrResult, scale);
+
+        Assert.Collection(
+            words,
+            imageWord =>
+            {
+                Assert.Equal("Image", imageWord.Text);
+                Assert.Equal(imageWordRect, imageWord.SourceRect);
+                Assert.False(imageWord.IsNativeText);
+            },
+            word => Assert.Same(nativeWord, word));
+    }
+
+    [Fact]
+    public void CombineNativeAndOcrWords_SuppressesNativeOverlapsWithoutDroppingColumnGaps()
+    {
+        PdfPageTextLine leftWord = new(new Windows.Foundation.Rect(10, 40, 20, 12), "10", isNativeText: true);
+        PdfPageTextLine rightWord = new(new Windows.Foundation.Rect(190, 40, 20, 12), "30", isNativeText: true);
+        GeneratedOcrLinesWords ocrResult = new()
+        {
+            Lines =
+            [
+                new GeneratedOcrLine
+                {
+                    Words =
+                    [
+                        new GeneratedOcrWord { Text = "1O", BoundingBox = new(12, 41, 20, 12) },
+                        new GeneratedOcrWord { Text = "10", BoundingBox = new(100, 40, 20, 12) },
+                        new GeneratedOcrWord { Text = "3O", BoundingBox = new(188, 39, 20, 12) }
+                    ]
+                }
+            ]
+        };
+
+        IReadOnlyList<PdfPageTextLine> words = PdfDocumentRenderer.CombineNativeAndOcrWords(
+            [leftWord, rightWord], [new(0, 0, 240, 100)], ocrResult, scale: 1);
+
+        Assert.Collection(
+            words,
+            word => Assert.Same(leftWord, word),
+            imageWord =>
+            {
+                Assert.Equal("10", imageWord.Text);
+                Assert.Equal(100, imageWord.SourceRect.X);
+                Assert.False(imageWord.IsNativeText);
+            },
+            word => Assert.Same(rightWord, word));
+    }
+
+    [Fact]
+    public void CombineNativeAndOcrWords_OverlappingImagesDoNotDuplicateWords()
+    {
+        PdfPageTextLine nativeWord = new(new Windows.Foundation.Rect(0, 0, 20, 10), "Native", isNativeText: true);
+        GeneratedOcrLinesWords ocrResult = GeneratedOcrLinesWords.FromParagraph("Image", new(100, 100, 20, 10));
+
+        IReadOnlyList<PdfPageTextLine> words = PdfDocumentRenderer.CombineNativeAndOcrWords(
+            [nativeWord], [new(90, 90, 50, 40), new(100, 100, 60, 50)], ocrResult, scale: 1);
+
+        Assert.Equal(2, words.Count);
+        Assert.Single(words, word => word.Text == "Image");
+    }
+
+    [Fact]
+    public void CombineNativeAndOcrWords_FiltersEmptyWordsAndInsignificantImageOverlap()
+    {
+        PdfPageTextLine nativeWord = new(new Windows.Foundation.Rect(0, 0, 20, 10), "Native", isNativeText: true);
+        GeneratedOcrLinesWords ocrResult = new()
+        {
+            Lines =
+            [
+                GeneratedOcrLine.FromText("Keep", new(105, 105, 10, 10)),
+                GeneratedOcrLine.FromText("Outside", new(108, 108, 10, 10)),
+                GeneratedOcrLine.FromText(" ", new(100, 100, 10, 10)),
+                GeneratedOcrLine.FromText("Empty bounds", new(100, 100, 0, 10))
+            ]
+        };
+
+        IReadOnlyList<PdfPageTextLine> words = PdfDocumentRenderer.CombineNativeAndOcrWords(
+            [nativeWord], [new(100, 100, 10, 10)], ocrResult, scale: 1);
+
+        Assert.Equal(["Native", "Keep"], words.Select(word => word.Text).ToArray());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CombineNativeAndOcrWords_MissingOcrPreservesNativeWords(bool nullResult)
+    {
+        IReadOnlyList<PdfPageTextLine> nativeWords =
+            [new(new Windows.Foundation.Rect(10, 10, 40, 12), "Native", isNativeText: true)];
+
+        IReadOnlyList<PdfPageTextLine> words = PdfDocumentRenderer.CombineNativeAndOcrWords(
+            nativeWords, [new(0, 0, 100, 100)], nullResult ? null : new GeneratedOcrLinesWords(), scale: 1);
+
+        Assert.Same(nativeWords, words);
+    }
+
+    [Fact]
+    public void CombineNativeAndOcrWords_WithoutImagesPreservesNativeWords()
+    {
+        IReadOnlyList<PdfPageTextLine> nativeWords =
+            [new(new Windows.Foundation.Rect(10, 10, 40, 12), "Native", isNativeText: true)];
+        GeneratedOcrLinesWords ocrResult = GeneratedOcrLinesWords.FromParagraph("Ignore", new(100, 100, 20, 10));
+
+        IReadOnlyList<PdfPageTextLine> words = PdfDocumentRenderer.CombineNativeAndOcrWords(
+            nativeWords, [], ocrResult, scale: 1);
+
+        Assert.Same(nativeWords, words);
     }
 
     [Fact]

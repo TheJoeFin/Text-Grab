@@ -203,14 +203,23 @@ internal sealed class PdfDocumentRenderer : IDisposable
     }
 
     /// <summary>
-    /// Returns individual native words (not grouped into lines) for table detection.
+    /// Returns individual native words and OCR words from embedded images for table detection.
+    /// Bounds are in rendered-page pixel coordinates, independent of the OCR scale.
     /// Empty when the page has no native text (e.g. a scanned page), since callers on
     /// that path already fall back to word-level OCR of the rendered page.
     /// </summary>
-    public async Task<IReadOnlyList<PdfPageTextLine>> GetSelectableWordsAsync(int pageIndex)
+    public async Task<IReadOnlyList<PdfPageTextLine>> GetSelectableWordsAsync(int pageIndex, ILanguage? language = null)
     {
         PdfPageContent pageContent = await GetPageContentAsync(pageIndex);
-        return pageContent.NativeWords;
+        if (!pageContent.HasNativeText || pageContent.ImageRegions.Count == 0)
+            return pageContent.NativeWords;
+
+        ILanguage resolvedLanguage = language ?? LanguageUtilities.GetCurrentInputLanguage();
+        using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(pageContent.RenderedPage);
+        // Recognize the page once so overlapping image regions do not duplicate words
+        // and all OCR bounds share the rendered page's origin.
+        (IOcrLinesWords? ocrResult, double scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, resolvedLanguage);
+        return CombineNativeAndOcrWords(pageContent.NativeWords, pageContent.ImageRegions, ocrResult, scale);
     }
 
     public async Task<BitmapSource> RenderPageAsync(int pageIndex)
@@ -439,6 +448,41 @@ internal sealed class PdfDocumentRenderer : IDisposable
         }
 
         return false;
+    }
+
+    internal static IReadOnlyList<PdfPageTextLine> CombineNativeAndOcrWords(
+        IReadOnlyList<PdfPageTextLine> nativeWords,
+        IReadOnlyList<Windows.Foundation.Rect> imageRegions,
+        IOcrLinesWords? ocrResult,
+        double scale)
+    {
+        if (ocrResult is null || ocrResult.Lines.Length == 0 || imageRegions.Count == 0)
+            return nativeWords;
+
+        List<PdfPageTextLine> combinedWords = [.. nativeWords];
+        // Native line bounds span column gaps that can contain image-only table cells.
+        IReadOnlyList<Windows.Foundation.Rect> nativeRects = [.. nativeWords.Select(word => word.SourceRect)];
+
+        foreach (IOcrWord ocrWord in ocrResult.Lines.SelectMany(line => line.Words))
+        {
+            if (string.IsNullOrWhiteSpace(ocrWord.Text))
+                continue;
+
+            Windows.Foundation.Rect scaledRect = ocrWord.BoundingBox;
+            Windows.Foundation.Rect sourceRect = new(
+                scaledRect.X / scale,
+                scaledRect.Y / scale,
+                scaledRect.Width / scale,
+                scaledRect.Height / scale);
+
+            if (!ShouldIncludeOcrLine(sourceRect, imageRegions)
+                || ShouldIncludeOcrLine(sourceRect, nativeRects))
+                continue;
+
+            combinedWords.Add(new PdfPageTextLine(sourceRect, ocrWord.Text.Trim(), isNativeText: false));
+        }
+
+        return SortLines(combinedWords);
     }
 
     private static PdfPageRenderOptions CreateRenderOptions(WinPdfPage page)
