@@ -105,6 +105,7 @@ internal static partial class WinAiTranslator
     /// <summary>
     /// Drops the cached language model to free the memory it holds. The next translation recreates
     /// it, so call this when translation is switched off rather than between translations.
+    /// Release is queued behind any active AI request without blocking the caller.
     /// </summary>
     internal static void ReleaseModel() => WinAiLanguageModel.ReleaseModel();
 

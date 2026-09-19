@@ -70,12 +70,12 @@ internal readonly record struct WinAiGenerationResult(string? Text, WinAiFailure
 internal static class WinAiLanguageModel
 {
     private static LanguageModel? _languageModel;
-    private static readonly SemaphoreSlim _modelLock = new(1, 1);
 
     // Phi Silica serves one generation at a time; queueing here keeps concurrent callers from
-    // interleaving requests on the shared model, which previously showed up as long stalls.
+    // interleaving requests on the shared model. Creation, warm-up and external release take the
+    // same lease, so no window can dispose the model while another feature is using it.
     private static readonly SemaphoreSlim _inferenceLock = new(1, 1);
-    private static bool _disposed;
+    private static volatile bool _disposed;
 
     #region availability
 
@@ -125,18 +125,20 @@ internal static class WinAiLanguageModel
     /// Private on purpose: a caller that held on to the returned model would keep using it after a
     /// dropped connection forced a restart. Features call <see cref="EnsureModelAsync"/> to check
     /// the model can be started, then <see cref="GenerateAsync"/>, which always uses the current one.
+    /// The caller must hold the inference lease, including when only warming up the model.
     /// </remarks>
     private static async Task<(LanguageModel? Model, string? Error)> GetModelAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_disposed)
+            return (null, "The Windows AI language model has been shut down.");
+
         if (_languageModel is not null)
             return (_languageModel, null);
 
-        await _modelLock.WaitAsync(cancellationToken);
         try
         {
-            if (_languageModel is not null)
-                return (_languageModel, null);
-
             (bool available, string? reason) = CheckAvailability();
             if (!available)
                 return (null, reason);
@@ -165,10 +167,6 @@ internal static class WinAiLanguageModel
             Debug.WriteLine($"LanguageModel creation failed: {ex.Message}");
             return (null, $"The Windows AI language model could not be started: {ex.Message}");
         }
-        finally
-        {
-            _modelLock.Release();
-        }
     }
 
     /// <summary>
@@ -177,6 +175,7 @@ internal static class WinAiLanguageModel
     /// </summary>
     internal static async Task<(bool Ready, string? Error)> EnsureModelAsync(CancellationToken cancellationToken)
     {
+        using IDisposable lease = await AcquireInferenceAsync(cancellationToken);
         (LanguageModel? model, string? error) = await GetModelAsync(cancellationToken);
         return (model is not null, error);
     }
@@ -220,7 +219,18 @@ internal static class WinAiLanguageModel
         if (_disposed)
             return;
 
-        await ReleaseModelAsync(cancellationToken);
+        using IDisposable lease = await AcquireInferenceAsync(cancellationToken)
+            .ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+        RestartModelUnderInferenceLease(cancellationToken);
+    }
+
+    private static void RestartModelUnderInferenceLease(CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            return;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        ReleaseModelUnderInferenceLease();
 
         // A failure to unlock the Limited Access Feature is cached for the life of the process, so
         // forget it too: a transient failure there would otherwise fail the retry before it starts.
@@ -232,16 +242,20 @@ internal static class WinAiLanguageModel
     /// so call this when a feature is switched off rather than between requests.
     /// </summary>
     /// <remarks>
-    /// Takes the same lock <see cref="GetModelAsync"/> creates the model under, so a release from one
-    /// window (the GrabFrame translate toggle, its cleanup) cannot dispose the model while another
-    /// window is still building it.
+    /// Waits for creation and every inference using the model, including a multi-request lease.
+    /// Recovery inside a request must use <see cref="RestartModelUnderInferenceLease"/> instead,
+    /// since it already holds the lease and acquiring it again would deadlock.
     /// </remarks>
     internal static async Task ReleaseModelAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed)
-            return;
+        // Even an uncontended release must not dispose a native model on the caller's UI thread.
+        using IDisposable lease = await AcquireInferenceAsync(cancellationToken)
+            .ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+        ReleaseModelUnderInferenceLease();
+    }
 
-        await _modelLock.WaitAsync(cancellationToken);
+    private static void ReleaseModelUnderInferenceLease()
+    {
         try
         {
             _languageModel?.Dispose();
@@ -254,13 +268,12 @@ internal static class WinAiLanguageModel
         finally
         {
             _languageModel = null;
-            _modelLock.Release();
         }
     }
 
     /// <summary>
     /// Fire-and-forget <see cref="ReleaseModelAsync"/> for callers that cannot await (window cleanup,
-    /// a toggle handler). The model is freed once any in-flight creation finishes.
+    /// a toggle handler). The model is freed once any in-flight creation and inference finish.
     /// </summary>
     internal static void ReleaseModel() => _ = ReleaseModelAsync();
 
@@ -272,21 +285,11 @@ internal static class WinAiLanguageModel
 
         _disposed = true;
 
-        // The process is exiting, so dispose the model directly instead of waiting on the model lock.
-        try
-        {
-            _languageModel?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Disposing the language model failed: {ex.Message}");
-        }
+        // Stop new creation immediately, but let an active request finish before disposing its
+        // native model. Shutdown must not block the UI thread waiting for that request.
+        ReleaseModel();
 
-        _languageModel = null;
-
-        // The semaphores are deliberately left undisposed: they hold nothing worth reclaiming at
-        // exit, and disposing them throws ObjectDisposedException into any pending WaitAsync — after
-        // which InferenceLease.Dispose() skips its Release() and the queue is wedged for good.
+        // Leave the semaphore alive so active leases can release it and queued callers can finish.
     }
 
     #endregion availability
@@ -333,21 +336,18 @@ internal static class WinAiLanguageModel
     /// </summary>
     internal static async Task<IDisposable> AcquireInferenceAsync(CancellationToken cancellationToken)
     {
-        await _inferenceLock.WaitAsync(cancellationToken);
+        await _inferenceLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         return new InferenceLease();
     }
 
     private sealed class InferenceLease : IDisposable
     {
-        private bool _released;
+        private int _released;
 
         public void Dispose()
         {
-            if (_released || _disposed)
-                return;
-
-            _released = true;
-            _inferenceLock.Release();
+            if (Interlocked.Exchange(ref _released, 1) == 0)
+                _inferenceLock.Release();
         }
     }
 
@@ -387,7 +387,7 @@ internal static class WinAiLanguageModel
             return result;
 
         Debug.WriteLine($"Windows AI connection lost, restarting the language model: {result.Message}");
-        await RestartModelAsync(cancellationToken);
+        RestartModelUnderInferenceLease(cancellationToken);
 
         (model, error) = await GetModelAsync(cancellationToken);
         if (model is null)
@@ -436,7 +436,7 @@ internal static class WinAiLanguageModel
             catch (Exception ex) when (IsConnectionLost(ex))
             {
                 Debug.WriteLine($"Windows AI connection lost, restarting the language model: {ex.Message}");
-                await RestartModelAsync(cancellationToken);
+                RestartModelUnderInferenceLease(cancellationToken);
 
                 (model, error) = await GetModelAsync(cancellationToken);
                 if (model is null)
