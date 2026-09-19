@@ -1,128 +1,153 @@
-$Version = Get-Date -Format "yyyy-MM-dd"
+param(
+    [ValidateSet("Prod", "Beta")]
+    [string]$Routine
+)
+
+$ErrorActionPreference = "Stop"
+
 $Project = "Text-Grab"
+$ProjectPath = "$PSScriptRoot\$Project\$Project.csproj"
+$BuildRoot = "$PSScriptRoot\bld"
+$PublishRoot = "$BuildRoot\publish"
+$ArtifactPath = "$BuildRoot\artifacts"
 
-# Define build paths for both architectures
-$BuildPathX64 = "$PSScriptRoot\bld\x64"
-$BuildPathX64SC = "$PSScriptRoot\bld\x64\Text-Grab-Self-Contained"
-$BuildPathArm64 = "$PSScriptRoot\bld\Arm64"
-$BuildPathArm64SC = "$PSScriptRoot\bld\Arm64\Text-Grab-Self-Contained"
+$BuildPathX64 = "$PublishRoot\x64"
+$BuildPathX64SC = "$PublishRoot\x64-self-contained"
+$BuildPathArm64 = "$PublishRoot\arm64"
+$BuildPathArm64SC = "$PublishRoot\arm64-self-contained"
 
-# Define archive paths
-$ArchiveX64SC = "$BuildPathX64\$Project-x64-Self-Contained-$Version.zip"
-$ArchiveARM64SC = "$BuildPathArm64\$Project-Arm64-Self-Contained-$Version.zip"
+$ArtifactX64 = "$ArtifactPath\$Project.exe"
+$ArtifactArm64 = "$ArtifactPath\$Project-arm64.exe"
+$ArtifactX64SC = "$ArtifactPath\$Project-x64-Self-Contained"
+$ArtifactArm64SC = "$ArtifactPath\$Project-arm64-Self-Contained"
 
-Write-Host "Building Text-Grab for x64 and Arm64 architectures..." -ForegroundColor Green
-Write-Host "Build Date: $Version" -ForegroundColor Yellow
+function Select-BuildRoutine {
+    while ($true) {
+        Write-Host "Select a build routine:" -ForegroundColor Cyan
+        Write-Host "  1. Prod - leave self-contained builds unzipped for signing"
+        Write-Host "  2. Beta - create upload-ready ZIP archives"
 
-# Clean up existing build directories
-Write-Host "`nCleaning up existing build directories..." -ForegroundColor Cyan
-if (Test-Path -Path $BuildPathX64) {
-    Remove-Item $BuildPathX64 -Recurse -Force
+        switch ((Read-Host "Enter 1 or 2").Trim().ToLowerInvariant()) {
+            { $_ -in "1", "prod" } {
+                return "Prod"
+            }
+            { $_ -in "2", "beta" } {
+                return "Beta"
+            }
+            default {
+                Write-Host "Please enter 1 for Prod or 2 for Beta.`n" -ForegroundColor Yellow
+            }
+        }
+    }
 }
-if (Test-Path -Path $BuildPathArm64) {
-    Remove-Item $BuildPathArm64 -Recurse -Force
+
+function Invoke-Publish {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Runtime,
+
+        [Parameter(Mandatory)]
+        [string]$OutputPath,
+
+        [Parameter(Mandatory)]
+        [bool]$SelfContained
+    )
+
+    $BuildType = if ($SelfContained) { "self-contained" } else { "framework-dependent" }
+    Write-Host "Building $Runtime $BuildType..." -ForegroundColor Yellow
+
+    $Arguments = @(
+        "publish"
+        $ProjectPath
+        "--runtime", $Runtime
+        "--configuration", "Release"
+        "--verbosity", "minimal"
+        "--output", $OutputPath
+        "-p:EnableMsixTooling=true"
+        "-p:PublishSingleFile=true"
+        "-p:CopyOutputSymbolsToPublishDirectory=false"
+        "--nologo"
+    )
+
+    if ($SelfContained) {
+        $Arguments += @(
+            "--self-contained"
+            "-p:DebugSymbols=false"
+            "-p:DebugType=None"
+        )
+    }
+    else {
+        $Arguments += "--no-self-contained"
+    }
+
+    if ($Runtime -eq "win-x64") {
+        $Arguments += "-p:PublishReadyToRun=$($SelfContained.ToString().ToLowerInvariant())"
+    }
+
+    & dotnet @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "The $Runtime $BuildType publish failed with exit code $LASTEXITCODE."
+    }
 }
 
-# Create build directories
-New-Item -ItemType Directory -Path $BuildPathX64 -Force | Out-Null
-New-Item -ItemType Directory -Path $BuildPathArm64 -Force | Out-Null
+if ([string]::IsNullOrWhiteSpace($Routine)) {
+    $Routine = Select-BuildRoutine
+}
+
+Write-Host "`nBuilding Text Grab using the $Routine routine..." -ForegroundColor Green
+
+Write-Host "`nCleaning previous build output..." -ForegroundColor Cyan
+if (Test-Path $PublishRoot) {
+    Remove-Item $PublishRoot -Recurse -Force
+}
+if (Test-Path $ArtifactPath) {
+    Remove-Item $ArtifactPath -Recurse -Force
+}
+
+New-Item -ItemType Directory -Path $PublishRoot, $ArtifactPath -Force | Out-Null
 
 Write-Host "`n=== Building x64 Versions ===" -ForegroundColor Magenta
-
-# Build x64 Framework-Dependent
-Write-Host "Building x64 framework-dependent..." -ForegroundColor Yellow
-dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
-    --runtime win-x64 `
-    --no-self-contained `
-    -c Release `
-    -v minimal `
-    -o $BuildPathX64 `
-    -p:EnableMsixTooling=true `
-    -p:PublishReadyToRun=false `
-    -p:PublishSingleFile=true `
-    -p:CopyOutputSymbolsToPublishDirectory=false `
-    --nologo
-
-# Build x64 Self-Contained
-Write-Host "Building x64 self-contained..." -ForegroundColor Yellow
-dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
-    --runtime win-x64 `
-    --self-contained `
-    -c Release `
-    -v minimal `
-    -o $BuildPathX64SC `
-    -p:EnableMsixTooling=true `
-    -p:WindowsAppSDKSelfContained=true `
-    -p:PublishReadyToRun=true `
-    -p:PublishSingleFile=true `
-    -p:CopyOutputSymbolsToPublishDirectory=false `
-    --nologo
+Invoke-Publish -Runtime "win-x64" -OutputPath $BuildPathX64 -SelfContained $false
+Invoke-Publish -Runtime "win-x64" -OutputPath $BuildPathX64SC -SelfContained $true
 
 Write-Host "`n=== Building ARM64 Versions ===" -ForegroundColor Magenta
+Invoke-Publish -Runtime "win-arm64" -OutputPath $BuildPathArm64 -SelfContained $false
+Invoke-Publish -Runtime "win-arm64" -OutputPath $BuildPathArm64SC -SelfContained $true
 
-# Build ARM64 Framework-Dependent
-Write-Host "Building ARM64 framework-dependent..." -ForegroundColor Yellow
-dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
-    --runtime win-arm64 `
-    --no-self-contained `
-    -c Release `
-    -v minimal `
-    -o $BuildPathArm64 `
-    -p:PublishSingleFile=true `
-    -p:EnableMsixTooling=true `
-    -p:CopyOutputSymbolsToPublishDirectory=false `
-    --nologo
+Write-Host "`n=== Collecting Artifacts ===" -ForegroundColor Magenta
+Move-Item "$BuildPathX64\$Project.exe" $ArtifactX64
+Move-Item "$BuildPathArm64\$Project.exe" $ArtifactArm64
+Rename-Item "$BuildPathArm64SC\$Project.exe" "$Project-arm64.exe"
 
-# Build ARM64 Self-Contained
-Write-Host "Building ARM64 self-contained..." -ForegroundColor Yellow
-dotnet publish "$PSScriptRoot\$Project\$Project.csproj" `
-    --runtime win-arm64 `
-    --self-contained `
-    -c Release `
-    -v minimal `
-    -o $BuildPathArm64SC `
-    -p:PublishSingleFile=true `
-    -p:EnableMsixTooling=true `
-    -p:WindowsAppSDKSelfContained=true `
-    -p:CopyOutputSymbolsToPublishDirectory=false `
-    --nologo
+if ($Routine -eq "Beta") {
+    $ArchiveX64SC = "$ArtifactX64SC.zip"
+    $ArchiveArm64SC = "$ArtifactArm64SC.zip"
 
-Write-Host "`n=== Renaming ARM64 Executables ===" -ForegroundColor Magenta
+    Write-Host "Creating x64 self-contained archive..." -ForegroundColor Yellow
+    Compress-Archive -Path "$BuildPathX64SC\*" -DestinationPath $ArchiveX64SC -Force
 
-# Rename ARM64 Framework-Dependent executable
-Write-Host "Renaming ARM64 framework-dependent executable..." -ForegroundColor Yellow
-if (Test-Path "$BuildPathArm64\$Project.exe") {
-    Rename-Item "$BuildPathArm64\$Project.exe" "Text-Grab-arm64.exe"
+    Write-Host "Creating ARM64 self-contained archive..." -ForegroundColor Yellow
+    Compress-Archive -Path "$BuildPathArm64SC\*" -DestinationPath $ArchiveArm64SC -Force
+}
+else {
+    Move-Item $BuildPathX64SC $ArtifactX64SC
+    Move-Item $BuildPathArm64SC $ArtifactArm64SC
 }
 
-# Rename ARM64 Self-Contained executable
-Write-Host "Renaming ARM64 self-contained executable..." -ForegroundColor Yellow
-if (Test-Path "$BuildPathArm64SC\$Project.exe") {
-    Rename-Item "$BuildPathArm64SC\$Project.exe" "Text-Grab-arm64.exe"
-}
+Remove-Item $PublishRoot -Recurse -Force
 
-Write-Host "`n=== Creating Archives ===" -ForegroundColor Magenta
-
-# Create x64 Self-Contained Archive
-Write-Host "Creating x64 self-contained archive..." -ForegroundColor Yellow
-Compress-Archive -Path "$BuildPathX64SC" -DestinationPath $ArchiveX64SC -Force
-
-# Create ARM64 Self-Contained Archive
-Write-Host "Creating ARM64 self-contained archive..." -ForegroundColor Yellow
-Compress-Archive -Path "$BuildPathArm64SC" -DestinationPath $ArchiveARM64SC -Force
-
-Write-Host "`n=== Build Summary ===" -ForegroundColor Green
-Write-Host "x64 Framework-Dependent: $BuildPathX64\$Project.exe" -ForegroundColor White
-Write-Host "x64 Self-Contained: $BuildPathX64SC\$Project.exe" -ForegroundColor White
-Write-Host "x64 Self-Contained Archive: $ArchiveX64SC" -ForegroundColor White
-Write-Host "ARM64 Framework-Dependent: $BuildPathArm64\Text-Grab-arm64.exe" -ForegroundColor White
-Write-Host "ARM64 Self-Contained: $BuildPathArm64SC\Text-Grab-arm64.exe" -ForegroundColor White
-Write-Host "ARM64 Self-Contained Archive: $ArchiveARM64SC" -ForegroundColor White
-
-# Get and display the actual product version from the built executable
 Write-Host "`n=== Version Information ===" -ForegroundColor Cyan
-$versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$BuildPathX64\$Project.exe")
-Write-Host "Product Version: $($versionInfo.ProductVersion)" -ForegroundColor White
-Write-Host "File Version: $($versionInfo.FileVersion)" -ForegroundColor White
+$VersionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($ArtifactX64)
+Write-Host "Product Version: $($VersionInfo.ProductVersion)" -ForegroundColor White
+Write-Host "File Version: $($VersionInfo.FileVersion)" -ForegroundColor White
 
-Write-Host "`nBuild completed successfully!" -ForegroundColor Green
+Write-Host "`n=== Artifacts ===" -ForegroundColor Green
+Get-ChildItem $ArtifactPath | ForEach-Object {
+    Write-Host $_.FullName -ForegroundColor White
+}
+
+if ($Routine -eq "Prod") {
+    Write-Host "`nSign the executables in the self-contained folders before creating the ZIP archives." -ForegroundColor Yellow
+}
+
+Write-Host "`nBuild completed successfully. Artifacts are in: $ArtifactPath" -ForegroundColor Green
