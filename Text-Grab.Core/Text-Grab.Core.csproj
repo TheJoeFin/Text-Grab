@@ -19,7 +19,7 @@
     <PackageReference Include="Microsoft.Recognizers.Text.Number" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.NumberWithUnit" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.Sequence" Version="1.8.13" />
-    <PackageReference Include="NCalcAsync" Version="7.1.0" />
+    <PackageReference Include="NCalcAsync" Version="7.2.0" />
     <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
          build tool. Exclude all its assets so nuget.exe never flows into the output. -->
     <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
@@ -31,7 +31,7 @@
          no such framework reference, so they need this package explicitly. Verified by a
          standalone probe: both types resolve and run correctly on plain net10.0 with this
          package referenced. -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.11" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.12" />
     <PackageReference Include="UnitsNet" Version="5.75.1" />
   </ItemGroup>
 

@@ -45,7 +45,7 @@
 
   <ItemGroup>
     <!-- Windows AI OCR (RecognizedText/RecognizedLine/RecognizedWord) for WinAiOcrLinesWords. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.4.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.5.5" />
     <!-- GDI+ Bitmap barcode reading/writing (BarcodeReader/BarcodeWriter) for BarcodeUtilities. -->
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.16" />
     <!-- Tesseract.exe process invocation for TesseractHelper. -->
@@ -54,8 +54,8 @@
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
     <!-- Magick.NET Compare for ImageChangeDetector. -->
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.17.0" />
-    <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.26" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.17.1" />
+    <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.27" />
     <!--
         Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
         stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
@@ -64,7 +64,7 @@
     -->
     <PackageReference Include="Whisper.net" Version="1.9.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
-    <PackageReference Include="NAudio" Version="3.0.1" />
+    <PackageReference Include="NAudio" Version="3.1.0" />
   </ItemGroup>
 
 </Project>
