@@ -126,8 +126,7 @@ public partial class TextOnlyTemplateDialog : FluentWindow
         bool templateOk = !string.IsNullOrWhiteSpace(OutputTemplateBox.GetSerializedText());
         SaveButton.IsEnabled = nameOk && templateOk;
 
-        if (ErrorText is not null)
-            ErrorText.Visibility = Visibility.Collapsed;
+        ErrorText?.Visibility = Visibility.Collapsed;
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
