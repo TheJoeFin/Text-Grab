@@ -192,7 +192,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="EtwShowTranscribe" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="TranscribeButtonJustIcon" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
