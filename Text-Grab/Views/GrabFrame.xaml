@@ -8,7 +8,6 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Name="GrabFrameWindow"
-    AutomationProperties.AutomationId="GrabFrameWindow"
     Title="Grab Frame"
     Width="800"
     Height="450"
@@ -17,6 +16,7 @@
     Activated="GrabFrameWindow_Activated"
     AllowDrop="True"
     AllowsTransparency="True"
+    AutomationProperties.AutomationId="GrabFrameWindow"
     Background="Transparent"
     BorderBrush="{ui:ThemeResource ApplicationBackgroundBrush}"
     BorderThickness="1"
@@ -162,9 +162,7 @@
                             AutomationProperties.AutomationId="GrabFrame.Menu.Topmost"
                             Header="Keep Grab Frame On Top"
                             IsCheckable="True"
-                            IsChecked="{Binding Topmost,
-                                                ElementName=GrabFrameWindow,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding Topmost, ElementName=GrabFrameWindow, Mode=TwoWay}" />
                         <Separator />
                         <MenuItem x:Name="TranslationMenuItem" Header="Translation to...">
                             <MenuItem
@@ -246,6 +244,7 @@
                             Click="OpenImageMenuItem_Click"
                             Header="Open Image or PDF..."
                             InputGestureText="Ctrl + O" />
+                        <MenuItem Click="CaptureFromCameraMenuItem_Click" Header="Capture from _Camera..." />
                         <MenuItem Click="OpenGrabFrameFileMenuItem_Click" Header="Open Grab Frame File..." />
                         <MenuItem
                             Click="SaveGrabFrameFileMenuItem_Click"
@@ -336,26 +335,20 @@
                             Checked="AspectRationMI_Checked"
                             Header="Maintain Aspect Ratio"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=AspectRationMI,
-                                                Mode=TwoWay}"
+                            IsChecked="{Binding IsChecked, ElementName=AspectRationMI, Mode=TwoWay}"
                             Unchecked="AspectRationMI_Checked" />
                         <MenuItem
                             Click="FreezeToggleButton_Click"
                             Header="Freeze Image In Frame"
                             InputGestureText="F"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=FreezeToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=FreezeToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="TableToggleButton_Click"
                             Header="Analyze as a Table"
                             InputGestureText="T"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=TableToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=TableToggleButton, Mode=TwoWay}" />
                         <MenuItem x:Name="EditTableMenuItem" Header="Table">
                             <MenuItem
                                 x:Name="AddTableRowMenuItem"
@@ -375,17 +368,13 @@
                             Click="EditToggleButton_Click"
                             Header="Allow recognized words to be edited"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=EditToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=EditToggleButton, Mode=TwoWay}" />
                         <MenuItem
                             Click="EditTextBTN_Click"
                             Header="Send results to an Edit Text Window"
                             InputGestureText="E"
                             IsCheckable="True"
-                            IsChecked="{Binding IsChecked,
-                                                ElementName=EditTextToggleButton,
-                                                Mode=TwoWay}" />
+                            IsChecked="{Binding IsChecked, ElementName=EditTextToggleButton, Mode=TwoWay}" />
                         <Separator />
                         <MenuItem
                             x:Name="InvertSelectionMenuItem"
@@ -608,22 +597,22 @@
                     Visibility="Collapsed">
                     <Button
                         x:Name="MinimizeButton"
-                        AutomationProperties.AutomationId="GrabFrame.MinimizeButton"
-                        AutomationProperties.Name="Minimize"
                         Width="46"
                         Height="32"
                         Margin="0,-2,0,0"
+                        AutomationProperties.AutomationId="GrabFrame.MinimizeButton"
+                        AutomationProperties.Name="Minimize"
                         Click="OnMinimizeButtonClick"
                         Style="{StaticResource TitleBarButtonStyle}">
                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
                     </Button>
                     <Button
                         x:Name="RestoreButton"
-                        AutomationProperties.AutomationId="GrabFrame.RestoreButton"
-                        AutomationProperties.Name="Restore"
                         Width="46"
                         Height="32"
                         Margin="0,-2,0,0"
+                        AutomationProperties.AutomationId="GrabFrame.RestoreButton"
+                        AutomationProperties.Name="Restore"
                         Click="OnRestoreButtonClick"
                         Style="{StaticResource TitleBarButtonStyle}">
                         <TextBlock
@@ -633,11 +622,11 @@
                     </Button>
                     <Button
                         x:Name="CloseButton"
-                        AutomationProperties.AutomationId="GrabFrame.CloseButton"
-                        AutomationProperties.Name="Close"
                         Width="46"
                         Height="32"
                         Margin="0,-2,0,0"
+                        AutomationProperties.AutomationId="GrabFrame.CloseButton"
+                        AutomationProperties.Name="Close"
                         Click="OnCloseButtonClick"
                         Style="{StaticResource TitleBarCloseButtonStyle}">
                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="" />
@@ -647,40 +636,42 @@
             </Grid>
             <Border
                 x:Name="RectanglesBorder"
-                AutomationProperties.AutomationId="GrabFrame.Content"
                 Grid.Row="1"
+                AutomationProperties.AutomationId="GrabFrame.Content"
                 ClipToBounds="True">
                 <Border.Background>
                     <SolidColorBrush Opacity=".05" Color="White" />
                 </Border.Background>
                 <Grid>
-                    <controls:ZoomBorder x:Name="MainZoomBorder" AutomationProperties.AutomationId="GrabFrame.ZoomSurface" AutomationProperties.Name="Capture image zoom and pan surface">
+                    <controls:ZoomBorder
+                        x:Name="MainZoomBorder"
+                        AutomationProperties.AutomationId="GrabFrame.ZoomSurface"
+                        AutomationProperties.Name="Capture image zoom and pan surface">
                         <Viewbox Name="CanvasViewBox">
                             <Grid>
                                 <Image
                                     x:Name="GrabFrameImage"
-                                    AutomationProperties.AutomationId="GrabFrame.Image"
                                     Grid.Row="1"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="GrabFrame.Image"
                                     Opacity="0"
                                     Stretch="Uniform" />
                                 <Canvas
                                     x:Name="PdfTextCanvas"
+                                    Margin="0"
                                     AutomationProperties.AutomationId="GrabFrame.PdfTextCanvas"
                                     AutomationProperties.Name="PDF text overlay"
-                                    Margin="0"
                                     ClipToBounds="True"
-                                    ContextMenu="{Binding ContextMenu,
-                                                          ElementName=RectanglesCanvas}"
+                                    ContextMenu="{Binding ContextMenu, ElementName=RectanglesCanvas}"
                                     MouseDown="RectanglesCanvas_MouseDown"
                                     MouseMove="RectanglesCanvas_MouseMove"
                                     MouseUp="RectanglesCanvas_MouseUp" />
                                 <Canvas
                                     x:Name="RectanglesCanvas"
+                                    Margin="0"
                                     AutomationProperties.AutomationId="GrabFrame.WordBordersCanvas"
                                     AutomationProperties.Name="Recognized word borders"
-                                    Margin="0"
                                     Background="Transparent"
                                     Focusable="True"
                                     IsHitTestVisible="True"
@@ -697,6 +688,7 @@
                                                 Click="OpenImageMenuItem_Click"
                                                 Header="Open Image or PDF..."
                                                 InputGestureText="Ctrl + O" />
+                                            <MenuItem Click="CaptureFromCameraMenuItem_Click" Header="Capture from _Camera..." />
                                             <Separator />
                                             <MenuItem
                                                 x:Name="CopyText"
@@ -737,16 +729,16 @@
                                 </Canvas>
                                 <Canvas
                                     x:Name="TemplateRegionOverlayCanvas"
-                                    AutomationProperties.AutomationId="GrabFrame.TemplateRegions"
                                     Margin="-4,-2,0,0"
                                     Panel.ZIndex="5"
+                                    AutomationProperties.AutomationId="GrabFrame.TemplateRegions"
                                     ClipToBounds="True"
                                     IsHitTestVisible="False" />
                                 <Canvas
                                     x:Name="TablePlacementOverlayCanvas"
-                                    AutomationProperties.AutomationId="GrabFrame.TablePlacementSurface"
                                     Margin="0"
                                     Panel.ZIndex="6"
+                                    AutomationProperties.AutomationId="GrabFrame.TablePlacementSurface"
                                     ClipToBounds="True"
                                     IsHitTestVisible="False" />
                             </Grid>
@@ -754,11 +746,11 @@
                     </controls:ZoomBorder>
                     <Border
                         x:Name="TablePlacementBanner"
-                        AutomationProperties.AutomationId="GrabFrame.TablePlacementStatus"
                         Margin="16"
                         Padding="12,8"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Top"
+                        AutomationProperties.AutomationId="GrabFrame.TablePlacementStatus"
                         Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                         BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"
@@ -780,18 +772,18 @@
                                 Text="Click to place a table divider." />
                             <Button
                                 x:Name="CancelTablePlacementButton"
-                                AutomationProperties.AutomationId="GrabFrame.CancelTablePlacementButton"
                                 MinWidth="72"
+                                AutomationProperties.AutomationId="GrabFrame.CancelTablePlacementButton"
                                 Click="CancelTablePlacement_Click"
                                 Content="Cancel" />
                         </StackPanel>
                     </Border>
                     <Border
                         x:Name="TranslationProgressBorder"
-                        AutomationProperties.AutomationId="GrabFrame.TranslationProgress"
                         Height="40"
                         Margin="8"
                         VerticalAlignment="Bottom"
+                        AutomationProperties.AutomationId="GrabFrame.TranslationProgress"
                         Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                         BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"
@@ -824,8 +816,8 @@
                                 Orientation="Vertical">
                                 <TextBlock
                                     x:Name="TranslationProgressText"
-                                    AutomationProperties.AutomationId="GrabFrame.TranslationProgressText"
                                     Margin="0,0,0,2"
+                                    AutomationProperties.AutomationId="GrabFrame.TranslationProgressText"
                                     FontSize="12"
                                     FontWeight="SemiBold"
                                     Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
@@ -847,12 +839,12 @@
                                 Text="0/0" />
                             <Button
                                 x:Name="CancelTranslationButton"
-                                AutomationProperties.AutomationId="GrabFrame.CancelTranslationButton"
                                 Grid.Column="3"
                                 Width="28"
                                 Height="28"
                                 Padding="0"
                                 VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="GrabFrame.CancelTranslationButton"
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Click="CancelTranslationButton_Click"
@@ -866,10 +858,10 @@
                     </Border>
                     <Border
                         x:Name="SpeakingProgressBorder"
-                        AutomationProperties.AutomationId="GrabFrame.SpeakingStatus"
                         Height="40"
                         Margin="8"
                         VerticalAlignment="Bottom"
+                        AutomationProperties.AutomationId="GrabFrame.SpeakingStatus"
                         Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                         BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"
@@ -909,13 +901,13 @@
                             </StackPanel>
                             <Button
                                 x:Name="StopSpeakingButton"
-                                AutomationProperties.AutomationId="GrabFrame.StopSpeakingButton"
                                 Grid.Column="2"
                                 Width="28"
                                 Height="28"
                                 Margin="12,0,0,0"
                                 Padding="0"
                                 VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="GrabFrame.StopSpeakingButton"
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Click="StopSpeakingButton_Click"
@@ -929,12 +921,12 @@
                     </Border>
                     <Border
                         x:Name="FrameMessageBorder"
-                        AutomationProperties.AutomationId="GrabFrame.Status"
                         MaxWidth="420"
                         Margin="16,16,16,20"
                         Padding="12,8"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Bottom"
+                        AutomationProperties.AutomationId="GrabFrame.Status"
                         Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                         BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"
@@ -960,8 +952,8 @@
             <!--  Template Save Panel (collapsed by default, shown when Save as Template is toggled)  -->
             <Border
                 x:Name="TemplateSavePanel"
-                AutomationProperties.AutomationId="GrabFrame.TemplateSavePanel"
                 Grid.Row="2"
+                AutomationProperties.AutomationId="GrabFrame.TemplateSavePanel"
                 Background="{ui:ThemeResource ApplicationBackgroundBrush}"
                 BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,1,0,0"
@@ -982,10 +974,10 @@
                         Text="Template Name:" />
                     <TextBox
                         x:Name="TemplateNameBox"
-                        AutomationProperties.AutomationId="GrabFrame.TemplateName"
                         Grid.Column="1"
                         Padding="4,2"
-                        VerticalContentAlignment="Center" />
+                        VerticalContentAlignment="Center"
+                        AutomationProperties.AutomationId="GrabFrame.TemplateName" />
                     <TextBlock
                         Grid.Column="2"
                         Margin="8,0,6,0"
@@ -994,11 +986,11 @@
                         ToolTip="Type { to insert a region chip. Plain text is also supported." />
                     <controls:InlinePickerRichTextBox
                         x:Name="TemplateOutputBox"
-                        AutomationProperties.AutomationId="GrabFrame.TemplateOutput"
                         Grid.Column="3"
                         VerticalAlignment="Center"
                         AcceptsReturn="True"
                         AcceptsTab="True"
+                        AutomationProperties.AutomationId="GrabFrame.TemplateOutput"
                         TextChanged="TemplateOutputBox_TextChanged"
                         ToolTip="Type { to open the region picker. Plain text also supported." />
                     <Button
@@ -1088,10 +1080,10 @@
 
                     <controls:SearchBar
                         x:Name="SearchBar"
-                        AutomationProperties.AutomationId="GrabFrame.Search"
                         Grid.Column="1"
                         Margin="0,0,6,0"
                         VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="GrabFrame.Search"
                         PlaceholderText="Search For Text..."
                         SearchChanged="SearchBar_SearchChanged"
                         ShowExactMatchToggle="True" />
@@ -1110,9 +1102,9 @@
                             <MenuItem.Header>
                                 <TextBlock
                                     x:Name="MatchesTXTBLK"
-                                    AutomationProperties.AutomationId="GrabFrame.SearchMatchCount"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="GrabFrame.SearchMatchCount"
                                     Text="Matches: 0" />
                             </MenuItem.Header>
                             <MenuItem Click="HandleDelete" Header="Delete Selected" />
@@ -1126,11 +1118,11 @@
 
                     <ComboBox
                         x:Name="LanguagesComboBox"
-                        AutomationProperties.AutomationId="GrabFrame.Language"
-                        AutomationProperties.Name="OCR language"
                         Grid.Column="3"
                         MinWidth="60"
                         Padding="8,0"
+                        AutomationProperties.AutomationId="GrabFrame.Language"
+                        AutomationProperties.Name="OCR language"
                         Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                         PreviewMouseDown="LanguagesComboBox_MouseDown"
                         SelectionChanged="LanguagesComboBox_SelectionChanged">
@@ -1158,29 +1150,29 @@
                             Visibility="Collapsed">
                             <Button
                                 x:Name="PreviousPdfPageButton"
-                                AutomationProperties.AutomationId="GrabFrame.PreviousPageButton"
-                                AutomationProperties.Name="Previous PDF page"
                                 Width="30"
                                 Height="30"
                                 Padding="0"
+                                AutomationProperties.AutomationId="GrabFrame.PreviousPageButton"
+                                AutomationProperties.Name="Previous PDF page"
                                 Click="PreviousPdfPageButton_Click"
                                 ToolTip="Previous PDF page">
                                 <ui:SymbolIcon Symbol="ChevronLeft24" />
                             </Button>
                             <TextBlock
                                 x:Name="PdfPageTextBlock"
-                                AutomationProperties.AutomationId="GrabFrame.PageStatus"
                                 Margin="6,0"
                                 VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="GrabFrame.PageStatus"
                                 Text="Page 1 / 1" />
                             <Button
                                 x:Name="NextPdfPageButton"
-                                AutomationProperties.AutomationId="GrabFrame.NextPageButton"
-                                AutomationProperties.Name="Next PDF page"
                                 Width="30"
                                 Height="30"
                                 Margin="6,0,0,0"
                                 Padding="0"
+                                AutomationProperties.AutomationId="GrabFrame.NextPageButton"
+                                AutomationProperties.Name="Next PDF page"
                                 Click="NextPdfPageButton_Click"
                                 ToolTip="Next PDF page">
                                 <ui:SymbolIcon Symbol="ChevronRight24" />
@@ -1188,11 +1180,11 @@
                         </StackPanel>
                         <controls:CollapsibleButton
                             x:Name="RefreshBTN"
-                            AutomationProperties.AutomationId="GrabFrame.RefreshButton"
-                            AutomationProperties.Name="Refresh OCR results"
                             Width="30"
                             Height="30"
                             Margin="0"
+                            AutomationProperties.AutomationId="GrabFrame.RefreshButton"
+                            AutomationProperties.Name="Refresh OCR results"
                             ButtonSymbol="ArrowClockwise24"
                             ButtonText="Re-OCR Frame"
                             Click="RefreshBTN_Click"
@@ -1200,9 +1192,9 @@
                             ToolTip="Re-OCR Frame (Ctrl + R)" />
                         <controls:CollapsibleButton
                             x:Name="OcrFrameBTN"
+                            Margin="0"
                             AutomationProperties.AutomationId="GrabFrame.OcrButton"
                             AutomationProperties.Name="Run OCR"
-                            Margin="0"
                             ButtonSymbol="ScanText24"
                             ButtonText="OCR Frame"
                             Click="RefreshBTN_Click"
@@ -1211,11 +1203,11 @@
 
                         <ToggleButton
                             x:Name="FreezeToggleButton"
-                            AutomationProperties.AutomationId="GrabFrame.FreezeToggle"
-                            AutomationProperties.Name="Freeze image in frame"
                             Width="30"
                             Height="30"
                             Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="GrabFrame.FreezeToggle"
+                            AutomationProperties.Name="Freeze image in frame"
                             Click="FreezeToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(F) Freeze the content within Grab Frame">
@@ -1224,11 +1216,11 @@
 
                         <ToggleButton
                             x:Name="TableToggleButton"
-                            AutomationProperties.AutomationId="GrabFrame.TableToggle"
-                            AutomationProperties.Name="Analyze as table"
                             Width="30"
                             Height="30"
                             Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="GrabFrame.TableToggle"
+                            AutomationProperties.Name="Analyze as table"
                             Click="TableToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="(T) Analyze content as tables">
@@ -1254,11 +1246,11 @@
 
                         <ToggleButton
                             x:Name="TranslateToggleButton"
-                            AutomationProperties.AutomationId="GrabFrame.TranslateToggle"
-                            AutomationProperties.Name="Enable translation"
                             Width="30"
                             Height="30"
                             Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="GrabFrame.TranslateToggle"
+                            AutomationProperties.Name="Enable translation"
                             Click="TranslateToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="Enable real-time translation">
@@ -1267,11 +1259,11 @@
 
                         <ToggleButton
                             x:Name="SpeakToggleButton"
-                            AutomationProperties.AutomationId="GrabFrame.SpeakToggle"
-                            AutomationProperties.Name="Speak results"
                             Width="30"
                             Height="30"
                             Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="GrabFrame.SpeakToggle"
+                            AutomationProperties.Name="Speak results"
                             Click="SpeakToggleButton_Click"
                             Style="{StaticResource ToggleSymbolButton}"
                             ToolTip="Speak grabbed text aloud">
@@ -1280,10 +1272,10 @@
 
                         <ToggleButton
                             x:Name="EditToggleButton"
-                            AutomationProperties.AutomationId="GrabFrame.EditWordsToggle"
-                            AutomationProperties.Name="Edit recognized words"
                             Margin="6,0,0,0"
                             Padding="7,4"
+                            AutomationProperties.AutomationId="GrabFrame.EditWordsToggle"
+                            AutomationProperties.Name="Edit recognized words"
                             Click="EditToggleButton_Click"
                             IsChecked="True"
                             Style="{StaticResource ToggleSymbolButton}"
@@ -1296,12 +1288,12 @@
 
                         <ToggleButton
                             x:Name="EditTextToggleButton"
-                            AutomationProperties.AutomationId="GrabFrame.SendToEditTextToggle"
-                            AutomationProperties.Name="Send results to Edit Text Window"
                             Width="30"
                             Height="30"
                             Margin="6,0,0,0"
                             d:IsChecked="True"
+                            AutomationProperties.AutomationId="GrabFrame.SendToEditTextToggle"
+                            AutomationProperties.Name="Send results to Edit Text Window"
                             Click="EditTextBTN_Click"
                             IsChecked="False"
                             Style="{StaticResource ToggleSymbolButton}"
@@ -1311,9 +1303,9 @@
 
                         <controls:CollapsibleButton
                             x:Name="SettingsBTN"
+                            Margin="6,0,0,0"
                             AutomationProperties.AutomationId="GrabFrame.SettingsButton"
                             AutomationProperties.Name="Settings"
-                            Margin="6,0,0,0"
                             ButtonSymbol="Settings24"
                             ButtonText="Settings"
                             Click="SettingsBTN_Click"
@@ -1339,14 +1331,32 @@
 
                     <controls:CollapsibleButton
                         x:Name="GrabBTN"
-                        AutomationProperties.AutomationId="GrabFrame.GrabButton"
                         Grid.Column="5"
                         Width="110"
                         Margin="0"
+                        AutomationProperties.AutomationId="GrabFrame.GrabButton"
                         ButtonSymbol="Copy24"
                         ButtonText="Grab"
                         Command="{x:Static local:GrabFrame.GrabCommand}"
-                        ToolTip="Grab text in the Grab Frame" />
+                        ToolTip="Grab text in the Grab Frame">
+                        <controls:CollapsibleButton.ContextMenu>
+                            <ContextMenu Opened="GrabButtonContextMenu_Opened">
+                                <MenuItem
+                                    AutomationProperties.AutomationId="GrabFrame.GrabMultiplePagesMenuItem"
+                                    Click="GrabMultiplePagesMenuItem_Click"
+                                    Header="Grab multiple pages..."
+                                    Tag="GrabMultiplePages"
+                                    ToolTip="Apply the current region and table settings to a range of pages of the open PDF" />
+                                <MenuItem
+                                    AutomationProperties.AutomationId="GrabFrame.IgnoreRepeatedHeadersFootersMenuItem"
+                                    Click="IgnoreRepeatedHeadersFootersMenuItem_Click"
+                                    Header="Ignore repeated headers and footers"
+                                    IsCheckable="True"
+                                    Tag="IgnoreRepeatedHeadersFooters"
+                                    ToolTip="When grabbing multiple pages, drop text that sits in the same place on page after page with the same (or numbered) text, like running headers and page numbers" />
+                            </ContextMenu>
+                        </controls:CollapsibleButton.ContextMenu>
+                    </controls:CollapsibleButton>
                 </Grid>
             </Border>
         </Grid>

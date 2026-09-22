@@ -12,6 +12,12 @@ concurrency:
 env:
   PROJECT_PATH: "Text-Grab/Text-Grab.csproj"
   TEST_PATH: "Tests/Tests.csproj"
+  TEST_CORE_PATH: "Tests.Core/Tests.Core.csproj"
+  TEST_CORE_WINDOWS_PATH: "Tests.Core.Windows/Tests.Core.Windows.csproj"
+  # Unlock token for the Windows AI language model (a Limited Access Feature). Absent secrets
+  # leave the properties empty, which just builds without on-device text AI rather than failing.
+  LAF_TOKEN: ${{ secrets.LAF_TOKEN }}
+  LAF_PUBLISHER_ID: ${{ secrets.LAF_PUBLISHER_ID }}
 
 jobs:
   build:
@@ -26,11 +32,17 @@ jobs:
         run: dotnet restore ${{ env.PROJECT_PATH }}
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }} -p:EnableMsixTooling=true
+      # The pure tier runs first: it needs no display and finishes in about a second, so a
+      # logic regression fails the job before the slow WPF/STA suite starts.
+      - name: Test Core
+        run: dotnet test --project ${{ env.TEST_CORE_PATH }}
+      - name: Test Core.Windows
+        run: dotnet test --project ${{ env.TEST_CORE_WINDOWS_PATH }} -r win-x64
       - name: Test
-        run: dotnet test ${{ env.TEST_PATH }} -r win-x64
+        run: dotnet test --project ${{ env.TEST_PATH }} -r win-x64
 
       - name: Build for release and Publish
-        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -p:EnableMsixTooling=true -o publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -p:EnableMsixTooling=true -p:LafToken=$env:LAF_TOKEN -p:LafPublisherId=$env:LAF_PUBLISHER_ID -o publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

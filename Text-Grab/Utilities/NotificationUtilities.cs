@@ -1,6 +1,7 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
 using System;
 using System.Text;
+using System.Windows;
 
 namespace Text_Grab.Utilities;
 
@@ -60,5 +61,84 @@ internal static class NotificationUtilities
         }
 
         toast.Show();
+    }
+
+    /// <summary>
+    /// Shows a toast for a finished audio transcription. Tapping it re-activates <paramref name="windowId"/>'s
+    /// <see cref="EditTextWindow"/> — the one that actually received the transcript — via
+    /// <see cref="TextGrabNotificationActivator"/>, rather than opening a new window with the text
+    /// (which would also have to be truncated to fit the ~5000-byte toast payload limit).
+    /// </summary>
+    internal static void ShowTranscriptionCompleteToast(string fileDescription, Guid windowId)
+    {
+        new ToastContentBuilder()
+            .AddArgument("windowId", windowId.ToString())
+            .AddText("Text Grab")
+            .AddText($"Transcription complete: {fileDescription}")
+            .Show();
+    }
+
+    /// <summary>
+    /// Shows a toast for a finished Local AI task (summarize, rewrite, translate, etc.). These run
+    /// with the owning <see cref="EditTextWindow"/> disabled for the duration, so a user who has
+    /// switched away benefits from the same "tap to come back" behavior as
+    /// <see cref="ShowTranscriptionCompleteToast"/>.
+    /// </summary>
+    internal static void ShowLocalAiCompleteToast(string taskDescription, Guid windowId)
+    {
+        new ToastContentBuilder()
+            .AddArgument("windowId", windowId.ToString())
+            .AddText("Text Grab")
+            .AddText($"{taskDescription} complete")
+            .Show();
+    }
+
+    /// <summary>
+    /// Shows a toast for a Whisper model finishing a background "quick download" kicked off from a
+    /// transcription model flyout (see <see cref="EditTextWindow.QuickDownloadModelMenuItem_Click"/>),
+    /// so the user isn't left guessing whether a multi-hundred-MB download actually completed.
+    /// </summary>
+    internal static void ShowModelDownloadCompleteToast(string modelName, Guid windowId)
+    {
+        new ToastContentBuilder()
+            .AddArgument("windowId", windowId.ToString())
+            .AddText("Text Grab")
+            .AddText($"\"{modelName}\" model ready")
+            .Show();
+    }
+
+    private const string WindowIdArgumentPrefix = "windowId=";
+
+    /// <summary>
+    /// Handles a toast's <c>windowId=</c> activation argument (see <see cref="ShowTranscriptionCompleteToast"/>)
+    /// by re-activating the matching <see cref="EditTextWindow"/> — the one that actually received the
+    /// transcript — instead of opening a new window. There are two toast-click entry points that both
+    /// need this: <see cref="TextGrabNotificationActivator"/> (COM activation, used when the app isn't
+    /// already running) and <c>App.LaunchFromToast</c> (fires in the already-running process). Returns
+    /// true if the argument was a windowId (handled either by activating the window or, if it was
+    /// already closed, by doing nothing) — callers should only fall back to their own "open a new
+    /// window" behavior when this returns false.
+    /// </summary>
+    internal static bool TryActivateTranscriptionWindow(string argsInvoked)
+    {
+        if (!argsInvoked.StartsWith(WindowIdArgumentPrefix, StringComparison.Ordinal)
+            || !Guid.TryParse(argsInvoked[WindowIdArgumentPrefix.Length..], out Guid windowId))
+        {
+            return false;
+        }
+
+        foreach (Window window in Application.Current.Windows)
+        {
+            if (window is EditTextWindow etw && etw.WindowId == windowId)
+            {
+                if (etw.WindowState == WindowState.Minimized)
+                    etw.WindowState = WindowState.Normal;
+                etw.Activate();
+                break;
+            }
+        }
+
+        // Handled either way: if the window was already closed there's nothing to re-activate.
+        return true;
     }
 }

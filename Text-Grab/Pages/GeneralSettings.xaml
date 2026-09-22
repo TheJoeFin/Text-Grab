@@ -107,6 +107,26 @@
             </StackPanel>
         </controls:SettingsExpander>
 
+        <controls:SettingsExpander
+            Description="Choose whether the system tray icon uses full color or a monochrome outline that follows the taskbar theme."
+            HeaderText="Tray icon style"
+            Icon="{ui:SymbolIcon PaintBucket24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="ColorTrayIconRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayIconStyle.Color"
+                    Checked="ColorTrayIconRdBtn_Checked"
+                    Content="Color"
+                    GroupName="TrayIconStyleGroup" />
+                <RadioButton
+                    x:Name="MonochromeTrayIconRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayIconStyle.Monochrome"
+                    Checked="MonochromeTrayIconRdBtn_Checked"
+                    Content="Monochrome"
+                    GroupName="TrayIconStyleGroup" />
+            </StackPanel>
+        </controls:SettingsExpander>
+
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Behavior" />
 
         <controls:SettingsCard
