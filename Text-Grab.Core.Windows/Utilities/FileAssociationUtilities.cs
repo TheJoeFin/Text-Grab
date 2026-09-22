@@ -64,4 +64,36 @@ internal static class FileAssociationUtilities
             Debug.WriteLine($".tggf file association registration failed: {ex.Message}");
         }
     }
+
+    /// <summary>True if the .tggf file association is currently registered for the current user.</summary>
+    internal static bool IsGrabFrameFileAssociationRegistered()
+    {
+        try
+        {
+            using RegistryKey? extensionKey = Registry.CurrentUser.OpenSubKey(GrabFrameExtensionKeyPath);
+            return extensionKey is not null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($".tggf file association check failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Removes the .tggf file association registered by <see cref="EnsureGrabFrameFileAssociation"/>,
+    /// e.g. so nothing is left in the registry once Fully Portable mode is active.
+    /// </summary>
+    internal static void RemoveGrabFrameFileAssociation()
+    {
+        try
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(GrabFrameExtensionKeyPath, throwOnMissingSubKey: false);
+            Registry.CurrentUser.DeleteSubKeyTree(GrabFrameProgIdKeyPath, throwOnMissingSubKey: false);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($".tggf file association removal failed: {ex.Message}");
+        }
+    }
 }

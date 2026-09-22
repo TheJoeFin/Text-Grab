@@ -20,11 +20,29 @@ public static class PortableStorageUtilities
     public static string GetDataDirectory(string subfolderName)
     {
         if (!PackageIdentity.IsPackaged() && SettingsAccess.IsConfigured && SettingsAccess.Current.FullyPortable)
-        {
-            string? exeDirectory = Path.GetDirectoryName(FileUtilities.GetExePath());
-            return Path.Combine(string.IsNullOrEmpty(exeDirectory) ? "c:\\Text-Grab" : exeDirectory, subfolderName);
-        }
+            return GetPortableDataDirectory(subfolderName);
 
+        return GetAppDataDataDirectory(subfolderName);
+    }
+
+    /// <summary>
+    /// The beside-executable location a given AppData subfolder moves to under Fully Portable
+    /// mode, regardless of whether that mode is currently active. Used by the portable-mode
+    /// readiness checklist to find/move data ahead of actually enabling the setting.
+    /// </summary>
+    public static string GetPortableDataDirectory(string subfolderName)
+    {
+        string? exeDirectory = Path.GetDirectoryName(FileUtilities.GetExePath());
+        return Path.Combine(string.IsNullOrEmpty(exeDirectory) ? "c:\\Text-Grab" : exeDirectory, subfolderName);
+    }
+
+    /// <summary>
+    /// The normal AppData location for a given subfolder, regardless of whether Fully Portable
+    /// mode is currently active. Used by the portable-mode readiness checklist to find data that
+    /// still needs to move.
+    /// </summary>
+    public static string GetAppDataDataDirectory(string subfolderName)
+    {
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Text-Grab",

@@ -174,4 +174,35 @@ internal static class ProtocolHandlerUtilities
             Debug.WriteLine($"text-grab:// protocol registration failed: {ex.Message}");
         }
     }
+
+    /// <summary>True if the text-grab:// protocol is currently registered for the current user.</summary>
+    internal static bool IsProtocolRegistered()
+    {
+        try
+        {
+            using RegistryKey? protocolKey = Registry.CurrentUser.OpenSubKey(ProtocolKeyPath);
+            return protocolKey is not null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"text-grab:// protocol check failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Removes the text-grab:// protocol registration made by <see cref="EnsureProtocolRegistration"/>,
+    /// e.g. so nothing is left in the registry once Fully Portable mode is active.
+    /// </summary>
+    internal static void RemoveProtocolRegistration()
+    {
+        try
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(ProtocolKeyPath, throwOnMissingSubKey: false);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"text-grab:// protocol removal failed: {ex.Message}");
+        }
+    }
 }
