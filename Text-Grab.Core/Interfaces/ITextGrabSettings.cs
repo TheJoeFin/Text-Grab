@@ -85,6 +85,13 @@ public interface ITextGrabSettings
     /// <summary>Store managed settings and history word borders in files beside the app data.</summary>
     bool EnableFileBackedManagedSettings { get; set; }
 
+    /// <summary>
+    /// Keep everything - settings, Whisper models, logs - beside the executable instead of
+    /// AppData/the registry, and skip registry-based OS integration (startup, context menu,
+    /// file/protocol associations) entirely. Implies <see cref="EnableFileBackedManagedSettings"/>.
+    /// </summary>
+    bool FullyPortable { get; set; }
+
     /// <summary>Persist pending changes. Backed by ApplicationSettingsBase.Save().</summary>
     void Save();
 }

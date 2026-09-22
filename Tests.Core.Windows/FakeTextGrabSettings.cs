@@ -45,6 +45,7 @@ internal sealed class FakeTextGrabSettings : ITextGrabSettings
     public string AudioTranscriptionModel { get; set; } = "BaseMultilingual";
     public string LiveTranscriptionModel { get; set; } = "BaseMultilingual";
     public bool EnableFileBackedManagedSettings { get; set; }
+    public bool FullyPortable { get; set; }
 
     public void Save() { }
 }

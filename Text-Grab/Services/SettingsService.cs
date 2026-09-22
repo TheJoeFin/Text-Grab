@@ -49,6 +49,8 @@ internal class SettingsService : IDisposable
 
     internal bool IsFileBackedManagedSettingsEnabled => _preferFileBackedManagedSettings;
 
+    internal bool IsFullyPortable => ClassicSettings.FullyPortable;
+
     internal string ManagedJsonSettingsFolderPath => _managedJsonSettingsFolderPath;
 
     public SettingsService()
@@ -98,13 +100,22 @@ internal class SettingsService : IDisposable
         }
 
         bool shouldUseRegularSettingsSidecar = _localSettings is null
-            && (ClassicSettings.EnableFileBackedManagedSettings || SidecarEnablesFileBackedManagedSettings(regularSettingsSidecarSnapshot));
+            && (ClassicSettings.EnableFileBackedManagedSettings
+                || ClassicSettings.FullyPortable
+                || SidecarEnablesFileBackedManagedSettings(regularSettingsSidecarSnapshot));
 
         if (shouldUseRegularSettingsSidecar)
             SyncRegularSettingsSidecarWithClassic(regularSettingsSidecarSnapshot);
 
         // Must be read after any migration so the user's saved preference is respected.
-        _preferFileBackedManagedSettings = ClassicSettings.EnableFileBackedManagedSettings;
+        _preferFileBackedManagedSettings = ClassicSettings.EnableFileBackedManagedSettings || ClassicSettings.FullyPortable;
+
+        // Once the JSON sidecar is authoritative, stop writing (or reading previous-version
+        // data from) the real user.config entirely - Settings.json becomes the single source
+        // of truth. Skipped for test SettingsService instances (saveClassicSettingsChanges:
+        // false) so unit tests never flip this process-wide flag for unrelated tests.
+        if (_saveClassicSettingsChanges)
+            AutomationSettingsProvider.SuppressClassicPersistence = shouldUseRegularSettingsSidecar;
 
         // copy settings from classic to local settings
         // so that when app updates they can be copied forward
@@ -657,7 +668,13 @@ internal class SettingsService : IDisposable
 
     private static bool SidecarEnablesFileBackedManagedSettings(IReadOnlyDictionary<string, JsonElement> sidecarSnapshot)
     {
-        if (!sidecarSnapshot.TryGetValue(nameof(Properties.Settings.EnableFileBackedManagedSettings), out JsonElement settingValue))
+        return SidecarFlagIsTrue(sidecarSnapshot, nameof(Properties.Settings.EnableFileBackedManagedSettings))
+            || SidecarFlagIsTrue(sidecarSnapshot, nameof(Properties.Settings.FullyPortable));
+    }
+
+    private static bool SidecarFlagIsTrue(IReadOnlyDictionary<string, JsonElement> sidecarSnapshot, string propertyName)
+    {
+        if (!sidecarSnapshot.TryGetValue(propertyName, out JsonElement settingValue))
             return false;
 
         return TryConvertJsonElementToSettingValue(

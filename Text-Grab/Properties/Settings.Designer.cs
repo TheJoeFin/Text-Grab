@@ -910,7 +910,19 @@ namespace Text_Grab.Properties {
                 this["EnableFileBackedManagedSettings"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FullyPortable {
+            get {
+                return ((bool)(this["FullyPortable"]));
+            }
+            set {
+                this["FullyPortable"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]

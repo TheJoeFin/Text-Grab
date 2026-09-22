@@ -213,6 +213,52 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Constructor_FullyPortableImpliesFileBackedManagedSettings()
+    {
+        Settings settings = new()
+        {
+            FirstRun = false,
+            EnableFileBackedManagedSettings = false,
+            FullyPortable = true
+        };
+
+        SettingsService service = CreateService(settings);
+
+        Assert.True(service.IsFileBackedManagedSettingsEnabled);
+        Assert.True(service.IsFullyPortable);
+    }
+
+    [Fact]
+    public void Constructor_RegularSettingsSidecarWithFullyPortableFlagImportsPortableSettings()
+    {
+        // FullyPortable alone (without EnableFileBackedManagedSettings) must still be enough
+        // for a portable Settings.json sidecar to be recognized as authoritative on a run
+        // where the classic store itself has neither flag set yet.
+        Settings settings = new()
+        {
+            FirstRun = false,
+            EnableFileBackedManagedSettings = false,
+            FullyPortable = false,
+            ShowToast = true
+        };
+
+        File.WriteAllText(
+            _regularSettingsFilePath,
+            """
+            {
+              "FullyPortable": true,
+              "ShowToast": false
+            }
+            """);
+
+        SettingsService service = CreateService(settings);
+
+        Assert.True(service.IsFileBackedManagedSettingsEnabled);
+        Assert.True(settings.FullyPortable);
+        Assert.False(settings.ShowToast);
+    }
+
+    [Fact]
     public void Constructor_FileBackedModeWithoutRegularSettingsSidecarCreatesOneFromClassicSettings()
     {
         Settings settings = new()

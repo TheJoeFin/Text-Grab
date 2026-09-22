@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Text.Json;
 using Text_Grab;
@@ -88,6 +89,47 @@ public class AutomationSettingsProviderTests
         Settings second = new();
         using (new SettingsService(second, localSettings: null))
             Assert.Equal("GrabFrame", second.DefaultLaunch);
+    }
+
+    [Fact]
+    public void SetPropertyValues_WhenClassicPersistenceSuppressedAndNoProfile_NoOps()
+    {
+        // No AutomationProfile: without suppression this would fall through to the real
+        // LocalFileSettingsProvider base, which needs a populated context ("GroupName" /
+        // "SettingsKey") and would throw on the empty one used here. Suppression must return
+        // before ever reaching that call.
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(null);
+
+        bool previousSuppression = AutomationSettingsProvider.SuppressClassicPersistence;
+        AutomationSettingsProvider.SuppressClassicPersistence = true;
+        try
+        {
+            AutomationSettingsProvider provider = new();
+            provider.SetPropertyValues(new SettingsContext(), new SettingsPropertyValueCollection());
+        }
+        finally
+        {
+            AutomationSettingsProvider.SuppressClassicPersistence = previousSuppression;
+        }
+    }
+
+    [Fact]
+    public void ResetAndUpgrade_WhenClassicPersistenceSuppressedAndNoProfile_NoOp()
+    {
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(null);
+
+        bool previousSuppression = AutomationSettingsProvider.SuppressClassicPersistence;
+        AutomationSettingsProvider.SuppressClassicPersistence = true;
+        try
+        {
+            IApplicationSettingsProvider provider = new AutomationSettingsProvider();
+            provider.Reset(new SettingsContext());
+            provider.Upgrade(new SettingsContext(), new SettingsPropertyCollection());
+        }
+        finally
+        {
+            AutomationSettingsProvider.SuppressClassicPersistence = previousSuppression;
+        }
     }
 
     private static Dictionary<string, string> ReadClassicSettings(string path) =>
