@@ -71,8 +71,16 @@ public interface ITextGrabSettings
     /// <summary>Speaking rate passed to the TTS engine; only values in [0.5, 6.0] are applied.</summary>
     double TtsSpeakingRate { get; set; }
 
-    /// <summary>Which local Whisper model to use for on-device audio transcription.</summary>
+    /// <summary>Which local Whisper model to use for file/clip audio transcription (Open Audio/Video).</summary>
     string AudioTranscriptionModel { get; set; }
+
+    /// <summary>
+    /// Which local Whisper model to use for live (near-real-time) transcription. Kept separate from
+    /// <see cref="AudioTranscriptionModel"/> so a large model picked for file transcription — where
+    /// there's a progress bar and a cancel button — never gets silently loaded into a live session,
+    /// where it would be too slow to keep up with speech. Live menus only ever offer fast models.
+    /// </summary>
+    string LiveTranscriptionModel { get; set; }
 
     /// <summary>Store managed settings and history word borders in files beside the app data.</summary>
     bool EnableFileBackedManagedSettings { get; set; }

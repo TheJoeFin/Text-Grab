@@ -689,32 +689,13 @@
                             IsCheckable="True"
                             Tag="MicrophoneAndSystemAudio" />
                         <Separator />
-                        <MenuItem Header="Transcription model">
-                            <MenuItem
-                                x:Name="CaptureModelTinyEnglishMenuItem"
-                                Click="TranscriptionModelMenuItem_Click"
-                                Header="Fastest — English"
-                                IsCheckable="True"
-                                Tag="TinyEnglish" />
-                            <MenuItem
-                                x:Name="CaptureModelBaseEnglishMenuItem"
-                                Click="TranscriptionModelMenuItem_Click"
-                                Header="Fast — English"
-                                IsCheckable="True"
-                                Tag="BaseEnglish" />
-                            <MenuItem
-                                x:Name="CaptureModelBaseMultilingualMenuItem"
-                                Click="TranscriptionModelMenuItem_Click"
-                                Header="Balanced — multilingual"
-                                IsCheckable="True"
-                                IsChecked="True"
-                                Tag="BaseMultilingual" />
-                            <MenuItem
-                                x:Name="CaptureModelSmallMultilingualMenuItem"
-                                Click="TranscriptionModelMenuItem_Click"
-                                Header="Most accurate — multilingual"
-                                IsCheckable="True"
-                                Tag="SmallMultilingual" />
+                        <MenuItem
+                            x:Name="CaptureTranscriptionModelMenuItem"
+                            Header="Transcription model"
+                            SubmenuOpened="TranscriptionModelSubmenu_Opened">
+                            <!-- Populated in TranscriptionModelSubmenu_Opened; this placeholder just
+                                 gives the item a submenu arrow so it opens in the first place. -->
+                            <MenuItem Header="Loading…" IsEnabled="False" />
                         </MenuItem>
                     </MenuItem>
                     <MenuItem
@@ -1318,32 +1299,13 @@
                                     IsCheckable="True"
                                     Tag="MicrophoneAndSystemAudio" />
                                 <Separator />
-                                <MenuItem Header="Transcription model">
-                                    <MenuItem
-                                        x:Name="ModelTinyEnglishMenuItem"
-                                        Click="TranscriptionModelMenuItem_Click"
-                                        Header="Fastest — English"
-                                        IsCheckable="True"
-                                        Tag="TinyEnglish" />
-                                    <MenuItem
-                                        x:Name="ModelBaseEnglishMenuItem"
-                                        Click="TranscriptionModelMenuItem_Click"
-                                        Header="Fast — English"
-                                        IsCheckable="True"
-                                        Tag="BaseEnglish" />
-                                    <MenuItem
-                                        x:Name="ModelBaseMultilingualMenuItem"
-                                        Click="TranscriptionModelMenuItem_Click"
-                                        Header="Balanced — multilingual"
-                                        IsCheckable="True"
-                                        IsChecked="True"
-                                        Tag="BaseMultilingual" />
-                                    <MenuItem
-                                        x:Name="ModelSmallMultilingualMenuItem"
-                                        Click="TranscriptionModelMenuItem_Click"
-                                        Header="Most accurate — multilingual"
-                                        IsCheckable="True"
-                                        Tag="SmallMultilingual" />
+                                <MenuItem
+                                    x:Name="MicTranscriptionModelMenuItem"
+                                    Header="Transcription model"
+                                    SubmenuOpened="TranscriptionModelSubmenu_Opened">
+                                    <!-- Populated in TranscriptionModelSubmenu_Opened; this placeholder just
+                                         gives the item a submenu arrow so it opens in the first place. -->
+                                    <MenuItem Header="Loading…" IsEnabled="False" />
                                 </MenuItem>
                                 <Separator />
                                 <MenuItem

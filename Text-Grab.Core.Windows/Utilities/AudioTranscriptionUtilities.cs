@@ -1,15 +1,8 @@
-using NAudio.CoreAudioApi;
 using NAudio.MediaFoundation;
 using NAudio.Utils;
 using NAudio.Wave;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Text_Grab.Services;
 using Whisper.net;
 using Whisper.net.Ggml;
@@ -23,7 +16,7 @@ namespace Text_Grab.Utilities;
 /// </summary>
 public static class AudioDebugLog
 {
-    private static readonly object _lock = new();
+    private static readonly Lock _lock = new();
 
     /// <summary>Rolled over into <c>audio-debug.prev.log</c> once the live file passes this size.</summary>
     private const long MaxLogBytes = 1024 * 1024;
@@ -83,7 +76,7 @@ public static class AudioDebugLog
 /// </summary>
 internal sealed class WhisperFactoryHandle
 {
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private int _users;
     private bool _retired;
     private bool _disposed;
@@ -141,7 +134,7 @@ internal sealed class WhisperFactoryHandle
 /// that every <see cref="WhisperProcessor"/> built from it decodes against, so it must outlive them:
 /// hold the lease for as long as any such processor lives, and dispose it after the processor.
 /// </summary>
-internal sealed class WhisperFactoryLease : IDisposable
+internal sealed partial class WhisperFactoryLease : IDisposable
 {
     private WhisperFactoryHandle? _handle;
 
@@ -179,8 +172,27 @@ public static class AudioTranscriptionUtilities
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Text-Grab", "WhisperModels");
 
-    /// <summary>The transcription model currently selected in settings (defaults to multilingual base).</summary>
+    /// <summary>
+    /// The model currently selected for file/clip transcription (Open Audio/Video), where a progress
+    /// bar and cancel button make a slow, large model tolerable. Defaults to multilingual base.
+    /// </summary>
     public static WhisperModelChoice CurrentModelChoice => WhisperModelInfo.Parse(SettingsAccess.Current.AudioTranscriptionModel);
+
+    /// <summary>
+    /// The model currently selected for live (near-real-time) transcription — tracked separately from
+    /// <see cref="CurrentModelChoice"/> so a large model picked for file transcription never gets
+    /// loaded into a live session, where it can't keep up with speech. Always one of
+    /// <see cref="WhisperModelInfo.LiveEligibleModels"/>; falls back to multilingual base otherwise
+    /// (e.g. a value persisted before a model was retired from live use).
+    /// </summary>
+    public static WhisperModelChoice CurrentLiveModelChoice
+    {
+        get
+        {
+            WhisperModelChoice choice = WhisperModelInfo.Parse(SettingsAccess.Current.LiveTranscriptionModel);
+            return Array.IndexOf(WhisperModelInfo.LiveEligibleModels, choice) >= 0 ? choice : WhisperModelChoice.BaseMultilingual;
+        }
+    }
 
     private static string ModelPathFor(WhisperModelChoice choice)
     {
@@ -266,7 +278,7 @@ public static class AudioTranscriptionUtilities
         GgmlType ggmlType = WhisperModelInfo.GgmlTypeFor(choice);
         QuantizationType quantization = WhisperModelInfo.QuantizationFor(choice);
         AudioDebugLog.Write($"EnsureModelDownloadedAsync: downloading Whisper '{ggmlType}' ({quantization}) model to {modelPath}");
-        progress?.Report($"Downloading speech model ({WhisperModelInfo.DisplayName(choice)}, first run)…");
+        progress?.Report($"Downloading ({WhisperModelInfo.DisplayName(choice)}, first run)…");
 
         string tempPath = modelPath + ".download";
         try
@@ -320,15 +332,16 @@ public static class AudioTranscriptionUtilities
     }
 
     /// <summary>
-    /// Borrows the shared, cached <see cref="WhisperFactory"/> for the currently selected model,
-    /// downloading the model if needed. The factory is expensive to create (it loads the model), so
-    /// it is created once and reused. If the model choice changes, the old factory is retired and a
-    /// new one is loaded — see <see cref="WhisperFactoryLease"/> for why the caller must hold the
-    /// lease for as long as it uses processors built from the factory.
+    /// Borrows the shared, cached <see cref="WhisperFactory"/> for <paramref name="modelChoice"/> (or
+    /// <see cref="CurrentModelChoice"/> — the file-transcription default — when omitted), downloading
+    /// the model if needed. The factory is expensive to create (it loads the model), so it is created
+    /// once and reused. If the model choice changes, the old factory is retired and a new one is
+    /// loaded — see <see cref="WhisperFactoryLease"/> for why the caller must hold the lease for as
+    /// long as it uses processors built from the factory.
     /// </summary>
-    internal static async Task<WhisperFactoryLease> AcquireFactoryAsync(IProgress<string>? progress, CancellationToken cancellationToken)
+    internal static async Task<WhisperFactoryLease> AcquireFactoryAsync(IProgress<string>? progress, CancellationToken cancellationToken, WhisperModelChoice? modelChoice = null)
     {
-        WhisperModelChoice choice = CurrentModelChoice;
+        WhisperModelChoice choice = modelChoice ?? CurrentModelChoice;
 
         await _factoryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -419,7 +432,7 @@ public static class AudioTranscriptionUtilities
     /// clip (0.0-1.0) after each segment, based on that segment's end time versus the clip's total
     /// duration — lets callers show a real progress bar instead of an indeterminate spinner.
     /// </summary>
-    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, string? hotWords = null, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, CancellationToken cancellationToken = default, bool includeTimecodes = false, IProgress<double>? clipProgress = null)
+    public static async Task<string> TranscribeAudioFileAsync(string audioFilePath, string? hotWords = null, IProgress<string>? statusProgress = null, IProgress<string>? segmentProgress = null, bool includeTimecodes = false, IProgress<double>? clipProgress = null, CancellationToken cancellationToken = default)
     {
         AudioDebugLog.Write($"TranscribeAudioFileAsync: START path='{audioFilePath}'");
 
@@ -578,7 +591,7 @@ public static class AudioTranscriptionUtilities
             float[] fast = new float[sampleCount];
             for (int i = 0; i < sampleCount; i++)
             {
-                short sample = (short)(raw[i * 2] | (raw[i * 2 + 1] << 8));
+                short sample = (short)(raw[i * 2] | (raw[(i * 2) + 1] << 8));
                 fast[i] = sample / 32768f;
             }
             return fast;
@@ -600,7 +613,7 @@ public static class AudioTranscriptionUtilities
                 samples.Add(sample / 32768f);
             }
         }
-        return samples.ToArray();
+        return [.. samples];
     }
 }
 
@@ -616,8 +629,20 @@ public enum WhisperModelChoice
     /// <summary>base — balanced, multilingual with auto language detection (default).</summary>
     BaseMultilingual,
 
-    /// <summary>small — most accurate offered here, multilingual, noticeably slower.</summary>
+    /// <summary>small — noticeably slower than balanced, multilingual, more accurate.</summary>
     SmallMultilingual,
+
+    /// <summary>medium.en — slower still, English only, more accurate than small.</summary>
+    MediumEnglish,
+
+    /// <summary>medium — slower still, multilingual, more accurate than small.</summary>
+    MediumMultilingual,
+
+    /// <summary>large-v3-turbo — a distilled large model: nearly large-v3 accuracy, much faster.</summary>
+    LargeTurboMultilingual,
+
+    /// <summary>large-v3 — the most accurate offered here, multilingual, slowest and largest download.</summary>
+    LargeMultilingual,
 }
 
 /// <summary>Maps <see cref="WhisperModelChoice"/> to its GGML model, language, and display name.</summary>
@@ -628,6 +653,10 @@ internal static class WhisperModelInfo
         "TinyEnglish" => WhisperModelChoice.TinyEnglish,
         "BaseEnglish" => WhisperModelChoice.BaseEnglish,
         "SmallMultilingual" => WhisperModelChoice.SmallMultilingual,
+        "MediumEnglish" => WhisperModelChoice.MediumEnglish,
+        "MediumMultilingual" => WhisperModelChoice.MediumMultilingual,
+        "LargeTurboMultilingual" => WhisperModelChoice.LargeTurboMultilingual,
+        "LargeMultilingual" => WhisperModelChoice.LargeMultilingual,
         _ => WhisperModelChoice.BaseMultilingual,
     };
 
@@ -636,31 +665,66 @@ internal static class WhisperModelInfo
         WhisperModelChoice.TinyEnglish => GgmlType.TinyEn,
         WhisperModelChoice.BaseEnglish => GgmlType.BaseEn,
         WhisperModelChoice.SmallMultilingual => GgmlType.Small,
+        WhisperModelChoice.MediumEnglish => GgmlType.MediumEn,
+        WhisperModelChoice.MediumMultilingual => GgmlType.Medium,
+        WhisperModelChoice.LargeTurboMultilingual => GgmlType.LargeV3Turbo,
+        WhisperModelChoice.LargeMultilingual => GgmlType.LargeV3,
         _ => GgmlType.Base,
     };
 
-    // English-only models can't language-detect, so force English; multilingual models auto-detect.
-    public static string LanguageFor(WhisperModelChoice choice) => choice switch
-    {
-        WhisperModelChoice.TinyEnglish or WhisperModelChoice.BaseEnglish => "en",
-        _ => "auto",
-    };
+    public static bool IsEnglishOnly(WhisperModelChoice choice) =>
+        choice is WhisperModelChoice.TinyEnglish or WhisperModelChoice.BaseEnglish or WhisperModelChoice.MediumEnglish;
 
-    // Q5_0 keeps the small English-only models fast and cheap to load with negligible WER impact.
+    // English-only models can't language-detect, so force English; multilingual models auto-detect.
+    public static string LanguageFor(WhisperModelChoice choice) => IsEnglishOnly(choice) ? "en" : "auto";
+
+    // Q5_0 keeps the English-only models fast and cheap to load with negligible WER impact.
     // Multilingual models use the near-lossless Q8_0 instead, since quantization hurts accuracy more
     // on the less-represented languages those models exist to cover.
-    public static QuantizationType QuantizationFor(WhisperModelChoice choice) => choice switch
-    {
-        WhisperModelChoice.TinyEnglish or WhisperModelChoice.BaseEnglish => QuantizationType.Q5_0,
-        _ => QuantizationType.Q8_0,
-    };
+    public static QuantizationType QuantizationFor(WhisperModelChoice choice) =>
+        IsEnglishOnly(choice) ? QuantizationType.Q5_0 : QuantizationType.Q8_0;
+
+    /// <summary>
+    /// The models offered for live (near-real-time) transcription — see
+    /// <see cref="AudioTranscriptionUtilities.CurrentLiveModelChoice"/>. Deliberately just the small,
+    /// fast models: a live VAD-chunked session has to keep up with speech as it happens, so the medium
+    /// and large models are file-transcription only, where a progress bar and cancel button make the
+    /// wait tolerable.
+    /// </summary>
+    public static readonly WhisperModelChoice[] LiveEligibleModels =
+    [
+        WhisperModelChoice.TinyEnglish,
+        WhisperModelChoice.BaseEnglish,
+        WhisperModelChoice.BaseMultilingual,
+        WhisperModelChoice.SmallMultilingual,
+    ];
 
     public static string DisplayName(WhisperModelChoice choice) => choice switch
     {
         WhisperModelChoice.TinyEnglish => "Fastest — English",
         WhisperModelChoice.BaseEnglish => "Fast — English",
-        WhisperModelChoice.SmallMultilingual => "Most accurate — multilingual",
+        WhisperModelChoice.SmallMultilingual => "Accurate — multilingual",
+        WhisperModelChoice.MediumEnglish => "Very accurate — English",
+        WhisperModelChoice.MediumMultilingual => "Very accurate — multilingual",
+        WhisperModelChoice.LargeTurboMultilingual => "Highly accurate, faster — multilingual",
+        WhisperModelChoice.LargeMultilingual => "Most accurate — multilingual",
         _ => "Balanced — multilingual",
+    };
+
+    // Approximate download sizes for the specific GGML type + quantization combo each choice maps
+    // to (see GgmlTypeFor/QuantizationFor); actual sizes vary slightly by release but not enough to
+    // matter for picking between models. Shown alongside DisplayName since "more accurate" alone
+    // doesn't convey how much bigger a download the bigger models are.
+    public static string ApproxDownloadSize(WhisperModelChoice choice) => choice switch
+    {
+        WhisperModelChoice.TinyEnglish => "~31 MB",
+        WhisperModelChoice.BaseEnglish => "~57 MB",
+        WhisperModelChoice.SmallMultilingual => "~252 MB",
+        WhisperModelChoice.MediumEnglish => "~514 MB",
+        WhisperModelChoice.MediumMultilingual => "~785 MB",
+        WhisperModelChoice.LargeTurboMultilingual => "~834 MB",
+        WhisperModelChoice.LargeMultilingual => "~1.66 GB",
+        _ => "~78 MB",
     };
 
     /// <summary>Longer description of the speed/accuracy/language tradeoff, shown once a model is picked.</summary>
@@ -671,16 +735,34 @@ internal static class WhisperModelInfo
         WhisperModelChoice.BaseEnglish =>
             "Still fast, with noticeably better accuracy than the tiny model. English speech only.",
         WhisperModelChoice.SmallMultilingual =>
-            "The most accurate model here, but the slowest to process. Automatically detects the spoken language and covers dozens beyond English.",
+            "Noticeably more accurate than the balanced model, and slower. Automatically detects the spoken language and covers dozens beyond English.",
+        WhisperModelChoice.MediumEnglish =>
+            "Noticeably more accurate than the fast English models, but slower and a larger download. English speech only.",
+        WhisperModelChoice.MediumMultilingual =>
+            "More accurate than the small model, but slower and a larger download. Automatically detects the spoken language and covers dozens beyond English.",
+        WhisperModelChoice.LargeTurboMultilingual =>
+            "A distilled version of the large model: nearly the same accuracy, but noticeably faster. Automatically detects the spoken language and covers dozens beyond English.",
+        WhisperModelChoice.LargeMultilingual =>
+            "The most accurate model here, but the slowest to process and the largest download. Automatically detects the spoken language and covers dozens beyond English.",
         _ =>
             "A good default: balances speed and accuracy. Automatically detects the spoken language and covers dozens beyond English.",
     };
 
     /// <summary>Short label for the language coverage, shown alongside <see cref="Description"/>.</summary>
     public static string LanguageSummary(WhisperModelChoice choice) =>
-        choice is WhisperModelChoice.TinyEnglish or WhisperModelChoice.BaseEnglish
-            ? "English only"
-            : "Multilingual — auto-detects language";
+        IsEnglishOnly(choice) ? "English only" : "Multilingual — auto-detects language";
+
+    /// <summary>Terse language label for a table column, where <see cref="LanguageSummary"/> is too long.</summary>
+    public static string ShortLanguageLabel(WhisperModelChoice choice) =>
+        IsEnglishOnly(choice) ? "English only" : "Multilingual";
+
+    /// <summary>
+    /// <see cref="DisplayName"/> with its approximate download size appended — used everywhere a model
+    /// is offered as a pick before it's necessarily downloaded (combo boxes, flyouts), so the size is
+    /// never more than a glance away.
+    /// </summary>
+    public static string DisplayNameWithSize(WhisperModelChoice choice) =>
+        $"{DisplayName(choice)} ({ApproxDownloadSize(choice)})";
 }
 
 /// <summary>Where <see cref="LiveAudioTranscriber"/> pulls audio from.</summary>
@@ -705,7 +787,7 @@ public enum LiveCaptureSource
 /// <see cref="PhraseRecognized"/>. Events fire on background threads; subscribers must marshal to
 /// their UI thread.
 /// </summary>
-public sealed class LiveAudioTranscriber : IDisposable
+public sealed partial class LiveAudioTranscriber : IDisposable
 {
     private const int SampleRate = 16000;
     private const int TimerIntervalMs = 200;
@@ -782,7 +864,7 @@ public sealed class LiveAudioTranscriber : IDisposable
         }
     }
 
-    private readonly List<CaptureChannel> _channels = new();
+    private readonly List<CaptureChannel> _channels = [];
     private WhisperFactoryLease? _factoryLease;
     private WhisperProcessor? _processor;
     private WhisperVadProcessor? _vadProcessor;
@@ -842,11 +924,13 @@ public sealed class LiveAudioTranscriber : IDisposable
                 return false;
             }
 
-            WhisperModelChoice choice = AudioTranscriptionUtilities.CurrentModelChoice;
+            // Live sessions only ever load a fast, live-eligible model (see CurrentLiveModelChoice) —
+            // never whatever large model might be selected for file transcription.
+            WhisperModelChoice choice = AudioTranscriptionUtilities.CurrentLiveModelChoice;
 
             // Held for the life of the session (released in Cleanup, after the processor): the shared
             // factory owns the native model _processor decodes against.
-            _factoryLease = await AudioTranscriptionUtilities.AcquireFactoryAsync(null, CancellationToken.None).ConfigureAwait(false);
+            _factoryLease = await AudioTranscriptionUtilities.AcquireFactoryAsync(null, CancellationToken.None, choice).ConfigureAwait(false);
             _processor = _factoryLease.Factory.CreateBuilder()
                 .WithLanguage(WhisperModelInfo.LanguageFor(choice))
                 .WithNoContext()   // each utterance stands alone: faster and avoids cross-phrase drift
@@ -1004,7 +1088,7 @@ public sealed class LiveAudioTranscriber : IDisposable
                 {
                     if (channel.PcmBuffer.Length == 0)
                     {
-                        perChannelSamples.Add(Array.Empty<float>());
+                        perChannelSamples.Add([]);
                         continue;
                     }
                     raw = channel.PcmBuffer.ToArray();
@@ -1039,8 +1123,8 @@ public sealed class LiveAudioTranscriber : IDisposable
                 if (!complete)
                     break;   // speech still in progress: leave this and later regions buffered
 
-                int start = Math.Max(0, (int)(seg.Start.TotalSeconds * SampleRate) - SampleRate / 20);
-                int end = Math.Min(samples.Length, (int)(seg.End.TotalSeconds * SampleRate) + SampleRate / 20);
+                int start = Math.Max(0, (int)(seg.Start.TotalSeconds * SampleRate) - (SampleRate / 20));
+                int end = Math.Min(samples.Length, (int)(seg.End.TotalSeconds * SampleRate) + (SampleRate / 20));
                 cutSeconds = seg.End.TotalSeconds;
                 if (end <= start)
                     continue;

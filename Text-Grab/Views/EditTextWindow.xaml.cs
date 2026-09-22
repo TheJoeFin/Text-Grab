@@ -28,6 +28,7 @@ using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
+using Text_Grab.Pages;
 using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -1239,8 +1240,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void DetachSpreadsheetCellEditor()
     {
-        if (activeSpreadsheetCellEditor is not null)
-            activeSpreadsheetCellEditor.SelectionChanged -= SpreadsheetCellEditor_SelectionChanged;
+        activeSpreadsheetCellEditor?.SelectionChanged -= SpreadsheetCellEditor_SelectionChanged;
 
         activeSpreadsheetCellEditor = null;
     }
@@ -2976,7 +2976,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // D9 is 43
         // D0 is 34
 
-        if (keyNumberPressed is < (-1)
+        if (keyNumberPressed is < -1
             or > 8)
             return;
 
@@ -3138,9 +3138,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 });
 
                 string transcription = await AudioTranscriptionUtilities.TranscribeAudioFileAsync(
-                    audioFile, hotWords, statusProgress, segmentProgress, cancellationToken,
+                    audioFile, hotWords, statusProgress, segmentProgress,
                     includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription,
-                    clipProgress: clipProgress);
+                    clipProgress: clipProgress, cancellationToken);
 
                 if (string.IsNullOrWhiteSpace(transcription))
                     AppendTranscriptionText("(no speech recognized)");
@@ -6432,7 +6432,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CaptureTranscribeAudioMenuItem.Visibility = Visibility.Visible;
             TranscriptionOptionsMenuItem.Visibility = Visibility.Visible;
             OpenAudioVideoMenuItem.Visibility = Visibility.Visible;
-            SyncTranscriptionModelMenu();
             TranscribeJustIconMenuItem.IsChecked = DefaultSettings.TranscribeButtonJustIcon;
             LiveTranscriptionLabel.Visibility = DefaultSettings.TranscribeButtonJustIcon ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -7709,21 +7708,92 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private void TranscriptionModelMenuItem_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Rebuilds a "Transcription model" flyout — shared by the Capture menu and the mic button's
+    /// right-click context menu — every time it's opened. These two flyouts drive live (near-real-time)
+    /// transcription, so they only ever offer <see cref="WhisperModelInfo.LiveEligibleModels"/> — a
+    /// small, fixed set of fast models, always shown (whether downloaded yet or not) and always
+    /// checkable, so the menu looks and behaves the same from a first run with nothing downloaded
+    /// through to having everything downloaded. A trailing "More models..." item opens the full Models
+    /// settings page, where the larger, file-transcription-only models live. Rebuilding on open (instead
+    /// of keeping static XAML items in sync by hand) means the check mark can never go stale.
+    /// </summary>
+    private void TranscriptionModelSubmenu_Opened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem submenu)
+            return;
+
+        submenu.Items.Clear();
+
+        WhisperModelChoice current = AudioTranscriptionUtilities.CurrentLiveModelChoice;
+        foreach (WhisperModelChoice choice in WhisperModelInfo.LiveEligibleModels)
+        {
+            MenuItem item = new()
+            {
+                Header = WhisperModelInfo.DisplayName(choice),
+                IsCheckable = true,
+                IsChecked = choice == current,
+                Tag = choice.ToString(),
+            };
+            item.Click += TranscriptionModelMenuItem_Click;
+            submenu.Items.Add(item);
+        }
+
+        submenu.Items.Add(new Separator());
+
+        MenuItem moreItem = new() { Header = "More models..." };
+        moreItem.Click += MoreModelsMenuItem_Click;
+        submenu.Items.Add(moreItem);
+    }
+
+    /// <summary>
+    /// Picks a live-transcription model: switches to it immediately, restarting a running session so
+    /// the new model takes effect, and — if it isn't downloaded yet — fetches it in the background
+    /// (live-eligible models are all small, so this finishes quickly) with a toast on completion or
+    /// failure.
+    /// </summary>
+    private async void TranscriptionModelMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem || menuItem.Tag is not string tag)
             return;
 
-        DefaultSettings.AudioTranscriptionModel = tag;
+        WhisperModelChoice choice = WhisperModelInfo.Parse(tag);
+        DefaultSettings.LiveTranscriptionModel = tag;
         DefaultSettings.Save();
-        SyncTranscriptionModelMenu();
 
-        // If a session is running, restart it so the newly selected model is loaded.
-        if (LiveTranscriptionToggleButton.IsChecked is true)
+        bool wasRunning = LiveTranscriptionToggleButton.IsChecked is true;
+        if (wasRunning)
         {
+            // Restarting loads the new model via AcquireFactoryAsync, which downloads it if needed.
             LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
             LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new model
         }
+
+        if (wasRunning || AudioTranscriptionUtilities.IsModelDownloaded(choice))
+            return;
+
+        try
+        {
+            await AudioTranscriptionUtilities.DownloadModelAsync(choice);
+            NotificationUtilities.ShowModelDownloadCompleteToast(WhisperModelInfo.DisplayName(choice), WindowId);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Transcription model download failed: {ex}");
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Download failed",
+                Content = $"Couldn't download the \"{WhisperModelInfo.DisplayName(choice)}\" model:\n{ex.Message}",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+        }
+    }
+
+    /// <summary>Opens (or activates) Settings and navigates straight to the Models page.</summary>
+    private void MoreModelsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsWindow settingsWindow = WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
+        settingsWindow.SettingsNavView.Navigate(typeof(ModelsSettings));
     }
 
     private void TranscribeJustIconMenuItem_Click(object sender, RoutedEventArgs e)
@@ -7732,25 +7802,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         DefaultSettings.TranscribeButtonJustIcon = justIcon;
         DefaultSettings.Save();
         LiveTranscriptionLabel.Visibility = justIcon ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    /// <summary>Reflects the persisted transcription-model choice in the context-menu check marks.</summary>
-    internal void SyncTranscriptionModelMenu()
-    {
-        string current = DefaultSettings.AudioTranscriptionModel;
-        ModelTinyEnglishMenuItem.IsChecked = current == "TinyEnglish";
-        ModelBaseEnglishMenuItem.IsChecked = current == "BaseEnglish";
-        ModelSmallMultilingualMenuItem.IsChecked = current == "SmallMultilingual";
-        CaptureModelTinyEnglishMenuItem.IsChecked = ModelTinyEnglishMenuItem.IsChecked;
-        CaptureModelBaseEnglishMenuItem.IsChecked = ModelBaseEnglishMenuItem.IsChecked;
-        CaptureModelSmallMultilingualMenuItem.IsChecked = ModelSmallMultilingualMenuItem.IsChecked;
-
-        // Anything else (including the default) falls back to balanced multilingual.
-        ModelBaseMultilingualMenuItem.IsChecked =
-            !ModelTinyEnglishMenuItem.IsChecked
-            && !ModelBaseEnglishMenuItem.IsChecked
-            && !ModelSmallMultilingualMenuItem.IsChecked;
-        CaptureModelBaseMultilingualMenuItem.IsChecked = ModelBaseMultilingualMenuItem.IsChecked;
     }
 
     private void LiveTranscriber_PhraseRecognized(object? sender, string recognizedText)

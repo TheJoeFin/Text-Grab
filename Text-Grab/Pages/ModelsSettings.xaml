@@ -17,351 +17,634 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Visible">
-        <StackPanel Margin="20,12,24,40" Orientation="Vertical">
-            <TextBlock Style="{StaticResource SettingsPageTitle}" Text="Models Settings" />
+    <StackPanel Margin="20,12,24,40" Orientation="Vertical">
+        <TextBlock Style="{StaticResource SettingsPageTitle}" Text="Models Settings" />
 
-            <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Speech-to-Text (Whisper)" />
-            <TextBlock
-                Margin="1,0,0,10"
-                Style="{StaticResource TextBodyNormal}"
-                TextWrapping="Wrap">
-                Audio transcription runs entirely on this device using local Whisper models. Models are downloaded to disk the first time they're used; manage them here to pick a default, download one ahead of time, or delete one to free up space.
-            </TextBlock>
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Speech-to-Text (Whisper)" />
+        <TextBlock
+            Margin="1,0,0,10"
+            Style="{StaticResource TextBodyNormal}"
+            TextWrapping="Wrap">
+            Audio transcription runs entirely on this device using local Whisper models. Models are downloaded to disk the first time they're used; manage them here to pick a default, download one ahead of time, or delete one to free up space.
+        </TextBlock>
 
-            <controls:SettingsCard Description="Used by default when transcribing audio or video, unless changed for a specific transcription." HeaderText="Default model">
-                <controls:SettingsCard.Icon>
-                    <ui:SymbolIcon Symbol="Mic24" />
-                </controls:SettingsCard.Icon>
-                <ComboBox
-                    x:Name="DefaultModelComboBox"
-                    Width="260"
-                    AutomationProperties.AutomationId="Settings.Models.DefaultModel"
-                    SelectionChanged="DefaultModelComboBox_SelectionChanged">
-                    <ComboBoxItem
-                        x:Name="TinyEnglishComboBoxItem"
-                        Content="Fastest — English"
-                        Tag="TinyEnglish" />
-                    <ComboBoxItem
-                        x:Name="BaseEnglishComboBoxItem"
-                        Content="Fast — English"
-                        Tag="BaseEnglish" />
-                    <ComboBoxItem
-                        x:Name="BaseMultilingualComboBoxItem"
-                        Content="Balanced — multilingual"
-                        Tag="BaseMultilingual" />
-                    <ComboBoxItem
-                        x:Name="SmallMultilingualComboBoxItem"
-                        Content="Most accurate — multilingual"
-                        Tag="SmallMultilingual" />
-                </ComboBox>
-            </controls:SettingsCard>
+        <controls:SettingsExpander
+            Description="Used by default when transcribing an audio/video file, unless changed for a specific transcription."
+            HeaderText="File transcription default model"
+            Icon="{ui:SymbolIcon DocumentCatchUp20}"
+            IsExpanded="True">
+            <ComboBox
+                x:Name="DefaultModelComboBox"
+                Width="320"
+                HorizontalAlignment="Left"
+                AutomationProperties.AutomationId="Settings.Models.DefaultModel"
+                SelectionChanged="DefaultModelComboBox_SelectionChanged">
+                <ComboBoxItem x:Name="TinyEnglishComboBoxItem" Tag="TinyEnglish" />
+                <ComboBoxItem x:Name="BaseEnglishComboBoxItem" Tag="BaseEnglish" />
+                <ComboBoxItem x:Name="BaseMultilingualComboBoxItem" Tag="BaseMultilingual" />
+                <ComboBoxItem x:Name="SmallMultilingualComboBoxItem" Tag="SmallMultilingual" />
+                <ComboBoxItem x:Name="MediumEnglishComboBoxItem" Tag="MediumEnglish" />
+                <ComboBoxItem x:Name="MediumMultilingualComboBoxItem" Tag="MediumMultilingual" />
+                <ComboBoxItem x:Name="LargeTurboMultilingualComboBoxItem" Tag="LargeTurboMultilingual" />
+                <ComboBoxItem x:Name="LargeMultilingualComboBoxItem" Tag="LargeMultilingual" />
+            </ComboBox>
+        </controls:SettingsExpander>
 
-            <Border
-                Margin="0,4,0,10"
-                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="6">
-                <StackPanel>
-                    <Grid Margin="12,7,12,7">
+        <controls:SettingsExpander
+            Margin="0,4,0,0"
+            Description="Used by default for live (near-real-time) transcription from the microphone or system audio. Restricted to small, fast models so it can keep up with speech; also changeable from the transcribe button's right-click menu."
+            HeaderText="Live transcription default model"
+            Icon="{ui:SymbolIcon MicPulse24}"
+            IsExpanded="True">
+            <ComboBox
+                x:Name="LiveDefaultModelComboBox"
+                Width="320"
+                HorizontalAlignment="Left"
+                AutomationProperties.AutomationId="Settings.Models.LiveDefaultModel"
+                SelectionChanged="LiveDefaultModelComboBox_SelectionChanged">
+                <ComboBoxItem x:Name="TinyEnglishLiveComboBoxItem" Tag="TinyEnglish" />
+                <ComboBoxItem x:Name="BaseEnglishLiveComboBoxItem" Tag="BaseEnglish" />
+                <ComboBoxItem x:Name="BaseMultilingualLiveComboBoxItem" Tag="BaseMultilingual" />
+                <ComboBoxItem x:Name="SmallMultilingualLiveComboBoxItem" Tag="SmallMultilingual" />
+            </ComboBox>
+        </controls:SettingsExpander>
+
+        <Border
+            Margin="0,4,0,10"
+            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="6">
+            <StackPanel>
+                <Grid Margin="12,7,12,7">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="72" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Grid.Column="0"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="Model" />
+                    <TextBlock
+                        Grid.Column="1"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="Language" />
+                    <TextBlock
+                        Grid.Column="2"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="Status" />
+                </Grid>
+
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="TinyEnglishRowGrid" Margin="12,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="140" />
                             <ColumnDefinition Width="72" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
+                        <StackPanel
                             Grid.Column="0"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Text="Model" />
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="TinyEnglishNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=TinyEnglishComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="MicPulse24"
+                                ToolTip="Live default"
+                                Visibility="{Binding IsSelected, ElementName=TinyEnglishLiveComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
                         <TextBlock
+                            x:Name="TinyEnglishLanguageText"
                             Grid.Column="1"
+                            VerticalAlignment="Center"
                             FontSize="12"
-                            FontWeight="SemiBold"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Text="Language" />
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <TextBlock
+                            x:Name="TinyEnglishStatusText"
                             Grid.Column="2"
+                            VerticalAlignment="Center"
                             FontSize="12"
-                            FontWeight="SemiBold"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Text="Status" />
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="TinyEnglishDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.TinyEnglish.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="TinyEnglish"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="TinyEnglishDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.TinyEnglish.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="TinyEnglish"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
                     </Grid>
+                </Border>
 
-                    <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
-                        <Grid Margin="12,6" ToolTip="The smallest and fastest model. English speech only, and the least accurate — best for quick drafts.">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="100" />
-                                <ColumnDefinition Width="140" />
-                                <ColumnDefinition Width="72" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel
-                                Grid.Column="0"
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="BaseEnglishRowGrid" Margin="12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="72" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="BaseEnglishNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                Orientation="Horizontal">
-                                <TextBlock Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="Fastest — English" />
-                                <ui:SymbolIcon
-                                    Margin="6,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Filled="True"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Symbol="Star24"
-                                    ToolTip="Default"
-                                    Visibility="{Binding IsSelected, ElementName=TinyEnglishComboBoxItem, Converter={StaticResource BoolToVis}}" />
-                            </StackPanel>
-                            <TextBlock
-                                Grid.Column="1"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=BaseEnglishComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="English only" />
-                            <TextBlock
-                                x:Name="TinyEnglishStatusText"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <StackPanel
-                                Grid.Column="3"
-                                HorizontalAlignment="Right"
-                                Orientation="Horizontal">
-                                <Button
-                                    x:Name="TinyEnglishDownloadButton"
-                                    AutomationProperties.AutomationId="Settings.Models.TinyEnglish.Download"
-                                    Click="DownloadButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="TinyEnglish"
-                                    ToolTip="Download">
-                                    <ui:SymbolIcon Symbol="ArrowDownload24" />
-                                </Button>
-                                <Button
-                                    x:Name="TinyEnglishDeleteButton"
-                                    AutomationProperties.AutomationId="Settings.Models.TinyEnglish.Delete"
-                                    Click="DeleteButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="TinyEnglish"
-                                    ToolTip="Delete">
-                                    <ui:SymbolIcon Symbol="Delete24" />
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="MicPulse24"
+                                ToolTip="Live default"
+                                Visibility="{Binding IsSelected, ElementName=BaseEnglishLiveComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="BaseEnglishLanguageText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="BaseEnglishStatusText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="BaseEnglishDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.BaseEnglish.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="BaseEnglish"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="BaseEnglishDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.BaseEnglish.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="BaseEnglish"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
-                    <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
-                        <Grid Margin="12,6" ToolTip="Still fast, with noticeably better accuracy than the tiny model. English speech only.">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="100" />
-                                <ColumnDefinition Width="140" />
-                                <ColumnDefinition Width="72" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel
-                                Grid.Column="0"
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="BaseMultilingualRowGrid" Margin="12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="72" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="BaseMultilingualNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                Orientation="Horizontal">
-                                <TextBlock Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="Fast — English" />
-                                <ui:SymbolIcon
-                                    Margin="6,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Filled="True"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Symbol="Star24"
-                                    ToolTip="Default"
-                                    Visibility="{Binding IsSelected, ElementName=BaseEnglishComboBoxItem, Converter={StaticResource BoolToVis}}" />
-                            </StackPanel>
-                            <TextBlock
-                                Grid.Column="1"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=BaseMultilingualComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="English only" />
-                            <TextBlock
-                                x:Name="BaseEnglishStatusText"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <StackPanel
-                                Grid.Column="3"
-                                HorizontalAlignment="Right"
-                                Orientation="Horizontal">
-                                <Button
-                                    x:Name="BaseEnglishDownloadButton"
-                                    AutomationProperties.AutomationId="Settings.Models.BaseEnglish.Download"
-                                    Click="DownloadButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="BaseEnglish"
-                                    ToolTip="Download">
-                                    <ui:SymbolIcon Symbol="ArrowDownload24" />
-                                </Button>
-                                <Button
-                                    x:Name="BaseEnglishDeleteButton"
-                                    AutomationProperties.AutomationId="Settings.Models.BaseEnglish.Delete"
-                                    Click="DeleteButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="BaseEnglish"
-                                    ToolTip="Delete">
-                                    <ui:SymbolIcon Symbol="Delete24" />
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="MicPulse24"
+                                ToolTip="Live default"
+                                Visibility="{Binding IsSelected, ElementName=BaseMultilingualLiveComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="BaseMultilingualLanguageText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="BaseMultilingualStatusText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="BaseMultilingualDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.BaseMultilingual.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="BaseMultilingual"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="BaseMultilingualDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.BaseMultilingual.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="BaseMultilingual"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
-                    <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
-                        <Grid Margin="12,6" ToolTip="A good default: balances speed and accuracy. Automatically detects the spoken language and covers dozens beyond English.">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="100" />
-                                <ColumnDefinition Width="140" />
-                                <ColumnDefinition Width="72" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel
-                                Grid.Column="0"
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="SmallMultilingualRowGrid" Margin="12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="72" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="SmallMultilingualNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                Orientation="Horizontal">
-                                <TextBlock Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="Balanced — multilingual" />
-                                <ui:SymbolIcon
-                                    Margin="6,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Filled="True"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Symbol="Star24"
-                                    ToolTip="Default"
-                                    Visibility="{Binding IsSelected, ElementName=BaseMultilingualComboBoxItem, Converter={StaticResource BoolToVis}}" />
-                            </StackPanel>
-                            <TextBlock
-                                Grid.Column="1"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=SmallMultilingualComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="Multilingual" />
-                            <TextBlock
-                                x:Name="BaseMultilingualStatusText"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <StackPanel
-                                Grid.Column="3"
-                                HorizontalAlignment="Right"
-                                Orientation="Horizontal">
-                                <Button
-                                    x:Name="BaseMultilingualDownloadButton"
-                                    AutomationProperties.AutomationId="Settings.Models.BaseMultilingual.Download"
-                                    Click="DownloadButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="BaseMultilingual"
-                                    ToolTip="Download">
-                                    <ui:SymbolIcon Symbol="ArrowDownload24" />
-                                </Button>
-                                <Button
-                                    x:Name="BaseMultilingualDeleteButton"
-                                    AutomationProperties.AutomationId="Settings.Models.BaseMultilingual.Delete"
-                                    Click="DeleteButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="BaseMultilingual"
-                                    ToolTip="Delete">
-                                    <ui:SymbolIcon Symbol="Delete24" />
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="MicPulse24"
+                                ToolTip="Live default"
+                                Visibility="{Binding IsSelected, ElementName=SmallMultilingualLiveComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="SmallMultilingualLanguageText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="SmallMultilingualStatusText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="SmallMultilingualDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.SmallMultilingual.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="SmallMultilingual"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="SmallMultilingualDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.SmallMultilingual.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="SmallMultilingual"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
-                    <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
-                        <Grid Margin="12,6" ToolTip="The most accurate model here, but the slowest to process. Automatically detects the spoken language and covers dozens beyond English.">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="100" />
-                                <ColumnDefinition Width="140" />
-                                <ColumnDefinition Width="72" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel
-                                Grid.Column="0"
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="MediumEnglishRowGrid" Margin="12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="72" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="MediumEnglishNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                Orientation="Horizontal">
-                                <TextBlock Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="Most accurate — multilingual" />
-                                <ui:SymbolIcon
-                                    Margin="6,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Filled="True"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Symbol="Star24"
-                                    ToolTip="Default"
-                                    Visibility="{Binding IsSelected, ElementName=SmallMultilingualComboBoxItem, Converter={StaticResource BoolToVis}}" />
-                            </StackPanel>
-                            <TextBlock
-                                Grid.Column="1"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=MediumEnglishComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="MediumEnglishLanguageText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="MediumEnglishStatusText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="MediumEnglishDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.MediumEnglish.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="MediumEnglish"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="MediumEnglishDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.MediumEnglish.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="MediumEnglish"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="MediumMultilingualRowGrid" Margin="12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="72" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="MediumMultilingualNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                Text="Multilingual" />
-                            <TextBlock
-                                x:Name="SmallMultilingualStatusText"
-                                Grid.Column="2"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=MediumMultilingualComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="MediumMultilingualLanguageText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="MediumMultilingualStatusText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="MediumMultilingualDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.MediumMultilingual.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="MediumMultilingual"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="MediumMultilingualDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.MediumMultilingual.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="MediumMultilingual"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="LargeTurboMultilingualRowGrid" Margin="12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="72" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="LargeTurboMultilingualNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
                                 VerticalAlignment="Center"
-                                FontSize="12"
-                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <StackPanel
-                                Grid.Column="3"
-                                HorizontalAlignment="Right"
-                                Orientation="Horizontal">
-                                <Button
-                                    x:Name="SmallMultilingualDownloadButton"
-                                    AutomationProperties.AutomationId="Settings.Models.SmallMultilingual.Download"
-                                    Click="DownloadButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="SmallMultilingual"
-                                    ToolTip="Download">
-                                    <ui:SymbolIcon Symbol="ArrowDownload24" />
-                                </Button>
-                                <Button
-                                    x:Name="SmallMultilingualDeleteButton"
-                                    AutomationProperties.AutomationId="Settings.Models.SmallMultilingual.Delete"
-                                    Click="DeleteButton_Click"
-                                    Style="{StaticResource SymbolButton}"
-                                    Tag="SmallMultilingual"
-                                    ToolTip="Delete">
-                                    <ui:SymbolIcon Symbol="Delete24" />
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                </StackPanel>
-            </Border>
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=LargeTurboMultilingualComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="LargeTurboMultilingualLanguageText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="LargeTurboMultilingualStatusText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="LargeTurboMultilingualDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.LargeTurboMultilingual.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="LargeTurboMultilingual"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="LargeTurboMultilingualDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.LargeTurboMultilingual.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="LargeTurboMultilingual"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
-            <controls:SettingsCard
-                Margin="0,8,0,3"
-                Description="Downloaded Whisper models are stored here."
-                HeaderText="Models folder"
-                Icon="{ui:SymbolIcon FolderOpen24}">
-                <controls:CollapsibleButton
-                    x:Name="OpenModelsFolderButton"
-                    Margin="0"
-                    AutomationProperties.AutomationId="Settings.Models.OpenFolder"
-                    ButtonSymbol="OpenFolder24"
-                    ButtonText="Open Folder"
-                    Click="OpenModelsFolderButton_Click" />
-            </controls:SettingsCard>
+                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <Grid x:Name="LargeMultilingualRowGrid" Margin="12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="72" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <TextBlock x:Name="LargeMultilingualNameText" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ui:SymbolIcon
+                                Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                Filled="True"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Symbol="Star24"
+                                ToolTip="File default"
+                                Visibility="{Binding IsSelected, ElementName=LargeMultilingualComboBoxItem, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="LargeMultilingualLanguageText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock
+                            x:Name="LargeMultilingualStatusText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel
+                            Grid.Column="3"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                            <Button
+                                x:Name="LargeMultilingualDownloadButton"
+                                AutomationProperties.AutomationId="Settings.Models.LargeMultilingual.Download"
+                                Click="DownloadButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="LargeMultilingual"
+                                ToolTip="Download">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" />
+                            </Button>
+                            <Button
+                                x:Name="LargeMultilingualDeleteButton"
+                                AutomationProperties.AutomationId="Settings.Models.LargeMultilingual.Delete"
+                                Click="DeleteButton_Click"
+                                Style="{StaticResource SymbolButton}"
+                                Tag="LargeMultilingual"
+                                ToolTip="Delete">
+                                <ui:SymbolIcon Symbol="Delete24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
 
-            <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Optical Character Recognition" />
+        <controls:SettingsCard
+            Margin="0,8,0,3"
+            Description="Downloaded Whisper models are stored here."
+            HeaderText="Models folder"
+            Icon="{ui:SymbolIcon FolderOpen24}">
+            <controls:CollapsibleButton
+                x:Name="OpenModelsFolderButton"
+                Margin="0"
+                AutomationProperties.AutomationId="Settings.Models.OpenFolder"
+                ButtonSymbol="OpenFolder24"
+                ButtonText="Open Folder"
+                Click="OpenModelsFolderButton_Click" />
+        </controls:SettingsCard>
 
-            <controls:SettingsCard
-                Description="OCR language packs for on-device text recognition are managed on the Languages page."
-                HeaderText="Language packs"
-                Icon="{ui:SymbolIcon LocalLanguage24}">
-                <controls:CollapsibleButton
-                    x:Name="GoToLanguagesButton"
-                    Margin="0"
-                    AutomationProperties.AutomationId="Settings.Models.GoToLanguages"
-                    ButtonSymbol="ChevronRight24"
-                    ButtonText="Go to Languages"
-                    Click="GoToLanguagesButton_Click" />
-            </controls:SettingsCard>
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Optical Character Recognition" />
 
-        </StackPanel>
-    </ScrollViewer>
+        <controls:SettingsCard
+            Description="OCR language packs for on-device text recognition are managed on the Languages page."
+            HeaderText="Language packs"
+            Icon="{ui:SymbolIcon LocalLanguage24}">
+            <controls:CollapsibleButton
+                x:Name="GoToLanguagesButton"
+                Margin="0"
+                AutomationProperties.AutomationId="Settings.Models.GoToLanguages"
+                ButtonSymbol="ChevronRight24"
+                ButtonText="Go to Languages"
+                Click="GoToLanguagesButton_Click" />
+        </controls:SettingsCard>
+
+    </StackPanel>
 </Page>

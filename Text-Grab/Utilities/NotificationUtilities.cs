@@ -93,6 +93,20 @@ internal static class NotificationUtilities
             .Show();
     }
 
+    /// <summary>
+    /// Shows a toast for a Whisper model finishing a background "quick download" kicked off from a
+    /// transcription model flyout (see <see cref="EditTextWindow.QuickDownloadModelMenuItem_Click"/>),
+    /// so the user isn't left guessing whether a multi-hundred-MB download actually completed.
+    /// </summary>
+    internal static void ShowModelDownloadCompleteToast(string modelName, Guid windowId)
+    {
+        new ToastContentBuilder()
+            .AddArgument("windowId", windowId.ToString())
+            .AddText("Text Grab")
+            .AddText($"\"{modelName}\" model ready")
+            .Show();
+    }
+
     private const string WindowIdArgumentPrefix = "windowId=";
 
     /// <summary>

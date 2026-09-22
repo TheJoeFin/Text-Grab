@@ -23,11 +23,12 @@ public partial class OpenMediaWindow : FluentWindow
         WhisperModelChoice currentChoice = AudioTranscriptionUtilities.CurrentModelChoice;
         foreach (ComboBoxItem item in ModelComboBox.Items)
         {
-            if (item.Tag is string tag && tag == currentChoice.ToString())
-            {
+            if (item.Tag is not string tag)
+                continue;
+
+            item.Content = WhisperModelInfo.DisplayNameWithSize(WhisperModelInfo.Parse(tag));
+            if (tag == currentChoice.ToString())
                 ModelComboBox.SelectedItem = item;
-                break;
-            }
         }
 
         UpdateModelDetails(currentChoice);
@@ -133,11 +134,6 @@ public partial class OpenMediaWindow : FluentWindow
         AppUtilities.TextGrabSettings.AudioTranscriptionModel = tag;
         AppUtilities.TextGrabSettings.Save();
         UpdateModelDetails(choice);
-
-        // Keep the live-transcription context menu (on the owning editor window) in sync, so it
-        // doesn't show a stale check mark if opened after this window changes the model.
-        if (Owner is EditTextWindow owningEditWindow)
-            owningEditWindow.SyncTranscriptionModelMenu();
     }
 
     /// <summary>Fills in the language/accuracy/download-size details panel for the given model.</summary>
@@ -149,7 +145,7 @@ public partial class OpenMediaWindow : FluentWindow
         long? downloadedBytes = AudioTranscriptionUtilities.DownloadedModelSizeBytes(choice);
         ModelDownloadStatusText.Text = downloadedBytes is long bytes
             ? $"Already downloaded — {bytes / (1024.0 * 1024.0):0.#} MB on disk."
-            : "Not downloaded yet — it will download automatically the first time you use it.";
+            : $"Not downloaded yet ({WhisperModelInfo.ApproxDownloadSize(choice)}) — it will download automatically the first time you use it.";
     }
 
     private async void StartTranscriptionButton_Click(object sender, RoutedEventArgs e)

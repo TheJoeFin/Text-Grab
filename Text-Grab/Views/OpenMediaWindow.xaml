@@ -95,10 +95,16 @@
                     AutomationProperties.AutomationId="OpenMedia.ModelComboBox"
                     Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                     SelectionChanged="ModelComboBox_SelectionChanged">
-                    <ComboBoxItem Content="Fastest — English" Tag="TinyEnglish" />
-                    <ComboBoxItem Content="Fast — English" Tag="BaseEnglish" />
-                    <ComboBoxItem Content="Balanced — multilingual" Tag="BaseMultilingual" />
-                    <ComboBoxItem Content="Most accurate — multilingual" Tag="SmallMultilingual" />
+                    <!-- Content is set from WhisperModelInfo in code-behind (see OpenMediaWindow ctor),
+                         the same single source of truth every other model touch point uses. -->
+                    <ComboBoxItem Tag="TinyEnglish" />
+                    <ComboBoxItem Tag="BaseEnglish" />
+                    <ComboBoxItem Tag="BaseMultilingual" />
+                    <ComboBoxItem Tag="SmallMultilingual" />
+                    <ComboBoxItem Tag="MediumEnglish" />
+                    <ComboBoxItem Tag="MediumMultilingual" />
+                    <ComboBoxItem Tag="LargeTurboMultilingual" />
+                    <ComboBoxItem Tag="LargeMultilingual" />
                 </ComboBox>
 
                 <Border

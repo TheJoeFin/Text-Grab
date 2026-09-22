@@ -9,7 +9,7 @@
     xmlns:pages="clr-namespace:Text_Grab.Pages"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Text Grab Settings"
-    Width="660"
+    Width="800"
     Height="700"
     MinWidth="200"
     MinHeight="300"

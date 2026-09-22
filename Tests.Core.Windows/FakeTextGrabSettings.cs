@@ -43,6 +43,7 @@ internal sealed class FakeTextGrabSettings : ITextGrabSettings
     public string TtsVoiceName { get; set; } = string.Empty;
     public double TtsSpeakingRate { get; set; } = 1;
     public string AudioTranscriptionModel { get; set; } = "BaseMultilingual";
+    public string LiveTranscriptionModel { get; set; } = "BaseMultilingual";
     public bool EnableFileBackedManagedSettings { get; set; }
 
     public void Save() { }
