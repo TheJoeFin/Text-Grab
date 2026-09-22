@@ -2760,10 +2760,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void CanLaunchUriExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        string possibleURL = PassedTextControl.SelectedText;
+        string possibleURL = GetPossibleUrlText();
 
-        if (string.IsNullOrEmpty(possibleURL))
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
         if (Uri.TryCreate(possibleURL, UriKind.Absolute, out _))
         {
             e.CanExecute = true;
@@ -2771,6 +2769,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         e.CanExecute = false;
+    }
+
+    private string GetPossibleUrlText()
+    {
+        if (editorMode == EtwEditorMode.Spreadsheet)
+            return GetSpreadsheetSelectedText().Trim();
+
+        string possibleURL = PassedTextControl.SelectedText;
+
+        if (string.IsNullOrEmpty(possibleURL))
+            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
+
+        return possibleURL;
     }
 
     private void CanOcrPasteExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -3854,7 +3865,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void InsertSelectionOnEveryLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(PassedTextControl.SelectedText)
+        // Operates on absolute character positions within the flat document text, which
+        // has no meaningful equivalent in Spreadsheet mode, so keep it disabled there.
+        if (editorMode == EtwEditorMode.Spreadsheet
+            || string.IsNullOrEmpty(PassedTextControl.SelectedText)
             || PassedTextControl.SelectedText.Contains(Environment.NewLine)
             || PassedTextControl.SelectedText.Contains('\r')
             || PassedTextControl.SelectedText.Contains('\n'))
@@ -3865,10 +3879,23 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void IsolateSelectionCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(PassedTextControl.SelectedText))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        // Isolate/Delete-All-Instances act on the flat document text, which has no
+        // meaningful per-cell equivalent in Spreadsheet mode, so keep them disabled there.
+        e.CanExecute = editorMode != EtwEditorMode.Spreadsheet
+            && !string.IsNullOrEmpty(PassedTextControl.SelectedText);
+    }
+
+    private void CanSearchSelectionExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = !string.IsNullOrEmpty(GetSpreadsheetAwareSelectedText());
+    }
+
+    private string GetSpreadsheetAwareSelectedText()
+    {
+        if (editorMode == EtwEditorMode.Spreadsheet)
+            return GetSpreadsheetSelectedText();
+
+        return PassedTextControl.SelectedText;
     }
 
     private void IsolateSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -3907,7 +3934,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void WebSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = GetSpreadsheetAwareSelectedText();
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
 
         if (e.Parameter is not WebSearchUrlModel webSearcher)
@@ -3919,7 +3946,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void DefaultWebSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = GetSpreadsheetAwareSelectedText();
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
 
         WebSearchUrlModel searcher = Singleton<WebSearchUrlCatalog>.Instance.DefaultSearcher;
@@ -4086,10 +4113,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string possibleURL = PassedTextControl.SelectedText;
+        string possibleURL = GetPossibleUrlText();
 
-        if (string.IsNullOrEmpty(possibleURL))
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
         if (Uri.TryCreate(possibleURL, UriKind.Absolute, out _))
             Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
     }
@@ -4246,22 +4271,27 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void MakeQrCodeCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(GetSelectedTextOrAllText()))
-            e.CanExecute = false;
-        else
-            e.CanExecute = true;
+        e.CanExecute = !string.IsNullOrWhiteSpace(GetQrCodeSourceText());
     }
 
     private void MakeQrCodeExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
-            return;
+        string text = GetQrCodeSourceText();
 
-        string text = GetSelectedTextOrAllText();
+        if (string.IsNullOrWhiteSpace(text))
+            return;
 
         QrCodeWindow window = new(text);
         window.CenterOverThisWindow(this);
         window.Show();
+    }
+
+    private string GetQrCodeSourceText()
+    {
+        if (editorMode == EtwEditorMode.Spreadsheet)
+            return GetSpreadsheetSelectedText();
+
+        return GetSelectedTextOrAllText();
     }
 
     private void AddedLineAboveCommand(object sender, ExecutedRoutedEventArgs e)
@@ -5307,6 +5337,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
+        // Unstack reshapes the flat document text into rows, which is redundant with the
+        // grid structure Spreadsheet mode already provides, so keep it disabled there.
+        if (editorMode == EtwEditorMode.Spreadsheet)
+        {
+            e.CanExecute = false;
+            return;
+        }
+
         if (PassedTextControl.SelectedText.Contains(Environment.NewLine)
             || PassedTextControl.SelectedText.Contains('\r')
             || PassedTextControl.SelectedText.Contains('\n'))
@@ -5589,7 +5627,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void SplitOnSelectionCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(PassedTextControl.SelectedText))
+        // Spreadsheet mode has its own cell-aware "Split Cells" feature
+        // (SplitSelectedSpreadsheetCells); this flat-text version doesn't apply there.
+        if (editorMode == EtwEditorMode.Spreadsheet
+            || string.IsNullOrEmpty(PassedTextControl.SelectedText))
             e.CanExecute = false;
         else
             e.CanExecute = true;

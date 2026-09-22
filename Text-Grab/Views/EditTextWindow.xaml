@@ -175,11 +175,11 @@
             Command="{x:Static local:EditTextWindow.TransposeTableCmd}"
             Executed="TransposeTableExecuted" />
         <CommandBinding
-            CanExecute="IsolateSelectionCmdCanExecute"
+            CanExecute="CanSearchSelectionExecute"
             Command="{x:Static local:EditTextWindow.WebSearchCmd}"
             Executed="WebSearchExecuted" />
         <CommandBinding
-            CanExecute="IsolateSelectionCmdCanExecute"
+            CanExecute="CanSearchSelectionExecute"
             Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
             Executed="DefaultWebSearchExecuted" />
     </Window.CommandBindings>
