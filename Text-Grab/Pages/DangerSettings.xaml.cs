@@ -17,6 +17,7 @@ public partial class DangerSettings : System.Windows.Controls.Page
 {
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
     private bool _loadingDangerSettings;
+    private bool _backedUpThisSession;
 
     public DangerSettings()
     {
@@ -28,8 +29,9 @@ public partial class DangerSettings : System.Windows.Controls.Page
         _loadingDangerSettings = true;
         OverrideArchCheckWinAI.IsChecked = DefaultSettings.OverrideAiArchCheck;
         EnableFileBackedManagedSettingsToggle.IsChecked = DefaultSettings.EnableFileBackedManagedSettings;
-        FullyPortableToggle.IsChecked = DefaultSettings.FullyPortable;
         _loadingDangerSettings = false;
+
+        RefreshPortableChecklist();
     }
 
     private async void ExportBugReportButton_Click(object sender, RoutedEventArgs e)
@@ -267,43 +269,145 @@ public partial class DangerSettings : System.Windows.Controls.Page
         _loadingDangerSettings = false;
     }
 
-    private async void FullyPortableToggle_Checked(object sender, RoutedEventArgs e)
+    /// <summary>Re-evaluates every readiness check and updates the checklist UI to match.</summary>
+    private void RefreshPortableChecklist()
     {
-        if (_loadingDangerSettings)
-            return;
+        bool alreadyPortable = DefaultSettings.FullyPortable;
+        bool isPackaged = AppUtilities.IsPackaged();
 
-        bool isEnabled = FullyPortableToggle.IsChecked is true;
-        if (DefaultSettings.FullyPortable == isEnabled)
-            return;
+        PortableChecklistPanel.Visibility = (!isPackaged && !alreadyPortable) ? Visibility.Visible : Visibility.Collapsed;
+        RecheckPortableButton.Visibility = (!isPackaged && !alreadyPortable) ? Visibility.Visible : Visibility.Collapsed;
+        EnableFullyPortableButton.Visibility = alreadyPortable ? Visibility.Collapsed : Visibility.Visible;
+        DisableFullyPortableButton.Visibility = alreadyPortable ? Visibility.Visible : Visibility.Collapsed;
 
-        if (isEnabled)
+        if (isPackaged)
         {
-            Wpf.Ui.Controls.MessageBoxResult confirmation = await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Enable Fully Portable Mode?",
-                Content = "Fully portable mode will be active after you restart Text Grab: settings, history, Whisper models and logs will move into Text Grab's own folder, and registry-based OS integration (startup on login, context menu, file/protocol associations) will stop being written.\n\nBackup your settings before enabling it if you have not already.",
-                PrimaryButtonText = "Enable",
-                CloseButtonText = "Cancel"
-            }.ShowDialogAsync();
-
-            if (confirmation != Wpf.Ui.Controls.MessageBoxResult.Primary)
-            {
-                RevertFullyPortableToggle();
-                return;
-            }
-
-            DefaultSettings.FullyPortable = true;
-            DefaultSettings.Save();
-
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Restart Required",
-                Content = "Restart Text Grab to apply fully portable mode.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-
+            PortableStatusText.Text = "Fully portable mode only applies to unpackaged installs.";
+            EnableFullyPortableButton.IsEnabled = false;
             return;
         }
+
+        if (alreadyPortable)
+        {
+            PortableStatusText.Text = "Fully portable mode is enabled. Restart Text Grab if you haven't already.";
+            return;
+        }
+
+        PortableReadinessCheck fileBacked = PortableModeReadiness.CheckFileBackedSettings(DefaultSettings);
+        SetCheckRow(FileBackedStatusIcon, FileBackedDetailText, FileBackedFixButton, fileBacked);
+
+        PortableReadinessCheck models = PortableModeReadiness.CheckTranscriptionModels();
+        SetCheckRow(ModelsStatusIcon, ModelsDetailText, ModelsFixButton, models);
+
+        PortableReadinessCheck startup = PortableModeReadiness.CheckStartupOnLogin(DefaultSettings);
+        SetCheckRow(StartupStatusIcon, StartupDetailText, StartupFixButton, startup);
+
+        PortableReadinessCheck registry = PortableModeReadiness.CheckRegistryIntegration(DefaultSettings);
+        SetCheckRow(RegistryStatusIcon, RegistryDetailText, RegistryFixButton, registry);
+
+        PortableReadinessCheck backup = PortableModeReadiness.CheckRecentBackup(_backedUpThisSession);
+        SetCheckRow(BackupStatusIcon, BackupDetailText, BackupFixButton, backup);
+
+        bool ready = fileBacked.IsSatisfied && models.IsSatisfied && startup.IsSatisfied && registry.IsSatisfied;
+        EnableFullyPortableButton.IsEnabled = ready;
+        PortableStatusText.Text = ready
+            ? "All required checks pass. You're ready to enable fully portable mode."
+            : "Resolve the required items above (backup is optional), then recheck.";
+    }
+
+    private static void SetCheckRow(Wpf.Ui.Controls.SymbolIcon icon, System.Windows.Controls.TextBlock detailText, System.Windows.Controls.Button fixButton, PortableReadinessCheck check)
+    {
+        icon.Symbol = check.IsSatisfied ? Wpf.Ui.Controls.SymbolRegular.Checkmark24 : Wpf.Ui.Controls.SymbolRegular.Warning24;
+        icon.Foreground = check.IsSatisfied
+            ? System.Windows.Media.Brushes.SeaGreen
+            : System.Windows.Media.Brushes.DarkOrange;
+        detailText.Text = check.Detail;
+        fixButton.Visibility = check.IsSatisfied ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void RecheckPortableButton_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshPortableChecklist();
+    }
+
+    private void FileBackedFixButton_Click(object sender, RoutedEventArgs e)
+    {
+        PortableModeReadiness.EnableFileBackedSettings(DefaultSettings);
+        RefreshPortableChecklist();
+    }
+
+    private void ModelsFixButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            PortableModeReadiness.MoveDataToPortableFolder();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to move data to the portable folder: {ex.Message}");
+        }
+
+        RefreshPortableChecklist();
+    }
+
+    private async void StartupFixButton_Click(object sender, RoutedEventArgs e)
+    {
+        StartupFixButton.IsEnabled = false;
+        await PortableModeReadiness.DisableStartupOnLoginAsync(DefaultSettings);
+        RefreshPortableChecklist();
+    }
+
+    private void RegistryFixButton_Click(object sender, RoutedEventArgs e)
+    {
+        PortableModeReadiness.RemoveRegistryIntegration(DefaultSettings);
+        RefreshPortableChecklist();
+    }
+
+    private async void BackupFixButton_Click(object sender, RoutedEventArgs e)
+    {
+        await ExportSettingsAsync();
+        _backedUpThisSession = true;
+        RefreshPortableChecklist();
+    }
+
+    private async void EnableFullyPortableButton_Click(object sender, RoutedEventArgs e)
+    {
+        Wpf.Ui.Controls.MessageBoxResult confirmation = await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Enable Fully Portable Mode?",
+            Content = "Fully portable mode will be active after you restart Text Grab: settings, history, Whisper models and logs will move into Text Grab's own folder, and registry-based OS integration (startup on login, context menu, file/protocol associations) will stop being written.",
+            PrimaryButtonText = "Enable",
+            CloseButtonText = "Cancel"
+        }.ShowDialogAsync();
+
+        if (confirmation != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            return;
+
+        DefaultSettings.FullyPortable = true;
+        DefaultSettings.Save();
+
+        await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Restart Required",
+            Content = "Restart Text Grab to apply fully portable mode.",
+            CloseButtonText = "OK"
+        }.ShowDialogAsync();
+
+        RefreshPortableChecklist();
+    }
+
+    private async void DisableFullyPortableButton_Click(object sender, RoutedEventArgs e)
+    {
+        Wpf.Ui.Controls.MessageBoxResult confirmation = await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Turn Off Fully Portable Mode?",
+            Content = "Fully portable mode will be turned off after you restart Text Grab. Data already moved beside the executable is not moved back automatically.",
+            PrimaryButtonText = "Turn Off",
+            CloseButtonText = "Cancel"
+        }.ShowDialogAsync();
+
+        if (confirmation != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            return;
 
         DefaultSettings.FullyPortable = false;
         DefaultSettings.Save();
@@ -311,15 +415,10 @@ public partial class DangerSettings : System.Windows.Controls.Page
         await new Wpf.Ui.Controls.MessageBox
         {
             Title = "Restart Required",
-            Content = "Fully portable mode will be turned off after you restart Text Grab. Data already moved beside the executable is not moved back automatically.",
+            Content = "Restart Text Grab to apply the change.",
             CloseButtonText = "OK"
         }.ShowDialogAsync();
-    }
 
-    private void RevertFullyPortableToggle()
-    {
-        _loadingDangerSettings = true;
-        FullyPortableToggle.IsChecked = DefaultSettings.FullyPortable;
-        _loadingDangerSettings = false;
+        RefreshPortableChecklist();
     }
 }
