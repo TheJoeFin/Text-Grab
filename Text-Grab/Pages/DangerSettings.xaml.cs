@@ -220,19 +220,51 @@ public partial class DangerSettings : System.Windows.Controls.Page
         if (DefaultSettings.EnableFileBackedManagedSettings == isEnabled)
             return;
 
-        DefaultSettings.EnableFileBackedManagedSettings = isEnabled;
-        DefaultSettings.Save();
+        if (isEnabled)
+        {
+            Wpf.Ui.Controls.MessageBoxResult confirmation = await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Enable Experimental File-Backed Settings Storage?",
+                Content = "Experimental file-backed settings storage will be preferred after you restart Text Grab. Restart is required because Text Grab applies this storage preference when it starts so it can safely keep the legacy strings and file-backed copies in sync.\n\nBackup your settings before enabling it if you have not already.",
+                PrimaryButtonText = "Enable",
+                CloseButtonText = "Cancel"
+            }.ShowDialogAsync();
 
-        string message = isEnabled
-            ? "Experimental file-backed settings storage will be preferred after you restart Text Grab. Restart is required because Text Grab applies this storage preference when it starts so it can safely keep the legacy strings and file-backed copies in sync. Backup your settings before using it if you have not already."
-            : "Legacy settings storage will be preferred again after you restart Text Grab.";
+            if (confirmation != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            {
+                RevertEnableFileBackedManagedSettingsToggle();
+                return;
+            }
+
+            DefaultSettings.EnableFileBackedManagedSettings = true;
+            DefaultSettings.Save();
+
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Restart Required",
+                Content = "Restart Text Grab to apply the new storage preference.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+
+            return;
+        }
+
+        DefaultSettings.EnableFileBackedManagedSettings = false;
+        DefaultSettings.Save();
 
         await new Wpf.Ui.Controls.MessageBox
         {
             Title = "Restart Required",
-            Content = message,
+            Content = "Legacy settings storage will be preferred again after you restart Text Grab.",
             CloseButtonText = "OK"
         }.ShowDialogAsync();
+    }
+
+    private void RevertEnableFileBackedManagedSettingsToggle()
+    {
+        _loadingDangerSettings = true;
+        EnableFileBackedManagedSettingsToggle.IsChecked = DefaultSettings.EnableFileBackedManagedSettings;
+        _loadingDangerSettings = false;
     }
 
     private async void FullyPortableToggle_Checked(object sender, RoutedEventArgs e)
