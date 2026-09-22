@@ -332,10 +332,13 @@ public static class AudioTranscriptionUtilities
     }
 
     /// <summary>
-    /// Borrows the shared, cached <see cref="WhisperFactory"/> for <paramref name="modelChoice"/> (or
+    /// Borrows the shared <see cref="WhisperFactory"/> for <paramref name="modelChoice"/> (or
     /// <see cref="CurrentModelChoice"/> — the file-transcription default — when omitted), downloading
-    /// the model if needed. The factory is expensive to create (it loads the model), so it is created
-    /// once and reused. If the model choice changes, the old factory is retired and a new one is
+    /// the model if needed. The factory is shared rather than one-per-caller only so two overlapping
+    /// users of the same model (e.g. a live session running while a file transcription starts) reuse
+    /// one loaded copy instead of each loading their own; each caller is expected to call
+    /// <see cref="ReleaseFactory"/> once it's done so the model doesn't stay resident in RAM between
+    /// transcriptions. If the model choice changes, the old factory is retired and a new one is
     /// loaded — see <see cref="WhisperFactoryLease"/> for why the caller must hold the lease for as
     /// long as it uses processors built from the factory.
     /// </summary>
@@ -361,6 +364,34 @@ public static class AudioTranscriptionUtilities
             _factoryHandle = new WhisperFactoryHandle(WhisperFactory.FromPath(modelPath), choice);
             AudioDebugLog.Write("AcquireFactoryAsync: WhisperFactory ready");
             return _factoryHandle.Lease();
+        }
+        finally
+        {
+            _factoryLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Releases the shared Whisper factory once a transcription (live or file) is done with it, so the
+    /// loaded model — anywhere from tens of MB to ~1.6 GB — doesn't stay resident in RAM between uses.
+    /// The next transcription simply reloads it via <see cref="AcquireFactoryAsync"/>. Safe to call even
+    /// while another lease on the same factory is still outstanding (e.g. a file transcription finishing
+    /// while a live session is using the same model, or vice versa): like a model change,
+    /// <see cref="WhisperFactoryHandle.Retire"/> only disposes once every outstanding lease has been
+    /// returned, so it never frees a model a concurrent session is still decoding against. Callers must
+    /// return their own lease before calling this.
+    /// </summary>
+    internal static void ReleaseFactory()
+    {
+        _factoryLock.Wait();
+        try
+        {
+            if (_factoryHandle is null)
+                return;
+
+            AudioDebugLog.Write($"ReleaseFactory: releasing factory for {_factoryHandle.Choice}");
+            _factoryHandle.Retire();
+            _factoryHandle = null;
         }
         finally
         {
@@ -446,59 +477,69 @@ public static class AudioTranscriptionUtilities
         return await Task.Run(async () =>
         {
             // The lease is held for the whole decode: a model change (or a live session starting) part
-            // way through must not free the native model this processor is still reading.
-            using WhisperFactoryLease factoryLease = await AcquireFactoryAsync(statusProgress, cancellationToken).ConfigureAwait(false);
-
-            statusProgress?.Report("Transcribing audio…");
-            AudioDebugLog.Write("TranscribeAudioFileAsync: decoding audio to 16 kHz mono WAV");
-            using MemoryStream wavStream = DecodeToWav16kMono(audioFilePath);
-            AudioDebugLog.Write($"TranscribeAudioFileAsync: decoded WAV bytes={wavStream.Length}");
-
-            // 16 kHz mono 16-bit PCM, 44-byte WAV header: 32,000 bytes/second of audio.
-            double clipTotalSeconds = Math.Max(0, wavStream.Length - 44) / 32000.0;
-
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            // Without this, whisper.cpp conditions each ~30s decode window on the text it just produced
-            // for the previous window. That's fine for continuity, but once a window decodes badly
-            // (applause, silence, cross-talk, a speaker handoff) the garbage becomes the prompt for the
-            // next window, and whisper.cpp is prone to spiraling into repeated garbage tokens once it's
-            // conditioned on its own bad output — corrupting the rest of a long file instead of just the
-            // one bad segment. WithNoContext() decodes each window independently so a bad patch stays
-            // contained to that patch. Matches the live path (see LiveAudioTranscriber.StartAsync).
-            WhisperProcessorBuilder processorBuilder = factoryLease.Factory.CreateBuilder()
-                .WithLanguage(WhisperModelInfo.LanguageFor(CurrentModelChoice))
-                .WithThreads(Math.Max(1, Environment.ProcessorCount - 1))
-                .WithNoContext();
-
-            // CarryInitialPrompt re-applies the hot words to every decode window (not just the first),
-            // so the bias holds across long files instead of fading out after the first segment.
-            if (!string.IsNullOrWhiteSpace(hotWords))
-                processorBuilder = processorBuilder.WithPrompt(hotWords.Trim()).WithCarryInitialPrompt(true);
-
-            await using WhisperProcessor processor = processorBuilder.Build();
-
-            StringBuilder builder = new();
-            int segmentCount = 0;
-            await foreach (SegmentData segment in processor.ProcessAsync(wavStream, cancellationToken).ConfigureAwait(false))
+            // way through must not free the native model this processor is still reading. Once this
+            // transcription is done with it — success, error, or cancellation — the finally below
+            // returns the lease and releases the shared factory so the model doesn't stay resident in
+            // RAM between transcriptions; the next call simply reloads it via AcquireFactoryAsync.
+            WhisperFactoryLease factoryLease = await AcquireFactoryAsync(statusProgress, cancellationToken).ConfigureAwait(false);
+            try
             {
-                string segmentText = includeTimecodes
-                    ? $"[{FormatTimecode(segment.Start)}]{segment.Text}{Environment.NewLine}"
-                    : segment.Text;
+                statusProgress?.Report("Transcribing audio…");
+                AudioDebugLog.Write("TranscribeAudioFileAsync: decoding audio to 16 kHz mono WAV");
+                using MemoryStream wavStream = DecodeToWav16kMono(audioFilePath);
+                AudioDebugLog.Write($"TranscribeAudioFileAsync: decoded WAV bytes={wavStream.Length}");
 
-                builder.Append(segmentText);
-                segmentProgress?.Report(segmentText);
-                segmentCount++;
+                // 16 kHz mono 16-bit PCM, 44-byte WAV header: 32,000 bytes/second of audio.
+                double clipTotalSeconds = Math.Max(0, wavStream.Length - 44) / 32000.0;
 
-                if (clipTotalSeconds > 0)
-                    clipProgress?.Report(Math.Clamp(segment.End.TotalSeconds / clipTotalSeconds, 0.0, 1.0));
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                // Without this, whisper.cpp conditions each ~30s decode window on the text it just produced
+                // for the previous window. That's fine for continuity, but once a window decodes badly
+                // (applause, silence, cross-talk, a speaker handoff) the garbage becomes the prompt for the
+                // next window, and whisper.cpp is prone to spiraling into repeated garbage tokens once it's
+                // conditioned on its own bad output — corrupting the rest of a long file instead of just the
+                // one bad segment. WithNoContext() decodes each window independently so a bad patch stays
+                // contained to that patch. Matches the live path (see LiveAudioTranscriber.StartAsync).
+                WhisperProcessorBuilder processorBuilder = factoryLease.Factory.CreateBuilder()
+                    .WithLanguage(WhisperModelInfo.LanguageFor(CurrentModelChoice))
+                    .WithThreads(Math.Max(1, Environment.ProcessorCount - 1))
+                    .WithNoContext();
+
+                // CarryInitialPrompt re-applies the hot words to every decode window (not just the first),
+                // so the bias holds across long files instead of fading out after the first segment.
+                if (!string.IsNullOrWhiteSpace(hotWords))
+                    processorBuilder = processorBuilder.WithPrompt(hotWords.Trim()).WithCarryInitialPrompt(true);
+
+                await using WhisperProcessor processor = processorBuilder.Build();
+
+                StringBuilder builder = new();
+                int segmentCount = 0;
+                await foreach (SegmentData segment in processor.ProcessAsync(wavStream, cancellationToken).ConfigureAwait(false))
+                {
+                    string segmentText = includeTimecodes
+                        ? $"[{FormatTimecode(segment.Start)}]{segment.Text}{Environment.NewLine}"
+                        : segment.Text;
+
+                    builder.Append(segmentText);
+                    segmentProgress?.Report(segmentText);
+                    segmentCount++;
+
+                    if (clipTotalSeconds > 0)
+                        clipProgress?.Report(Math.Clamp(segment.End.TotalSeconds / clipTotalSeconds, 0.0, 1.0));
+                }
+
+                clipProgress?.Report(1.0);
+
+                stopwatch.Stop();
+                string text = CleanTranscript(builder.ToString());
+                AudioDebugLog.Write($"TranscribeAudioFileAsync: DONE in {stopwatch.ElapsedMilliseconds} ms, {segmentCount} segments, result length={text.Length}");
+                return text;
             }
-
-            clipProgress?.Report(1.0);
-
-            stopwatch.Stop();
-            string text = CleanTranscript(builder.ToString());
-            AudioDebugLog.Write($"TranscribeAudioFileAsync: DONE in {stopwatch.ElapsedMilliseconds} ms, {segmentCount} segments, result length={text.Length}");
-            return text;
+            finally
+            {
+                factoryLease.Dispose();
+                ReleaseFactory();
+            }
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -1215,10 +1256,16 @@ public sealed partial class LiveAudioTranscriber : IDisposable
             _vadProcessor = null;
         }
 
-        // Return the factory only after the processor built from it is disposed. The VAD factory is
+        // Return the lease only after the processor built from it is disposed, then release the shared
+        // factory so the model doesn't stay resident in RAM once this session is done with it — the
+        // next session (or a restart on model/source change) simply reloads it. The VAD factory is
         // shared and owned by AudioTranscriptionUtilities; nothing to release there.
-        _factoryLease?.Dispose();
-        _factoryLease = null;
+        if (_factoryLease is not null)
+        {
+            _factoryLease.Dispose();
+            _factoryLease = null;
+            AudioTranscriptionUtilities.ReleaseFactory();
+        }
     }
 
     public void Dispose()
