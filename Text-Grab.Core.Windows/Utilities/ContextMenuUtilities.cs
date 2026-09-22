@@ -32,9 +32,9 @@ internal static class ContextMenuUtilities
     /// <returns>True if registration was successful, false otherwise.</returns>
     public static bool AddToContextMenu(out string? errorMessage)
     {
-        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+        if (SystemIntegrationGate.IsBlocked)
         {
-            errorMessage = "System integration is disabled for this automation profile.";
+            errorMessage = "System integration is disabled for this automation profile or Fully Portable mode.";
             return false;
         }
 
@@ -77,9 +77,9 @@ internal static class ContextMenuUtilities
     /// <returns>True if removal was successful, false otherwise.</returns>
     public static bool RemoveFromContextMenu(out string? errorMessage)
     {
-        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+        if (SystemIntegrationGate.IsBlocked)
         {
-            errorMessage = "System integration is disabled for this automation profile.";
+            errorMessage = "System integration is disabled for this automation profile or Fully Portable mode.";
             return false;
         }
 

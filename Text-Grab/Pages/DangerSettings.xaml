@@ -122,6 +122,40 @@
             </StackPanel>
         </Border>
 
+        <Border
+            Margin="0,8,0,0"
+            Padding="12"
+            Background="#14FFA500"
+            BorderBrush="DarkOrange"
+            BorderThickness="1"
+            CornerRadius="6">
+            <StackPanel>
+                <TextBlock
+                    FontWeight="Bold"
+                    Style="{StaticResource TextBodyNormal}"
+                    Text="Fully portable mode" />
+                <TextBlock
+                    Margin="0,6,0,0"
+                    Style="{StaticResource TextBodyNormal}"
+                    TextWrapping="Wrap">
+                    <Run Text="Keeps everything - settings, history, downloaded Whisper models, logs - in Text Grab's own folder instead of AppData, and skips registry-based OS integration (startup on login, context menu, file/protocol associations) so nothing is left behind outside that folder. Implies file-backed settings storage above. Only applies to unpackaged installs." />
+                    <LineBreak />
+                    <Hyperlink Click="BackupSettingsHyperlink_Click">Backup your settings</Hyperlink>
+                    <Run Text=" before enabling it, then restart Text Grab." />
+                </TextBlock>
+                <ui:ToggleSwitch
+                    x:Name="FullyPortableToggle"
+                    AutomationProperties.AutomationId="Settings.Danger.FullyPortableToggle"
+                    Margin="0,10,0,0"
+                    Checked="FullyPortableToggle_Checked"
+                    Unchecked="FullyPortableToggle_Checked">
+                    <TextBlock Style="{StaticResource TextBodyNormal}">
+                        Enable fully portable mode (restart required)
+                    </TextBlock>
+                </ui:ToggleSwitch>
+            </StackPanel>
+        </Border>
+
         <controls:SettingsCard
             Margin="0,8,0,3"
             Description="Windows Local AI model features normally require an ARM CPU. Override the check to allow any architecture."

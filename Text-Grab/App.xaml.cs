@@ -597,8 +597,10 @@ public partial class App : System.Windows.Application
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
         // Per-user text-grab:// and .tggf registration for unpackaged installs
-        // (packaged installs register these via the MSIX manifest).
-        if (_automationProfile is null || _automationProfile.AllowsPersistentRegistration)
+        // (packaged installs register these via the MSIX manifest). Skipped under Fully
+        // Portable mode too, so nothing gets written to the registry.
+        if ((_automationProfile is null || _automationProfile.AllowsPersistentRegistration)
+            && !SystemIntegrationGate.PortableModeBlocksRegistry)
         {
             ProtocolHandlerUtilities.EnsureProtocolRegistration();
             FileAssociationUtilities.EnsureGrabFrameFileAssociation();

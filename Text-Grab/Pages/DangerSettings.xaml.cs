@@ -28,6 +28,7 @@ public partial class DangerSettings : System.Windows.Controls.Page
         _loadingDangerSettings = true;
         OverrideArchCheckWinAI.IsChecked = DefaultSettings.OverrideAiArchCheck;
         EnableFileBackedManagedSettingsToggle.IsChecked = DefaultSettings.EnableFileBackedManagedSettings;
+        FullyPortableToggle.IsChecked = DefaultSettings.FullyPortable;
         _loadingDangerSettings = false;
     }
 
@@ -232,5 +233,61 @@ public partial class DangerSettings : System.Windows.Controls.Page
             Content = message,
             CloseButtonText = "OK"
         }.ShowDialogAsync();
+    }
+
+    private async void FullyPortableToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loadingDangerSettings)
+            return;
+
+        bool isEnabled = FullyPortableToggle.IsChecked is true;
+        if (DefaultSettings.FullyPortable == isEnabled)
+            return;
+
+        if (isEnabled)
+        {
+            Wpf.Ui.Controls.MessageBoxResult confirmation = await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Enable Fully Portable Mode?",
+                Content = "Fully portable mode will be active after you restart Text Grab: settings, history, Whisper models and logs will move into Text Grab's own folder, and registry-based OS integration (startup on login, context menu, file/protocol associations) will stop being written.\n\nBackup your settings before enabling it if you have not already.",
+                PrimaryButtonText = "Enable",
+                CloseButtonText = "Cancel"
+            }.ShowDialogAsync();
+
+            if (confirmation != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            {
+                RevertFullyPortableToggle();
+                return;
+            }
+
+            DefaultSettings.FullyPortable = true;
+            DefaultSettings.Save();
+
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Restart Required",
+                Content = "Restart Text Grab to apply fully portable mode.",
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
+
+            return;
+        }
+
+        DefaultSettings.FullyPortable = false;
+        DefaultSettings.Save();
+
+        await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Restart Required",
+            Content = "Fully portable mode will be turned off after you restart Text Grab. Data already moved beside the executable is not moved back automatically.",
+            CloseButtonText = "OK"
+        }.ShowDialogAsync();
+    }
+
+    private void RevertFullyPortableToggle()
+    {
+        _loadingDangerSettings = true;
+        FullyPortableToggle.IsChecked = DefaultSettings.FullyPortable;
+        _loadingDangerSettings = false;
     }
 }

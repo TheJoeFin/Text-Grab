@@ -16,7 +16,7 @@ internal class ImplementAppOptions
 
     public static async Task ImplementStartupOption(bool startupOnLogin)
     {
-        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+        if (SystemIntegrationGate.IsBlocked)
             return;
 
         if (startupOnLogin)
@@ -44,7 +44,7 @@ internal class ImplementAppOptions
 
     public static void RegisterAsImageOpenWithApp()
     {
-        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+        if (SystemIntegrationGate.IsBlocked)
             return;
 
         if (AppUtilities.IsPackaged())
@@ -112,7 +112,7 @@ internal class ImplementAppOptions
 
     public static void UnregisterAsImageOpenWithApp()
     {
-        if (AutomationProfile.Current is { AllowsSystemIntegration: false })
+        if (SystemIntegrationGate.IsBlocked)
             return;
 
         if (AppUtilities.IsPackaged())
