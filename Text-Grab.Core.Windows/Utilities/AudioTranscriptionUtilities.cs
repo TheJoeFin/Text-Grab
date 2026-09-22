@@ -174,7 +174,8 @@ public static class AudioTranscriptionUtilities
     private static WhisperVadFactory? _vadFactory;
     private static readonly SemaphoreSlim _vadFactoryLock = new(1, 1);
 
-    private static string ModelDirectory => Path.Combine(
+    /// <summary>Where downloaded Whisper (and VAD) models are stored on disk.</summary>
+    public static string ModelDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Text-Grab", "WhisperModels");
 
@@ -285,6 +286,37 @@ public static class AudioTranscriptionUtilities
             try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
             throw;
         }
+    }
+
+    /// <summary>
+    /// Downloads the given Whisper model ahead of time (e.g. from the Models settings page) so it's
+    /// ready before the user starts a transcription. A no-op if it's already downloaded.
+    /// </summary>
+    public static Task<string> DownloadModelAsync(WhisperModelChoice choice, IProgress<string>? progress = null, CancellationToken cancellationToken = default) =>
+        EnsureModelDownloadedAsync(choice, progress, cancellationToken);
+
+    /// <summary>
+    /// Deletes a downloaded model's file to free disk space. If it's the model currently loaded in
+    /// memory, the shared factory is retired so the next transcription reloads (and, if needed,
+    /// re-downloads) it rather than continuing to serve the now-deleted file's in-memory copy.
+    /// Returns false if the model wasn't downloaded.
+    /// </summary>
+    public static bool DeleteModel(WhisperModelChoice choice)
+    {
+        string path = ModelPathFor(choice);
+        if (!File.Exists(path))
+            return false;
+
+        File.Delete(path);
+        AudioDebugLog.Write($"DeleteModel: deleted {choice} model at {path}");
+
+        if (_factoryHandle is not null && _factoryHandle.Choice == choice)
+        {
+            _factoryHandle.Retire();
+            _factoryHandle = null;
+        }
+
+        return true;
     }
 
     /// <summary>
