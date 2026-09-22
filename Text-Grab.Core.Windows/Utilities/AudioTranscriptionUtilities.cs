@@ -23,9 +23,7 @@ public static class AudioDebugLog
 
     private static long _writtenBytes = -1;   // -1 until the size of an existing log is read once
 
-    private static string LogDirectory => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Text-Grab", "Logs");
+    private static string LogDirectory => PortableStorageUtilities.GetDataDirectory("Logs");
 
     /// <summary>Stable per-user log path so a run can be found and collected after the fact.</summary>
     public static string LogPath { get; } = Path.Combine(LogDirectory, "audio-debug.log");
@@ -167,10 +165,11 @@ public static class AudioTranscriptionUtilities
     private static WhisperVadFactory? _vadFactory;
     private static readonly SemaphoreSlim _vadFactoryLock = new(1, 1);
 
-    /// <summary>Where downloaded Whisper (and VAD) models are stored on disk.</summary>
-    public static string ModelDirectory => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Text-Grab", "WhisperModels");
+    /// <summary>
+    /// Where downloaded Whisper (and VAD) models are stored on disk. Redirected beside the
+    /// executable under Fully Portable mode; see <see cref="PortableStorageUtilities"/>.
+    /// </summary>
+    public static string ModelDirectory => PortableStorageUtilities.GetDataDirectory("WhisperModels");
 
     /// <summary>
     /// The model currently selected for file/clip transcription (Open Audio/Video), where a progress
