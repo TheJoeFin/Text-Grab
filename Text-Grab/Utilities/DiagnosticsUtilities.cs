@@ -1,3 +1,4 @@
+using Dapplo.Windows.Common.Structs;
 using Dapplo.Windows.User32;
 using Microsoft.Win32;
 using System;
@@ -443,14 +444,14 @@ public static class DiagnosticsUtilities
                 // DPI scale percent
                 NativeMethods.GetScaleFactorForMonitor(di.MonitorHandle, out uint scalePercent);
                 // Raw and scaled bounds
-                Dapplo.Windows.Common.Structs.NativeRect raw = di.Bounds;
+                NativeRect raw = di.Bounds;
                 Rect scaled = di.ScaledBounds();
 
                 monitors.Add(new MonitorInfoModel
                 {
                     Index = i + 1,
                     ScalePercent = scalePercent,
-                    Bounds = raw,
+                    Bounds = raw.ToRect(),
                     ScaledBounds = scaled
                 });
             }

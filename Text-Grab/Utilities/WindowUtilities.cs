@@ -60,7 +60,7 @@ public static partial class WindowUtilities
 
             foreach (DisplayInfo screen in allScreens)
             {
-                Rect screenRect = screen.Bounds;
+                Rect screenRect = new(screen.Bounds.Left, screen.Bounds.Top, screen.Bounds.Width, screen.Bounds.Height);
                 DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(passedWindow);
                 screenRect = screenRect.GetScaledDownByDpi(dpi);
                 if (screenRect.IntersectsWith(storedSize))
@@ -135,7 +135,7 @@ public static partial class WindowUtilities
 
     public static Point GetCenterPoint(this DisplayInfo screen)
     {
-        Rect screenRect = screen.Bounds;
+        Rect screenRect = new(screen.Bounds.Left, screen.Bounds.Top, screen.Bounds.Width, screen.Bounds.Height);
         double x = screenRect.Left + (screenRect.Width / 2);
         double y = screenRect.Top + (screenRect.Height / 2);
         return new(x, y);

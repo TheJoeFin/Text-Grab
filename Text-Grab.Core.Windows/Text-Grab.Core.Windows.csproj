@@ -54,8 +54,8 @@
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
     <!-- Magick.NET Compare for ImageChangeDetector. -->
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.17.1" />
-    <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.27" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="15.0.0" />
+    <PackageReference Include="Magick.NET.SystemDrawing" Version="9.0.0" />
     <!--
         Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
         stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
@@ -64,7 +64,7 @@
     -->
     <PackageReference Include="Whisper.net" Version="1.9.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
-    <PackageReference Include="NAudio" Version="3.1.0" />
+    <PackageReference Include="NAudio" Version="3.2.0" />
   </ItemGroup>
 
 </Project>
