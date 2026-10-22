@@ -41,6 +41,7 @@ public partial class BottomBarSettings : FluentWindow
         _leftListView = CollectionViewSource.GetDefaultView(ButtonsInLeftList);
 
         ShowCursorTextCheckBox.IsChecked = DefaultSettings.ShowCursorText;
+        ShowTranscribeToggle.IsChecked = DefaultSettings.EtwShowTranscribe;
         ShowScrollbarCheckBox.IsChecked = DefaultSettings.ScrollBottomBar;
         ShowLanguagePickerToggle.IsChecked = DefaultSettings.EtwShowLangPicker;
         ShowWordCountToggle.IsChecked = DefaultSettings.EtwShowWordCount;
@@ -141,6 +142,7 @@ public partial class BottomBarSettings : FluentWindow
     private void SaveBTN_Click(object sender, RoutedEventArgs e)
     {
         DefaultSettings.ShowCursorText = ShowCursorTextCheckBox.IsChecked ?? true;
+        DefaultSettings.EtwShowTranscribe = ShowTranscribeToggle.IsChecked ?? true;
         DefaultSettings.ScrollBottomBar = ShowScrollbarCheckBox.IsChecked ?? true;
         DefaultSettings.EtwShowLangPicker = ShowLanguagePickerToggle.IsChecked ?? true;
         DefaultSettings.EtwShowWordCount = ShowWordCountToggle.IsChecked ?? true;

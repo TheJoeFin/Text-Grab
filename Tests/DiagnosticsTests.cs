@@ -111,6 +111,8 @@ public class DiagnosticsTests
 
         // Display
         Assert.Contains("\"appTheme\"", bugReport);
+        Assert.Contains("\"renderingMode\"", bugReport);
+        Assert.Contains("\"softwareRenderingActive\"", bugReport);
         Assert.Contains("\"fontSizeSetting\"", bugReport);
 
         // Edit Text Window

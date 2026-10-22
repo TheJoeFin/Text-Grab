@@ -1,0 +1,125 @@
+<ui:FluentWindow
+    x:Class="Text_Grab.Controls.GrabPageRangeDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Grab Multiple Pages"
+    AutomationProperties.AutomationId="GrabPageRangeDialog"
+    Width="360"
+    Height="360"
+    MinWidth="320"
+    MinHeight="320"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
+    </Window.Resources>
+
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar
+            Title="Grab Multiple Pages"
+            Height="32"
+            Margin="2,2,2,0"
+            Padding="8,2"
+            Icon="{StaticResource TextGrabIcon}" />
+
+        <StackPanel Grid.Row="1" Margin="12">
+            <TextBlock
+                x:Name="DescriptionTextBlock"
+                Margin="0,0,0,12"
+                TextWrapping="Wrap" />
+
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Text="From page" />
+                <TextBox
+                    x:Name="FromPageTextBox"
+                    Grid.Column="1"
+                    AutomationProperties.AutomationId="GrabPageRange.FromPage"
+                    TextChanged="PageTextBox_TextChanged" />
+                <TextBlock
+                    Grid.Column="2"
+                    Margin="12,0,8,0"
+                    VerticalAlignment="Center"
+                    Text="to" />
+                <TextBox
+                    x:Name="ToPageTextBox"
+                    Grid.Column="3"
+                    AutomationProperties.AutomationId="GrabPageRange.ToPage"
+                    TextChanged="PageTextBox_TextChanged" />
+            </Grid>
+
+            <TextBlock Margin="0,0,0,4" Text="Pages to include:" />
+            <StackPanel
+                x:Name="PageParityPanel"
+                AutomationProperties.AutomationId="GrabPageRange.PageParityOptions"
+                Margin="0,0,0,12"
+                Orientation="Horizontal">
+                <RadioButton
+                    Content="All"
+                    GroupName="PageParity"
+                    IsChecked="True"
+                    Tag="all" />
+                <RadioButton
+                    Margin="12,0,0,0"
+                    Content="Odd only"
+                    GroupName="PageParity"
+                    Tag="odd" />
+                <RadioButton
+                    Margin="12,0,0,0"
+                    Content="Even only"
+                    GroupName="PageParity"
+                    Tag="even" />
+            </StackPanel>
+
+            <CheckBox
+                x:Name="BlankLineBetweenPagesCheckBox"
+                AutomationProperties.AutomationId="GrabPageRange.BlankLineBetweenPages"
+                Content="Insert a blank line between pages" />
+
+            <TextBlock
+                x:Name="RangeErrorText"
+                AutomationProperties.AutomationId="GrabPageRange.Error"
+                Margin="0,8,0,0"
+                FontSize="11"
+                Foreground="Red"
+                Text=""
+                Visibility="Collapsed" />
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="12,0,12,12"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <ui:Button
+                x:Name="OkButton"
+                AutomationProperties.AutomationId="GrabPageRange.OkButton"
+                Margin="0,0,6,0"
+                Appearance="Primary"
+                Click="OkButton_Click"
+                Content="Grab" />
+            <ui:Button
+                AutomationProperties.AutomationId="GrabPageRange.CancelButton"
+                Click="CancelButton_Click"
+                Content="Cancel" />
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

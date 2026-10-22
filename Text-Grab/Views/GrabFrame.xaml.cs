@@ -1,4 +1,4 @@
-using Dapplo.Windows.User32;
+﻿using Dapplo.Windows.User32;
 using Fasetto.Word;
 using System;
 using System.Collections.Generic;
@@ -52,6 +52,20 @@ public partial class GrabFrame : Window
     public static RoutedCommand GrabTrimCommand = new();
     private readonly GrabFrameTableEditState tableEditState = new();
     private ResultTable? AnalyzedResultTable;
+
+    /// <summary>
+    /// User-repositioned table boundary (dragged via the corner handles on the table outline).
+    /// When set, only word borders whose center falls inside this rect are handed to the table
+    /// algorithm; when null, every word border in the frame is used, as before.
+    /// Deliberately survives <see cref="ResetGrabFrame"/> and PDF page changes so a table that
+    /// repeats at the same spot on every page can be grabbed page after page without re-dragging
+    /// the handles; it is only dropped when the user clears table edits (Escape) or loads
+    /// different content.
+    /// </summary>
+    private System.Drawing.RectangleF? tableBoundsOverride;
+    private System.Drawing.RectangleF tableBoundsLiveRect;
+    private Border? tableBoundsOutlineVisual;
+    private Thumb[]? tableBoundsHandleVisuals;
     private Point clickedPoint;
     private ILanguage? currentLanguage;
     private TextBox? destinationTextBox;
@@ -65,8 +79,17 @@ public partial class GrabFrame : Window
     private int _currentPdfPageIndex = -1;
     private int _initialPdfPageIndex;
     private bool hasLoadedImageSource = false;
+    /// <summary>
+    /// True once the user has made a change to the recognized words (edited/added/removed/moved
+    /// a word border, or placed a manual table divider) that a soft/automatic refresh — like a
+    /// middle-mouse window move — would otherwise silently discard. Cleared whenever the frame's
+    /// word borders are actually cleared, e.g. by <see cref="ResetGrabFrame"/>.
+    /// </summary>
+    private bool hasUnsavedWordEdits = false;
     private bool IsDragOver = false;
     private bool isDrawing = false;
+    private readonly RedrawCoordinator redrawCoordinator = new();
+    private int activeRedrawVersion;
     private bool isAutoOcrRedrawPass = false;
     private bool isLanguageBoxLoaded = false;
     private bool isMiddleDown = false;
@@ -104,12 +127,14 @@ public partial class GrabFrame : Window
     private string translationTargetLanguage = "English";
     private readonly DispatcherTimer translationTimer = new();
     private readonly Dictionary<WordBorder, string> originalTexts = [];
-    private readonly SemaphoreSlim translationSemaphore = new(3); // Limit to 3 concurrent translations
     private int totalWordsToTranslate = 0;
     private int translatedWordsCount = 0;
+    private bool isTranslating = false;
     private CancellationTokenSource? translationCancellationTokenSource;
     private readonly List<PdfTextLineOverlay> pdfTextLineOverlays = [];
     private CancellationTokenSource? _pdfPageNavCts;
+    /// <summary>True while "Grab multiple pages" is walking a page range; guards re-entry.</summary>
+    private bool isGrabbingMultiplePages;
     private bool isLoadedVisualDocument = false;
     private double frozenFrameContentScale = 1;
     private const string TargetLanguageMenuHeader = "Target Language";
@@ -140,6 +165,35 @@ public partial class GrabFrame : Window
         PdfTextLineOverlay? PdfTextLine,
         double Top,
         double Left);
+
+    internal sealed class RedrawCoordinator
+    {
+        private readonly SemaphoreSlim drawLock = new(1, 1);
+        private int version;
+
+        public void Invalidate()
+        {
+            version++;
+        }
+
+        public bool IsCurrent(int requestVersion) => requestVersion == version;
+
+        public async Task RunAsync(Func<int, Task> redraw)
+        {
+            int requestVersion = ++version;
+            await drawLock.WaitAsync();
+            try
+            {
+                // Coalesce requests made during OCR; only the latest view needs drawing.
+                if (IsCurrent(requestVersion))
+                    await redraw(requestVersion);
+            }
+            finally
+            {
+                drawLock.Release();
+            }
+        }
+    }
 
     #region Constructors
 
@@ -280,7 +334,7 @@ public partial class GrabFrame : Window
 
         foreach (TemplateRegion region in template.Regions.OrderBy(r => r.RegionNumber))
         {
-            Rect abs = region.ToAbsoluteRect(cw, ch);
+            Rect abs = region.ToAbsoluteRect(cw, ch).AsRect();
 
             WordBorder wb = new()
             {
@@ -370,7 +424,7 @@ public partial class GrabFrame : Window
         if (wbInfoList.Count < 1)
             NotifyIfUiAutomationNeedsLiveSource(currentLanguage);
 
-        if (history.PositionRect != Rect.Empty)
+        if (history.PositionRect != System.Drawing.RectangleF.Empty)
         {
             Left = history.PositionRect.Left;
             Top = history.PositionRect.Top;
@@ -481,12 +535,12 @@ public partial class GrabFrame : Window
 
         foreach (WordBorderInfo info in wbInfoList)
         {
-            Rect borderRect = info.BorderRect;
+            Rect borderRect = info.BorderRect.AsRect();
             info.BorderRect = new Rect(
                 borderRect.Left * scaleX,
                 borderRect.Top * scaleY,
                 borderRect.Width * scaleX,
-                borderRect.Height * scaleY);
+                borderRect.Height * scaleY).AsRectangleF();
 
             if (info.DisplayLineHeight > 0)
                 info.DisplayLineHeight *= scaleY;
@@ -507,8 +561,8 @@ public partial class GrabFrame : Window
             return new Size(imageContentBitmap.Width, imageContentBitmap.Height);
         }
 
-        Rect positionRect = history.PositionRect;
-        if (positionRect == Rect.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
+        System.Drawing.RectangleF positionRect = history.PositionRect;
+        if (positionRect == System.Drawing.RectangleF.Empty || positionRect.Width <= 0 || positionRect.Height <= 0)
             return new Size(0, 0);
 
         if (history.SourceMode == TextGrabMode.Fullscreen)
@@ -654,10 +708,18 @@ public partial class GrabFrame : Window
         UpdateTableEditingUiState();
     }
 
-    private void CancelTablePlacement(bool clearManualSeparators = false)
+    /// <param name="keepTableBounds">
+    /// Preserve the user-dragged table boundary even while clearing manual separators, so the
+    /// same region is reused on the next page of the same document.
+    /// </param>
+    private void CancelTablePlacement(bool clearManualSeparators = false, bool keepTableBounds = false)
     {
         if (clearManualSeparators)
+        {
             tableEditState.ClearAll();
+            if (!keepTableBounds)
+                tableBoundsOverride = null;
+        }
         else
             tableEditState.CancelPlacement();
 
@@ -720,6 +782,11 @@ public partial class GrabFrame : Window
             return true;
         }
 
+        // A manually placed divider is a real edit worth protecting: freeze the frame so
+        // the reDrawTimer/content-change watcher stop resetting it out from under the user.
+        FreezeFrameForWordEditing();
+        hasUnsavedWordEdits = true;
+
         string placementLabel = tableEditState.PlacementMode == GrabFrameTablePlacementMode.AddRow
             ? "row"
             : "column";
@@ -740,7 +807,7 @@ public partial class GrabFrame : Window
         if (AnalyzedResultTable is null)
             _ = TryToPlaceTable();
 
-        tableBounds = AnalyzedResultTable?.BoundingRect ?? Rect.Empty;
+        tableBounds = AnalyzedResultTable?.BoundingRect.AsRect() ?? Rect.Empty;
         return tableBounds != Rect.Empty
             && tableBounds.Width > 0
             && tableBounds.Height > 0;
@@ -837,6 +904,237 @@ public partial class GrabFrame : Window
         await ShowPdfPageAsync(targetPageIndex);
     }
 
+    private void GrabButtonContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ContextMenu menu)
+            return;
+
+        // Only a loaded multi-page PDF has pages to walk. (The menu items can't be named:
+        // they live inside the CollapsibleButton's name scope, so they are found by Tag.)
+        bool canGrabMultiplePages = _loadedPdfDocument is { PageCount: > 1 } && !isGrabbingMultiplePages;
+        foreach (MenuItem item in menu.Items.OfType<MenuItem>())
+        {
+            item.IsEnabled = canGrabMultiplePages;
+
+            if (item.Tag is "IgnoreRepeatedHeadersFooters")
+                item.IsChecked = DefaultSettings.GrabFrameIgnoreRepeatedHeadersFooters;
+        }
+    }
+
+    private void IgnoreRepeatedHeadersFootersMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem item)
+            return;
+
+        DefaultSettings.GrabFrameIgnoreRepeatedHeadersFooters = item.IsChecked;
+        DefaultSettings.Save();
+    }
+
+    private async void GrabMultiplePagesMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_loadedPdfDocument is null)
+        {
+            ShowFrameMessage("Open a PDF in the Grab Frame to grab multiple pages.");
+            return;
+        }
+
+        if (isGrabbingMultiplePages)
+            return;
+
+        // Every page in the range is re-rendered and re-read, including the current one, so
+        // any hand edits to the current page's words would be lost.
+        if (!await ConfirmDiscardWordEditsAsync())
+            return;
+
+        GrabPageRangeDialog dialog = new(_currentPdfPageIndex, _loadedPdfDocument.PageCount, TableToggleButton.IsChecked is true)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        List<int> pageIndices = GrabPageRangeDialog.BuildPageIndices(dialog.FirstPageIndex, dialog.LastPageIndex, dialog.PageParity);
+        await GrabPageRangeAsync(pageIndices, dialog.InsertBlankLineBetweenPages);
+    }
+
+    /// <summary>
+    /// Runs the normal single-page grab pipeline (page render, word borders, table analysis
+    /// with the persisted <see cref="tableBoundsOverride"/>, active template) over each page in
+    /// <paramref name="pageIndices"/> and opens the joined text in a new Edit Text Window.
+    /// With "Ignore repeated headers and footers" on, a first pass reads every page so the
+    /// running headers/footers can be found across pages before the grab pass drops them.
+    /// Leaves the frame on the last page.
+    /// </summary>
+    private async Task GrabPageRangeAsync(IReadOnlyList<int> pageIndices, bool insertBlankLineBetweenPages)
+    {
+        if (_loadedPdfDocument is null || isGrabbingMultiplePages)
+            return;
+
+        int pageCount = _loadedPdfDocument.PageCount;
+        List<int> pagesToGrab = [.. pageIndices.Where(index => index >= 0 && index < pageCount)];
+        if (pagesToGrab.Count == 0)
+            return;
+
+        isGrabbingMultiplePages = true;
+        StringBuilder combinedText = new();
+        Dictionary<int, (IOcrLinesWords Result, double Scale)> ocrResultsByPage = [];
+
+        try
+        {
+            List<HashSet<int>>? ignoredElementsPerPage = null;
+
+            if (DefaultSettings.GrabFrameIgnoreRepeatedHeadersFooters && pagesToGrab.Count > 1)
+            {
+                List<PageTextSnapshot> snapshots = [];
+                foreach (int pageIndex in pagesToGrab)
+                {
+                    ShowFrameMessage($"Checking page {pageIndex + 1} for repeated headers and footers...");
+
+                    if (!await PrepareCurrentPdfPageForGrabAsync(pageIndex, ocrResultsByPage))
+                        return;
+
+                    snapshots.Add(SnapshotCurrentPageTextElements());
+                }
+
+                ignoredElementsPerPage = RepeatedPageElementDetector.FindRepeatedHeaderFooterElements(snapshots);
+            }
+
+            int lastPageNumber = pagesToGrab[^1] + 1;
+            for (int position = 0; position < pagesToGrab.Count; position++)
+            {
+                int pageIndex = pagesToGrab[position];
+                ShowFrameMessage($"Grabbing page {pageIndex + 1} of {lastPageNumber}...");
+
+                if (!await PrepareCurrentPdfPageForGrabAsync(pageIndex, ocrResultsByPage))
+                    return;
+
+                if (ignoredElementsPerPage is not null)
+                    RemoveIgnoredPageTextElements(ignoredElementsPerPage[position]);
+
+                UpdateFrameText();
+                string pageText = await ResolveGrabOutputTextAsync();
+                if (string.IsNullOrWhiteSpace(pageText))
+                    continue;
+
+                if (combinedText.Length > 0 && insertBlankLineBetweenPages)
+                    combinedText.AppendLine();
+
+                combinedText.AppendLine(pageText.TrimEnd());
+            }
+        }
+        finally
+        {
+            isGrabbingMultiplePages = false;
+        }
+
+        HideFrameMessage();
+
+        string outputText = combinedText.ToString().TrimEnd();
+        if (string.IsNullOrWhiteSpace(outputText))
+        {
+            ShowFrameMessage("No text was found on the selected pages.");
+            return;
+        }
+
+        // A multi-page grab is a document of its own, so it always lands in a fresh Edit Text
+        // Window (never appended to a linked one), in spreadsheet mode when it was grabbed as a
+        // table so the rows from every page line up as one sheet.
+        EditTextWindow? resultWindow = WindowUtilities.OpenTextInNewEditTextWindow(
+            outputText,
+            enterSpreadsheetMode: TableToggleButton.IsChecked is true);
+
+        if (resultWindow is null)
+            return;
+
+        if (CloseOnGrabMenuItem.IsChecked)
+            Close();
+    }
+
+    /// <summary>
+    /// Shows <paramref name="pageIndex"/> and synchronously drives what the redraw timer would
+    /// eventually do for it, so the word borders / text lines are on the canvas when this
+    /// returns. OCR results are cached in <paramref name="ocrResultsByPage"/> so a page visited
+    /// twice (header/footer analysis, then the grab) is only OCR'd once. Returns false when the
+    /// frame was closed, the document replaced, or the navigation superseded meanwhile.
+    /// </summary>
+    private async Task<bool> PrepareCurrentPdfPageForGrabAsync(
+        int pageIndex,
+        Dictionary<int, (IOcrLinesWords Result, double Scale)> ocrResultsByPage)
+    {
+        await ShowPdfPageAsync(pageIndex);
+
+        if (_loadedPdfDocument is null || _currentPdfPageIndex != pageIndex)
+            return false;
+
+        reDrawTimer.Stop();
+
+        if (ocrResultsByPage.TryGetValue(pageIndex, out (IOcrLinesWords Result, double Scale) cached))
+            (ocrResultOfWindow, windowFrameImageScale) = cached;
+
+        await DrawRectanglesAroundWords(SearchBar.SearchText, isAutomaticRedraw: true);
+
+        if (ocrResultOfWindow is not null && !ocrResultsByPage.ContainsKey(pageIndex))
+            ocrResultsByPage[pageIndex] = (ocrResultOfWindow, windowFrameImageScale);
+
+        return _loadedPdfDocument is not null && _currentPdfPageIndex == pageIndex;
+    }
+
+    /// <summary>
+    /// Every piece of text currently on the canvas (word borders first, then native-PDF text
+    /// lines) with its position, for cross-page header/footer detection. The order is what
+    /// <see cref="RemoveIgnoredPageTextElements"/> indexes into after the page is redrawn.
+    /// </summary>
+    private PageTextSnapshot SnapshotCurrentPageTextElements()
+    {
+        List<PageTextElement> elements =
+            [.. wordBorders.Select(wb => new PageTextElement(wb.Word, new System.Drawing.RectangleF((float)wb.Left, (float)wb.Top, (float)wb.Width, (float)wb.Height))),
+             .. pdfTextLineOverlays.Select(line => new PageTextElement(line.Text, new System.Drawing.RectangleF((float)line.Left, (float)line.Top, (float)line.Width, (float)line.Height)))];
+
+        double canvasWidth = RectanglesCanvas.Width > 0 ? RectanglesCanvas.Width : RectanglesCanvas.ActualWidth;
+        double canvasHeight = RectanglesCanvas.Height > 0 ? RectanglesCanvas.Height : RectanglesCanvas.ActualHeight;
+
+        return new PageTextSnapshot(elements, new System.Drawing.SizeF((float)canvasWidth, (float)canvasHeight));
+    }
+
+    /// <summary>
+    /// Drops the word borders / text lines at the given snapshot indices from the canvas so the
+    /// text assembled by <see cref="UpdateFrameText"/> leaves them out. The page was redrawn from
+    /// the same source since the snapshot, so the element order is the same.
+    /// </summary>
+    private void RemoveIgnoredPageTextElements(HashSet<int> ignoredIndices)
+    {
+        if (ignoredIndices.Count == 0)
+            return;
+
+        List<WordBorder> wordBordersToRemove = [];
+        for (int index = 0; index < wordBorders.Count; index++)
+        {
+            if (ignoredIndices.Contains(index))
+                wordBordersToRemove.Add(wordBorders[index]);
+        }
+
+        List<PdfTextLineOverlay> linesToRemove = [];
+        int wordBorderCount = wordBorders.Count;
+        for (int index = 0; index < pdfTextLineOverlays.Count; index++)
+        {
+            if (ignoredIndices.Contains(wordBorderCount + index))
+                linesToRemove.Add(pdfTextLineOverlays[index]);
+        }
+
+        foreach (WordBorder wordBorder in wordBordersToRemove)
+        {
+            RectanglesCanvas.Children.Remove(wordBorder);
+            wordBorders.Remove(wordBorder);
+        }
+
+        foreach (PdfTextLineOverlay line in linesToRemove)
+        {
+            PdfTextCanvas.Children.Remove(line);
+            pdfTextLineOverlays.Remove(line);
+        }
+    }
+
     private async Task ShowPdfPageAsync(int pageIndex)
     {
         if (_loadedPdfDocument is null)
@@ -851,14 +1149,21 @@ public partial class GrabFrame : Window
         try
         {
             reDrawTimer.Stop();
-            CancelTablePlacement(clearManualSeparators: true);
+            // Keep the dragged table boundary across pages: tables that repeat on every page
+            // of a document sit in the same place, so the region should carry over.
+            CancelTablePlacement(clearManualSeparators: true, keepTableBounds: true);
             ResetGrabFrame();
             await Task.Delay(300, ct);
 
             if (_loadedPdfDocument is null || ct.IsCancellationRequested)
                 return;
 
-            _currentPdfPageContent = await _loadedPdfDocument.GetPageContentAsync(pageIndex);
+            PdfDocumentRenderer pdfDocument = _loadedPdfDocument;
+            PdfPageContent pageContent = await pdfDocument.GetPageContentAsync(pageIndex);
+            if (ct.IsCancellationRequested || _isCleanedUp || !ReferenceEquals(pdfDocument, _loadedPdfDocument))
+                return;
+
+            _currentPdfPageContent = pageContent;
             frameContentImageSource = _currentPdfPageContent.RenderedPage;
             hasLoadedImageSource = true;
             isStaticImageSource = true;
@@ -969,7 +1274,15 @@ public partial class GrabFrame : Window
         {
             destinationTextBox = value;
             if (destinationTextBox is not null)
+            {
                 EditTextToggleButton.IsChecked = true;
+
+                if (WindowUtilities.ShouldForceTableModeForNewGrab(
+                    hasDestinationTextBox: true,
+                    IsLinkedEditTextWindowInSpreadsheetMode(),
+                    isTableModeAvailable: true))
+                    TableToggleButton.IsChecked = true;
+            }
             else
                 EditTextToggleButton.IsChecked = false;
         }
@@ -1034,8 +1347,8 @@ public partial class GrabFrame : Window
 
     private void ScaleFrozenOverlayElements(double widthScale, double heightScale)
     {
-        if ((!double.IsFinite(widthScale) || widthScale <= 0)
-            || (!double.IsFinite(heightScale) || heightScale <= 0))
+        if (!double.IsFinite(widthScale) || widthScale <= 0
+            || !double.IsFinite(heightScale) || heightScale <= 0)
         {
             return;
         }
@@ -1073,6 +1386,16 @@ public partial class GrabFrame : Window
         }
 
         tableEditState.ScaleSeparators(heightScale, widthScale);
+
+        if (tableBoundsOverride is System.Drawing.RectangleF bounds)
+        {
+            tableBoundsOverride = new System.Drawing.RectangleF(
+                (float)(bounds.X * widthScale),
+                (float)(bounds.Y * heightScale),
+                (float)(bounds.Width * widthScale),
+                (float)(bounds.Height * heightScale));
+        }
+
         ClearTablePlacementPreview();
     }
 
@@ -1217,7 +1540,7 @@ public partial class GrabFrame : Window
         List<WordBorderInfo> wbInfoList = [];
 
         foreach (WordBorder wb in wordBorders)
-            wbInfoList.Add(new WordBorderInfo(wb));
+            wbInfoList.Add(WordBorderInfoFactory.Create(wb));
 
         string? wbInfoJson = null;
         if (wbInfoList.Count > 0)
@@ -1262,7 +1585,7 @@ public partial class GrabFrame : Window
             WordBorderInfoJson = wbInfoJson,
             WordBorderInfoFileName = wbInfoJson is null ? null : historyItem?.WordBorderInfoFileName,
             ImageContent = bitmap,
-            PositionRect = sizePosRect,
+            PositionRect = sizePosRect.AsRectangleF(),
             IsTable = TableToggleButton.IsChecked!.Value,
             ManualTableColumnSeparators = tableEditState.ManualColumnSeparators.Count > 0 ? [.. tableEditState.ManualColumnSeparators] : null,
             ManualTableRowSeparators = tableEditState.ManualRowSeparators.Count > 0 ? [.. tableEditState.ManualRowSeparators] : null,
@@ -1288,6 +1611,7 @@ public partial class GrabFrame : Window
 
         const double widthScaleAdjustFactor = 1.5;
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
 
         double top = wordBorder.Top;
         double left = wordBorder.Left;
@@ -1342,6 +1666,7 @@ public partial class GrabFrame : Window
     public void DeleteThisWordBorder(WordBorder wordBorder, bool startEndTransaction = true)
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         wordBorders.Remove(wordBorder);
         RectanglesCanvas.Children.Remove(wordBorder);
 
@@ -1402,6 +1727,7 @@ public partial class GrabFrame : Window
         if (_isCleanedUp)
             return;
         _isCleanedUp = true;
+        redrawCoordinator.Invalidate();
         _freezeTransitionVersion++;
 
         MainZoomBorder.ResetRequested -= MainZoomBorder_ResetRequested;
@@ -1435,12 +1761,11 @@ public partial class GrabFrame : Window
 
         translationTimer.Stop();
         translationTimer.Tick -= TranslationTimer_Tick;
-        translationSemaphore.Dispose();
         translationCancellationTokenSource?.Cancel();
         translationCancellationTokenSource?.Dispose();
 
         // Dispose the shared translation model during cleanup to prevent resource leaks
-        WindowsAiUtilities.DisposeTranslationModel();
+        WinAiTranslator.ReleaseModel();
 
         MinimizeButton.Click -= OnMinimizeButtonClick;
         RestoreButton.Click -= OnRestoreButtonClick;
@@ -1510,6 +1835,7 @@ public partial class GrabFrame : Window
     public void MergeSelectedWordBorders()
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         RectanglesCanvas.ContextMenu.IsOpen = false;
         if (!IsFreezeMode)
             FreezeGrabFrame();
@@ -1541,7 +1867,7 @@ public partial class GrabFrame : Window
 
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         // Build merged content via model-only ResultTable
-        List<WordBorderInfo> selInfos = [.. selectedWordBorders.Select(wb => new WordBorderInfo(wb))];
+        List<WordBorderInfo> selInfos = [.. selectedWordBorders.Select(wb => WordBorderInfoFactory.Create(wb))];
         ResultTable tmp = new();
         tmp.AnalyzeAsTable(selInfos, new System.Drawing.Rectangle(0, 0, (int)ActualWidth, (int)ActualHeight));
         StringBuilder sb = new();
@@ -1631,6 +1957,7 @@ public partial class GrabFrame : Window
     public void UndoableWordChange(WordBorder wordBorder, string oldWord, bool isSingleTransaction)
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         if (isSingleTransaction)
             UndoRedo.StartTransaction();
 
@@ -1645,8 +1972,17 @@ public partial class GrabFrame : Window
             UndoRedo.EndTransaction();
     }
 
+    /// <summary>
+    /// Bubbled up from a word border's debounced TextChanged (see
+    /// <see cref="WordBorder.EditWordTextBox_TextChanged"/>/DebounceTimer_Tick) while the user
+    /// is actively typing a correction. Flags the frame dirty immediately, ahead of the
+    /// LostFocus commit in <see cref="UndoableWordChange"/>, so a soft-refresh path that
+    /// interrupts typing without a focus change still sees the edit as unsaved.
+    /// </summary>
     public void WordChanged()
     {
+        ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         reSearchTimer.Stop();
         reSearchTimer.Start();
     }
@@ -1706,6 +2042,7 @@ public partial class GrabFrame : Window
             FreezeGrabFrame();
 
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         SolidColorBrush backgroundBrush = new(Colors.Black);
         System.Drawing.Bitmap? bmp = null;
@@ -1715,7 +2052,7 @@ public partial class GrabFrame : Window
         rect = new(rect.X + 4, rect.Y, (rect.Width * dpi.DpiScaleX) + 10, rect.Height * dpi.DpiScaleY);
         // Language language = CurrentLanguage.AsLanguage() ?? LanguageUtilities.GetCurrentInputLanguage().AsLanguage() ?? new Language("en-US");
         ILanguage language = CurrentLanguage ?? LanguageUtilities.GetCurrentInputLanguage();
-        string ocrText = await OcrUtilities.GetTextFromAbsoluteRectAsync(
+        string ocrText = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(
             rect.GetScaleSizeByFraction(viewBoxZoomFactor),
             language,
             GetUiAutomationExcludedHandles());
@@ -1732,9 +2069,9 @@ public partial class GrabFrame : Window
         Windows.Foundation.Rect lineRect = new()
         {
             X = ((Canvas.GetLeft(selectBorder) * windowFrameImageScale) - 10) * dpi.DpiScaleX,
-            Y = (Canvas.GetTop(selectBorder) * windowFrameImageScale) * dpi.DpiScaleY,
-            Width = (selectBorder.Width * windowFrameImageScale) * dpi.DpiScaleX,
-            Height = (selectBorder.Height * windowFrameImageScale) * dpi.DpiScaleY,
+            Y = Canvas.GetTop(selectBorder) * windowFrameImageScale * dpi.DpiScaleY,
+            Width = selectBorder.Width * windowFrameImageScale * dpi.DpiScaleX,
+            Height = selectBorder.Height * windowFrameImageScale * dpi.DpiScaleY,
         };
 
         if (bmp is not null)
@@ -1977,6 +2314,7 @@ public partial class GrabFrame : Window
     private void DeleteWordBordersExecuted(object sender, ExecutedRoutedEventArgs? e = null)
     {
         ShouldSaveOnClose = true;
+        hasUnsavedWordEdits = true;
         UndoRedo.StartTransaction();
         List<WordBorder> deletedWordBorders = DeleteSelectedWordBorders();
         UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
@@ -2172,8 +2510,11 @@ public partial class GrabFrame : Window
 
     private string GetNormalizedOcrWordText(IOcrWord word)
     {
-        string wordText = word.Text;
+        return GetNormalizedOcrWordText(word.Text);
+    }
 
+    private string GetNormalizedOcrWordText(string wordText)
+    {
         if (DefaultSettings.CorrectErrors)
             wordText = wordText.TryFixNumberLetterErrors();
 
@@ -2232,11 +2573,11 @@ public partial class GrabFrame : Window
         WordBorder wordBorder = new()
         {
             DisplayLineHeight = displayLineHeight * contentScale,
-            Width = (((sourceRect.Width / (dpi.DpiScaleX * sourceScale)) + 2) / viewBoxZoomFactor) * contentScale,
-            Height = (((sourceRect.Height / (dpi.DpiScaleY * sourceScale)) + 2) / viewBoxZoomFactor) * contentScale,
+            Width = ((sourceRect.Width / (dpi.DpiScaleX * sourceScale)) + 2) / viewBoxZoomFactor * contentScale,
+            Height = ((sourceRect.Height / (dpi.DpiScaleY * sourceScale)) + 2) / viewBoxZoomFactor * contentScale,
             KeepSingleLineOutput = keepSingleLineOutput,
-            Top = (((sourceRect.Y / (dpi.DpiScaleY * sourceScale) - 1) + borderToCanvasY) / viewBoxZoomFactor) * contentScale,
-            Left = (((sourceRect.X / (dpi.DpiScaleX * sourceScale) - 1) + borderToCanvasX) / viewBoxZoomFactor) * contentScale,
+            Top = ((sourceRect.Y / (dpi.DpiScaleY * sourceScale)) - 1 + borderToCanvasY) / viewBoxZoomFactor * contentScale,
+            Left = ((sourceRect.X / (dpi.DpiScaleX * sourceScale)) - 1 + borderToCanvasX) / viewBoxZoomFactor * contentScale,
             OwnerGrabFrame = this,
             LineNumber = lineNumber,
             IsFromEditWindow = IsFromEditWindow,
@@ -2253,7 +2594,7 @@ public partial class GrabFrame : Window
 
     private void AddRenderedWordBorder(WordBorder wordBorderBox)
     {
-        if (!IsOcrValid)
+        if (!IsCurrentRedraw)
             return;
 
         wordBorders.Add(wordBorderBox);
@@ -2275,10 +2616,10 @@ public partial class GrabFrame : Window
     {
         double contentScale = IsFreezeMode ? frozenFrameContentScale : 1;
         Rect displayRect = new(
-            (sourceRect.X / (dpi.DpiScaleX * sourceScale)) * contentScale,
-            (sourceRect.Y / (dpi.DpiScaleY * sourceScale)) * contentScale,
-            (sourceRect.Width / (dpi.DpiScaleX * sourceScale)) * contentScale,
-            (sourceRect.Height / (dpi.DpiScaleY * sourceScale)) * contentScale);
+            sourceRect.X / (dpi.DpiScaleX * sourceScale) * contentScale,
+            sourceRect.Y / (dpi.DpiScaleY * sourceScale) * contentScale,
+            sourceRect.Width / (dpi.DpiScaleX * sourceScale) * contentScale,
+            sourceRect.Height / (dpi.DpiScaleY * sourceScale) * contentScale);
 
         PdfTextLineOverlay overlay = new(text);
         overlay.ApplyLayout(displayRect);
@@ -2287,30 +2628,48 @@ public partial class GrabFrame : Window
 
     private void AddRenderedPdfTextLine(PdfTextLineOverlay overlay)
     {
-        if (!IsOcrValid)
+        if (!IsCurrentRedraw)
             return;
 
         pdfTextLineOverlays.Add(overlay);
         _ = PdfTextCanvas.Children.Add(overlay);
     }
 
-    private async Task DrawRectanglesAroundWords(string searchWord = "")
+    private bool IsCurrentRedraw => IsOcrValid
+        && !_isCleanedUp
+        && redrawCoordinator.IsCurrent(activeRedrawVersion);
+
+    private Task DrawRectanglesAroundWords(string searchWord = "", bool isAutomaticRedraw = false)
     {
-        if (CurrentLanguage is UiAutomationLang)
-            await DrawUiAutomationRectanglesAsync(searchWord);
-        else
-            await DrawOcrRectanglesAsync(searchWord);
+        return redrawCoordinator.RunAsync(async version =>
+        {
+            if (_isCleanedUp)
+                return;
 
-        // The overlay just changed; rebase the change detector so the newly
-        // drawn word borders become part of the baseline instead of being
-        // judged as screen-content changes that re-trigger a refresh.
-        contentChangeDetector.Reset();
+            activeRedrawVersion = version;
+            isAutoOcrRedrawPass = isAutomaticRedraw;
+            try
+            {
+                if (CurrentLanguage is UiAutomationLang)
+                    await DrawUiAutomationRectanglesAsync(searchWord);
+                else
+                    await DrawOcrRectanglesAsync(searchWord);
 
-        // Only a fresh grab (or re-OCR) should trigger auto-speak. Selection,
-        // edits, moves and other overlay mutations also rebuild FrameText, so
-        // arm the speak-on-next-update flag here rather than speaking on every
-        // UpdateFrameText call.
-        _speakOnNextFrameTextUpdate = true;
+                if (!IsCurrentRedraw)
+                    return;
+
+                // The overlay just changed; rebase the change detector so the newly
+                // drawn word borders do not trigger another refresh.
+                contentChangeDetector.Reset();
+                // Only a successful fresh capture arms auto-speak, not selection/edit updates.
+                _speakOnNextFrameTextUpdate = true;
+            }
+            finally
+            {
+                isDrawing = false;
+                isAutoOcrRedrawPass = false;
+            }
+        });
     }
 
     private async Task DrawOcrRectanglesAsync(string searchWord = "")
@@ -2320,7 +2679,10 @@ public partial class GrabFrame : Window
 
         if (_currentPdfPageContent?.HasNativeText is true)
         {
-            await DrawPdfRectanglesAsync(searchWord);
+            if (TableToggleButton.IsChecked is true)
+                await DrawPdfWordRectanglesAsync(searchWord);
+            else
+                await DrawPdfRectanglesAsync(searchWord);
             return;
         }
 
@@ -2343,15 +2705,21 @@ public partial class GrabFrame : Window
 
         if (ocrResultOfWindow is null || ocrResultOfWindow.Lines.Length == 0)
         {
+            (IOcrLinesWords? Result, double Scale) recognition;
             if (frameContentImageSource is BitmapSource frozenBmp)
             {
                 using System.Drawing.Bitmap bmpForOcr = ImageMethods.BitmapSourceToBitmap(frozenBmp);
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
+                recognition = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
             }
             else
             {
-                (ocrResultOfWindow, windowFrameImageScale) = await OcrUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
+                recognition = await OcrSourceUtilities.GetOcrResultFromRegionAsync(rectCanvasSize, CurrentLanguage);
             }
+
+            if (!IsCurrentRedraw)
+                return;
+
+            (ocrResultOfWindow, windowFrameImageScale) = recognition;
         }
 
         if (ocrResultOfWindow is null)
@@ -2427,7 +2795,7 @@ public partial class GrabFrame : Window
         reSearchTimer.Start();
 
         // Trigger translation if enabled
-        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
         {
             translationTimer.Stop();
             translationTimer.Start();
@@ -2461,6 +2829,8 @@ public partial class GrabFrame : Window
         isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
 
         IReadOnlyList<PdfPageTextLine> pageLines = await _loadedPdfDocument.GetSelectableLinesAsync(_currentPdfPageIndex, CurrentLanguage);
+        if (!IsCurrentRedraw)
+            return;
 
         foreach (PdfPageTextLine pageLine in pageLines)
         {
@@ -2492,7 +2862,76 @@ public partial class GrabFrame : Window
         isDrawing = false;
         reSearchTimer.Start();
 
-        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
+        {
+            translationTimer.Stop();
+            translationTimer.Start();
+        }
+    }
+
+    /// <summary>
+    /// Renders a native-text PDF page as per-word borders instead of per-line overlays,
+    /// so Table mode has the individual word gaps it needs to detect columns and rows.
+    /// </summary>
+    private async Task DrawPdfWordRectanglesAsync(string searchWord = "")
+    {
+        if (isDrawing || IsDragOver || _loadedPdfDocument is null || _currentPdfPageContent is null || _currentPdfPageIndex < 0)
+            return;
+
+        isDrawing = true;
+        IsOcrValid = true;
+        windowFrameImageScale = 1;
+        ocrResultOfWindow = null;
+
+        if (string.IsNullOrWhiteSpace(searchWord))
+            searchWord = SearchBar.SearchText;
+
+        ClearRenderedWordBorders();
+
+        if (frameContentImageSource is not BitmapSource bmpImg)
+        {
+            isDrawing = false;
+            reDrawTimer.Start();
+            return;
+        }
+
+        DpiScale dpi = VisualTreeHelper.GetDpi(this);
+        SyncRectanglesCanvasSizeToImage();
+        isSpaceJoining = CurrentLanguage!.IsSpaceJoining();
+
+        IReadOnlyList<PdfPageTextLine> pageWords = await _loadedPdfDocument.GetSelectableWordsAsync(_currentPdfPageIndex, CurrentLanguage);
+        if (!IsCurrentRedraw)
+            return;
+
+        using System.Drawing.Bitmap bmp = ImageMethods.BitmapSourceToBitmap(bmpImg);
+
+        foreach (PdfPageTextLine pageWord in pageWords)
+        {
+            string wordText = pageWord.IsNativeText ? pageWord.Text : GetNormalizedOcrWordText(pageWord.Text);
+            Windows.Foundation.Rect wordRect = pageWord.SourceRect;
+            SolidColorBrush backgroundBrush = GetBackgroundBrushFromOcrBitmap(1, bmp, ref wordRect);
+
+            WordBorder wordBorderBox = CreateWordBorderFromSourceRect(
+                wordRect,
+                1,
+                wordText,
+                lineNumber: 0,
+                backgroundBrush,
+                dpi,
+                1.0,
+                0.0,
+                0.0);
+
+            AddRenderedWordBorder(wordBorderBox);
+        }
+
+        if (DefaultSettings.TryToReadBarcodes)
+            TryToReadBarcodes(dpi);
+
+        isDrawing = false;
+        reSearchTimer.Start();
+
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
         {
             translationTimer.Stop();
             translationTimer.Start();
@@ -2528,10 +2967,13 @@ public partial class GrabFrame : Window
         }
         else
         {
-            liveUiAutomationSnapshot = await UIAutomationUtilities.GetOverlaySnapshotFromRegionAsync(
+            overlaySnapshot = await UIAutomationUtilities.GetOverlaySnapshotFromRegionAsync(
                 new Rect(rectCanvasSize.X, rectCanvasSize.Y, rectCanvasSize.Width, rectCanvasSize.Height),
                 GetUiAutomationExcludedHandles());
-            overlaySnapshot = liveUiAutomationSnapshot;
+            if (!IsCurrentRedraw)
+                return;
+
+            liveUiAutomationSnapshot = overlaySnapshot;
         }
 
         if (overlaySnapshot is null || overlaySnapshot.Items.Count == 0)
@@ -2606,7 +3048,7 @@ public partial class GrabFrame : Window
 
         reSearchTimer.Start();
 
-        if (isTranslationEnabled && WindowsAiUtilities.CanDeviceUseWinAI())
+        if (isTranslationEnabled && WinAiTranslator.IsAvailable())
         {
             translationTimer.Stop();
             translationTimer.Start();
@@ -2816,6 +3258,9 @@ public partial class GrabFrame : Window
                 return;
             }
 
+            if (!await ConfirmDiscardWordEditsAsync())
+                return;
+
             FreezeToggleButton.IsChecked = false;
             // Diff the frozen snapshot against the live screen before clearing so
             // unchanged content keeps its (possibly edited) word borders.
@@ -2833,14 +3278,28 @@ public partial class GrabFrame : Window
         reDrawTimer.Start();
     }
 
-    private void FreezeToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
+    private async void FreezeToggleButton_Click(object? sender = null, RoutedEventArgs? e = null)
     {
         if (FreezeToggleButton.IsChecked is bool freezeMode && freezeMode)
+        {
             FreezeGrabFrame();
-        else if (IsPdfDocumentLoaded)
+            return;
+        }
+
+        if (IsPdfDocumentLoaded)
+        {
             FreezeToggleButton.IsChecked = true;
-        else
-            UnfreezeGrabFrameWithDiff();
+            return;
+        }
+
+        if (!await ConfirmDiscardWordEditsAsync())
+        {
+            // Declined: stay frozen so the edited word borders are not put at risk.
+            FreezeToggleButton.IsChecked = true;
+            return;
+        }
+
+        UnfreezeGrabFrameWithDiff();
     }
 
     private static SolidColorBrush GetBackgroundBrushFromOcrBitmap(double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
@@ -2894,7 +3353,7 @@ public partial class GrabFrame : Window
     private SolidColorBrush GetBackgroundBrushFromBitmap(ref DpiScale dpi, double scale, System.Drawing.Bitmap bmp, ref Windows.Foundation.Rect lineRect)
     {
         SolidColorBrush backgroundBrush = new(Colors.Black);
-        double pxToRectanglesFactor = (RectanglesCanvas.ActualWidth / bmp.Width) * dpi.DpiScaleX;
+        double pxToRectanglesFactor = RectanglesCanvas.ActualWidth / bmp.Width * dpi.DpiScaleX;
         double boxLeft = lineRect.Left / (dpi.DpiScaleX * scale);
         double boxTop = lineRect.Top / (dpi.DpiScaleY * scale);
         double boxRight = lineRect.Right / (dpi.DpiScaleX * scale);
@@ -3331,8 +3790,8 @@ public partial class GrabFrame : Window
 
             if (!KeyboardExtensions.IsShiftDown())
             {
-                Height += (widthDelta) * aspectRatio;
-                Top -= (offsetDelta) * aspectRatio;
+                Height += widthDelta * aspectRatio;
+                Top -= offsetDelta * aspectRatio;
             }
         }
         else if (e.Delta < 0)
@@ -3344,8 +3803,8 @@ public partial class GrabFrame : Window
 
                 if (!KeyboardExtensions.IsShiftDown())
                 {
-                    Height -= (widthDelta) * aspectRatio;
-                    Top += (offsetDelta) * aspectRatio;
+                    Height -= widthDelta * aspectRatio;
+                    Top += offsetDelta * aspectRatio;
                 }
             }
         }
@@ -3485,8 +3944,8 @@ public partial class GrabFrame : Window
 
     private void MoveResizeWordBorder(Point movingPoint, WordBorder movingWordBorder, Rect prevSize)
     {
-        double xShiftDelta = (movingPoint.X - clickedPoint.X);
-        double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+        double xShiftDelta = movingPoint.X - clickedPoint.X;
+        double yShiftDelta = movingPoint.Y - clickedPoint.Y;
         Canvas.SetZIndex(movingWordBorder, wordBorders.Count + 1);
 
         switch (resizingSide)
@@ -3528,8 +3987,8 @@ public partial class GrabFrame : Window
 
     private void MoveWindowWithMiddleMouse(Point movingPoint)
     {
-        double xShiftDelta = (movingPoint.X - clickedPoint.X);
-        double yShiftDelta = (movingPoint.Y - clickedPoint.Y);
+        double xShiftDelta = movingPoint.X - clickedPoint.X;
+        double yShiftDelta = movingPoint.Y - clickedPoint.Y;
 
         Top += yShiftDelta;
         Left += xShiftDelta;
@@ -3570,6 +4029,18 @@ public partial class GrabFrame : Window
             return;
 
         await TryLoadDocumentFromPath(dlg.FileName);
+
+        reDrawTimer.Start();
+    }
+
+    private async void CaptureFromCameraMenuItem_Click(object? sender = null, RoutedEventArgs? e = null)
+    {
+        string? capturedImagePath = await CameraCaptureUtilities.CaptureImageFromCameraAsync(this);
+
+        if (capturedImagePath is null)
+            return;
+
+        await TryLoadDocumentFromPath(capturedImagePath);
 
         reDrawTimer.Start();
     }
@@ -3753,10 +4224,7 @@ public partial class GrabFrame : Window
 
             isMiddleDown = true;
             if (!IsPdfDocumentLoaded)
-            {
-                ResetGrabFrame();
-                UnfreezeGrabFrame();
-            }
+                BeginMiddleMouseFrameResetAsync();
             return;
         }
 
@@ -3774,12 +4242,31 @@ public partial class GrabFrame : Window
         Canvas.SetTop(selectBorder, clickedPoint.Y);
     }
 
+    /// <summary>
+    /// Starting a middle-mouse drag moves the frame window, which invalidates the current word
+    /// borders since they're mapped to the screen area under the old window position. When the
+    /// user has tweaked those borders, confirm before discarding them instead of wiping silently.
+    /// </summary>
+    private async void BeginMiddleMouseFrameResetAsync()
+    {
+        if (!await ConfirmDiscardWordEditsAsync())
+        {
+            isMiddleDown = false;
+            isSelecting = false;
+            Mouse.Captured?.ReleaseMouseCapture();
+            return;
+        }
+
+        ResetGrabFrameWithUndo();
+        UnfreezeGrabFrame();
+    }
+
     private void RectanglesCanvas_MouseMove(object sender, MouseEventArgs e)
     {
         FrameworkElement interactionSurface = GetInteractionSurface(sender) ?? RectanglesCanvas;
         bool isPdfTextInteraction = IsPdfTextInteraction(sender);
         bool shouldPanInsteadOfSelect = MainZoomBorder.CanPan
-            && ((IsPdfDocumentLoaded || !isPdfTextInteraction) && IsZoomPanGestureActive);
+            && (IsPdfDocumentLoaded || !isPdfTextInteraction) && IsZoomPanGestureActive;
 
         if (tableEditState.IsPlacementActive)
         {
@@ -3876,6 +4363,7 @@ public partial class GrabFrame : Window
 
         if (movingWordBordersDictionary.Count > 0)
         {
+            hasUnsavedWordEdits = true;
             UndoRedo.StartTransaction();
 
             foreach (WordBorder movedWb in movingWordBordersDictionary.Keys)
@@ -3942,15 +4430,7 @@ public partial class GrabFrame : Window
             // Timer-driven redraws are not user actions, so the word borders
             // they render must not be recorded in the undo stack; recording
             // them pinned every rendered border for the life of the frame.
-            isAutoOcrRedrawPass = true;
-            try
-            {
-                await DrawRectanglesAroundWords(searchText);
-            }
-            finally
-            {
-                isAutoOcrRedrawPass = false;
-            }
+            await DrawRectanglesAroundWords(searchText, isAutomaticRedraw: true);
         }
     }
 
@@ -4039,8 +4519,12 @@ public partial class GrabFrame : Window
             return;
         }
 
+        if (!await ConfirmDiscardWordEditsAsync())
+            return;
+
         HideFrameMessage();
         reDrawTimer.Stop();
+        hasUnsavedWordEdits = false;
 
         UndoRedo.StartTransaction();
 
@@ -4059,6 +4543,7 @@ public partial class GrabFrame : Window
             // calculates word border positions assuming no zoom transform.
             MainZoomBorder.Reset();
             RectanglesCanvas.RenderTransform = Transform.Identity;
+            redrawCoordinator.Invalidate();
             IsOcrValid = false;
             ocrResultOfWindow = null;
             ClearRenderedWordBorders();
@@ -4346,9 +4831,14 @@ public partial class GrabFrame : Window
 
     private void ResetGrabFrame()
     {
+        hasUnsavedWordEdits = false;
         CancelTablePlacement();
         RemoveTableLines();
         AnalyzedResultTable = null;
+        // tableBoundsOverride is intentionally kept: a refresh (auto, manual, or a new page)
+        // re-applies the dragged region so repeated tables can be grabbed page after page.
+        tableBoundsOutlineVisual = null;
+        tableBoundsHandleVisuals = null;
         SetRefreshOrOcrFrameBtnVis();
 
         MainZoomBorder.Reset();
@@ -4361,6 +4851,7 @@ public partial class GrabFrame : Window
         TemplateRegionOverlayCanvas.ClearValue(HeightProperty);
         GrabFrameImage.ClearValue(WidthProperty);
         GrabFrameImage.ClearValue(HeightProperty);
+        redrawCoordinator.Invalidate();
         IsOcrValid = false;
         ocrResultOfWindow = null;
         liveUiAutomationSnapshot = null;
@@ -4371,6 +4862,51 @@ public partial class GrabFrame : Window
         ClearRenderedWordBorders();
         MatchesTXTBLK.Text = "- Matches";
         UpdateFrameText();
+    }
+
+    /// <summary>
+    /// Same as <see cref="ResetGrabFrame"/>, but first records the current word borders as an
+    /// undoable removal so a reset (confirmed or automatic) can be undone with Ctrl+Z.
+    /// </summary>
+    private void ResetGrabFrameWithUndo()
+    {
+        if (wordBorders.Count == 0)
+        {
+            ResetGrabFrame();
+            return;
+        }
+
+        UndoRedo.StartTransaction();
+        UndoRedo.InsertUndoRedoOperation(UndoRedoOperation.RemoveWordBorder,
+            new GrabFrameOperationArgs()
+            {
+                RemovingWordBorders = [.. wordBorders],
+                WordBorders = wordBorders,
+                GrabFrameCanvas = RectanglesCanvas
+            });
+        ResetGrabFrame();
+        UndoRedo.EndTransaction();
+    }
+
+    /// <summary>
+    /// Gate for soft/automatic refresh paths (middle-mouse window move, etc.) that would
+    /// otherwise silently discard word borders the user has tweaked. Returns true immediately,
+    /// with no prompt, when there is nothing unsaved to lose.
+    /// </summary>
+    private async Task<bool> ConfirmDiscardWordEditsAsync()
+    {
+        if (!hasUnsavedWordEdits)
+            return true;
+
+        Wpf.Ui.Controls.MessageBoxResult result = await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Text Grab",
+            Content = "This Grab Frame has edits that haven't been saved. Continuing will discard them and re-run OCR.\n\nContinue anyway?",
+            PrimaryButtonText = "Discard Edits",
+            CloseButtonText = "Cancel"
+        }.ShowDialogAsync();
+
+        return result == Wpf.Ui.Controls.MessageBoxResult.Primary;
     }
 
     private void SearchBar_SearchChanged(object? sender, EventArgs e)
@@ -4764,7 +5300,7 @@ public partial class GrabFrame : Window
 
         // Pattern items — saved regexes and built-in recognizers as one "Patterns" concept,
         // split into "Saved Patterns" / "Smart Patterns" subsections.
-        items.AddRange(PatternItem.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
+        items.AddRange(PatternItemCatalog.GetAll().Select(TextOnlyTemplateDialog.InlinePickerItemFor));
 
         TemplateOutputBox.ItemsSource = items;
 
@@ -4824,7 +5360,12 @@ public partial class GrabFrame : Window
         CancelTablePlacement();
         RemoveTableLines();
 
-        if (ShouldRefreshOcrBordersForTableModeActivation())
+        // A native-text PDF page switches between line overlays (best for reading/copying)
+        // and per-word borders (needed for table detection) depending on this toggle, so it
+        // always needs a redraw here, regardless of the paragraph-merge-only conditions below.
+        bool isNativePdfTextPage = _currentPdfPageContent?.HasNativeText is true;
+
+        if (isNativePdfTextPage || ShouldRefreshOcrBordersForTableModeActivation())
         {
             await DrawRectanglesAroundWords(SearchBar.SearchText);
             UpdateFrameText();
@@ -4859,7 +5400,7 @@ public partial class GrabFrame : Window
             droppedImage.BeginInit();
             droppedImage.UriSource = fileURI;
             droppedImage.CacheOption = BitmapCacheOption.OnLoad; // decode fully into memory and release the file handle
-            System.Drawing.RotateFlipType rotateFlipType = ImageMethods.GetRotateFlipType(path);
+            System.Drawing.RotateFlipType rotateFlipType = BitmapUtilities.GetRotateFlipType(path);
             ImageMethods.RotateImage(droppedImage, rotateFlipType);
             droppedImage.EndInit();
             frameContentImageSource = droppedImage;
@@ -4957,12 +5498,25 @@ public partial class GrabFrame : Window
     {
         RemoveTableLines();
 
-        List<WordBorderInfo> wbInfos = [.. wordBorders.Select(wb => new WordBorderInfo(wb))];
+        List<WordBorderInfo> wbInfos = [.. wordBorders.Select(wb => WordBorderInfoFactory.Create(wb))];
         if (wbInfos.Count == 0)
         {
             AnalyzedResultTable = null;
             tableEditState.SetManualSeparators(tableEditState.ManualRowSeparators, tableEditState.ManualColumnSeparators);
             return wbInfos;
+        }
+
+        bool isBoundsOverrideApplied = false;
+        if (tableBoundsOverride is System.Drawing.RectangleF bounds)
+        {
+            List<WordBorderInfo> filteredInfos = ResultTable.FilterWordBordersWithinBounds(wbInfos, bounds);
+            if (filteredInfos.Count > 0)
+            {
+                wbInfos = filteredInfos;
+                isBoundsOverrideApplied = true;
+            }
+            // Otherwise the dragged bounds excluded every word border on this page; analyze the
+            // whole page this time but keep the override so it still applies on the next page.
         }
 
         Point windowPosition = this.GetAbsolutePosition();
@@ -4986,8 +5540,16 @@ public partial class GrabFrame : Window
             tableEditState.SetManualSeparators(
                 AnalyzedResultTable.ManualRowSeparators,
                 AnalyzedResultTable.ManualColumnSeparators);
-            if (AnalyzedResultTable.TableLines is not null)
-                RectanglesCanvas.Children.Add(AnalyzedResultTable.TableLines);
+
+            // Draw the outline where the user put it (not the tight bounds of the words found
+            // inside) so the persisted region is visible on every page and the handles start
+            // their drag from where they are drawn.
+            if (isBoundsOverrideApplied && tableBoundsOverride is System.Drawing.RectangleF appliedBounds)
+                AnalyzedResultTable.BoundingRect = appliedBounds;
+
+            Canvas tableLinesCanvas = ResultTableRenderer.BuildTableLines(AnalyzedResultTable, includeBoundsHandles: true);
+            RectanglesCanvas.Children.Add(tableLinesCanvas);
+            WireUpTableBoundsHandles(tableLinesCanvas);
         }
         catch (Exception ex)
         {
@@ -4995,6 +5557,111 @@ public partial class GrabFrame : Window
         }
 
         return wbInfos;
+    }
+
+    private void WireUpTableBoundsHandles(Canvas tableLinesCanvas)
+    {
+        tableBoundsOutlineVisual = tableLinesCanvas.Children.OfType<Border>().FirstOrDefault();
+        tableBoundsHandleVisuals = [.. tableLinesCanvas.Children.OfType<Thumb>()];
+
+        foreach (Thumb handle in tableBoundsHandleVisuals)
+        {
+            handle.DragStarted += TableBoundsHandle_DragStarted;
+            handle.DragDelta += TableBoundsHandle_DragDelta;
+            handle.DragCompleted += TableBoundsHandle_DragCompleted;
+        }
+    }
+
+    private void TableBoundsHandle_DragStarted(object sender, DragStartedEventArgs e)
+    {
+        // The analyzed table's BoundingRect is what the outline and handles were drawn from
+        // (it already equals the override when the override was applied), so start there to
+        // avoid the outline jumping on the first drag delta.
+        tableBoundsLiveRect = AnalyzedResultTable?.BoundingRect ?? tableBoundsOverride ?? default;
+    }
+
+    private void TableBoundsHandle_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (sender is not Thumb { Tag: TableBoundsCorner corner })
+            return;
+
+        const double minimumSize = GrabFrameTableEditState.MinimumSeparatorGap * 2;
+
+        double minX = 0;
+        double minY = 0;
+        double maxX = RectanglesCanvas.ActualWidth > 0 ? RectanglesCanvas.ActualWidth : double.MaxValue;
+        double maxY = RectanglesCanvas.ActualHeight > 0 ? RectanglesCanvas.ActualHeight : double.MaxValue;
+
+        float left = tableBoundsLiveRect.Left;
+        float top = tableBoundsLiveRect.Top;
+        float right = tableBoundsLiveRect.Right;
+        float bottom = tableBoundsLiveRect.Bottom;
+
+        switch (corner)
+        {
+            case TableBoundsCorner.TopLeft:
+                left = (float)SafeClamp(left + e.HorizontalChange, minX, right - minimumSize);
+                top = (float)SafeClamp(top + e.VerticalChange, minY, bottom - minimumSize);
+                break;
+            case TableBoundsCorner.TopRight:
+                right = (float)SafeClamp(right + e.HorizontalChange, left + minimumSize, maxX);
+                top = (float)SafeClamp(top + e.VerticalChange, minY, bottom - minimumSize);
+                break;
+            case TableBoundsCorner.BottomLeft:
+                left = (float)SafeClamp(left + e.HorizontalChange, minX, right - minimumSize);
+                bottom = (float)SafeClamp(bottom + e.VerticalChange, top + minimumSize, maxY);
+                break;
+            case TableBoundsCorner.BottomRight:
+                right = (float)SafeClamp(right + e.HorizontalChange, left + minimumSize, maxX);
+                bottom = (float)SafeClamp(bottom + e.VerticalChange, top + minimumSize, maxY);
+                break;
+        }
+
+        tableBoundsLiveRect = System.Drawing.RectangleF.FromLTRB(left, top, right, bottom);
+        RenderTableBoundsPreview(tableBoundsLiveRect);
+
+        static double SafeClamp(double value, double min, double max) => min <= max ? Math.Clamp(value, min, max) : min;
+    }
+
+    private void TableBoundsHandle_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        tableBoundsOverride = tableBoundsLiveRect;
+        FreezeFrameForWordEditing();
+        // Not flagged as an unsaved edit: the dragged bounds survive a refresh, so there is
+        // nothing for the discard-edits prompt to protect.
+        UpdateFrameText();
+    }
+
+    private void RenderTableBoundsPreview(System.Drawing.RectangleF bounds)
+    {
+        if (tableBoundsOutlineVisual is Border outline)
+        {
+            Canvas.SetLeft(outline, bounds.Left);
+            Canvas.SetTop(outline, bounds.Top);
+            outline.Width = Math.Max(0, bounds.Width);
+            outline.Height = Math.Max(0, bounds.Height);
+        }
+
+        if (tableBoundsHandleVisuals is not { Length: > 0 })
+            return;
+
+        foreach (Thumb handle in tableBoundsHandleVisuals)
+        {
+            if (handle.Tag is not TableBoundsCorner corner)
+                continue;
+
+            (double x, double y) = corner switch
+            {
+                TableBoundsCorner.TopLeft => (bounds.Left, bounds.Top),
+                TableBoundsCorner.TopRight => (bounds.Right, bounds.Top),
+                TableBoundsCorner.BottomLeft => (bounds.Left, bounds.Bottom),
+                TableBoundsCorner.BottomRight => (bounds.Right, bounds.Bottom),
+                _ => (bounds.Left, bounds.Top)
+            };
+
+            Canvas.SetLeft(handle, x - (handle.Width / 2));
+            Canvas.SetTop(handle, y - (handle.Height / 2));
+        }
     }
 
     private void TryToReadBarcodes(DpiScale dpi)
@@ -5083,10 +5750,10 @@ public partial class GrabFrame : Window
             WordBorder wb = new()
             {
                 Word = result.Text,
-                Width = diffs.X / dpi.DpiScaleX + 12,
-                Height = diffs.Y / dpi.DpiScaleY + 12,
-                Left = minPoint.X / (dpi.DpiScaleX) - 6,
-                Top = minPoint.Y / (dpi.DpiScaleY) - 6,
+                Width = (diffs.X / dpi.DpiScaleX) + 12,
+                Height = (diffs.Y / dpi.DpiScaleY) + 12,
+                Left = (minPoint.X / dpi.DpiScaleX) - 6,
+                Top = (minPoint.Y / dpi.DpiScaleY) - 6,
                 OwnerGrabFrame = this
             };
             Debug.WriteLine($"TryToReadBarcodes: WordBorder Left={wb.Left:F1}, Top={wb.Top:F1}, Width={wb.Width:F1}, Height={wb.Height:F1}");
@@ -5292,7 +5959,11 @@ public partial class GrabFrame : Window
                 IsParagraphDetectionActive()
                 && previousLine.AllowParagraphJoin
                 && currentLine.AllowParagraphJoin
-                && OcrUtilities.IsWrappedParagraph(previousLine.Top, previousLine.Height, currentLine.Top, currentLine.Height);
+                && PdfDocumentRenderer.IsWrappedPdfLine(
+                    previousLine.Top,
+                    previousLine.Height,
+                    currentLine.Top,
+                    currentLine.Height);
 
             if (shouldJoinParagraph)
                 stringBuilder.Append(' ');
@@ -5655,34 +6326,56 @@ public partial class GrabFrame : Window
 
     private async void GrabExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string outputText = FrameText;
-
-        if (_activeGrabTemplate is not null)
-        {
-            if (isStaticImageSource && frameContentImageSource is BitmapSource bmpSrc)
-            {
-                using System.Drawing.Bitmap bmp = ImageMethods.BitmapSourceToBitmap(bmpSrc);
-                outputText = await GrabTemplateExecutor.ExecuteTemplateOnBitmapAsync(
-                    _activeGrabTemplate, bmp, CurrentLanguage);
-            }
-            else
-            {
-                System.Drawing.Rectangle screenRect = GetContentAreaScreenRect();
-                Rect captureRect = new(screenRect.X, screenRect.Y, screenRect.Width, screenRect.Height);
-                outputText = await GrabTemplateExecutor.ExecuteTemplateAsync(
-                    _activeGrabTemplate, captureRect, CurrentLanguage);
-            }
-
-            if (!string.IsNullOrWhiteSpace(outputText))
-                GrabTemplateManager.RecordUsage(_activeGrabTemplate.Id);
-        }
+        string outputText = await ResolveGrabOutputTextAsync();
 
         if (string.IsNullOrWhiteSpace(outputText))
             return;
 
+        // When the ETW is being updated live it already holds FrameText, so a plain grab only
+        // needs to commit the caret; template output is never mirrored live and must be inserted.
+        bool replaceDestinationSelection = _activeGrabTemplate is not null || AlwaysUpdateEtwCheckBox.IsChecked is false;
+        DeliverGrabbedText(outputText, replaceDestinationSelection);
+    }
+
+    /// <summary>
+    /// The text a grab of the frame's current content produces: the active Grab Template's
+    /// output when one is selected, otherwise <see cref="FrameText"/>.
+    /// </summary>
+    private async Task<string> ResolveGrabOutputTextAsync()
+    {
+        if (_activeGrabTemplate is null)
+            return FrameText;
+
+        string outputText;
+        if (isStaticImageSource && frameContentImageSource is BitmapSource bmpSrc)
+        {
+            using System.Drawing.Bitmap bmp = ImageMethods.BitmapSourceToBitmap(bmpSrc);
+            outputText = await GrabTemplateExecutor.ExecuteTemplateOnBitmapAsync(
+                _activeGrabTemplate, bmp, CurrentLanguage);
+        }
+        else
+        {
+            System.Drawing.Rectangle screenRect = GetContentAreaScreenRect();
+            Rect captureRect = new(screenRect.X, screenRect.Y, screenRect.Width, screenRect.Height);
+            outputText = await GrabTemplateExecutor.ExecuteTemplateAsync(
+                _activeGrabTemplate, captureRect, CurrentLanguage);
+        }
+
+        if (!string.IsNullOrWhiteSpace(outputText))
+            GrabTemplateManager.RecordUsage(_activeGrabTemplate.Id);
+
+        return outputText;
+    }
+
+    /// <summary>
+    /// Sends grabbed text where a grab normally goes: the destination Edit Text Window when
+    /// there is one, otherwise the clipboard (plus toast), then closes the frame if configured.
+    /// </summary>
+    private void DeliverGrabbedText(string outputText, bool replaceDestinationSelection)
+    {
         if (destinationTextBox is not null)
         {
-            if (_activeGrabTemplate is not null || AlwaysUpdateEtwCheckBox.IsChecked is false)
+            if (replaceDestinationSelection)
                 destinationTextBox.SelectedText = outputText;
 
             destinationTextBox.Select(destinationTextBox.SelectionStart + destinationTextBox.SelectionLength, 0);
@@ -6076,12 +6769,13 @@ public partial class GrabFrame : Window
 
             if (isChecked)
             {
-                if (!WindowsAiUtilities.CanDeviceUseWinAI())
+                (bool available, string? reason) = WinAiTranslator.CheckAvailability();
+                if (!available)
                 {
                     await new Wpf.Ui.Controls.MessageBox
                     {
                         Title = "Translation Not Available",
-                        Content = "Windows AI is not available on this device. Translation requires Windows AI support.",
+                        Content = reason ?? "Windows AI is not available on this device.",
                         CloseButtonText = "OK"
                     }.ShowDialogAsync();
                     TranslateToggleButton.IsChecked = false;
@@ -6125,7 +6819,7 @@ public partial class GrabFrame : Window
                 originalTexts.Clear();
 
                 // Dispose the translation model to free resources when not in use
-                WindowsAiUtilities.DisposeTranslationModel();
+                WinAiTranslator.ReleaseModel();
             }
         }
     }
@@ -6173,7 +6867,7 @@ public partial class GrabFrame : Window
     {
         translationTimer.Stop();
 
-        if (!isTranslationEnabled || !WindowsAiUtilities.CanDeviceUseWinAI())
+        if (!isTranslationEnabled || !WinAiTranslator.IsAvailable())
             return;
 
         await PerformTranslationAsync();
@@ -6184,6 +6878,13 @@ public partial class GrabFrame : Window
         if (translationCancellationTokenSource == null || translationCancellationTokenSource.IsCancellationRequested)
             return;
 
+        // The timer restarts on every draw / resize / OCR refresh, so a second pass can be kicked off
+        // while this one is still awaiting the model. Two passes share the progress counters and the
+        // streamed callbacks index into their own bordersToTranslate list, so the first run's results
+        // would land on the second run's word borders. One at a time.
+        if (isTranslating)
+            return;
+
         ShowTranslationProgress();
 
         totalWordsToTranslate = wordBorders.Count;
@@ -6191,43 +6892,54 @@ public partial class GrabFrame : Window
 
         CancellationToken cancellationToken = translationCancellationTokenSource.Token;
 
-        // Translate all word borders with controlled concurrency (max 3 at a time)
-        List<Task> translationTasks = [];
+        // Every word box goes through the model together. Translating them one at a time meant one
+        // full on-device inference per word, which is why this used to take minutes on a busy frame
+        // and produced worse wording (each word was translated with no surrounding context).
+        List<WordBorder> bordersToTranslate = [];
+        List<string> textsToTranslate = [];
+
+        foreach (WordBorder wb in wordBorders)
+        {
+            // Store original text if not already stored
+            if (!originalTexts.ContainsKey(wb))
+                originalTexts[wb] = wb.Word;
+
+            string originalText = originalTexts[wb];
+            if (string.IsNullOrWhiteSpace(originalText))
+                continue;
+
+            bordersToTranslate.Add(wb);
+            textsToTranslate.Add(originalText);
+        }
+
+        totalWordsToTranslate = bordersToTranslate.Count;
+        UpdateTranslationProgress();
+
+        string? failureMessage = null;
+
+        // Set as late as possible — nothing above awaits, so no second pass can slip in before here,
+        // and a throw in the setup above can't leave the flag stuck on.
+        isTranslating = true;
 
         try
         {
-            foreach (WordBorder wb in wordBorders)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
-
-                // Store original text if not already stored
-                if (!originalTexts.ContainsKey(wb))
-                    originalTexts[wb] = wb.Word;
-
-                string originalText = originalTexts[wb];
-                if (!string.IsNullOrWhiteSpace(originalText))
+            // Results stream back as the model generates them, so boxes fill in progressively.
+            BatchTranslationResult result = await WinAiTranslator.TranslateBatchAsync(
+                textsToTranslate,
+                translationTargetLanguage,
+                (index, translated) => Dispatcher.InvokeAsync(() =>
                 {
-                    translationTasks.Add(TranslateWordBorderAsync(wb, originalText, cancellationToken));
-                }
-                else
-                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    bordersToTranslate[index].Word = translated;
                     translatedWordsCount++;
                     UpdateTranslationProgress();
-                }
-            }
+                }),
+                cancellationToken);
 
-            // Wait for all translations to complete or cancellation
-            // Use WhenAll with exception handling to gracefully handle cancellations
-            try
-            {
-                await Task.WhenAll(translationTasks);
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected when cancellation is requested
-                Debug.WriteLine("Translation tasks cancelled during WhenAll");
-            }
+            if (!result.Succeeded)
+                failureMessage = result.Message;
 
             if (!cancellationToken.IsCancellationRequested)
             {
@@ -6241,10 +6953,28 @@ public partial class GrabFrame : Window
         catch (Exception ex)
         {
             Debug.WriteLine($"Translation error: {ex.Message}");
+            failureMessage = $"Translation failed: {ex.Message}";
         }
         finally
         {
+            isTranslating = false;
             HideTranslationProgress();
+        }
+
+        // Turn translation back off on failure so the frame does not silently retry on every
+        // redraw, and tell the user what went wrong.
+        if (failureMessage is not null && !cancellationToken.IsCancellationRequested)
+        {
+            isTranslationEnabled = false;
+            TranslateToggleButton.IsChecked = false;
+            EnableTranslationMenuItem.IsChecked = false;
+
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Translation Failed",
+                Content = failureMessage,
+                CloseButtonText = "OK"
+            }.ShowDialogAsync();
         }
     }
 
@@ -6266,52 +6996,9 @@ public partial class GrabFrame : Window
         if (totalWordsToTranslate == 0)
             return;
 
-        double progress = (double)translatedWordsCount / totalWordsToTranslate * 100;
-        TranslationProgressBar.Value = progress;
-        TranslationCountText.Text = $"{translatedWordsCount}/{totalWordsToTranslate}";
-    }
-
-    private async Task TranslateWordBorderAsync(WordBorder wordBorder, string originalText, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await translationSemaphore.WaitAsync(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // Semaphore wait was cancelled - exit gracefully
-            return;
-        }
-
-        try
-        {
-            // Ensure cancellation is honored immediately before starting translation
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string translatedText = await WindowsAiUtilities.TranslateText(originalText, translationTargetLanguage);
-
-            // If cancellation was requested during translation, abort before updating UI state
-            cancellationToken.ThrowIfCancellationRequested();
-
-            wordBorder.Word = translatedText;
-
-            translatedWordsCount++;
-            await Dispatcher.InvokeAsync(() => UpdateTranslationProgress());
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected during cancellation - don't propagate
-            Debug.WriteLine($"Translation cancelled for word: {originalText}");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Translation failed for '{originalText}': {ex.Message}");
-            // On error, keep original text (don't update word border)
-        }
-        finally
-        {
-            translationSemaphore.Release();
-        }
+        int completed = Math.Min(translatedWordsCount, totalWordsToTranslate);
+        TranslationProgressBar.Value = (double)completed / totalWordsToTranslate * 100;
+        TranslationCountText.Text = $"{completed}/{totalWordsToTranslate}";
     }
 
     private void GetGrabFrameTranslationSettings()
@@ -6320,7 +7007,7 @@ public partial class GrabFrame : Window
         translationTargetLanguage = DefaultSettings.GrabFrameTranslationLanguage;
 
         // Hide translation button if Windows AI is not available
-        bool canUseWinAI = WindowsAiUtilities.CanDeviceUseWinAI();
+        bool canUseWinAI = WinAiTranslator.IsAvailable();
         translateToolAvailable = canUseWinAI;
         SetToolButtonVisibility(TranslateToggleButton, "Translate", canUseWinAI);
         TranslationMenuItem.Visibility = canUseWinAI ? Visibility.Visible : Visibility.Collapsed;

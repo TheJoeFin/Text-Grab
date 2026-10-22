@@ -209,8 +209,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             && firstMatch is not null
             && this.IsFocused)
         {
-            textEditWindow.PassedTextControl.Select(firstMatch.Index, firstMatch.Value.Length);
-            textEditWindow.PassedTextControl.Focus();
+            textEditWindow.SelectInEditor(firstMatch.Index, firstMatch.Value.Length);
             this.Focus();
         }
     }
@@ -263,8 +262,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (textEditWindow is not null && this.IsFocused)
         {
             RecognizerMatch first = recognizerMatches[0];
-            textEditWindow.PassedTextControl.Select(first.Start, first.Length);
-            textEditWindow.PassedTextControl.Focus();
+            textEditWindow.SelectInEditor(first.Start, first.Length);
             this.Focus();
         }
     }
@@ -841,8 +839,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             return;
         }
 
-        textEditWindow.PassedTextControl.Focus();
-        textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
+        textEditWindow.SelectInEditor(selectedResult.Index, selectedResult.Length);
         this.Focus();
     }
 

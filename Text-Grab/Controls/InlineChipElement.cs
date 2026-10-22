@@ -44,13 +44,11 @@ public class InlineChipElement : Control
     {
         base.OnApplyTemplate();
 
-        if (_removeButton is not null)
-            _removeButton.Click -= RemoveButton_Click;
+        _removeButton?.Click -= RemoveButton_Click;
 
         _removeButton = GetTemplateChild(PartRemoveButton) as Button;
 
-        if (_removeButton is not null)
-            _removeButton.Click += RemoveButton_Click;
+        _removeButton?.Click += RemoveButton_Click;
     }
 
     private void RemoveButton_Click(object sender, RoutedEventArgs e)

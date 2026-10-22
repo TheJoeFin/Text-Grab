@@ -6,7 +6,7 @@ using Text_Grab.Services;
 
 namespace Tests;
 
-public class SettingsServiceTests : IDisposable
+public partial class SettingsServiceTests : IDisposable
 {
     private readonly string _tempFolder;
     private readonly string _regularSettingsFilePath;

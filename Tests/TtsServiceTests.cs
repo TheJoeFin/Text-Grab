@@ -22,16 +22,16 @@ public class TtsServiceTests
         };
 
         service.Speak("first");
-        await engine.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await engine.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         service.RunWhenIdle(() => service.Speak("second"));
         engine.ReleaseFirst.TrySetResult();
-        await engine.SecondStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await engine.SecondStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         Assert.Equal([true], busyEvents);
 
         engine.ReleaseSecond.TrySetResult();
-        await idle.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await idle.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         Assert.Equal([true, false], busyEvents);
     }
