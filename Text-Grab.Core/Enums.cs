@@ -33,6 +33,16 @@ public enum TrayIconStyle
     Monochrome = 1,
 }
 
+public enum RenderingMode
+{
+    // Software rendering on Arm64 devices, hardware (GPU) rendering everywhere else.
+    Auto = 0,
+    // Always let WPF render through the GPU.
+    Hardware = 1,
+    // Always render on the CPU (WPF RenderMode.SoftwareOnly).
+    Software = 2,
+}
+
 public enum FileStorageKind
 {
     Absolute = 0,

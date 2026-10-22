@@ -47,6 +47,13 @@ public partial class App : System.Windows.Application
     public NotifyIconWindow? TextGrabIcon { get; set; }
     #endregion Properties
 
+    public App()
+    {
+        // WPF reads the process render mode when it creates its first window, so this has to
+        // happen here rather than in the Startup handler.
+        RenderingUtilities.ApplyRenderingMode(_defaultSettings);
+    }
+
     #region Methods
 
     public static void DefaultLaunch()

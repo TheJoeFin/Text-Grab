@@ -490,7 +490,19 @@ namespace Text_Grab.Properties {
                 this["TrayIconStyle"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
+        public string RenderingMode {
+            get {
+                return ((string)(this["RenderingMode"]));
+            }
+            set {
+                this["RenderingMode"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
