@@ -87,6 +87,11 @@ public partial class GeneralSettings : Page
                 break;
         }
 
+        RenderingMode renderingMode = RenderingUtilities.ParseRenderingMode(DefaultSettings.RenderingMode);
+        RenderingAutoRadio.IsChecked = renderingMode == RenderingMode.Auto;
+        RenderingHardwareRadio.IsChecked = renderingMode == RenderingMode.Hardware;
+        RenderingSoftwareRadio.IsChecked = renderingMode == RenderingMode.Software;
+
         TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
         switch (defaultLaunchSetting)
         {
@@ -287,6 +292,18 @@ public partial class GeneralSettings : Page
         DefaultSettings.TrayIconStyle = TrayIconStyle.Monochrome.ToString();
         DefaultSettings.Save();
         NotifyIconUtilities.RefreshTrayIconStyle();
+    }
+
+    private void RenderingModeRadio_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet
+            || sender is not RadioButton radioButton
+            || !Enum.TryParse(radioButton.Tag?.ToString(), out RenderingMode mode))
+            return;
+
+        // WPF fixes its render mode when the first window is created, so this applies on next launch.
+        DefaultSettings.RenderingMode = mode.ToString();
+        DefaultSettings.Save();
     }
 
     private void ReadBarcodesBarcode_Checked(object sender, RoutedEventArgs e)

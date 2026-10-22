@@ -127,6 +127,55 @@
             </StackPanel>
         </controls:SettingsExpander>
 
+        <controls:SettingsExpander
+            Description="Choose whether Text Grab draws its windows with the graphics card or the CPU. Restart Text Grab for a change to take effect."
+            HeaderText="Rendering"
+            Icon="{ui:SymbolIcon DeveloperBoard24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="RenderingAutoRadio"
+                    AutomationProperties.AutomationId="Settings.General.Rendering.Auto"
+                    Checked="RenderingModeRadio_Checked"
+                    Content="Automatic"
+                    GroupName="RenderingModeGroup"
+                    Tag="Auto" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Use the CPU on Arm64 devices, where the graphics driver can hold on to around 1 GB of memory, and the graphics card everywhere else."
+                    TextWrapping="Wrap" />
+
+                <RadioButton
+                    x:Name="RenderingHardwareRadio"
+                    AutomationProperties.AutomationId="Settings.General.Rendering.Hardware"
+                    Checked="RenderingModeRadio_Checked"
+                    Content="Graphics card"
+                    GroupName="RenderingModeGroup"
+                    Tag="Hardware" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Always render with the graphics card. Uses more memory on some devices."
+                    TextWrapping="Wrap" />
+
+                <RadioButton
+                    x:Name="RenderingSoftwareRadio"
+                    AutomationProperties.AutomationId="Settings.General.Rendering.Software"
+                    Checked="RenderingModeRadio_Checked"
+                    Content="CPU (software)"
+                    GroupName="RenderingModeGroup"
+                    Tag="Software" />
+                <TextBlock
+                    Margin="24,0,0,0"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Always render with the CPU. Uses far less graphics memory."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </controls:SettingsExpander>
+
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Behavior" />
 
         <controls:SettingsCard
