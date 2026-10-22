@@ -184,6 +184,8 @@ public static class DiagnosticsUtilities
 
             // Display / font
             AppTheme = s.AppTheme ?? "System",
+            RenderingMode = s.RenderingMode ?? "Auto",
+            SoftwareRenderingActive = RenderingUtilities.ShouldUseSoftwareRendering(s),
             FontFamilySetting = s.FontFamilySetting ?? "Default",
             FontSizeSetting = s.FontSizeSetting,
             IsFontBold = s.IsFontBold,
@@ -538,6 +540,8 @@ public class SettingsInfoModel
 
     // Display / font
     public string AppTheme { get; set; } = string.Empty;
+    public string RenderingMode { get; set; } = string.Empty;
+    public bool SoftwareRenderingActive { get; set; }  // what the saved setting resolves to on this device
     public string FontFamilySetting { get; set; } = string.Empty;
     public double FontSizeSetting { get; set; }
     public bool IsFontBold { get; set; }
