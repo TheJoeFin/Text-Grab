@@ -20,7 +20,9 @@ pwsh .\UiTests\Run-UiTests.ps1 -Suite Harness,Lifecycle,CliProtocol,GrabFrame,Ed
 pwsh .\UiTests\Invoke-ReleaseSignoff.ps1
 ```
 
-The release sign-off runs coverage validation, xUnit, and the safe standard suites. It writes `release-signoff.json` and `release-signoff.md` beneath `UiTests\artifacts\release-signoff`, with per-lane and aggregate UI pass/fail/skip counts, skipped test names/reasons, and paths to UI JSON/JUnit, environment, screenshots, recordings, and diagnostics. A lane needs at least one executed (pass or fail) UI test; the safe standard lane can therefore pass with documented boundary/capability skips after its smoke minimum executes. Explicitly requested capability, system-integration, and packaged-VM lanes fail sign-off when unavailable or all-skipped, including when the packaged VM safety confirmation is absent.
+The release sign-off runs coverage validation, all three xUnit projects (`Tests.Core`, `Tests.Core.Windows`, and `Tests`), and the safe standard suites. It writes `release-signoff.json` and `release-signoff.md` beneath `UiTests\artifacts\release-signoff`, with per-lane and aggregate UI pass/fail/skip counts, skipped test names/reasons, and paths to UI JSON/JUnit, environment, screenshots, recordings, and diagnostics. A lane needs at least one executed (pass or fail) UI test; the safe standard lane can therefore pass with documented boundary/capability skips after its smoke minimum executes. Explicitly requested capability, system-integration, and packaged-VM lanes fail sign-off when unavailable or all-skipped, including when the packaged VM safety confirmation is absent.
+
+Unit tests use the machine's native Windows runtime and separate TRX directories. The WPF test host applies the app's automatic rendering policy and runs collections serially to avoid concurrent native graphics teardown.
 
 Opt in only on the appropriate runner:
 

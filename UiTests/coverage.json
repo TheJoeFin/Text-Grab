@@ -1153,7 +1153,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\StringMethodTests.cs"
+        "Tests.Core\\StringMethodTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1175,7 +1175,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\StringMethodTests.cs"
+        "Tests.Core\\StringMethodTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1197,7 +1197,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\StringMethodTests.cs"
+        "Tests.Core\\StringMethodTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1219,7 +1219,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\StringMethodTests.cs"
+        "Tests.Core\\StringMethodTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1241,7 +1241,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\StringMethodTests.cs"
+        "Tests.Core\\StringMethodTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1263,7 +1263,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\PatternExecutorTests.cs"
+        "Tests.Core\\PatternExecutorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1307,7 +1307,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\PatternExecutorTests.cs"
+        "Tests.Core\\PatternExecutorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1349,7 +1349,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\ExtractedPatternTests.cs"
+        "Tests.Core\\ExtractedPatternTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1371,7 +1371,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\EditTextTableDocumentTests.cs"
+        "Tests.Core\\EditTextTableDocumentTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1437,7 +1437,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\EditTextTableDocumentTests.cs"
+        "Tests.Core\\EditTextTableDocumentTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1459,7 +1459,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\EditTextTableDocumentTests.cs"
+        "Tests.Core\\EditTextTableDocumentTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1481,7 +1481,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\SpreadsheetUndoHistoryTests.cs"
+        "Tests.Core\\SpreadsheetUndoHistoryTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1523,7 +1523,7 @@
       "coverageClassification": "existing unit test",
       "automationLane": "unit",
       "currentCoverage": [
-        "Tests\\CalculatorTests.cs::NCalc_SupportsBasicMathFunctions"
+        "Tests.Core\\CalculatorTests.cs::NCalc_SupportsBasicMathFunctions"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1545,8 +1545,8 @@
       "coverageClassification": "existing unit test",
       "automationLane": "unit",
       "currentCoverage": [
-        "Tests\\UnitConversionTests.cs",
-        "Tests\\CalculatorTests.cs"
+        "Tests.Core\\UnitConversionTests.cs",
+        "Tests.Core\\CalculatorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1568,7 +1568,7 @@
       "coverageClassification": "existing unit test",
       "automationLane": "unit",
       "currentCoverage": [
-        "Tests\\CalculatorTests.cs"
+        "Tests.Core\\CalculatorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -1812,7 +1812,7 @@
       "coverageClassification": "winapp UIA",
       "automationLane": "interactive-ui",
       "currentCoverage": [
-        "Tests\\PatternExecutorTests.cs"
+        "Tests.Core\\PatternExecutorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "contract",
@@ -1834,7 +1834,7 @@
       "coverageClassification": "fixture-assisted automation",
       "automationLane": "ocr-fixture",
       "currentCoverage": [
-        "Tests\\OcrTests.cs"
+        "Tests.Core.Windows\\OcrTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "capability-gated",
@@ -1856,7 +1856,7 @@
       "coverageClassification": "fixture-assisted automation",
       "automationLane": "ocr-fixture",
       "currentCoverage": [
-        "Tests\\RecognizerExecutorTests.cs"
+        "Tests.Core\\RecognizerExecutorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "capability-gated",
@@ -1878,7 +1878,7 @@
       "coverageClassification": "hardware/display lane",
       "automationLane": "copilot-plus-hardware",
       "currentCoverage": [
-        "Tests\\WindowsAiUtilitiesTests.cs"
+        "Tests.Core.Windows\\WindowsAiUtilitiesTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "capability-gated",
@@ -1965,7 +1965,7 @@
       "coverageClassification": "fixture-assisted automation",
       "automationLane": "ocr-fixture",
       "currentCoverage": [
-        "Tests\\LanguageTests.cs"
+        "Tests.Core.Windows\\LanguageTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -2007,7 +2007,7 @@
       "coverageClassification": "existing unit test",
       "automationLane": "unit",
       "currentCoverage": [
-        "Tests\\PatternExecutorTests.cs"
+        "Tests.Core\\PatternExecutorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "contract",
@@ -2069,7 +2069,7 @@
       "coverageClassification": "existing unit test",
       "automationLane": "unit",
       "currentCoverage": [
-        "Tests\\PatternExecutorTests.cs"
+        "Tests.Core\\PatternExecutorTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "contract",
@@ -2464,7 +2464,7 @@
       "coverageClassification": "fixture-assisted automation",
       "automationLane": "process-fixture",
       "currentCoverage": [
-        "Tests\\GrabFrameFileTests.cs"
+        "Tests.Core.Windows\\GrabFrameFileTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "full",
@@ -2568,7 +2568,7 @@
       "coverageClassification": "packaged/VM lane",
       "automationLane": "packaged-vm",
       "currentCoverage": [
-        "Tests\\ProtocolUtilitiesTests.cs::TryParseProtocolUri_ParsesCommands"
+        "Tests.Core\\ProtocolUtilitiesTests.cs::TryParseProtocolUri_ParsesCommands"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -2630,7 +2630,7 @@
       "coverageClassification": "existing unit test",
       "automationLane": "unit",
       "currentCoverage": [
-        "Tests\\BarcodeUtilitiesTests.cs::ReadTestSingleQRCode"
+        "Tests\\BarcodeUtilitiesImageTests.cs::ReadTestSingleQRCode"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -2652,7 +2652,7 @@
       "coverageClassification": "existing unit test",
       "automationLane": "unit",
       "currentCoverage": [
-        "Tests\\BarcodeUtilitiesTests.cs"
+        "Tests.Core.Windows\\BarcodeUtilitiesTests.cs"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "partial",
@@ -2674,7 +2674,7 @@
       "coverageClassification": "fixture-assisted automation",
       "automationLane": "ocr-fixture",
       "currentCoverage": [
-        "Tests\\BarcodeUtilitiesTests.cs::TryToReadBarcodes_WithTwoQrCodes_ReturnsTwoResults"
+        "Tests.Core.Windows\\BarcodeUtilitiesTests.cs::TryToReadBarcodes_WithTwoQrCodes_ReturnsTwoResults"
       ],
       "implementationStatus": "implemented",
       "coverageLevel": "contract",
