@@ -2638,14 +2638,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (!possibleEmail.IsValidEmailAddress())
             return;
 
-        MenuItem emailMi = new()
-        {
-            Header = $"Email: {possibleEmail}"
-        };
-        emailMi.Click += (sender, e) =>
-        {
-            Process.Start(new ProcessStartInfo($"mailto:{possibleEmail}") { UseShellExecute = true });
-        };
+        if (ExternalLinkLauncher.CreateMenuItem($"mailto:{possibleEmail}") is not MenuItem emailMi)
+            return;
 
         PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
         PassedTextControl.ContextMenu?.Items.Insert(0, emailMi);
@@ -2707,20 +2701,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
         }
 
-        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out Uri? uri))
+        if (ExternalLinkLauncher.CreateMenuItem(possibleURL) is MenuItem urlMi)
         {
-            string headerText = $"Try to go to: {possibleURL}";
-            if (headerText.Length > 36)
-                headerText = string.Concat(headerText.AsSpan(0, 36), "...");
-
-            MenuItem urlMi = new()
-            {
-                Header = headerText
-            };
-            urlMi.Click += (sender, e) =>
-            {
-                Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
-            };
             PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
             PassedTextControl.ContextMenu?.Items.Insert(0, urlMi);
         }
@@ -2760,15 +2742,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void CanLaunchUriExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        string possibleURL = GetPossibleUrlText();
-
-        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out _))
-        {
-            e.CanExecute = true;
-            return;
-        }
-
-        e.CanExecute = false;
+        e.CanExecute = ExternalLinkUtilities.TryCreate(GetPossibleUrlText(), out _);
     }
 
     private string GetPossibleUrlText()
@@ -4111,12 +4085,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         qsl.Show();
     }
 
-    private void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
+    private async void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string possibleURL = GetPossibleUrlText();
-
-        if (Uri.TryCreate(possibleURL, UriKind.Absolute, out _))
-            Process.Start(new ProcessStartInfo(possibleURL) { UseShellExecute = true });
+        await ExternalLinkLauncher.OpenAsync(GetPossibleUrlText());
     }
     private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
     {
@@ -4819,10 +4790,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private void MarkdownEditorControl_RequestNavigate(object sender, RequestNavigateEventArgs e)
+    private async void MarkdownEditorControl_RequestNavigate(object sender, RequestNavigateEventArgs e)
     {
-        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
         e.Handled = true;
+        await ExternalLinkLauncher.OpenAsync(e.Uri.OriginalString);
     }
 
     private DispatcherTimer? _debounceTimer = null;

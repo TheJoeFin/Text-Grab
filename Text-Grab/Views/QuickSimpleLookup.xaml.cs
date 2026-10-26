@@ -482,13 +482,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
                     return;
 
-                if (Uri.TryCreate(lookupItem.LongValue, UriKind.Absolute, out Uri? uri))
+                if (await ExternalLinkLauncher.OpenAsync(lookupItem.LongValue))
                 {
-                    Process.Start(new ProcessStartInfo(lookupItem.LongValue) { UseShellExecute = true });
                     this.Close();
                     return;
                 }
-                break;
+                isPuttingValueIn = false;
+                return;
             case KeyboardModifiersDown.Ctrl:
                 if (selectedLookupItems.FirstOrDefault() is LookupItem ctrlItem
                     && ctrlItem.Kind == LookupItemKind.GrabTemplate
@@ -547,7 +547,11 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                                 break;
                             }
                         case LookupItemKind.Link:
-                            Process.Start(new ProcessStartInfo(lItem.LongValue) { UseShellExecute = true });
+                            if (!await ExternalLinkLauncher.OpenAsync(lItem.LongValue))
+                            {
+                                isPuttingValueIn = false;
+                                return;
+                            }
                             openedHistoryItemOrLink = true;
                             break;
                         case LookupItemKind.Command:

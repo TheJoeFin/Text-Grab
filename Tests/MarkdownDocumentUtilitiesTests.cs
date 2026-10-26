@@ -7,6 +7,25 @@ namespace Tests;
 public class MarkdownDocumentUtilitiesTests
 {
     [WpfFact]
+    public void Markdown_NonWebLinkTargetsRemainIntactForEditing()
+    {
+        const string markdown = """
+            [file](file://example.invalid/share/document.txt)
+
+            [protocol](ms-settings:display)
+
+            [relative](notes.md)
+            """;
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
+
+        Assert.Contains("[file](file://example.invalid/share/document.txt)", serialized);
+        Assert.Contains("[protocol](ms-settings:display)", serialized);
+        Assert.Contains("[relative](notes.md)", serialized);
+    }
+
+    [WpfFact]
     public void Markdown_RoundTrips_CommonFormatting()
     {
         const string markdown = """

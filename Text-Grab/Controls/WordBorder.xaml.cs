@@ -365,7 +365,7 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
         EditWordTextBox.Height = this.Height - 2;
         EditWordTextBox.FontSize = 14;
 
-        if (Uri.TryCreate(Word, UriKind.Absolute, out Uri? uri))
+        if (ExternalLinkUtilities.TryCreate(Word, out _))
             EditWordTextBox.Background = new SolidColorBrush(Colors.Blue);
     }
 
@@ -518,21 +518,8 @@ public partial class WordBorder : UserControl, INotifyPropertyChanged
             translateSeparator?.Visibility = Visibility.Collapsed;
         }
 
-        if (Uri.TryCreate(Word, UriKind.Absolute, out Uri? uri))
+        if (ExternalLinkLauncher.CreateMenuItem(Word) is MenuItem urlMi)
         {
-            string headerText = $"Try to go to: {Word}";
-            int maxLength = 36;
-            if (headerText.Length > maxLength)
-                headerText = string.Concat(headerText.AsSpan(0, maxLength), "...");
-
-            MenuItem urlMi = new()
-            {
-                Header = headerText
-            };
-            urlMi.Click += (sender, e) =>
-            {
-                Process.Start(new ProcessStartInfo(Word) { UseShellExecute = true });
-            };
             textBoxContextMenu.Items.Add(urlMi);
         }
     }

@@ -27,6 +27,7 @@ public class UiAutomationContractTests
             ["Controls\\FindAndReplaceWindow.xaml"] = ["FindReplaceDialog", "FindReplace.Search", "FindReplace.Results"],
             ["Controls\\RegexEditorDialog.xaml"] = ["RegexEditorDialog", "RegexEditor.Pattern", "RegexEditor.Error"],
             ["Controls\\PatternMatchModeDialog.xaml"] = ["PatternMatchDialog", "PatternMatch.Indices", "PatternMatch.IndicesError"],
+            ["Controls\\ExternalLinkConfirmationContent.xaml"] = ["ExternalLink.ConfirmationContent", "ExternalLink.Target", "ExternalLink.WarningButton", "ExternalLink.WarningText"],
             ["Pages\\KeysSettings.xaml"] = ["Settings.ShortcutsPage", "Settings.Shortcuts.GlobalHotkeysToggle", "Settings.Shortcuts.FullscreenGrab"],
         };
 
