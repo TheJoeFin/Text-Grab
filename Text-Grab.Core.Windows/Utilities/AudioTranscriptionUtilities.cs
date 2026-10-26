@@ -1,6 +1,7 @@
 using NAudio.MediaFoundation;
 using NAudio.Utils;
 using NAudio.Wave;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using Text_Grab.Services;
@@ -161,6 +162,7 @@ public static class AudioTranscriptionUtilities
 
     private static WhisperFactoryHandle? _factoryHandle;
     private static readonly SemaphoreSlim _factoryLock = new(1, 1);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _modelDownloadLocks = new(StringComparer.OrdinalIgnoreCase);
 
     // Silero VAD (voice activity detection) lets live transcription skip silence and cut on natural
     // speech boundaries instead of fixed time windows. The factory is small and shared.
@@ -266,37 +268,57 @@ public static class AudioTranscriptionUtilities
     /// <summary>
     /// Downloads a GGML model to LocalAppData if it isn't already present, returning its path. The
     /// download is written to a temp file first, then moved into place so a cancelled or failed
-    /// download never leaves a corrupt model behind.
+    /// download never leaves a corrupt model behind. Settings downloads and transcription share
+    /// the same per-model gate; requests for different models can download independently.
     /// </summary>
     private static async Task<string> EnsureModelDownloadedAsync(WhisperModelChoice choice, IProgress<string>? progress, CancellationToken cancellationToken)
     {
         string modelPath = ModelPathFor(choice);
-        if (File.Exists(modelPath))
-            return modelPath;
-
-        Directory.CreateDirectory(ModelDirectory);
         GgmlType ggmlType = WhisperModelInfo.GgmlTypeFor(choice);
         QuantizationType quantization = WhisperModelInfo.QuantizationFor(choice);
-        AudioDebugLog.Write($"EnsureModelDownloadedAsync: downloading Whisper '{ggmlType}' ({quantization}) model to {modelPath}");
-        progress?.Report($"Downloading ({WhisperModelInfo.DisplayName(choice)}, first run)…");
 
-        string tempPath = modelPath + ".download";
+        return await EnsureModelDownloadedAsync(modelPath, async cancellation =>
+        {
+            AudioDebugLog.Write($"EnsureModelDownloadedAsync: downloading Whisper '{ggmlType}' ({quantization}) model to {modelPath}");
+            progress?.Report($"Downloading ({WhisperModelInfo.DisplayName(choice)}, first run)…");
+            return await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType, quantization, cancellation).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal static async Task<string> EnsureModelDownloadedAsync(string modelPath, Func<CancellationToken, Task<Stream>> openModelStreamAsync, CancellationToken cancellationToken)
+    {
+        modelPath = Path.GetFullPath(modelPath);
+        SemaphoreSlim downloadLock = _modelDownloadLocks.GetOrAdd(modelPath, _ => new SemaphoreSlim(1, 1));
+        await downloadLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            using (Stream modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType, quantization, cancellationToken).ConfigureAwait(false))
-            using (FileStream fileWriter = File.Create(tempPath))
-                await modelStream.CopyToAsync(fileWriter, cancellationToken).ConfigureAwait(false);
-
             if (File.Exists(modelPath))
-                File.Delete(modelPath);
-            File.Move(tempPath, modelPath);
-            AudioDebugLog.Write("EnsureModelDownloadedAsync: download complete");
-            return modelPath;
+                return modelPath;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(modelPath)!);
+            // A private staging file also keeps cleanup from touching another process's download.
+            string tempPath = $"{modelPath}.{Guid.NewGuid():N}.download";
+            try
+            {
+                using (Stream modelStream = await openModelStreamAsync(cancellationToken).ConfigureAwait(false))
+                using (FileStream fileWriter = new(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                    await modelStream.CopyToAsync(fileWriter, cancellationToken).ConfigureAwait(false);
+
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(tempPath, modelPath);
+                AudioDebugLog.Write("EnsureModelDownloadedAsync: download complete");
+                return modelPath;
+            }
+            finally
+            {
+                try { File.Delete(tempPath); }
+                catch (IOException ex) { AudioDebugLog.Write($"EnsureModelDownloadedAsync: staging cleanup failed: {ex.Message}"); }
+                catch (UnauthorizedAccessException ex) { AudioDebugLog.Write($"EnsureModelDownloadedAsync: staging cleanup failed: {ex.Message}"); }
+            }
         }
-        catch
+        finally
         {
-            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
-            throw;
+            downloadLock.Release();
         }
     }
 
