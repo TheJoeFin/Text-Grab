@@ -205,7 +205,7 @@ internal static partial class WinAiTranslator
     }
 
     /// <summary>
-    /// Translates one block, splitting it on line boundaries and recursing when — and only when —
+    /// Translates one block, splitting it on line or word boundaries and recursing when — and only when —
     /// the model reports the prompt does not fit the context. Any other failure is passed straight
     /// back so the caller can report it.
     /// </summary>
@@ -220,9 +220,9 @@ internal static partial class WinAiTranslator
         if (outcome.Text is not null || outcome.Failure is not WinAiFailure.PromptTooLong)
             return outcome;
 
-        // Too long for one pass: split roughly in half on a line break and translate each side.
+        // Too long for one pass: split at a line or word boundary and translate each side.
         string[] pieces = SplitInHalf(text);
-        if (pieces.Length < 2)
+        if (pieces.Length < 2 || Array.Exists(pieces, piece => piece.Length == 0 || piece.Length >= text.Length))
             return outcome;
 
         StringBuilder combined = new();
@@ -238,7 +238,8 @@ internal static partial class WinAiTranslator
         return WinAiGenerationResult.Ok(combined.ToString());
     }
 
-    private static string[] SplitInHalf(string text)
+    /// <summary>Splits at a line or word boundary, leaving short or unbroken text unchanged.</summary>
+    internal static string[] SplitInHalf(string text)
     {
         if (text.Length < 200)
             return [text];
@@ -247,7 +248,10 @@ internal static partial class WinAiTranslator
         int splitAt = text.LastIndexOf('\n', middle);
 
         if (splitAt <= 0)
-            splitAt = text.IndexOf('\n', middle);
+        {
+            // The newline stays in the first piece, so the last character cannot be a split.
+            splitAt = text.IndexOf('\n', middle, text.Length - middle - 1);
+        }
 
         if (splitAt <= 0)
         {
