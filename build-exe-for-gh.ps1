@@ -47,12 +47,15 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Building Text Grab requires Windows.'
 }
 
-$RequiredTools = @('dotnet')
+$RequiredTools = @('dotnet', 'sign-exe')
 if (-not $SkipRelease) {
     $RequiredTools += 'git', 'gh'
 }
 foreach ($Tool in $RequiredTools) {
     if (-not (Get-Command $Tool -ErrorAction SilentlyContinue)) {
+        if ($Tool -eq 'sign-exe') {
+            throw 'sign-exe is required. Run this script from a PowerShell session with your signing profile loaded.'
+        }
         throw "$Tool is required but was not found on PATH."
     }
 }
@@ -110,8 +113,32 @@ if (-not $SkipRelease) {
     }
 }
 
-# Beta selects ZIP output; it does not change the app version or release status.
-& $BuildScript -Routine Beta
+# Prod leaves the self-contained builds unzipped so they can be signed first.
+& $BuildScript -Routine Prod
+
+Write-Host 'Signing release executables...' -ForegroundColor Cyan
+& sign-exe -SearchPath $ArtifactRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "sign-exe failed with exit code $LASTEXITCODE. No release was created."
+}
+
+$Executables = @(Get-ChildItem -LiteralPath $ArtifactRoot -Filter '*.exe' -File -Recurse)
+if ($Executables.Count -eq 0) {
+    throw "No release executables found in: $ArtifactRoot"
+}
+foreach ($Executable in $Executables) {
+    $Signature = Get-AuthenticodeSignature -LiteralPath $Executable.FullName
+    if ($Signature.Status -ne 'Valid') {
+        throw "Release executable does not have a valid signature: $($Executable.FullName) ($($Signature.Status)). No release was created."
+    }
+}
+
+foreach ($Name in 'Text-Grab-x64-Self-Contained', 'Text-Grab-arm64-Self-Contained') {
+    $Directory = Join-Path $ArtifactRoot $Name
+    Write-Host "Creating signed archive: $Name.zip" -ForegroundColor Yellow
+    Compress-Archive -Path (Join-Path $Directory '*') -DestinationPath "$Directory.zip" -Force
+    Remove-Item -LiteralPath $Directory -Recurse -Force
+}
 
 $AssetNames = @(
     'Text-Grab.exe'
