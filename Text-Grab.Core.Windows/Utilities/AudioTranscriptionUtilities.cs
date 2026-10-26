@@ -846,7 +846,7 @@ public enum LiveCaptureSource
 /// both at once (mixed into a single stream), gated by Silero voice-activity detection. Instead of
 /// transcribing fixed time windows (which waste compute on silence and cut words mid-phrase), it
 /// buffers audio, runs cheap VAD on a short cadence to find speech regions, and only sends a region
-/// to Whisper once it's complete (trailing silence detected). Each completed utterance raises
+/// to Whisper once it's complete (trailing silence or an idle loopback capture). Each utterance raises
 /// <see cref="PhraseRecognized"/>. Events fire on background threads; subscribers must marshal to
 /// their UI thread.
 /// </summary>
@@ -857,6 +857,90 @@ public sealed partial class LiveAudioTranscriber : IDisposable
     private const double MinAudioSeconds = 0.4;         // don't bother running VAD on less than this
     private const double CompletionSilenceSeconds = 0.25; // trailing silence that marks an utterance done
     private const double MaxUtteranceSeconds = 20.0;     // hard cap so a long monologue still flushes
+    private static readonly TimeSpan LoopbackIdleFlushDelay = TimeSpan.FromMilliseconds(500);
+
+    internal readonly record struct SpeechSegment(TimeSpan Start, TimeSpan End);
+
+    internal sealed class CaptureBuffer(WaveFormat sourceFormat, TimeProvider? timeProvider = null)
+    {
+        private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+        private readonly MemoryStream _pcmBuffer = new();
+        private readonly Lock _bufferLock = new();
+        private long? _lastPacketTimestamp;
+        private long _packetVersion;
+
+        internal WaveFormat SourceFormat { get; } = sourceFormat;
+        internal readonly record struct Snapshot(byte[] Audio, long PacketVersion);
+
+        internal void Write(ReadOnlySpan<byte> audio)
+        {
+            if (audio.IsEmpty)
+                return;
+
+            lock (_bufferLock)
+            {
+                _pcmBuffer.Write(audio);
+                _lastPacketTimestamp = _timeProvider.GetTimestamp();
+                _packetVersion++;
+            }
+        }
+
+        internal Snapshot GetSnapshot()
+        {
+            lock (_bufferLock)
+                return new Snapshot(_pcmBuffer.ToArray(), _packetVersion);
+        }
+
+        internal bool HasIdleGap(Snapshot snapshot, TimeSpan delay)
+        {
+            lock (_bufferLock)
+                return _pcmBuffer.Length > 0
+                    && _packetVersion == snapshot.PacketVersion
+                    && _lastPacketTimestamp is long timestamp
+                    && _timeProvider.GetElapsedTime(timestamp, _timeProvider.GetTimestamp()) >= delay;
+        }
+
+        internal void TrimFront(double seconds)
+        {
+            if (seconds <= 0)
+                return;
+
+            int bytesToRemove = (int)(seconds * SourceFormat.AverageBytesPerSecond);
+            int blockAlign = SourceFormat.BlockAlign;
+            if (blockAlign > 0)
+                bytesToRemove -= bytesToRemove % blockAlign;
+            TrimFrontBytes(bytesToRemove);
+        }
+
+        internal void TrimSnapshot(Snapshot snapshot) => TrimFrontBytes(snapshot.Audio.Length);
+
+        private void TrimFrontBytes(int bytesToRemove)
+        {
+            if (bytesToRemove <= 0)
+                return;
+
+            lock (_bufferLock)
+            {
+                byte[] current = _pcmBuffer.ToArray();
+                int remove = Math.Min(bytesToRemove, current.Length);
+                _pcmBuffer.SetLength(0);
+                if (current.Length > remove)
+                    _pcmBuffer.Write(current, remove, current.Length - remove);
+                else
+                    _lastPacketTimestamp = null;
+            }
+        }
+
+        internal void Clear()
+        {
+            lock (_bufferLock)
+            {
+                _pcmBuffer.SetLength(0);
+                _lastPacketTimestamp = null;
+                _packetVersion++;
+            }
+        }
+    }
 
     /// <summary>
     /// A single capture device feeding this transcriber (microphone or system-audio loopback), with
@@ -864,9 +948,8 @@ public sealed partial class LiveAudioTranscriber : IDisposable
     /// </summary>
     private sealed class CaptureChannel
     {
-        public WaveFormat SourceFormat { get; }
-        public MemoryStream PcmBuffer { get; } = new();
-        public object BufferLock { get; } = new();
+        public CaptureBuffer Buffer { get; }
+        public WaveFormat SourceFormat => Buffer.SourceFormat;
         private readonly IWaveIn? _waveIn;
         private readonly WasapiRecorder? _wasapiRecorder;
         private readonly EventHandler<WaveInEventArgs>? _waveInDataAvailableHandler;
@@ -875,24 +958,16 @@ public sealed partial class LiveAudioTranscriber : IDisposable
         public CaptureChannel(IWaveIn capture)
         {
             _waveIn = capture;
-            SourceFormat = capture.WaveFormat;
-            _waveInDataAvailableHandler = (_, e) =>
-            {
-                lock (BufferLock)
-                    PcmBuffer.Write(e.Buffer, 0, e.BytesRecorded);
-            };
+            Buffer = new CaptureBuffer(capture.WaveFormat);
+            _waveInDataAvailableHandler = (_, e) => Buffer.Write(e.Buffer.AsSpan(0, e.BytesRecorded));
             capture.DataAvailable += _waveInDataAvailableHandler;
         }
 
         public CaptureChannel(WasapiRecorder capture)
         {
             _wasapiRecorder = capture;
-            SourceFormat = capture.WaveFormat;
-            _wasapiDataAvailableHandler = (buffer, _, _, _) =>
-            {
-                lock (BufferLock)
-                    PcmBuffer.Write(buffer);
-            };
+            Buffer = new CaptureBuffer(capture.WaveFormat);
+            _wasapiDataAvailableHandler = (buffer, _, _, _) => Buffer.Write(buffer);
             capture.DataAvailable += _wasapiDataAvailableHandler;
         }
 
@@ -924,6 +999,7 @@ public sealed partial class LiveAudioTranscriber : IDisposable
                 _wasapiRecorder.DataAvailable -= _wasapiDataAvailableHandler;
                 try { _wasapiRecorder.Dispose(); } catch { }
             }
+            Buffer.Clear();
         }
     }
 
@@ -1141,76 +1217,25 @@ public sealed partial class LiveAudioTranscriber : IDisposable
             if (processor is null || vad is null || _channels.Count == 0)
                 return;
 
-            // Snapshot without clearing — audio keeps arriving while we work; we trim precisely later.
-            List<float[]> perChannelSamples = new(_channels.Count);
-            bool anyData = false;
-            foreach (CaptureChannel channel in _channels)
-            {
-                byte[] raw;
-                lock (channel.BufferLock)
+            string phrase = await ProcessBufferedAudioAsync(
+                _channels.Select(channel => channel.Buffer).ToArray(),
+                Source,
+                async samples =>
                 {
-                    if (channel.PcmBuffer.Length == 0)
-                    {
-                        perChannelSamples.Add([]);
-                        continue;
-                    }
-                    raw = channel.PcmBuffer.ToArray();
-                }
-                anyData = true;
-                perChannelSamples.Add(AudioTranscriptionUtilities.ConvertToSamples16kMono(raw, raw.Length, channel.SourceFormat));
-            }
-            if (!anyData)
-                return;
-
-            float[] samples = MixChannels(perChannelSamples);
-            double totalSeconds = samples.Length / (double)SampleRate;
-            if (!flush && totalSeconds < MinAudioSeconds)
-                return;
-
-            IReadOnlyList<VadSegmentData> speech = await vad.DetectSpeechAsync(samples).ConfigureAwait(false);
-            if (speech.Count == 0)
-            {
-                // Only silence so far: keep just the tail so the buffer doesn't grow during quiet.
-                TrimAllChannelsFront(totalSeconds - 0.5);
-                return;
-            }
-
-            bool forced = flush || totalSeconds >= MaxUtteranceSeconds;
-            double cutSeconds = 0;
-            StringBuilder phrase = new();
-
-            for (int i = 0; i < speech.Count; i++)
-            {
-                VadSegmentData seg = speech[i];
-                bool complete = forced || (totalSeconds - seg.End.TotalSeconds) >= CompletionSilenceSeconds;
-                if (!complete)
-                    break;   // speech still in progress: leave this and later regions buffered
-
-                int start = Math.Max(0, (int)(seg.Start.TotalSeconds * SampleRate) - (SampleRate / 20));
-                int end = Math.Min(samples.Length, (int)(seg.End.TotalSeconds * SampleRate) + (SampleRate / 20));
-                cutSeconds = seg.End.TotalSeconds;
-                if (end <= start)
-                    continue;
-
-                ReadOnlyMemory<float> slice = new(samples, start, end - start);
-                StringBuilder segmentText = new();
-                await foreach (SegmentData s in processor.ProcessAsync(slice, CancellationToken.None).ConfigureAwait(false))
-                    segmentText.Append(s.Text);
-
-                string cleaned = AudioTranscriptionUtilities.CleanTranscript(segmentText.ToString());
-                if (cleaned.Length > 0)
+                    IReadOnlyList<VadSegmentData> detected = await vad.DetectSpeechAsync(samples).ConfigureAwait(false);
+                    return detected.Select(segment => new SpeechSegment(segment.Start, segment.End)).ToArray();
+                },
+                async slice =>
                 {
-                    if (phrase.Length > 0)
-                        phrase.Append(' ');
-                    phrase.Append(cleaned);
-                }
-            }
-
-            if (cutSeconds > 0)
-                TrimAllChannelsFront(cutSeconds);
+                    StringBuilder segmentText = new();
+                    await foreach (SegmentData segment in processor.ProcessAsync(slice, CancellationToken.None).ConfigureAwait(false))
+                        segmentText.Append(segment.Text);
+                    return segmentText.ToString();
+                },
+                flush).ConfigureAwait(false);
 
             if (phrase.Length > 0)
-                PhraseRecognized?.Invoke(this, phrase.ToString());
+                PhraseRecognized?.Invoke(this, phrase);
         }
         catch (Exception ex)
         {
@@ -1222,35 +1247,89 @@ public sealed partial class LiveAudioTranscriber : IDisposable
         }
     }
 
-    /// <summary>
-    /// Drops the first <paramref name="seconds"/> of buffered audio (rounded to a whole sample frame)
-    /// from every capture channel. Only the consumed prefix is removed, so audio captured during
-    /// processing is preserved. Each channel is trimmed using its own format, but by the same real-time
-    /// duration, so mixed channels stay in sync.
-    /// </summary>
-    private void TrimAllChannelsFront(double seconds)
+    internal static async Task<string> ProcessBufferedAudioAsync(
+        IReadOnlyList<CaptureBuffer> buffers,
+        LiveCaptureSource source,
+        Func<float[], Task<IReadOnlyList<SpeechSegment>>> detectSpeechAsync,
+        Func<ReadOnlyMemory<float>, Task<string>> transcribeAsync,
+        bool flush = false)
     {
-        if (seconds <= 0)
-            return;
-
-        foreach (CaptureChannel channel in _channels)
+        // Snapshot without clearing: packets received during VAD/decoding must survive trimming.
+        List<CaptureBuffer.Snapshot> snapshots = new(buffers.Count);
+        List<float[]> perChannelSamples = new(buffers.Count);
+        bool anyData = false;
+        foreach (CaptureBuffer buffer in buffers)
         {
-            int bytesToRemove = (int)(seconds * channel.SourceFormat.AverageBytesPerSecond);
-            int blockAlign = channel.SourceFormat.BlockAlign;
-            if (blockAlign > 0)
-                bytesToRemove -= bytesToRemove % blockAlign;
-            if (bytesToRemove <= 0)
+            CaptureBuffer.Snapshot snapshot = buffer.GetSnapshot();
+            snapshots.Add(snapshot);
+            byte[] raw = snapshot.Audio;
+            if (raw.Length == 0)
+            {
+                perChannelSamples.Add([]);
+                continue;
+            }
+            anyData = true;
+            perChannelSamples.Add(AudioTranscriptionUtilities.ConvertToSamples16kMono(raw, raw.Length, buffer.SourceFormat));
+        }
+        if (!anyData)
+            return string.Empty;
+
+        bool HasLoopbackIdleGap() =>
+            source == LiveCaptureSource.SystemAudio
+            && buffers.Count == 1
+            && buffers[0].HasIdleGap(snapshots[0], LoopbackIdleFlushDelay);
+
+        float[] samples = MixChannels(perChannelSamples);
+        double totalSeconds = samples.Length / (double)SampleRate;
+        if (!flush && totalSeconds < MinAudioSeconds && !HasLoopbackIdleGap())
+            return string.Empty;
+
+        IReadOnlyList<SpeechSegment> speech = await detectSpeechAsync(samples).ConfigureAwait(false);
+        // WASAPI loopback can stop sending packets entirely when playback stops. Recheck after
+        // VAD so a resumed stream cannot force completion based on an out-of-date idle snapshot.
+        bool idleFlush = HasLoopbackIdleGap();
+        bool forced = flush || idleFlush || totalSeconds >= MaxUtteranceSeconds;
+        double cutSeconds = 0;
+        StringBuilder phrase = new();
+
+        for (int i = 0; i < speech.Count; i++)
+        {
+            SpeechSegment seg = speech[i];
+            bool complete = forced || (totalSeconds - seg.End.TotalSeconds) >= CompletionSilenceSeconds;
+            if (!complete)
+                break;
+
+            int start = Math.Max(0, (int)(seg.Start.TotalSeconds * SampleRate) - (SampleRate / 20));
+            int end = Math.Min(samples.Length, (int)(seg.End.TotalSeconds * SampleRate) + (SampleRate / 20));
+            cutSeconds = seg.End.TotalSeconds;
+            if (end <= start)
                 continue;
 
-            lock (channel.BufferLock)
+            ReadOnlyMemory<float> slice = new(samples, start, end - start);
+            string cleaned = AudioTranscriptionUtilities.CleanTranscript(await transcribeAsync(slice).ConfigureAwait(false));
+            if (cleaned.Length > 0)
             {
-                byte[] current = channel.PcmBuffer.ToArray();
-                int remove = Math.Min(bytesToRemove, current.Length);
-                channel.PcmBuffer.SetLength(0);
-                if (current.Length > remove)
-                    channel.PcmBuffer.Write(current, remove, current.Length - remove);
+                if (phrase.Length > 0)
+                    phrase.Append(' ');
+                phrase.Append(cleaned);
             }
         }
+
+        if (idleFlush)
+        {
+            // Drain this snapshot, including any tiny post-speech tail, exactly once. New packets
+            // appended during decoding remain buffered and start their own idle interval.
+            for (int i = 0; i < buffers.Count; i++)
+                buffers[i].TrimSnapshot(snapshots[i]);
+        }
+        else
+        {
+            double trimSeconds = speech.Count == 0 ? totalSeconds - 0.5 : cutSeconds;
+            foreach (CaptureBuffer buffer in buffers)
+                buffer.TrimFront(trimSeconds);
+        }
+
+        return phrase.ToString();
     }
 
     private void Cleanup()
