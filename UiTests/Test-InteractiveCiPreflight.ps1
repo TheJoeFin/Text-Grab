@@ -11,6 +11,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+Import-Module (Join-Path $PSScriptRoot 'TextGrab.UiTestHarness.psm1') -Force -DisableNameChecking
+
 function Add-PreflightCheck {
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Checks,
@@ -171,10 +173,19 @@ try {
     Add-PreflightCheck -Checks $checks -Name 'dotnet-sdk-10' -Passed $dotnetAvailable -Details "dotnet --version: $dotnetVersion"
 
     $winapp = Get-Command winapp -ErrorAction SilentlyContinue
-    $winappVersion = if ($null -ne $winapp) { (& winapp --version 2>&1 | Out-String).Trim() } else { '' }
-    $winappAvailable = $null -ne $winapp -and $LASTEXITCODE -eq 0 -and $winappVersion -match '^0\.5\.\d+(?:[-+].*)?$'
+    $winappVersion = ''
+    $winappAvailable = $false
+    try {
+        $winappContract = Test-WinAppCli
+        $winappVersion = $winappContract.Version
+        $winappAvailable = $true
+        $winappDetails = "path=$($winapp.Source); version=$winappVersion; schema=$($winappContract.SchemaVersion)"
+    }
+    catch {
+        $winappDetails = $_.Exception.Message
+    }
     $manifest.environment.winapp = [ordered]@{ path = if ($winapp) { $winapp.Source } else { $null }; version = $winappVersion }
-    Add-PreflightCheck -Checks $checks -Name 'winapp-cli-0.5' -Passed $winappAvailable -Details "path=$($manifest.environment.winapp.path); version=$winappVersion"
+    Add-PreflightCheck -Checks $checks -Name 'winapp-ui-contract' -Passed $winappAvailable -Details $winappDetails
 
     $monitors = Get-MonitorState
     $manifest.environment.monitors = $monitors

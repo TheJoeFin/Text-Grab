@@ -4,7 +4,7 @@
 
 ## Prerequisites and safety
 
-- Windows 10/11, .NET SDK 10.0.100, and **WinApp CLI 0.5.x** (`winapp --version`).
+- Windows 10/11, .NET SDK 10.0.100, and **WinApp CLI 0.5.0 or later** with UI schema 1.0 (`winapp --version`).
 - A logged-in, unlocked desktop is needed only for real-input/system lanes. Do not run them from a service session.
 - The harness creates a per-run profile below `UiTests\artifacts`, snapshots/restores the clipboard, and terminates only PIDs it created. Do not point it at a normal Text Grab profile.
 - Standard runs do not enable hotkeys, manipulate the tray, install packages, or alter user settings. Real input, Explorer, clipboard, and OLE drag/drop tests are opt-in system integration.
