@@ -1,4 +1,5 @@
 using Markdig.Extensions.TaskLists;
+using Markdig.Helpers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System;
@@ -203,7 +204,7 @@ public static class MarkdownFlowDocumentUtilities
     /// Refines a raw offset already known to fall inside <paramref name="block"/> using whichever of
     /// <paramref name="runs"/> belong to that same paragraph. Falls back to placing it proportionally
     /// across the whole block (still correct at the paragraph level) when no run in this block covers
-    /// the offset — e.g. a fenced code block or thematic break, tagged as a single run spanning the block.
+    /// the offset — e.g. stripped syntax between runs or a thematic break.
     /// </summary>
     private static TextPointer MapWithinBlock(IReadOnlyList<MarkdownOffsetMapping> runs, MarkdownOffsetMapping block, int rawOffset)
     {
@@ -399,11 +400,11 @@ public static class MarkdownFlowDocumentUtilities
                 break;
 
             case FencedCodeBlock fencedCodeBlock:
-                blocks.Add(CreateCodeParagraph(MarkdownDocumentUtilities.GetCodeBlockText(fencedCodeBlock), fencedCodeBlock.Info, quoteDepth, fencedCodeBlock.Span.Start, fencedCodeBlock.Span.End + 1));
+                blocks.Add(CreateCodeParagraph(fencedCodeBlock, fencedCodeBlock.Info, source, quoteDepth));
                 break;
 
             case CodeBlock codeBlock:
-                blocks.Add(CreateCodeParagraph(MarkdownDocumentUtilities.GetCodeBlockText(codeBlock), info: null, quoteDepth, codeBlock.Span.Start, codeBlock.Span.End + 1));
+                blocks.Add(CreateCodeParagraph(codeBlock, info: null, source, quoteDepth));
                 break;
 
             case ThematicBreakBlock thematicBreakBlock:
@@ -430,7 +431,7 @@ public static class MarkdownFlowDocumentUtilities
         }
     }
 
-    private static Paragraph CreateCodeParagraph(string codeText, string? info, int quoteDepth, int rawStart, int rawEnd)
+    private static Paragraph CreateCodeParagraph(CodeBlock codeBlock, string? info, string source, int quoteDepth)
     {
         Paragraph paragraph = new()
         {
@@ -440,10 +441,58 @@ public static class MarkdownFlowDocumentUtilities
         SetBlockRole(paragraph, MarkdownBlockRole.CodeBlock);
         SetQuoteDepth(paragraph, quoteDepth);
         SetCodeFenceInfo(paragraph, info?.ToString() ?? string.Empty);
-        SetRawSpan(paragraph, rawStart, rawEnd);
-        Run codeTextRun = new(codeText);
-        SetRawSpan(codeTextRun, rawStart, rawEnd);
-        paragraph.Inlines.Add(codeTextRun);
+        SetRawSpan(paragraph, codeBlock.Span.Start, codeBlock.Span.End + 1);
+
+        string codeText = MarkdownDocumentUtilities.GetCodeBlockText(codeBlock);
+        int codeOffset = 0;
+        // Line slices exclude fences and stripped quote/list/code indentation. Keep their
+        // mappings separate from normalized newlines so CRLF never compresses a line's text.
+        for (int i = 0; i < codeBlock.Lines.Count && codeOffset < codeText.Length; i++)
+        {
+            StringLine line = codeBlock.Lines.Lines[i];
+            int lineLength = Math.Min(line.Slice.Length, codeText.Length - codeOffset);
+            int rawLineStart = line.Slice.Start;
+            if (!ReferenceEquals(line.Slice.Text, source))
+            {
+                // Markdig allocates a new slice when container indentation consumes part of
+                // a tab. Recover its source position and map the expanded spaces separately.
+                rawLineStart = line.Position;
+                int column = 0;
+                while (column < line.Column && rawLineStart < source.Length)
+                {
+                    char character = source[rawLineStart++];
+                    column = character == '\t' ? column + 4 - column % 4 : column + 1;
+                }
+
+                int expandedSpaces = Math.Min(column - line.Column, lineLength);
+                if (expandedSpaces > 0)
+                {
+                    Run expandedTabRun = new(codeText.Substring(codeOffset, expandedSpaces));
+                    SetRawSpan(expandedTabRun, rawLineStart - 1, rawLineStart);
+                    paragraph.Inlines.Add(expandedTabRun);
+                    codeOffset += expandedSpaces;
+                    lineLength -= expandedSpaces;
+                }
+            }
+
+            Run codeTextRun = new(codeText.Substring(codeOffset, lineLength));
+            SetRawSpan(codeTextRun, rawLineStart, rawLineStart + lineLength);
+            paragraph.Inlines.Add(codeTextRun);
+            codeOffset += lineLength;
+
+            if (codeOffset < codeText.Length)
+            {
+                Run newlineRun = new("\n");
+                int rawNewlineStart = rawLineStart + lineLength;
+                SetRawSpan(newlineRun, rawNewlineStart, rawNewlineStart + line.NewLine.Length());
+                paragraph.Inlines.Add(newlineRun);
+                codeOffset++;
+            }
+        }
+
+        if (paragraph.Inlines.Count == 0)
+            paragraph.Inlines.Add(new Run());
+
         return paragraph;
     }
 

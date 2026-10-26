@@ -146,6 +146,110 @@ Console.WriteLine("hi");
         return new TextRange(start, end).Text;
     }
 
+    private static IEnumerable<(FlowDocument Document, string Source)> OriginalAndCanonicalDocuments(string markdown)
+    {
+        FlowDocument original = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        yield return (original, markdown);
+
+        // Find searches this serialized source, then SelectInEditor rebuilds the rendered document.
+        string canonical = MarkdownFlowDocumentUtilities.SerializeToMarkdown(original, preserveLiteralMarkdown: true);
+        yield return (MarkdownFlowDocumentUtilities.CreateFlowDocument(canonical, new FontFamily("Segoe UI"), 16), canonical);
+    }
+
+    [WpfTheory]
+    [InlineData("```csharp", "```", "\r\n")]
+    [InlineData("```csharp", "```", "\n")]
+    [InlineData("```", "```", "\r\n")]
+    [InlineData("```", "```", "\n")]
+    [InlineData("````csharp", "````", "\r\n")]
+    [InlineData("`````", "``````", "\n")]
+    [InlineData("~~~text", "~~~~~", "\r\n")]
+    [InlineData("~~~~~", "~~~~~", "\n")]
+    public void MapRawOffsetToPosition_UsesFencedCodeContentSpans(string openingFence, string closingFence, string newline)
+    {
+        string markdown = $"{openingFence}{newline}alpha beta gamma{newline}{closingFence}";
+
+        foreach ((FlowDocument document, string source) in OriginalAndCanonicalDocuments(markdown))
+        {
+            MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+            Assert.Equal("alpha beta gamma", MarkdownFlowDocumentUtilities.GetDocumentPlainText(document));
+            foreach (string token in new[] { "alpha", "beta", "gamma" })
+                Assert.Equal(token, MapAndSlice(document, map, source.IndexOf(token, StringComparison.Ordinal), token.Length));
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void MapRawOffsetToPosition_MapsMultilineCodeAndBlankLinesExactly(string newline)
+    {
+        string code = string.Join(newline, "alpha start", "middle beta gamma", "", "last omega");
+        string markdown = $"Before **context**.{newline}{newline}```csharp{newline}{code}{newline}```{newline}{newline}After **context**.";
+
+        foreach ((FlowDocument document, string source) in OriginalAndCanonicalDocuments(markdown))
+        {
+            MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+            foreach (string token in new[] { "alpha", "start", "middle", "beta", "gamma", "last", "omega" })
+                Assert.Equal(token, MapAndSlice(document, map, source.IndexOf(token, StringComparison.Ordinal), token.Length));
+
+            int start = source.IndexOf("start", StringComparison.Ordinal);
+            int betaEnd = source.IndexOf("beta", StringComparison.Ordinal) + "beta".Length;
+            Assert.Equal("start\nmiddle beta", MapAndSlice(document, map, start, betaEnd - start).Replace("\r\n", "\n", StringComparison.Ordinal));
+
+            int gammaStart = source.IndexOf("gamma", StringComparison.Ordinal);
+            int omegaEnd = source.IndexOf("omega", StringComparison.Ordinal) + "omega".Length;
+            Assert.Equal("gamma\n\nlast omega", MapAndSlice(document, map, gammaStart, omegaEnd - gammaStart).Replace("\r\n", "\n", StringComparison.Ordinal));
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("    alpha beta gamma\n    delta epsilon omega")]
+    [InlineData("  ```csharp\n  alpha beta gamma\n  delta epsilon omega\n  ```")]
+    [InlineData("> ```csharp\n> alpha beta gamma\n> delta epsilon omega\n> ```")]
+    [InlineData(">     alpha beta gamma\n>     delta epsilon omega")]
+    [InlineData("- ```csharp\n  alpha beta gamma\n  delta epsilon omega\n  ```")]
+    [InlineData("- item\n\n      alpha beta gamma\n      delta epsilon omega")]
+    public void MapRawOffsetToPosition_SkipsCodeContainerIndentation(string markdown)
+    {
+        foreach ((FlowDocument document, string source) in OriginalAndCanonicalDocuments(markdown))
+        {
+            MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+            foreach (string token in new[] { "beta", "epsilon", "omega" })
+                Assert.Equal(token, MapAndSlice(document, map, source.IndexOf(token, StringComparison.Ordinal), token.Length));
+
+            int gammaStart = source.IndexOf("gamma", StringComparison.Ordinal);
+            int epsilonEnd = source.IndexOf("epsilon", StringComparison.Ordinal) + "epsilon".Length;
+            Assert.Equal("gamma\ndelta epsilon", MapAndSlice(document, map, gammaStart, epsilonEnd - gammaStart).Replace("\r\n", "\n", StringComparison.Ordinal));
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("> ```csharp\n>\talpha beta gamma\n>\tdelta epsilon omega\n> ```")]
+    [InlineData("- item\n\n  \t\talpha beta gamma\n  \t\tdelta epsilon omega")]
+    public void MapRawOffsetToPosition_HandlesPartiallyExpandedCodeIndentationTabs(string markdown)
+    {
+        foreach ((FlowDocument document, string source) in OriginalAndCanonicalDocuments(markdown))
+        {
+            MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+            foreach (string token in new[] { "beta", "epsilon", "omega" })
+                Assert.Equal(token, MapAndSlice(document, map, source.IndexOf(token, StringComparison.Ordinal), token.Length));
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("```csharp\n```", "")]
+    [InlineData("```csharp\n\nalpha beta gamma\n\n\n```", "\nalpha beta gamma")]
+    [InlineData("```csharp\nalpha beta gamma\n   \n```", "alpha beta gamma\n   ")]
+    public void Markdown_CodeLineMappingsPreserveRenderedTextAndSerialization(string markdown, string expectedCode)
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+
+        Assert.Equal(expectedCode, MarkdownFlowDocumentUtilities.GetDocumentPlainText(document));
+        Assert.Equal($"```csharp{Environment.NewLine}{expectedCode}{Environment.NewLine}```",
+            MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true));
+    }
+
     [WpfFact]
     public void MapRawOffsetToPosition_SkipsStrippedBoldMarkers()
     {
