@@ -262,6 +262,7 @@ public class ExternalLinkLauncherTests
             {
                 ExternalLinkConfirmationContent content = Assert.IsType<ExternalLinkConfirmationContent>(dialog.Content);
                 TextBox target = Assert.IsType<TextBox>(content.FindName("TargetTextBox"));
+                CheckBox dontWarnAgain = Assert.IsType<CheckBox>(content.FindName("DontWarnAgainCheckBox"));
                 bool isEmail = uri.Scheme == "mailto";
 
                 Assert.Equal(isEmail ? "Open Email Link?" : "Open Telephone Link?", dialog.Title);
@@ -270,6 +271,12 @@ public class ExternalLinkLauncherTests
                 Assert.Equal(Uri.UnescapeDataString(uri.AbsoluteUri), target.Text);
                 Assert.Equal(uri.AbsoluteUri, target.ToolTip);
                 Assert.True(target.IsReadOnly);
+                Assert.Equal(
+                    isEmail ? "Don't warn me again about email links" : "Don't warn me again about telephone links",
+                    dontWarnAgain.Content);
+                Assert.False(content.DontWarnAgain);
+                dontWarnAgain.IsChecked = true;
+                Assert.True(content.DontWarnAgain);
             }
             finally
             {

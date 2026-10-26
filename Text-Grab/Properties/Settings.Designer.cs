@@ -505,6 +505,30 @@ namespace Text_Grab.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool WarnBeforeOpeningEmailLinks {
+            get {
+                return ((bool)(this["WarnBeforeOpeningEmailLinks"]));
+            }
+            set {
+                this["WarnBeforeOpeningEmailLinks"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool WarnBeforeOpeningTelephoneLinks {
+            get {
+                return ((bool)(this["WarnBeforeOpeningTelephoneLinks"]));
+            }
+            set {
+                this["WarnBeforeOpeningTelephoneLinks"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool FsgSendEtwToggle {
             get {

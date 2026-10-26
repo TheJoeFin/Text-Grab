@@ -64,5 +64,10 @@
                 </Border>
             </Popup>
         </StackPanel>
+        <CheckBox
+            x:Name="DontWarnAgainCheckBox"
+            Margin="0,12,0,0"
+            AutomationProperties.AutomationId="ExternalLink.DontWarnAgain"
+            AutomationProperties.HelpText="You can turn this warning back on in Settings, Dangerous Options, External links." />
     </StackPanel>
 </UserControl>

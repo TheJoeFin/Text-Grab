@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using Text_Grab.Controls;
+using Text_Grab.Properties;
 
 namespace Text_Grab.Utilities;
 
@@ -90,10 +91,48 @@ internal static class ExternalLinkLauncher
         return dialog;
     }
 
-    private static async Task<bool> ConfirmAsync(Uri uri)
+    private static Task<bool> ConfirmAsync(Uri uri)
     {
-        Wpf.Ui.Controls.MessageBoxResult result = await CreateConfirmationDialog(uri).ShowDialogAsync();
-        return result == Wpf.Ui.Controls.MessageBoxResult.Primary;
+        return ConfirmAsync(uri, AppUtilities.TextGrabSettings, ShowConfirmationAsync);
+    }
+
+    internal static async Task<bool> ConfirmAsync(
+        Uri uri,
+        Settings settings,
+        Func<Uri, Task<(bool Approved, bool DontWarnAgain)>> showConfirmationAsync)
+    {
+        bool shouldWarn = uri.Scheme switch
+        {
+            "mailto" => settings.WarnBeforeOpeningEmailLinks,
+            "tel" => settings.WarnBeforeOpeningTelephoneLinks,
+            _ => false
+        };
+        if (!shouldWarn)
+            return true;
+
+        (bool approved, bool dontWarnAgain) = await showConfirmationAsync(uri);
+        if (!approved)
+            return false;
+
+        if (dontWarnAgain)
+        {
+            if (uri.Scheme == Uri.UriSchemeMailto)
+                settings.WarnBeforeOpeningEmailLinks = false;
+            else
+                settings.WarnBeforeOpeningTelephoneLinks = false;
+
+            settings.Save();
+        }
+
+        return true;
+    }
+
+    private static async Task<(bool Approved, bool DontWarnAgain)> ShowConfirmationAsync(Uri uri)
+    {
+        Wpf.Ui.Controls.MessageBox dialog = CreateConfirmationDialog(uri);
+        Wpf.Ui.Controls.MessageBoxResult result = await dialog.ShowDialogAsync();
+        ExternalLinkConfirmationContent content = (ExternalLinkConfirmationContent)dialog.Content;
+        return (result == Wpf.Ui.Controls.MessageBoxResult.Primary, content.DontWarnAgain);
     }
 
     private static async Task ShowErrorAsync(string message)

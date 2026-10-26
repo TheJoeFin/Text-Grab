@@ -52,6 +52,34 @@
                 Click="ExportBugReportButton_Click" />
         </controls:SettingsCard>
 
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="External links" />
+
+        <controls:SettingsCard
+            Description="Ask for confirmation before opening an email link from captured or pasted text. Only open links from sources you trust."
+            HeaderText="Email link warnings (mailto:)"
+            Icon="{ui:SymbolIcon Mail24}">
+            <ui:ToggleSwitch
+                x:Name="EmailLinkWarningToggle"
+                AutomationProperties.AutomationId="Settings.Danger.EmailLinkWarningToggle"
+                Checked="ExternalLinkWarningToggle_Changed"
+                OffContent="Open without warning"
+                OnContent="Warn before opening"
+                Unchecked="ExternalLinkWarningToggle_Changed" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            Description="Ask for confirmation before opening a telephone link. Calls may incur charges or reveal your number."
+            HeaderText="Telephone link warnings (tel:)"
+            Icon="{ui:SymbolIcon Call24}">
+            <ui:ToggleSwitch
+                x:Name="TelephoneLinkWarningToggle"
+                AutomationProperties.AutomationId="Settings.Danger.TelephoneLinkWarningToggle"
+                Checked="ExternalLinkWarningToggle_Changed"
+                OffContent="Open without warning"
+                OnContent="Warn before opening"
+                Unchecked="ExternalLinkWarningToggle_Changed" />
+        </controls:SettingsCard>
+
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Backup and restore" />
 
         <controls:SettingsExpander

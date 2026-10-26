@@ -7,6 +7,8 @@ namespace Text_Grab.Controls;
 
 public partial class ExternalLinkConfirmationContent : UserControl
 {
+    public bool DontWarnAgain => DontWarnAgainCheckBox.IsChecked is true;
+
     public ExternalLinkConfirmationContent(Uri uri)
     {
         InitializeComponent();
@@ -14,6 +16,9 @@ public partial class ExternalLinkConfirmationContent : UserControl
         ActionDescription.Text = isEmail
             ? "This opens your email app. Review all recipients and message details before sending."
             : "This opens your calling app and may start a call. Charges may apply.";
+        DontWarnAgainCheckBox.Content = isEmail
+            ? "Don't warn me again about email links"
+            : "Don't warn me again about telephone links";
         TargetTextBox.Text = Uri.UnescapeDataString(uri.AbsoluteUri);
         TargetTextBox.ToolTip = uri.AbsoluteUri;
     }
