@@ -4230,6 +4230,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 oldItem.Click -= GrabTemplateMenuItem_Click;
         }
         GrabTemplateMenuItem.Items.Clear();
+        GrabTemplateMenuItem.Items.Add(new MenuItem { Header = "Loading…", IsEnabled = false });
     }
 
     private void ClearDynamicMenuItems()

@@ -718,7 +718,10 @@
                     <MenuItem
                         x:Name="GrabTemplateMenuItem"
                         Header="Use Grab _Template..."
-                        SubmenuOpened="GrabTemplateMenuItem_SubmenuOpened" />
+                        SubmenuOpened="GrabTemplateMenuItem_SubmenuOpened">
+                        <!-- Keeps the submenu openable before its items are loaded lazily. -->
+                        <MenuItem Header="Loading…" IsEnabled="False" />
+                    </MenuItem>
                     <MenuItem
                         x:Name="RecursiveFoldersCheck"
                         Header="Scan all folders recursively"
