@@ -1,6 +1,8 @@
 using System.Configuration;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Windows.Interop;
+using System.Windows.Media;
 using Text_Grab;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -9,6 +11,16 @@ namespace Tests;
 
 public class RenderingUtilitiesTests
 {
+    [Fact]
+    public void TestHost_UsesAutomaticRenderingPolicy()
+    {
+        RenderMode expected = RenderingUtilities.ShouldUseSoftwareRendering(RenderingMode.Auto, RuntimeInformation.OSArchitecture)
+            ? RenderMode.SoftwareOnly
+            : RenderMode.Default;
+
+        Assert.Equal(expected, RenderOptions.ProcessRenderMode);
+    }
+
     [Theory]
     [InlineData(Architecture.Arm64, true)]
     [InlineData(Architecture.X64, false)]
