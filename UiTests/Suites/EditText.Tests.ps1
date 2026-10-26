@@ -20,8 +20,10 @@ Register-UiTest -Suite 'EditText' -Name 'find-replace-dialog-replaces-editor-con
     Open-DeterministicMenu -Target $editText -MenuAutomationId 'EditText.Menu.Selection' -ChildAutomationId 'EditText.Menu.FindAndReplace' -Context $Context
     Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.FindAndReplace'
     $dialog = Wait-UiTestDialog -ProcessId $editText.ProcessId -Title 'Find and Replace' -TimeoutSeconds $Context.TimeoutSeconds
-    Set-DeterministicInteractiveValue -Target $dialog -AutomationId 'FindReplace.Search' -Value 'before'
-    Set-DeterministicInteractiveValue -Target $dialog -AutomationId 'FindReplace.ReplaceText' -Value 'after'
+    Set-UiTestValue -Target $dialog -AutomationId 'InnerTextBox' -Value 'before'
+    Set-UiTestValue -Target $dialog -AutomationId 'FindReplace.ReplaceText' -Value 'after'
+    Invoke-UiTestElement -Target $dialog -AutomationId 'FindReplace.FindButton'
+    Wait-UiTestElement -Target $dialog -AutomationId 'MatchesText' -Value '2 Matches' -TimeoutSeconds $Context.TimeoutSeconds
     Invoke-UiTestElement -Target $dialog -AutomationId 'FindReplace.ReplaceAllButton'
     Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'after after' -TimeoutSeconds $Context.TimeoutSeconds
 }
