@@ -58,7 +58,7 @@ public partial class SplitColumnWindow : Wpf.Ui.Controls.FluentWindow
     {
         // Feed the inline picker the same unified catalog the Grab Template editor uses:
         // saved regexes (inserted as {p:Name}) and built-in smart patterns ({r:Name}).
-        allPatternItems = PatternItem.GetAll();
+        allPatternItems = PatternItemCatalog.GetAll();
         PatternPickerBox.ItemsSource =
         [
             .. allPatternItems.Select(p => new InlinePickerItem(p.Name, TokenFor(p), p.GroupLabel)

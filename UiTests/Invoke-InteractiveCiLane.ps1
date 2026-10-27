@@ -345,10 +345,13 @@ try {
     }
 
     if (-not $SkipXunit) {
-        Invoke-DotNet -Arguments @(
-            'test', 'Tests\Tests.csproj', '-c', $Configuration, "-p:Platform=$($settings.Platform)",
-            '--logger', 'trx;LogFileName=xunit.trx', '--results-directory', $xunitDirectory, '--nologo'
-        )
+        foreach ($testProject in @('Tests.Core', 'Tests.Core.Windows', 'Tests')) {
+            Invoke-DotNet -Arguments @(
+                'test', '--project', "$testProject\$testProject.csproj", '-c', $Configuration, "-p:Platform=$($settings.Platform)",
+                '--report-xunit-trx', '--report-xunit-trx-filename', 'xunit.trx',
+                '--results-directory', (Join-Path $xunitDirectory $testProject), '--no-logo'
+            )
+        }
     }
 
     $uiArguments = @(

@@ -41,7 +41,7 @@ public class SettingsImportExportTests
         string settingsJsonPath = Path.Combine(tempDir, "settings.json");
         Assert.True(File.Exists(settingsJsonPath));
 
-        string jsonContent = await File.ReadAllTextAsync(settingsJsonPath);
+        string jsonContent = await File.ReadAllTextAsync(settingsJsonPath, TestContext.Current.CancellationToken);
         Assert.False(string.IsNullOrEmpty(jsonContent));
         // Check that JSON contains some setting keys (any of the common settings)
         bool containsSettings = jsonContent.Contains("ShowToast") ||
@@ -66,7 +66,7 @@ public class SettingsImportExportTests
         string originalTempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Original_{Guid.NewGuid()}");
         System.IO.Compression.ZipFile.ExtractToDirectory(originalZipPath, originalTempDir);
         string originalJsonPath = Path.Combine(originalTempDir, "settings.json");
-        string originalJson = await File.ReadAllTextAsync(originalJsonPath);
+        string originalJson = await File.ReadAllTextAsync(originalJsonPath, TestContext.Current.CancellationToken);
 
         // Step 3: Deserialize to dictionary to get all key-value pairs
         Dictionary<string, JsonElement>? originalSettings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(originalJson);
@@ -100,7 +100,7 @@ public class SettingsImportExportTests
         string modifiedTempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Modified_{Guid.NewGuid()}");
         Directory.CreateDirectory(modifiedTempDir);
         string modifiedJsonPath = Path.Combine(modifiedTempDir, "settings.json");
-        await File.WriteAllTextAsync(modifiedJsonPath, modifiedJson);
+        await File.WriteAllTextAsync(modifiedJsonPath, modifiedJson, TestContext.Current.CancellationToken);
 
         string modifiedZipPath = Path.Combine(Path.GetTempPath(), $"TextGrab_Modified_{Guid.NewGuid()}.zip");
         System.IO.Compression.ZipFile.CreateFromDirectory(modifiedTempDir, modifiedZipPath);
@@ -115,7 +115,7 @@ public class SettingsImportExportTests
         string reimportedTempDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Reimported_{Guid.NewGuid()}");
         System.IO.Compression.ZipFile.ExtractToDirectory(reimportedZipPath, reimportedTempDir);
         string reimportedJsonPath = Path.Combine(reimportedTempDir, "settings.json");
-        string reimportedJson = await File.ReadAllTextAsync(reimportedJsonPath);
+        string reimportedJson = await File.ReadAllTextAsync(reimportedJsonPath, TestContext.Current.CancellationToken);
 
         Dictionary<string, JsonElement>? reimportedSettings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(reimportedJson);
         Assert.NotNull(reimportedSettings);
@@ -179,7 +179,9 @@ public class SettingsImportExportTests
 
             verifyDir = Path.Combine(Path.GetTempPath(), $"TextGrab_Verify_{Guid.NewGuid()}");
             System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, verifyDir);
-            string exportedJson = await File.ReadAllTextAsync(Path.Combine(verifyDir, "settings.json"));
+            string exportedJson = await File.ReadAllTextAsync(
+                Path.Combine(verifyDir, "settings.json"),
+                TestContext.Current.CancellationToken);
             Assert.Contains("export-roundtrip-1", exportedJson);
 
             // Clear the managed setting to simulate import on a clean machine
@@ -215,7 +217,9 @@ public class SettingsImportExportTests
         try
         {
             System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, tempDir);
-            string jsonContent = await File.ReadAllTextAsync(Path.Combine(tempDir, "settings.json"));
+            string jsonContent = await File.ReadAllTextAsync(
+                Path.Combine(tempDir, "settings.json"),
+                TestContext.Current.CancellationToken);
 
             // All six managed-JSON setting names must appear as keys in the export
             Assert.True(jsonContent.Contains("regexList", StringComparison.OrdinalIgnoreCase));
@@ -281,7 +285,7 @@ public class SettingsImportExportTests
 
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(legacyDir, "settings.json"), legacyJson);
+            await File.WriteAllTextAsync(Path.Combine(legacyDir, "settings.json"), legacyJson, TestContext.Current.CancellationToken);
             System.IO.Compression.ZipFile.CreateFromDirectory(legacyDir, legacyZipPath);
 
             // Start from a clean state so the assertion is unambiguous

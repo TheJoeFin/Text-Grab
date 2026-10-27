@@ -847,7 +847,8 @@ public partial class FullscreenGrab
         List<Point> relativePoints = [.. devicePoints.Select(point => new Point(point.X - deviceBounds.X, point.Y - deviceBounds.Y))];
 
         using Bitmap rawBitmap = ImageMethods.GetRegionOfScreenAsBitmap(absoluteCaptureRect.AsRectangle(), cacheResult: false);
-        Bitmap maskedBitmap = FreeformCaptureUtilities.CreateMaskedBitmap(rawBitmap, relativePoints);
+        List<System.Drawing.PointF> relativePointsF = [.. relativePoints.Select(point => point.AsPointF())];
+        Bitmap maskedBitmap = BitmapMaskUtilities.CreateMaskedBitmap(rawBitmap, relativePointsF);
         Singleton<HistoryService>.Instance.CacheLastBitmap(maskedBitmap);
 
         BitmapSource captureImage = ImageMethods.BitmapToImageSource(maskedBitmap);
@@ -1265,28 +1266,28 @@ public partial class FullscreenGrab
                     Math.Round(clickedPointForOcr.X),
                     Math.Round(clickedPointForOcr.Y));
 
-                TextFromOCR = await OcrUtilities.GetClickedWordAsync(this, clickedPointForOcr, selectedOcrLang);
+                TextFromOCR = await OcrSourceUtilities.GetClickedWordAsync(this, clickedPointForOcr, selectedOcrLang);
             }
             else if (selectedOcrLang is UiAutomationLang)
             {
-                TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
+                TextFromOCR = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
             }
             else if (selection.CapturedImage is not null)
             {
                 TextFromOCR = isTable
-                    ? await OcrUtilities.GetTextFromBitmapSourceAsTableAsync(selection.CapturedImage, selectedOcrLang)
-                    : await OcrUtilities.GetTextFromBitmapSourceAsync(selection.CapturedImage, selectedOcrLang);
+                    ? await OcrSourceUtilities.GetTextFromBitmapSourceAsTableAsync(selection.CapturedImage, selectedOcrLang)
+                    : await OcrSourceUtilities.GetTextFromBitmapSourceAsync(selection.CapturedImage, selectedOcrLang);
             }
             else if (isTable)
             {
                 // TODO: Look into why this happens and find a better way to dispose the bitmap
                 // DO NOT add a using statement to this selected bitmap, it crashes the app
                 Bitmap selectionBitmap = ImageMethods.GetRegionOfScreenAsBitmap(selection.CaptureRegion.AsRectangle());
-                TextFromOCR = await OcrUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
+                TextFromOCR = await OcrSourceUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
             }
             else
             {
-                TextFromOCR = await OcrUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
+                TextFromOCR = await OcrSourceUtilities.GetTextFromAbsoluteRectAsync(selection.CaptureRegion, selectedOcrLang, excludedHandles);
             }
         }
         catch (Exception ex)
@@ -1327,7 +1328,7 @@ public partial class FullscreenGrab
                 LanguageKind = languageKind,
                 UsedUiAutomation = usedUiAutomation,
                 CaptureDateTime = DateTimeOffset.Now,
-                PositionRect = GetHistoryPositionRect(selection),
+                PositionRect = GetHistoryPositionRect(selection).AsRectangleF(),
                 IsTable = TableToggleButton.IsChecked!.Value,
                 TextContent = TextFromOCR ?? string.Empty,
                 ImageContent = historyBitmap,

@@ -90,6 +90,116 @@ public class AutomationSettingsProviderTests
             Assert.Equal("GrabFrame", second.DefaultLaunch);
     }
 
+    [Fact]
+    public void ExternalLinkWarnings_DefaultToEnabled()
+    {
+        using TempProfile temp = TempProfile.Create();
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(temp.Profile);
+        Settings settings = new();
+
+        Assert.True(settings.WarnBeforeOpeningEmailLinks);
+        Assert.True(settings.WarnBeforeOpeningTelephoneLinks);
+        Assert.Equal("True", settings.Properties[nameof(Settings.WarnBeforeOpeningEmailLinks)].DefaultValue);
+        Assert.Equal("True", settings.Properties[nameof(Settings.WarnBeforeOpeningTelephoneLinks)].DefaultValue);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ExternalLinkWarning_OptOutPersistsForOnlyTheApprovedScheme(bool isEmail)
+    {
+        using TempProfile temp = TempProfile.Create();
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(temp.Profile);
+        Settings settings = new();
+        Uri email = new("mailto:user@example.invalid");
+        Uri phone = new("tel:+15551234567");
+        Uri target = isEmail ? email : phone;
+
+        Assert.True(await ExternalLinkLauncher.ConfirmAsync(target, settings, _ => Task.FromResult((true, true))));
+
+        Settings reloaded = new();
+        Assert.Equal(!isEmail, reloaded.WarnBeforeOpeningEmailLinks);
+        Assert.Equal(isEmail, reloaded.WarnBeforeOpeningTelephoneLinks);
+        Dictionary<string, string> persisted = ReadClassicSettings(temp.Profile.ClassicSettingsFilePath);
+        Assert.Equal((!isEmail).ToString(), persisted[nameof(Settings.WarnBeforeOpeningEmailLinks)]);
+        Assert.Equal(isEmail.ToString(), persisted[nameof(Settings.WarnBeforeOpeningTelephoneLinks)]);
+        Assert.True(await ExternalLinkLauncher.ConfirmAsync(
+            target,
+            reloaded,
+            _ => throw new InvalidOperationException("The opted-out scheme must not prompt again.")));
+
+        int prompts = 0;
+        Assert.False(await ExternalLinkLauncher.ConfirmAsync(
+            isEmail ? phone : email,
+            reloaded,
+            _ =>
+            {
+                prompts++;
+                return Task.FromResult((false, false));
+            }));
+        Assert.Equal(1, prompts);
+    }
+
+    [Theory]
+    [InlineData("mailto:user@example.invalid", false, false)]
+    [InlineData("mailto:user@example.invalid", false, true)]
+    [InlineData("mailto:user@example.invalid", true, false)]
+    [InlineData("tel:+15551234567", false, false)]
+    [InlineData("tel:+15551234567", false, true)]
+    [InlineData("tel:+15551234567", true, false)]
+    public async Task ExternalLinkWarning_WithoutApprovedOptOutDoesNotSavePreferences(
+        string target, bool approved, bool dontWarnAgain)
+    {
+        using TempProfile temp = TempProfile.Create();
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(temp.Profile);
+        Settings settings = new();
+
+        bool result = await ExternalLinkLauncher.ConfirmAsync(
+            new Uri(target),
+            settings,
+            _ => Task.FromResult((approved, dontWarnAgain)));
+
+        Assert.Equal(approved, result);
+        Assert.True(settings.WarnBeforeOpeningEmailLinks);
+        Assert.True(settings.WarnBeforeOpeningTelephoneLinks);
+        Assert.False(File.Exists(temp.Profile.ClassicSettingsFilePath));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ExternalLinkWarning_ReenablingPreferenceRestoresConfirmation(bool isEmail)
+    {
+        using TempProfile temp = TempProfile.Create();
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(temp.Profile);
+        Settings settings = new()
+        {
+            WarnBeforeOpeningEmailLinks = false,
+            WarnBeforeOpeningTelephoneLinks = false
+        };
+        if (isEmail)
+            settings.WarnBeforeOpeningEmailLinks = true;
+        else
+            settings.WarnBeforeOpeningTelephoneLinks = true;
+        settings.Save();
+
+        Settings reloaded = new();
+        int prompts = 0;
+        bool approved = await ExternalLinkLauncher.ConfirmAsync(
+            new Uri(isEmail ? "mailto:user@example.invalid" : "tel:+15551234567"),
+            reloaded,
+            _ =>
+            {
+                prompts++;
+                return Task.FromResult((false, false));
+            });
+
+        Assert.False(approved);
+        Assert.Equal(1, prompts);
+        Assert.Equal(isEmail, reloaded.WarnBeforeOpeningEmailLinks);
+        Assert.Equal(!isEmail, reloaded.WarnBeforeOpeningTelephoneLinks);
+    }
+
     private static Dictionary<string, string> ReadClassicSettings(string path) =>
         JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path))
         ?? throw new InvalidOperationException("Classic settings file was empty.");

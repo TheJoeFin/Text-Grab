@@ -221,7 +221,7 @@ public partial class SearchBar : UserControl
         PatternMenu.Items.Clear();
 
         string? currentGroup = null;
-        foreach (PatternItem pattern in PatternItem.GetAll())
+        foreach (PatternItem pattern in PatternItemCatalog.GetAll())
         {
             if (pattern.GroupLabel != currentGroup)
             {

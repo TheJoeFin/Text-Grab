@@ -149,7 +149,7 @@ public class ScreenLayoutTests
 
         for (int i = 0; i < dapploDisplays.Length; i++)
         {
-            Rect dapploRect = dapploDisplays[i].Bounds;
+            Rect dapploRect = new(dapploDisplays[i].Bounds.Left, dapploDisplays[i].Bounds.Top, dapploDisplays[i].Bounds.Width, dapploDisplays[i].Bounds.Height);
             Rect winFormsRect = winFormsDisplays[i].Bounds.AsRect();
 
             Point dapploCenterPoint = dapploRect.CenterPoint();

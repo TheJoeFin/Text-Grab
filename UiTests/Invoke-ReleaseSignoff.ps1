@@ -13,6 +13,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$testRuntime = 'win-' + [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
 Import-Module (Join-Path $PSScriptRoot 'ReleaseSignoff.Helpers.psm1') -Force
 $runRoot = Join-Path ([IO.Path]::GetFullPath($ArtifactRoot)) ("signoff-{0}-{1}" -f [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'), [guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Path $runRoot -Force | Out-Null
@@ -87,6 +88,7 @@ function Invoke-SignoffStep {
 $environment = [ordered]@{
     generatedUtc = [DateTimeOffset]::UtcNow.ToString('O')
     configuration = $Configuration
+    testRuntime = $testRuntime
     computerName = $env:COMPUTERNAME
     userName = $env:USERNAME
     os = [Environment]::OSVersion.VersionString
@@ -113,8 +115,11 @@ Invoke-SignoffStep -Name 'coverage' -Artifact $coverageReport -Action {
 
 if (-not $SkipXunit) {
     $xunitDirectory = Join-Path $runRoot 'xunit'
-    Invoke-SignoffStep -Name 'xunit' -Artifact $xunitDirectory -Action {
-        & dotnet test (Join-Path $repositoryRoot 'Tests\Tests.csproj') -c $Configuration --results-directory $xunitDirectory --logger 'trx;LogFileName=release-signoff.trx' --nologo
+    foreach ($testProject in @('Tests.Core', 'Tests.Core.Windows', 'Tests')) {
+        $projectResults = Join-Path $xunitDirectory $testProject
+        Invoke-SignoffStep -Name "xunit-$testProject" -Artifact $projectResults -Action {
+            & dotnet test --project (Join-Path $repositoryRoot "$testProject\$testProject.csproj") -c $Configuration -r $testRuntime --results-directory $projectResults --report-xunit-trx --report-xunit-trx-filename 'release-signoff.trx' --no-logo
+        }
     }
 }
 

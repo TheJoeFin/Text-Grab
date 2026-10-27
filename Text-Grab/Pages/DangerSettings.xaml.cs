@@ -28,7 +28,24 @@ public partial class DangerSettings : System.Windows.Controls.Page
         _loadingDangerSettings = true;
         OverrideArchCheckWinAI.IsChecked = DefaultSettings.OverrideAiArchCheck;
         EnableFileBackedManagedSettingsToggle.IsChecked = DefaultSettings.EnableFileBackedManagedSettings;
+        EmailLinkWarningToggle.IsChecked = DefaultSettings.WarnBeforeOpeningEmailLinks;
+        TelephoneLinkWarningToggle.IsChecked = DefaultSettings.WarnBeforeOpeningTelephoneLinks;
         _loadingDangerSettings = false;
+    }
+
+    private void ExternalLinkWarningToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loadingDangerSettings)
+            return;
+
+        if (sender == EmailLinkWarningToggle)
+            DefaultSettings.WarnBeforeOpeningEmailLinks = EmailLinkWarningToggle.IsChecked is true;
+        else if (sender == TelephoneLinkWarningToggle)
+            DefaultSettings.WarnBeforeOpeningTelephoneLinks = TelephoneLinkWarningToggle.IsChecked is true;
+        else
+            return;
+
+        DefaultSettings.Save();
     }
 
     private async void ExportBugReportButton_Click(object sender, RoutedEventArgs e)

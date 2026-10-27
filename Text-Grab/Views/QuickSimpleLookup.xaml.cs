@@ -59,6 +59,14 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     public bool IsEditingDataGrid { get; set; } = false;
     public bool IsFromETW { get; set; } = false;
+
+    /// <summary>
+    /// When set, a pick always writes straight into <see cref="DestinationTextBox"/> and closes the
+    /// window, regardless of <c>EditWindowToggleButton</c> — for callers (like the audio hot-words
+    /// picker) that want QSL purely as a value picker, not the ETW insert/clipboard flow.
+    /// </summary>
+    public bool IsPickerMode { get; set; } = false;
+
     public List<LookupItem> ItemsDictionary { get; set; } = [];
 
     #endregion Properties
@@ -88,9 +96,15 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (cells.FirstOrDefault() is string firstCell)
             newRow.ShortValue = firstCell;
 
+        // CSV rows are written as "ShortValue,LongValue" with no quoting/escaping (see
+        // LookupItem.ToCSVString), so a LongValue that itself contains commas splits into more than
+        // two cells here. Rejoin with the same delimiter to reconstitute the original value instead of
+        // losing the commas (space-joining is still correct for tab-split rows: typed/pasted multi-cell
+        // entries are meant to read as one space-separated phrase, not regain literal tab characters).
+        string joinSeparator = splitChar == ',' ? "," : " ";
         newRow.LongValue = "";
         if (cells.Count > 1 && cells[1] is not null)
-            newRow.LongValue = string.Join(" ", cells.Skip(1).ToArray());
+            newRow.LongValue = string.Join(joinSeparator, cells.Skip(1).ToArray());
 
         newRow.Kind = kind;
         return newRow;
@@ -468,13 +482,13 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                 if (selectedLookupItems.FirstOrDefault() is not LookupItem lookupItem)
                     return;
 
-                if (Uri.TryCreate(lookupItem.LongValue, UriKind.Absolute, out Uri? uri))
+                if (await ExternalLinkLauncher.OpenAsync(lookupItem.LongValue))
                 {
-                    Process.Start(new ProcessStartInfo(lookupItem.LongValue) { UseShellExecute = true });
                     this.Close();
                     return;
                 }
-                break;
+                isPuttingValueIn = false;
+                return;
             case KeyboardModifiersDown.Ctrl:
                 if (selectedLookupItems.FirstOrDefault() is LookupItem ctrlItem
                     && ctrlItem.Kind == LookupItemKind.GrabTemplate
@@ -533,7 +547,11 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
                                 break;
                             }
                         case LookupItemKind.Link:
-                            Process.Start(new ProcessStartInfo(lItem.LongValue) { UseShellExecute = true });
+                            if (!await ExternalLinkLauncher.OpenAsync(lItem.LongValue))
+                            {
+                                isPuttingValueIn = false;
+                                return;
+                            }
                             openedHistoryItemOrLink = true;
                             break;
                         case LookupItemKind.Command:
@@ -569,7 +587,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (stringBuilder.Length > 3 && stringBuilder.ToString().EndsWith("\r\n"))
             stringBuilder.Remove(stringBuilder.Length - 2, 2);
 
-        if (DestinationTextBox is not null && EditWindowToggleButton.IsChecked is true)
+        if (DestinationTextBox is not null && (IsPickerMode || EditWindowToggleButton.IsChecked is true))
         {
             // Do it this way instead of append text because it inserts the text at the cursor
             // Then puts the cursor at the end of the newly added text

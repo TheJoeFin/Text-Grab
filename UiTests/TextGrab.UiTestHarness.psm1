@@ -87,12 +87,12 @@ function Test-WinAppCli {
 
     $command = Get-Command winapp -ErrorAction SilentlyContinue
     if ($null -eq $command) {
-        throw 'WinApp CLI was not found. Install WinApp CLI v0.5.0 before running UI tests.'
+        throw 'WinApp CLI was not found. Install WinApp CLI v0.5.0 or later before running UI tests.'
     }
 
     $versionText = (& winapp --version 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or $versionText -notmatch '^(?<major>0)\.(?<minor>5)\.(?<patch>\d+)(?:[-+].*)?$') {
-        throw "WinApp CLI v0.5.x is required; found '$versionText'. Install the v0.5.0-compatible WinApp CLI."
+    if ($LASTEXITCODE -ne 0 -or $versionText -notmatch '^(?<version>\d+\.\d+\.\d+)(?:[-+].*)?$' -or [version]$matches.version -lt [version]'0.5.0') {
+        throw "WinApp CLI v0.5.0 or later is required; found '$versionText'."
     }
 
     $schemaText = (& winapp ui --cli-schema 2>&1 | Out-String).Trim()
@@ -107,8 +107,8 @@ function Test-WinAppCli {
         throw "WinApp CLI returned an invalid UI schema: $($_.Exception.Message)"
     }
 
-    if ($schema.version -notmatch '^0\.5\.') {
-        throw "WinApp UI schema version '$($schema.version)' is incompatible; expected v0.5.x."
+    if ($schema.schemaVersion -ne '1.0') {
+        throw "WinApp UI schema version '$($schema.schemaVersion)' is incompatible; expected schema v1.0."
     }
 
     $available = @($schema.subcommands.psobject.Properties.Name)

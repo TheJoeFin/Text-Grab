@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Text_Grab.Utilities;
 
 namespace Text_Grab;
 
@@ -16,6 +17,9 @@ public class TextGrabNotificationActivator : NotificationActivator
             // Tapping on the top-level header launches with empty args
             if (invokedArgs.Length != 0)
             {
+                if (NotificationUtilities.TryActivateTranscriptionWindow(invokedArgs))
+                    return;
+
                 // Perform a normal launch
                 EditTextWindow mtw = new(invokedArgs);
                 mtw.Show();
