@@ -19,7 +19,7 @@
 </p>
 
 ## Overview
-![All Modes In Light Mode](images/All-Modes-Light.png)
+![All Modes In Light Mode](images/All-Modes-Themed.png)
 
 Use Text Grab on Windows to capture text with OCR, clean it up quickly, and move it into the next step of your workflow.
 
@@ -83,7 +83,7 @@ The Windows UI automation inventory, safe local release sign-off command, runner
 ## Choose from Four Modes
 
 ### 1. Full-Screen Mode (basis of [Text Extractor](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor))
-![Select text from a region](images/FSG-V4.gif)
+![Select text from a region](images/FSG-V4.webp)
 
 Use Full-Screen Mode when you want to select any region of the screen and copy the recognized text straight to your clipboard.
 
@@ -92,7 +92,7 @@ You can also click once to try to copy a single word. That works because the Win
 If you click or select an area with no text, the Text Grab window stays active so you can try again. To exit, press Escape, right-click and choose Cancel, or press Alt+F4.
 
 ### 2. Grab Frame Mode
-![Grab Frame](images/3-2-GF-Editing-Table-2.gif)
+![Grab Frame](images/TGGF-Table.webp)
 
 Use Grab Frame when you want a movable OCR window you can keep over part of your screen. Position the frame over the text you want, then grab text by searching for it, clicking a word border, or clicking the Grab button.
 
@@ -143,7 +143,7 @@ The Calc Pane can help with:
 Use the Calc Pane when OCR pulls numbers, quantities, dates, or measurements out of an image and you want quick answers without moving the data into another calculator first. It can also summarize numeric values from spreadsheet selections, copy all calculation results, and hide or show errors depending on how much detail you want while cleaning data.
 
 ### 4. Quick Simple Lookup
-![Quick Simple Lookup](images/Quick-Simple-Lookup.gif)
+![Quick Simple Lookup](images/TG-QSL.webp)
 
 Quick Simple Lookup is not about OCR. Use it to retrieve frequently used text like URLs, emails, part numbers, and more. Think of it as your long-term memory: a custom dictionary you can edit and recall instantly whenever you need it. The workflow is fast:
 
@@ -151,6 +151,13 @@ Quick Simple Lookup is not about OCR. Use it to retrieve frequently used text li
 2. Begin typing to filter the lookup to the item you want
 3. When what you want is the first result, press Enter
 4. Paste the value into the application you are using
+
+### Bonus Mode: Browser Extension
+
+Text Grab isn't limited to screenshots. The [Text Grab Extension](https://github.com/TheJoeFin/Text-Grab-Extension) for Chrome and Edge lets you grab raw, selectable text straight from a web page and send it into Text Grab — no OCR needed since the text is already there. It's a fast way to pull text out of pages that block copy/paste or have awkward formatting, and get it into Text Grab for cleanup, spreadsheet mode, or your usual post-grab workflow.
+
+- [Chrome Web Store](https://chromewebstore.google.com/detail/text-grab-extension/edkbakekpnnghfmhojmckdagdjeldjmi)
+- [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/text-grab-extension/mhhheckbddpoehjgcapihkmbjbgcgcfj)
 
 ### From OCR to usable text
 
